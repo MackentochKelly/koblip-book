@@ -1,7 +1,7 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
-import importPlugin from "eslint-plugin-import";
+import { defineConfig, globalIgnores } from "eslint/config"
+import nextVitals from "eslint-config-next/core-web-vitals"
+import nextTs from "eslint-config-next/typescript"
+import importPlugin from "eslint-plugin-import"
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -19,6 +19,17 @@ const eslintConfig = defineConfig([
           zones: [
             // features/ cannot import from app/
             { target: "./features", from: "./app" },
+            // features never import each other
+            {
+              target: "./features/business-page",
+              from: "./features",
+              except: ["./business-page"],
+            },
+            {
+              target: "./features/place-import",
+              from: "./features",
+              except: ["./place-import"],
+            },
             // shared code cannot import from features/ or app/
             { target: "./components", from: "./features" },
             { target: "./components", from: "./app" },
@@ -33,6 +44,13 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // components/ui is shadcn's code, kept as the CLI writes it.
+  {
+    files: ["components/ui/**"],
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -41,6 +59,6 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
-]);
+])
 
-export default eslintConfig;
+export default eslintConfig

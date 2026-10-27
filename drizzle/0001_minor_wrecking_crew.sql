@@ -1,0 +1,10 @@
+ALTER TABLE `businesses` ADD `google_place_id` text;--> statement-breakpoint
+ALTER TABLE `businesses` ADD `category` text;--> statement-breakpoint
+ALTER TABLE `businesses` ADD `rating` real;--> statement-breakpoint
+ALTER TABLE `businesses` ADD `review_count` integer;--> statement-breakpoint
+ALTER TABLE `businesses` ADD `website` text;--> statement-breakpoint
+ALTER TABLE `businesses` ADD `latitude` real;--> statement-breakpoint
+ALTER TABLE `businesses` ADD `longitude` real;--> statement-breakpoint
+ALTER TABLE `businesses` ADD `maps_url` text;--> statement-breakpoint
+ALTER TABLE `businesses` ADD `status` text;--> statement-breakpoint
+CREATE UNIQUE INDEX `businesses_googlePlaceId_unique` ON `businesses` (`google_place_id`);
