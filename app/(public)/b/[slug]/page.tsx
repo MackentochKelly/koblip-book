@@ -93,12 +93,7 @@ export default async function BusinessPage({ params }: Props) {
               <AboutPreview text={business.description} />
             )}
             <SectionTabs sections={sections} />
-            {services.length > 0 && (
-              <>
-                <ServiceList services={services} currency={business.currency} />
-                <Separator />
-              </>
-            )}
+            <ServiceList services={services} currency={business.currency} />
             {team.length > 0 && (
               <>
                 <TeamList team={team} />
