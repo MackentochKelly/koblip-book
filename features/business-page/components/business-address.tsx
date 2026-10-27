@@ -7,7 +7,7 @@ export function BusinessAddress({ children }: { children: React.ReactNode }) {
     <Item
       variant="muted"
       size="xs"
-      className="mt-1 w-fit max-w-full flex-nowrap"
+      className="mt-1 w-fit max-w-full flex-nowrap gap-2 px-2.5 py-1.5 text-xs"
     >
       <ItemMedia>
         <MapPinIcon aria-hidden="true" />
@@ -30,7 +30,7 @@ export function BusinessWebsite({ url }: { url: string }) {
     <Item
       variant="muted"
       size="xs"
-      className="w-fit max-w-full flex-nowrap md:hidden"
+      className="w-fit max-w-full flex-nowrap gap-2 px-2.5 py-1.5 text-xs md:hidden"
       render={<a href={url} target="_blank" rel="noreferrer" />}
     >
       <ItemMedia>

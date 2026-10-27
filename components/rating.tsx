@@ -19,7 +19,7 @@ export function Rating({
       )}
     >
       <StarIcon
-        className="size-3.5 fill-primary text-primary"
+        className="size-3.5 fill-warning text-warning"
         aria-hidden="true"
       />{" "}
       {rating.toFixed(1)}
