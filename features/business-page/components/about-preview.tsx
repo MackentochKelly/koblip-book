@@ -12,7 +12,7 @@ export function AboutPreview({ text }: { text: string }) {
       <Button
         variant="link"
         size="sm"
-        className="h-auto p-0"
+        className="h-auto p-0 dark:text-foreground"
         onClick={() =>
           document
             .getElementById("about")
