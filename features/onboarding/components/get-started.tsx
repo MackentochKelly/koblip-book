@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import { motion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
 import { useRouter } from "next/navigation"
 import {
   ArrowLeftIcon,
@@ -75,6 +75,9 @@ type Mode = "search" | "link"
 // On a phone the search box grows into a full screen search when tapped
 // (Motion layout animation: motion.dev/docs/react-layout-animations).
 const GROW = { type: "spring", bounce: 0, duration: 0.4 } as const
+// The page colour fades in behind the full screen search faster than it
+// grows, so it is in place before the keyboard opens and Safari moves the page.
+const COVER = { duration: 0.2, ease: "easeOut" } as const
 const MotionCard = motion.create(Card)
 
 const MODES: ViewTab<Mode>[] = [
@@ -111,11 +114,6 @@ export function GetStarted({
   const open = expanded && isMobile && !picked && mode === "search"
   // While full screen: the part of the screen above the keyboard.
   const visible = useVisualViewport(open)
-  // Once it has grown: the page colour painted all around it, so the page
-  // behind never shows where iPhone Safari draws it (under the clock,
-  // behind its see-through keyboard bar).
-  const [grown, setGrown] = useState(false)
-  const covered = open && grown
   const [resuming, setResuming] = useState(Boolean(resume && signedIn))
 
   // Back from Google: make the page the owner's and open its dashboard.
@@ -145,7 +143,6 @@ export function GetStarted({
       height: frame.offsetHeight,
       radius: parseFloat(getComputedStyle(frame).borderTopLeftRadius),
     })
-    setGrown(false)
     setExpanded(true)
   }
 
@@ -225,11 +222,25 @@ export function GetStarted({
         className="w-full"
         style={open ? { height: rest.height } : undefined}
       >
+        {/* The page colour over the whole page, from the moment the search
+            opens, so the page behind never shows where iPhone Safari draws
+            it (under the clock, behind its see-through keyboard bar). */}
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              aria-hidden
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={COVER}
+              className="fixed inset-x-0 -inset-y-[100vmax] z-50 bg-background"
+            />
+          )}
+        </AnimatePresence>
         <motion.div
           ref={frameRef}
           layout
           transition={GROW}
-          onLayoutAnimationComplete={() => setGrown(open)}
           style={
             open
               ? {
@@ -243,8 +254,7 @@ export function GetStarted({
           className={cn(
             glassFrameClassName,
             open &&
-              "fixed inset-x-0 top-0 z-50 h-dvh bg-background p-0 inset-ring-0",
-            covered && "shadow-[0_0_0_100vmax_var(--color-background)]"
+              "fixed inset-x-0 top-0 z-50 h-dvh bg-background p-0 inset-ring-0"
           )}
         >
           <MotionCard
