@@ -1,21 +1,11 @@
-# Next.js template
+# Koblip Book
 
-This is a Next.js template with shadcn/ui.
+A booking app for any local business: customers book appointments on the business's public page, owners manage bookings, services and team.
 
-## Adding components
-
-To add components to your app, run the following command:
+## Run it locally
 
 ```bash
-npx shadcn@latest add button
-```
-
-This will place the ui components in the `components` directory.
-
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button";
+npm install
+cp .env.example .env.local
+npm run dev
 ```

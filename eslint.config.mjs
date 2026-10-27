@@ -1,10 +1,38 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import importPlugin from "eslint-plugin-import";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    plugins: {
+      import: importPlugin,
+    },
+    rules: {
+      // Each new feature adds its own zone:
+      // { target: "./features/<name>", from: "./features", except: ["./<name>"] }
+      "import/no-restricted-paths": [
+        "error",
+        {
+          zones: [
+            // features/ cannot import from app/
+            { target: "./features", from: "./app" },
+            // shared code cannot import from features/ or app/
+            { target: "./components", from: "./features" },
+            { target: "./components", from: "./app" },
+            { target: "./hooks", from: "./features" },
+            { target: "./hooks", from: "./app" },
+            { target: "./lib", from: "./features" },
+            { target: "./lib", from: "./app" },
+            { target: "./types", from: "./features" },
+            { target: "./types", from: "./app" },
+          ],
+        },
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
