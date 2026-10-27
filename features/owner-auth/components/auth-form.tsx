@@ -76,6 +76,8 @@ export function AuthForm({
             name: name.trim(),
             email: email.trim(),
             password,
+            // The link in the sign-up email opens this page, signed in.
+            callbackURL: next,
           })
         : await authClient.signIn.email({ email: email.trim(), password })
     if (failed) {

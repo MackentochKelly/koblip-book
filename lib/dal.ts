@@ -10,6 +10,8 @@ export interface OwnerSession {
   email: string
   // The photo from Google login; null for email accounts.
   image: string | null
+  // False until a password account opens its sign-up email link.
+  emailVerified: boolean
 }
 
 export const getSession = cache(async (): Promise<OwnerSession | null> => {
@@ -24,6 +26,7 @@ export const getSession = cache(async (): Promise<OwnerSession | null> => {
     name: session.user.name,
     email: session.user.email,
     image: session.user.image ?? null,
+    emailVerified: session.user.emailVerified,
   }
 })
 
