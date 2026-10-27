@@ -18,6 +18,7 @@ import { BusinessAmenities } from "@/features/business-page/components/business-
 import { ExternalLinkIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BusinessFooter } from "@/features/business-page/components/business-footer"
+import { LanguageMenu } from "@/features/business-page/components/language-menu"
 import { BusinessMap } from "@/features/business-page/components/business-map"
 import { BusinessReviews } from "@/features/business-page/components/business-reviews"
 import { Rating } from "@/components/rating"
@@ -84,6 +85,7 @@ export default async function BusinessPage({ params }: Props) {
               <BusinessSummary business={business} open={open} />
               <div className="flex shrink-0 gap-2 md:hidden">
                 <ThemeToggle />
+                <LanguageMenu />
                 <ShareButton title={business.name} />
               </div>
             </div>

@@ -10,6 +10,7 @@ import {
 import type { Business } from "../types"
 import { BusinessActions } from "./business-actions"
 import { BusinessFacts } from "./business-facts"
+import { LanguageMenu } from "./language-menu"
 import { ShareButton } from "./share-button"
 
 // On a computer: the business and its buttons, kept in view beside the page.
@@ -29,6 +30,7 @@ export function BusinessSideCard({
         )}
         <CardAction className="flex gap-2">
           <ThemeToggle size="icon-sm" />
+          <LanguageMenu size="icon-sm" />
           <ShareButton title={business.name} size="icon-sm" />
         </CardAction>
       </CardHeader>
