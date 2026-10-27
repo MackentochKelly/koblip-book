@@ -1,6 +1,6 @@
 import { VerifiedBadge } from "@/components/verified-badge"
 import type { Business } from "../types"
-import { BusinessAddress } from "./business-address"
+import { BusinessAddress, BusinessWebsite } from "./business-address"
 import { BusinessFacts } from "./business-facts"
 
 // Who it is at a glance: name, kind, rating, open now, and where.
@@ -22,8 +22,9 @@ export function BusinessSummary({
       )}
       <BusinessFacts business={business} open={open} />
       {business.address && (
-        <BusinessAddress className="mt-1">{business.address}</BusinessAddress>
+        <BusinessAddress>{business.address}</BusinessAddress>
       )}
+      {business.website && <BusinessWebsite url={business.website} />}
     </header>
   )
 }

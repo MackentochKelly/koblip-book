@@ -83,7 +83,7 @@ export function BusinessPhotos({ photos }: { photos: PagePhoto[] }) {
       </CarouselContent>
       <Badge
         variant="secondary"
-        className="pointer-events-none absolute right-2 bottom-2 bg-background/60 tabular-nums ring-1 ring-foreground/5 backdrop-blur-2xl backdrop-saturate-150 md:hidden"
+        className="pointer-events-none absolute right-2 bottom-2 tabular-nums md:hidden"
       >
         {current + 1}/{total}
       </Badge>

@@ -3,8 +3,8 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Item, ItemContent, ItemTitle } from "@/components/ui/item"
+import { PageSection } from "@/components/page-section"
+import { Item, ItemContent, ItemGroup, ItemTitle } from "@/components/ui/item"
 import type { Service } from "../types"
 import { formatDuration } from "../utils/format-duration"
 import { formatPrice } from "../utils/format-price"
@@ -45,8 +45,7 @@ function ServiceFacts({
   )
 }
 
-// What the business sells, like Fresha: a few white cards on a gray tray,
-// then See all. On a phone the tray runs edge to edge as its own band.
+// What the business sells, like Fresha: a few cards, then See all.
 export function ServiceList({
   services,
   currency,
@@ -59,49 +58,31 @@ export function ServiceList({
   const shown = all ? services : services.slice(0, SERVICES_PREVIEW)
   const more = services.length > shown.length
   return (
-    <Card className="bg-muted/50 pb-7 shadow-none ring-0 max-md:mx-[calc(50%-50vw)] max-md:rounded-none">
-      <CardContent>
-        <section
-          id="services"
-          aria-labelledby="services-title"
-          className="flex scroll-mt-16 flex-col gap-4"
+    <PageSection id="services" title="Services">
+      <ItemGroup className="gap-3">
+        {shown.map((service) => (
+          <Item key={service.id} variant="outline">
+            <ItemContent>
+              <ItemTitle>
+                <span className="truncate text-base font-semibold">
+                  {service.name}
+                </span>
+              </ItemTitle>
+              <ServiceFacts service={service} currency={currency} />
+            </ItemContent>
+          </Item>
+        ))}
+      </ItemGroup>
+      {more && (
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          onClick={() => setAll(true)}
         >
-          <h2
-            id="services-title"
-            className="text-lg font-semibold tracking-tight"
-          >
-            Services
-          </h2>
-          <div className="flex flex-col gap-3">
-            {shown.map((service) => (
-              <Item
-                key={service.id}
-                className="border border-foreground/10 bg-card dark:bg-muted"
-              >
-                <ItemContent>
-                  <ItemTitle>
-                    <span className="truncate text-base font-semibold">
-                      {service.name}
-                    </span>
-                  </ItemTitle>
-                  <ServiceFacts service={service} currency={currency} />
-                </ItemContent>
-              </Item>
-            ))}
-            {more && (
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="mt-1 bg-card"
-                onClick={() => setAll(true)}
-              >
-                See all
-              </Button>
-            )}
-          </div>
-        </section>
-      </CardContent>
-    </Card>
+          See all
+        </Button>
+      )}
+    </PageSection>
   )
 }

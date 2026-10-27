@@ -1,23 +1,42 @@
-import { MapPinIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { GlobeIcon, MapPinIcon } from "lucide-react"
+import { Item, ItemContent, ItemMedia } from "@/components/ui/item"
 
-// Where the business is, on a soft gray chip with a pin.
-export function BusinessAddress({
-  children,
-  className,
-}: {
-  children: React.ReactNode
-  className?: string
-}) {
+// Where the business is, on a soft chip with a pin.
+export function BusinessAddress({ children }: { children: React.ReactNode }) {
   return (
-    <p
-      className={cn(
-        "flex w-fit max-w-full min-w-0 items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm",
-        className
-      )}
+    <Item
+      variant="muted"
+      size="xs"
+      className="mt-1 w-fit max-w-full flex-nowrap"
     >
-      <MapPinIcon className="size-4 shrink-0" aria-hidden="true" />
-      <span className="truncate">{children}</span>
-    </p>
+      <ItemMedia>
+        <MapPinIcon aria-hidden="true" />
+      </ItemMedia>
+      <ItemContent className="min-w-0 truncate">{children}</ItemContent>
+    </Item>
+  )
+}
+
+// The business's website on the same chip, for phones (computers have the
+// Website button in the side card).
+export function BusinessWebsite({ url }: { url: string }) {
+  let host = url
+  try {
+    host = new URL(url).hostname.replace(/^www\./, "")
+  } catch {
+    // Not a full address: show it as saved.
+  }
+  return (
+    <Item
+      variant="muted"
+      size="xs"
+      className="w-fit max-w-full flex-nowrap md:hidden"
+      render={<a href={url} target="_blank" rel="noreferrer" />}
+    >
+      <ItemMedia>
+        <GlobeIcon aria-hidden="true" />
+      </ItemMedia>
+      <ItemContent className="min-w-0 truncate">{host}</ItemContent>
+    </Item>
   )
 }

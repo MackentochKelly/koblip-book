@@ -11,7 +11,7 @@ const TAP_OPEN_MS = 2500
 // How long it stays open once the page stops scrolling.
 const SCROLL_OPEN_MS = 700
 
-// The blue verified seal with a white check, as on X and Instagram. Hovering
+// The verified seal with a check, as on X and Instagram, in the theme's colours. Hovering
 // it, tapping it, or scrolling the page slides its word out beside it on a
 // light blue pill. After a scroll it slides back as soon as the page is still,
 // and at once when the page is back at the top.
@@ -51,21 +51,21 @@ export function VerifiedBadge({
       data-open={open || undefined}
       onClick={() => show(TAP_OPEN_MS)}
       className={cn(
-        "group/verified inline-flex items-center rounded-full p-0.5 text-sm font-medium tracking-normal text-verified-foreground transition-[background-color,padding] duration-300 ease-out outline-none hover:bg-verified/15 hover:pr-2.5 focus-visible:ring-3 focus-visible:ring-ring/30 data-open:bg-verified/15 data-open:pr-2.5",
+        "group/verified inline-flex items-center rounded-full p-0.5 text-sm font-medium tracking-normal text-foreground transition-[background-color,padding] duration-300 ease-out outline-none hover:bg-muted hover:pr-2.5 focus-visible:ring-3 focus-visible:ring-ring/30 data-open:bg-muted data-open:pr-2.5",
         className
       )}
     >
       <svg viewBox="0 0 24 24" aria-hidden="true" className="size-6 shrink-0">
         <path
           d={SEAL}
-          className="fill-verified stroke-verified"
+          className="fill-primary stroke-primary"
           strokeWidth={1.5}
           strokeLinejoin="round"
         />
         <path
           d="m8.5 12 2.5 2.5 4.5-5"
           fill="none"
-          stroke="white"
+          className="stroke-primary-foreground"
           strokeWidth={2.2}
           strokeLinecap="round"
           strokeLinejoin="round"
