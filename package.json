@@ -13,7 +13,8 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "import:place": "tsx --conditions=react-server scripts/import-place.ts"
+    "import:place": "tsx --conditions=react-server scripts/import-place.ts",
+    "about:write": "tsx --conditions=react-server scripts/write-about.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -26,6 +27,7 @@
     "lucide-react": "^1.61.0",
     "next": "16.4.2",
     "next-themes": "^0.4.6",
+    "openai": "^7.45.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "server-only": "^0.0.1",
