@@ -111,6 +111,11 @@ export function GetStarted({
   const open = expanded && isMobile && !picked && mode === "search"
   // While full screen: the part of the screen above the keyboard.
   const visible = useVisualViewport(open)
+  // Once it has grown: the page colour painted all around it, so the page
+  // behind never shows where iPhone Safari draws it (under the clock,
+  // behind its see-through keyboard bar).
+  const [grown, setGrown] = useState(false)
+  const covered = open && grown
   const [resuming, setResuming] = useState(Boolean(resume && signedIn))
 
   // Back from Google: make the page the owner's and open its dashboard.
@@ -140,6 +145,7 @@ export function GetStarted({
       height: frame.offsetHeight,
       radius: parseFloat(getComputedStyle(frame).borderTopLeftRadius),
     })
+    setGrown(false)
     setExpanded(true)
   }
 
@@ -223,6 +229,7 @@ export function GetStarted({
           ref={frameRef}
           layout
           transition={GROW}
+          onLayoutAnimationComplete={() => setGrown(open)}
           style={
             open
               ? {
@@ -236,7 +243,8 @@ export function GetStarted({
           className={cn(
             glassFrameClassName,
             open &&
-              "fixed inset-x-0 top-0 z-50 h-dvh bg-background p-0 inset-ring-0"
+              "fixed inset-x-0 top-0 z-50 h-dvh bg-background p-0 inset-ring-0",
+            covered && "shadow-[0_0_0_100vmax_var(--color-background)]"
           )}
         >
           <MotionCard
