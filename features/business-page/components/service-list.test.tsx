@@ -19,7 +19,9 @@ const service = (n: number, extra: Partial<Service> = {}) =>
 
 describe("ServiceList", () => {
   it("renders nothing without services", () => {
-    const { container } = render(<ServiceList services={[]} currency="DOP" />)
+    const { container } = render(
+      <ServiceList services={[]} currency="DOP" slug="test" bookable={false} />
+    )
     expect(container.innerHTML).toBe("")
   })
 
@@ -28,6 +30,8 @@ describe("ServiceList", () => {
       <ServiceList
         services={[1, 2, 3, 4].map((n) => service(n))}
         currency="DOP"
+        slug="test"
+        bookable={false}
       />
     )
     expect(screen.queryByText("Service 4")).toBeNull()
@@ -44,6 +48,8 @@ describe("ServiceList", () => {
           service(2, { priceMinor: 0 }),
         ]}
         currency="DOP"
+        slug="test"
+        bookable={false}
       />
     )
     expect(screen.getByText("Free")).toBeTruthy()

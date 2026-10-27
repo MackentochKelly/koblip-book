@@ -1,0 +1,151 @@
+"use client"
+
+import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+
+import { Button } from "@/components/ui/button"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
+import { Textarea } from "@/components/ui/textarea"
+import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
+import { updateBusinessDetails } from "../api/actions"
+import type { BusinessDetailsInput } from "../types"
+
+type Invalid = "phone" | "website" | "seats" | null
+
+// The page's About, phone and website, and how many people can be booked at
+// the same time when there is no team.
+export function DetailsForm({
+  businessId,
+  details,
+  hasTeam,
+}: {
+  businessId: string
+  details: BusinessDetailsInput
+  hasTeam: boolean
+}) {
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+  const [description, setDescription] = useState(details.description ?? "")
+  const [phone, setPhone] = useState(details.phone ?? "")
+  const [website, setWebsite] = useState(details.website ?? "")
+  const [seats, setSeats] = useState(String(details.seats))
+  const [invalid, setInvalid] = useState<Invalid>(null)
+
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const seatsValue = Number(seats)
+    if (phone.trim() && !PHONE_PATTERN.test(phone.trim()))
+      return setInvalid("phone")
+    if (website.trim() && !/^https?:\/\/\S+\.\S+/.test(website.trim())) {
+      return setInvalid("website")
+    }
+    if (
+      !Number.isInteger(seatsValue) ||
+      seatsValue < 1 ||
+      seatsValue > BOOKING_RULES.maxSeats
+    ) {
+      return setInvalid("seats")
+    }
+    setInvalid(null)
+    startTransition(async () => {
+      const result = await updateBusinessDetails(businessId, {
+        description: description.trim() || null,
+        phone: phone.trim() || null,
+        website: website.trim() || null,
+        seats: seatsValue,
+      })
+      if (result.ok) {
+        toast.success("Saved")
+        router.refresh()
+      } else {
+        toast.error("Could not save. Check the fields.")
+      }
+    })
+  }
+
+  return (
+    <form onSubmit={submit} noValidate className="flex flex-col gap-6">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <Button type="submit" disabled={pending}>
+          {pending && <Spinner data-icon="inline-start" />}
+          Save
+        </Button>
+      </div>
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="details-about">About</FieldLabel>
+          <Textarea
+            id="details-about"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            maxLength={BOOKING_RULES.maxBusinessDescription}
+            className="min-h-32"
+          />
+        </Field>
+        <Field data-invalid={invalid === "phone" || undefined}>
+          <FieldLabel htmlFor="details-phone">Phone</FieldLabel>
+          <Input
+            id="details-phone"
+            type="tel"
+            inputMode="tel"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            aria-invalid={invalid === "phone" || undefined}
+          />
+          {invalid === "phone" && (
+            <FieldError>Check the phone number</FieldError>
+          )}
+        </Field>
+        <Field data-invalid={invalid === "website" || undefined}>
+          <FieldLabel htmlFor="details-website">Website</FieldLabel>
+          <Input
+            id="details-website"
+            type="url"
+            inputMode="url"
+            value={website}
+            onChange={(event) => setWebsite(event.target.value)}
+            placeholder="https://"
+            aria-invalid={invalid === "website" || undefined}
+          />
+          {invalid === "website" && (
+            <FieldError>Use a full link, with https://</FieldError>
+          )}
+        </Field>
+        {!hasTeam && (
+          <Field data-invalid={invalid === "seats" || undefined}>
+            <FieldLabel htmlFor="details-seats">
+              Bookings at the same time
+            </FieldLabel>
+            <Input
+              id="details-seats"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={BOOKING_RULES.maxSeats}
+              value={seats}
+              onChange={(event) => setSeats(event.target.value)}
+              className="w-24"
+              aria-invalid={invalid === "seats" || undefined}
+            />
+            <FieldDescription>
+              With a team, each person takes one.
+            </FieldDescription>
+            {invalid === "seats" && (
+              <FieldError>From 1 to {BOOKING_RULES.maxSeats}</FieldError>
+            )}
+          </Field>
+        )}
+      </FieldGroup>
+    </form>
+  )
+}

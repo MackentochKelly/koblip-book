@@ -5,10 +5,12 @@ import { cn } from "@/lib/utils"
 export function Rating({
   rating,
   reviewCount,
+  locale = "en-US",
   className,
 }: {
   rating: number
   reviewCount?: number | null
+  locale?: string
   className?: string
 }) {
   return (
@@ -25,7 +27,7 @@ export function Rating({
       {rating.toFixed(1)}
       {typeof reviewCount === "number" && (
         <span className="text-muted-foreground">
-          ({reviewCount.toLocaleString("en-US")})
+          ({reviewCount.toLocaleString(locale)})
         </span>
       )}
     </span>

@@ -2,43 +2,60 @@ import { GlobeIcon, NavigationIcon, PhoneCallIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { messagesFor } from "@/lib/i18n"
+import type { PageLanguage } from "@/lib/page-language"
 import type { Business } from "../types"
 import { directionsUrl } from "../utils/directions-url"
+import { BookButton } from "./book-button"
 
-// Directions, call and website: only what the business has. A row on the phone bar,
-// stacked in the side card.
+// Book now (when bookable), directions, call and website: only what the
+// business has. A row on the phone bar, stacked in the side card. With
+// booking on, Book now is the one main button and, on the phone bar,
+// directions and call shrink to icons.
 export function BusinessActions({
   business,
   layout,
+  bookable = false,
+  language,
 }: {
   business: Business
   layout: "row" | "stack"
+  bookable?: boolean
+  language: PageLanguage
 }) {
+  const m = messagesFor(language).actions
   const directions = directionsUrl(business)
   const wide = layout === "row" ? "flex-1" : "w-full"
+  const icons = bookable && layout === "row"
   return (
     <div className={cn("flex gap-2", layout === "row" ? "w-full" : "flex-col")}>
+      {bookable && (
+        <BookButton slug={business.slug} label={m.bookNow} className={wide} />
+      )}
       {directions && (
         <Button
           variant="outline"
-          size="lg"
-          className={wide}
+          size={icons ? "icon-lg" : "lg"}
+          className={icons ? undefined : wide}
+          aria-label={icons ? m.directions : undefined}
           nativeButton={false}
           render={<a href={directions} target="_blank" rel="noreferrer" />}
         >
           <NavigationIcon />
-          Directions
+          {!icons && m.directions}
         </Button>
       )}
       {business.phone && (
         <Button
-          size="lg"
-          className={wide}
+          variant={bookable ? "outline" : "default"}
+          size={icons ? "icon-lg" : "lg"}
+          className={icons ? undefined : wide}
+          aria-label={icons ? m.call : undefined}
           nativeButton={false}
           render={<a href={`tel:${business.phone.replace(/[^\d+]/g, "")}`} />}
         >
           <PhoneCallIcon />
-          Call
+          {!icons && m.call}
         </Button>
       )}
       {layout === "stack" && business.website && (
@@ -52,13 +69,13 @@ export function BusinessActions({
           }
         >
           <GlobeIcon />
-          Website
+          {m.website}
         </Button>
       )}
     </div>
   )
 }
 
-export function hasActions(business: Business): boolean {
-  return Boolean(directionsUrl(business) || business.phone)
+export function hasActions(business: Business, bookable = false): boolean {
+  return Boolean(bookable || directionsUrl(business) || business.phone)
 }

@@ -30,6 +30,21 @@ const eslintConfig = defineConfig([
               from: "./features",
               except: ["./place-import"],
             },
+            {
+              target: "./features/booking",
+              from: "./features",
+              except: ["./booking"],
+            },
+            {
+              target: "./features/dashboard",
+              from: "./features",
+              except: ["./dashboard"],
+            },
+            {
+              target: "./features/owner-auth",
+              from: "./features",
+              except: ["./owner-auth"],
+            },
             // shared code cannot import from features/ or app/
             { target: "./components", from: "./features" },
             { target: "./components", from: "./app" },
@@ -44,9 +59,10 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // components/ui is shadcn's code, kept as the CLI writes it.
+  // components/ui and hooks/use-mobile.ts are shadcn's code, kept as the
+  // CLI writes it.
   {
-    files: ["components/ui/**"],
+    files: ["components/ui/**", "hooks/use-mobile.ts"],
     rules: {
       "react-hooks/set-state-in-effect": "off",
     },

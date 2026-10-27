@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { ArrowRightIcon, ExternalLinkIcon } from "lucide-react"
 
+import { useMessages } from "@/components/language-provider"
 import { Rating } from "@/components/rating"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -96,6 +97,7 @@ function GoogleReviewsLink({
   mapsUrl: string
   variant: "default" | "outline"
 }) {
+  const m = useMessages()
   return (
     <Button
       variant={variant}
@@ -103,7 +105,7 @@ function GoogleReviewsLink({
       nativeButton={false}
       render={<a href={mapsUrl} target="_blank" rel="noreferrer" />}
     >
-      See all reviews on Google
+      {m.reviews.seeAllOnGoogle}
       <ExternalLinkIcon data-icon="inline-end" />
     </Button>
   )
@@ -120,11 +122,10 @@ export function BusinessReviews({
   reviewCount: number | null
   mapsUrl: string | null
 }) {
+  const m = useMessages()
   const [open, setOpen] = useState(false)
   if (reviews.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">No Google reviews yet.</p>
-    )
+    return <p className="text-sm text-muted-foreground">{m.reviews.none}</p>
   }
   const more = reviews.length > REVIEWS_ON_PAGE
   return (
@@ -136,7 +137,7 @@ export function BusinessReviews({
           className="self-start"
           onClick={() => setOpen(true)}
         >
-          See more reviews
+          {m.reviews.seeMore}
           <ArrowRightIcon data-icon="inline-end" />
         </Button>
       ) : (
@@ -145,11 +146,11 @@ export function BusinessReviews({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="flex max-h-[85svh] flex-col sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Reviews</DialogTitle>
+            <DialogTitle>{m.sections.reviews}</DialogTitle>
             {reviewCount !== null && (
               <DialogDescription>
-                {reviewCount.toLocaleString("en-US")}{" "}
-                {reviewCount === 1 ? "review" : "reviews"}
+                {reviewCount.toLocaleString(m.locale)}{" "}
+                {m.reviews.count(reviewCount)}
               </DialogDescription>
             )}
           </DialogHeader>

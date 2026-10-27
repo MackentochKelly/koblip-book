@@ -1,13 +1,23 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 
+import { useMessages } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { PageSection } from "@/components/page-section"
-import { Item, ItemContent, ItemGroup, ItemTitle } from "@/components/ui/item"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import type { Service } from "../types"
-import { formatDuration } from "../utils/format-duration"
-import { formatPrice } from "../utils/format-price"
+import { formatDuration } from "@/lib/format-duration"
+import { formatPrice } from "@/lib/format-price"
+import { BookButton } from "./book-button"
 
 // How many services the page shows before See all.
 const SERVICES_PREVIEW = 3
@@ -24,6 +34,7 @@ function ServiceFacts({
   service: Service
   currency: string
 }) {
+  const m = useMessages()
   const description =
     service.description && plain(service.description) !== plain(service.name)
       ? service.description
@@ -37,31 +48,48 @@ function ServiceFacts({
       {service.priceMinor !== null && (
         <p className="text-sm font-medium text-foreground">
           {service.priceMinor === 0
-            ? "Free"
-            : formatPrice(service.priceMinor, currency)}
+            ? m.booking.free
+            : formatPrice(service.priceMinor, currency, m.locale)}
         </p>
       )}
     </>
   )
 }
 
-// What the business sells, like Fresha: a few cards, then See all.
+// What the business sells, like Fresha: a few cards, then See all. With
+// booking on, each card has its own Book button.
 export function ServiceList({
   services,
   currency,
+  slug,
+  bookable,
 }: {
   services: Service[]
   currency: string
+  slug: string
+  bookable: boolean
 }) {
+  const m = useMessages()
   const [all, setAll] = useState(false)
   if (services.length === 0) return null
   const shown = all ? services : services.slice(0, SERVICES_PREVIEW)
   const more = services.length > shown.length
   return (
-    <PageSection id="services" title="Services">
+    <PageSection id="services" title={m.sections.services}>
       <ItemGroup className="gap-3">
         {shown.map((service) => (
           <Item key={service.id} variant="outline">
+            {service.photoUrl && (
+              <ItemMedia variant="image" className="size-16">
+                <Image
+                  src={service.photoUrl}
+                  alt=""
+                  width={64}
+                  height={64}
+                  unoptimized
+                />
+              </ItemMedia>
+            )}
             <ItemContent>
               <ItemTitle>
                 <span className="truncate text-base font-semibold">
@@ -70,6 +98,17 @@ export function ServiceList({
               </ItemTitle>
               <ServiceFacts service={service} currency={currency} />
             </ItemContent>
+            {bookable && (
+              <ItemActions>
+                <BookButton
+                  slug={slug}
+                  serviceId={service.id}
+                  label={m.actions.book}
+                  variant="outline"
+                  size="sm"
+                />
+              </ItemActions>
+            )}
           </Item>
         ))}
       </ItemGroup>
@@ -80,7 +119,7 @@ export function ServiceList({
           size="lg"
           onClick={() => setAll(true)}
         >
-          See all
+          {m.page.seeAll}
         </Button>
       )}
     </PageSection>

@@ -1,0 +1,161 @@
+"use client"
+
+import { useTransition } from "react"
+import Image from "next/image"
+import { useRouter } from "next/navigation"
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  EllipsisVerticalIcon,
+  ImageIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react"
+import { toast } from "sonner"
+
+import { PageSection } from "@/components/page-section"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+import { Spinner } from "@/components/ui/spinner"
+import { UPLOAD_RULES } from "@/lib/upload-rules"
+import {
+  deleteBusinessPhoto,
+  reorderBusinessPhotos,
+  uploadBusinessPhoto,
+} from "../api/photo-actions"
+import type { OwnerPhoto } from "../media-types"
+import { usePhotoUpload } from "./photo-upload"
+
+// The page's own photos, shown before Google's. The first one leads.
+export function BusinessPhotosEditor({
+  businessId,
+  photos,
+}: {
+  businessId: string
+  photos: OwnerPhoto[]
+}) {
+  const router = useRouter()
+  const [busy, startTransition] = useTransition()
+  const { pick, pending, field } = usePhotoUpload((formData) =>
+    uploadBusinessPhoto(businessId, formData)
+  )
+  const full = photos.length >= UPLOAD_RULES.maxBusinessPhotos
+
+  const run = (task: () => Promise<{ ok: boolean }>) =>
+    startTransition(async () => {
+      const result = await task().catch(() => ({ ok: false }))
+      if (result.ok) router.refresh()
+      else toast.error("That did not work. Please try again.")
+    })
+  const move = (index: number, by: number) => {
+    const ids = photos.map((photo) => photo.id)
+    const [id] = ids.splice(index, 1)
+    ids.splice(index + by, 0, id)
+    run(() => reorderBusinessPhotos(businessId, ids))
+  }
+
+  return (
+    <PageSection
+      id="photos"
+      title="Photos"
+      action={
+        <Button variant="outline" onClick={pick} disabled={pending || full}>
+          {pending ? (
+            <Spinner data-icon="inline-start" />
+          ) : (
+            <PlusIcon data-icon="inline-start" />
+          )}
+          Add
+        </Button>
+      }
+    >
+      {field}
+      {photos.length === 0 ? (
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <ImageIcon />
+            </EmptyMedia>
+            <EmptyTitle>No photos yet</EmptyTitle>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {photos.map((photo, index) => (
+            <li
+              key={photo.id}
+              className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted"
+            >
+              <Image
+                src={photo.url}
+                alt={`Photo ${index + 1}`}
+                fill
+                unoptimized
+                sizes="(max-width: 640px) 50vw, 33vw"
+                className="object-cover"
+              />
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      aria-label={`Photo ${index + 1} options`}
+                      className="absolute top-2 right-2"
+                    />
+                  }
+                >
+                  <EllipsisVerticalIcon />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem
+                      disabled={index === 0 || busy}
+                      onClick={() => move(index, -1)}
+                    >
+                      <ArrowLeftIcon />
+                      Move left
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={index === photos.length - 1 || busy}
+                      onClick={() => move(index, 1)}
+                    >
+                      <ArrowRightIcon />
+                      Move right
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      disabled={busy}
+                      onClick={() =>
+                        run(() => deleteBusinessPhoto(businessId, photo.id))
+                      }
+                    >
+                      <Trash2Icon />
+                      Remove
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </li>
+          ))}
+        </ul>
+      )}
+    </PageSection>
+  )
+}

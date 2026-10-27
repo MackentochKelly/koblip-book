@@ -1,24 +1,29 @@
+import { messagesFor } from "@/lib/i18n"
+import type { PageLanguage } from "@/lib/page-language"
+
 // Who the page belongs to, where its Google details come from, and who built it.
 export function BusinessFooter({
   name,
   fromGoogle,
+  language,
 }: {
   name: string
   fromGoogle: boolean
+  language: PageLanguage
 }) {
+  const m = messagesFor(language).footer
   return (
     <footer className="flex flex-col items-center gap-1 pt-4 text-center text-xs text-muted-foreground">
       <p>
-        © {new Date().getFullYear()} {name}. All rights reserved.
+        © {new Date().getFullYear()} {name}. {m.rights}
       </p>
       {fromGoogle && (
         <p>
-          Photos, opening times and reviews from{" "}
-          <span translate="no">Google Maps</span>.
+          {m.fromGoogle} <span translate="no">Google Maps</span>.
         </p>
       )}
       <p>
-        Built by <span className="font-medium text-foreground">Koblip</span>
+        {m.builtBy} <span className="font-medium text-foreground">Koblip</span>
       </p>
     </footer>
   )

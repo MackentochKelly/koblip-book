@@ -1,30 +1,24 @@
 import { PageSection } from "@/components/page-section"
 import { Badge } from "@/components/ui/badge"
+import { formatClock, formatWeekday } from "@/lib/format-booking-time"
+import { messagesFor, type Messages } from "@/lib/i18n"
+import type { PageLanguage } from "@/lib/page-language"
 import { cn } from "@/lib/utils"
 import type { DayHours } from "../utils/group-hours"
 
-// "20:30" → "8:30 PM", as Google words it.
-function formatTime(time: string): string {
-  const [hours, minutes] = time.split(":").map(Number)
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "UTC",
-  }).format(Date.UTC(2000, 0, 1, hours, minutes))
-}
-
-function dayTime(day: DayHours): string {
-  if (day.ranges.length === 0) return "Closed"
+function dayTime(day: DayHours, m: Messages): string {
+  if (day.ranges.length === 0) return m.hours.closed
   if (
     day.ranges.some(
       (range) => range.opensAt === "00:00" && range.closesAt === "00:00"
     )
   ) {
-    return "Open 24 hours"
+    return m.hours.open24
   }
   return day.ranges
     .map(
-      (range) => `${formatTime(range.opensAt)} – ${formatTime(range.closesAt)}`
+      (range) =>
+        `${formatClock(range.opensAt, m.locale)} – ${formatClock(range.closesAt, m.locale)}`
     )
     .join(", ")
 }
@@ -33,12 +27,15 @@ function dayTime(day: DayHours): string {
 export function OpeningHours({
   days,
   todayWeekday,
+  language,
 }: {
   days: DayHours[]
   todayWeekday: number
+  language: PageLanguage
 }) {
+  const m = messagesFor(language)
   return (
-    <PageSection id="hours" title="Opening times">
+    <PageSection id="hours" title={m.sections.hours}>
       <dl className="flex flex-col gap-2.5 text-sm">
         {days.map((day) => {
           const isToday = day.weekday === todayWeekday
@@ -53,10 +50,10 @@ export function OpeningHours({
               )}
             >
               <dt className="flex items-center gap-2">
-                {day.label}
-                {isToday && <Badge variant="outline">Today</Badge>}
+                {formatWeekday(day.weekday, m.locale)}
+                {isToday && <Badge variant="outline">{m.hours.today}</Badge>}
               </dt>
-              <dd className="text-right tabular-nums">{dayTime(day)}</dd>
+              <dd className="text-right tabular-nums">{dayTime(day, m)}</dd>
             </div>
           )
         })}

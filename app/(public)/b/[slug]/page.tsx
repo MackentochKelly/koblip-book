@@ -1,5 +1,9 @@
 import type { Metadata } from "next"
+import { headers } from "next/headers"
 import { notFound } from "next/navigation"
+import { LanguageProvider } from "@/components/language-provider"
+import { messagesFor } from "@/lib/i18n"
+import { pickLanguage } from "@/lib/page-language"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { BottomBar } from "@/components/bottom-bar"
 import { Toaster } from "@/components/ui/sonner"
@@ -18,6 +22,7 @@ import { BusinessAmenities } from "@/features/business-page/components/business-
 import { ExternalLinkIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BusinessFooter } from "@/features/business-page/components/business-footer"
+import { ClaimCard } from "@/features/business-page/components/claim-card"
 import { LanguageMenu } from "@/features/business-page/components/language-menu"
 import { BusinessMap } from "@/features/business-page/components/business-map"
 import { BusinessReviews } from "@/features/business-page/components/business-reviews"
@@ -35,14 +40,25 @@ import { TeamList } from "@/features/business-page/components/team-list"
 import { getWeekdayInTimeZone } from "@/features/business-page/utils/get-weekday-in-time-zone"
 import { groupHours } from "@/features/business-page/utils/group-hours"
 import { isOpenNow } from "@/features/business-page/utils/is-open-now"
+import { BookingFlow } from "@/features/booking/components/booking-flow"
+import { toBookingPage } from "@/features/booking/components/booking-page"
+import { isBookable } from "@/features/booking/utils/is-bookable"
 
-type Props = {
-  params: Promise<{ slug: string }>
+type Props = PageProps<"/b/[slug]">
+
+// ?lang= wins, then the visitor's browser language, else English.
+async function pageLanguage(searchParams: Props["searchParams"]) {
+  const { lang } = await searchParams
+  return pickLanguage(lang, (await headers()).get("accept-language"))
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: Props): Promise<Metadata> {
   const { slug } = await params
-  const data = await getBusinessPage(slug)
+  const language = await pageLanguage(searchParams)
+  const data = await getBusinessPage(slug, language)
   if (!data) {
     notFound()
   }
@@ -52,37 +68,51 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function BusinessPage({ params }: Props) {
+export default async function BusinessPage({ params, searchParams }: Props) {
   const { slug } = await params
-  const data = await getBusinessPage(slug)
+  const language = await pageLanguage(searchParams)
+  const m = messagesFor(language)
+  const data = await getBusinessPage(slug, language)
   if (!data) {
     notFound()
   }
   const { business, hours, services, team, photos, reviews, amenities } = data
   // No hours saved: say nothing rather than "Closed now".
   const open = hours.length > 0 ? isOpenNow(hours, business.timezone) : null
+  const bookable = isBookable({
+    status: business.status,
+    servicesCount: services.length,
+    hoursCount: hours.length,
+  })
   const hasLocation = Boolean(
     business.address || business.mapsUrl || business.latitude !== null
   )
   const sections = [
-    services.length > 0 && { id: "services", label: "Services" },
-    team.length > 0 && { id: "team", label: "Team" },
-    { id: "reviews", label: "Reviews" },
-    photos.length > 0 && { id: "portfolio", label: "Portfolio" },
-    { id: "hours", label: "Opening times" },
-    business.description && { id: "about", label: "About" },
-    amenities.length > 0 && { id: "info", label: "Additional information" },
-    hasLocation && { id: "location", label: "Location" },
+    services.length > 0 && { id: "services", label: m.sections.services },
+    team.length > 0 && { id: "team", label: m.sections.team },
+    { id: "reviews", label: m.sections.reviews },
+    photos.length > 0 && { id: "portfolio", label: m.sections.portfolio },
+    { id: "hours", label: m.sections.hours },
+    business.description && { id: "about", label: m.sections.about },
+    amenities.length > 0 && { id: "info", label: m.sections.info },
+    hasLocation && { id: "location", label: m.sections.location },
   ].filter((section) => !!section)
 
   return (
-    <>
-      <main className="mx-auto w-full max-w-6xl pb-28 md:px-6 md:pt-6 md:pb-16">
+    <LanguageProvider language={language}>
+      <main
+        lang={language}
+        className="mx-auto w-full max-w-6xl pb-28 md:px-6 md:pt-6 md:pb-16"
+      >
         <BusinessPhotos photos={photos} />
         <div className="grid gap-8 px-4 pt-5 md:grid-cols-[minmax(0,1fr)_20rem] md:gap-10 md:px-0 md:pt-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="flex min-w-0 flex-col gap-8">
             <div className="flex items-start justify-between gap-3">
-              <BusinessSummary business={business} open={open} />
+              <BusinessSummary
+                business={business}
+                open={open}
+                language={language}
+              />
               <div className="flex shrink-0 gap-2 md:hidden">
                 <ThemeToggle />
                 <LanguageMenu />
@@ -93,21 +123,27 @@ export default async function BusinessPage({ params }: Props) {
               <AboutPreview text={business.description} />
             )}
             <SectionTabs sections={sections} />
-            <ServiceList services={services} currency={business.currency} />
+            <ServiceList
+              services={services}
+              currency={business.currency}
+              slug={business.slug}
+              bookable={bookable}
+            />
             {team.length > 0 && (
               <>
-                <TeamList team={team} />
+                <TeamList team={team} language={language} />
                 <Separator />
               </>
             )}
             <PageSection
               id="reviews"
-              title="Reviews"
+              title={m.sections.reviews}
               action={
                 business.rating !== null ? (
                   <Rating
                     rating={business.rating}
                     reviewCount={business.reviewCount}
+                    locale={m.locale}
                     className="text-sm"
                   />
                 ) : undefined
@@ -124,7 +160,7 @@ export default async function BusinessPage({ params }: Props) {
               <>
                 <PageSection
                   id="portfolio"
-                  title="Portfolio"
+                  title={m.sections.portfolio}
                   action={
                     <Badge variant="outline" className="mr-auto">
                       {photos.length}
@@ -139,25 +175,32 @@ export default async function BusinessPage({ params }: Props) {
             <OpeningHours
               days={groupHours(hours)}
               todayWeekday={getWeekdayInTimeZone(business.timezone)}
+              language={language}
             />
             {business.description && (
               <>
                 <Separator />
-                <BusinessAbout description={business.description} />
+                <BusinessAbout
+                  description={business.description}
+                  language={language}
+                />
               </>
             )}
             {amenities.length > 0 && (
               <>
                 <Separator />
-                <PageSection id="info" title="Additional information">
-                  <BusinessAmenities amenities={amenities} />
+                <PageSection id="info" title={m.sections.info}>
+                  <BusinessAmenities
+                    amenities={amenities}
+                    language={language}
+                  />
                 </PageSection>
               </>
             )}
             {hasLocation && (
               <>
                 <Separator />
-                <PageSection id="location" title="Location">
+                <PageSection id="location" title={m.sections.location}>
                   {business.latitude !== null &&
                     business.longitude !== null && (
                       <BusinessMap
@@ -182,29 +225,44 @@ export default async function BusinessPage({ params }: Props) {
                         />
                       }
                     >
-                      Open in Google Maps
+                      {m.page.openInMaps}
                       <ExternalLinkIcon data-icon="inline-end" />
                     </Button>
                   )}
                 </PageSection>
               </>
             )}
+            {business.ownerId === null && (
+              <ClaimCard slug={business.slug} language={language} />
+            )}
             <BusinessFooter
               name={business.name}
               fromGoogle={business.googlePlaceId !== null}
+              language={language}
             />
           </div>
           <aside className="hidden md:block">
-            <BusinessSideCard business={business} open={open} />
+            <BusinessSideCard
+              business={business}
+              open={open}
+              bookable={bookable}
+              language={language}
+            />
           </aside>
         </div>
       </main>
-      {hasActions(business) && (
-        <BottomBar label="Contact" className="md:hidden">
-          <BusinessActions business={business} layout="row" />
+      {hasActions(business, bookable) && (
+        <BottomBar label={m.page.contact} className="md:hidden">
+          <BusinessActions
+            business={business}
+            layout="row"
+            bookable={bookable}
+            language={language}
+          />
         </BottomBar>
       )}
+      {bookable && <BookingFlow page={toBookingPage(data)} mode="drawer" />}
       <Toaster />
-    </>
+    </LanguageProvider>
   )
 }

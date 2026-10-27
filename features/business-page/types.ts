@@ -1,3 +1,4 @@
+import type { PageLanguage } from "@/lib/page-language"
 import type {
   businessHours,
   businessPhotos,
@@ -43,4 +44,9 @@ export interface BusinessPageData {
   photos: PagePhoto[]
   reviews: PageReview[]
   amenities: Amenity[]
+  language: PageLanguage
+  // serviceId → teamMemberIds that do it, from team_member_services; a
+  // service missing from the record is done by everyone.
+  serviceTeams: Record<string, string[]>
+  addonGroups: { id: string; prompt: string; minSelect: number; maxSelect: number | null; serviceIds: string[]; options: { id: string; name: string; description: string | null; priceMinor: number | null; durationMinutes: number }[] }[]
 }

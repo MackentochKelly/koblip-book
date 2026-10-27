@@ -15,6 +15,34 @@
       "when": 1793071242410,
       "tag": "0001_minor_wrecking_crew",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793079355049,
+      "tag": "0002_bright_miss_america",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793081556026,
+      "tag": "0003_flashy_raza",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793081566945,
+      "tag": "0004_pretty_firebrand",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793082376969,
+      "tag": "0005_absurd_marvel_apes",
+      "breakpoints": true
     }
   ]
 }

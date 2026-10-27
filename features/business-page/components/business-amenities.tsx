@@ -9,32 +9,41 @@ import {
   ToiletIcon,
   type LucideIcon,
 } from "lucide-react"
+import { messagesFor } from "@/lib/i18n"
+import type { PageLanguage } from "@/lib/page-language"
 import type { Amenity } from "../types"
 
-const AMENITIES: Record<Amenity, { icon: LucideIcon; label: string }> = {
-  wheelchair: { icon: AccessibilityIcon, label: "Wheelchair accessible" },
-  parking: { icon: CarFrontIcon, label: "Parking available" },
-  pets: { icon: PawPrintIcon, label: "Pet-friendly" },
-  kids: { icon: BabyIcon, label: "Kid-friendly" },
-  restroom: { icon: ToiletIcon, label: "Restroom" },
-  cards: { icon: CreditCardIcon, label: "Accepts cards" },
-  nfc: { icon: NfcIcon, label: "Mobile payments" },
-  cash_only: { icon: BanknoteIcon, label: "Cash only" },
+const ICONS: Record<Amenity, LucideIcon> = {
+  wheelchair: AccessibilityIcon,
+  parking: CarFrontIcon,
+  pets: PawPrintIcon,
+  kids: BabyIcon,
+  restroom: ToiletIcon,
+  cards: CreditCardIcon,
+  nfc: NfcIcon,
+  cash_only: BanknoteIcon,
 }
 
 // What Google says is true of the place (wheelchair access, parking…).
-export function BusinessAmenities({ amenities }: { amenities: Amenity[] }) {
+export function BusinessAmenities({
+  amenities,
+  language,
+}: {
+  amenities: Amenity[]
+  language: PageLanguage
+}) {
+  const labels = messagesFor(language).amenities
   return (
     <ul className="flex flex-col gap-3 text-sm">
       {amenities.map((amenity) => {
-        const { icon: Icon, label } = AMENITIES[amenity]
+        const Icon = ICONS[amenity]
         return (
           <li
             key={amenity}
             className="flex items-center gap-3 [&_svg]:size-5 [&_svg]:shrink-0"
           >
             <Icon aria-hidden="true" />
-            {label}
+            {labels[amenity]}
           </li>
         )
       })}

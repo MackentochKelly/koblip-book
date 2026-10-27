@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 
+import { useMessages } from "@/components/language-provider"
 import { ViewTabs, type ViewTab } from "@/components/view-tabs"
 import { cn } from "@/lib/utils"
 
@@ -12,6 +13,7 @@ const ACTIVE_LINE = 120
 // sections; then they slide in pinned at the top (like Fresha), and leave at
 // once. -mt-8 undoes the column gap, so no empty space is left where they sit.
 export function SectionTabs({ sections }: { sections: ViewTab<string>[] }) {
+  const m = useMessages()
   const ref = useRef<HTMLDivElement>(null)
   const [pinned, setPinned] = useState(false)
   const [active, setActive] = useState<string | null>(null)
@@ -73,7 +75,7 @@ export function SectionTabs({ sections }: { sections: ViewTab<string>[] }) {
               .getElementById(id)
               ?.scrollIntoView({ behavior: "smooth", block: "start" })
           }
-          ariaLabel="Page sections"
+          ariaLabel={m.sections.pageSections}
         />
       </div>
     </div>

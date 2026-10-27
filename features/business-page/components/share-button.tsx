@@ -3,6 +3,7 @@
 import { ShareIcon } from "lucide-react"
 import { toast } from "sonner"
 
+import { useMessages } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 
 // The phone's share sheet, or the link copied where there is none.
@@ -13,6 +14,7 @@ export function ShareButton({
   title: string
   size?: "icon" | "icon-sm"
 }) {
+  const m = useMessages()
   const share = async () => {
     const url = window.location.href
     try {
@@ -21,7 +23,7 @@ export function ShareButton({
         return
       }
       await navigator.clipboard.writeText(url)
-      toast.success("Link copied")
+      toast.success(m.page.linkCopied)
     } catch {
       // The visitor closed the share sheet.
     }
@@ -31,8 +33,8 @@ export function ShareButton({
       type="button"
       variant="outline"
       size={size}
-      aria-label="Share"
-      title="Share"
+      aria-label={m.page.share}
+      title={m.page.share}
       onClick={() => void share()}
     >
       <ShareIcon />

@@ -1,10 +1,18 @@
 import { PageSection } from "@/components/page-section"
-export function BusinessAbout({ description }: { description: string | null }) {
+import { messagesFor } from "@/lib/i18n"
+import type { PageLanguage } from "@/lib/page-language"
+export function BusinessAbout({
+  description,
+  language,
+}: {
+  description: string | null
+  language: PageLanguage
+}) {
   if (!description) {
     return null
   }
   return (
-    <PageSection id="about" title="About">
+    <PageSection id="about" title={messagesFor(language).sections.about}>
       <p className="text-sm leading-relaxed whitespace-pre-line">
         {description}
       </p>

@@ -1,23 +1,22 @@
 import { PageSection } from "@/components/page-section"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { messagesFor } from "@/lib/i18n"
+import { initials } from "@/lib/initials"
+import type { PageLanguage } from "@/lib/page-language"
 import type { TeamMember } from "../types"
 
-function initials(name: string): string {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase()
-}
-
-export function TeamList({ team }: { team: TeamMember[] }) {
+export function TeamList({
+  team,
+  language,
+}: {
+  team: TeamMember[]
+  language: PageLanguage
+}) {
   if (team.length === 0) {
     return null
   }
   return (
-    <PageSection id="team" title="Team">
+    <PageSection id="team" title={messagesFor(language).sections.team}>
       <div className="flex flex-wrap gap-4">
         {team.map((member) => (
           <div

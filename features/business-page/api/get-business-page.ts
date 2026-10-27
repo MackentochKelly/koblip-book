@@ -1,14 +1,20 @@
 import "server-only"
 import { cache } from "react"
-import { asc, eq } from "drizzle-orm"
+import { and, asc, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
+  addonGroups,
+  addonOptions,
   businessHours,
   businessPhotos,
   businesses,
+  serviceAddonGroups,
   services,
+  teamMemberServices,
   teamMembers,
+  translations,
 } from "@/lib/db/schema"
+import { DEFAULT_LANGUAGE, type PageLanguage } from "@/lib/page-language"
 import type { Amenity, BusinessPageData, PagePhoto, PageReview } from "../types"
 import { mapAmenities } from "../utils/map-amenities"
 
@@ -64,7 +70,8 @@ const DETAILS_FIELD_MASK =
 // photo names may not be cached, so they always come from a new Details
 // call. Google failures return no extras; the page still loads.
 async function getGoogleExtras(
-  googlePlaceId: string | null
+  googlePlaceId: string | null,
+  language: PageLanguage
 ): Promise<GoogleExtras> {
   if (!googlePlaceId) {
     return EMPTY_EXTRAS
@@ -75,7 +82,7 @@ async function getGoogleExtras(
   }
   try {
     const res = await fetch(
-      `https://places.googleapis.com/v1/places/${googlePlaceId}?languageCode=en`,
+      `https://places.googleapis.com/v1/places/${googlePlaceId}?languageCode=${language}`,
       {
         headers: {
           "X-Goog-Api-Key": key,
@@ -134,7 +141,8 @@ async function getGoogleExtras(
 }
 
 async function loadBusinessPage(
-  slug: string
+  slug: string,
+  language: PageLanguage = DEFAULT_LANGUAGE
 ): Promise<BusinessPageData | null> {
   const [business] = await db
     .select()
@@ -145,30 +153,72 @@ async function loadBusinessPage(
     return null
   }
 
-  const [hours, serviceRows, team, ownPhotos] = await Promise.all([
-    db
-      .select()
-      .from(businessHours)
-      .where(eq(businessHours.businessId, business.id))
-      .orderBy(asc(businessHours.weekday), asc(businessHours.opensAt)),
-    db
-      .select()
-      .from(services)
-      .where(eq(services.businessId, business.id))
-      .orderBy(asc(services.position)),
-    db
-      .select()
-      .from(teamMembers)
-      .where(eq(teamMembers.businessId, business.id))
-      .orderBy(asc(teamMembers.position)),
-    db
-      .select()
-      .from(businessPhotos)
-      .where(eq(businessPhotos.businessId, business.id))
-      .orderBy(asc(businessPhotos.position)),
-  ])
+  const [
+    hours,
+    serviceRows,
+    team,
+    ownPhotos,
+    teamLinks,
+    translationRows,
+    addonGroupRows,
+    addonOptionRows,
+    addonLinkRows,
+  ] = await Promise.all([
+      db
+        .select()
+        .from(businessHours)
+        .where(eq(businessHours.businessId, business.id))
+        .orderBy(asc(businessHours.weekday), asc(businessHours.opensAt)),
+      db
+        .select()
+        .from(services)
+        .where(eq(services.businessId, business.id))
+        .orderBy(asc(services.position)),
+      db
+        .select()
+        .from(teamMembers)
+        .where(eq(teamMembers.businessId, business.id))
+        .orderBy(asc(teamMembers.position)),
+      db
+        .select()
+        .from(businessPhotos)
+        .where(eq(businessPhotos.businessId, business.id))
+        .orderBy(asc(businessPhotos.position)),
+      db
+        .select({
+          serviceId: teamMemberServices.serviceId,
+          teamMemberId: teamMemberServices.teamMemberId,
+        })
+        .from(teamMemberServices)
+        .where(eq(teamMemberServices.businessId, business.id)),
+      language === "es"
+        ? db
+            .select()
+            .from(translations)
+            .where(
+              and(
+                eq(translations.businessId, business.id),
+                eq(translations.language, "es")
+              )
+            )
+        : Promise.resolve([]),
+      db
+        .select()
+        .from(addonGroups)
+        .where(eq(addonGroups.businessId, business.id))
+        .orderBy(asc(addonGroups.position)),
+      db
+        .select()
+        .from(addonOptions)
+        .where(eq(addonOptions.businessId, business.id))
+        .orderBy(asc(addonOptions.position)),
+      db
+        .select()
+        .from(serviceAddonGroups)
+        .where(eq(serviceAddonGroups.businessId, business.id)),
+    ])
 
-  const extras = await getGoogleExtras(business.googlePlaceId)
+  const extras = await getGoogleExtras(business.googlePlaceId, language)
 
   // The business's own photos win over Google's.
   const photos: PagePhoto[] =
@@ -180,14 +230,131 @@ async function loadBusinessPage(
         }))
       : extras.photos
 
+  const serviceTeams: Record<string, string[]> = {}
+  for (const link of teamLinks) {
+    ;(serviceTeams[link.serviceId] ??= []).push(link.teamMemberId)
+  }
+
+  // Spanish: replace About and each service's name/description with its
+  // up-to-date translation where there is one. A translation counts only
+  // while its sourceText still equals the current English text exactly.
+  let pageBusiness = business
+  let pageServices = serviceRows
+  if (language === "es") {
+    const byKey = new Map(
+      translationRows.map((row) => [`${row.entityId}\n${row.field}`, row])
+    )
+    if (business.description) {
+      const row = byKey.get(`${business.id}\nbusiness.description`)
+      if (row && row.sourceText === business.description) {
+        pageBusiness = { ...business, description: row.text }
+      }
+    }
+    pageServices = serviceRows.map((service) => {
+      let next = service
+      const nameRow = byKey.get(`${service.id}\nservice.name`)
+      if (nameRow && nameRow.sourceText === service.name) {
+        next = { ...next, name: nameRow.text }
+      }
+      if (service.description) {
+        const descriptionRow = byKey.get(`${service.id}\nservice.description`)
+        if (
+          descriptionRow &&
+          descriptionRow.sourceText === service.description
+        ) {
+          next = { ...next, description: descriptionRow.text }
+        }
+      }
+      return next
+    })
+  }
+
+  // Add-on groups show only when linked to at least one service and
+  // holding at least one option.
+  const serviceOrder = new Map(
+    serviceRows.map((service, index) => [service.id, index] as const)
+  )
+  let pageAddonGroups = addonGroupRows.flatMap((group) => {
+    const options = addonOptionRows
+      .filter((option) => option.groupId === group.id)
+      .map((option) => ({
+        id: option.id,
+        name: option.name,
+        description: option.description,
+        priceMinor: option.priceMinor,
+        durationMinutes: option.durationMinutes,
+      }))
+    const serviceIds = addonLinkRows
+      .filter((link) => link.groupId === group.id)
+      .map((link) => link.serviceId)
+      .sort((a, b) => (serviceOrder.get(a) ?? 0) - (serviceOrder.get(b) ?? 0))
+    if (serviceIds.length === 0 || options.length === 0) {
+      return []
+    }
+    return [
+      {
+        id: group.id,
+        prompt: group.prompt,
+        minSelect: group.minSelect,
+        maxSelect: group.maxSelect,
+        serviceIds,
+        options,
+      },
+    ]
+  })
+
+  // Spanish: replace each add-on prompt, option name and option
+  // description with its up-to-date translation where there is one.
+  if (language === "es") {
+    const addonTranslations = new Map(
+      translationRows.map((row) => [`${row.entityId}\n${row.field}`, row])
+    )
+    pageAddonGroups = pageAddonGroups.map((group) => {
+      const promptRow = addonTranslations.get(
+        `${group.id}\naddon_group.prompt`
+      )
+      const prompt =
+        promptRow && promptRow.sourceText === group.prompt
+          ? promptRow.text
+          : group.prompt
+      return {
+        ...group,
+        prompt,
+        options: group.options.map((option) => {
+          const nameRow = addonTranslations.get(`${option.id}\naddon.name`)
+          const name =
+            nameRow && nameRow.sourceText === option.name
+              ? nameRow.text
+              : option.name
+          let description = option.description
+          if (description) {
+            const descriptionRow = addonTranslations.get(
+              `${option.id}\naddon.description`
+            )
+            if (
+              descriptionRow &&
+              descriptionRow.sourceText === description
+            ) {
+              description = descriptionRow.text
+            }
+          }
+          return { ...option, name, description }
+        }),
+      }
+    })
+  }
+
   return {
-    business,
+    business: pageBusiness,
     hours,
-    services: serviceRows,
+    services: pageServices,
     team,
     photos,
     reviews: extras.reviews,
     amenities: extras.amenities,
+    language,
+    serviceTeams,
+    addonGroups: pageAddonGroups,
   }
 }
 

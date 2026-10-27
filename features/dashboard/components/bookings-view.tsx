@@ -1,0 +1,319 @@
+"use client"
+
+import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { CalendarDaysIcon, ChevronRightIcon, PlusIcon } from "lucide-react"
+import { toast } from "sonner"
+
+import { ResponsivePanel } from "@/components/responsive-panel"
+import { ViewTabs } from "@/components/view-tabs"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from "@/components/ui/item"
+import { Spinner } from "@/components/ui/spinner"
+import { formatClock, formatDay } from "@/lib/format-booking-time"
+import type {
+  OwnerBookingInput,
+  OwnerBookingResult,
+} from "@/types/owner-booking"
+import { cancelBooking } from "../api/actions"
+import { setBookingStatus } from "../api/booking-actions"
+import type { OwnerBooking } from "../types"
+import { AddBookingPanel, type AddBookingOptions } from "./add-booking-panel"
+import { BookingDetails } from "./booking-details"
+import { BookingStatusBadge } from "./booking-status-badge"
+import { BookingsChart } from "./bookings-chart"
+
+type View = "upcoming" | "past"
+
+const VIEWS = [
+  { id: "upcoming" as const, label: "Upcoming" },
+  { id: "past" as const, label: "Past" },
+]
+
+// The business's bookings, by day: upcoming first, past one tab away. Each
+// opens its details; once it has started it can be marked done or no-show.
+export function BookingsView({
+  businessId,
+  upcoming,
+  past,
+  counts,
+  nextDays,
+  addOptions,
+  createBooking,
+}: {
+  businessId: string
+  upcoming: OwnerBooking[]
+  past: OwnerBooking[]
+  counts: { today: number; upcoming: number }
+  nextDays: Array<{ date: string; bookings: number }>
+  addOptions: AddBookingOptions
+  createBooking: (input: OwnerBookingInput) => Promise<OwnerBookingResult>
+}) {
+  const [view, setView] = useState<View>("upcoming")
+  const [opened, setOpened] = useState<OwnerBooking | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  // When the details opened: a booking that has started by then can be
+  // marked done or no-show.
+  const [openedAt, setOpenedAt] = useState(0)
+  const [adding, setAdding] = useState(false)
+  const [cancelling, setCancelling] = useState<OwnerBooking | null>(null)
+  const [pending, startTransition] = useTransition()
+  const router = useRouter()
+  const list = view === "upcoming" ? upcoming : past
+  const days = groupByDay(list)
+
+  const run = (task: () => Promise<{ ok: boolean }>, done: string) =>
+    startTransition(async () => {
+      const result = await task().catch(() => ({ ok: false }))
+      setCancelling(null)
+      if (result.ok) {
+        setDetailsOpen(false)
+        toast.success(done)
+        router.refresh()
+      } else {
+        toast.error("That did not work. Please try again.")
+      }
+    })
+
+  const started = opened ? Date.parse(opened.startAt) <= openedAt : false
+  const footer = opened && (
+    <BookingActions
+      booking={opened}
+      started={started}
+      pending={pending}
+      onCancel={() => setCancelling(opened)}
+      onStatus={(status, done) =>
+        run(() => setBookingStatus(businessId, opened.id, status), done)
+      }
+    />
+  )
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Bookings</h1>
+          <p className="text-sm text-muted-foreground">
+            {counts.today} today · {counts.upcoming} upcoming
+          </p>
+        </div>
+        <Button
+          onClick={() => setAdding(true)}
+          disabled={addOptions.services.length === 0}
+        >
+          <PlusIcon data-icon="inline-start" />
+          Add
+        </Button>
+      </div>
+      <BookingsChart days={nextDays} />
+      <ViewTabs
+        views={VIEWS}
+        value={view}
+        onChange={setView}
+        ariaLabel="Bookings"
+        variant="line"
+      />
+      {days.length === 0 ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <CalendarDaysIcon />
+            </EmptyMedia>
+            <EmptyTitle>
+              {view === "upcoming"
+                ? "No upcoming bookings"
+                : "No past bookings"}
+            </EmptyTitle>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        days.map(([date, bookings]) => (
+          <section
+            key={date}
+            className="flex flex-col gap-3"
+            aria-label={formatDay(date)}
+          >
+            <h2 className="text-sm font-medium text-muted-foreground">
+              {formatDay(date)}
+            </h2>
+            <ItemGroup className="gap-3">
+              {bookings.map((booking) => (
+                <Item
+                  key={booking.id}
+                  variant="outline"
+                  render={
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpened(booking)
+                        setOpenedAt(Date.now())
+                        setDetailsOpen(true)
+                      }}
+                    />
+                  }
+                  className="text-left"
+                >
+                  <ItemContent>
+                    <ItemTitle>
+                      {formatClock(booking.time)} –{" "}
+                      {formatClock(booking.endTime)}
+                      <BookingStatusBadge status={booking.status} />
+                    </ItemTitle>
+                    <ItemDescription>
+                      {booking.customerName} · {booking.serviceName}
+                      {booking.teamMemberName && ` · ${booking.teamMemberName}`}
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <ChevronRightIcon />
+                  </ItemActions>
+                </Item>
+              ))}
+            </ItemGroup>
+          </section>
+        ))
+      )}
+
+      <ResponsivePanel
+        open={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        title={opened ? opened.customerName : "Booking"}
+        footer={footer}
+      >
+        {opened && <BookingDetails booking={opened} />}
+      </ResponsivePanel>
+
+      <AddBookingPanel
+        open={adding}
+        onClose={() => setAdding(false)}
+        businessId={businessId}
+        options={addOptions}
+        createBooking={createBooking}
+      />
+
+      <AlertDialog
+        open={cancelling !== null}
+        onOpenChange={(open) => {
+          if (!open && !pending) setCancelling(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {cancelling &&
+                `${cancelling.customerName}, ${formatDay(cancelling.date)} at ${formatClock(cancelling.time)}.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>Keep it</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={pending}
+              onClick={() =>
+                cancelling &&
+                run(
+                  () => cancelBooking(businessId, cancelling.id),
+                  "Booking cancelled"
+                )
+              }
+            >
+              Cancel booking
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}
+
+// What can be done with a booking: before it starts, cancel it; once it
+// has started, mark it done or no-show; after that, undo.
+function BookingActions({
+  booking,
+  started,
+  pending,
+  onCancel,
+  onStatus,
+}: {
+  booking: OwnerBooking
+  started: boolean
+  pending: boolean
+  onCancel: () => void
+  onStatus: (
+    status: "confirmed" | "completed" | "no_show",
+    done: string
+  ) => void
+}) {
+  if (booking.status === "cancelled") return null
+  if (booking.status !== "confirmed") {
+    return (
+      <Button
+        variant="outline"
+        disabled={pending}
+        onClick={() => onStatus("confirmed", "Marked as booked")}
+      >
+        {pending && <Spinner data-icon="inline-start" />}
+        Undo
+      </Button>
+    )
+  }
+  if (!started) {
+    return (
+      <Button variant="outline" disabled={pending} onClick={onCancel}>
+        Cancel booking
+      </Button>
+    )
+  }
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <Button
+        variant="outline"
+        disabled={pending}
+        onClick={() => onStatus("no_show", "Marked as no-show")}
+      >
+        No-show
+      </Button>
+      <Button
+        disabled={pending}
+        onClick={() => onStatus("completed", "Marked as done")}
+      >
+        {pending && <Spinner data-icon="inline-start" />}
+        Done
+      </Button>
+    </div>
+  )
+}
+
+function groupByDay(bookings: OwnerBooking[]): Array<[string, OwnerBooking[]]> {
+  const days = new Map<string, OwnerBooking[]>()
+  for (const booking of bookings) {
+    const day = days.get(booking.date) ?? []
+    day.push(booking)
+    days.set(booking.date, day)
+  }
+  return [...days]
+}
