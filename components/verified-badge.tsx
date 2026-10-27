@@ -1,16 +1,17 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 
 // Lucide's badge-check seal outline, filled here so it reads as a badge even when small.
 const SEAL =
   "M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
-// How long a tapped badge stays open on a phone, which has no hover to end.
-const TAP_OPEN_MS = 2500
+// How long the badge stays open after a tap, or after the page stops scrolling.
+const OPEN_MS = 2500
 
 // The blue verified seal with a white check, as on X and Instagram. Hovering
-// it, or tapping it on a phone, slides its word out beside it on a light blue pill.
+// it, tapping it, or scrolling the page slides its word out beside it on a
+// light blue pill; it slides back once the page has been still for a moment.
 export function VerifiedBadge({
   label = "Verified",
   className,
@@ -19,17 +20,25 @@ export function VerifiedBadge({
   className?: string
 }) {
   const [open, setOpen] = useState(false)
+  const timer = useRef<number | undefined>(undefined)
+  const show = useCallback(() => {
+    setOpen(true)
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setOpen(false), OPEN_MS)
+  }, [])
   useEffect(() => {
-    if (!open) return
-    const timer = window.setTimeout(() => setOpen(false), TAP_OPEN_MS)
-    return () => window.clearTimeout(timer)
-  }, [open])
+    window.addEventListener("scroll", show, { passive: true })
+    return () => {
+      window.removeEventListener("scroll", show)
+      window.clearTimeout(timer.current)
+    }
+  }, [show])
   return (
     <button
       type="button"
       aria-label={label}
       data-open={open || undefined}
-      onClick={() => setOpen(true)}
+      onClick={show}
       className={cn(
         "group/verified inline-flex items-center rounded-full p-0.5 text-sm font-medium tracking-normal text-verified-foreground transition-[background-color,padding] duration-300 ease-out outline-none hover:bg-verified/15 hover:pr-2.5 focus-visible:ring-3 focus-visible:ring-ring/30 data-open:bg-verified/15 data-open:pr-2.5",
         className
