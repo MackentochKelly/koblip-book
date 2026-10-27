@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useVisualViewport } from "@/hooks/use-visual-viewport"
 import { AuthForm } from "@/features/owner-auth/components/auth-form"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import { cn } from "@/lib/utils"
@@ -108,6 +109,8 @@ export function GetStarted({
   const [rest, setRest] = useState({ height: 0, radius: 0 })
   const frameRef = useRef<HTMLDivElement>(null)
   const open = expanded && isMobile && !picked && mode === "search"
+  // While full screen: the part of the screen above the keyboard.
+  const visible = useVisualViewport(open)
   const [resuming, setResuming] = useState(Boolean(resume && signedIn))
 
   // Back from Google: make the page the owner's and open its dashboard.
@@ -222,14 +225,18 @@ export function GetStarted({
           transition={GROW}
           style={
             open
-              ? { borderRadius: 0 }
+              ? {
+                  borderRadius: 0,
+                  ...(visible && { top: visible.top, height: visible.height }),
+                }
               : rest.radius
                 ? { borderRadius: rest.radius }
                 : undefined
           }
           className={cn(
             glassFrameClassName,
-            open && "fixed inset-0 z-50 h-dvh bg-background p-0 inset-ring-0"
+            open &&
+              "fixed inset-x-0 top-0 z-50 h-dvh bg-background p-0 inset-ring-0"
           )}
         >
           <MotionCard
