@@ -30,7 +30,7 @@ export async function requireOwner(next?: string): Promise<OwnerSession> {
   const session = await getSession()
   if (!session) {
     redirect(
-      "/sign-in" + (next ? "?next=" + encodeURIComponent(next) : "")
+      "/login" + (next ? "?next=" + encodeURIComponent(next) : "")
     )
   }
   return session

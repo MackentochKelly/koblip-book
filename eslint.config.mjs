@@ -45,6 +45,18 @@ const eslintConfig = defineConfig([
               from: "./features",
               except: ["./owner-auth"],
             },
+            // onboarding imports the place importer, the business page
+            // reader and the login form.
+            {
+              target: "./features/onboarding",
+              from: "./features",
+              except: [
+                "./onboarding",
+                "./place-import",
+                "./business-page",
+                "./owner-auth",
+              ],
+            },
             // shared code cannot import from features/ or app/
             { target: "./components", from: "./features" },
             { target: "./components", from: "./app" },

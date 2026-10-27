@@ -57,13 +57,19 @@ function apiKey(): string {
 }
 
 // Place Details (New): GET /v1/places/{placeId}. A non-200 answer throws
-// with Google's error message.
-export async function fetchPlace(placeId: string): Promise<GooglePlace> {
+// with Google's error message. The session token ends an autocomplete
+// session started by the onboarding search.
+export async function fetchPlace(
+  placeId: string,
+  sessionToken?: string
+): Promise<GooglePlace> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 10_000)
   let res: Response
   try {
-    res = await fetch(`${PLACES_API}/places/${placeId}?languageCode=en`, {
+    res = await fetch(
+      `${PLACES_API}/places/${placeId}?languageCode=en${sessionToken ? `&sessionToken=${sessionToken}` : ""}`,
+      {
       headers: {
         "X-Goog-Api-Key": apiKey(),
         "X-Goog-FieldMask": FIELD_MASK,

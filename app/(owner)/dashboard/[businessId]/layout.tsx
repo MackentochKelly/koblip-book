@@ -1,6 +1,9 @@
+import { Suspense } from "react"
+
 import { Toaster } from "@/components/ui/sonner"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { DashboardShell } from "@/features/dashboard/components/dashboard-shell"
+import { WelcomePanel } from "@/features/dashboard/components/welcome-panel"
 import { requireOwner } from "@/lib/dal"
 
 export default async function BusinessDashboardLayout({
@@ -16,6 +19,9 @@ export default async function BusinessDashboardLayout({
       owner={{ name: owner.name, email: owner.email }}
     >
       {children}
+      <Suspense>
+        <WelcomePanel slug={business.slug} name={business.name} />
+      </Suspense>
       <Toaster />
     </DashboardShell>
   )

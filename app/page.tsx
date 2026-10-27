@@ -1,19 +1,48 @@
-import { Button } from "@/components/ui/button"
+import type { Metadata } from "next"
+import Link from "next/link"
 
-export default function Page() {
+import { SiteHeader } from "@/components/site-header"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { claimBusiness } from "@/features/dashboard/api/actions"
+import { GetStarted } from "@/features/onboarding/components/get-started"
+import { getSession } from "@/lib/dal"
+
+export const metadata: Metadata = {
+  title: "Koblip Book",
+  description: "Your booking page in one minute.",
+}
+
+export default async function HomePage() {
+  const signedIn = (await getSession()) !== null
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
+    <div className="flex min-h-dvh flex-col bg-linear-to-b from-primary/15 via-primary/5 to-background">
+      <SiteHeader
+        action={
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={<Link href={signedIn ? "/dashboard" : "/login"} />}
+          >
+            {signedIn ? "Dashboard" : "Log in"}
+          </Button>
+        }
+      />
+      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-8 px-4 pt-10 pb-16 sm:pt-20">
+        <div className="flex flex-col gap-3">
+          <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+            Your booking page in one minute
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Find your business. We build the rest.
+          </p>
         </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
+        <Card className="shadow-lg">
+          <CardContent>
+            <GetStarted signedIn={signedIn} claim={claimBusiness} />
+          </CardContent>
+        </Card>
+      </main>
     </div>
   )
 }

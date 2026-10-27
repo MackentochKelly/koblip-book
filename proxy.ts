@@ -7,7 +7,7 @@ import { getSessionCookie } from "better-auth/cookies"
 export function proxy(request: NextRequest) {
   if (!getSessionCookie(request)) {
     const url = request.nextUrl.clone()
-    url.pathname = "/sign-in"
+    url.pathname = "/login"
     url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`
     return NextResponse.redirect(url)
   }

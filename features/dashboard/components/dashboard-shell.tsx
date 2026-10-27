@@ -72,7 +72,7 @@ export function DashboardShell({
   }))
   const signOut = async () => {
     await authClient.signOut()
-    router.replace("/sign-in")
+    router.replace("/")
     router.refresh()
   }
 

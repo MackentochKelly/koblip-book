@@ -63,30 +63,30 @@ function isMapsLink(input: string): boolean {
   )
 }
 
-// A shared Maps URL carries the place ID directly.
-function placeIdFromUrl(finalUrl: string): string | null {
-  let url: URL
-  try {
-    url = new URL(finalUrl)
-  } catch {
+// What a resolved Maps URL tells us, in order: a direct place ID, a
+// name to Text Search (biased around coordinates when the URL has them),
+// or nothing usable.
+export type PlaceQueryFromUrl =
+  | { kind: "placeId"; placeId: string }
+  | { kind: "text"; text: string; latitude?: number; longitude?: number }
+  | null
+
+function placeNameFromUrl(finalUrl: string): string | null {
+  const placeMatch = /\/maps\/place\/([^/?#]+)/.exec(finalUrl)
+  if (!placeMatch) {
     return null
   }
-  const fromParam = url.searchParams.get("query_place_id")
-  if (fromParam) {
-    return fromParam
-  }
-  const match = /place_id:([^/?&#]+)/.exec(finalUrl)
-  return match ? match[1] : null
+  const name = decodeURIComponent(placeMatch[1].replace(/\+/g, " ")).trim()
+  return name.length > 0 ? name : null
 }
 
-// Otherwise the URL carries the place name (/maps/place/<name>/) and the
-// coordinates (@<lat>,<lng>), which locate one Text Search result.
-function nameAndCoordsFromUrl(
+function coordsFromUrl(
   finalUrl: string
-): { name: string; latitude: number; longitude: number } | null {
-  const placeMatch = /\/maps\/place\/([^/?#]+)/.exec(finalUrl)
-  const coordsMatch = /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(finalUrl)
-  if (!placeMatch || !coordsMatch) {
+): { latitude: number; longitude: number } | null {
+  const coordsMatch =
+    /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(finalUrl) ??
+    /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/.exec(finalUrl)
+  if (!coordsMatch) {
     return null
   }
   const latitude = Number(coordsMatch[1])
@@ -94,42 +94,124 @@ function nameAndCoordsFromUrl(
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     return null
   }
-  return {
-    name: decodeURIComponent(placeMatch[1].replace(/\+/g, " ")),
-    latitude,
-    longitude,
+  return { latitude, longitude }
+}
+
+// Pure: turns a resolved Maps URL into a place ID or a Text Search query.
+export function placeQueryFromUrl(finalUrl: string): PlaceQueryFromUrl {
+  let url: URL
+  try {
+    url = new URL(finalUrl)
+  } catch {
+    return null
   }
+  // A consent interstitial carries the real URL in its continue param.
+  if (url.hostname.toLowerCase() === "consent.google.com") {
+    const continued = url.searchParams.get("continue")
+    if (!continued) {
+      return null
+    }
+    return placeQueryFromUrl(continued)
+  }
+  const fromParam = url.searchParams.get("query_place_id")
+  if (fromParam) {
+    return { kind: "placeId", placeId: fromParam }
+  }
+  const idMatch = /place_id:([^/?&#]+)/.exec(finalUrl)
+  if (idMatch) {
+    return { kind: "placeId", placeId: idMatch[1] }
+  }
+  const name = placeNameFromUrl(finalUrl)
+  if (name) {
+    const coords = coordsFromUrl(finalUrl)
+    if (coords) {
+      return { kind: "text", text: name, ...coords }
+    }
+  }
+  const query = url.searchParams.get("q")?.trim()
+  if (query) {
+    return { kind: "text", text: query }
+  }
+  if (name) {
+    return { kind: "text", text: name }
+  }
+  return null
+}
+
+const LINK_TIMEOUT_MS = 5_000
+const MAX_LINK_HOPS = 5
+const LINK_USER_AGENT = "Mozilla/5.0 (compatible; KoblipBook/1.0)"
+
+// Follows a pasted Maps link by hand (short links redirect to the full
+// Maps URL). Max 5 hops, 5 second timeout per hop. A consent interstitial
+// is not fetched: its continue param is the next URL.
+async function resolveLink(startUrl: string): Promise<string> {
+  let current = startUrl
+  for (let hop = 0; hop < MAX_LINK_HOPS; hop++) {
+    let url: URL
+    try {
+      url = new URL(current)
+    } catch {
+      return current
+    }
+    if (url.hostname.toLowerCase() === "consent.google.com") {
+      const continued = url.searchParams.get("continue")
+      if (!continued) {
+        return current
+      }
+      current = continued
+      continue
+    }
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), LINK_TIMEOUT_MS)
+    let res: Response
+    try {
+      res = await fetch(current, {
+        redirect: "manual",
+        headers: { "User-Agent": LINK_USER_AGENT },
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timeout)
+    }
+    const location = res.headers.get("Location")
+    if (!location) {
+      return current
+    }
+    current = new URL(location, current).toString()
+  }
+  return current
 }
 
 // Turns what the owner pasted (a Google Maps link or any other text) into a
 // Google place ID. Throws "No business found" when nothing matches.
 export async function findPlaceId(input: string): Promise<string> {
   if (isMapsLink(input)) {
-    // Short links redirect to the full Maps URL; fetch follows them.
-    const res = await fetch(input, { redirect: "follow" })
-    try {
-      await res.body?.cancel()
-    } catch {
-      // The final URL is all we need.
-    }
-    const direct = placeIdFromUrl(res.url)
-    if (direct) {
-      return direct
-    }
-    const named = nameAndCoordsFromUrl(res.url)
-    if (!named) {
+    const finalUrl = await resolveLink(input)
+    const query = placeQueryFromUrl(finalUrl)
+    if (!query) {
       throw new Error("No business found")
     }
+    if (query.kind === "placeId") {
+      return query.placeId
+    }
     const matches = await searchText({
-      textQuery: named.name,
+      textQuery: query.text,
       pageSize: 1,
       languageCode: "en",
-      locationBias: {
-        circle: {
-          center: { latitude: named.latitude, longitude: named.longitude },
-          radius: 500.0,
-        },
-      },
+      ...(query.latitude !== undefined && query.longitude !== undefined
+        ? {
+            locationBias: {
+              circle: {
+                center: {
+                  latitude: query.latitude,
+                  longitude: query.longitude,
+                },
+                radius: 500.0,
+              },
+            },
+          }
+        : {}),
     })
     const id = matches.places?.[0]?.id
     if (!id) {

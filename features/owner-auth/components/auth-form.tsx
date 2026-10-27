@@ -1,17 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import {
   Field,
   FieldDescription,
@@ -22,124 +14,161 @@ import {
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
+import { emailStatus } from "../api/email-status"
 
 const MIN_PASSWORD = 8
 
-// Sign in or create a bookings account with an email and a password.
+type Step = "email" | "password" | "create"
+
+// Email first: an existing account asks for its password, a new email asks
+// for a name and a new password. One form for both, no sign-up page.
+// After it, `onSignedIn` runs, or the screen opens `next`.
 export function AuthForm({
-  mode,
-  next,
+  next = "/dashboard",
+  onSignedIn,
+  disabled = false,
 }: {
-  mode: "sign-in" | "sign-up"
-  next: string
+  next?: string
+  onSignedIn?: () => Promise<void>
+  disabled?: boolean
 }) {
   const router = useRouter()
+  const [step, setStep] = useState<Step>("email")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [sending, setSending] = useState(false)
   const [error, setError] = useState("")
-  const signUp = mode === "sign-up"
-  const other = signUp ? "/sign-in" : "/sign-up"
-  const otherHref = next === "/dashboard" ? other : `${other}?next=${encodeURIComponent(next)}`
+  const busy = sending || disabled
 
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (sending) return
-    if (signUp && !name.trim()) {
+  const checkEmail = async () => {
+    const status = await emailStatus(email).catch(() => null)
+    if (!status?.ok) {
+      setError("Check your email address")
+      return
+    }
+    setError("")
+    setStep(status.exists ? "password" : "create")
+  }
+
+  const logIn = async () => {
+    if (step === "create" && !name.trim()) {
       setError("Add your name")
       return
     }
     if (password.length < MIN_PASSWORD) {
-      setError(`Use at least ${MIN_PASSWORD} characters for the password`)
+      setError(`Use at least ${MIN_PASSWORD} characters`)
       return
     }
-    setSending(true)
-    setError("")
-    const { error: failed } = signUp
-      ? await authClient.signUp.email({
-          name: name.trim(),
-          email: email.trim(),
-          password,
-        })
-      : await authClient.signIn.email({ email: email.trim(), password })
-    setSending(false)
+    const { error: failed } =
+      step === "create"
+        ? await authClient.signUp.email({
+            name: name.trim(),
+            email: email.trim(),
+            password,
+          })
+        : await authClient.signIn.email({ email: email.trim(), password })
     if (failed) {
       setError(
-        signUp
-          ? "That email could not be used. Try signing in."
-          : "Wrong email or password"
+        step === "create"
+          ? "That did not work. Please try again."
+          : "Wrong password"
       )
+      return
+    }
+    setError("")
+    if (onSignedIn) {
+      await onSignedIn()
       return
     }
     router.replace(next)
     router.refresh()
   }
 
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (busy) return
+    setSending(true)
+    try {
+      await (step === "email" ? checkEmail() : logIn())
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const changeEmail = () => {
+    setStep("email")
+    setPassword("")
+    setError("")
+  }
+
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle className="text-xl">
-          {signUp ? "Create your bookings account" : "Sign in"}
-        </CardTitle>
-        <CardDescription>
-          {signUp ? "Take bookings on your page." : "Manage your bookings."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={(event) => void submit(event)} noValidate>
-          <FieldGroup>
-            {signUp && (
-              <Field>
-                <FieldLabel htmlFor="auth-name">Name</FieldLabel>
-                <Input
-                  id="auth-name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  autoComplete="name"
-                  disabled={sending}
-                />
-              </Field>
-            )}
-            <Field>
-              <FieldLabel htmlFor="auth-email">Email</FieldLabel>
-              <Input
-                id="auth-email"
-                type="email"
-                inputMode="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                autoComplete="email"
-                disabled={sending}
-              />
-            </Field>
-            <Field data-invalid={Boolean(error) || undefined}>
-              <FieldLabel htmlFor="auth-password">Password</FieldLabel>
-              <Input
-                id="auth-password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete={signUp ? "new-password" : "current-password"}
-                disabled={sending}
-              />
-              {error && <FieldError>{error}</FieldError>}
-            </Field>
-            <Field>
-              <Button type="submit" size="lg" disabled={sending}>
-                {sending && <Spinner data-icon="inline-start" />}
-                {signUp ? "Create account" : "Sign in"}
-              </Button>
-              <FieldDescription className="text-center">
-                {signUp ? "Have an account? " : "New here? "}
-                <Link href={otherHref}>
-                  {signUp ? "Sign in" : "Create an account"}
-                </Link>
-              </FieldDescription>
-            </Field>
-          </FieldGroup>
-        </form>
-      </CardContent>
-    </Card>
+    <form onSubmit={(event) => void submit(event)} noValidate>
+      <FieldGroup>
+        <Field data-invalid={(step === "email" && Boolean(error)) || undefined}>
+          <FieldLabel htmlFor="auth-email">Email</FieldLabel>
+          <Input
+            id="auth-email"
+            type="email"
+            inputMode="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+            readOnly={step !== "email"}
+            disabled={busy}
+            aria-invalid={(step === "email" && Boolean(error)) || undefined}
+          />
+          {step !== "email" && (
+            <FieldDescription>
+              <button type="button" onClick={changeEmail}>
+                Use another email
+              </button>
+            </FieldDescription>
+          )}
+          {step === "email" && error && <FieldError>{error}</FieldError>}
+        </Field>
+        {step === "create" && (
+          <Field>
+            <FieldLabel htmlFor="auth-name">Your name</FieldLabel>
+            <Input
+              id="auth-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              autoComplete="name"
+              disabled={busy}
+              autoFocus
+            />
+          </Field>
+        )}
+        {step !== "email" && (
+          <Field data-invalid={Boolean(error) || undefined}>
+            <FieldLabel htmlFor="auth-password">
+              {step === "create" ? "Choose a password" : "Password"}
+            </FieldLabel>
+            <Input
+              id="auth-password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete={
+                step === "create" ? "new-password" : "current-password"
+              }
+              disabled={busy}
+              autoFocus={step === "password"}
+              aria-invalid={Boolean(error) || undefined}
+            />
+            {error && <FieldError>{error}</FieldError>}
+          </Field>
+        )}
+        <Button type="submit" size="lg" disabled={busy}>
+          {busy && <Spinner data-icon="inline-start" />}
+          {step === "email"
+            ? "Continue"
+            : step === "create"
+              ? "Create account"
+              : "Log in"}
+        </Button>
+      </FieldGroup>
+    </form>
   )
 }

@@ -66,11 +66,6 @@ const en = {
     photoBy: "Photo by",
     close: "Close",
   },
-  claim: {
-    title: "Own this business?",
-    description: "Take bookings on this page for free.",
-    button: "Claim",
-  },
   footer: {
     rights: "All rights reserved.",
     fromGoogle: "Photos, opening times and reviews from",
@@ -189,11 +184,6 @@ const es: Messages = {
     seeMore: (more: number) => `Ver ${more} fotos más`,
     photoBy: "Foto de",
     close: "Cerrar",
-  },
-  claim: {
-    title: "¿Es tu negocio?",
-    description: "Recibe reservas en esta página gratis.",
-    button: "Reclamar",
   },
   footer: {
     rights: "Todos los derechos reservados.",

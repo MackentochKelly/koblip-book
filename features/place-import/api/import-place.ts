@@ -35,9 +35,11 @@ async function aiDescription(
 // fresh hours; its slug, services, team, photos and description are kept.
 // Description order: the owner's existing text, Google's editorialSummary,
 // then Meta AI. Returns the slug.
-export async function importPlace(input: string): Promise<string> {
-  const placeId = await findPlaceId(input)
-  const place = await fetchPlace(placeId)
+export async function importPlaceById(
+  placeId: string,
+  sessionToken?: string
+): Promise<string> {
+  const place = await fetchPlace(placeId, sessionToken)
   const { business, hours } = mapPlace(place)
 
   const [existing] = await db
@@ -87,4 +89,10 @@ export async function importPlace(input: string): Promise<string> {
     }
   })
   return slug
+}
+
+// Same import from pasted text or a Maps link: resolves the place ID
+// first, then imports by ID.
+export async function importPlace(input: string): Promise<string> {
+  return importPlaceById(await findPlaceId(input))
 }

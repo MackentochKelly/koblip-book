@@ -22,7 +22,6 @@ import { BusinessAmenities } from "@/features/business-page/components/business-
 import { ExternalLinkIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BusinessFooter } from "@/features/business-page/components/business-footer"
-import { ClaimCard } from "@/features/business-page/components/claim-card"
 import { LanguageMenu } from "@/features/business-page/components/language-menu"
 import { BusinessMap } from "@/features/business-page/components/business-map"
 import { BusinessReviews } from "@/features/business-page/components/business-reviews"
@@ -231,9 +230,6 @@ export default async function BusinessPage({ params, searchParams }: Props) {
                   )}
                 </PageSection>
               </>
-            )}
-            {business.ownerId === null && (
-              <ClaimCard slug={business.slug} language={language} />
             )}
             <BusinessFooter
               name={business.name}
