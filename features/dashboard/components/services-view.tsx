@@ -77,6 +77,7 @@ import { setServiceTeam } from "../api/team-services"
 import type { OwnerAddonGroup, ServiceInput, ServiceSuggestion } from "../types"
 import { ExtrasView } from "./extras-view"
 import { PhotoField } from "./photo-upload"
+import { noAutofill } from "@/lib/no-autofill"
 
 interface ServiceRow {
   id: string
@@ -411,6 +412,7 @@ function ServiceForm({
         <Field data-invalid={invalid === "name" || undefined}>
           <FieldLabel htmlFor="service-name">Name</FieldLabel>
           <Input
+            {...noAutofill("service_name")}
             id="service-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
@@ -442,6 +444,7 @@ function ServiceForm({
           <Field data-invalid={invalid === "price" || undefined}>
             <FieldLabel htmlFor="service-price">Price</FieldLabel>
             <Input
+              {...noAutofill("service_price")}
               id="service-price"
               inputMode="decimal"
               value={price}
@@ -455,6 +458,7 @@ function ServiceForm({
         <Field>
           <FieldLabel htmlFor="service-description">Description</FieldLabel>
           <Textarea
+            {...noAutofill("service_description")}
             id="service-description"
             value={description}
             onChange={(event) => setDescription(event.target.value)}

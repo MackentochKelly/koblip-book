@@ -39,6 +39,7 @@ import { initials } from "@/lib/initials"
 import type { OwnerBooking, OwnerCustomer } from "../types"
 import { BookingStatusBadge } from "./booking-status-badge"
 import { ContactButtons } from "./contact-buttons"
+import { noAutofill } from "@/lib/no-autofill"
 
 // Everyone who booked, from their bookings. Opening one shows their visits;
 // the open customer is in the address (?customer=), so their bookings load
@@ -94,6 +95,7 @@ export function CustomersView({
             <SearchIcon />
           </InputGroupAddon>
           <InputGroupInput
+            {...noAutofill("customers")}
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}

@@ -53,6 +53,7 @@ import { useDebounced } from "../utils/use-debounced"
 import { useSessionToken } from "../utils/use-session-token"
 import { SearchAreaPanel, type SearchArea } from "./search-area"
 import { SuggestionList } from "./suggestion-list"
+import { noAutofill } from "@/lib/no-autofill"
 
 type ClaimResult =
   { ok: true; businessId: string } | { ok: false; error: string }
@@ -502,6 +503,7 @@ function FindBusiness({
           {searching ? <Spinner /> : <SearchIcon />}
         </InputGroupAddon>
         <InputGroupInput
+          {...noAutofill("business")}
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -512,7 +514,6 @@ function FindBusiness({
           placeholder="Your business name"
           className="text-base [&::-webkit-search-cancel-button]:appearance-none"
           aria-label="Your business name"
-          autoComplete="off"
           enterKeyHint="search"
         />
         {query && (
@@ -612,6 +613,7 @@ function PasteLink({ onChoose }: { onChoose: (picked: Picked) => void }) {
             <LinkIcon />
           </InputGroupAddon>
           <InputGroupInput
+            {...noAutofill("maps_link")}
             type="url"
             inputMode="url"
             value={link}
@@ -620,7 +622,6 @@ function PasteLink({ onChoose }: { onChoose: (picked: Picked) => void }) {
             className="text-base"
             aria-label="Google Maps link"
             aria-invalid={Boolean(error) || undefined}
-            autoComplete="off"
             autoFocus
           />
         </InputGroup>

@@ -68,6 +68,7 @@ import {
   type BookingService,
   type BookingSlot,
 } from "./booking-page"
+import { noAutofill } from "@/lib/no-autofill"
 
 export const ANYONE = "any"
 
@@ -499,11 +500,11 @@ export function DetailsStep({
         <Field data-invalid={error === "name" || undefined}>
           <FieldLabel htmlFor="booking-name">{m.booking.name}</FieldLabel>
           <Input
+            {...noAutofill("booking_name")}
             id="booking-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
             disabled={sending}
-            autoComplete="name"
             maxLength={BOOKING_RULES.maxCustomerName}
             aria-invalid={error === "name" || undefined}
           />
@@ -512,13 +513,13 @@ export function DetailsStep({
         <Field data-invalid={error === "phone" || undefined}>
           <FieldLabel htmlFor="booking-phone">{m.booking.phone}</FieldLabel>
           <Input
+            {...noAutofill("booking_phone")}
             id="booking-phone"
             type="tel"
             inputMode="tel"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
             disabled={sending}
-            autoComplete="tel"
             maxLength={25}
             aria-invalid={error === "phone" || undefined}
           />

@@ -19,6 +19,7 @@ import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import { emailStatus } from "../api/email-status"
 import { GoogleButton } from "./google-button"
 import { GoogleError } from "./google-error"
+import { noAutofill } from "@/lib/no-autofill"
 
 type Step = "email" | "password" | "create"
 
@@ -132,12 +133,12 @@ export function AuthForm({
         <Field data-invalid={(step === "email" && Boolean(error)) || undefined}>
           <FieldLabel htmlFor="auth-email">Email</FieldLabel>
           <Input
+            {...noAutofill("auth_email")}
             id="auth-email"
             type="email"
             inputMode="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            autoComplete="email"
             readOnly={step !== "email"}
             disabled={busy}
             aria-invalid={(step === "email" && Boolean(error)) || undefined}
@@ -161,10 +162,10 @@ export function AuthForm({
           <Field>
             <FieldLabel htmlFor="auth-name">Your name</FieldLabel>
             <Input
+              {...noAutofill("auth_name")}
               id="auth-name"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              autoComplete="name"
               disabled={busy}
               autoFocus
             />

@@ -42,6 +42,7 @@ import type {
   OwnerBookingInput,
   OwnerBookingResult,
 } from "@/types/owner-booking"
+import { noAutofill } from "@/lib/no-autofill"
 
 const FORM = "add-booking-form"
 const ANYONE = "any"
@@ -361,11 +362,11 @@ function BookingForm({
         <Field data-invalid={error("name")}>
           <FieldLabel htmlFor="add-name">Customer</FieldLabel>
           <Input
+            {...noAutofill("add_name")}
             id="add-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
             maxLength={BOOKING_RULES.maxCustomerName}
-            autoComplete="off"
             aria-invalid={error("name")}
           />
           {invalid === "name" && <FieldError>Add a name</FieldError>}
@@ -373,13 +374,13 @@ function BookingForm({
         <Field data-invalid={error("phone")}>
           <FieldLabel htmlFor="add-phone">Phone</FieldLabel>
           <Input
+            {...noAutofill("add_phone")}
             id="add-phone"
             type="tel"
             inputMode="tel"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
             placeholder="Optional"
-            autoComplete="off"
             aria-invalid={error("phone")}
           />
           {invalid === "phone" && (
@@ -389,6 +390,7 @@ function BookingForm({
         <Field data-invalid={error("note")}>
           <FieldLabel htmlFor="add-note">Note</FieldLabel>
           <Textarea
+            {...noAutofill("add_note")}
             id="add-note"
             value={note}
             onChange={(event) => setNote(event.target.value)}

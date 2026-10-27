@@ -55,6 +55,7 @@ import {
 } from "../api/actions"
 import { removeTeamMemberPhoto, setTeamMemberPhoto } from "../api/photo-actions"
 import { PhotoField } from "./photo-upload"
+import { noAutofill } from "@/lib/no-autofill"
 
 interface MemberRow {
   id: string
@@ -273,11 +274,11 @@ function MemberForm({
         <Field data-invalid={invalid || undefined}>
           <FieldLabel htmlFor="member-name">Name</FieldLabel>
           <Input
+            {...noAutofill("member_name")}
             id="member-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
             maxLength={80}
-            autoComplete="off"
             aria-invalid={invalid || undefined}
           />
           {invalid && <FieldError>Add a name</FieldError>}

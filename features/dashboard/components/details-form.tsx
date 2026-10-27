@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { updateBusinessDetails } from "../api/actions"
 import type { BusinessDetailsInput } from "../types"
+import { noAutofill } from "@/lib/no-autofill"
 
 type Invalid = "name" | "phone" | "website" | "seats" | null
 
@@ -90,11 +91,11 @@ export function DetailsForm({
         <Field data-invalid={invalid === "name" || undefined}>
           <FieldLabel htmlFor="details-name">Name</FieldLabel>
           <Input
+            {...noAutofill("details_name")}
             id="details-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
             maxLength={BOOKING_RULES.maxBusinessName}
-            autoComplete="organization"
             aria-invalid={invalid === "name" || undefined}
           />
           {invalid === "name" && <FieldError>Add the business name</FieldError>}
@@ -102,6 +103,7 @@ export function DetailsForm({
         <Field>
           <FieldLabel htmlFor="details-about">About</FieldLabel>
           <Textarea
+            {...noAutofill("details_about")}
             id="details-about"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
@@ -112,6 +114,7 @@ export function DetailsForm({
         <Field data-invalid={invalid === "phone" || undefined}>
           <FieldLabel htmlFor="details-phone">Phone</FieldLabel>
           <Input
+            {...noAutofill("details_phone")}
             id="details-phone"
             type="tel"
             inputMode="tel"
@@ -126,16 +129,17 @@ export function DetailsForm({
         <Field>
           <FieldLabel htmlFor="details-address">Address</FieldLabel>
           <Input
+            {...noAutofill("details_address")}
             id="details-address"
             value={address}
             onChange={(event) => setAddress(event.target.value)}
             maxLength={BOOKING_RULES.maxBusinessAddress}
-            autoComplete="street-address"
           />
         </Field>
         <Field data-invalid={invalid === "website" || undefined}>
           <FieldLabel htmlFor="details-website">Website</FieldLabel>
           <Input
+            {...noAutofill("details_website")}
             id="details-website"
             type="url"
             inputMode="url"

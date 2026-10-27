@@ -17,6 +17,7 @@ import type { CitySuggestion, Coordinates } from "../types"
 import { useDebounced } from "../utils/use-debounced"
 import { useSessionToken } from "../utils/use-session-token"
 import { SuggestionList } from "./suggestion-list"
+import { noAutofill } from "@/lib/no-autofill"
 
 export interface SearchArea {
   label: string
@@ -92,12 +93,12 @@ export function SearchAreaPanel({
             <SearchIcon />
           </InputGroupAddon>
           <InputGroupInput
+            {...noAutofill("city")}
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="City"
             aria-label="City"
-            autoComplete="off"
           />
         </InputGroup>
         {cities.length > 0 && (

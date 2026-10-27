@@ -66,6 +66,7 @@ import {
   updateAddonGroup,
 } from "../api/addon-actions"
 import type { AddonGroupInput, OwnerAddonGroup } from "../types"
+import { noAutofill } from "@/lib/no-autofill"
 
 const FORM = "extras-form"
 
@@ -366,6 +367,7 @@ function ExtrasForm({
         <Field data-invalid={invalid === "name" || undefined}>
           <FieldLabel htmlFor="extras-name">Name</FieldLabel>
           <Input
+            {...noAutofill("extras_name")}
             id="extras-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
@@ -380,6 +382,7 @@ function ExtrasForm({
             Question for customers
           </FieldLabel>
           <Input
+            {...noAutofill("extras_prompt")}
             id="extras-prompt"
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
@@ -442,6 +445,7 @@ function ExtrasForm({
                     )}
                   </div>
                   <Input
+                    {...noAutofill("option_name")}
                     id={`option-name-${option.key}`}
                     value={option.name}
                     onChange={(event) =>
@@ -457,6 +461,7 @@ function ExtrasForm({
                 </Field>
                 <Field>
                   <Input
+                    {...noAutofill("option_description")}
                     aria-label={`Option ${index + 1} description`}
                     value={option.description}
                     onChange={(event) =>
@@ -475,6 +480,7 @@ function ExtrasForm({
                     }
                   >
                     <Input
+                      {...noAutofill("option_price")}
                       aria-label={`Option ${index + 1} extra price`}
                       inputMode="decimal"
                       value={option.price}
