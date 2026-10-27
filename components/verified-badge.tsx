@@ -6,12 +6,15 @@ import { cn } from "@/lib/utils"
 // Lucide's badge-check seal outline, filled here so it reads as a badge even when small.
 const SEAL =
   "M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
-// How long the badge stays open after a tap, or after the page stops scrolling.
-const OPEN_MS = 2500
+// How long the badge stays open after a tap.
+const TAP_OPEN_MS = 2500
+// How long it stays open once the page stops scrolling.
+const SCROLL_OPEN_MS = 700
 
 // The blue verified seal with a white check, as on X and Instagram. Hovering
 // it, tapping it, or scrolling the page slides its word out beside it on a
-// light blue pill; it slides back once the page has been still for a moment.
+// light blue pill. After a scroll it slides back as soon as the page is still,
+// and at once when the page is back at the top.
 export function VerifiedBadge({
   label = "Verified",
   className,
@@ -21,15 +24,23 @@ export function VerifiedBadge({
 }) {
   const [open, setOpen] = useState(false)
   const timer = useRef<number | undefined>(undefined)
-  const show = useCallback(() => {
+  const show = useCallback((ms: number) => {
     setOpen(true)
     window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => setOpen(false), OPEN_MS)
+    timer.current = window.setTimeout(() => setOpen(false), ms)
   }, [])
   useEffect(() => {
-    window.addEventListener("scroll", show, { passive: true })
+    const onScroll = () => {
+      if (window.scrollY <= 0) {
+        window.clearTimeout(timer.current)
+        setOpen(false)
+        return
+      }
+      show(SCROLL_OPEN_MS)
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
     return () => {
-      window.removeEventListener("scroll", show)
+      window.removeEventListener("scroll", onScroll)
       window.clearTimeout(timer.current)
     }
   }, [show])
@@ -38,7 +49,7 @@ export function VerifiedBadge({
       type="button"
       aria-label={label}
       data-open={open || undefined}
-      onClick={show}
+      onClick={() => show(TAP_OPEN_MS)}
       className={cn(
         "group/verified inline-flex items-center rounded-full p-0.5 text-sm font-medium tracking-normal text-verified-foreground transition-[background-color,padding] duration-300 ease-out outline-none hover:bg-verified/15 hover:pr-2.5 focus-visible:ring-3 focus-visible:ring-ring/30 data-open:bg-verified/15 data-open:pr-2.5",
         className
