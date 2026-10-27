@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import { useMessages } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
+import { shareLink } from "@/lib/share-link"
 
 // The phone's share sheet, or the link copied where there is none.
 export function ShareButton({
@@ -16,17 +17,8 @@ export function ShareButton({
 }) {
   const m = useMessages()
   const share = async () => {
-    const url = window.location.href
-    try {
-      if (navigator.share) {
-        await navigator.share({ title, url })
-        return
-      }
-      await navigator.clipboard.writeText(url)
-      toast.success(m.page.linkCopied)
-    } catch {
-      // The visitor closed the share sheet.
-    }
+    const result = await shareLink({ title, url: window.location.href })
+    if (result === "copied") toast.success(m.page.linkCopied)
   }
   return (
     <Button

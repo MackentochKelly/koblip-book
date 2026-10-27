@@ -57,6 +57,7 @@ const en = {
     none: "No Google reviews yet.",
     seeMore: "See more reviews",
     seeAllOnGoogle: "See all reviews on Google",
+    order: "Most relevant reviews from",
     count: (n: number): string => (n === 1 ? "review" : "reviews"),
   },
   photos: {
@@ -176,6 +177,7 @@ const es: Messages = {
     none: "Aún no hay reseñas de Google.",
     seeMore: "Ver más reseñas",
     seeAllOnGoogle: "Ver todas las reseñas en Google",
+    order: "Reseñas más relevantes de",
     count: (n: number) => (n === 1 ? "reseña" : "reseñas"),
   },
   photos: {

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { ArrowRightIcon, ExternalLinkIcon } from "lucide-react"
 
+import { GoogleMapsCredit } from "@/components/google-maps-credit"
 import { useMessages } from "@/components/language-provider"
 import { Rating } from "@/components/rating"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -21,6 +22,18 @@ import type { PageReview } from "../types"
 
 // How many reviews the page shows before "See more reviews".
 const REVIEWS_ON_PAGE = 2
+
+// How the reviews are chosen, with Google's logo: Google asks for both
+// (developers.google.com/maps/documentation/places/web-service/policies).
+function ReviewSource() {
+  const m = useMessages()
+  return (
+    <p className="flex flex-wrap items-center text-xs text-muted-foreground">
+      {m.reviews.order}
+      <GoogleMapsCredit />
+    </p>
+  )
+}
 
 // The reviews as a list, each with who wrote it, as Google asks.
 function ReviewList({
@@ -130,6 +143,7 @@ export function BusinessReviews({
   const more = reviews.length > REVIEWS_ON_PAGE
   return (
     <div className="flex flex-col gap-4">
+      <ReviewSource />
       <ReviewList reviews={reviews.slice(0, REVIEWS_ON_PAGE)} columns clamp />
       {more ? (
         <Button
@@ -153,6 +167,7 @@ export function BusinessReviews({
                 {m.reviews.count(reviewCount)}
               </DialogDescription>
             )}
+            <ReviewSource />
           </DialogHeader>
           <div className="-mx-6 min-h-0 flex-1 overflow-y-auto px-6">
             <ReviewList reviews={reviews} columns={false} clamp={false} />

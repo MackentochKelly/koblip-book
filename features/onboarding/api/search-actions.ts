@@ -1,5 +1,6 @@
 "use server"
 
+import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import { autocomplete } from "./places-autocomplete"
 import type { BusinessSuggestion, CitySuggestion, Coordinates } from "../types"
 
@@ -38,7 +39,10 @@ function validInput(input: unknown): input is string {
     return false
   }
   const trimmed = input.trim()
-  return trimmed.length >= 2 && trimmed.length <= 100
+  return (
+    trimmed.length >= ONBOARDING_RULES.minInput &&
+    trimmed.length <= ONBOARDING_RULES.maxInput
+  )
 }
 
 // Business search for the home page box. Never throws: a Google failure
@@ -64,17 +68,19 @@ export async function searchBusinesses({
     body.locationBias = {
       circle: {
         center: { latitude: near.latitude, longitude: near.longitude },
-        radius: 50000.0,
+        radius: ONBOARDING_RULES.biasRadiusMeters,
       },
     }
   }
   try {
     const predictions = await autocomplete(body)
-    return predictions.slice(0, 5).map((prediction) => ({
-      placeId: prediction.placeId,
-      name: prediction.mainText,
-      address: prediction.secondaryText,
-    }))
+    return predictions
+      .slice(0, ONBOARDING_RULES.maxResults)
+      .map((prediction) => ({
+        placeId: prediction.placeId,
+        name: prediction.mainText,
+        address: prediction.secondaryText,
+      }))
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
     return []
@@ -99,11 +105,13 @@ export async function searchCities({
       languageCode: "en",
       includedPrimaryTypes: ["(cities)"],
     })
-    return predictions.slice(0, 5).map((prediction) => ({
-      placeId: prediction.placeId,
-      name: prediction.mainText,
-      region: prediction.secondaryText,
-    }))
+    return predictions
+      .slice(0, ONBOARDING_RULES.maxResults)
+      .map((prediction) => ({
+        placeId: prediction.placeId,
+        name: prediction.mainText,
+        region: prediction.secondaryText,
+      }))
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
     return []

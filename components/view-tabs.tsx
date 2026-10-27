@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 export interface ViewTab<T extends string> {
   id: T
   label: string
+  icon?: React.ReactNode
 }
 
 // The app's one row of tabs. A row that runs out of room scrolls sideways
@@ -43,6 +44,7 @@ export function ViewTabs<T extends string>({
         >
           {views.map((view) => (
             <TabsTrigger key={view.id} value={view.id}>
+              {view.icon}
               {view.label}
             </TabsTrigger>
           ))}

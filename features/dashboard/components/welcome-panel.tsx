@@ -13,6 +13,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
+import { shareLink } from "@/lib/share-link"
 
 // Shown once, right after a new owner gets their business: the page link,
 // ready to share.
@@ -26,16 +27,8 @@ export function WelcomePanel({ slug, name }: { slug: string; name: string }) {
 
   const share = async () => {
     const url = new URL(path, window.location.origin).toString()
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: name, url })
-        return
-      }
-      await navigator.clipboard.writeText(url)
-      toast.success("Link copied")
-    } catch {
-      // The owner closed the share sheet.
-    }
+    const result = await shareLink({ title: name, url })
+    if (result === "copied") toast.success("Link copied")
   }
 
   return (

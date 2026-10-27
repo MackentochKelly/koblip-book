@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 
+import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
+
 vi.mock("server-only", () => ({}))
 
 const { autocompleteMock } = vi.hoisted(() => ({ autocompleteMock: vi.fn() }))
@@ -62,7 +64,7 @@ test("searchBusinesses sends locationBias only with valid coordinates", async ()
     locationBias: {
       circle: {
         center: { latitude: 18.47, longitude: -69.93 },
-        radius: 50000.0,
+        radius: ONBOARDING_RULES.biasRadiusMeters,
       },
     },
   })
@@ -83,7 +85,7 @@ test("searchBusinesses sends locationBias only with valid coordinates", async ()
 test("searchBusinesses rejects bad input and bad tokens", async () => {
   autocompleteMock.mockResolvedValue([prediction("ChIJ1", "A")])
 
-  for (const input of ["", "a", "x".repeat(101)]) {
+  for (const input of ["", "a", "x".repeat(ONBOARDING_RULES.maxInput + 1)]) {
     await expect(
       searchBusinesses({ input, sessionToken: TOKEN })
     ).resolves.toEqual([])
@@ -98,13 +100,15 @@ test("searchBusinesses rejects bad input and bad tokens", async () => {
 
 test("searchBusinesses caps at 5 and returns [] on Google errors", async () => {
   autocompleteMock.mockResolvedValue(
-    Array.from({ length: 7 }, (_, i) => prediction(`ChIJ${i}`, `Shop ${i}`))
+    Array.from({ length: ONBOARDING_RULES.maxResults + 2 }, (_, i) =>
+      prediction(`ChIJ${i}`, `Shop ${i}`)
+    )
   )
   const results = await searchBusinesses({
     input: "shop",
     sessionToken: TOKEN,
   })
-  expect(results).toHaveLength(5)
+  expect(results).toHaveLength(ONBOARDING_RULES.maxResults)
 
   const error = vi.spyOn(console, "error").mockImplementation(() => {})
   autocompleteMock.mockRejectedValueOnce(new Error("quota exploded"))

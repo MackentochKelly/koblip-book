@@ -19,6 +19,7 @@
   "dependencies": {
     "@base-ui/react": "^1.9.0",
     "@libsql/client": "^0.18.0",
+    "@paper-design/shaders-react": "^0.0.82",
     "@vis.gl/react-google-maps": "^1.10.1",
     "better-auth": "^1.7.14",
     "class-variance-authority": "^0.7.1",

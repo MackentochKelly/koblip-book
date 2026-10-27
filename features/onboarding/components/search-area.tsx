@@ -9,19 +9,14 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
+import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
+import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import { cityCenter, searchCities } from "../api/search-actions"
 import type { CitySuggestion, Coordinates } from "../types"
 import { useDebounced } from "../utils/use-debounced"
 import { useSessionToken } from "../utils/use-session-token"
+import { SuggestionList } from "./suggestion-list"
 
 export interface SearchArea {
   label: string
@@ -46,11 +41,11 @@ export function SearchAreaPanel({
   const [cities, setCities] = useState<CitySuggestion[]>([])
   const [picking, setPicking] = useState<string | null>(null)
   const { current: sessionToken, renew } = useSessionToken()
-  const needle = useDebounced(query.trim(), 250)
+  const needle = useDebounced(query.trim(), ONBOARDING_RULES.debounceMs)
 
   useEffect(() => {
     let current = true
-    if (needle.length < 2) {
+    if (needle.length < ONBOARDING_RULES.minInput) {
       queueMicrotask(() => current && setCities([]))
       return () => {
         current = false
@@ -106,28 +101,19 @@ export function SearchAreaPanel({
           />
         </InputGroup>
         {cities.length > 0 && (
-          <ItemGroup className="gap-1">
-            {cities.map((city) => (
-              <Item
-                key={city.placeId}
-                size="sm"
-                render={
-                  <button type="button" onClick={() => void pick(city)} />
-                }
-                className="text-left hover:bg-muted"
-              >
-                <ItemMedia variant="icon">
-                  {picking === city.placeId ? <Spinner /> : <MapPinIcon />}
-                </ItemMedia>
-                <ItemContent>
-                  <ItemTitle>{city.name}</ItemTitle>
-                  {city.region && (
-                    <ItemDescription>{city.region}</ItemDescription>
-                  )}
-                </ItemContent>
-              </Item>
-            ))}
-          </ItemGroup>
+          <SuggestionList
+            items={cities.map((city) => ({
+              id: city.placeId,
+              title: city.name,
+              description: city.region,
+            }))}
+            busyId={picking}
+            onPick={(id) => {
+              const city = cities.find((found) => found.placeId === id)
+              if (city) void pick(city)
+            }}
+            icon={<MapPinIcon />}
+          />
         )}
       </div>
     </ResponsivePanel>

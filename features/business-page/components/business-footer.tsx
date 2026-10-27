@@ -1,3 +1,4 @@
+import { GoogleMapsCredit } from "@/components/google-maps-credit"
 import { messagesFor } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
 
@@ -18,8 +19,9 @@ export function BusinessFooter({
         © {new Date().getFullYear()} {name}. {m.rights}
       </p>
       {fromGoogle && (
-        <p>
-          {m.fromGoogle} <span translate="no">Google Maps</span>.
+        <p className="flex flex-wrap items-center justify-center">
+          {m.fromGoogle}
+          <GoogleMapsCredit />
         </p>
       )}
       <p>

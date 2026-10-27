@@ -14,9 +14,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
+import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import { emailStatus } from "../api/email-status"
-
-const MIN_PASSWORD = 8
 
 type Step = "email" | "password" | "create"
 
@@ -56,8 +55,8 @@ export function AuthForm({
       setError("Add your name")
       return
     }
-    if (password.length < MIN_PASSWORD) {
-      setError(`Use at least ${MIN_PASSWORD} characters`)
+    if (password.length < ONBOARDING_RULES.minPasswordLength) {
+      setError(`Use at least ${ONBOARDING_RULES.minPasswordLength} characters`)
       return
     }
     const { error: failed } =
@@ -120,9 +119,15 @@ export function AuthForm({
           />
           {step !== "email" && (
             <FieldDescription>
-              <button type="button" onClick={changeEmail}>
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="dark:text-foreground"
+                onClick={changeEmail}
+              >
                 Use another email
-              </button>
+              </Button>
             </FieldDescription>
           )}
           {step === "email" && error && <FieldError>{error}</FieldError>}
