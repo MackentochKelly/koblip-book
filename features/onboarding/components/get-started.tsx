@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
+import { motion } from "motion/react"
 import { useRouter } from "next/navigation"
 import {
   ArrowLeftIcon,
@@ -14,6 +15,11 @@ import {
   XIcon,
 } from "lucide-react"
 
+import {
+  glassClassName,
+  glassEdgeClassName,
+  glassFrameClassName,
+} from "@/components/glass-frame"
 import { ViewTabs, type ViewTab } from "@/components/view-tabs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -32,8 +38,10 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { AuthForm } from "@/features/owner-auth/components/auth-form"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
+import { cn } from "@/lib/utils"
 import {
   prepareBusiness,
   prepareBusinessFromLink,
@@ -63,6 +71,11 @@ const ERRORS = {
 
 type Mode = "search" | "link"
 
+// On a phone the search box grows into a full screen search when tapped
+// (Motion layout animation: motion.dev/docs/react-layout-animations).
+const GROW = { type: "spring", bounce: 0, duration: 0.4 } as const
+const MotionCard = motion.create(Card)
+
 const MODES: ViewTab<Mode>[] = [
   { id: "search", label: "Search", icon: <SearchIcon /> },
   { id: "link", label: "Maps link", icon: <LinkIcon /> },
@@ -74,9 +87,14 @@ const MODES: ViewTab<Mode>[] = [
 export function GetStarted({
   signedIn,
   claim,
+  resume = null,
+  hint = true,
 }: {
   signedIn: boolean
   claim: (slug: string) => Promise<ClaimResult>
+  // Back from Google login: the page to make the owner's.
+  resume?: string | null
+  hint?: boolean
 }) {
   const router = useRouter()
   const [mode, setMode] = useState<Mode>("search")
@@ -84,6 +102,60 @@ export function GetStarted({
   const [prepared, setPrepared] = useState<PreparedBusiness | null>(null)
   const [error, setError] = useState("")
   const [finishing, setFinishing] = useState(false)
+  const isMobile = useIsMobile()
+  const [expanded, setExpanded] = useState(false)
+  // The box's place and corners on the page, kept while it is full screen.
+  const [rest, setRest] = useState({ height: 0, radius: 0 })
+  const frameRef = useRef<HTMLDivElement>(null)
+  const open = expanded && isMobile && !picked && mode === "search"
+  const [resuming, setResuming] = useState(Boolean(resume && signedIn))
+
+  // Back from Google: make the page the owner's and open its dashboard.
+  useEffect(() => {
+    if (!resume || !signedIn) return
+    let current = true
+    void claim(resume)
+      .catch(() => null)
+      .then((claimed) => {
+        if (!current) return
+        if (claimed?.ok) {
+          router.replace(`/dashboard/${claimed.businessId}?welcome=1`)
+          return
+        }
+        setResuming(false)
+        router.replace("/")
+      })
+    return () => {
+      current = false
+    }
+  }, [resume, signedIn, claim, router])
+
+  const expand = () => {
+    const frame = frameRef.current
+    if (!isMobile || !frame || expanded) return
+    setRest({
+      height: frame.offsetHeight,
+      radius: parseFloat(getComputedStyle(frame).borderTopLeftRadius),
+    })
+    setExpanded(true)
+  }
+
+  const collapse = () => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
+    setExpanded(false)
+  }
+
+  // The page behind the full screen search stays still.
+  useEffect(() => {
+    if (!open) return
+    const root = document.documentElement
+    root.style.overflow = "hidden"
+    return () => {
+      root.style.overflow = ""
+    }
+  }, [open])
 
   const choose = (next: Picked) => {
     setPicked(next)
@@ -131,31 +203,88 @@ export function GetStarted({
           value={mode}
           onChange={setMode}
           ariaLabel="How to find your business"
-          listClassName="h-11! border border-background/30 *:h-full bg-background/35 p-1 dark:bg-background/60 backdrop-blur-md"
+          listClassName={cn(
+            glassClassName,
+            glassEdgeClassName,
+            "h-11! border p-1 *:h-full"
+          )}
         />
       )}
-      {/* A frosted glass frame around the card, like Fresha's: it blurs
-          the gradient behind it and draws a faint edge; no drop shadow. */}
-      <div className="w-full rounded-[calc(var(--radius-4xl)+--spacing(1.5))] p-1.5 inset-ring-6 inset-ring-foreground/8 backdrop-blur-md backdrop-saturate-(--glass-saturate)">
-        <Card className="text-left shadow-none ring-0">
-          <CardContent>{content}</CardContent>
-        </Card>
+      {/* The shared glass frame around the card. While full screen,
+          an empty space of its size keeps the page still. */}
+      <div
+        className="w-full"
+        style={open ? { height: rest.height } : undefined}
+      >
+        <motion.div
+          ref={frameRef}
+          layout
+          transition={GROW}
+          style={
+            open
+              ? { borderRadius: 0 }
+              : rest.radius
+                ? { borderRadius: rest.radius }
+                : undefined
+          }
+          className={cn(
+            glassFrameClassName,
+            open && "fixed inset-0 z-50 h-dvh bg-background p-0 inset-ring-0"
+          )}
+        >
+          <MotionCard
+            layout
+            transition={GROW}
+            className={cn(
+              "text-left shadow-none ring-0",
+              open && "h-full rounded-none"
+            )}
+          >
+            <CardContent className={cn(open && "flex min-h-0 flex-1 flex-col")}>
+              <motion.div
+                layout="position"
+                transition={GROW}
+                className={cn(open && "flex min-h-0 flex-1 flex-col")}
+              >
+                {content}
+              </motion.div>
+            </CardContent>
+          </MotionCard>
+        </motion.div>
       </div>
-      {!picked && (
+      {/* The home page's note; the dashboard hides it. */}
+      {!picked && hint && (
         <p className="flex items-center gap-2 text-sm font-medium">
           <CornerLeftUpIcon className="size-4" />
-          Try it with your business
+          Free to try, no card needed
         </p>
       )}
     </div>
   )
+
+  if (resuming) {
+    return box(
+      <Button size="lg" disabled className="w-full">
+        <Spinner data-icon="inline-start" />
+        Building your page…
+      </Button>
+    )
+  }
 
   if (!picked) {
     return box(
       mode === "link" ? (
         <PasteLink onChoose={choose} />
       ) : (
-        <FindBusiness onChoose={choose} />
+        <FindBusiness
+          onChoose={(next) => {
+            setExpanded(false)
+            choose(next)
+          }}
+          expanded={open}
+          onExpand={expand}
+          onCollapse={collapse}
+        />
       )
     )
   }
@@ -204,7 +333,12 @@ export function GetStarted({
         </Button>
       ) : (
         <>
-          <AuthForm onSignedIn={() => finish()} disabled={finishing} />
+          <AuthForm
+            onSignedIn={() => finish()}
+            disabled={finishing}
+            googleNext={ready ? `/?claim=${ready.slug}` : undefined}
+            googleReady={Boolean(ready)}
+          />
           <Button variant="ghost" onClick={back} disabled={finishing}>
             Not your business?
           </Button>
@@ -215,7 +349,17 @@ export function GetStarted({
 }
 
 // Search as you type, near the owner or a city they pick.
-function FindBusiness({ onChoose }: { onChoose: (picked: Picked) => void }) {
+function FindBusiness({
+  onChoose,
+  expanded,
+  onExpand,
+  onCollapse,
+}: {
+  onChoose: (picked: Picked) => void
+  expanded: boolean
+  onExpand: () => void
+  onCollapse: () => void
+}) {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<BusinessSuggestion[] | null>(null)
   const [searching, setSearching] = useState(false)
@@ -299,8 +443,18 @@ function FindBusiness({ onChoose }: { onChoose: (picked: Picked) => void }) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div>
+    <div className={cn("flex flex-col gap-3", expanded && "min-h-0 flex-1")}>
+      <div className="flex items-center gap-2">
+        {expanded && (
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label="Close search"
+            onClick={onCollapse}
+          >
+            <ArrowLeftIcon />
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -326,9 +480,12 @@ function FindBusiness({ onChoose }: { onChoose: (picked: Picked) => void }) {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          onFocus={askLocation}
+          onFocus={() => {
+            askLocation()
+            onExpand()
+          }}
           placeholder="Your business name"
-          className="text-base"
+          className="text-base [&::-webkit-search-cancel-button]:appearance-none"
           aria-label="Your business name"
           autoComplete="off"
           enterKeyHint="search"
@@ -345,23 +502,35 @@ function FindBusiness({ onChoose }: { onChoose: (picked: Picked) => void }) {
           </InputGroupAddon>
         )}
       </InputGroup>
-      {results && results.length === 0 && !searching && (
-        <p className="px-1 text-sm text-muted-foreground">No business found</p>
-      )}
-      {results && results.length > 0 && (
-        <SuggestionList
-          items={results.map((business) => ({
-            id: business.placeId,
-            title: business.name,
-            description: business.address,
-          }))}
-          onPick={(id) => {
-            const business = results.find((found) => found.placeId === id)
-            if (business) pick(business)
-          }}
-          icon={<MapPinIcon />}
-        />
-      )}
+      <div
+        className={cn(
+          expanded &&
+            "-mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-1"
+        )}
+      >
+        {results && results.length === 0 && !searching && (
+          <p className="px-1 text-sm text-muted-foreground">
+            No business found
+          </p>
+        )}
+        {results && results.length > 0 && (
+          <SuggestionList
+            items={results.map((business) => ({
+              id: business.placeId,
+              title: business.name,
+              description: business.address,
+            }))}
+            onPick={(id) => {
+              const business = results.find((found) => found.placeId === id)
+              if (business) pick(business)
+            }}
+            icon={<MapPinIcon />}
+            // Full screen: the Google Maps logo sits at the bottom left.
+            className={cn(expanded && "flex-1")}
+            creditClassName={expanded ? "mt-auto self-start" : undefined}
+          />
+        )}
+      </div>
       <SearchAreaPanel
         open={areaOpen}
         onClose={() => setAreaOpen(false)}

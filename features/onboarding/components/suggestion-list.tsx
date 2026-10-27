@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { GoogleMapsCredit } from "@/components/google-maps-credit"
+import { cn } from "@/lib/utils"
 
 export interface Suggestion {
   id: string
@@ -26,14 +27,18 @@ export function SuggestionList({
   busyId = null,
   onPick,
   icon,
+  className,
+  creditClassName = "self-end",
 }: {
   items: Suggestion[]
   busyId?: string | null
   onPick: (id: string) => void
   icon: ReactNode
+  className?: string
+  creditClassName?: string
 }) {
   return (
-    <ItemGroup className="gap-1">
+    <ItemGroup className={cn("gap-1", className)}>
       {items.map((item) => (
         <Item
           key={item.id}
@@ -54,7 +59,7 @@ export function SuggestionList({
           </ItemContent>
         </Item>
       ))}
-      <GoogleMapsCredit className="self-end" />
+      <GoogleMapsCredit className={creditClassName} />
     </ItemGroup>
   )
 }

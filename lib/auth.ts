@@ -13,6 +13,18 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: ONBOARDING_RULES.minPasswordLength,
   },
+  // Google login (better-auth.com/docs/authentication/google): the keys come
+  // from Google Cloud > Google Auth Platform > Clients. The redirect URI
+  // there is <BETTER_AUTH_URL>/api/auth/callback/google.
+  socialProviders:
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          },
+        }
+      : undefined,
   advanced: { database: { generateId: () => crypto.randomUUID() } },
   plugins: [nextCookies()],
 })

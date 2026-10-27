@@ -16,7 +16,7 @@ export default async function BusinessDashboardLayout({
   return (
     <DashboardShell
       business={{ id: business.id, slug: business.slug, name: business.name }}
-      owner={{ name: owner.name, email: owner.email }}
+      owner={{ name: owner.name, email: owner.email, image: owner.image }}
     >
       {children}
       <Suspense>

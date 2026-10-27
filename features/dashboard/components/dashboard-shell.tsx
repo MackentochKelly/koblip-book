@@ -1,29 +1,18 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import {
   CalendarDaysIcon,
   ClockIcon,
   ContactIcon,
   ExternalLinkIcon,
-  LogOutIcon,
   ScissorsIcon,
   SettingsIcon,
   UsersIcon,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   Sidebar,
   SidebarContent,
@@ -37,8 +26,8 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
+import { AccountMenu } from "./account-menu"
 
 const NAV = [
   { path: "", label: "Bookings", icon: CalendarDaysIcon },
@@ -57,11 +46,10 @@ export function DashboardShell({
   children,
 }: {
   business: { id: string; slug: string; name: string }
-  owner: { name: string; email: string }
+  owner: { name: string; email: string; image: string | null }
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const router = useRouter()
   const base = `/dashboard/${business.id}`
   const items = NAV.map((item) => ({
     ...item,
@@ -70,12 +58,6 @@ export function DashboardShell({
       ? pathname.startsWith(base + item.path)
       : pathname === base,
   }))
-  const signOut = async () => {
-    await authClient.signOut()
-    router.replace("/")
-    router.refresh()
-  }
-
   return (
     <TooltipProvider>
       <SidebarProvider>
@@ -126,31 +108,7 @@ export function DashboardShell({
               View page
               <ExternalLinkIcon data-icon="inline-end" />
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button variant="ghost" size="icon" aria-label="Account" />
-                }
-              >
-                <Avatar size="sm">
-                  <AvatarFallback>
-                    {owner.name.trim().charAt(0).toUpperCase() || "?"}
-                  </AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel className="truncate">
-                    {owner.email}
-                  </DropdownMenuLabel>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => void signOut()}>
-                  <LogOutIcon />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <AccountMenu owner={owner} />
           </header>
           <div className="mx-auto w-full max-w-3xl p-4 pb-28 md:p-8">
             {children}

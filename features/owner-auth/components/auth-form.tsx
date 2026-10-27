@@ -10,24 +10,31 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import { emailStatus } from "../api/email-status"
+import { GoogleButton } from "./google-button"
 
 type Step = "email" | "password" | "create"
 
 // Email first: an existing account asks for its password, a new email asks
 // for a name and a new password. One form for both, no sign-up page.
-// After it, `onSignedIn` runs, or the screen opens `next`.
+// After it, `onSignedIn` runs, or the screen opens `next`. Google first:
+// it leaves the page and comes back to `googleNext` (default `next`).
 export function AuthForm({
   next = "/dashboard",
+  googleNext = next,
+  googleReady = true,
   onSignedIn,
   disabled = false,
 }: {
   next?: string
+  googleNext?: string
+  googleReady?: boolean
   onSignedIn?: () => Promise<void>
   disabled?: boolean
 }) {
@@ -104,6 +111,17 @@ export function AuthForm({
   return (
     <form onSubmit={(event) => void submit(event)} noValidate>
       <FieldGroup>
+        {step === "email" && (
+          <>
+            <GoogleButton
+              callbackURL={googleNext}
+              disabled={busy || !googleReady}
+            />
+            <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
+              or
+            </FieldSeparator>
+          </>
+        )}
         <Field data-invalid={(step === "email" && Boolean(error)) || undefined}>
           <FieldLabel htmlFor="auth-email">Email</FieldLabel>
           <Input

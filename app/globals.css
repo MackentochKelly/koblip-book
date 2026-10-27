@@ -4,13 +4,36 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* A frosted menu's surface (dropdowns, selects): the popover colour at
+   --menu-glass, like Koblip Sales. shadcn's translucent preset uses 70%. */
+@utility bg-menu-glass {
+  background-color: color-mix(
+    in oklab,
+    var(--popover) var(--menu-glass, 70%),
+    transparent
+  );
+}
+
 @theme inline {
+    /* The see-through glass for small pieces on the moving gradient (the
+       Meta badge, the Search / Maps link switch, the header buttons):
+       bg-glass border-glass-edge backdrop-blur-md. The page colour at
+       --glass-fill (35% light, 30% dark). */
+    --color-glass: color-mix(in oklab, var(--background) var(--glass-fill), transparent);
+    /* The edge of every glass piece and every frosted menu (--glass-edge):
+       always a light line. Use border-glass-edge / ring-glass-edge. */
+    --color-glass-edge: var(--glass-edge);
+    --color-glass-frame-edge: var(--glass-frame-edge);
+    --color-google-button: var(--google-button);
+    --color-google-button-border: var(--google-button-border);
+    --color-google-button-foreground: var(--google-button-foreground);
     --color-warning: var(--warning);
     --color-verified: var(--verified);
     --color-verified-foreground: var(--verified-foreground);
     --font-heading: var(--font-sans);
     --font-display: var(--font-display);
     --color-hero-foreground: var(--hero-foreground);
+    --color-hero-marker-foreground: var(--hero-marker-foreground);
     --font-serif: var(--font-serif);
     /* The home title on phones: grows with the screen, as big as fits on
        two lines (36px at the smallest, 48px at most). */
@@ -85,10 +108,24 @@
     --chart-4: oklch(0.457 0.24 277.023);
     --chart-5: oklch(0.398 0.195 277.366);
     --hero-accent: oklch(0.833 0.145 321.434);
+    /* The home marker on "Google Maps": Google Maps blue (#1A73E8), white
+       words on it. */
+    --hero-marker: #1a73e8;
+    --hero-marker-foreground: #ffffff;
+    /* "Continue with Google": Google's own button colours
+       (developers.google.com/identity/branding-guidelines). */
+    --google-button: #ffffff;
+    --google-button-border: #747775;
+    --google-button-foreground: #1f1f1f;
     --hero-foreground: color-mix(in oklch, var(--foreground) 70%, var(--primary));
     /* How much a glass frame boosts the colours behind it. Fresha uses 4.5
        on a pale page; our gradient is already strong, so far less. */
     --glass-saturate: 1.5;
+    --glass-fill: 35%;
+    --glass-edge: color-mix(in oklab, var(--background) 30%, transparent);
+    --glass-frame-edge: color-mix(in oklab, var(--foreground) 8%, transparent);
+    /* How solid the frosted menus are; same as Koblip Sales. */
+    --menu-glass: 40%;
     --radius: 0.625rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
@@ -101,6 +138,10 @@
 }
 
 .dark {
+    --glass-fill: 30%;
+    /* On dark glass a dark edge disappears: a faint light line instead. */
+    --glass-edge: color-mix(in oklab, var(--foreground) 15%, transparent);
+    --glass-frame-edge: color-mix(in oklab, var(--foreground) 8%, transparent);
     --warning: oklch(0.828 0.189 84.429);
     --verified: #1d9bf0;
     --verified-foreground: #b5d4f4;
@@ -128,6 +169,13 @@
     --chart-4: oklch(0.457 0.24 277.023);
     --chart-5: oklch(0.398 0.195 277.366);
     --hero-accent: oklch(0.833 0.145 321.434);
+    /* The home marker on "Google Maps": Google Maps blue (#1A73E8), white
+       words on it. */
+    --hero-marker: #1a73e8;
+    --hero-marker-foreground: #ffffff;
+    --google-button: #131314;
+    --google-button-border: #8e918f;
+    --google-button-foreground: #e3e3e3;
     --hero-foreground: color-mix(in oklch, var(--foreground) 85%, var(--chart-1));
     --sidebar: oklch(0.205 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
