@@ -29,4 +29,4 @@ export interface OwnerCustomer {
 export interface HoursRow { weekday: number; opensAt: string; closesAt: string }
 export interface ServiceInput { name: string; description: string | null; durationMinutes: number; priceMinor: number | null }
 export interface ServiceSuggestion { name: string; description: string | null; durationMinutes: number }
-export interface BusinessDetailsInput { description: string | null; phone: string | null; website: string | null; seats: number }
+export interface BusinessDetailsInput { name: string; address: string | null; description: string | null; phone: string | null; website: string | null; seats: number }

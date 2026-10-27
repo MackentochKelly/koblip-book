@@ -5,4 +5,7 @@ export const ONBOARDING_RULES = {
   minInput: 2,
   maxInput: 100,
   minPasswordLength: 8,
+  // An import nobody owns and nobody confirmed older than this (hours) is
+  // deleted on the next prepareBusiness call.
+  unclaimedImportHours: 24,
 } as const

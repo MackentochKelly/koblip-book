@@ -14,6 +14,10 @@ let dir: string
 let seenFieldMask = ""
 
 const detailsPayload = {
+  rating: 4.7,
+  userRatingCount: 120,
+  googleMapsUri: "https://maps.google.com/?cid=1",
+  location: { latitude: 18.48, longitude: -69.94 },
   photos: [
     {
       name: "places/ChIJ1/photos/photoA",
@@ -95,11 +99,20 @@ afterAll(() => {
   rmSync(dir, { recursive: true, force: true })
 })
 
-test("asks for photos, reviews and amenities in one field mask", async () => {
+test("asks for photos, reviews, amenities and live fields in one field mask", async () => {
   await getBusinessPage("google-shop")
   expect(seenFieldMask).toBe(
-    "photos,reviews,accessibilityOptions,parkingOptions,paymentOptions,allowsDogs,goodForChildren,restroom"
+    "photos,reviews,rating,userRatingCount,googleMapsUri,location,accessibilityOptions,parkingOptions,paymentOptions,allowsDogs,goodForChildren,restroom"
   )
+})
+
+test("fills the page business from the live Details response", async () => {
+  const data = await getBusinessPage("google-shop")
+  expect(data?.business.rating).toBe(4.7)
+  expect(data?.business.reviewCount).toBe(120)
+  expect(data?.business.mapsUrl).toBe("https://maps.google.com/?cid=1")
+  expect(data?.business.latitude).toBe(18.48)
+  expect(data?.business.longitude).toBe(-69.94)
 })
 
 test("maps reviews and skips the one with no text", async () => {
@@ -142,4 +155,9 @@ test("returns no extras when Google fails, and the page still loads", async () =
   expect(data?.reviews).toEqual([])
   expect(data?.amenities).toEqual([])
   expect(data?.photos).toEqual([])
+  expect(data?.business.rating).toBeNull()
+  expect(data?.business.reviewCount).toBeNull()
+  expect(data?.business.mapsUrl).toBeNull()
+  expect(data?.business.latitude).toBeNull()
+  expect(data?.business.longitude).toBeNull()
 })

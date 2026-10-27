@@ -36,6 +36,15 @@ export async function updateBusinessDetails(
   if (!owned) {
     return { ok: false, error: "not_found" }
   }
+  const name = input.name.trim()
+  if (name === "" || name.length > BOOKING_RULES.maxBusinessName) {
+    return invalid()
+  }
+  const address =
+    input.address === null ? null : input.address.trim() || null
+  if (address !== null && address.length > BOOKING_RULES.maxBusinessAddress) {
+    return invalid()
+  }
   const description =
     input.description === null ? null : input.description.trim() || null
   if (description !== null && description.length > BOOKING_RULES.maxBusinessDescription) {
@@ -71,7 +80,33 @@ export async function updateBusinessDetails(
   }
   await db
     .update(businesses)
-    .set({ description, phone, website, seats: input.seats })
+    .set({
+      name,
+      address,
+      description,
+      phone,
+      website,
+      seats: input.seats,
+      detailsConfirmedAt: Date.now(),
+    })
+    .where(eq(businesses.id, owned.business.id))
+  revalidateBusiness(owned.business.slug)
+  return { ok: true }
+}
+
+// The owner confirms the imported details are theirs. From then on the
+// name, phone, address, website, category, status, timezone and hours are
+// the owner's own details, not Google's.
+export async function confirmBusinessDetails(
+  businessId: string
+): Promise<ActionResult> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) {
+    return { ok: false, error: "not_found" }
+  }
+  await db
+    .update(businesses)
+    .set({ detailsConfirmedAt: Date.now() })
     .where(eq(businesses.id, owned.business.id))
   revalidateBusiness(owned.business.slug)
   return { ok: true }
@@ -116,6 +151,10 @@ export async function saveHours(
         }))
       )
     }
+    await tx
+      .update(businesses)
+      .set({ detailsConfirmedAt: Date.now() })
+      .where(eq(businesses.id, owned.business.id))
   })
   revalidateBusiness(owned.business.slug)
   return { ok: true }

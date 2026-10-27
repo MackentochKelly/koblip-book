@@ -10,6 +10,7 @@ import { getSession } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { businesses } from "@/lib/db/schema"
 import type { PreparedBusiness } from "../types"
+import { purgeUnclaimedImports } from "./purge-unclaimed"
 
 const PLACE_ID_PATTERN = /^[A-Za-z0-9_-]{10,300}$/
 
@@ -61,6 +62,7 @@ export async function prepareBusiness({
   ) {
     return { ok: false, error: "invalid" }
   }
+  await purgeUnclaimedImports()
   let slug: string
   try {
     slug = await importPlaceById(placeId, sessionToken)
@@ -86,6 +88,7 @@ export async function prepareBusinessFromLink({
   if (trimmed.length < 1 || trimmed.length > 2000) {
     return { ok: false, error: "invalid" }
   }
+  await purgeUnclaimedImports()
   let slug: string
   try {
     slug = await importPlace(trimmed)

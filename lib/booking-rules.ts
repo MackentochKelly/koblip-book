@@ -10,6 +10,8 @@ export const BOOKING_RULES = {
   maxSeats: 20,
   maxServiceName: 80,
   maxServiceDescription: 300,
+  maxBusinessName: 120,
+  maxBusinessAddress: 300,
   maxBusinessDescription: 1000,
   maxCustomerName: 80,
   maxPriceMinor: 10_000_000,

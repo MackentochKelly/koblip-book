@@ -9,8 +9,6 @@ function place(overrides: Partial<GooglePlace> = {}): GooglePlace {
     formattedAddress: "Av. Churchill, Santo Domingo",
     internationalPhoneNumber: "+18095550134",
     websiteUri: "https://example.com",
-    rating: 4.7,
-    userRatingCount: 120,
     primaryTypeDisplayName: { text: "Barber shop" },
     regularOpeningHours: {
       periods: [
@@ -21,10 +19,7 @@ function place(overrides: Partial<GooglePlace> = {}): GooglePlace {
       ],
     },
     timeZone: { id: "America/Santo_Domingo" },
-    location: { latitude: 18.48, longitude: -69.94 },
-    googleMapsUri: "https://maps.google.com/?cid=1",
     businessStatus: "OPERATIONAL",
-    editorialSummary: { text: "A great shop" },
     addressComponents: [
       { types: ["country"], shortText: "DO" },
       { types: ["locality"], shortText: "Santo Domingo" },
@@ -43,17 +38,26 @@ test("maps every field to the businesses row and hours rows", () => {
     phone: "+18095550134",
     website: "https://example.com",
     category: "Barber shop",
-    rating: 4.7,
-    reviewCount: 120,
-    latitude: 18.48,
-    longitude: -69.94,
-    mapsUrl: "https://maps.google.com/?cid=1",
     timezone: "America/Santo_Domingo",
-    description: "A great shop",
     status: "operational",
     currency: "DOP",
   })
   expect(hours).toEqual([{ weekday: 1, opensAt: "09:00", closesAt: "18:30" }])
+})
+
+test("never keeps Google cached content", () => {
+  const { business } = mapPlace(place())
+  for (const field of [
+    "rating",
+    "reviewCount",
+    "mapsUrl",
+    "latitude",
+    "longitude",
+    "description",
+  ] as const) {
+    expect(business).not.toHaveProperty(field)
+  }
+  expect(business.googlePlaceId).toBe("places/ChIJ123")
 })
 
 test("maps each business status", () => {

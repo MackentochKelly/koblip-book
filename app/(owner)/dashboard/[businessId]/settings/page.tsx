@@ -25,6 +25,8 @@ export default async function SettingsPage({ params }: Props) {
         businessId={businessId}
         hasTeam={team.length > 0}
         details={{
+          name: business.name,
+          address: business.address,
           description: business.description,
           phone: business.phone,
           website: business.website,

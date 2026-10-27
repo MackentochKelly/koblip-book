@@ -42,6 +42,10 @@ interface GoogleReview {
 interface GoogleDetails {
   photos?: GooglePhoto[]
   reviews?: GoogleReview[]
+  rating?: number
+  userRatingCount?: number
+  googleMapsUri?: string
+  location?: { latitude?: number; longitude?: number }
   accessibilityOptions?: Record<string, boolean | undefined>
   parkingOptions?: Record<string, boolean | undefined>
   paymentOptions?: {
@@ -59,16 +63,33 @@ interface GoogleExtras {
   photos: PagePhoto[]
   reviews: PageReview[]
   amenities: Amenity[]
+  // Live from Google on every view, never stored (Places policies forbid
+  // caching them; only the place ID may be kept). Null when Google fails.
+  rating: number | null
+  reviewCount: number | null
+  mapsUrl: string | null
+  latitude: number | null
+  longitude: number | null
 }
 
-const EMPTY_EXTRAS: GoogleExtras = { photos: [], reviews: [], amenities: [] }
+const EMPTY_EXTRAS: GoogleExtras = {
+  photos: [],
+  reviews: [],
+  amenities: [],
+  rating: null,
+  reviewCount: null,
+  mapsUrl: null,
+  latitude: null,
+  longitude: null,
+}
 
 const DETAILS_FIELD_MASK =
-  "photos,reviews,accessibilityOptions,parkingOptions,paymentOptions,allowsDogs,goodForChildren,restroom"
+  "photos,reviews,rating,userRatingCount,googleMapsUri,location,accessibilityOptions,parkingOptions,paymentOptions,allowsDogs,goodForChildren,restroom"
 
-// Fresh from Google on each page view, never stored: reviews, amenities and
-// photo names may not be cached, so they always come from a new Details
-// call. Google failures return no extras; the page still loads.
+// Fresh from Google on each page view, never stored: rating, review count,
+// Maps URL, coordinates, reviews, amenities and photo names may not be
+// cached, so they always come from one new Details call. Google failures
+// return no extras; the page still loads.
 async function getGoogleExtras(
   googlePlaceId: string | null,
   language: PageLanguage
@@ -134,7 +155,24 @@ async function getGoogleExtras(
       goodForChildren: data.goodForChildren,
       restroom: data.restroom,
     })
-    return { photos, reviews, amenities }
+    return {
+      photos,
+      reviews,
+      amenities,
+      rating: typeof data.rating === "number" ? data.rating : null,
+      reviewCount:
+        typeof data.userRatingCount === "number" ? data.userRatingCount : null,
+      mapsUrl:
+        typeof data.googleMapsUri === "string" ? data.googleMapsUri : null,
+      latitude:
+        typeof data.location?.latitude === "number"
+          ? data.location.latitude
+          : null,
+      longitude:
+        typeof data.location?.longitude === "number"
+          ? data.location.longitude
+          : null,
+    }
   } catch {
     return EMPTY_EXTRAS
   }
@@ -344,8 +382,19 @@ async function loadBusinessPage(
     })
   }
 
+  // The five Google extras ride on the page business so every .tsx stays
+  // as it is; they are live values, never read from the database.
+  const liveBusiness = {
+    ...pageBusiness,
+    rating: extras.rating,
+    reviewCount: extras.reviewCount,
+    mapsUrl: extras.mapsUrl,
+    latitude: extras.latitude,
+    longitude: extras.longitude,
+  }
+
   return {
-    business: pageBusiness,
+    business: liveBusiness,
     hours,
     services: pageServices,
     team,

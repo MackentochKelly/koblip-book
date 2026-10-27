@@ -7,6 +7,7 @@ import {
 import { getAddonGroups } from "@/features/dashboard/api/addon-queries"
 import { getServiceTeams } from "@/features/dashboard/api/team-service-queries"
 import { BookingsView } from "@/features/dashboard/components/bookings-view"
+import { ConfirmDetailsCard } from "@/features/dashboard/components/confirm-details-card"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import { addDaysTo, todayIn } from "@/lib/format-booking-time"
 
@@ -39,7 +40,7 @@ export default async function BookingsPage({ params }: Props) {
       ).length,
     }
   })
-  return (
+  const bookings = (
     <BookingsView
       businessId={businessId}
       upcoming={upcoming}
@@ -59,5 +60,23 @@ export default async function BookingsPage({ params }: Props) {
       }}
       createBooking={createOwnerBooking}
     />
+  )
+  if (business.detailsConfirmedAt !== null) return bookings
+  // Until the owner confirms what came from Google Maps, that comes first.
+  return (
+    <div className="flex flex-col gap-6">
+      <ConfirmDetailsCard
+        businessId={businessId}
+        details={{
+          name: business.name,
+          category: business.category,
+          phone: business.phone,
+          address: business.address,
+          website: business.website,
+          openDays: new Set(owner.hours.map((hour) => hour.weekday)).size,
+        }}
+      />
+      {bookings}
+    </div>
   )
 }

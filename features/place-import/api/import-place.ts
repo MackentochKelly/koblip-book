@@ -33,8 +33,8 @@ async function aiDescription(
 // Finds the place, fetches its details, maps and saves it in one
 // transaction. An existing import (same googlePlaceId) is updated and gets
 // fresh hours; its slug, services, team, photos and description are kept.
-// Description order: the owner's existing text, Google's editorialSummary,
-// then Meta AI. Returns the slug.
+// Description order: the owner's existing text, then Meta AI (Google's
+// editorialSummary is never stored). Returns the slug.
 export async function importPlaceById(
   placeId: string,
   sessionToken?: string
@@ -49,10 +49,7 @@ export async function importPlaceById(
     .limit(1)
   if (existing) {
     const description =
-      existing.description ||
-      business.description ||
-      (await aiDescription(business, hours)) ||
-      null
+      existing.description || (await aiDescription(business, hours)) || null
     await db.transaction(async (tx) => {
       await tx
         .update(businesses)
@@ -77,8 +74,7 @@ export async function importPlaceById(
     .where(like(businesses.slug, `${base}%`))
   const taken = new Set(conflicts.map((row) => row.slug))
   const slug = uniqueSlug(base, (candidate) => taken.has(candidate))
-  const description =
-    business.description || (await aiDescription(business, hours)) || null
+  const description = (await aiDescription(business, hours)) || null
   const id = crypto.randomUUID()
   await db.transaction(async (tx) => {
     await tx.insert(businesses).values({ ...business, description, id, slug })

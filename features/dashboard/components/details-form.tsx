@@ -19,9 +19,9 @@ import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { updateBusinessDetails } from "../api/actions"
 import type { BusinessDetailsInput } from "../types"
 
-type Invalid = "phone" | "website" | "seats" | null
+type Invalid = "name" | "phone" | "website" | "seats" | null
 
-// The page's About, phone and website, and how many people can be booked at
+// The business's name, address, About, phone and website, and how many people can be booked at
 // the same time when there is no team.
 export function DetailsForm({
   businessId,
@@ -34,6 +34,8 @@ export function DetailsForm({
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const [name, setName] = useState(details.name)
+  const [address, setAddress] = useState(details.address ?? "")
   const [description, setDescription] = useState(details.description ?? "")
   const [phone, setPhone] = useState(details.phone ?? "")
   const [website, setWebsite] = useState(details.website ?? "")
@@ -43,6 +45,7 @@ export function DetailsForm({
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const seatsValue = Number(seats)
+    if (!name.trim()) return setInvalid("name")
     if (phone.trim() && !PHONE_PATTERN.test(phone.trim()))
       return setInvalid("phone")
     if (website.trim() && !/^https?:\/\/\S+\.\S+/.test(website.trim())) {
@@ -58,6 +61,8 @@ export function DetailsForm({
     setInvalid(null)
     startTransition(async () => {
       const result = await updateBusinessDetails(businessId, {
+        name: name.trim(),
+        address: address.trim() || null,
         description: description.trim() || null,
         phone: phone.trim() || null,
         website: website.trim() || null,
@@ -82,6 +87,18 @@ export function DetailsForm({
         </Button>
       </div>
       <FieldGroup>
+        <Field data-invalid={invalid === "name" || undefined}>
+          <FieldLabel htmlFor="details-name">Name</FieldLabel>
+          <Input
+            id="details-name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            maxLength={BOOKING_RULES.maxBusinessName}
+            autoComplete="organization"
+            aria-invalid={invalid === "name" || undefined}
+          />
+          {invalid === "name" && <FieldError>Add the business name</FieldError>}
+        </Field>
         <Field>
           <FieldLabel htmlFor="details-about">About</FieldLabel>
           <Textarea
@@ -105,6 +122,16 @@ export function DetailsForm({
           {invalid === "phone" && (
             <FieldError>Check the phone number</FieldError>
           )}
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="details-address">Address</FieldLabel>
+          <Input
+            id="details-address"
+            value={address}
+            onChange={(event) => setAddress(event.target.value)}
+            maxLength={BOOKING_RULES.maxBusinessAddress}
+            autoComplete="street-address"
+          />
         </Field>
         <Field data-invalid={invalid === "website" || undefined}>
           <FieldLabel htmlFor="details-website">Website</FieldLabel>

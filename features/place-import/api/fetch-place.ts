@@ -30,15 +30,10 @@ export interface GooglePlace {
   formattedAddress?: string
   internationalPhoneNumber?: string
   websiteUri?: string
-  rating?: number
-  userRatingCount?: number
   primaryTypeDisplayName?: { text: string }
   regularOpeningHours?: { periods?: GooglePlacePeriod[] }
   timeZone?: { id: string }
-  location?: { latitude: number; longitude: number }
-  googleMapsUri?: string
   businessStatus?: string
-  editorialSummary?: { text: string }
   addressComponents?: Array<{ types: string[]; shortText?: string }>
   photos?: GooglePlacePhoto[]
 }
@@ -46,7 +41,7 @@ export interface GooglePlace {
 const PLACES_API = "https://places.googleapis.com/v1"
 
 const FIELD_MASK =
-  "id,displayName,formattedAddress,internationalPhoneNumber,websiteUri,rating,userRatingCount,primaryTypeDisplayName,regularOpeningHours,timeZone,location,googleMapsUri,businessStatus,editorialSummary,addressComponents"
+  "id,displayName,formattedAddress,internationalPhoneNumber,websiteUri,primaryTypeDisplayName,regularOpeningHours,timeZone,businessStatus,addressComponents"
 
 function apiKey(): string {
   const key = process.env.GOOGLE_MAPS_PLATFORM_KEY

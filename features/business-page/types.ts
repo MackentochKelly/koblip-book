@@ -7,7 +7,17 @@ import type {
   teamMembers,
 } from "@/lib/db/schema"
 
-export type Business = typeof businesses.$inferSelect
+// The business as the page shows it: the stored row plus the live Google
+// extras (rating, review count, Maps URL, coordinates). Those five are
+// never stored (Places policies); getBusinessPage fills them fresh from
+// Google on every view, null when Google fails.
+export type Business = typeof businesses.$inferSelect & {
+  rating: number | null
+  reviewCount: number | null
+  mapsUrl: string | null
+  latitude: number | null
+  longitude: number | null
+}
 export type BusinessHour = typeof businessHours.$inferSelect
 export type Service = typeof services.$inferSelect
 export type TeamMember = typeof teamMembers.$inferSelect

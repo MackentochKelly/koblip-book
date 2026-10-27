@@ -122,6 +122,15 @@ test("returns null for an unknown slug", async () => {
   await expect(getBusinessPage("no-such-business")).resolves.toBeNull()
 })
 
+test("live Google fields are null without a place ID", async () => {
+  const data = await getBusinessPage("demo-salon")
+  expect(data?.business.rating).toBeNull()
+  expect(data?.business.reviewCount).toBeNull()
+  expect(data?.business.mapsUrl).toBeNull()
+  expect(data?.business.latitude).toBeNull()
+  expect(data?.business.longitude).toBeNull()
+})
+
 test("returns the business with children in order", async () => {
   const data = await getBusinessPage("demo-salon")
   expect(data?.business.name).toBe("Demo Salon")
