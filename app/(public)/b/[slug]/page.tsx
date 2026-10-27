@@ -17,6 +17,7 @@ import {
 import { BusinessAmenities } from "@/features/business-page/components/business-amenities"
 import { ExternalLinkIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { BusinessFooter } from "@/features/business-page/components/business-footer"
 import { BusinessMap } from "@/features/business-page/components/business-map"
 import { BusinessReviews } from "@/features/business-page/components/business-reviews"
 import { Rating } from "@/components/rating"
@@ -191,6 +192,10 @@ export default async function BusinessPage({ params }: Props) {
                 </PageSection>
               </>
             )}
+            <BusinessFooter
+              name={business.name}
+              fromGoogle={business.googlePlaceId !== null}
+            />
           </div>
           <aside className="hidden md:block">
             <BusinessSideCard business={business} open={open} />
