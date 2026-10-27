@@ -18,6 +18,7 @@ import { authClient } from "@/lib/auth-client"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import { emailStatus } from "../api/email-status"
 import { GoogleButton } from "./google-button"
+import { GoogleError } from "./google-error"
 
 type Step = "email" | "password" | "create"
 
@@ -29,12 +30,15 @@ export function AuthForm({
   next = "/dashboard",
   googleNext = next,
   googleReady = true,
+  googleError = null,
   onSignedIn,
   disabled = false,
 }: {
   next?: string
   googleNext?: string
   googleReady?: boolean
+  // The `error` Google sign-in came back with, if any.
+  googleError?: string | null
   onSignedIn?: () => Promise<void>
   disabled?: boolean
 }) {
@@ -113,6 +117,7 @@ export function AuthForm({
       <FieldGroup>
         {step === "email" && (
           <>
+            {googleError && <GoogleError code={googleError} />}
             <GoogleButton
               callbackURL={googleNext}
               disabled={busy || !googleReady}

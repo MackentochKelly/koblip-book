@@ -10,7 +10,9 @@ import { authClient } from "@/lib/auth-client"
 // "Continue with Google", drawn the way Google's branding rules ask
 // (developers.google.com/identity/branding-guidelines): Google's own "G"
 // from its sign-in pack, unchanged, on Google's light or dark button
-// colours. After Google, the browser comes back to `callbackURL`.
+// colours. After Google, the browser comes back to `callbackURL`; when
+// Google sign-in fails, to the login page with `?error=` (and the same
+// `next`), which says what happened.
 export function GoogleButton({
   callbackURL,
   disabled = false,
@@ -25,6 +27,7 @@ export function GoogleButton({
     const { error } = await authClient.signIn.social({
       provider: "google",
       callbackURL,
+      errorCallbackURL: `/login?next=${encodeURIComponent(callbackURL)}`,
     })
     if (error) setSending(false)
   }

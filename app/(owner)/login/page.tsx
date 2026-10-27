@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Log in" }
 // The home page's look: one rounded panel on the moving gradient, the
 // login card in the same glass frame as the home box.
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { next } = await searchParams
+  const { next, error } = await searchParams
   const target = safeNext(typeof next === "string" ? next : undefined)
   if (await getSession()) {
     redirect(target)
@@ -35,7 +35,10 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
             Log in
           </h1>
           <GlassCard>
-            <AuthForm next={target} />
+            <AuthForm
+              next={target}
+              googleError={typeof error === "string" ? error : null}
+            />
           </GlassCard>
         </main>
       </section>
