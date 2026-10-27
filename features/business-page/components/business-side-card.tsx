@@ -1,8 +1,15 @@
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import type { Business } from "../types"
 import { BusinessActions } from "./business-actions"
-import { BusinessStatus } from "./business-status"
+import { BusinessFacts } from "./business-facts"
 import { ShareButton } from "./share-button"
 
 // On a computer: the business and its buttons, kept in view beside the page.
@@ -17,17 +24,16 @@ export function BusinessSideCard({
     <Card className="sticky top-6">
       <CardHeader>
         <CardTitle className="text-lg">{business.name}</CardTitle>
+        {business.category && (
+          <CardDescription>{business.category}</CardDescription>
+        )}
         <CardAction className="flex gap-2">
           <ThemeToggle size="icon-sm" />
           <ShareButton title={business.name} size="icon-sm" />
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {open !== null && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
-            <BusinessStatus open={open} />
-          </div>
-        )}
+        <BusinessFacts business={business} open={open} />
         {business.address && (
           <p className="text-sm text-muted-foreground">{business.address}</p>
         )}

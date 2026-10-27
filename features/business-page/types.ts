@@ -18,10 +18,29 @@ export interface PagePhoto {
   credit: { name: string; uri: string | null } | null
 }
 
+export interface PageReview {
+  author: { name: string; uri: string | null; photoUrl: string | null }
+  rating: number
+  when: string
+  text: string
+}
+
+export type Amenity =
+  | "wheelchair"
+  | "parking"
+  | "pets"
+  | "kids"
+  | "restroom"
+  | "cards"
+  | "nfc"
+  | "cash_only"
+
 export interface BusinessPageData {
   business: Business
   hours: BusinessHour[]
   services: Service[]
   team: TeamMember[]
   photos: PagePhoto[]
+  reviews: PageReview[]
+  amenities: Amenity[]
 }

@@ -1,0 +1,168 @@
+"use client"
+
+import { useState } from "react"
+import { ArrowRightIcon, ExternalLinkIcon } from "lucide-react"
+
+import { Rating } from "@/components/rating"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
+import type { PageReview } from "../types"
+
+// How many reviews the page shows before "See more reviews".
+const REVIEWS_ON_PAGE = 2
+
+// The reviews as a list, each with who wrote it, as Google asks.
+function ReviewList({
+  reviews,
+  columns,
+  clamp,
+}: {
+  reviews: PageReview[]
+  columns: boolean
+  clamp: boolean
+}) {
+  return (
+    <ul className={cn("grid gap-4", columns && "lg:grid-cols-2")}>
+      {reviews.map((review, index) => (
+        <li
+          key={`${review.author.name}-${index}`}
+          className="flex flex-col gap-2"
+        >
+          <div className="flex items-center gap-3">
+            <Avatar>
+              {review.author.photoUrl && (
+                <AvatarImage
+                  src={review.author.photoUrl}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                />
+              )}
+              <AvatarFallback>
+                {review.author.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              {review.author.uri ? (
+                <a
+                  href={review.author.uri}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block truncate text-sm font-medium hover:underline"
+                >
+                  {review.author.name}
+                </a>
+              ) : (
+                <p className="truncate text-sm font-medium">
+                  {review.author.name}
+                </p>
+              )}
+              <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Rating rating={review.rating} />
+                {review.when}
+              </p>
+            </div>
+          </div>
+          <p
+            className={cn(
+              "text-sm leading-relaxed whitespace-pre-line",
+              clamp && "line-clamp-3"
+            )}
+          >
+            {review.text}
+          </p>
+          {index < reviews.length - 1 && (
+            <Separator className={cn("mt-2", columns && "lg:hidden")} />
+          )}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function GoogleReviewsLink({
+  mapsUrl,
+  variant,
+}: {
+  mapsUrl: string
+  variant: "default" | "outline"
+}) {
+  return (
+    <Button
+      variant={variant}
+      className={cn(variant === "outline" && "self-start")}
+      nativeButton={false}
+      render={<a href={mapsUrl} target="_blank" rel="noreferrer" />}
+    >
+      See all reviews on Google
+      <ExternalLinkIcon data-icon="inline-end" />
+    </Button>
+  )
+}
+
+// Two Google reviews, then the rest (Google gives five at most) in a dialog
+// that ends with every review on Google.
+export function BusinessReviews({
+  reviews,
+  reviewCount,
+  mapsUrl,
+}: {
+  reviews: PageReview[]
+  reviewCount: number | null
+  mapsUrl: string | null
+}) {
+  const [open, setOpen] = useState(false)
+  if (reviews.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">No Google reviews yet.</p>
+    )
+  }
+  const more = reviews.length > REVIEWS_ON_PAGE
+  return (
+    <div className="flex flex-col gap-4">
+      <ReviewList reviews={reviews.slice(0, REVIEWS_ON_PAGE)} columns clamp />
+      {more ? (
+        <Button
+          variant="outline"
+          className="self-start"
+          onClick={() => setOpen(true)}
+        >
+          See more reviews
+          <ArrowRightIcon data-icon="inline-end" />
+        </Button>
+      ) : (
+        mapsUrl && <GoogleReviewsLink mapsUrl={mapsUrl} variant="outline" />
+      )}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="flex max-h-[85svh] flex-col sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Reviews</DialogTitle>
+            {reviewCount !== null && (
+              <DialogDescription>
+                {reviewCount.toLocaleString("en-US")}{" "}
+                {reviewCount === 1 ? "review" : "reviews"}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <div className="-mx-6 min-h-0 flex-1 overflow-y-auto px-6">
+            <ReviewList reviews={reviews} columns={false} clamp={false} />
+          </div>
+          {mapsUrl && (
+            <DialogFooter>
+              <GoogleReviewsLink mapsUrl={mapsUrl} variant="default" />
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

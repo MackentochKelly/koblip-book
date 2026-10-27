@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
+import { cn } from "@/lib/utils"
 import { XIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -100,7 +101,8 @@ export function BusinessPhotos({ photos }: { photos: PagePhoto[] }) {
 }
 
 // One photo large, like a phone's own gallery: the whole screen in black,
-// swiped to the next, with a close button and where you are.
+// swiped to the next, with a close button, where you are, and Google's
+// credit for the photo on screen (Google asks for it wherever a photo is large).
 function PhotoViewer({
   photos,
   start,
@@ -113,6 +115,7 @@ function PhotoViewer({
   const [api, setApi] = useState<CarouselApi>()
   const current = useCurrentSlide(api, start)
   const total = photos.length
+  const credit = photos[current]?.credit
 
   return (
     <Dialog open onOpenChange={(next) => !next && onClose()}>
@@ -161,8 +164,84 @@ function PhotoViewer({
           <CarouselPrevious className="left-4 hidden md:inline-flex" />
           <CarouselNext className="right-4 hidden md:inline-flex" />
         </Carousel>
-        <div className="min-h-10 pb-[max(1rem,env(safe-area-inset-bottom))]" />
+        <p className="min-h-10 truncate px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] text-xs text-white/70">
+          {credit &&
+            (credit.uri ? (
+              <a
+                href={credit.uri}
+                target="_blank"
+                rel="noreferrer"
+                className="underline-offset-4 hover:underline"
+              >
+                Photo by {credit.name}
+              </a>
+            ) : (
+              <>Photo by {credit.name}</>
+            ))}
+        </p>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// How many portfolio photos the page shows; the last one says how many more there are.
+const PORTFOLIO_PREVIEW = 9
+
+// The page's photos again as a Portfolio, like Fresha's: three across on a
+// phone, one big photo beside the rest on a computer. The last tile shows
+// "+N" when there are more; any tile opens the full-screen viewer.
+export function BusinessPortfolio({ photos }: { photos: PagePhoto[] }) {
+  const [open, setOpen] = useState<number | null>(null)
+  const total = photos.length
+  const shown = photos.slice(0, PORTFOLIO_PREVIEW)
+  const more = total - shown.length
+  return (
+    <>
+      <div className="grid grid-cols-3 gap-2 md:grid-cols-4">
+        {shown.map((photo, index) => {
+          const last = more > 0 && index === shown.length - 1
+          return (
+            <button
+              key={photo.id}
+              type="button"
+              onClick={() => setOpen(index)}
+              aria-label={
+                last
+                  ? `See ${more} more photos`
+                  : `Photo ${index + 1} of ${total}`
+              }
+              className={cn(
+                "relative aspect-square overflow-hidden rounded-xl bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
+                index === 0 && "md:col-span-2 md:row-span-2"
+              )}
+            >
+              <Image
+                src={photo.url}
+                alt=""
+                fill
+                unoptimized
+                sizes="(max-width: 768px) 33vw, 25vw"
+                className="object-cover"
+              />
+              {last && (
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 flex items-center justify-center bg-black/40 text-2xl font-semibold text-white"
+                >
+                  +{more}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+      {open !== null && (
+        <PhotoViewer
+          photos={photos}
+          start={open}
+          onClose={() => setOpen(null)}
+        />
+      )}
+    </>
   )
 }

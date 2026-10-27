@@ -22,7 +22,7 @@ export function ServiceList({
     return null
   }
   return (
-    <PageSection title="Services">
+    <PageSection id="services" title="Services">
       <ItemGroup className="gap-1">
         {services.map((service) => (
           <Item key={service.id} size="sm" className="px-0">

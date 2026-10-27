@@ -16,8 +16,13 @@ function nowInTimeZone(timeZone: string, now: Date) {
     hourCycle: "h23",
   }).formatToParts(now)
   const part = (type: string) => parts.find((p) => p.type === type)?.value ?? ""
-  const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(part("weekday"))
-  return { weekday, minutes: Number(part("hour")) * 60 + Number(part("minute")) }
+  const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
+    part("weekday")
+  )
+  return {
+    weekday,
+    minutes: Number(part("hour")) * 60 + Number(part("minute")),
+  }
 }
 
 // Whether the business is open right now. A row that closes after midnight

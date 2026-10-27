@@ -4,8 +4,8 @@ export function BusinessAbout({ description }: { description: string | null }) {
     return null
   }
   return (
-    <PageSection title="About">
-      <p className="text-sm leading-relaxed text-muted-foreground">
+    <PageSection id="about" title="About">
+      <p className="text-sm leading-relaxed whitespace-pre-line">
         {description}
       </p>
     </PageSection>

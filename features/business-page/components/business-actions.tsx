@@ -1,11 +1,11 @@
-import { NavigationIcon, PhoneCallIcon } from "lucide-react"
+import { GlobeIcon, NavigationIcon, PhoneCallIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { Business } from "../types"
 import { directionsUrl } from "../utils/directions-url"
 
-// Directions and call: only what the business has. A row on the phone bar,
+// Directions, call and website: only what the business has. A row on the phone bar,
 // stacked in the side card.
 export function BusinessActions({
   business,
@@ -41,10 +41,24 @@ export function BusinessActions({
           Call
         </Button>
       )}
+      {layout === "stack" && business.website && (
+        <Button
+          variant="outline"
+          size="lg"
+          className="w-full"
+          nativeButton={false}
+          render={
+            <a href={business.website} target="_blank" rel="noreferrer" />
+          }
+        >
+          <GlobeIcon />
+          Website
+        </Button>
+      )}
     </div>
   )
 }
 
 export function hasActions(business: Business): boolean {
-  return Boolean(business.phone || business.address)
+  return Boolean(directionsUrl(business) || business.phone)
 }

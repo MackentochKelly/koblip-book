@@ -3,7 +3,13 @@ import type { BusinessHour } from "../types"
 import { isOpenNow } from "./is-open-now"
 
 const row = (weekday: number, opensAt: string, closesAt: string) =>
-  ({ id: `${weekday}-${opensAt}`, businessId: "b", weekday, opensAt, closesAt }) as BusinessHour
+  ({
+    id: `${weekday}-${opensAt}`,
+    businessId: "b",
+    weekday,
+    opensAt,
+    closesAt,
+  }) as BusinessHour
 
 // Monday 2026-10-26 in UTC.
 const at = (time: string) => new Date(`2026-10-26T${time}:00Z`)
@@ -22,7 +28,9 @@ describe("isOpenNow", () => {
 
   it("keeps an overnight range open after midnight", () => {
     expect(isOpenNow([row(0, "20:00", "02:00")], "UTC", at("01:00"))).toBe(true)
-    expect(isOpenNow([row(0, "20:00", "02:00")], "UTC", at("03:00"))).toBe(false)
+    expect(isOpenNow([row(0, "20:00", "02:00")], "UTC", at("03:00"))).toBe(
+      false
+    )
   })
 
   it("uses the business's time zone", () => {

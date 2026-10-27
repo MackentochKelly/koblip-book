@@ -17,7 +17,7 @@ export function TeamList({ team }: { team: TeamMember[] }) {
     return null
   }
   return (
-    <PageSection title="Team">
+    <PageSection id="team" title="Team">
       <div className="flex flex-wrap gap-4">
         {team.map((member) => (
           <div

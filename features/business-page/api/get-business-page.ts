@@ -9,7 +9,8 @@ import {
   services,
   teamMembers,
 } from "@/lib/db/schema"
-import type { BusinessPageData, PagePhoto } from "../types"
+import type { Amenity, BusinessPageData, PagePhoto, PageReview } from "../types"
+import { mapAmenities } from "../utils/map-amenities"
 
 interface GooglePhotoAttribution {
   displayName?: string
@@ -21,18 +22,56 @@ interface GooglePhoto {
   authorAttributions?: GooglePhotoAttribution[]
 }
 
-// Fresh from Google on each page view, never stored: a photo name may not
-// be cached and can expire, so it always comes from a new Details call.
-// Google failures return no photos; the page still loads.
-async function getGooglePhotos(
+interface GoogleReview {
+  rating?: number
+  relativePublishTimeDescription?: string
+  text?: { text?: string; languageCode?: string }
+  authorAttribution?: {
+    displayName?: string
+    uri?: string
+    photoUri?: string
+  }
+}
+
+interface GoogleDetails {
+  photos?: GooglePhoto[]
+  reviews?: GoogleReview[]
+  accessibilityOptions?: Record<string, boolean | undefined>
+  parkingOptions?: Record<string, boolean | undefined>
+  paymentOptions?: {
+    acceptsCreditCards?: boolean
+    acceptsDebitCards?: boolean
+    acceptsCashOnly?: boolean
+    acceptsNfc?: boolean
+  }
+  allowsDogs?: boolean
+  goodForChildren?: boolean
+  restroom?: boolean
+}
+
+interface GoogleExtras {
+  photos: PagePhoto[]
+  reviews: PageReview[]
+  amenities: Amenity[]
+}
+
+const EMPTY_EXTRAS: GoogleExtras = { photos: [], reviews: [], amenities: [] }
+
+const DETAILS_FIELD_MASK =
+  "photos,reviews,accessibilityOptions,parkingOptions,paymentOptions,allowsDogs,goodForChildren,restroom"
+
+// Fresh from Google on each page view, never stored: reviews, amenities and
+// photo names may not be cached, so they always come from a new Details
+// call. Google failures return no extras; the page still loads.
+async function getGoogleExtras(
   googlePlaceId: string | null
-): Promise<PagePhoto[]> {
+): Promise<GoogleExtras> {
   if (!googlePlaceId) {
-    return []
+    return EMPTY_EXTRAS
   }
   const key = process.env.GOOGLE_MAPS_PLATFORM_KEY
   if (!key) {
-    return []
+    return EMPTY_EXTRAS
   }
   try {
     const res = await fetch(
@@ -40,17 +79,19 @@ async function getGooglePhotos(
       {
         headers: {
           "X-Goog-Api-Key": key,
-          "X-Goog-FieldMask": "photos",
+          "X-Goog-FieldMask": DETAILS_FIELD_MASK,
         },
         cache: "no-store",
       }
     )
     if (!res.ok) {
-      return []
+      return EMPTY_EXTRAS
     }
-    const data = (await res.json()) as { photos?: GooglePhoto[] }
-    const photos = Array.isArray(data.photos) ? data.photos.slice(0, 10) : []
-    return photos
+    const data = (await res.json()) as GoogleDetails
+    const googlePhotos = Array.isArray(data.photos)
+      ? data.photos.slice(0, 10)
+      : []
+    const photos: PagePhoto[] = googlePhotos
       .filter((photo) => typeof photo.name === "string" && photo.name)
       .map((photo) => {
         const credit = photo.authorAttributions?.[0]
@@ -62,8 +103,33 @@ async function getGooglePhotos(
             : null,
         }
       })
+    // Reviews without text are skipped. An author's photo URL is returned
+    // as is, never proxied.
+    const reviews: PageReview[] = (
+      Array.isArray(data.reviews) ? data.reviews : []
+    )
+      .filter((review) => review.text?.text)
+      .map((review) => ({
+        author: {
+          name: review.authorAttribution?.displayName ?? "",
+          uri: review.authorAttribution?.uri ?? null,
+          photoUrl: review.authorAttribution?.photoUri ?? null,
+        },
+        rating: review.rating ?? 0,
+        when: review.relativePublishTimeDescription ?? "",
+        text: review.text?.text as string,
+      }))
+    const amenities = mapAmenities({
+      accessibilityOptions: data.accessibilityOptions,
+      parkingOptions: data.parkingOptions,
+      paymentOptions: data.paymentOptions,
+      allowsDogs: data.allowsDogs,
+      goodForChildren: data.goodForChildren,
+      restroom: data.restroom,
+    })
+    return { photos, reviews, amenities }
   } catch {
-    return []
+    return EMPTY_EXTRAS
   }
 }
 
@@ -102,6 +168,9 @@ async function loadBusinessPage(
       .orderBy(asc(businessPhotos.position)),
   ])
 
+  const extras = await getGoogleExtras(business.googlePlaceId)
+
+  // The business's own photos win over Google's.
   const photos: PagePhoto[] =
     ownPhotos.length > 0
       ? ownPhotos.map((photo) => ({
@@ -109,9 +178,17 @@ async function loadBusinessPage(
           url: photo.url,
           credit: null,
         }))
-      : await getGooglePhotos(business.googlePlaceId)
+      : extras.photos
 
-  return { business, hours, services: serviceRows, team, photos }
+  return {
+    business,
+    hours,
+    services: serviceRows,
+    team,
+    photos,
+    reviews: extras.reviews,
+    amenities: extras.amenities,
+  }
 }
 
 export const getBusinessPage = cache(loadBusinessPage)
