@@ -4,16 +4,29 @@ import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 
 // Route handlers have no built-in CSRF protection like server actions do:
 // refuse a request whose Origin header names another host. A missing
-// Origin (curl, non-browser clients) is allowed.
+// Origin (curl, non-browser clients) is allowed. Compare against the Host
+// header nginx forwarded, NOT request.url: in production the app binds
+// localhost:3100, so request.url names the local address while the Host
+// header names the public site the browser sees. Fall back to the URL
+// when no Host header is present.
 export function isCrossSiteRequest(request: Request): boolean {
   const origin = request.headers.get("origin")
   if (!origin) {
     return false
   }
+  const host = request.headers.get("host") ?? urlHost(request.url)
   try {
-    return new URL(origin).host !== new URL(request.url).host
+    return new URL(origin).host !== host
   } catch {
     return true
+  }
+}
+
+function urlHost(url: string): string {
+  try {
+    return new URL(url).host
+  } catch {
+    return ""
   }
 }
 

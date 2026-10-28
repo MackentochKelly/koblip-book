@@ -27,6 +27,26 @@ test("another host and garbage origins are refused", () => {
   expect(isCrossSiteRequest(request("not a url"))).toBe(true)
 })
 
+// Production shape: the app binds localhost:3100 behind nginx, so
+// request.url names the local address while the forwarded Host header
+// names the public site. The public https origin must be allowed.
+test("behind a proxy the forwarded Host wins over the local url", () => {
+  const proxied = new Request("http://127.0.0.1:3100/api/assistant", {
+    headers: {
+      host: "book.koblip.com",
+      origin: "https://book.koblip.com",
+    },
+  })
+  expect(isCrossSiteRequest(proxied)).toBe(false)
+  const forged = new Request("http://127.0.0.1:3100/api/assistant", {
+    headers: {
+      host: "book.koblip.com",
+      origin: "https://evil.com",
+    },
+  })
+  expect(isCrossSiteRequest(forged)).toBe(true)
+})
+
 test("budget carries an already-aborted signal and done is safe twice", () => {
   const controller = new AbortController()
   controller.abort()
