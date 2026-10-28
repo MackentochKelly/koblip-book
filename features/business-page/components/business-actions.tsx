@@ -1,4 +1,4 @@
-import { GlobeIcon, NavigationIcon, PhoneCallIcon } from "@/components/ui/icons"
+import { LinkIcon, NavigationIcon, PhoneCallIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -68,7 +68,7 @@ export function BusinessActions({
             <a href={business.website} target="_blank" rel="noreferrer" />
           }
         >
-          <GlobeIcon />
+          <LinkIcon />
           {m.website}
         </Button>
       )}

@@ -31,7 +31,12 @@ export function BusinessSummary({
       {business.address && (
         <BusinessAddress>{business.address}</BusinessAddress>
       )}
-      {business.website && <BusinessWebsite url={business.website} />}
+      {business.website && (
+        <BusinessWebsite
+          url={business.website}
+          label={messagesFor(language).actions.website}
+        />
+      )}
     </header>
   )
 }

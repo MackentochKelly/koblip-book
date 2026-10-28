@@ -1,4 +1,4 @@
-import { GlobeIcon, MapPinIcon } from "@/components/ui/icons"
+import { LinkIcon, MapPinIcon } from "@/components/ui/icons"
 import { Item, ItemContent, ItemMedia } from "@/components/ui/item"
 
 // Where the business is, on a soft chip with a pin.
@@ -18,14 +18,14 @@ export function BusinessAddress({ children }: { children: React.ReactNode }) {
 }
 
 // The business's website on the same chip, for phones (computers have the
-// Website button in the side card).
-export function BusinessWebsite({ url }: { url: string }) {
-  let host = url
-  try {
-    host = new URL(url).hostname.replace(/^www\./, "")
-  } catch {
-    // Not a full address: show it as saved.
-  }
+// Website button in the side card). Named "Website", not its address.
+export function BusinessWebsite({
+  url,
+  label,
+}: {
+  url: string
+  label: string
+}) {
   return (
     <Item
       variant="muted"
@@ -34,9 +34,9 @@ export function BusinessWebsite({ url }: { url: string }) {
       render={<a href={url} target="_blank" rel="noreferrer" />}
     >
       <ItemMedia>
-        <GlobeIcon aria-hidden="true" />
+        <LinkIcon aria-hidden="true" />
       </ItemMedia>
-      <ItemContent className="min-w-0 truncate">{host}</ItemContent>
+      <ItemContent className="min-w-0 truncate">{label}</ItemContent>
     </Item>
   )
 }
