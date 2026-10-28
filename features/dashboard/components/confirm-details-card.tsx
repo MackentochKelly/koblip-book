@@ -3,16 +3,12 @@
 import { useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import {
-  ChevronRightIcon,
-  ClockIcon,
-  GlobeIcon,
-  MapPinIcon,
-  PhoneIcon,
-  StoreIcon,
-} from "lucide-react"
 import { toast } from "sonner"
 
+import {
+  BusinessDetails,
+  type BusinessDetailsData,
+} from "@/components/business-details"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -22,26 +18,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { confirmBusinessDetails } from "../api/actions"
-
-export interface ImportedDetails {
-  name: string
-  category: string | null
-  phone: string | null
-  address: string | null
-  website: string | null
-  // Days of the week with opening hours.
-  openDays: number
-}
 
 // Shown on the dashboard until the owner confirms what came from Google
 // Maps. Once confirmed, the details are the owner's own (Google's terms
@@ -51,7 +29,7 @@ export function ConfirmDetailsCard({
   details,
 }: {
   businessId: string
-  details: ImportedDetails
+  details: BusinessDetailsData
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -68,20 +46,6 @@ export function ConfirmDetailsCard({
       }
     })
 
-  const rows = [
-    {
-      icon: StoreIcon,
-      value: details.category
-        ? `${details.name} · ${details.category}`
-        : details.name,
-    },
-    { icon: PhoneIcon, value: details.phone },
-    { icon: MapPinIcon, value: details.address },
-    { icon: GlobeIcon, value: details.website },
-  ].filter((row): row is { icon: typeof StoreIcon; value: string } =>
-    Boolean(row.value)
-  )
-
   return (
     <Card>
       <CardHeader>
@@ -89,39 +53,7 @@ export function ConfirmDetailsCard({
         <CardDescription>From Google Maps. Is this right?</CardDescription>
       </CardHeader>
       <CardContent>
-        <ItemGroup className="gap-1">
-          {rows.map(({ icon: Icon, value }) => (
-            <Item key={value} size="sm" className="px-0 py-1.5">
-              <ItemMedia variant="icon">
-                <Icon />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle className="font-normal wrap-break-word">
-                  {value}
-                </ItemTitle>
-              </ItemContent>
-            </Item>
-          ))}
-          <Item
-            size="sm"
-            className="px-0 py-1.5"
-            render={<Link href={`${base}/hours`} />}
-          >
-            <ItemMedia variant="icon">
-              <ClockIcon />
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle className="font-normal">
-                {details.openDays === 0
-                  ? "No opening hours"
-                  : `Open ${details.openDays} ${details.openDays === 1 ? "day" : "days"} a week`}
-              </ItemTitle>
-            </ItemContent>
-            <ItemActions>
-              <ChevronRightIcon className="size-4 text-muted-foreground" />
-            </ItemActions>
-          </Item>
-        </ItemGroup>
+        <BusinessDetails details={details} hoursHref={`${base}/hours`} />
       </CardContent>
       <CardFooter className="justify-end gap-2">
         <Button

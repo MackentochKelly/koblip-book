@@ -20,6 +20,7 @@ import {
   glassEdgeClassName,
   glassFrameClassName,
 } from "@/components/glass-frame"
+import { BusinessDetails } from "@/components/business-details"
 import { ViewTabs, type ViewTab } from "@/components/view-tabs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -363,6 +364,17 @@ export function GetStarted({
           )}
         </ItemContent>
       </Item>
+      {/* Signing up confirms these, so the owner checks them here. */}
+      {ready && !blocked && (
+        <BusinessDetails
+          details={{
+            category: ready.category,
+            phone: ready.phone,
+            website: ready.website,
+            openDays: ready.openDays,
+          }}
+        />
+      )}
       {blocked ? (
         <Field data-invalid>
           <FieldError>{error}</FieldError>
