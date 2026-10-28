@@ -6,6 +6,8 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
+import type { PageLanguage } from "@/lib/page-language"
+import { authWordsFor } from "../i18n"
 
 // "Continue with Google", drawn the way Google's branding rules ask
 // (developers.google.com/identity/branding-guidelines): Google's own "G"
@@ -16,9 +18,11 @@ import { authClient } from "@/lib/auth-client"
 export function GoogleButton({
   callbackURL,
   disabled = false,
+  language = "en",
 }: {
   callbackURL: string
   disabled?: boolean
+  language?: PageLanguage
 }) {
   const [sending, setSending] = useState(false)
 
@@ -65,7 +69,7 @@ export function GoogleButton({
           />
         </>
       )}
-      Continue with Google
+      {authWordsFor(language).google}
     </Button>
   )
 }

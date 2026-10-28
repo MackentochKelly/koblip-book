@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header"
 import { claimBusiness } from "@/features/dashboard/api/actions"
 import { getMyBusinesses } from "@/features/dashboard/api/queries"
 import { AccountMenu } from "@/features/dashboard/components/account-menu"
+import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { GetStarted } from "@/features/onboarding/components/get-started"
 import { requireOwner } from "@/lib/dal"
 import { fontDisplay } from "@/lib/fonts"
@@ -21,6 +22,7 @@ export default async function DashboardPage() {
     redirect(`/dashboard/${businesses[0].id}`)
   }
   const firstName = owner.name.trim().split(/\s+/)[0]
+  const t = (await getOwnerMessages()).shell.start
   return (
     <div
       className={cn(
@@ -44,13 +46,13 @@ export default async function DashboardPage() {
         <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center gap-8 px-4 pt-12 pb-24 text-center sm:pt-24">
           <div className="flex flex-col gap-2 font-display text-hero-foreground">
             {firstName && (
-              <p className="text-base font-medium">Welcome, {firstName}</p>
+              <p className="text-base font-medium">{t.welcome(firstName)}</p>
             )}
             <h1 className="text-3xl font-medium tracking-tight text-balance sm:text-4xl">
-              Find your business
+              {t.title}
             </h1>
             <p className="text-base text-balance">
-              Pick it on Google Maps to build your booking page.
+              {t.hint}
             </p>
           </div>
           <GetStarted signedIn claim={claimBusiness} hint={false} />

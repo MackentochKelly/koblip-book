@@ -29,6 +29,12 @@ const shell = {
   device: "Device",
   language: "Language",
   signOut: "Sign out",
+  // /dashboard before the first business.
+  start: {
+    welcome: (name: string) => `Welcome, ${name}`,
+    title: "Find your business",
+    hint: "Pick it on Google Maps to build your booking page.",
+  },
   titles: {
     checkDetails: "Check your details",
     live: "You're live",

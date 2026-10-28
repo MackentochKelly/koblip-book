@@ -16,7 +16,9 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
+import type { PageLanguage } from "@/lib/page-language"
 import { emailStatus } from "../api/email-status"
+import { authWordsFor } from "../i18n"
 import { GoogleButton } from "./google-button"
 import { GoogleError } from "./google-error"
 import { noAutofill } from "@/lib/no-autofill"
@@ -27,6 +29,7 @@ type Step = "email" | "password" | "create"
 // for a name and a new password. One form for both, no sign-up page.
 // After it, `onSignedIn` runs, or the screen opens `next`. Google first:
 // it leaves the page and comes back to `googleNext` (default `next`).
+// `language` picks its words.
 export function AuthForm({
   next = "/dashboard",
   googleNext = next,
@@ -34,6 +37,7 @@ export function AuthForm({
   googleError = null,
   onSignedIn,
   disabled = false,
+  language = "en",
 }: {
   next?: string
   googleNext?: string
@@ -42,7 +46,9 @@ export function AuthForm({
   googleError?: string | null
   onSignedIn?: () => Promise<void>
   disabled?: boolean
+  language?: PageLanguage
 }) {
+  const t = authWordsFor(language)
   const router = useRouter()
   const [step, setStep] = useState<Step>("email")
   const [name, setName] = useState("")
@@ -55,7 +61,7 @@ export function AuthForm({
   const checkEmail = async () => {
     const status = await emailStatus(email).catch(() => null)
     if (!status?.ok) {
-      setError("Check your email address")
+      setError(t.errors.email)
       return
     }
     setError("")
@@ -64,11 +70,11 @@ export function AuthForm({
 
   const logIn = async () => {
     if (step === "create" && !name.trim()) {
-      setError("Add your name")
+      setError(t.errors.name)
       return
     }
     if (password.length < ONBOARDING_RULES.minPasswordLength) {
-      setError(`Use at least ${ONBOARDING_RULES.minPasswordLength} characters`)
+      setError(t.errors.password)
       return
     }
     const { error: failed } =
@@ -82,11 +88,7 @@ export function AuthForm({
           })
         : await authClient.signIn.email({ email: email.trim(), password })
     if (failed) {
-      setError(
-        step === "create"
-          ? "That did not work. Please try again."
-          : "Wrong password"
-      )
+      setError(step === "create" ? t.errors.signUp : t.errors.wrongPassword)
       return
     }
     setError("")
@@ -120,18 +122,19 @@ export function AuthForm({
       <FieldGroup>
         {step === "email" && (
           <>
-            {googleError && <GoogleError code={googleError} />}
+            {googleError && <GoogleError code={googleError} language={language} />}
             <GoogleButton
               callbackURL={googleNext}
               disabled={busy || !googleReady}
+              language={language}
             />
             <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-              or
+              {t.or}
             </FieldSeparator>
           </>
         )}
         <Field data-invalid={(step === "email" && Boolean(error)) || undefined}>
-          <FieldLabel htmlFor="auth-email">Email</FieldLabel>
+          <FieldLabel htmlFor="auth-email">{t.email}</FieldLabel>
           <Input
             {...noAutofill("auth_email")}
             id="auth-email"
@@ -152,7 +155,7 @@ export function AuthForm({
                 className="dark:text-foreground"
                 onClick={changeEmail}
               >
-                Use another email
+                {t.useAnotherEmail}
               </Button>
             </FieldDescription>
           )}
@@ -160,7 +163,7 @@ export function AuthForm({
         </Field>
         {step === "create" && (
           <Field>
-            <FieldLabel htmlFor="auth-name">Your name</FieldLabel>
+            <FieldLabel htmlFor="auth-name">{t.yourName}</FieldLabel>
             <Input
               {...noAutofill("auth_name")}
               id="auth-name"
@@ -174,7 +177,7 @@ export function AuthForm({
         {step !== "email" && (
           <Field data-invalid={Boolean(error) || undefined}>
             <FieldLabel htmlFor="auth-password">
-              {step === "create" ? "Choose a password" : "Password"}
+              {step === "create" ? t.choosePassword : t.password}
             </FieldLabel>
             <Input
               id="auth-password"
@@ -194,10 +197,10 @@ export function AuthForm({
         <Button type="submit" size="lg" disabled={busy}>
           {busy && <Spinner data-icon="inline-start" />}
           {step === "email"
-            ? "Continue"
+            ? t.continue
             : step === "create"
-              ? "Create account"
-              : "Log in"}
+              ? t.createAccount
+              : t.logIn}
         </Button>
       </FieldGroup>
     </form>

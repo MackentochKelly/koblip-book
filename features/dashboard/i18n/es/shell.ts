@@ -30,6 +30,12 @@ const shell: typeof en = {
   device: "Dispositivo",
   language: "Idioma",
   signOut: "Cerrar sesión",
+  // /dashboard before the first business.
+  start: {
+    welcome: (name: string) => `Hola, ${name}`,
+    title: "Encuentra tu negocio",
+    hint: "Elígelo en Google Maps para crear tu página de reservas.",
+  },
   titles: {
     checkDetails: "Revisa tus datos",
     live: "Ya estás en línea",
