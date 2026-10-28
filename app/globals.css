@@ -193,6 +193,9 @@
     }
   body {
     @apply bg-background text-foreground;
+    /* Clear of the notch when a phone is turned sideways (the page fills the
+       screen: viewport-fit=cover in app/layout.tsx). */
+    padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
     }
   /* A full page put over the current one (the "You're booked" page) takes
      its place: everything else in the body is hidden while it is there, so

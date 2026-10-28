@@ -17,7 +17,7 @@ export function BottomBar({
       aria-label={label}
       className={cn("fixed inset-x-0 bottom-0 z-40 transform-gpu", className)}
     >
-      <div className="flex gap-2 border-t bg-background px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="flex gap-2 border-t bg-background ps-[max(1rem,env(safe-area-inset-left))] pe-[max(1rem,env(safe-area-inset-right))] pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
         {children}
       </div>
     </div>

@@ -4,6 +4,9 @@ export type PageLanguage = (typeof PAGE_LANGUAGES)[number]
 
 export const DEFAULT_LANGUAGE: PageLanguage = "en"
 
+// Set by proxy.ts on every page request: the page's language, for <html lang>.
+export const PAGE_LANGUAGE_HEADER = "x-page-language"
+
 export function isPageLanguage(value: unknown): value is PageLanguage {
   return value === "en" || value === "es"
 }
