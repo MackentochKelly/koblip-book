@@ -30,7 +30,12 @@ export function BusinessActions({
   return (
     <div className={cn("flex gap-2", layout === "row" ? "w-full" : "flex-col")}>
       {bookable && (
-        <BookButton slug={business.slug} label={m.bookNow} className={wide} />
+        // On the phone bar the icons come first, Book now on the right.
+        <BookButton
+          slug={business.slug}
+          label={m.bookNow}
+          className={cn(wide, icons && "order-last")}
+        />
       )}
       {directions && (
         <Button
