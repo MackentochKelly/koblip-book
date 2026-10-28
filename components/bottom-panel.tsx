@@ -146,9 +146,11 @@ export function BottomPanel({
           )}
           <div
             ref={scroll}
-            // shadcn's scroll-fade: the list fades out under the title and
-            // the buttons instead of being cut.
-            className="min-h-0 flex-1 scroll-fade overflow-y-auto p-4"
+            // A line between the list and the buttons.
+            className={cn(
+              "min-h-0 flex-1 overflow-y-auto p-4",
+              footer && "border-b"
+            )}
           >
             <div ref={inner}>{children}</div>
           </div>
