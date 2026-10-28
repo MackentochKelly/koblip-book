@@ -1,6 +1,7 @@
 // The owner area's frame: tabs, top bar, account menu and page titles.
 const shell = {
   nav: {
+    home: "Home",
     owner: "Owner",
     bookings: "Bookings",
     customers: "Customers",
@@ -12,9 +13,13 @@ const shell = {
     details: "Details",
   },
   groups: {
-    business: "Business",
-    settings: "Settings",
+    bookings: "Bookings",
+    workspace: "Workspace",
   },
+  search: "Search",
+  searchHint: "Search pages and actions",
+  noResults: "No results",
+  pages: "Pages",
   menu: "Menu",
   viewPage: "View page",
   account: "Account",

@@ -2,6 +2,7 @@ import type en from "../en/shell"
 
 const shell: typeof en = {
   nav: {
+    home: "Inicio",
     owner: "Propietario",
     bookings: "Reservas",
     customers: "Clientes",
@@ -13,9 +14,13 @@ const shell: typeof en = {
     details: "Datos",
   },
   groups: {
-    business: "Negocio",
-    settings: "Ajustes",
+    bookings: "Reservas",
+    workspace: "Espacio de trabajo",
   },
+  search: "Buscar",
+  searchHint: "Buscar páginas y acciones",
+  noResults: "Sin resultados",
+  pages: "Páginas",
   menu: "Menú",
   viewPage: "Ver página",
   account: "Cuenta",

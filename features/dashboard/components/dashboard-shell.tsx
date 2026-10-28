@@ -15,6 +15,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { AppSidebar } from "./app-sidebar"
+import { CommandMenuProvider } from "./command-menu"
 import { TopBar } from "./top-bar"
 
 const NAV = [
@@ -49,8 +50,9 @@ export function DashboardShell({
   }))
   return (
     <TooltipProvider>
-      <SidebarProvider>
-        <AppSidebar business={business} owner={owner} />
+      <CommandMenuProvider business={business}>
+        <SidebarProvider>
+        <AppSidebar businessId={business.id} owner={owner} />
         <SidebarInset className="min-w-0">
           <TopBar business={business} owner={owner} menu />
           <div className="mx-auto w-full max-w-3xl p-4 pb-28 md:p-8">
@@ -76,7 +78,8 @@ export function DashboardShell({
             </Link>
           ))}
         </nav>
-      </SidebarProvider>
+        </SidebarProvider>
+      </CommandMenuProvider>
     </TooltipProvider>
   )
 }

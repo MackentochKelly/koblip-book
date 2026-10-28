@@ -62,11 +62,21 @@ export function OwnerAvatar({
 // badge on its corner and a ring on hover and while open, so it reads as a
 // menu. Inside: who is logged in, light or dark (or as the device is), the
 // language, and Sign out.
-const THEMES = [
+export const THEMES = [
   { value: "light", key: "light", icon: SunIcon },
   { value: "dark", key: "dark", icon: MoonIcon },
   { value: "system", key: "device", icon: MonitorIcon },
 ] as const
+
+// Signs out and goes home; the account menu and the search list both use it.
+export function useSignOut() {
+  const router = useRouter()
+  return async () => {
+    await authClient.signOut()
+    router.replace("/")
+    router.refresh()
+  }
+}
 
 export function AccountMenu({ owner }: { owner: Owner }) {
   const m = useOwnerMessages().shell
@@ -108,15 +118,10 @@ export function AccountMenuContent({
   React.ComponentProps<typeof DropdownMenuContent>,
   "side" | "align" | "sideOffset"
 >) {
-  const router = useRouter()
   const { theme, setTheme } = useTheme()
   const m = useOwnerMessages().shell
   const [language, setLanguage] = useOwnerLanguage()
-  const signOut = async () => {
-    await authClient.signOut()
-    router.replace("/")
-    router.refresh()
-  }
+  const signOut = useSignOut()
 
   return (
     <DropdownMenuContent

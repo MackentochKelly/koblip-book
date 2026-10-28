@@ -1,17 +1,14 @@
 "use client"
 
-import Link from "next/link"
 import { usePathname } from "next/navigation"
-import {
-  CalendarDaysIcon,
-  ClockIcon,
-  ContactIcon,
-  MessageCircleIcon,
-  ScissorsIcon,
-  StoreIcon,
-  UsersIcon,
-} from "lucide-react"
+import { SearchIcon } from "lucide-react"
 
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
+import { Kbd } from "@/components/ui/kbd"
 import {
   Sidebar,
   SidebarContent,
@@ -24,73 +21,74 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useOwnerMessages } from "../i18n/provider"
+import { NAV_GROUPS } from "../navigation"
 import type { Owner } from "./account-menu"
+import { useCommandMenu } from "./command-menu"
 import { NavMain } from "./nav-main"
 import { NavUser } from "./nav-user"
 
 // The owner area's menu, built like Koblip Sales' AppSidebar (shadcn
-// sidebar-07): the business on top, the pages in groups, the account at the
-// foot. On a computer it folds to icons (the top bar's ☰ or the rail); on a
-// phone it slides in from the left. New pages go in a group here.
-const GROUPS = [
-  {
-    key: "business",
-    items: [
-      { path: "", key: "bookings", icon: CalendarDaysIcon },
-      { path: "/customers", key: "customers", icon: ContactIcon },
-      { path: "/services", key: "services", icon: ScissorsIcon },
-      { path: "/assistant", key: "assistant", icon: MessageCircleIcon },
-    ],
-  },
-  {
-    key: "settings",
-    items: [
-      { path: "/team", key: "team", icon: UsersIcon },
-      { path: "/hours", key: "hours", icon: ClockIcon },
-      { path: "/settings", key: "details", icon: StoreIcon },
-    ],
-  },
-] as const
-
+// sidebar-07): Search on top, the pages in groups, the account at the foot.
+// On a computer it folds to icons (the top bar's ☰ or the rail); on a phone
+// it is the drawer from the left.
 export function AppSidebar({
-  business,
+  businessId,
   owner,
 }: {
-  business: { id: string; name: string }
+  businessId: string
   owner: Owner
 }) {
   const pathname = usePathname()
   const m = useOwnerMessages().shell
   const { isMobile, setOpenMobile } = useSidebar()
-  const base = `/dashboard/${business.id}`
+  const openCommandMenu = useCommandMenu()
+  const base = `/dashboard/${businessId}`
+  const openSearch = () => {
+    if (isMobile) setOpenMobile(false)
+    openCommandMenu(true)
+  }
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <SidebarMenu>
+        {/* A search field when open; just the icon when folded. */}
+        <InputGroup className="bg-background group-data-[collapsible=icon]:hidden">
+          <InputGroupAddon>
+            <SearchIcon />
+          </InputGroupAddon>
+          <InputGroupInput
+            readOnly
+            placeholder={m.search}
+            aria-label={m.searchHint}
+            aria-haspopup="dialog"
+            className="cursor-pointer"
+            onClick={openSearch}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                openSearch()
+              }
+            }}
+          />
+          <InputGroupAddon align="inline-end">
+            <Kbd>⌘K</Kbd>
+          </InputGroupAddon>
+        </InputGroup>
+        <SidebarMenu className="hidden group-data-[collapsible=icon]:flex">
           <SidebarMenuItem>
             <SidebarMenuButton
-              size="lg"
-              tooltip={business.name}
-              render={
-                <Link
-                  href={base}
-                  onClick={() => {
-                    if (isMobile) setOpenMobile(false)
-                  }}
-                />
-              }
+              variant="outline"
+              tooltip={m.search}
+              onClick={openSearch}
             >
-              <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <StoreIcon className="size-4" />
-              </span>
-              <span className="truncate font-medium">{business.name}</span>
+              <SearchIcon />
+              <span>{m.search}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {GROUPS.map((group) => (
+        {NAV_GROUPS.map((group) => (
           <NavMain
             key={group.key}
             title={m.groups[group.key]}
