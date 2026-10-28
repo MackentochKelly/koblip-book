@@ -302,3 +302,29 @@ export const assistantActions = sqliteTable(
   },
   (table) => [index("assistant_actions_business_idx").on(table.businessId)]
 )
+
+// One saved owner-assistant chat per row. The id is a UUID made by the
+// browser; messages is JSON of AssistantMessage[]. The title is the
+// first owner message, set once on create and never changed after.
+export const assistantConversations = sqliteTable(
+  "assistant_conversations",
+  {
+    id: text().primaryKey(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    ownerId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text().notNull(),
+    messages: text().notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    index("assistant_conversations_owner_idx").on(
+      table.businessId,
+      table.ownerId,
+      table.updatedAt
+    ),
+  ]
+)

@@ -38,13 +38,14 @@ const execute = vi.fn(
   })
 )
 
-function tool() {
+function tool(name = "cancel_booking", resultKind = "bookings") {
   return {
     definition: {
-      name: "cancel_booking",
+      name,
       description: "Cancel.",
       parameters: {},
       needsConfirm: true,
+      resultKind,
     },
     label: "Cancelling…",
     run: async () => ({ error: "needs tap" }),
@@ -74,12 +75,17 @@ async function events(res: Response) {
     .map((line) => JSON.parse(line))
 }
 
-function store(ownerId = "u1", businessId = "b1", now = Date.now()) {
+function store(
+  ownerId = "u1",
+  businessId = "b1",
+  now = Date.now(),
+  toolName = "cancel_booking"
+) {
   const stored = storePendingAction(
     {
       ownerId,
       businessId,
-      toolName: "cancel_booking",
+      toolName,
       args: { bookingId: "k1" },
     },
     now
@@ -176,7 +182,12 @@ test("accept true runs stored args only, extra body fields ignored", async () =>
   const list = await events(res)
   expect(list[0]).toMatchObject({ type: "step", status: "running" })
   expect(list[1]).toMatchObject({ type: "step", status: "done" })
-  expect(list[2]).toEqual({ type: "text", delta: 'did {"bookingId":"k1"}' })
+  expect(list[2]).toEqual({
+    type: "result",
+    ok: true,
+    text: 'did {"bookingId":"k1"}',
+    kind: "bookings",
+  })
   expect(list[3]).toEqual({ type: "done" })
   expect(execute).toHaveBeenCalledWith({ bookingId: "k1" })
   expect(logAssistantAction).toHaveBeenCalledWith({
@@ -208,7 +219,12 @@ test("execute failure streams a failed step and server text", async () => {
   const res = await POST(post({ businessId: "b1", id, accept: true }))
   const list = await events(res)
   expect(list[1]).toMatchObject({ type: "step", status: "failed" })
-  expect(list[2]).toEqual({ type: "text", delta: "Could not cancel (gone)." })
+  expect(list[2]).toEqual({
+    type: "result",
+    ok: false,
+    text: "Could not cancel (gone).",
+    kind: "bookings",
+  })
   expect(list[3]).toEqual({ type: "done" })
 })
 
@@ -228,4 +244,28 @@ test("confirm passes the cookie language to the tools", async () => {
   const id = store()
   await POST(post({ businessId: "b1", id, accept: true }))
   expect(vi.mocked(buildAssistantTools)).toHaveBeenCalledWith("b1", "u1", "es")
+})
+
+test("each tool sends its result kind", async () => {
+  const kinds: [string, string][] = [
+    ["update_service", "services"],
+    ["cancel_booking", "bookings"],
+    ["delete_service", "services"],
+    ["delete_team_member", "team"],
+    ["set_hours", "hours"],
+    ["create_booking", "bookings"],
+  ]
+  for (const [name, kind] of kinds) {
+    resetPendingActionsForTests()
+    vi.mocked(buildAssistantTools).mockReturnValue([tool(name, kind)] as never)
+    const id = store("u1", "b1", Date.now(), name)
+    const res = await POST(post({ businessId: "b1", id, accept: true }))
+    const list = await events(res)
+    expect(list[2]).toEqual({
+      type: "result",
+      ok: true,
+      text: 'did {"bookingId":"k1"}',
+      kind,
+    })
+  }
 })

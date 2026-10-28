@@ -57,6 +57,13 @@
       "when": 1793150374338,
       "tag": "0007_cheerful_fixer",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1793221419116,
+      "tag": "0008_skinny_leper_queen",
+      "breakpoints": true
     }
   ]
 }

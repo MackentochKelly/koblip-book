@@ -154,7 +154,14 @@ export async function POST(request: Request) {
             status: outcome.ok ? "done" : "failed",
           })
         )
-        controller.enqueue(send({ type: "text", delta: outcome.doneText }))
+        controller.enqueue(
+          send({
+            type: "result",
+            ok: outcome.ok,
+            text: outcome.doneText,
+            kind: tool?.definition.resultKind ?? "bookings",
+          })
+        )
         controller.enqueue(send({ type: "done" }))
       } finally {
         budget.done()

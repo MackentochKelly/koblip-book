@@ -71,6 +71,24 @@ function byName(name: string) {
   )!
 }
 
+test("every needsConfirm tool carries its result kind", () => {
+  const tools = buildAssistantTools("b1", "u1", "en")
+  const kinds: [string, string][] = [
+    ["update_service", "services"],
+    ["cancel_booking", "bookings"],
+    ["delete_service", "services"],
+    ["delete_team_member", "team"],
+    ["set_hours", "hours"],
+    ["create_booking", "bookings"],
+  ]
+  expect(
+    tools.filter((t) => t.definition.needsConfirm).map((t) => t.definition.name).sort()
+  ).toEqual(kinds.map(([name]) => name).sort())
+  for (const [name, kind] of kinds) {
+    expect(byName(name).definition.resultKind).toBe(kind)
+  }
+})
+
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(getOwnerBusiness).mockResolvedValue({

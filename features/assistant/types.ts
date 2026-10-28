@@ -1,7 +1,15 @@
 // Stream contract for POST /api/assistant (section 5 of docs/assistant-plan.md).
 // One JSON object per line.
+// Which owner page a confirmed change belongs to, for the result link.
+export type ResultKind =
+  | "bookings"
+  | "services"
+  | "team"
+  | "hours"
+  | "customers"
 export type AssistantStreamEvent =
   | { type: "text"; delta: string } // words appearing in the reply
+  | { type: "result"; ok: boolean; text: string; kind: ResultKind } // tap outcome with a link
   | {
       type: "step"
       id: string
@@ -37,6 +45,20 @@ export interface AssistantMessage {
   text: string
 }
 
+// One row of the Recent list: id, title, and last-write time.
+export interface AssistantChatSummary {
+  id: string
+  title: string
+  updatedAt: string // ISO date
+}
+
+// A saved chat: id, title, and the full word list.
+export interface AssistantChat {
+  id: string
+  title: string
+  messages: AssistantMessage[]
+}
+
 // Request for POST /api/assistant.
 export interface AssistantRequest {
   businessId: string
@@ -56,6 +78,7 @@ export interface AssistantToolDefinition {
   description: string
   parameters: Record<string, unknown> // JSON Schema for the arguments
   needsConfirm: boolean // true = sends a confirm event instead of running
+  resultKind?: ResultKind // set on needsConfirm tools: the result link
 }
 
 // One tool the loop can run: definition sent to the model, label for the

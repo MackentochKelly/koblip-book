@@ -669,6 +669,7 @@ export function buildAssistantTools(
           },
         }),
         needsConfirm: true,
+        resultKind: "services",
       },
       label: t.steps.updateService,
       run: async () => ({ error: t.tapFirst.updateService }),
@@ -832,6 +833,7 @@ export function buildAssistantTools(
           ["bookingId"]
         ),
         needsConfirm: true,
+        resultKind: "bookings",
       },
       label: t.steps.cancelBooking,
       run: async () => ({ error: t.tapFirst.cancel }),
@@ -887,6 +889,7 @@ export function buildAssistantTools(
           ["serviceId"]
         ),
         needsConfirm: true,
+        resultKind: "services",
       },
       label: t.steps.deleteService,
       run: async () => ({ error: t.tapFirst.deleteService }),
@@ -935,6 +938,7 @@ export function buildAssistantTools(
           ["memberId"]
         ),
         needsConfirm: true,
+        resultKind: "team",
       },
       label: t.steps.deleteMember,
       run: async () => ({ error: t.tapFirst.deleteMember }),
@@ -1001,6 +1005,7 @@ export function buildAssistantTools(
           ["rows"]
         ),
         needsConfirm: true,
+        resultKind: "hours",
       },
       label: t.steps.hours,
       run: async () => ({
@@ -1142,6 +1147,7 @@ export function buildAssistantTools(
           ["serviceId", "date", "time", "name"]
         ),
         needsConfirm: true,
+        resultKind: "bookings",
       },
       label: t.steps.booking,
       run: async () => ({ error: t.tapFirst.booking }),

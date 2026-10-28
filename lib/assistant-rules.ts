@@ -13,6 +13,11 @@ export const ASSISTANT_RULES = {
   // Choice buttons: how many options, and how long one option is.
   maxChoices: 6,
   maxChoiceChars: 60,
+  // Saved chats: how many the Recent list shows, and save limits.
+  recentChats: 30,
+  maxSavedMessages: 200,
+  maxSavedMessageChars: 8000,
+  maxChatTitleChars: 60,
   // Total wall time for one chat request, model calls and tools together.
   maxRequestMs: 120_000,
   // Voice transcription. The UI imports these so the browser records
