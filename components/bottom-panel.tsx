@@ -42,6 +42,9 @@ function useSheetStops(
     const area = scroll.current
     const body = inner.current
     if (!sheet || !area || !body) return
+    // While a sheet is open on top, this one is squeezed to its height;
+    // measure again once it closes.
+    if (sheet.hasAttribute("data-nested-drawer-open")) return
     const padding = parseFloat(getComputedStyle(area).paddingTop) * 2
     // Everything that is not the scrolling middle: handle, title, buttons.
     const chrome = sheet.offsetHeight - area.clientHeight
@@ -65,21 +68,34 @@ function useSheetStops(
     )
   }, [popup, scroll, inner])
 
-  const measured = heights !== null
+  // The sheet mounts after `open` turns on (it is portalled), so the effect
+  // waits for it rather than running once with nothing to watch.
+  const [tries, setTries] = React.useState(0)
   React.useLayoutEffect(() => {
     if (!enabled) return
+    if (!popup.current) {
+      const frame = requestAnimationFrame(() => setTries((value) => value + 1))
+      return () => cancelAnimationFrame(frame)
+    }
     // A ResizeObserver reports each node's size as soon as it starts
     // observing, so this also takes the first measurement.
     const observer = new ResizeObserver(measure)
     for (const node of [popup.current, inner.current]) {
       if (node) observer.observe(node)
     }
+    // A sheet on top closing leaves this one's size as it was, so watch for
+    // it too.
+    const nested = new MutationObserver(measure)
+    nested.observe(popup.current, {
+      attributeFilter: ["data-nested-drawer-open"],
+    })
     window.addEventListener("resize", measure)
     return () => {
       observer.disconnect()
+      nested.disconnect()
       window.removeEventListener("resize", measure)
     }
-  }, [enabled, measure, measured, popup, inner])
+  }, [enabled, measure, tries, popup, inner])
 
   // A new step opens at its own content height again.
   const [lastKey, setLastKey] = React.useState(resetKey)
@@ -168,10 +184,12 @@ export function BottomPanel({
       }}
       showSwipeHandle
       swipeDirection="down"
+      // Always controlled (null until the stops are measured): Base UI
+      // keeps the first mode it sees and warns on a switch.
+      snapPoint={stops.active ? stops.snapPoint : null}
       {...(stops.active
         ? {
             snapPoints: stops.snapPoints,
-            snapPoint: stops.snapPoint,
             onSnapPointChange: stops.onSnapPointChange,
           }
         : {})}
@@ -182,6 +200,9 @@ export function BottomPanel({
           onFocusCapture={stops.active ? stops.onFocusCapture : undefined}
           className={cn(
             "pb-[max(var(--drawer-keyboard-inset,0px),env(safe-area-inset-bottom))] [--drawer-content-max-height:calc(100dvh-3rem)]",
+            // Base UI's stop offset doesn't pass down to children, so copy
+            // it into one that does for the list and the buttons.
+            "[--sheet-offset:var(--drawer-snap-point-offset,0px)]",
             // While the keyboard is open the sheet rises to its tallest.
             "min-h-[min(var(--drawer-content-max-height),calc(var(--drawer-keyboard-inset,0px)*1000))]"
           )}
@@ -200,7 +221,7 @@ export function BottomPanel({
               // Below a lower stop, the hidden part is left as room so the
               // last lines can scroll into view.
               stops.active &&
-                "pb-[calc(1rem+var(--drawer-snap-point-offset,0px))]"
+                "pb-[calc(1rem+var(--sheet-offset))]"
             )}
           >
             <div ref={inner}>{children}</div>
@@ -209,7 +230,7 @@ export function BottomPanel({
             <DrawerFooter
               className={cn(
                 stops.active &&
-                  "translate-y-[calc(-1*var(--drawer-snap-point-offset,0px))] transition-[translate] duration-450 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                  "translate-y-[calc(-1*var(--sheet-offset))] transition-[translate] duration-450 ease-[cubic-bezier(0.22,1,0.36,1)]"
               )}
             >
               {footer}
