@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect, useRef } from "react"
+
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 
@@ -30,13 +32,33 @@ export function ViewTabs<T extends string>({
   listClassName?: string
 }) {
   const line = variant === "line"
+  // Like big apps: the open tab slides into the middle of the row, so a tab
+  // opened by scrolling the page is never hidden or faded at the edge.
+  const row = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const box = row.current
+    const tab = box?.querySelector<HTMLElement>("[data-active]")
+    if (!box || !tab) return
+    const boxRect = box.getBoundingClientRect()
+    const tabRect = tab.getBoundingClientRect()
+    const left =
+      box.scrollLeft +
+      tabRect.left -
+      boxRect.left -
+      (boxRect.width - tabRect.width) / 2
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    box.scrollTo({ left, behavior: reduce ? "auto" : "smooth" })
+  }, [value])
   return (
     <Tabs
       value={value}
       onValueChange={(next) => onChange(next as T)}
       className={cn("min-w-0 gap-1", line && "border-b", className)}
     >
-      <div className="no-scrollbar min-w-0 flex-1 scroll-fade-x overflow-x-auto whitespace-nowrap">
+      <div
+        ref={row}
+        className="no-scrollbar min-w-0 flex-1 scroll-fade-x overflow-x-auto whitespace-nowrap"
+      >
         <TabsList
           variant={variant}
           aria-label={ariaLabel}
