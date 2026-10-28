@@ -12,6 +12,11 @@ const shell: typeof en = {
     assistant: "Asistente",
     details: "Datos",
   },
+  groups: {
+    business: "Negocio",
+    settings: "Ajustes",
+  },
+  menu: "Menú",
   viewPage: "Ver página",
   account: "Cuenta",
   appearance: "Apariencia",

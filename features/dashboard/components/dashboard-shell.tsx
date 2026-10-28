@@ -11,20 +11,10 @@ import {
   UsersIcon,
 } from "lucide-react"
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { AppSidebar } from "./app-sidebar"
 import { TopBar } from "./top-bar"
 
 const NAV = [
@@ -36,8 +26,9 @@ const NAV = [
   { path: "/settings", label: "Settings", icon: SettingsIcon },
 ]
 
-// The owner area: a sidebar on a computer, a bottom tab bar on a phone, and
-// a top bar with the business name, its public page and the account menu.
+// The owner area: the ☰ menu (folding on a computer, sliding in on a phone),
+// a bottom tab bar on a phone for the main pages, and a top bar with the
+// business name, its public page and the account menu.
 export function DashboardShell({
   business,
   owner,
@@ -59,35 +50,9 @@ export function DashboardShell({
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <Sidebar
-          collapsible="none"
-          className="sticky top-0 hidden h-dvh border-r md:flex"
-        >
-          <SidebarHeader>
-            <p className="truncate px-2 pt-2 font-semibold">{business.name}</p>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {items.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        isActive={item.active}
-                        render={<Link href={item.href} />}
-                      >
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
+        <AppSidebar business={business} />
         <SidebarInset className="min-w-0">
-          <TopBar business={business} owner={owner} besideSidebar />
+          <TopBar business={business} owner={owner} menu />
           <div className="mx-auto w-full max-w-3xl p-4 pb-28 md:p-8">
             {children}
           </div>

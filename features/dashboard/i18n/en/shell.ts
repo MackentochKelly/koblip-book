@@ -11,6 +11,11 @@ const shell = {
     assistant: "Assistant",
     details: "Details",
   },
+  groups: {
+    business: "Business",
+    settings: "Settings",
+  },
+  menu: "Menu",
   viewPage: "View page",
   account: "Account",
   appearance: "Appearance",
