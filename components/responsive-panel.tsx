@@ -44,7 +44,7 @@ export function ResponsivePanel({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="-mx-6 max-h-[60dvh] overflow-y-auto px-6">
+        <div className="-mx-6 max-h-[60dvh] scroll-fade overflow-y-auto px-6 py-2">
           {children}
         </div>
         {footer && <DialogFooter>{footer}</DialogFooter>}

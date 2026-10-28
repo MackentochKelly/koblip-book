@@ -194,7 +194,9 @@ export function BottomPanel({
           <div
             ref={scroll}
             className={cn(
-              "flex-1 overflow-y-auto p-4",
+              // shadcn's scroll-fade: the list fades out under the title
+              // and the buttons instead of being cut.
+              "flex-1 scroll-fade overflow-y-auto p-4",
               // Below a lower stop, the hidden part is left as room so the
               // last lines can scroll into view.
               stops.active &&
