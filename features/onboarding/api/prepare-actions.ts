@@ -7,7 +7,7 @@ import {
   importPlaceById,
 } from "@/features/place-import/api/import-place"
 import { db } from "@/lib/db"
-import { businesses } from "@/lib/db/schema"
+import { businessHours, businesses } from "@/lib/db/schema"
 import type { PreparedBusiness } from "../types"
 import { purgeUnclaimedImports } from "./purge-unclaimed"
 
@@ -29,12 +29,20 @@ async function toPrepared(slug: string): Promise<PreparedBusiness> {
     return failed("prepareBusiness imported no business row")
   }
   const page = await getBusinessPage(slug)
+  const hours = await db
+    .select({ weekday: businessHours.weekday })
+    .from(businessHours)
+    .where(eq(businessHours.businessId, business.id))
   return {
     ok: true,
     slug,
     name: business.name,
     address: business.address,
     photoUrl: page?.photos[0]?.url ?? null,
+    category: business.category,
+    phone: business.phone,
+    website: business.website,
+    openDays: new Set(hours.map((hour) => hour.weekday)).size,
   }
 }
 

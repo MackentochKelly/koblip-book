@@ -22,5 +22,9 @@ export type PreparedBusiness =
       name: string
       address: string | null
       photoUrl: string | null
+      category: string | null
+      phone: string | null
+      website: string | null
+      openDays: number
     }
   | { ok: false; error: "invalid" | "not_found" | "failed" }

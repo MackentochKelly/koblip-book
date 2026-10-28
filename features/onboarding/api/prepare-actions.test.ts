@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
-import { businesses, user } from "@/lib/db/schema"
+import { businessHours, businesses, user } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
 
@@ -49,6 +49,9 @@ beforeAll(async () => {
       slug: "claimed-shop",
       name: "Claimed Shop",
       address: "1 Main St",
+      category: "Barber shop",
+      phone: "+18095550100",
+      website: "https://claimed.example",
       timezone: "America/Santo_Domingo",
       currency: "DOP",
       ownerId: "other",
@@ -68,6 +71,20 @@ beforeAll(async () => {
       timezone: "America/Santo_Domingo",
       currency: "DOP",
       ownerId: null,
+    },
+  ])
+  await db.insert(businessHours).values([
+    {
+      businessId: "biz-claimed",
+      weekday: 1,
+      opensAt: "09:00",
+      closesAt: "18:00",
+    },
+    {
+      businessId: "biz-claimed",
+      weekday: 3,
+      opensAt: "09:00",
+      closesAt: "18:00",
     },
   ])
 })
@@ -124,6 +141,10 @@ test("prepareBusiness returns the prepared shop", async () => {
     name: "Claimed Shop",
     address: "1 Main St",
     photoUrl: "https://photo/1",
+    category: "Barber shop",
+    phone: "+18095550100",
+    website: "https://claimed.example",
+    openDays: 2,
   })
   expect(importPlaceByIdMock).toHaveBeenCalledWith(
     "ChIJclaimedplace",
@@ -158,6 +179,13 @@ test("prepareBusinessFromLink validates, imports and maps errors", async () => {
   getBusinessPageMock.mockResolvedValueOnce({ photos: [] })
   await expect(
     prepareBusinessFromLink({ link: "  https://maps.app.goo.gl/free  " })
-  ).resolves.toMatchObject({ ok: true, slug: "free-shop" })
+  ).resolves.toMatchObject({
+    ok: true,
+    slug: "free-shop",
+    category: null,
+    phone: null,
+    website: null,
+    openDays: 0,
+  })
   expect(importPlaceMock).toHaveBeenCalledWith("https://maps.app.goo.gl/free")
 })

@@ -25,14 +25,26 @@ beforeAll(async () => {
     { id: "user-a", name: "A", email: "a@example.com", emailVerified: false },
     { id: "user-b", name: "B", email: "b@example.com", emailVerified: false },
   ])
-  await db.insert(businesses).values({
-    id: "biz-taken",
-    slug: "taken-shop",
-    name: "Taken Shop",
-    timezone: "America/Santo_Domingo",
-    currency: "DOP",
-    ownerId: "user-a",
-  })
+  await db.insert(businesses).values([
+    {
+      id: "biz-taken",
+      slug: "taken-shop",
+      name: "Taken Shop",
+      timezone: "America/Santo_Domingo",
+      currency: "DOP",
+      ownerId: "user-a",
+      detailsConfirmedAt: null,
+    },
+    {
+      id: "biz-mine",
+      slug: "my-shop",
+      name: "My Shop",
+      timezone: "America/Santo_Domingo",
+      currency: "DOP",
+      ownerId: "user-b",
+      detailsConfirmedAt: null,
+    },
+  ])
 })
 
 afterAll(() => {
@@ -49,13 +61,33 @@ async function ownerIdOf(id: string) {
   return row?.ownerId ?? null
 }
 
+async function confirmedAtOf(id: string) {
+  const { db } = await import("@/lib/db")
+  const [row] = await db
+    .select({ detailsConfirmedAt: businesses.detailsConfirmedAt })
+    .from(businesses)
+    .where(eq(businesses.id, id))
+  return row?.detailsConfirmedAt ?? null
+}
+
 test("user B takes over a business owned by user A", async () => {
   await expect(ownerIdOf("biz-taken")).resolves.toBe("user-a")
+  await expect(confirmedAtOf("biz-taken")).resolves.toBeNull()
   await expect(claimBusinessForUser("user-b", "taken-shop")).resolves.toEqual({
     ok: true,
     businessId: "biz-taken",
   })
   await expect(ownerIdOf("biz-taken")).resolves.toBe("user-b")
+  expect(typeof (await confirmedAtOf("biz-taken"))).toBe("number")
+})
+
+test("claiming your own unconfirmed business confirms it", async () => {
+  await expect(confirmedAtOf("biz-mine")).resolves.toBeNull()
+  await expect(claimBusinessForUser("user-b", "my-shop")).resolves.toEqual({
+    ok: true,
+    businessId: "biz-mine",
+  })
+  expect(typeof (await confirmedAtOf("biz-mine"))).toBe("number")
 })
 
 test("claiming your own business is ok", async () => {
