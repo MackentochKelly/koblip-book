@@ -1,4 +1,8 @@
-import type { AssistantMessage, AssistantStreamEvent } from "../types"
+import type {
+  AssistantMessage,
+  AssistantStreamEvent,
+  ResultKind,
+} from "../types"
 
 export type ConfirmState = "pending" | "accepted" | "declined"
 
@@ -17,6 +21,13 @@ export interface ChatConfirm {
   state: ConfirmState
 }
 
+// What a tapped action did, and which owner page it changed.
+export interface ChatResult {
+  ok: boolean
+  text: string
+  kind: ResultKind
+}
+
 export type ChatItem =
   | { id: string; role: "owner"; text: string }
   | {
@@ -27,6 +38,7 @@ export type ChatItem =
       confirms: ChatConfirm[]
       // Quick answers the owner can tap instead of typing.
       choices: string[]
+      result: ChatResult | null
     }
 
 type AssistantItem = Extract<ChatItem, { role: "assistant" }>
@@ -53,6 +65,7 @@ export function newReply(): ChatItem {
     steps: [],
     confirms: [],
     choices: [],
+    result: null,
   }
 }
 
@@ -101,6 +114,11 @@ export function applyEvent(
         ...reply,
         choices: event.options,
       }))
+    case "result":
+      return withReply(items, (reply) => ({
+        ...reply,
+        result: { ok: event.ok, text: event.text, kind: event.kind },
+      }))
     default:
       return items
   }
@@ -123,21 +141,30 @@ export function resolveConfirm(
   )
 }
 
+// The words of one item; a tapped action's result counts as words, so
+// the assistant knows on the next question what was done.
+function wordsOf(item: ChatItem): string {
+  if (item.role === "owner" || !item.result) return item.text
+  return [item.text, item.result.text]
+    .filter((part) => part.trim())
+    .join("\n\n")
+}
+
 // What the server gets: the words only, the newest `limit` messages.
 export function toMessages(
   items: ChatItem[],
   limit: number
 ): AssistantMessage[] {
   return items
-    .filter((item) => item.text.trim() !== "")
-    .map((item) => ({ role: item.role, text: item.text }))
+    .map((item) => ({ role: item.role, text: wordsOf(item) }))
+    .filter((message) => message.text.trim() !== "")
     .slice(-limit)
 }
 
 // Saved chats carry this number. Raise it whenever ChatItem changes:
 // a chat saved by another version starts fresh instead of breaking the
 // screen.
-export const CHAT_STORAGE_VERSION = 3
+export const CHAT_STORAGE_VERSION = 4
 
 const isText = (value: unknown): value is string => typeof value === "string"
 
@@ -152,7 +179,11 @@ function isChatItem(value: unknown): value is ChatItem {
     Array.isArray(item.steps) &&
     Array.isArray(item.confirms) &&
     Array.isArray(item.choices) &&
-    item.choices.every(isText)
+    item.choices.every(isText) &&
+    (item.result === null ||
+      (typeof item.result === "object" &&
+        isText((item.result as Record<string, unknown>).text) &&
+        isText((item.result as Record<string, unknown>).kind)))
   )
 }
 

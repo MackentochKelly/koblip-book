@@ -2,12 +2,29 @@
 // card titles); these are the ones the screen itself shows.
 const messages = {
   title: "Assistant",
+  back: "Back",
   newChat: "New chat",
-  working: "Working",
+  working: "Thinking…",
   retry: "Try again",
+  // The one line that folds the assistant's steps.
+  work: {
+    done: (count: number) =>
+      count === 1 ? "Checked 1 thing" : `Checked ${count} things`,
+  },
+  // Under each answer.
+  actions: {
+    copy: "Copy",
+    retry: "Try again",
+  },
   empty: {
-    title: "Ask me anything",
-    example: "What is on today?",
+    title: "How can I help today?",
+    // One tap sends the words as they are.
+    suggestions: {
+      today: "What is on today?",
+      free: "Who is free tomorrow?",
+      book: "Book a client",
+      services: "Show my services",
+    },
   },
   composer: {
     placeholder: "Ask or tell me what to do",

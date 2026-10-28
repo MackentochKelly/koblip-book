@@ -15,6 +15,8 @@ export default async function AssistantPage({
 }: PageProps<"/dashboard/[businessId]/assistant">) {
   const { businessId } = await params
   await getOwnerBusiness(businessId)
-  const messages = assistantMessagesFor(await getOwnerLanguage())
-  return <AssistantChat businessId={businessId} messages={messages} />
+  // Only the language crosses to the browser: the words include
+  // functions (counts), which a server page cannot send.
+  const language = await getOwnerLanguage()
+  return <AssistantChat businessId={businessId} language={language} />
 }

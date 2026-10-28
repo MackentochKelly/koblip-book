@@ -2,9 +2,11 @@ import type { AssistantTransport } from "../hooks/use-assistant-chat"
 import type { AssistantStreamEvent } from "../types"
 
 // One JSON event per line, as the server writes them.
+// A stopped request just ends: stopping is not an error.
 async function* events(
   path: string,
-  body: unknown
+  body: unknown,
+  signal?: AbortSignal
 ): AsyncGenerator<AssistantStreamEvent> {
   let response: Response
   try {
@@ -12,8 +14,10 @@ async function* events(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal,
     })
   } catch {
+    if (signal?.aborted) return
     yield { type: "error", code: "unavailable" }
     return
   }
@@ -53,12 +57,13 @@ async function* events(
     const last = pending.trim() ? parse(pending) : null
     if (last) yield last
   } catch {
+    if (signal?.aborted) return
     yield { type: "error", code: "unavailable" }
   }
 }
 
 // The real server: POST /api/assistant and POST /api/assistant/confirm.
 export const httpTransport: AssistantTransport = {
-  chat: (request) => events("/api/assistant", request),
+  chat: (request, signal) => events("/api/assistant", request, signal),
   confirm: (request) => events("/api/assistant/confirm", request),
 }

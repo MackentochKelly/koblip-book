@@ -18,15 +18,22 @@ export function TopBar({
   owner,
   menu = false,
   viewPage = true,
+  className,
 }: {
   business: { id: string; slug: string; name: string }
   owner: { name: string; email: string; image: string | null }
   menu?: boolean
   viewPage?: boolean
+  className?: string
 }) {
   const m = useOwnerMessages().shell
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background px-4">
+    <header
+      className={cn(
+        "sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background px-4",
+        className
+      )}
+    >
       {menu && (
         // Koblip Sales' header button: a 20 px icon, like the bar's others.
         <SidebarTrigger
@@ -58,9 +65,7 @@ export function TopBar({
       )}
       <AccountMenu
         owner={owner}
-        settingsHref={
-          menu ? `/dashboard/${business.id}/settings` : undefined
-        }
+        settingsHref={menu ? `/dashboard/${business.id}/settings` : undefined}
       />
     </header>
   )

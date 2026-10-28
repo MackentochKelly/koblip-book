@@ -2,12 +2,29 @@ import type en from "./en"
 
 const messages: typeof en = {
   title: "Asistente",
+  back: "Atrás",
   newChat: "Nuevo chat",
-  working: "Trabajando",
+  working: "Pensando…",
   retry: "Reintentar",
+  // The one line that folds the assistant's steps.
+  work: {
+    done: (count: number) =>
+      count === 1 ? "Revisé 1 cosa" : `Revisé ${count} cosas`,
+  },
+  // Under each answer.
+  actions: {
+    copy: "Copiar",
+    retry: "Reintentar",
+  },
   empty: {
-    title: "Pregúntame lo que quieras",
-    example: "¿Qué hay para hoy?",
+    title: "¿En qué te ayudo hoy?",
+    // One tap sends the words as they are.
+    suggestions: {
+      today: "¿Qué hay para hoy?",
+      free: "¿Quién está libre mañana?",
+      book: "Reservar a un cliente",
+      services: "Ver mis servicios",
+    },
   },
   composer: {
     placeholder: "Pregunta o dime qué hacer",

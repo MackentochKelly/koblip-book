@@ -71,6 +71,7 @@ test("toMessages skips empty replies and keeps the newest", () => {
       steps: [],
       confirms: [],
       choices: [],
+      result: null,
     },
     { id: "o2", role: "owner", text: "Again" },
   ]
@@ -130,4 +131,25 @@ test("an older or broken saved chat starts fresh instead of breaking", () => {
   ).toEqual([])
   expect(restoreChat("not json")).toEqual([])
   expect(restoreChat(null)).toEqual([])
+})
+
+test("a tapped action's result lands on the reply and goes back as words", () => {
+  let items: ChatItem[] = [owner]
+  items = applyEvent(items, {
+    type: "result",
+    ok: true,
+    text: "Cancelled the booking.",
+    kind: "bookings",
+  })
+  const reply = items[1]
+  expect(reply.role === "assistant" && reply.result).toEqual({
+    ok: true,
+    text: "Cancelled the booking.",
+    kind: "bookings",
+  })
+  expect(toMessages(items, 10)).toEqual([
+    { role: "owner", text: "Hi" },
+    { role: "assistant", text: "Cancelled the booking." },
+  ])
+  expect(restoreChat(saveChat(items))).toEqual(items)
 })

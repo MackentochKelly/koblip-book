@@ -82,45 +82,54 @@ export function DashboardShell({
       </Link>
     )
   }
+  // On a phone the assistant is a full page of its own, with its own back
+  // button: no top bar or tab bar. On a computer it fills the page beside
+  // the menu, under the top bar.
   return (
     <TooltipProvider>
       <CommandMenuProvider business={business}>
-      <SidebarProvider>
-        <AppSidebar businessId={business.id} owner={owner} />
-        <SidebarInset className={cn("min-w-0", assistantOpen && "h-dvh")}>
-          <TopBar business={business} owner={owner} menu />
-          {/* The chat page fills the screen between the top bar and the tab bar. */}
-          <div
+        <SidebarProvider>
+          <AppSidebar businessId={business.id} owner={owner} />
+          <SidebarInset className={cn("min-w-0", assistantOpen && "md:h-dvh")}>
+            <TopBar
+              business={business}
+              owner={owner}
+              menu
+              className={cn(assistantOpen && "max-md:hidden")}
+            />
+            <div
+              className={cn(
+                "mx-auto w-full max-w-3xl p-4 pb-28 md:p-8",
+                assistantOpen &&
+                  "flex min-h-0 max-w-none flex-1 flex-col p-0 pb-0 md:p-0"
+              )}
+            >
+              {children}
+            </div>
+          </SidebarInset>
+          <nav
+            aria-label={m.owner}
             className={cn(
-              "mx-auto w-full max-w-3xl p-4 pb-28 md:p-8",
-              assistantOpen &&
-                "flex min-h-0 max-w-none flex-1 flex-col p-0 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:p-0"
+              "fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden",
+              assistantOpen && "hidden"
             )}
           >
-            {children}
-          </div>
-        </SidebarInset>
-        <nav
-          aria-label={m.owner}
-          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
-        >
-          {PHONE_LEFT.map((path) => tab(path))}
-          <div className="flex min-h-14 items-center justify-center">
-            <Button
-              size="icon-lg"
-              // A soft 2 px ring drawn over its own colour, and a 24 px icon.
-              className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
-              aria-label={m.assistant}
-              nativeButton={false}
-              aria-current={assistantOpen ? "page" : undefined}
-              render={<Link href={assistantHref} />}
-            >
-              <SparklesIcon className="size-6" />
-            </Button>
-          </div>
-          {PHONE_RIGHT.map((path) => tab(path))}
-        </nav>
-      </SidebarProvider>
+            {PHONE_LEFT.map((path) => tab(path))}
+            <div className="flex min-h-14 items-center justify-center">
+              <Button
+                size="icon-lg"
+                // A soft 2 px ring drawn over its own colour, and a 24 px icon.
+                className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
+                aria-label={m.assistant}
+                nativeButton={false}
+                render={<Link href={assistantHref} />}
+              >
+                <SparklesIcon className="size-6" />
+              </Button>
+            </div>
+            {PHONE_RIGHT.map((path) => tab(path))}
+          </nav>
+        </SidebarProvider>
       </CommandMenuProvider>
     </TooltipProvider>
   )

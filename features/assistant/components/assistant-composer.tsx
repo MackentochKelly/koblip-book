@@ -21,13 +21,18 @@ export function AssistantComposer({
   labels,
   errors,
   busy,
+  stoppable,
   onSend,
+  onStop,
 }: {
   businessId: string
   labels: AssistantMessages["composer"]
   errors: AssistantMessages["errors"]
   busy: boolean
+  // While a question is being answered, the send button stops it.
+  stoppable: boolean
   onSend: (text: string) => void
+  onStop: () => void
 }) {
   const [text, setText] = useState("")
   const canSend = text.trim() !== "" && !busy
@@ -68,13 +73,17 @@ export function AssistantComposer({
           enterKeyHint="send"
           className="max-h-32 min-h-11"
         />
-        <InputGroupAddon align="inline-end">
+        {/* Like big chat apps: the words on top, the buttons in a row
+            under them. */}
+        <InputGroupAddon align="block-end" className="justify-end">
           {voice.supported && (
             <InputGroupButton
               type="button"
               variant={voice.state === "recording" ? "destructive" : "ghost"}
               size="icon-sm"
-              aria-label={voice.state === "recording" ? labels.stop : labels.mic}
+              aria-label={
+                voice.state === "recording" ? labels.stop : labels.mic
+              }
               disabled={busy || voice.state === "transcribing"}
               onClick={voice.state === "recording" ? voice.stop : voice.start}
             >
@@ -87,15 +96,27 @@ export function AssistantComposer({
               )}
             </InputGroupButton>
           )}
-          <InputGroupButton
-            type="submit"
-            variant="default"
-            size="icon-sm"
-            aria-label={labels.send}
-            disabled={!canSend}
-          >
-            {busy ? <Spinner /> : <ArrowUpIcon />}
-          </InputGroupButton>
+          {stoppable ? (
+            <InputGroupButton
+              type="button"
+              variant="default"
+              size="icon-sm"
+              aria-label={labels.stop}
+              onClick={onStop}
+            >
+              <SquareIcon />
+            </InputGroupButton>
+          ) : (
+            <InputGroupButton
+              type="submit"
+              variant="default"
+              size="icon-sm"
+              aria-label={labels.send}
+              disabled={!canSend}
+            >
+              {busy ? <Spinner /> : <ArrowUpIcon />}
+            </InputGroupButton>
+          )}
         </InputGroupAddon>
       </InputGroup>
     </form>

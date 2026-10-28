@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type {
@@ -20,7 +20,10 @@ import {
 
 // How the screen talks to the server: two calls, each a stream of events.
 export interface AssistantTransport {
-  chat(request: AssistantRequest): AsyncIterable<AssistantStreamEvent>
+  chat(
+    request: AssistantRequest,
+    signal?: AbortSignal
+  ): AsyncIterable<AssistantStreamEvent>
   confirm(request: AssistantConfirmRequest): AsyncIterable<AssistantStreamEvent>
 }
 
@@ -80,13 +83,28 @@ export function useAssistantChat(
     }
   }
 
-  const ask = (history: ChatItem[]) =>
-    consume(
-      transport.chat({
-        businessId,
-        messages: toMessages(history, ASSISTANT_RULES.maxHistoryMessages),
-      })
+  // Only a question can be stopped; a tapped action always finishes.
+  const asking = useRef<AbortController | null>(null)
+  const [stoppable, setStoppable] = useState(false)
+  const ask = async (history: ChatItem[]) => {
+    const controller = new AbortController()
+    asking.current = controller
+    setStoppable(true)
+    await consume(
+      transport.chat(
+        {
+          businessId,
+          messages: toMessages(history, ASSISTANT_RULES.maxHistoryMessages),
+        },
+        controller.signal
+      )
     )
+    if (asking.current === controller) {
+      asking.current = null
+      setStoppable(false)
+    }
+  }
+  const stop = () => asking.current?.abort()
 
   const send = (text: string) => {
     const clean = text.trim()
@@ -123,5 +141,5 @@ export function useAssistantChat(
     setError(null)
   }
 
-  return { items, busy, error, send, retry, answer, reset }
+  return { items, busy, error, send, retry, answer, reset, stop, stoppable }
 }
