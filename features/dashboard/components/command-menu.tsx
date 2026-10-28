@@ -85,7 +85,7 @@ function CommandMenu({
     >
       <Command>
         <CommandInput placeholder={m.searchHint} />
-        <CommandList>
+        <CommandList className="scroll-fade">
           <CommandEmpty>{m.noResults}</CommandEmpty>
           {NAV_GROUPS.map((group) => (
             <CommandGroup key={group.key} heading={m.groups[group.key]}>

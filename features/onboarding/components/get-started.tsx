@@ -545,7 +545,7 @@ function FindBusiness({
       <div
         className={cn(
           expanded &&
-            "-mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-1"
+            "-mx-1 flex min-h-0 flex-1 scroll-fade flex-col overflow-y-auto overscroll-contain px-1"
         )}
       >
         {results && results.length === 0 && !searching && (

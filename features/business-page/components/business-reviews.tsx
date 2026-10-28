@@ -169,7 +169,7 @@ export function BusinessReviews({
             )}
             <ReviewSource />
           </DialogHeader>
-          <div className="-mx-6 min-h-0 flex-1 overflow-y-auto px-6">
+          <div className="-mx-6 min-h-0 flex-1 scroll-fade overflow-y-auto px-6">
             <ReviewList reviews={reviews} columns={false} clamp={false} />
           </div>
           {mapsUrl && (

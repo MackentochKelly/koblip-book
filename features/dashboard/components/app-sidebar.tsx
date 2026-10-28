@@ -87,7 +87,7 @@ export function AppSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="scroll-fade">
         {NAV_GROUPS.map((group) => (
           <NavMain
             key={group.key}
