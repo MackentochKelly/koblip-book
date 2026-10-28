@@ -165,7 +165,8 @@ export function DetailsForm({
             <FieldError>Use a full link, with https://</FieldError>
           )}
         </Field>
-        {!hasTeam && (
+        {/* Settings only: right after sign-up it would just confuse. */}
+        {!hasTeam && !next && (
           <Field data-invalid={invalid === "seats" || undefined}>
             <FieldLabel htmlFor="details-seats">
               Bookings at the same time
