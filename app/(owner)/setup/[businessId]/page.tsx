@@ -30,7 +30,7 @@ export default async function SetupPage({
       <section className="relative isolate flex flex-1 flex-col overflow-hidden rounded-4xl">
         <HeroGradient />
         <SiteHeader />
-        <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-6 px-4 pt-6 pb-24">
+        <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-6 px-2 pt-4 pb-24 sm:px-4">
           <GlassCard>
             <DetailsForm
               businessId={businessId}
