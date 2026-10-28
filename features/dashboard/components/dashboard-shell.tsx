@@ -50,7 +50,7 @@ export function DashboardShell({
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <AppSidebar business={business} />
+        <AppSidebar business={business} owner={owner} />
         <SidebarInset className="min-w-0">
           <TopBar business={business} owner={owner} menu />
           <div className="mx-auto w-full max-w-3xl p-4 pb-28 md:p-8">

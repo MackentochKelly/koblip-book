@@ -32,17 +32,24 @@ import { LANGUAGE_NAMES } from "@/features/dashboard/i18n/language"
 import { authClient } from "@/lib/auth-client"
 import { PAGE_LANGUAGES, isPageLanguage } from "@/lib/page-language"
 import { initials } from "@/lib/initials"
+import { cn } from "@/lib/utils"
 
-interface Owner {
+export interface Owner {
   name: string
   email: string
   image: string | null
 }
 
 // The owner's photo (from Google) or initials.
-function OwnerAvatar({ owner }: { owner: Owner }) {
+export function OwnerAvatar({
+  owner,
+  className,
+}: {
+  owner: Owner
+  className?: string
+}) {
   return (
-    <Avatar className="size-9">
+    <Avatar className={cn("size-9", className)}>
       {owner.image && (
         <AvatarImage src={owner.image} alt="" referrerPolicy="no-referrer" />
       )}
@@ -62,16 +69,7 @@ const THEMES = [
 ] as const
 
 export function AccountMenu({ owner }: { owner: Owner }) {
-  const router = useRouter()
-  const { theme, setTheme } = useTheme()
   const m = useOwnerMessages().shell
-  const [language, setLanguage] = useOwnerLanguage()
-  const signOut = async () => {
-    await authClient.signOut()
-    router.replace("/")
-    router.refresh()
-  }
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -92,56 +90,89 @@ export function AccountMenu({ owner }: { owner: Owner }) {
           <ChevronDownIcon />
         </span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel className="flex items-center gap-2 font-normal">
-            <OwnerAvatar owner={owner} />
-            <span className="grid min-w-0 flex-1 leading-tight">
-              <span className="truncate font-medium text-foreground">
-                {owner.name}
-              </span>
-              <span className="truncate text-xs">{owner.email}</span>
-            </span>
-          </DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>{m.appearance}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={theme ?? "system"}
-            onValueChange={setTheme}
-          >
-            {THEMES.map((item) => (
-              <DropdownMenuRadioItem key={item.value} value={item.value}>
-                <item.icon />
-                {m[item.key]}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>{m.language}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={language}
-            onValueChange={(next) => {
-              if (isPageLanguage(next)) setLanguage(next)
-            }}
-          >
-            {PAGE_LANGUAGES.map((code) => (
-              <DropdownMenuRadioItem key={code} value={code} lang={code}>
-                <LanguagesIcon />
-                {LANGUAGE_NAMES[code]}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => void signOut()}>
-          <LogOutIcon />
-          {m.signOut}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
+      <AccountMenuContent owner={owner} align="end" />
     </DropdownMenu>
+  )
+}
+
+// What the account menu holds; the top bar's photo and the menu's footer
+// (NavUser) both open it.
+export function AccountMenuContent({
+  owner,
+  side,
+  align,
+  sideOffset,
+}: {
+  owner: Owner
+} & Pick<
+  React.ComponentProps<typeof DropdownMenuContent>,
+  "side" | "align" | "sideOffset"
+>) {
+  const router = useRouter()
+  const { theme, setTheme } = useTheme()
+  const m = useOwnerMessages().shell
+  const [language, setLanguage] = useOwnerLanguage()
+  const signOut = async () => {
+    await authClient.signOut()
+    router.replace("/")
+    router.refresh()
+  }
+
+  return (
+    <DropdownMenuContent
+      side={side}
+      align={align}
+      sideOffset={sideOffset}
+      className="w-64"
+    >
+      <DropdownMenuGroup>
+        <DropdownMenuLabel className="flex items-center gap-2 font-normal">
+          <OwnerAvatar owner={owner} />
+          <span className="grid min-w-0 flex-1 leading-tight">
+            <span className="truncate font-medium text-foreground">
+              {owner.name}
+            </span>
+            <span className="truncate text-xs">{owner.email}</span>
+          </span>
+        </DropdownMenuLabel>
+      </DropdownMenuGroup>
+      <DropdownMenuSeparator />
+      <DropdownMenuGroup>
+        <DropdownMenuLabel>{m.appearance}</DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={theme ?? "system"}
+          onValueChange={setTheme}
+        >
+          {THEMES.map((item) => (
+            <DropdownMenuRadioItem key={item.value} value={item.value}>
+              <item.icon />
+              {m[item.key]}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuGroup>
+      <DropdownMenuSeparator />
+      <DropdownMenuGroup>
+        <DropdownMenuLabel>{m.language}</DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={language}
+          onValueChange={(next) => {
+            if (isPageLanguage(next)) setLanguage(next)
+          }}
+        >
+          {PAGE_LANGUAGES.map((code) => (
+            <DropdownMenuRadioItem key={code} value={code} lang={code}>
+              <LanguagesIcon />
+              {LANGUAGE_NAMES[code]}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuGroup>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={() => void signOut()}>
+        <LogOutIcon />
+        {m.signOut}
+      </DropdownMenuItem>
+    </DropdownMenuContent>
   )
 }
