@@ -85,21 +85,9 @@ export function DetailsForm({
     })
   }
 
-  // In Settings, Save sits beside the title; right after sign-up it is the
-  // big button at the bottom, like the login card's.
-  const save = (
-    <Button type="submit" size={next ? "lg" : "default"} disabled={pending}>
-      {pending && <Spinner data-icon="inline-start" />}
-      Save
-    </Button>
-  )
-
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {!next && save}
-      </div>
+      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
       <FieldGroup>
         <Field data-invalid={invalid === "name" || undefined}>
           <FieldLabel htmlFor="details-name">Name</FieldLabel>
@@ -191,7 +179,11 @@ export function DetailsForm({
           </Field>
         )}
       </FieldGroup>
-      {next && save}
+      {/* Save is the big button at the end of the form, like the login card's. */}
+      <Button type="submit" size="lg" disabled={pending}>
+        {pending && <Spinner data-icon="inline-start" />}
+        Save
+      </Button>
     </form>
   )
 }

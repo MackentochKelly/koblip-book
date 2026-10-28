@@ -83,13 +83,7 @@ export function HoursForm({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Hours</h1>
-        <Button onClick={save} disabled={pending}>
-          {pending && <Spinner data-icon="inline-start" />}
-          Save
-        </Button>
-      </div>
+      <h1 className="text-2xl font-semibold tracking-tight">Hours</h1>
       <FieldGroup>
         {WEEK.map(({ weekday, label }, index) => {
           const ranges = days[weekday]
@@ -179,6 +173,11 @@ export function HoursForm({
           )
         })}
       </FieldGroup>
+      {/* Save is the big button at the end, like the Settings form's. */}
+      <Button size="lg" onClick={save} disabled={pending}>
+        {pending && <Spinner data-icon="inline-start" />}
+        Save
+      </Button>
     </div>
   )
 }
