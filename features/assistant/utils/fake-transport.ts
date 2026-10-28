@@ -35,6 +35,7 @@ export const fakeTransport: AssistantTransport = {
         title: "Cancel booking",
         summary: "Ana, haircut, tomorrow 3:00 PM",
         destructive: true,
+        action: "Cancel booking",
       }
       yield* words("I need your OK before I do that.")
     } else {

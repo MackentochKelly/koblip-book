@@ -13,6 +13,7 @@ export interface ChatConfirm {
   title: string
   summary: string
   destructive: boolean
+  action: string
   state: ConfirmState
 }
 
@@ -24,6 +25,8 @@ export type ChatItem =
       text: string
       steps: ChatStep[]
       confirms: ChatConfirm[]
+      // Quick answers the owner can tap instead of typing.
+      choices: string[]
     }
 
 type AssistantItem = Extract<ChatItem, { role: "assistant" }>
@@ -49,6 +52,7 @@ export function newReply(): ChatItem {
     text: "",
     steps: [],
     confirms: [],
+    choices: [],
   }
 }
 
@@ -87,9 +91,15 @@ export function applyEvent(
             title: event.title,
             summary: event.summary,
             destructive: event.destructive,
+            action: event.action,
             state: "pending",
           },
         ],
+      }))
+    case "choices":
+      return withReply(items, (reply) => ({
+        ...reply,
+        choices: event.options,
       }))
     default:
       return items
@@ -122,4 +132,45 @@ export function toMessages(
     .filter((item) => item.text.trim() !== "")
     .map((item) => ({ role: item.role, text: item.text }))
     .slice(-limit)
+}
+
+// Saved chats carry this number. Raise it whenever ChatItem changes:
+// a chat saved by another version starts fresh instead of breaking the
+// screen.
+export const CHAT_STORAGE_VERSION = 3
+
+const isText = (value: unknown): value is string => typeof value === "string"
+
+// Only a reply that has every field this version draws.
+function isChatItem(value: unknown): value is ChatItem {
+  if (typeof value !== "object" || value === null) return false
+  const item = value as Record<string, unknown>
+  if (!isText(item.id) || !isText(item.text)) return false
+  if (item.role === "owner") return true
+  return (
+    item.role === "assistant" &&
+    Array.isArray(item.steps) &&
+    Array.isArray(item.confirms) &&
+    Array.isArray(item.choices) &&
+    item.choices.every(isText)
+  )
+}
+
+export function saveChat(items: ChatItem[]): string {
+  return JSON.stringify({ version: CHAT_STORAGE_VERSION, items })
+}
+
+// The saved chat, or nothing when it is missing, from another version
+// or not the shape this version draws.
+export function restoreChat(saved: string | null): ChatItem[] {
+  if (!saved) return []
+  try {
+    const data: unknown = JSON.parse(saved)
+    if (typeof data !== "object" || data === null) return []
+    const { version, items } = data as { version?: unknown; items?: unknown }
+    if (version !== CHAT_STORAGE_VERSION || !Array.isArray(items)) return []
+    return items.every(isChatItem) ? items : []
+  } catch {
+    return []
+  }
 }

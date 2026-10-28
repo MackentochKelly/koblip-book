@@ -296,6 +296,7 @@ test("update_service describe shows only the changed fields, old to new", async 
     title: "Change this service?",
     summary: expect.stringContaining("Haircut"),
     destructive: false,
+    action: "Change",
   })
   const summary = (card as { summary: string }).summary
   expect(summary).toContain("→")
@@ -510,6 +511,7 @@ test("cancel_booking card comes from the database, executes on tap", async () =>
     title: "Cancel this booking?",
     summary: "Ana · Cut · Thursday, October 29 · 10:00 AM",
     destructive: true,
+    action: "Cancel booking",
   })
   expect(vi.mocked(cancelBooking)).not.toHaveBeenCalled()
   vi.mocked(cancelBooking).mockResolvedValue({ ok: true })
@@ -566,6 +568,7 @@ test("delete_service and delete_team_member describe and execute", async () => {
     title: "Delete this service?",
     summary: "Cut · 30 min",
     destructive: true,
+    action: "Delete",
   })
   expect(await service.confirm!.describe({ serviceId: "nope" })).toEqual({
     error: expect.any(String),
@@ -580,6 +583,7 @@ test("delete_service and delete_team_member describe and execute", async () => {
     title: "Remove this team member?",
     summary: "Bo",
     destructive: true,
+    action: "Remove",
   })
   vi.mocked(deleteTeamMember).mockResolvedValue({
     ok: false,
@@ -598,6 +602,7 @@ test("set_hours validates, describes and executes", async () => {
     title: "Replace opening hours?",
     summary: "Monday 09:00–18:00",
     destructive: true,
+    action: "Replace hours",
   })
   expect(
     await tool.confirm!.describe({
@@ -707,9 +712,32 @@ test("create_booking happy path stores a card with a server weekday", async () =
     title: "Book this appointment?",
     summary: expect.stringContaining("Thursday, January 1 · 10:00 AM"),
     destructive: false,
+    action: "Book",
   })
   expect((card as { summary: string }).summary).toContain("Ana · Cut")
   expect(vi.mocked(createOwnerBooking)).not.toHaveBeenCalled()
+})
+
+test("a price of 0 shows as Free on the booking and update cards", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue({
+    business: BOOKING_BUSINESS,
+    hours: [],
+    services: [
+      { id: "s1", name: "Cut", durationMinutes: 30, priceMinor: 0 },
+    ],
+    team: [{ id: "m1", name: "Leo" }],
+  } as never)
+  const booked = (await byName("create_booking").confirm!.describe(
+    BOOKING_ARGS
+  )) as { summary: string }
+  expect(booked.summary).toContain("Free")
+  expect(booked.summary).not.toContain("€0")
+  mockServiceShop()
+  const changed = (await byName("update_service").confirm!.describe({
+    serviceId: "s1",
+    priceMinor: 0,
+  })) as { summary: string }
+  expect(changed.summary).toContain("Free")
 })
 
 test("create_booking allowConflict true is dropped", async () => {
@@ -945,6 +973,7 @@ test("spanish cancel card is server-built with a spanish weekday", async () => {
     title: "¿Cancelar esta reserva?",
     summary: "Ana · Corte · jueves, 29 de octubre · 10:00 a.m.",
     destructive: true,
+    action: "Cancelar reserva",
   })
   expect(vi.mocked(cancelBooking)).not.toHaveBeenCalled()
   vi.mocked(cancelBooking).mockResolvedValue({ ok: true })

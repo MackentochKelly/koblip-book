@@ -34,6 +34,31 @@ interface CollectedCall {
   argsText: string
 }
 
+// Buttons from a passed answer check, or null for no buttons: trimmed,
+// de-duplicated, and only options that appear word for word in this
+// request's tool results. A bad choice list never fails the answer.
+function cleanChoices(
+  choices: string[],
+  toolResults: string[]
+): string[] | null {
+  const options: string[] = []
+  for (const choice of choices) {
+    const name = choice.trim()
+    if (
+      name === "" ||
+      name.length > ASSISTANT_RULES.maxChoiceChars ||
+      !toolResults.some((result) => result.includes(name)) ||
+      options.includes(name)
+    ) {
+      continue
+    }
+    options.push(name)
+  }
+  return options.length >= 2 && options.length <= ASSISTANT_RULES.maxChoices
+    ? options
+    : null
+}
+
 // Today in the business timezone, for the system prompt.
 function zonedNow(
   now: number,
@@ -117,6 +142,7 @@ async function* handleConfirmCall(
     title: card.title,
     summary: card.summary,
     destructive: card.destructive,
+    action: card.action,
   }
   return true
 }
@@ -142,8 +168,8 @@ export async function* runChat(
     yield { type: "error", code: "unavailable" }
     return
   }
-  const byName = new Map(tools.map((t) => [t.definition.name, t]))
   const t = serverMessagesFor(context.language)
+  const byName = new Map(tools.map((t) => [t.definition.name, t]))
   const { date, time, weekday } = zonedNow(context.now, context.timeZone)
   const history: OpenAI.Chat.ChatCompletionMessageParam[] = [
     {
@@ -224,18 +250,17 @@ export async function* runChat(
         return await create()
       }
     }
-    let sentText = false
     let stopAfterReply = false
-    // A non-confirm tool ran in this request: later text may cite tool
-    // data, so it is held for the judge instead of streaming live.
+    // A non-confirm tool ran in this request: the final answer goes
+    // through the judge instead of going out directly.
     let toolsRan = false
     let retriesLeft = ASSISTANT_RULES.answerCheckRetries
     // Last answer that failed a check and is still waiting on its retry.
     let pendingAnswer: string | null = null
     for (let turn = 0; turn < ASSISTANT_RULES.maxSteps; turn += 1) {
       const stream = await modelCall()
-      // Decided before this turn streams: holding cannot start mid-turn.
-      const streamLive = !toolsRan
+      // The owner only ever sees the final answer: every turn's text
+      // is held, and only a turn with no tool calls goes out.
       let text = ""
       const calls: CollectedCall[] = []
       for await (const chunk of stream) {
@@ -265,17 +290,6 @@ export async function* runChat(
         }
         if (delta.content) {
           text += delta.content
-          if (!streamLive) {
-            continue
-          }
-          // A later turn's words would glue onto the earlier text
-          // ("list.I checked"), so separate them once, only when
-          // this turn really has text.
-          if (sentText && text === delta.content) {
-            yield { type: "text", delta: "\n\n" }
-          }
-          sentText = true
-          yield { type: "text", delta: delta.content }
         }
         for (const tc of delta.tool_calls ?? []) {
           const slot = (calls[tc.index] ??= { id: "", name: "", argsText: "" })
@@ -291,12 +305,16 @@ export async function* runChat(
         }
       }
       if (calls.length === 0) {
-        if (streamLive || text === "") {
+        if (!toolsRan) {
+          // Nothing was looked up: the answer goes out as one event.
+          if (text !== "") {
+            yield { type: "text", delta: text }
+          }
           yield { type: "done" }
           return
         }
-        // Held final answer: check it against this request's tool
-        // results before the owner sees it.
+        // Final answer after lookups: check it against this request's
+        // tool results before the owner sees it.
         const stepId = `check-${turn}`
         yield {
           type: "step",
@@ -323,11 +341,11 @@ export async function* runChat(
         }
         if (verdict.ok === true) {
           pendingAnswer = null
-          if (sentText) {
-            yield { type: "text", delta: "\n\n" }
-          }
-          sentText = true
           yield { type: "text", delta: text }
+          const options = cleanChoices(verdict.choices, toolResults)
+          if (options !== null) {
+            yield { type: "choices", options }
+          }
           yield { type: "done" }
           return
         }
@@ -347,23 +365,10 @@ export async function* runChat(
           continue
         }
         pendingAnswer = null
-        if (sentText) {
-          yield { type: "text", delta: "\n\n" }
-        }
-        sentText = true
         yield { type: "text", delta: text }
         yield { type: "text", delta: "\n\n" + t.loop.unverified }
         yield { type: "done" }
         return
-      }
-      if (!streamLive && text !== "") {
-        // Short lead-in to the tool calls: it carries no looked-up
-        // facts of its own, so it goes out as it is.
-        if (sentText) {
-          yield { type: "text", delta: "\n\n" }
-        }
-        sentText = true
-        yield { type: "text", delta: text }
       }
       // Full assistant message first, then one tool message per call,
       // in order, with the matching id.
@@ -438,10 +443,6 @@ export async function* runChat(
     if (pendingAnswer !== null) {
       // A checked answer never got its retry: send the last one
       // marked as unverified instead of the stopped message.
-      if (sentText) {
-        yield { type: "text", delta: "\n\n" }
-      }
-      sentText = true
       yield { type: "text", delta: pendingAnswer }
       yield { type: "text", delta: "\n\n" + t.loop.unverified }
       yield { type: "done" }

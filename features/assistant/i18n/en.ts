@@ -18,8 +18,8 @@ const messages = {
     micDenied: "Allow the microphone to speak.",
   },
   confirm: {
-    cancel: "Cancel",
-    confirm: "Confirm",
+    // Closes the card; the other button says the action itself.
+    cancel: "Not now",
     confirmed: "Confirmed",
     cancelled: "Cancelled",
   },

@@ -77,7 +77,8 @@ export function MessageList({
     <MessageScrollerProvider autoScroll>
       <MessageScroller className="flex-1">
         <MessageScrollerViewport>
-          <MessageScrollerContent className="gap-4 p-4">
+          {/* pb-12 keeps the last message clear of the bottom fade. */}
+          <MessageScrollerContent className="gap-4 p-4 pb-12">
             {items.length === 0 && !busy && (
               <Empty className="flex-1">
                 <EmptyHeader>
@@ -131,6 +132,21 @@ export function MessageList({
                             {item.text}
                           </BubbleContent>
                         </Bubble>
+                      )}
+                      {/* Quick answers, only while they are still the
+                          open question: a tap sends one as the reply. */}
+                      {item === last && !busy && item.choices.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {item.choices.map((choice) => (
+                            <Button
+                              key={choice}
+                              variant="outline"
+                              onClick={() => onSend(choice)}
+                            >
+                              {choice}
+                            </Button>
+                          ))}
+                        </div>
                       )}
                       {item.confirms.map((confirm) => (
                         <ConfirmCard

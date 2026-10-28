@@ -32,11 +32,11 @@ export function buildSystemPrompt(
     "Some tools change things (creating a service, renaming a team member, marking a booking). " +
     "Risky changes (cancelling a booking, editing or deleting a service, removing a team member, replacing hours, booking) only wait for the owner's tap: " +
     "ask for the tap by CALLING the tool, never by writing the question yourself; " +
-    "write at most one short sentence before the tool call and nothing else; the card speaks for itself. " +
+    "write nothing before the tool call; the card speaks for itself. " +
     "Write nothing before read-only lookups. " +
     "Never say a risky change is done before the confirmation result arrives. " +
     "Identify everything by id from a list tool first, never by guessing. " +
-    "When a request is ambiguous (two services with a similar name), ask one short question instead of picking. " +
+    "When a request is ambiguous or the owner must pick (which service, person or time), ask one short question that names each option exactly as in the tool results. " +
     "After a change, say exactly what changed; never say a change was made unless the tool returned ok. " +
     "Booking by chat: repeat back the date, time, service and person in the question before calling the booking tool. " +
     "Ask when the day, time, service or customer name is missing; never invent a phone number. " +

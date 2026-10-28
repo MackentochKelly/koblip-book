@@ -29,8 +29,8 @@ afterEach(() => {
 })
 
 test("judge call uses json_schema with strict true and low reasoning", async () => {
-  const create = mockCreate('{"supported":true,"problems":[]}')
-  await expect(checkAnswer(INPUT)).resolves.toEqual({ ok: true })
+  const create = mockCreate('{"supported":true,"problems":[],"choices":[]}')
+  await expect(checkAnswer(INPUT)).resolves.toEqual({ ok: true, choices: [] })
   const body = (create.mock.calls as unknown[][])[0]?.[0] as {
     model: string
     stream?: boolean
@@ -55,7 +55,7 @@ test("judge call uses json_schema with strict true and low reasoning", async () 
   const schema = body.response_format.json_schema.schema
   expect(schema.additionalProperties).toBe(false)
   expect(schema.required).toEqual(
-    expect.arrayContaining(["supported", "problems"])
+    expect.arrayContaining(["supported", "problems", "choices"])
   )
   expect(Object.keys(schema.properties)).toEqual(
     expect.arrayContaining(schema.required)
@@ -65,11 +65,29 @@ test("judge call uses json_schema with strict true and low reasoning", async () 
 })
 
 test("unsupported answers come back with each problem", async () => {
-  mockCreate('{"supported":false,"problems":["Wrong count.","Wrong name."]}')
+  mockCreate('{"supported":false,"problems":["Wrong count.","Wrong name."],"choices":[]}')
   await expect(checkAnswer(INPUT)).resolves.toEqual({
     ok: false,
     problems: ["Wrong count.", "Wrong name."],
   })
+})
+
+test("choices are parsed and returned with a supported answer", async () => {
+  mockCreate('{"supported":true,"problems":[],"choices":["Cut","Fade"]}')
+  await expect(checkAnswer(INPUT)).resolves.toEqual({
+    ok: true,
+    choices: ["Cut", "Fade"],
+  })
+})
+
+test("malformed choices keep ok true with no buttons", async () => {
+  for (const choices of ['"Cut"', "[42]", "null", '{"a":1}']) {
+    mockCreate(`{"supported":true,"problems":[],"choices":${choices}}`)
+    await expect(checkAnswer(INPUT)).resolves.toEqual({
+      ok: true,
+      choices: [],
+    })
+  }
 })
 
 test("a failing call is unknown and never throws", async () => {

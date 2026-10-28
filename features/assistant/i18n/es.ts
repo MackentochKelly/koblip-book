@@ -18,8 +18,8 @@ const messages: typeof en = {
     micDenied: "Permite el micrófono para hablar.",
   },
   confirm: {
-    cancel: "Cancelar",
-    confirm: "Confirmar",
+    // Closes the card; the other button says the action itself.
+    cancel: "Ahora no",
     confirmed: "Confirmado",
     cancelled: "Cancelado",
   },

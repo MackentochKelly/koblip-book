@@ -52,10 +52,19 @@ const messages: typeof en = {
     book: "¿Reservar esta cita?",
     updateService: "¿Cambiar este servicio?",
   },
+  actions: {
+    cancelBooking: "Cancelar reserva",
+    deleteService: "Eliminar",
+    deleteMember: "Eliminar",
+    hours: "Cambiar horario",
+    book: "Reservar",
+    updateService: "Cambiar",
+  },
   booking: {
     minutes: (durationMinutes: number) => `${durationMinutes} min`,
     anyone: "Cualquiera",
     noPrice: "Sin precio",
+    free: "Gratis",
     closedWeek: "Cerrado toda la semana",
     at: (day: string, time: string) => `${day} a las ${time}`,
     booked: (name: string, service: string, when: string) =>

@@ -90,7 +90,7 @@ function immediate(
 
 function confirmable(
   name: string,
-  card: { title: string; summary: string; destructive: boolean }
+  card: { title: string; summary: string; destructive: boolean; action: string }
 ): AssistantTool {
   return {
     definition: {
@@ -154,16 +154,19 @@ function evalTools(): AssistantTool[] {
       title: "Cancel?",
       summary: "Ana",
       destructive: true,
+      action: "Cancel booking",
     }),
     confirmable("delete_service", {
       title: "Delete?",
       summary: "Beard Trim",
       destructive: true,
+      action: "Delete",
     }),
     confirmable("create_booking", {
       title: "Book?",
       summary: "Ana",
       destructive: false,
+      action: "Book",
     }),
   ]
 }

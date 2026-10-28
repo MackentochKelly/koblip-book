@@ -12,6 +12,8 @@ import {
   applyEvent,
   newReply,
   resolveConfirm,
+  restoreChat,
+  saveChat,
   toMessages,
   type ChatItem,
 } from "../utils/chat-state"
@@ -42,10 +44,8 @@ export function useAssistantChat(
   useEffect(() => {
     queueMicrotask(() => {
       try {
-        const saved: unknown = JSON.parse(
-          sessionStorage.getItem(storageKey) ?? "null"
-        )
-        if (Array.isArray(saved)) setItems(saved as ChatItem[])
+        // A chat from another version or of another shape starts fresh.
+        setItems(restoreChat(sessionStorage.getItem(storageKey)))
       } catch {
         // Nothing saved, or storage is off.
       }
@@ -56,7 +56,7 @@ export function useAssistantChat(
     if (!restored) return
     try {
       if (items.length > 0) {
-        sessionStorage.setItem(storageKey, JSON.stringify(items))
+        sessionStorage.setItem(storageKey, saveChat(items))
       } else {
         sessionStorage.removeItem(storageKey)
       }

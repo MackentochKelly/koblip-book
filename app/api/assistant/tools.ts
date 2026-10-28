@@ -250,7 +250,9 @@ async function checkBookingArgs(
     price:
       service.priceMinor === null
         ? t.booking.noPrice
-        : formatPrice(service.priceMinor, business.currency, t.locale),
+        : service.priceMinor === 0
+          ? t.booking.free
+          : formatPrice(service.priceMinor, business.currency, t.locale),
     timeZone: business.timezone,
   }
 }
@@ -377,7 +379,9 @@ export function buildAssistantTools(
   const describePrice = (priceMinor: number | null, currency: string): string =>
     priceMinor === null
       ? t.booking.noPrice
-      : formatPrice(priceMinor, currency, t.locale)
+      : priceMinor === 0
+        ? t.booking.free
+        : formatPrice(priceMinor, currency, t.locale)
   return [
     {
       definition: {
@@ -699,6 +703,7 @@ export function buildAssistantTools(
           }
           return {
             title: t.cards.updateService,
+            action: t.actions.updateService,
             summary: nameChanged
               ? parts.join(" · ")
               : `${checked.current.name} · ${parts.join(" · ")}`,
@@ -848,6 +853,7 @@ export function buildAssistantTools(
           }
           return {
             title: t.cards.cancel,
+            action: t.actions.cancelBooking,
             summary: `${booking.customerName} · ${booking.serviceName} · ${formatDay(booking.date, t.locale)} · ${formatClock(booking.time, t.locale)}`,
             destructive: true,
           }
@@ -897,6 +903,7 @@ export function buildAssistantTools(
           }
           return {
             title: t.cards.deleteService,
+            action: t.actions.deleteService,
             summary: `${service.name} · ${t.booking.minutes(service.durationMinutes)}`,
             destructive: true,
           }
@@ -944,6 +951,7 @@ export function buildAssistantTools(
           }
           return {
             title: t.cards.deleteMember,
+            action: t.actions.deleteMember,
             summary: member.name,
             destructive: true,
           }
@@ -1012,6 +1020,7 @@ export function buildAssistantTools(
             )
           return {
             title: t.cards.hours,
+            action: t.actions.hours,
             summary:
               lines.length > 0 ? lines.join(", ") : t.booking.closedWeek,
             destructive: true,
@@ -1144,6 +1153,7 @@ export function buildAssistantTools(
           }
           return {
             title: t.cards.book,
+            action: t.actions.book,
             summary:
               `${checked.name} · ${checked.service.name} · ` +
               `${formatDay(checked.date, t.locale)} · ${formatClock(checked.time, t.locale)} · ` +

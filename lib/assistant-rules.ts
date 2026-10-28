@@ -10,6 +10,9 @@ export const ASSISTANT_RULES = {
   // timeout for one judge call.
   answerCheckRetries: 2,
   answerCheckTimeoutMs: 20_000,
+  // Choice buttons: how many options, and how long one option is.
+  maxChoices: 6,
+  maxChoiceChars: 60,
   // Total wall time for one chat request, model calls and tools together.
   maxRequestMs: 120_000,
   // Voice transcription. The UI imports these so the browser records

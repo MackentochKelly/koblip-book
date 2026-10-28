@@ -56,10 +56,19 @@ const messages = {
     book: "Book this appointment?",
     updateService: "Change this service?",
   },
+  actions: {
+    cancelBooking: "Cancel booking",
+    deleteService: "Delete",
+    deleteMember: "Remove",
+    hours: "Replace hours",
+    book: "Book",
+    updateService: "Change",
+  },
   booking: {
     minutes: (durationMinutes: number) => `${durationMinutes} min`,
     anyone: "Anyone",
     noPrice: "No price",
+    free: "Free",
     closedWeek: "Closed all week",
     at: (day: string, time: string) => `${day} at ${time}`,
     booked: (name: string, service: string, when: string) =>

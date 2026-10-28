@@ -44,7 +44,7 @@ export function ConfirmCard({
               disabled={disabled}
               onClick={() => onAnswer(true)}
             >
-              {labels.confirm}
+              {confirm.action}
             </Button>
           </>
         ) : (

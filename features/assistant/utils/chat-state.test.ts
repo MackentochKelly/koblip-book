@@ -2,7 +2,10 @@ import { expect, test } from "vitest"
 
 import {
   applyEvent,
+  CHAT_STORAGE_VERSION,
   resolveConfirm,
+  restoreChat,
+  saveChat,
   toMessages,
   type ChatItem,
 } from "./chat-state"
@@ -45,6 +48,7 @@ test("a confirm starts pending and can be resolved", () => {
     title: "Cancel booking",
     summary: "Ana, 3pm",
     destructive: true,
+    action: "Cancel booking",
   })
   items = resolveConfirm(items, "c1", "accepted")
   const reply = items[1]
@@ -66,6 +70,7 @@ test("toMessages skips empty replies and keeps the newest", () => {
       text: "",
       steps: [],
       confirms: [],
+      choices: [],
     },
     { id: "o2", role: "owner", text: "Again" },
   ]
@@ -74,4 +79,55 @@ test("toMessages skips empty replies and keeps the newest", () => {
     { role: "owner", text: "Again" },
   ])
   expect(toMessages(items, 1)).toEqual([{ role: "owner", text: "Again" }])
+})
+
+test("choices land on the reply and are not sent back as words", () => {
+  let items: ChatItem[] = [owner]
+  items = applyEvent(items, { type: "text", delta: "Which one?" })
+  items = applyEvent(items, {
+    type: "choices",
+    options: ["Classic Haircut", "Buzz Cut"],
+  })
+  const reply = items[1]
+  expect(reply.role === "assistant" && reply.choices).toEqual([
+    "Classic Haircut",
+    "Buzz Cut",
+  ])
+  expect(toMessages(items, 10)).toEqual([
+    { role: "owner", text: "Hi" },
+    { role: "assistant", text: "Which one?" },
+  ])
+})
+
+test("a saved chat comes back as it was", () => {
+  let items: ChatItem[] = [owner]
+  items = applyEvent(items, { type: "text", delta: "Which one?" })
+  items = applyEvent(items, { type: "choices", options: ["A", "B"] })
+  expect(restoreChat(saveChat(items))).toEqual(items)
+})
+
+test("an older or broken saved chat starts fresh instead of breaking", () => {
+  const reply = {
+    id: "a1",
+    role: "assistant",
+    text: "Hi",
+    steps: [],
+    confirms: [],
+  }
+  // Saved before versions existed: a bare list.
+  expect(restoreChat(JSON.stringify([owner, reply]))).toEqual([])
+  // Another version.
+  expect(
+    restoreChat(
+      JSON.stringify({ version: CHAT_STORAGE_VERSION - 1, items: [owner] })
+    )
+  ).toEqual([])
+  // This version, but a reply missing a field.
+  expect(
+    restoreChat(
+      JSON.stringify({ version: CHAT_STORAGE_VERSION, items: [owner, reply] })
+    )
+  ).toEqual([])
+  expect(restoreChat("not json")).toEqual([])
+  expect(restoreChat(null)).toEqual([])
 })

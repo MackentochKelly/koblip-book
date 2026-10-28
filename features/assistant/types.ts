@@ -14,7 +14,9 @@ export type AssistantStreamEvent =
       title: string
       summary: string
       destructive: boolean
-    } // card with Confirm and Cancel
+      action: string // the button's word, e.g. "Book", "Delete"
+    } // card with the action button and Cancel
+  | { type: "choices"; options: string[] } // quick answers; a tap sends one
   | { type: "done" } // input enabled again
   | {
       type: "error"
@@ -77,4 +79,5 @@ export interface ConfirmCard {
   title: string
   summary: string
   destructive: boolean
+  action: string // the button's word, e.g. "Book", "Delete"
 }
