@@ -43,7 +43,7 @@ import {
   Moon as MynaMoon,
   Navigation as MynaNavigation,
   Plus as MynaPlus,
-  Scissors as MynaScissors,
+  Tag as MynaTag,
   Search as MynaSearch,
   SearchX as MynaSearchX,
   Share as MynaShare,
@@ -62,7 +62,7 @@ import {
   X as MynaX,
   CalendarSolid as MynaCalendarSolid,
   UserSquareSolid as MynaUserSquareSolid,
-  ScissorsSolid as MynaScissorsSolid,
+  TagSolid as MynaTagSolid,
   CogSolid as MynaCogSolid,
   UsersSolid as MynaUsersSolid,
   Clock3Solid as MynaClock3Solid,
@@ -202,7 +202,7 @@ export const PawPrintIcon = icon(LucidePawPrint as Icon, "PawPrintIcon")
 export const PhoneCallIcon = icon(MynaTelephoneCall as Icon, "PhoneCallIcon")
 export const PhoneIcon = icon(MynaTelephone as Icon, "PhoneIcon")
 export const PlusIcon = icon(MynaPlus as Icon, "PlusIcon")
-export const ScissorsIcon = icon(MynaScissors as Icon, "ScissorsIcon")
+export const TagIcon = icon(MynaTag as Icon, "TagIcon")
 export const SearchIcon = icon(MynaSearch as Icon, "SearchIcon")
 export const SearchXIcon = icon(MynaSearchX as Icon, "SearchXIcon")
 export const SettingsIcon = icon(MynaCog as Icon, "SettingsIcon")
@@ -234,7 +234,7 @@ const FILLED = new Map<Icon, Icon>([
   [CalendarDaysIcon, icon(MynaCalendarSolid as Icon, "CalendarDaysFilledIcon")],
   [CalendarIcon, icon(MynaCalendarSolid as Icon, "CalendarFilledIcon")],
   [ContactIcon, icon(MynaUserSquareSolid as Icon, "ContactFilledIcon")],
-  [ScissorsIcon, icon(MynaScissorsSolid as Icon, "ScissorsFilledIcon")],
+  [TagIcon, icon(MynaTagSolid as Icon, "TagFilledIcon")],
   [SettingsIcon, icon(MynaCogSolid as Icon, "SettingsFilledIcon")],
   [UsersIcon, icon(MynaUsersSolid as Icon, "UsersFilledIcon")],
   [ClockIcon, icon(MynaClock3Solid as Icon, "ClockFilledIcon")],

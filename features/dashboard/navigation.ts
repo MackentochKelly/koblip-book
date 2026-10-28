@@ -3,7 +3,7 @@ import {
   ContactIcon,
   LayoutDashboardIcon,
   MessageCircleIcon,
-  ScissorsIcon,
+  TagIcon,
   SettingsIcon,
   StoreIcon,
   UsersIcon,
@@ -19,7 +19,7 @@ export const NAV_GROUPS = [
     items: [
       { path: "", key: "home", icon: LayoutDashboardIcon },
       { path: "/customers", key: "customers", icon: ContactIcon },
-      { path: "/services", key: "services", icon: ScissorsIcon },
+      { path: "/services", key: "services", icon: TagIcon },
       { path: "/assistant", key: "assistant", icon: MessageCircleIcon },
     ],
   },

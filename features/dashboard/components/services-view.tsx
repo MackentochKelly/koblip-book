@@ -7,7 +7,7 @@ import {
   ArrowUpIcon,
   EllipsisVerticalIcon,
   PlusIcon,
-  ScissorsIcon,
+  TagIcon,
   SparklesIcon,
   Trash2Icon,
 } from "@/components/ui/icons"
@@ -197,7 +197,7 @@ export function ServicesView({
         <Empty className="border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <ScissorsIcon />
+              <TagIcon />
             </EmptyMedia>
             <EmptyTitle>{t.empty}</EmptyTitle>
           </EmptyHeader>

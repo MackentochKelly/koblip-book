@@ -6,7 +6,7 @@ import {
   ClockIcon,
   ContactIcon,
   LayoutDashboardIcon,
-  ScissorsIcon,
+  TagIcon,
   SettingsIcon,
   UsersIcon,
 } from "@/components/ui/icons"
@@ -21,7 +21,7 @@ import { TopBar } from "./top-bar"
 const NAV = [
   { path: "", label: "Home", icon: LayoutDashboardIcon },
   { path: "/customers", label: "Customers", icon: ContactIcon },
-  { path: "/services", label: "Services", icon: ScissorsIcon },
+  { path: "/services", label: "Services", icon: TagIcon },
   { path: "/team", label: "Team", icon: UsersIcon },
   { path: "/hours", label: "Hours", icon: ClockIcon },
   { path: "/settings", label: "Settings", icon: SettingsIcon },
