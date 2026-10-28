@@ -21,6 +21,7 @@
     "@libsql/client": "^0.18.0",
     "@mynaui/icons-react": "^0.4.11",
     "@paper-design/shaders-react": "^0.0.82",
+    "@shadcn/react": "^0.3.1",
     "@vis.gl/react-google-maps": "^1.10.1",
     "better-auth": "^1.7.14",
     "canvas-confetti": "^1.9.4",

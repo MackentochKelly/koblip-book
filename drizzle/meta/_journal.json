@@ -50,6 +50,13 @@
       "when": 1793123843715,
       "tag": "0006_drop_google_cached_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793150374338,
+      "tag": "0007_cheerful_fixer",
+      "breakpoints": true
     }
   ]
 }

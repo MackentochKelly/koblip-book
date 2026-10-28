@@ -284,3 +284,21 @@ export const translations = sqliteTable(
     index("translations_business_idx").on(table.businessId, table.language),
   ]
 )
+
+// One row per write the assistant runs (direct or confirmed), including
+// failures. The summary is server-built, never model words.
+export const assistantActions = sqliteTable(
+  "assistant_actions",
+  {
+    id: id(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    ownerId: text().references(() => user.id, { onDelete: "set null" }),
+    tool: text().notNull(),
+    summary: text().notNull(),
+    status: text().notNull(),
+    ...timestamps(),
+  },
+  (table) => [index("assistant_actions_business_idx").on(table.businessId)]
+)

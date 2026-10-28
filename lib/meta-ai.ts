@@ -4,6 +4,10 @@ import OpenAI from "openai"
 // The one place the text model name lives.
 export const META_TEXT_MODEL = "muse-spark-1.3"
 
+// The one place the speech-to-text model name lives. Used by the raw
+// ASR endpoint (not an OpenAI-protocol path, so callers use fetch).
+export const META_VOICE_MODEL = "muse-voice-transcribe-1.0"
+
 let sharedClient: OpenAI | null = null
 
 // Says whether the AI is off: without MODEL_API_KEY the callers skip AI.

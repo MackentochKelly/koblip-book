@@ -5,27 +5,36 @@ import { usePathname } from "next/navigation"
 import {
   ClockIcon,
   ContactIcon,
+  filledIcon,
   LayoutDashboardIcon,
   TagIcon,
+  SparklesIcon,
   SettingsIcon,
   UsersIcon,
 } from "@/components/ui/icons"
 
+import { Button } from "@/components/ui/button"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { cn } from "@/lib/utils"
 import { AppSidebar } from "./app-sidebar"
 import { CommandMenuProvider } from "./command-menu"
 import { TopBar } from "./top-bar"
 
 const NAV = [
-  { path: "", label: "Home", icon: LayoutDashboardIcon },
-  { path: "/customers", label: "Customers", icon: ContactIcon },
-  { path: "/services", label: "Services", icon: TagIcon },
-  { path: "/team", label: "Team", icon: UsersIcon },
-  { path: "/hours", label: "Hours", icon: ClockIcon },
-  { path: "/settings", label: "Settings", icon: SettingsIcon },
-]
+  { path: "", key: "home", icon: LayoutDashboardIcon },
+  { path: "/customers", key: "customers", icon: ContactIcon },
+  { path: "/services", key: "services", icon: TagIcon },
+  { path: "/team", key: "team", icon: UsersIcon },
+  { path: "/hours", key: "hours", icon: ClockIcon },
+  { path: "/settings", key: "settings", icon: SettingsIcon },
+] as const
+
+// The phone has room for four tabs with the assistant between them; Hours
+// and Settings open from the ☰ menu (Settings also from the account menu).
+const PHONE_LEFT = ["", "/customers"]
+const PHONE_RIGHT = ["/services", "/team"]
 
 // The owner area: the ☰ menu (folding on a computer, sliding in on a phone),
 // a bottom tab bar on a phone for the main pages, and a top bar with the
@@ -40,45 +49,78 @@ export function DashboardShell({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const m = useOwnerMessages().shell.nav
   const base = `/dashboard/${business.id}`
+  const assistantHref = `${base}/assistant`
+  const assistantOpen = pathname.startsWith(assistantHref)
   const items = NAV.map((item) => ({
     ...item,
+    label: m[item.key],
     href: base + item.path,
     active: item.path
       ? pathname.startsWith(base + item.path)
       : pathname === base,
   }))
+  const tab = (path: string) => {
+    const item = items.find((found) => found.path === path)
+    if (!item) return null
+    const active = item.active
+    const TabIcon = active ? filledIcon(item.icon) : item.icon
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-xs font-medium text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
+          active && "text-foreground"
+        )}
+      >
+        {/* As in Koblip Sales' BottomTabBar: the open tab's icon is filled. */}
+        <TabIcon className="size-5" />
+        <span className="max-w-full truncate">{item.label}</span>
+      </Link>
+    )
+  }
   return (
     <TooltipProvider>
       <CommandMenuProvider business={business}>
-        <SidebarProvider>
+      <SidebarProvider>
         <AppSidebar businessId={business.id} owner={owner} />
-        <SidebarInset className="min-w-0">
+        <SidebarInset className={cn("min-w-0", assistantOpen && "h-dvh")}>
           <TopBar business={business} owner={owner} menu />
-          <div className="mx-auto w-full max-w-3xl p-4 pb-28 md:p-8">
+          {/* The chat page fills the screen between the top bar and the tab bar. */}
+          <div
+            className={cn(
+              "mx-auto w-full max-w-3xl p-4 pb-28 md:p-8",
+              assistantOpen &&
+                "flex min-h-0 max-w-none flex-1 flex-col p-0 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:p-0"
+            )}
+          >
             {children}
           </div>
         </SidebarInset>
         <nav
-          aria-label="Owner"
-          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+          aria-label={m.owner}
+          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
         >
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={item.active ? "page" : undefined}
-              className={cn(
-                "flex min-h-14 flex-col items-center justify-center gap-1 text-xs text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
-                item.active && "text-foreground"
-              )}
+          {PHONE_LEFT.map((path) => tab(path))}
+          <div className="flex min-h-14 items-center justify-center">
+            <Button
+              size="icon-lg"
+              // A soft 2 px ring drawn over its own colour, and a 24 px icon.
+              className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
+              aria-label={m.assistant}
+              nativeButton={false}
+              aria-current={assistantOpen ? "page" : undefined}
+              render={<Link href={assistantHref} />}
             >
-              <item.icon className="size-5" />
-              {item.label}
-            </Link>
-          ))}
+              <SparklesIcon className="size-6" />
+            </Button>
+          </div>
+          {PHONE_RIGHT.map((path) => tab(path))}
         </nav>
-        </SidebarProvider>
+      </SidebarProvider>
       </CommandMenuProvider>
     </TooltipProvider>
   )
