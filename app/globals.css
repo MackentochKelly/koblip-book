@@ -194,6 +194,13 @@
   body {
     @apply bg-background text-foreground;
     }
+  /* A full page put over the current one (the "You're booked" page) takes
+     its place: everything else in the body is hidden while it is there, so
+     the page is just that one (Safari tints its bars from what is under
+     them, and a cover over the page wasn't enough). Toasts stay. */
+  body:has(> [data-full-page]) > :not([data-full-page], section) {
+    display: none;
+  }
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
     }

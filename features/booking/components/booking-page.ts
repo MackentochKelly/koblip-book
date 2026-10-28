@@ -1,4 +1,5 @@
 import type { services, teamMembers } from "@/lib/db/schema"
+import { directionsUrl } from "@/lib/directions-url"
 import { checkAddons } from "../utils/addons"
 
 type ServiceRow = typeof services.$inferSelect
@@ -34,6 +35,8 @@ export interface BookingPage {
   // The first photo, for the "You're booked" page.
   photoUrl: string | null
   address: string | null
+  // Google's directions there, or null without an address or a place.
+  directionsUrl: string | null
   phone: string | null
   timeZone: string
   currency: string
@@ -97,6 +100,8 @@ export function toBookingPage(data: {
     slug: string
     name: string
     address: string | null
+    latitude: number | null
+    longitude: number | null
     phone: string | null
     timezone: string
     currency: string
@@ -112,6 +117,7 @@ export function toBookingPage(data: {
     name: data.business.name,
     photoUrl: data.photos[0]?.url ?? null,
     address: data.business.address,
+    directionsUrl: directionsUrl(data.business),
     phone: data.business.phone,
     timeZone: data.business.timezone,
     currency: data.business.currency,

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { messagesFor } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
 import type { Business } from "../types"
-import { directionsUrl } from "../utils/directions-url"
+import { directionsUrl } from "@/lib/directions-url"
 import { BookButton } from "./book-button"
 
 // Book now (when bookable), directions, call and website: only what the

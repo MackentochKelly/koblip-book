@@ -1,10 +1,12 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   ArrowLeftIcon,
+  NavigationIcon,
   ShareIcon,
   StoreIcon,
   XIcon,
@@ -479,8 +481,10 @@ export function BookingFlow({
 
 // The booking, confirmed.
 // After Confirm booking: a full page, like the owner's "Your page is live"
-// (the shared Celebration), with the booking to share and Done back to the
-// business page.
+// (the shared Celebration), with the booking to share, directions, and Done
+// back to the business page. It takes the place of the business page (which
+// globals.css hides while it is there) rather than covering it, so the
+// phone's bars take its white like any page's.
 function BookedPage({
   page,
   booking,
@@ -493,6 +497,9 @@ function BookedPage({
   const m = useMessages()
   const price = priceLabel(booking.priceMinor, booking.currency, m)
   const when = `${formatDay(booking.date, m.locale)} · ${formatClock(booking.time, m.locale)}`
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
   const share = async () => {
     const url = new URL(`/b/${page.slug}`, window.location.origin).toString()
     const result = await shareLink({
@@ -502,9 +509,9 @@ function BookedPage({
     })
     if (result === "copied") toast.success(m.page.linkCopied)
   }
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-background">
-      <main className="mx-auto flex min-h-full w-full max-w-lg flex-col justify-center px-4 py-10">
+  return createPortal(
+    <div data-full-page className="flex min-h-dvh flex-col bg-background">
+      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-4 py-10">
         <GlassCard>
           <Celebration
             media={
@@ -523,14 +530,31 @@ function BookedPage({
                   <ShareIcon data-icon="inline-start" />
                   {m.page.share}
                 </Button>
-                <Button variant="outline" size="lg" onClick={onDone}>
+                {page.directionsUrl && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    nativeButton={false}
+                    render={
+                      <a
+                        href={page.directionsUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      />
+                    }
+                  >
+                    <NavigationIcon data-icon="inline-start" />
+                    {m.actions.directions}
+                  </Button>
+                )}
+                <Button variant="link" onClick={onDone}>
                   {m.booking.done}
                 </Button>
               </>
             }
           >
             <Item variant="muted" className="w-full text-left">
-              <ItemContent className="gap-1 text-sm">
+              <ItemContent className="min-w-0 gap-1 text-sm">
                 <p className="font-medium">{when}</p>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -549,13 +573,16 @@ function BookedPage({
                   {price && <p>{price}</p>}
                 </div>
                 {booking.address && (
-                  <p className="text-muted-foreground">{booking.address}</p>
+                  <p className="truncate text-muted-foreground">
+                    {booking.address}
+                  </p>
                 )}
               </ItemContent>
             </Item>
           </Celebration>
         </GlassCard>
       </main>
-    </div>
+    </div>,
+    document.body
   )
 }
