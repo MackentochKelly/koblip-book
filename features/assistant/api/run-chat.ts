@@ -16,6 +16,7 @@ import {
   buildClockLine,
   buildLanguageLine,
   buildSystemPrompt,
+  buildVoiceLine,
 } from "../utils/system-prompt"
 import { checkAnswer } from "./check-answer"
 import { storePendingAction } from "./pending-actions"
@@ -27,6 +28,7 @@ export interface RunChatContext {
   ownerId: string
   businessId: string
   language: PageLanguage // owner's language, read once per request
+  voice?: boolean // talking mode: short spoken answers, same tools
 }
 
 interface CollectedCall {
@@ -201,7 +203,8 @@ export async function* runChat(
           timeZone: context.timeZone,
         }) +
         " " +
-        buildLanguageLine(context.language),
+        buildLanguageLine(context.language) +
+        (context.voice === true ? " " + buildVoiceLine(context.language) : ""),
     },
     ...messages.map((m): OpenAI.Chat.ChatCompletionMessageParam => ({
       role: m.role === "owner" ? "user" : "assistant",

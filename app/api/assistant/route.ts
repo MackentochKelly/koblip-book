@@ -80,7 +80,15 @@ export async function POST(request: Request) {
     typeof body === "object" && body !== null
       ? (body as { messages?: unknown }).messages
       : undefined
-  if (typeof businessId !== "string" || !isValidMessages(messages)) {
+  const voice =
+    typeof body === "object" && body !== null
+      ? (body as { voice?: unknown }).voice
+      : undefined
+  if (
+    typeof businessId !== "string" ||
+    !isValidMessages(messages) ||
+    (voice !== undefined && typeof voice !== "boolean")
+  ) {
     return Response.json({ error: "bad_request" }, { status: 400 })
   }
   if (messages.some((m) => m.text.length > ASSISTANT_RULES.maxMessageChars)) {
@@ -111,6 +119,7 @@ export async function POST(request: Request) {
             ownerId: session.userId,
             businessId: owned.business.id,
             language,
+            voice: voice === true,
           },
           buildAssistantTools(owned.business.id, session.userId, language),
           { signal: budget.signal }

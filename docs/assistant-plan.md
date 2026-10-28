@@ -353,10 +353,12 @@ Same chat, saved like typed chats.
   internal check route, the Meta relay, tests, dev/start scripts. Status:
   done and reviewed 2026-10-28 (463 tests pass; a real Meta stream came
   back as speechStart, partials, speechComplete).
-- [ ] **2. Speaking token + talking mode** (Muse): GET
+- [x] **2. Speaking token + talking mode** (Muse): GET
   /api/voice/speak-token (ElevenLabs single-use token), VOICE_RULES config
   (model, output format, voice id, timeouts), ELEVENLABS_API_KEY;
   /api/assistant accepts `voice: true` and adds a short-spoken-answer line.
+  Status: done and reviewed 2026-10-28 (route /api/voice/speak-token returns
+  { url, voiceId }; values in lib/voice-rules.ts).
 - [ ] **3. Voice screen** (Claude): the talk button, full-screen orb
   (HeroGradient), live captions, mic worklet to the socket, sending turns,
   playing the voice, interrupting, stop, errors; phone light/dark.

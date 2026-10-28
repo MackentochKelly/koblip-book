@@ -1779,6 +1779,17 @@ test("no reschedule tool exists and the prompt says so", async () => {
   expect(clock).toBe("Today is Wednesday, 2026-10-28, 09:00 (Europe/Madrid).")
 })
 
+test("buildVoiceLine speaks briefly in both languages", async () => {
+  const { buildVoiceLine } =
+    await import("@/features/assistant/utils/system-prompt")
+  const en = buildVoiceLine("en")
+  expect(en).toContain("speaking out loud")
+  expect(en).toContain("tap confirm")
+  const es = buildVoiceLine("es")
+  expect(es).toContain("voz alta")
+  expect(es).toContain("confirmar")
+})
+
 test("the prompt carries the Markdown formatting rule", async () => {
   const { buildSystemPrompt } =
     await import("@/features/assistant/utils/system-prompt")

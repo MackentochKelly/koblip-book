@@ -60,3 +60,11 @@ export function buildClockLine(clock: PromptClock): string {
 export function buildLanguageLine(language: PageLanguage): string {
   return language === "es" ? "Responde en español." : "Reply in English."
 }
+
+// Talking mode: the answer is spoken out loud. Same dynamic part, so the
+// static prompt above stays byte-identical for prefix caching.
+export function buildVoiceLine(language: PageLanguage): string {
+  return language === "es"
+    ? "Estás hablando en voz alta. Responde en una o dos frases cortas de lenguaje hablado: sin listas, sin Markdown, sin emojis, sin enlaces. Di las horas, fechas y precios como se dicen en voz alta. Cuando un cambio necesite el toque del dueño, pídele que pulse confirmar en la pantalla."
+    : "You are speaking out loud. Answer in one or two short sentences of plain speech: no lists, no Markdown, no emoji, no links. Say times, dates and prices the way people say them. When a change needs the owner's tap, ask them to tap confirm on the screen."
+}

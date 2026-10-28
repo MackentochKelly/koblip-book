@@ -159,3 +159,36 @@ test("language comes from the cookie, a lang body field is ignored", async () =>
   const gotContext = calls[calls.length - 1]?.[1] as { language: string }
   expect(gotContext.language).toBe("es")
 })
+
+test("voice true reaches runChat, absent stays false", async () => {
+  const body = {
+    businessId: "b1",
+    messages: [{ role: "owner", text: "hi" }],
+    voice: true,
+  }
+  const res = await POST(post(body))
+  expect(res.status).toBe(200)
+  const calls = vi.mocked(runChat).mock.calls
+  const gotContext = calls[calls.length - 1]?.[1] as { voice: boolean }
+  expect(gotContext.voice).toBe(true)
+
+  await POST(
+    post({ businessId: "b1", messages: [{ role: "owner", text: "hi" }] })
+  )
+  const later = vi.mocked(runChat).mock.calls
+  expect((later[later.length - 1]?.[1] as { voice: boolean }).voice).toBe(
+    false
+  )
+})
+
+test("a non-boolean voice is a bad request", async () => {
+  const res = await POST(
+    post({
+      businessId: "b1",
+      messages: [{ role: "owner", text: "hi" }],
+      voice: "yes",
+    })
+  )
+  expect(res.status).toBe(400)
+  expect(await res.json()).toEqual({ error: "bad_request" })
+})
