@@ -75,10 +75,16 @@ export function ServiceList({
   const shown = all ? services : services.slice(0, SERVICES_PREVIEW)
   const more = services.length > shown.length
   return (
-    <PageSection id="services" title={m.sections.services}>
+    // A gray band like Fresha's: edge to edge on a phone, a rounded box on a
+    // computer, with the white service cards on it.
+    <PageSection
+      id="services"
+      title={m.sections.services}
+      className="-mx-4 bg-muted px-4 py-6 md:mx-0 md:rounded-2xl md:p-6"
+    >
       <ItemGroup className="gap-3">
         {shown.map((service) => (
-          <Item key={service.id} variant="outline">
+          <Item key={service.id} variant="outline" className="bg-background">
             {service.photoUrl && (
               <ItemMedia variant="image" className="size-16">
                 <Image
