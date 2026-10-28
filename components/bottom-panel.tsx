@@ -155,7 +155,7 @@ export function BottomPanel({
             <div ref={inner}>{children}</div>
           </div>
           {footer && (
-            <DrawerFooter>{footer}</DrawerFooter>
+            <DrawerFooter className="pt-4">{footer}</DrawerFooter>
           )}
         </DrawerContent>
       </DrawerPrimitive.VirtualKeyboardProvider>
