@@ -67,7 +67,6 @@ interface Picked {
 const ERRORS = {
   invalid: "Paste a Google Maps link",
   not_found: "That business was not found on Google Maps",
-  owned: "Someone already manages this business",
   failed: "That did not work. Please try again.",
 } as const
 
@@ -189,7 +188,6 @@ export function GetStarted({
     void next.prepared.then((result) => {
       setPrepared(result)
       if (!result.ok) setError(ERRORS[result.error])
-      else if (result.owned) setError(ERRORS.owned)
     })
     if (signedIn) void finish(next)
   }
@@ -200,13 +198,13 @@ export function GetStarted({
     if (!current) return
     setFinishing(true)
     const result = await current.prepared
-    if (!result.ok || result.owned) {
+    if (!result.ok) {
       setFinishing(false)
       return
     }
     const claimed = await claim(result.slug).catch(() => null)
     if (!claimed?.ok) {
-      setError(claimed?.error === "owned" ? ERRORS.owned : ERRORS.failed)
+      setError(ERRORS.failed)
       setFinishing(false)
       return
     }
@@ -492,16 +490,6 @@ function FindBusiness({
   return (
     <div className={cn("flex flex-col gap-3", expanded && "min-h-0 flex-1")}>
       <div className="flex items-center gap-2">
-        {expanded && (
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label="Close search"
-            onClick={onCollapse}
-          >
-            <ArrowLeftIcon />
-          </Button>
-        )}
         <Button
           variant="outline"
           size="sm"
@@ -517,6 +505,17 @@ function FindBusiness({
           )}
           {area?.label ?? "Anywhere"}
         </Button>
+        {expanded && (
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label="Close search"
+            onClick={onCollapse}
+            className="ml-auto"
+          >
+            <XIcon />
+          </Button>
+        )}
       </div>
       {/* The home page's main box: taller and outlined on purpose. */}
       <InputGroup className="h-12 border-border bg-transparent dark:bg-transparent">

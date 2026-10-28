@@ -56,7 +56,14 @@ export function HeroGradient() {
   }, [themeClass])
 
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+    // Rounded on its own, with the box's corner size: iPhone Safari draws
+    // this moving layer apart from the page and, while the page around it
+    // changes (the phone search opening), stops clipping it to the box's
+    // rounded corners for a moment, so they flash square.
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 -z-10 [clip-path:inset(0_round_var(--radius-4xl))]"
+    >
       {colors && (
         <MeshGradient
           colors={colors}
