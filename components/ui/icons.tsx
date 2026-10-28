@@ -60,6 +60,15 @@ import {
   UserSquare as MynaUserSquare,
   Users as MynaUsers,
   X as MynaX,
+  CalendarSolid as MynaCalendarSolid,
+  UserSquareSolid as MynaUserSquareSolid,
+  ScissorsSolid as MynaScissorsSolid,
+  CogSolid as MynaCogSolid,
+  UsersSolid as MynaUsersSolid,
+  Clock3Solid as MynaClock3Solid,
+  HomeSolid as MynaHomeSolid,
+  StoreSolid as MynaStoreSolid,
+  ChatSolid as MynaChatSolid,
 } from "@mynaui/icons-react"
 import {
   BadgeCheck as LucideBadgeCheck,
@@ -207,3 +216,23 @@ export const TriangleAlertIcon = icon(
 )
 export const UsersIcon = icon(MynaUsers as Icon, "UsersIcon")
 export const XIcon = icon(MynaX as Icon, "XIcon")
+
+// Filled twins of outline icons: the open tab of a phone tab bar shows its
+// icon filled, as iPhone and Android apps do. An icon without a twin stays
+// as it is.
+const FILLED = new Map<Icon, Icon>([
+  [CalendarDaysIcon, icon(MynaCalendarSolid as Icon, "CalendarDaysFilledIcon")],
+  [CalendarIcon, icon(MynaCalendarSolid as Icon, "CalendarFilledIcon")],
+  [ContactIcon, icon(MynaUserSquareSolid as Icon, "ContactFilledIcon")],
+  [ScissorsIcon, icon(MynaScissorsSolid as Icon, "ScissorsFilledIcon")],
+  [SettingsIcon, icon(MynaCogSolid as Icon, "SettingsFilledIcon")],
+  [UsersIcon, icon(MynaUsersSolid as Icon, "UsersFilledIcon")],
+  [ClockIcon, icon(MynaClock3Solid as Icon, "ClockFilledIcon")],
+  [HouseIcon, icon(MynaHomeSolid as Icon, "HouseFilledIcon")],
+  [StoreIcon, icon(MynaStoreSolid as Icon, "StoreFilledIcon")],
+  [MessageCircleIcon, icon(MynaChatSolid as Icon, "MessageCircleFilledIcon")],
+])
+
+export function filledIcon(outline: Icon): Icon {
+  return FILLED.get(outline) ?? outline
+}
