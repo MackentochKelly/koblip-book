@@ -6,18 +6,14 @@ import type { Route } from "next"
 
 import { ViewTabs } from "@/components/view-tabs"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
+import { SETTINGS_TABS } from "../navigation"
 
-const TABS = [
-  { id: "/team", key: "team" },
-  { id: "/hours", key: "hours" },
-  { id: "/settings", key: "details" },
-] as const
+const TABS = SETTINGS_TABS.map(({ path, key }) => ({ id: path, key }))
 
-type TabPath = (typeof TABS)[number]["id"]
+type TabPath = (typeof SETTINGS_TABS)[number]["path"]
 
-// On a phone the tab bar has no room for Team and Hours, so Settings opens
-// them as tabs, like an iPhone's segmented control. The computer's sidebar
-// lists them itself.
+// Settings opens Team, Hours and Details as tabs, like an iPhone's segmented
+// control, from both the menu and the phone's tab bar.
 export function SettingsTabs({ businessId }: { businessId: string }) {
   const router = useRouter()
   const m = useOwnerMessages().shell.nav
@@ -37,7 +33,6 @@ export function SettingsTabs({ businessId }: { businessId: string }) {
       value={value}
       onChange={(id) => router.push(`${base}${id}` as Route)}
       ariaLabel={m.settings}
-      className="md:hidden"
       listClassName="w-full"
     />
   )

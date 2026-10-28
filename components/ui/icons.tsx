@@ -69,6 +69,8 @@ import {
   HomeSolid as MynaHomeSolid,
   StoreSolid as MynaStoreSolid,
   ChatSolid as MynaChatSolid,
+  LayoutDashboard as MynaLayoutDashboard,
+  LayoutDashboardSolid as MynaLayoutDashboardSolid,
 } from "@mynaui/icons-react"
 import {
   BadgeCheck as LucideBadgeCheck,
@@ -175,6 +177,10 @@ export const HouseIcon = icon(MynaHome as Icon, "HouseIcon")
 export const ImageIcon = icon(MynaImage as Icon, "ImageIcon")
 export const InfoIcon = icon(MynaInfo as Icon, "InfoIcon")
 export const LanguagesIcon = icon(LucideLanguages as Icon, "LanguagesIcon")
+export const LayoutDashboardIcon = icon(
+  MynaLayoutDashboard as Icon,
+  "LayoutDashboardIcon"
+)
 export const LinkIcon = icon(MynaLink as Icon, "LinkIcon")
 export const Loader2Icon = icon(LucideLoaderCircle as Icon, "Loader2Icon")
 export const LocateFixedIcon = icon(
@@ -221,6 +227,10 @@ export const XIcon = icon(MynaX as Icon, "XIcon")
 // icon filled, as iPhone and Android apps do. An icon without a twin stays
 // as it is.
 const FILLED = new Map<Icon, Icon>([
+  [
+    LayoutDashboardIcon,
+    icon(MynaLayoutDashboardSolid as Icon, "LayoutDashboardFilledIcon"),
+  ],
   [CalendarDaysIcon, icon(MynaCalendarSolid as Icon, "CalendarDaysFilledIcon")],
   [CalendarIcon, icon(MynaCalendarSolid as Icon, "CalendarFilledIcon")],
   [ContactIcon, icon(MynaUserSquareSolid as Icon, "ContactFilledIcon")],

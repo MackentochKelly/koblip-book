@@ -98,9 +98,14 @@ export function AppSidebar({
                 href,
                 label: m.nav[item.key],
                 icon: item.icon,
-                active: item.path
-                  ? pathname.startsWith(href)
-                  : pathname === base,
+                active:
+                  "under" in item
+                    ? item.under.some((path) =>
+                        pathname.startsWith(base + path)
+                      )
+                    : item.path
+                      ? pathname.startsWith(href)
+                      : pathname === base,
               }
             })}
           />

@@ -3,9 +3,9 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  CalendarDaysIcon,
   ClockIcon,
   ContactIcon,
+  LayoutDashboardIcon,
   ScissorsIcon,
   SettingsIcon,
   UsersIcon,
@@ -19,7 +19,7 @@ import { CommandMenuProvider } from "./command-menu"
 import { TopBar } from "./top-bar"
 
 const NAV = [
-  { path: "", label: "Bookings", icon: CalendarDaysIcon },
+  { path: "", label: "Home", icon: LayoutDashboardIcon },
   { path: "/customers", label: "Customers", icon: ContactIcon },
   { path: "/services", label: "Services", icon: ScissorsIcon },
   { path: "/team", label: "Team", icon: UsersIcon },

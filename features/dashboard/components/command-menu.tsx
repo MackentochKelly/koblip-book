@@ -18,7 +18,7 @@ import {
 import { PAGE_LANGUAGES } from "@/lib/page-language"
 import { useOwnerLanguage, useOwnerMessages } from "../i18n/provider"
 import { LANGUAGE_NAMES } from "../i18n/language"
-import { NAV_GROUPS } from "../navigation"
+import { NAV_GROUPS, SETTINGS_TABS } from "../navigation"
 import { THEMES, useSignOut } from "./account-menu"
 
 const CommandMenuContext = createContext<(open: boolean) => void>(() => {})
@@ -102,6 +102,20 @@ function CommandMenu({
               ))}
             </CommandGroup>
           ))}
+          {/* Settings' tabs, so each can be found by name. */}
+          <CommandGroup heading={m.nav.settings}>
+            {SETTINGS_TABS.map((tab) => (
+              <CommandItem
+                key={tab.key}
+                onSelect={() =>
+                  run(() => router.push(`${base}${tab.path}` as Route))
+                }
+              >
+                <tab.icon />
+                {m.nav[tab.key]}
+              </CommandItem>
+            ))}
+          </CommandGroup>
           <CommandGroup heading={m.account}>
             <CommandItem
               onSelect={() =>
