@@ -195,11 +195,11 @@ function Sidebar({
           data-mobile="true"
           className={cn(
             "w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [--drawer-bleed-background:transparent] [--drawer-inset:--spacing(2)]",
-            // Like Gmail on a phone: the menu meets the edge it opens from, and
-            // a link's highlight runs into that edge, rounded only on the far side.
+            // The same gap on every side; like Gmail, a link's highlight runs
+            // into the edge it opens from, rounded only on the far side.
             side === "left"
-              ? "ml-0 [&_[data-slot=sidebar-group]]:pl-0 [&_[data-slot=sidebar-group-label]]:pl-4 [&_[data-slot=sidebar-group]_[data-slot=sidebar-menu-button]]:rounded-l-none [&_[data-slot=sidebar-group]_[data-slot=sidebar-menu-button]]:pl-4"
-              : "mr-0 [&_[data-slot=sidebar-group]]:pr-0 [&_[data-slot=sidebar-group-label]]:pr-4 [&_[data-slot=sidebar-group]_[data-slot=sidebar-menu-button]]:rounded-r-none [&_[data-slot=sidebar-group]_[data-slot=sidebar-menu-button]]:pr-4"
+              ? "[&_[data-slot=sidebar-group]]:pl-0 [&_[data-slot=sidebar-group-label]]:pl-4 [&_[data-slot=sidebar-group]_[data-slot=sidebar-menu-button]]:rounded-l-none [&_[data-slot=sidebar-group]_[data-slot=sidebar-menu-button]]:pl-4"
+              : "[&_[data-slot=sidebar-group]]:pr-0 [&_[data-slot=sidebar-group-label]]:pr-4 [&_[data-slot=sidebar-group]_[data-slot=sidebar-menu-button]]:rounded-r-none [&_[data-slot=sidebar-group]_[data-slot=sidebar-menu-button]]:pr-4"
           )}
           style={
             {
