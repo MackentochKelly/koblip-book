@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   Empty,
-  EmptyContent,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
@@ -202,9 +201,6 @@ export function ServicesView({
             </EmptyMedia>
             <EmptyTitle>{t.empty}</EmptyTitle>
           </EmptyHeader>
-          <EmptyContent>
-            <Button onClick={() => openForm("new")}>{t.addService}</Button>
-          </EmptyContent>
         </Empty>
       ) : (
         <ItemGroup className="gap-3">
@@ -284,7 +280,7 @@ export function ServicesView({
         onClose={() => setEditing(null)}
         title={editing === "new" ? t.addService : t.editService}
         footer={
-          <Button type="submit" form={SERVICE_FORM} disabled={pending}>
+          <Button type="submit" size="lg" form={SERVICE_FORM} disabled={pending}>
             {pending && <Spinner data-icon="inline-start" />}
             {c.save}
           </Button>
@@ -638,7 +634,7 @@ function SuggestPanel({
       title={kind === "services" ? t.suggested : m.catalog.extras.suggested}
       footer={
         suggestions.length > 0 ? (
-          <Button onClick={add} disabled={adding || ticked.length === 0}>
+          <Button size="lg" onClick={add} disabled={adding || ticked.length === 0}>
             {adding && <Spinner data-icon="inline-start" />}
             {t.addCount(ticked.length)}
           </Button>

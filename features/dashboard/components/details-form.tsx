@@ -91,7 +91,7 @@ export function DetailsForm({
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">
-        {title ?? m.shell.nav.settings}
+        {title ?? m.shell.nav.details}
       </h1>
       <FieldGroup>
         <Field data-invalid={invalid === "name" || undefined}>

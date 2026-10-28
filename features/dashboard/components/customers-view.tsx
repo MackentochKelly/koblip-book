@@ -109,7 +109,7 @@ export function CustomersView({
         </InputGroup>
       )}
       {shown.length === 0 ? (
-        <Empty>
+        <Empty className="border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <UsersIcon />

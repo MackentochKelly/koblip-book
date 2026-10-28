@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   Empty,
-  EmptyContent,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
@@ -125,9 +124,6 @@ export function TeamView({
             </EmptyMedia>
             <EmptyTitle>{t.empty}</EmptyTitle>
           </EmptyHeader>
-          <EmptyContent>
-            <Button onClick={() => openForm("new")}>{t.addPerson}</Button>
-          </EmptyContent>
         </Empty>
       ) : (
         <ItemGroup className="gap-3">
@@ -205,7 +201,7 @@ export function TeamView({
         onClose={() => setEditing(null)}
         title={editing === "new" ? t.addPerson : t.editPerson}
         footer={
-          <Button type="submit" form={MEMBER_FORM} disabled={pending}>
+          <Button type="submit" size="lg" form={MEMBER_FORM} disabled={pending}>
             {pending && <Spinner data-icon="inline-start" />}
             {c.save}
           </Button>

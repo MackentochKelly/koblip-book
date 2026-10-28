@@ -7,6 +7,7 @@ import { toast } from "sonner"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import type { OwnerMessages } from "@/features/dashboard/i18n"
@@ -54,7 +55,7 @@ export function usePhotoUpload<T extends object>(
     })
 
   const field = (
-    <input
+    <Input
       ref={input}
       type="file"
       accept={ACCEPT}

@@ -68,7 +68,7 @@ export function BusinessPhotos({ photos }: { photos: PagePhoto[] }) {
               type="button"
               onClick={() => setOpen(index)}
               aria-label={m.photos.photoOf(index + 1, total)}
-              className="relative block aspect-[4/3] w-full overflow-hidden bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/30 md:rounded-lg"
+              className="relative block aspect-4/3 w-full overflow-hidden bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/30 md:rounded-lg"
             >
               <Image
                 src={photo.url}

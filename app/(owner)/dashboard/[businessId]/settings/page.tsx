@@ -9,7 +9,7 @@ import { SpanishSection } from "@/features/dashboard/components/spanish-section"
 import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.settings }
+  return { title: (await getOwnerMessages()).shell.nav.details }
 }
 
 type Props = {

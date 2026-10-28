@@ -120,7 +120,7 @@ export function AddBookingPanel({
         onClose={onClose}
         title={t.title}
         footer={
-          <Button type="submit" form={FORM} disabled={pending}>
+          <Button type="submit" size="lg" form={FORM} disabled={pending}>
             {pending && <Spinner data-icon="inline-start" />}
             {t.submit}
           </Button>

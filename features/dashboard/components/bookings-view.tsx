@@ -139,7 +139,7 @@ export function BookingsView({
         listClassName="w-full"
       />
       {days.length === 0 ? (
-        <Empty>
+        <Empty className="border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <CalendarDaysIcon />

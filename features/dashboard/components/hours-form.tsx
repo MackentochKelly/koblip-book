@@ -142,7 +142,7 @@ export function HoursForm({
                   {rangeIndex > 0 && (
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="icon-sm"
                       aria-label={t.remove}
                       onClick={() =>
                         update(

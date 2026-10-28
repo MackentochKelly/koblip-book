@@ -95,7 +95,7 @@ export function AccountMenu({ owner }: { owner: Owner }) {
         <OwnerAvatar owner={owner} />
         <span
           aria-hidden
-          className="absolute -right-1 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-muted text-foreground ring-2 ring-background [&_svg]:size-[11px]! [&_svg]:stroke-2"
+          className="absolute -right-1 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-muted text-foreground ring-2 ring-background [&_svg]:size-3! [&_svg]:stroke-2"
         >
           <ChevronDownIcon />
         </span>

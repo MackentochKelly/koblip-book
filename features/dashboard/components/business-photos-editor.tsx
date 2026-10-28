@@ -100,7 +100,7 @@ export function BusinessPhotosEditor({
           {photos.map((photo, index) => (
             <li
               key={photo.id}
-              className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted"
+              className="relative aspect-4/3 overflow-hidden rounded-lg bg-muted"
             >
               <Image
                 src={photo.url}

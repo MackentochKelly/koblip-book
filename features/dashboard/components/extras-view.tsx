@@ -229,7 +229,7 @@ export function ExtrasView({
         onClose={closePanel}
         title={editing ? t.edit : t.add}
         footer={
-          <Button type="submit" form={FORM} disabled={pending}>
+          <Button type="submit" size="lg" form={FORM} disabled={pending}>
             {pending && <Spinner data-icon="inline-start" />}
             {c.save}
           </Button>
@@ -530,6 +530,7 @@ function ExtrasForm({
               <Button
                 type="button"
                 variant="ghost"
+                size="sm"
                 className="self-start"
                 onClick={() => {
                   setOptions((current) => [
