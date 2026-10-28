@@ -1,6 +1,6 @@
 "use client"
 
-import { ExternalLinkIcon } from "lucide-react"
+import { ExternalLinkIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"

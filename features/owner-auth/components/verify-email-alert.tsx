@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { MailIcon } from "lucide-react"
+import { MailIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {

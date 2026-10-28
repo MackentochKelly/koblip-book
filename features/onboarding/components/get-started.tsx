@@ -12,7 +12,7 @@ import {
   SearchIcon,
   StoreIcon,
   XIcon,
-} from "lucide-react"
+} from "@/components/ui/icons"
 
 import {
   glassClassName,

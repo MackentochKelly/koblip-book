@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { SearchIcon } from "lucide-react"
+import { SearchIcon } from "@/components/ui/icons"
 
 import {
   InputGroup,

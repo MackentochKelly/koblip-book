@@ -1,4 +1,4 @@
-import { GlobeIcon, MapPinIcon } from "lucide-react"
+import { GlobeIcon, MapPinIcon } from "@/components/ui/icons"
 import { Item, ItemContent, ItemMedia } from "@/components/ui/item"
 
 // Where the business is, on a soft chip with a pin.

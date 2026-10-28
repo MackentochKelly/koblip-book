@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { GlobeIcon } from "lucide-react"
+import { GlobeIcon } from "@/components/ui/icons"
 
 import { useMessages, usePageLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"

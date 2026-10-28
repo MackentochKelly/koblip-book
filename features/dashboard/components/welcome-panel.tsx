@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { ExternalLinkIcon, LinkIcon, ShareIcon } from "lucide-react"
+import { ExternalLinkIcon, LinkIcon, ShareIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"

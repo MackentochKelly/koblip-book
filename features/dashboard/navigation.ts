@@ -6,7 +6,7 @@ import {
   ScissorsIcon,
   SettingsIcon,
   UsersIcon,
-} from "lucide-react"
+} from "@/components/ui/icons"
 
 // The owner area's pages, in the menu's groups (like Koblip Sales'
 // config/navigation). The ☰ menu and the search list both read it; a new

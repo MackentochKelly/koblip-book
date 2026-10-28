@@ -2,7 +2,7 @@
 
 import { useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { ExternalLinkIcon, LanguagesIcon } from "lucide-react"
+import { ExternalLinkIcon, LanguagesIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { PageSection } from "@/components/page-section"

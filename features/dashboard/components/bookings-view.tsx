@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { CalendarDaysIcon, ChevronRightIcon, PlusIcon } from "lucide-react"
+import { CalendarDaysIcon, ChevronRightIcon, PlusIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"

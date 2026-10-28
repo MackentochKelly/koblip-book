@@ -11,6 +11,16 @@ const eslintConfig = defineConfig([
       import: importPlugin,
     },
     rules: {
+      // One icon set: every icon comes from components/ui/icons.tsx.
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: ["lucide-react", "@mynaui/icons-react"].map((name) => ({
+            name,
+            message: "Import icons from '@/components/ui/icons'.",
+          })),
+        },
+      ],
       // Each new feature adds its own zone:
       // { target: "./features/<name>", from: "./features", except: ["./<name>"] }
       "import/no-restricted-paths": [
@@ -69,6 +79,13 @@ const eslintConfig = defineConfig([
           ],
         },
       ],
+    },
+  },
+  // The icon file is the one place the icon packages are imported.
+  {
+    files: ["components/ui/icons.tsx"],
+    rules: {
+      "no-restricted-imports": "off",
     },
   },
   // components/ui and hooks/use-mobile.ts are shadcn's code, kept as the

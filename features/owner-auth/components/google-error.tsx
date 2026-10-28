@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { CircleAlertIcon, InfoIcon } from "lucide-react"
+import { CircleAlertIcon, InfoIcon } from "@/components/ui/icons"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 

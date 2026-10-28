@@ -19,7 +19,7 @@ import {
   BusinessPortfolio,
 } from "@/features/business-page/components/business-photos"
 import { BusinessAmenities } from "@/features/business-page/components/business-amenities"
-import { ExternalLinkIcon } from "lucide-react"
+import { ExternalLinkIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import { BusinessFooter } from "@/features/business-page/components/business-footer"
 import { LanguageMenu } from "@/features/business-page/components/language-menu"

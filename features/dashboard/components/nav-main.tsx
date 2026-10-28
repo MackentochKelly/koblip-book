@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import type { LucideIcon } from "lucide-react"
+import type { Icon } from "@/components/ui/icons"
 
 import {
   SidebarGroup,
@@ -15,7 +15,7 @@ import {
 export interface NavItem {
   href: string
   label: string
-  icon: LucideIcon
+  icon: Icon
   active: boolean
 }
 

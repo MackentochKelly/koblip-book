@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { CalendarIcon, CalendarX2Icon, UsersIcon } from "lucide-react"
+import { CalendarIcon, CalendarX2Icon, UsersIcon } from "@/components/ui/icons"
 import { es } from "react-day-picker/locale"
 
 import { useMessages } from "@/components/language-provider"

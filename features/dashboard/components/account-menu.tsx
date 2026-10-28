@@ -8,7 +8,7 @@ import {
   MonitorIcon,
   MoonIcon,
   SunIcon,
-} from "lucide-react"
+} from "@/components/ui/icons"
 import { useTheme } from "next-themes"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"

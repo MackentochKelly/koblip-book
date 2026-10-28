@@ -3,7 +3,7 @@
 import { createContext, use, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Route } from "next"
-import { ExternalLinkIcon, LanguagesIcon, LogOutIcon } from "lucide-react"
+import { ExternalLinkIcon, LanguagesIcon, LogOutIcon } from "@/components/ui/icons"
 import { useTheme } from "next-themes"
 
 import {

@@ -1,4 +1,4 @@
-import { GlobeIcon, NavigationIcon, PhoneCallIcon } from "lucide-react"
+import { GlobeIcon, NavigationIcon, PhoneCallIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"

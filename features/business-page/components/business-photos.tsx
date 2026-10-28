@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
-import { XIcon } from "lucide-react"
+import { XIcon } from "@/components/ui/icons"
 
 import { useMessages } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"

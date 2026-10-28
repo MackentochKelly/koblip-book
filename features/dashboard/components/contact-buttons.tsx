@@ -1,4 +1,4 @@
-import { MessageCircleIcon, PhoneIcon } from "lucide-react"
+import { MessageCircleIcon, PhoneIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { phoneLinks } from "@/lib/phone-link"

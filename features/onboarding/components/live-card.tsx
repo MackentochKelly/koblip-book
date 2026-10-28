@@ -9,7 +9,7 @@ import {
   LinkIcon,
   ShareIcon,
   StoreIcon,
-} from "lucide-react"
+} from "@/components/ui/icons"
 import { motion } from "motion/react"
 import { toast } from "sonner"
 

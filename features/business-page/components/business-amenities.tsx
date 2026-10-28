@@ -7,13 +7,13 @@ import {
   NfcIcon,
   PawPrintIcon,
   ToiletIcon,
-  type LucideIcon,
-} from "lucide-react"
+  type Icon,
+} from "@/components/ui/icons"
 import { messagesFor } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
 import type { Amenity } from "../types"
 
-const ICONS: Record<Amenity, LucideIcon> = {
+const ICONS: Record<Amenity, Icon> = {
   wheelchair: AccessibilityIcon,
   parking: CarFrontIcon,
   pets: PawPrintIcon,

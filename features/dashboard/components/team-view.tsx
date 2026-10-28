@@ -9,7 +9,7 @@ import {
   PlusIcon,
   Trash2Icon,
   UsersIcon,
-} from "lucide-react"
+} from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"

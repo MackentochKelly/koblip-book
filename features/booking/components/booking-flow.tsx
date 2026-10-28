@@ -3,7 +3,7 @@
 import { useRef, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { ArrowLeftIcon, CircleCheckIcon, XIcon } from "lucide-react"
+import { ArrowLeftIcon, CircleCheckIcon, XIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { BottomBar } from "@/components/bottom-bar"

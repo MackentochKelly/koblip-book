@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { BadgeCheckIcon, ChevronRightIcon, ShieldCheckIcon } from "lucide-react"
+import { BadgeCheckIcon, ChevronRightIcon, ShieldCheckIcon } from "@/components/ui/icons"
 
 import { glassButtonClassName } from "@/components/glass-frame"
 import { Badge } from "@/components/ui/badge"

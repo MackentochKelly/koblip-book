@@ -6,7 +6,7 @@ import {
   MapPinIcon,
   PhoneIcon,
   StoreIcon,
-} from "lucide-react"
+} from "@/components/ui/icons"
 
 import {
   Item,

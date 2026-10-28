@@ -9,7 +9,7 @@ import {
   ScissorsIcon,
   SettingsIcon,
   UsersIcon,
-} from "lucide-react"
+} from "@/components/ui/icons"
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"

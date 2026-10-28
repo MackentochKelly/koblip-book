@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { LocateFixedIcon, MapPinIcon, SearchIcon } from "lucide-react"
+import { LocateFixedIcon, MapPinIcon, SearchIcon } from "@/components/ui/icons"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
 import {

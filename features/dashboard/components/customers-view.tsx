@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { ChevronRightIcon, SearchIcon, UsersIcon } from "lucide-react"
+import { ChevronRightIcon, SearchIcon, UsersIcon } from "@/components/ui/icons"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"

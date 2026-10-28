@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronsUpDownIcon } from "lucide-react"
+import { ChevronsUpDownIcon } from "@/components/ui/icons"
 
 import {
   DropdownMenu,

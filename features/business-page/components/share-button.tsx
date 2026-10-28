@@ -1,6 +1,6 @@
 "use client"
 
-import { ShareIcon } from "lucide-react"
+import { ShareIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { useMessages } from "@/components/language-provider"

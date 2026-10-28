@@ -1,4 +1,4 @@
-import { StarIcon } from "lucide-react"
+import { StarIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 // A Google rating: a filled star, the score, then the number of reviews.

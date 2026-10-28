@@ -10,7 +10,7 @@ import {
   ImageIcon,
   PlusIcon,
   Trash2Icon,
-} from "lucide-react"
+} from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { PageSection } from "@/components/page-section"

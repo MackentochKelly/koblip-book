@@ -1,4 +1,4 @@
-import { SearchXIcon } from "lucide-react"
+import { SearchXIcon } from "@/components/ui/icons"
 import { PageNotice } from "@/components/page-notice"
 
 export default function NotFound() {

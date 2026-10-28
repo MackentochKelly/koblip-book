@@ -1,7 +1,7 @@
 "use client" // Error boundaries must be Client Components
 
 import { useEffect } from "react"
-import { CircleAlertIcon } from "lucide-react"
+import { CircleAlertIcon } from "@/components/ui/icons"
 
 import { PageNotice } from "@/components/page-notice"
 import { Button } from "@/components/ui/button"

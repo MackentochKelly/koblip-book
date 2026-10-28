@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowRightIcon, ExternalLinkIcon } from "lucide-react"
+import { ArrowRightIcon, ExternalLinkIcon } from "@/components/ui/icons"
 
 import { GoogleMapsCredit } from "@/components/google-maps-credit"
 import { useMessages } from "@/components/language-provider"
