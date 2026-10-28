@@ -143,7 +143,6 @@ export function BusinessReviews({
   const more = reviews.length > REVIEWS_ON_PAGE
   return (
     <div className="flex flex-col gap-4">
-      <ReviewSource />
       <ReviewList reviews={reviews.slice(0, REVIEWS_ON_PAGE)} columns clamp />
       {more ? (
         <Button
