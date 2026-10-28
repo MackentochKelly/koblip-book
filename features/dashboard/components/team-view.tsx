@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
+  ClockIcon,
   EllipsisVerticalIcon,
   PlusIcon,
   Trash2Icon,
@@ -74,7 +76,8 @@ export function TeamView({
   team: MemberRow[]
 }) {
   const router = useRouter()
-  const { common: c, team: t } = useOwnerMessages().catalog
+  const messages = useOwnerMessages()
+  const { common: c, team: t } = messages.catalog
   const [editing, setEditing] = useState<MemberRow | "new" | null>(null)
   const [formKey, setFormKey] = useState(0)
   const [pending, startTransition] = useTransition()
@@ -110,10 +113,22 @@ export function TeamView({
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
-        <Button onClick={() => openForm("new")}>
-          <PlusIcon data-icon="inline-start" />
-          {c.add}
-        </Button>
+        <div className="flex gap-2">
+          {/* The phone's tab bar has no Hours; the computer's menu does. */}
+          <Button
+            variant="outline"
+            className="md:hidden"
+            nativeButton={false}
+            render={<Link href={`/dashboard/${businessId}/hours`} />}
+          >
+            <ClockIcon data-icon="inline-start" />
+            {messages.shell.nav.hours}
+          </Button>
+          <Button onClick={() => openForm("new")}>
+            <PlusIcon data-icon="inline-start" />
+            {c.add}
+          </Button>
+        </div>
       </div>
 
       {team.length === 0 ? (

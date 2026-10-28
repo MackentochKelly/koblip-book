@@ -124,20 +124,16 @@ function PhotoViewer({
     <Dialog open onOpenChange={(next) => !next && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="inset-0 flex h-svh max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none bg-black p-0 text-white ring-0 sm:max-w-none"
+        className="inset-0 flex h-svh max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none bg-background p-0 text-foreground ring-0 sm:max-w-none"
       >
         <DialogTitle className="sr-only">{m.photos.photos}</DialogTitle>
         <div className="flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-2">
-          <span className="text-sm text-white/80 tabular-nums">
+          <span className="text-sm text-muted-foreground tabular-nums">
             {current + 1}/{total}
           </span>
           <DialogClose
             render={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-white hover:bg-white/10 hover:text-white"
-              />
+              <Button variant="ghost" size="icon" />
             }
           >
             <XIcon />
@@ -167,7 +163,7 @@ function PhotoViewer({
           <CarouselPrevious className="left-4 hidden md:inline-flex" />
           <CarouselNext className="right-4 hidden md:inline-flex" />
         </Carousel>
-        <p className="min-h-10 truncate px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] text-xs text-white/70">
+        <p className="min-h-10 truncate px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground">
           {credit &&
             (credit.uri ? (
               <a

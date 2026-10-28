@@ -45,7 +45,7 @@ export function NavMain({ title, items }: { title: string; items: NavItem[] }) {
                 />
               }
             >
-              <item.icon strokeWidth={1.75} />
+              <item.icon />
               <span>{item.label}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>

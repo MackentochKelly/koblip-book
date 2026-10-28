@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   Empty,
+  EmptyContent,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
@@ -646,16 +647,28 @@ function SuggestPanel({
           <Spinner />
         </div>
       ) : state.status === "off" ? (
-        <p className="text-sm text-muted-foreground">{t.aiOff}</p>
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>{t.aiOff}</EmptyTitle>
+          </EmptyHeader>
+        </Empty>
       ) : state.status === "failed" ? (
-        <div className="flex flex-col items-start gap-3">
-          <p className="text-sm text-muted-foreground">{t.noSuggestions}</p>
-          <Button variant="outline" onClick={retry}>
-            {t.tryAgain}
-          </Button>
-        </div>
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>{t.noSuggestions}</EmptyTitle>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button variant="outline" onClick={retry}>
+              {t.tryAgain}
+            </Button>
+          </EmptyContent>
+        </Empty>
       ) : suggestions.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t.nothingNew}</p>
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>{t.nothingNew}</EmptyTitle>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <FieldGroup className="gap-3">
           {suggestions.map((item) => (
