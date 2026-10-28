@@ -22,6 +22,5 @@ export type PreparedBusiness =
       name: string
       address: string | null
       photoUrl: string | null
-      owned: boolean
     }
   | { ok: false; error: "invalid" | "not_found" | "failed" }

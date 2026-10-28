@@ -7,17 +7,12 @@ import { businesses, user } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
 
-const {
-  importPlaceByIdMock,
-  importPlaceMock,
-  getBusinessPageMock,
-  getSessionMock,
-} = vi.hoisted(() => ({
-  importPlaceByIdMock: vi.fn(),
-  importPlaceMock: vi.fn(),
-  getBusinessPageMock: vi.fn(),
-  getSessionMock: vi.fn(),
-}))
+const { importPlaceByIdMock, importPlaceMock, getBusinessPageMock } =
+  vi.hoisted(() => ({
+    importPlaceByIdMock: vi.fn(),
+    importPlaceMock: vi.fn(),
+    getBusinessPageMock: vi.fn(),
+  }))
 
 vi.mock("@/features/place-import/api/import-place", () => ({
   importPlaceById: importPlaceByIdMock,
@@ -26,7 +21,6 @@ vi.mock("@/features/place-import/api/import-place", () => ({
 vi.mock("@/features/business-page/api/get-business-page", () => ({
   getBusinessPage: getBusinessPageMock,
 }))
-vi.mock("@/lib/dal", () => ({ getSession: getSessionMock }))
 
 const { prepareBusiness, prepareBusinessFromLink } =
   await import("./prepare-actions")
@@ -115,14 +109,9 @@ test("prepareBusiness maps other errors to failed and logs once", async () => {
   error.mockRestore()
 })
 
-test("prepareBusiness reports a shop owned by someone else", async () => {
+test("prepareBusiness returns the prepared shop", async () => {
   importPlaceByIdMock.mockResolvedValueOnce("claimed-shop")
   getBusinessPageMock.mockResolvedValueOnce(pageWithPhoto())
-  getSessionMock.mockResolvedValueOnce({
-    userId: "u1",
-    name: "Me",
-    email: "me@example.com",
-  })
 
   await expect(
     prepareBusiness({
@@ -135,51 +124,11 @@ test("prepareBusiness reports a shop owned by someone else", async () => {
     name: "Claimed Shop",
     address: "1 Main St",
     photoUrl: "https://photo/1",
-    owned: true,
   })
   expect(importPlaceByIdMock).toHaveBeenCalledWith(
     "ChIJclaimedplace",
     "123e4567-e89b-42d3-a456-426614174000"
   )
-})
-
-test("prepareBusiness reports my own shop as unowned", async () => {
-  importPlaceByIdMock.mockResolvedValueOnce("my-shop")
-  getBusinessPageMock.mockResolvedValueOnce({ photos: [] })
-  getSessionMock.mockResolvedValueOnce({
-    userId: "u1",
-    name: "Me",
-    email: "me@example.com",
-  })
-
-  await expect(prepareBusiness({ placeId: "ChIJmyownplace" })).resolves.toEqual(
-    {
-      ok: true,
-      slug: "my-shop",
-      name: "My Shop",
-      address: null,
-      photoUrl: null,
-      owned: false,
-    }
-  )
-})
-
-test("prepareBusiness without a session treats any owner as owned", async () => {
-  importPlaceByIdMock.mockResolvedValueOnce("claimed-shop")
-  getBusinessPageMock.mockResolvedValueOnce({ photos: [] })
-  getSessionMock.mockResolvedValueOnce(null)
-
-  await expect(
-    prepareBusiness({ placeId: "ChIJclaimedplace" })
-  ).resolves.toMatchObject({ ok: true, owned: true })
-
-  importPlaceByIdMock.mockResolvedValueOnce("free-shop")
-  getBusinessPageMock.mockResolvedValueOnce({ photos: [] })
-  getSessionMock.mockResolvedValueOnce(null)
-
-  await expect(
-    prepareBusiness({ placeId: "ChIJfreeplace12" })
-  ).resolves.toMatchObject({ ok: true, owned: false })
 })
 
 test("prepareBusinessFromLink validates, imports and maps errors", async () => {
@@ -207,9 +156,8 @@ test("prepareBusinessFromLink validates, imports and maps errors", async () => {
 
   importPlaceMock.mockResolvedValueOnce("free-shop")
   getBusinessPageMock.mockResolvedValueOnce({ photos: [] })
-  getSessionMock.mockResolvedValueOnce(null)
   await expect(
     prepareBusinessFromLink({ link: "  https://maps.app.goo.gl/free  " })
-  ).resolves.toMatchObject({ ok: true, slug: "free-shop", owned: false })
+  ).resolves.toMatchObject({ ok: true, slug: "free-shop" })
   expect(importPlaceMock).toHaveBeenCalledWith("https://maps.app.goo.gl/free")
 })

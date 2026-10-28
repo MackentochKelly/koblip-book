@@ -6,7 +6,6 @@ import {
   importPlace,
   importPlaceById,
 } from "@/features/place-import/api/import-place"
-import { getSession } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { businesses } from "@/lib/db/schema"
 import type { PreparedBusiness } from "../types"
@@ -19,9 +18,7 @@ function failed(error: unknown): PreparedBusiness {
   return { ok: false, error: "failed" }
 }
 
-// Reads the freshly imported business row plus its first photo. Owned
-// means someone else already owns it (without a session, any owner
-// counts); the owner's own business reads as unowned.
+// Reads the freshly imported business row plus its first photo.
 async function toPrepared(slug: string): Promise<PreparedBusiness> {
   const [business] = await db
     .select()
@@ -32,17 +29,12 @@ async function toPrepared(slug: string): Promise<PreparedBusiness> {
     return failed("prepareBusiness imported no business row")
   }
   const page = await getBusinessPage(slug)
-  const session = await getSession()
-  const owned =
-    business.ownerId !== null &&
-    (session === null || business.ownerId !== session.userId)
   return {
     ok: true,
     slug,
     name: business.name,
     address: business.address,
     photoUrl: page?.photos[0]?.url ?? null,
-    owned,
   }
 }
 
