@@ -1,7 +1,14 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { ChevronDownIcon, LogOutIcon } from "lucide-react"
+import {
+  ChevronDownIcon,
+  LogOutIcon,
+  MonitorIcon,
+  MoonIcon,
+  SunIcon,
+} from "lucide-react"
+import { useTheme } from "next-themes"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -11,6 +18,8 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -37,9 +46,17 @@ function OwnerAvatar({ owner }: { owner: Owner }) {
 
 // The owner's account menu, like Koblip Sales': their photo with a small ⌄
 // badge on its corner and a ring on hover and while open, so it reads as a
-// menu. Inside: who is logged in, and Sign out.
+// menu. Inside: who is logged in, light or dark (or as the device is), and
+// Sign out.
+const THEMES = [
+  { value: "light", label: "Light", icon: SunIcon },
+  { value: "dark", label: "Dark", icon: MoonIcon },
+  { value: "system", label: "Device", icon: MonitorIcon },
+]
+
 export function AccountMenu({ owner }: { owner: Owner }) {
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
   const signOut = async () => {
     await authClient.signOut()
     router.replace("/")
@@ -77,6 +94,21 @@ export function AccountMenu({ owner }: { owner: Owner }) {
               <span className="truncate text-xs">{owner.email}</span>
             </span>
           </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Appearance</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={theme ?? "system"}
+            onValueChange={setTheme}
+          >
+            {THEMES.map((item) => (
+              <DropdownMenuRadioItem key={item.value} value={item.value}>
+                <item.icon />
+                {item.label}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => void signOut()}>
