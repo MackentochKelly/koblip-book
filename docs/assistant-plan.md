@@ -392,3 +392,9 @@ Same chat, saved like typed chats.
   the most Meta in the hackathon score and to reuse the full assistant.
 - 2026-10-28: the app now starts with `node server.mjs`; the port comes
   from PORT (not `--port`). Local preview: `PORT=3100 npm run dev`.
+- 2026-10-28: tested live: a `tts_websocket` token is refused on the Text to
+  Dialogue socket ("Token type mismatch: expected 'ttd_websocket'"). A
+  `ttd_websocket` token (POST /v1/single-use-token/ttd_websocket, not yet on
+  the token docs page) opens it with `single_use_token` in the query: audio
+  chunks and is_final arrived. Branch A: the browser speaks with ElevenLabs
+  directly; no speaking relay.
