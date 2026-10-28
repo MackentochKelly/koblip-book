@@ -38,3 +38,44 @@ verification: the agent checking its own work.
 - To undo a wrong step, ask it to revert.
 - The practice run cost about $7 of tokens.
 - Help: Discord office hours.
+
+# Part 2: checking the agent's work
+
+From "Agents 102: Best Practices for Verifiable Agents Pt. 2"
+(https://vimeo.com/1239918451), same workshop code.
+
+## Where to check
+
+- Check at the key steps, not every step. Each check makes the agent more
+  accurate but slower: 20 turns without checks, 30 with them.
+- Put the check inside the tool itself (for example inside "submit"), so the
+  agent can't skip it. Don't offer checking as a tool the agent may or may
+  not call.
+- Check the smaller steps along the way too (like the plan or checklist), so
+  mistakes are caught early.
+- Only allow the tools on the list. If the agent asks for any other tool,
+  refuse it.
+
+## Two kinds of check
+
+- **Fixed rules (code):** is it complete, in the right format (for example
+  JSON), with nothing forbidden in it (for example no invented numbers).
+- **AI judge:** a second AI call checks that each claim is true against the
+  source.
+- Use both.
+
+## When it fails
+
+- Send the failure reason back to the agent so it tries again. It gets
+  better each time (in the session: 50% → 67% → 83% covered).
+- Limit the retries (the session used 3), then hand it to a person.
+- For important answers, a person signs off at the end.
+- Pass marks are a setting (the session used 80%). Use 100% for money,
+  health and legal; lower for low-risk tasks. Experts choose the number.
+- Checks that later steps don't depend on can run afterwards, without making
+  the user wait.
+
+## Working tip
+
+- Run two Muse Code sessions: one builds and one only reviews. The reviewer
+  can't change anything.
