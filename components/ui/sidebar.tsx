@@ -181,8 +181,8 @@ function Sidebar({
 
   if (isMobile) {
     return (
-      // Koblip Sales' phone menu: the shared drawer, swiped shut toward the
-      // edge it opens from.
+      // Koblip Sales' phone menu: the shared drawer, floating with the same
+      // gap on every side and swiped shut toward the edge it opens from.
       <Drawer
         open={openMobile}
         onOpenChange={setOpenMobile}
@@ -193,14 +193,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className={cn(
-            "w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [--drawer-bleed-background:transparent] [--drawer-inset:--spacing(2)]",
-            // The same gap on every side; like Gmail, a link's highlight runs
-            // into the edge it opens from, rounded only on the far side.
-            side === "left"
-              ? "[&_[data-slot=sidebar-group]]:pl-0 [&_[data-slot=sidebar-group-label]]:pl-4 [&_[data-slot=sidebar-group]_[data-slot=sidebar-menu-button]]:rounded-l-none [&_[data-slot=sidebar-group]_[data-slot=sidebar-menu-button]]:pl-4"
-              : "[&_[data-slot=sidebar-group]]:pr-0 [&_[data-slot=sidebar-group-label]]:pr-4 [&_[data-slot=sidebar-group]_[data-slot=sidebar-menu-button]]:rounded-r-none [&_[data-slot=sidebar-group]_[data-slot=sidebar-menu-button]]:pr-4"
-          )}
+          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [--drawer-bleed-background:transparent] [--drawer-inset:--spacing(2)]"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
