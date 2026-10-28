@@ -102,7 +102,7 @@ test("snaps durations, drops duplicates and long names, caps at 8", async () => 
       })),
     ])
   )
-  const result = await suggestServices("biz-mine")
+  const result = await suggestServices("biz-mine", "en")
   expect(result.ok).toBe(true)
   if (!result.ok) {
     return
@@ -126,7 +126,7 @@ test("snaps durations, drops duplicates and long names, caps at 8", async () => 
 test("returns ai_off when the key is missing", async () => {
   await loadFresh()
   vi.stubEnv("MODEL_API_KEY", "")
-  const result = await suggestServices("biz-mine")
+  const result = await suggestServices("biz-mine", "en")
   expect(result).toEqual({ ok: false, error: "ai_off" })
   expect(createMock).not.toHaveBeenCalled()
 })
@@ -134,13 +134,13 @@ test("returns ai_off when the key is missing", async () => {
 test("returns failed when the AI errors", async () => {
   await loadFresh()
   createMock.mockRejectedValueOnce(new Error("boom"))
-  const result = await suggestServices("biz-mine")
+  const result = await suggestServices("biz-mine", "en")
   expect(result).toEqual({ ok: false, error: "failed" })
 })
 
 test("returns not_found for someone else's business", async () => {
   await loadFresh()
-  const result = await suggestServices("biz-theirs")
+  const result = await suggestServices("biz-theirs", "en")
   expect(result).toEqual({ ok: false, error: "not_found" })
   expect(createMock).not.toHaveBeenCalled()
 })

@@ -3,6 +3,8 @@
 import { and, eq } from "drizzle-orm"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
+import { getMetaAiClient, isMetaAiEnabled, META_TEXT_MODEL } from "@/lib/meta-ai"
+import { isPageLanguage, type PageLanguage } from "@/lib/page-language"
 import {
   addonGroups,
   addonOptions,
@@ -12,7 +14,9 @@ import {
 import type {
   ActionResult,
   AddonGroupInput,
+  AddonGroupSuggestion,
   AddonOptionInput,
+  AddonOptionSuggestion,
 } from "../types"
 import { ownedBusiness, revalidateBusiness } from "./owned-business"
 
@@ -376,4 +380,277 @@ export async function reorderAddonGroups(
   })
   revalidateBusiness(owned.business.slug)
   return { ok: true }
+}
+
+const SUGGEST_ADDON_SYSTEM_MESSAGE =
+  "You suggest add-on groups (extras) for a local business's booking page. Return up to 4 groups this kind of business usually offers with its services. Each group has a short name (max 60 characters), a short question shown to the customer (max 100 characters, e.g. 'Add anything?'), how many options the customer must pick (minSelect, usually 0) and may pick (maxSelect, or null for any), the ids of the business's services it fits (only ids from the list given), and 2 to 6 options. Each option has a short name (max 60 characters), an optional one-line description (max 120 characters) and the extra minutes it adds. Never include prices. Never repeat a group the business already has."
+
+function languageLine(language: PageLanguage): string {
+  return language === "es"
+    ? "Write in Spanish (Latin American, informal tú)."
+    : "Write in English."
+}
+
+function snapAddonMinutes(minutes: number): number {
+  let best: number = BOOKING_RULES.addonMinutes[0]
+  for (const value of BOOKING_RULES.addonMinutes) {
+    if (Math.abs(value - minutes) < Math.abs(best - minutes)) {
+      best = value
+    }
+  }
+  return best
+}
+
+function mapAddonSuggestions(
+  raw: unknown,
+  existingNames: string[],
+  serviceIds: Set<string>
+): AddonGroupSuggestion[] | null {
+  if (!Array.isArray(raw)) {
+    return null
+  }
+  const taken = new Set(existingNames.map((name) => name.trim().toLowerCase()))
+  const groups: AddonGroupSuggestion[] = []
+  for (const item of raw) {
+    if (groups.length >= 4) {
+      break
+    }
+    if (!item || typeof item !== "object") {
+      continue
+    }
+    const candidate = item as {
+      name?: unknown
+      prompt?: unknown
+      minSelect?: unknown
+      maxSelect?: unknown
+      serviceIds?: unknown
+      options?: unknown
+    }
+    if (typeof candidate.name !== "string") {
+      continue
+    }
+    const name = candidate.name.trim()
+    if (
+      name.length === 0 ||
+      name.length > BOOKING_RULES.maxAddonName ||
+      taken.has(name.toLowerCase())
+    ) {
+      continue
+    }
+    if (typeof candidate.prompt !== "string") {
+      continue
+    }
+    const prompt = candidate.prompt.trim()
+    if (
+      prompt.length === 0 ||
+      prompt.length > BOOKING_RULES.maxAddonPrompt
+    ) {
+      continue
+    }
+    if (!Array.isArray(candidate.options)) {
+      continue
+    }
+    const seen = new Set<string>()
+    const options: AddonOptionSuggestion[] = []
+    for (const rawOption of candidate.options) {
+      if (options.length >= BOOKING_RULES.maxAddonOptions) {
+        break
+      }
+      if (!rawOption || typeof rawOption !== "object") {
+        continue
+      }
+      const optionCandidate = rawOption as {
+        name?: unknown
+        description?: unknown
+        durationMinutes?: unknown
+      }
+      if (typeof optionCandidate.name !== "string") {
+        continue
+      }
+      const optionName = optionCandidate.name.trim()
+      if (
+        optionName.length === 0 ||
+        optionName.length > BOOKING_RULES.maxAddonName ||
+        seen.has(optionName.toLowerCase())
+      ) {
+        continue
+      }
+      seen.add(optionName.toLowerCase())
+      const duration = Number(optionCandidate.durationMinutes)
+      if (!Number.isFinite(duration)) {
+        continue
+      }
+      const description =
+        typeof optionCandidate.description === "string"
+          ? optionCandidate.description
+              .trim()
+              .slice(0, BOOKING_RULES.maxAddonDescription) || null
+          : null
+      options.push({
+        name: optionName,
+        description,
+        durationMinutes: snapAddonMinutes(duration),
+      })
+    }
+    if (options.length < 1) {
+      continue
+    }
+    const ids: string[] = []
+    if (Array.isArray(candidate.serviceIds)) {
+      for (const id of candidate.serviceIds) {
+        if (
+          typeof id === "string" &&
+          serviceIds.has(id) &&
+          !ids.includes(id)
+        ) {
+          ids.push(id)
+        }
+      }
+    }
+    const minValue = Number(candidate.minSelect)
+    const minSelect = Number.isFinite(minValue)
+      ? Math.min(Math.max(0, Math.floor(minValue)), options.length)
+      : 0
+    let maxSelect: number | null = null
+    if (candidate.maxSelect !== null && candidate.maxSelect !== undefined) {
+      const maxValue = Number(candidate.maxSelect)
+      if (Number.isFinite(maxValue)) {
+        maxSelect = Math.min(
+          Math.max(Math.floor(maxValue), Math.max(1, minSelect)),
+          options.length
+        )
+      }
+    }
+    taken.add(name.toLowerCase())
+    groups.push({ name, prompt, minSelect, maxSelect, serviceIds: ids, options })
+  }
+  return groups
+}
+
+// Suggests add-on groups but saves nothing. The UI calls createAddonGroup
+// for each group the owner ticks, with priceMinor: null on every option.
+export async function suggestAddonGroups(
+  businessId: string,
+  language: PageLanguage
+): Promise<ActionResult<{ groups: AddonGroupSuggestion[] }>> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) {
+    return { ok: false, error: "not_found" }
+  }
+  if (!isMetaAiEnabled()) {
+    return { ok: false, error: "ai_off" }
+  }
+  const client = getMetaAiClient()
+  if (!client) {
+    return { ok: false, error: "ai_off" }
+  }
+  const [serviceRows, groupRows] = await Promise.all([
+    db
+      .select({ id: services.id, name: services.name })
+      .from(services)
+      .where(eq(services.businessId, owned.business.id)),
+    db
+      .select({ name: addonGroups.name })
+      .from(addonGroups)
+      .where(eq(addonGroups.businessId, owned.business.id)),
+  ])
+  if (groupRows.length >= BOOKING_RULES.maxAddonGroups) {
+    return { ok: true, groups: [] }
+  }
+  const lang = isPageLanguage(language) ? language : "en"
+  try {
+    const completion = await client.chat.completions.create(
+      {
+        model: META_TEXT_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: `${SUGGEST_ADDON_SYSTEM_MESSAGE} ${languageLine(lang)}`,
+          },
+          {
+            role: "user",
+            content: [
+              `Business name: ${owned.business.name}`,
+              owned.business.category
+                ? `Category: ${owned.business.category}`
+                : null,
+              serviceRows.length > 0
+                ? `Services:\n${serviceRows.map((row) => `${row.id}: ${row.name}`).join("\n")}`
+                : null,
+              groupRows.length > 0
+                ? `Existing add-on groups: ${groupRows.map((row) => row.name).join(", ")}`
+                : null,
+            ]
+              .filter((line) => line !== null)
+              .join("\n"),
+          },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "addon_suggestions",
+            schema: {
+              type: "object",
+              properties: {
+                groups: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string" },
+                      prompt: { type: "string" },
+                      minSelect: { type: "integer" },
+                      maxSelect: { type: ["integer", "null"] },
+                      serviceIds: {
+                        type: "array",
+                        items: { type: "string" },
+                      },
+                      options: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            name: { type: "string" },
+                            description: { type: "string" },
+                            durationMinutes: { type: "integer" },
+                          },
+                          required: ["name", "durationMinutes"],
+                        },
+                      },
+                    },
+                    required: [
+                      "name",
+                      "prompt",
+                      "minSelect",
+                      "serviceIds",
+                      "options",
+                    ],
+                  },
+                },
+              },
+              required: ["groups"],
+            },
+          },
+        },
+      },
+      { timeout: 15_000 }
+    )
+    const content = completion.choices[0]?.message?.content
+    if (!content) {
+      return { ok: false, error: "failed" }
+    }
+    const parsed = JSON.parse(content) as { groups?: unknown }
+    const groups = mapAddonSuggestions(
+      parsed.groups,
+      groupRows.map((row) => row.name),
+      new Set(serviceRows.map((row) => row.id))
+    )
+    if (!groups) {
+      return { ok: false, error: "failed" }
+    }
+    revalidateBusiness(owned.business.slug)
+    return { ok: true, groups }
+  } catch {
+    return { ok: false, error: "failed" }
+  }
 }

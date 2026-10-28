@@ -12,6 +12,7 @@ import {
   teamMembers,
 } from "@/lib/db/schema"
 import { getMetaAiClient, isMetaAiEnabled, META_TEXT_MODEL } from "@/lib/meta-ai"
+import { isPageLanguage, type PageLanguage } from "@/lib/page-language"
 import type {
   ActionResult,
   BusinessDetailsInput,
@@ -497,7 +498,13 @@ export async function claimBusiness(
 }
 
 const SUGGEST_SYSTEM_MESSAGE =
-  "You suggest the bookable services for a local business's booking page. Return up to 8 common services this kind of business offers, each with a short name (max 60 characters), an optional one-line description (max 120 characters) and a typical length in minutes. Never include prices. Never repeat a service the business already has. Plain English."
+  "You suggest the bookable services for a local business's booking page. Return up to 8 common services this kind of business offers, each with a short name (max 60 characters), an optional one-line description (max 120 characters) and a typical length in minutes. Never include prices. Never repeat a service the business already has."
+
+function languageLine(language: PageLanguage): string {
+  return language === "es"
+    ? "Write in Spanish (Latin American, informal tú)."
+    : "Write in English."
+}
 
 function snapDuration(minutes: number): number {
   let best: number = BOOKING_RULES.serviceMinutes[0]
@@ -563,7 +570,8 @@ function mapSuggestions(
 }
 
 export async function suggestServices(
-  businessId: string
+  businessId: string,
+  language: PageLanguage
 ): Promise<ActionResult<{ services: ServiceSuggestion[] }>> {
   const owned = await ownedBusiness(businessId)
   if (!owned) {
@@ -576,6 +584,7 @@ export async function suggestServices(
   if (!client) {
     return { ok: false, error: "ai_off" }
   }
+  const lang = isPageLanguage(language) ? language : "en"
   const existing = await db
     .select({ name: services.name })
     .from(services)
@@ -585,7 +594,10 @@ export async function suggestServices(
       {
         model: META_TEXT_MODEL,
         messages: [
-          { role: "system", content: SUGGEST_SYSTEM_MESSAGE },
+          {
+            role: "system",
+            content: `${SUGGEST_SYSTEM_MESSAGE} ${languageLine(lang)}`,
+          },
           {
             role: "user",
             content: [
