@@ -23,7 +23,7 @@ export function TeamList({
             key={member.id}
             className="flex w-16 flex-col items-center gap-1.5"
           >
-            <Avatar size="lg">
+            <Avatar size="lg" className="size-12">
               {member.photoUrl && <AvatarImage src={member.photoUrl} alt="" />}
               <AvatarFallback>{initials(member.name)}</AvatarFallback>
             </Avatar>
