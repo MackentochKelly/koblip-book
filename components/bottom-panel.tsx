@@ -12,16 +12,12 @@ import {
 } from "@/components/ui/drawer"
 import { cn } from "@/lib/utils"
 
-type Stop = "peek" | "middle" | "content" | "max"
-
-// A bottom sheet's stops (Base UI snap points): it opens at its content's
-// height and can be dragged to the bottom (title and buttons only), the
-// middle of the screen or all the way up. Focusing a field takes it to the
-// top, above the keyboard. Measured from the sheet itself, so the stops
-// follow the content as it changes.
-function useSheetStops(
+// The sheet's height in px: what its content needs, up to its tallest.
+// Set as a number (not "auto") so the stock height transition also slides
+// on iPhone Safari, which can't animate to "auto". Measured from the sheet
+// itself, so it follows the content as it changes.
+function useSheetHeight(
   enabled: boolean,
-  resetKey: string | undefined,
   {
     popup,
     scroll,
@@ -32,10 +28,7 @@ function useSheetStops(
     inner: React.RefObject<HTMLDivElement | null>
   }
 ) {
-  const [heights, setHeights] = React.useState<Record<Stop, number> | null>(
-    null
-  )
-  const [stop, setStop] = React.useState<Stop>("content")
+  const [height, setHeight] = React.useState<number | null>(null)
 
   const measure = React.useCallback(() => {
     const sheet = popup.current
@@ -48,23 +41,15 @@ function useSheetStops(
     const padding = parseFloat(getComputedStyle(area).paddingTop) * 2
     // Everything that is not the scrolling middle: handle, title, buttons.
     const chrome = sheet.offsetHeight - area.clientHeight
-    const max = sheet.offsetHeight
-    const content = Math.round(
-      Math.min(max, chrome + body.offsetHeight + padding)
-    )
-    const next = {
-      peek: Math.round(Math.min(chrome, content)),
-      middle: Math.round(window.innerHeight / 2),
-      content,
-      max: Math.round(max),
-    }
-    setHeights((current) =>
-      current &&
-      (Object.keys(next) as Stop[]).every(
-        (key) => Math.abs(current[key] - next[key]) <= 1
+    const max = parseFloat(getComputedStyle(sheet).maxHeight)
+    const next = Math.round(
+      Math.min(
+        Number.isFinite(max) ? max : window.innerHeight,
+        chrome + body.offsetHeight + padding
       )
-        ? current
-        : next
+    )
+    setHeight((current) =>
+      current !== null && Math.abs(current - next) <= 1 ? current : next
     )
   }, [popup, scroll, inner])
 
@@ -78,9 +63,10 @@ function useSheetStops(
       return () => cancelAnimationFrame(frame)
     }
     // A ResizeObserver reports each node's size as soon as it starts
-    // observing, so this also takes the first measurement.
+    // observing, so this also takes the first measurement. The middle
+    // changes size when the title or the buttons do.
     const observer = new ResizeObserver(measure)
-    for (const node of [popup.current, inner.current]) {
+    for (const node of [popup.current, scroll.current, inner.current]) {
       if (node) observer.observe(node)
     }
     // A sheet on top closing leaves this one's size as it was, so watch for
@@ -95,59 +81,14 @@ function useSheetStops(
       nested.disconnect()
       window.removeEventListener("resize", measure)
     }
-  }, [enabled, measure, tries, popup, inner])
+  }, [enabled, measure, tries, popup, scroll, inner])
 
-  // A new step opens at its own content height again.
-  const [lastKey, setLastKey] = React.useState(resetKey)
-  if (lastKey !== resetKey) {
-    setLastKey(resetKey)
-    setStop("content")
-  }
-
-  if (!enabled || !heights) return { active: false as const }
-  // The top stop is 1 (the sheet's full height).
-  const value = (key: Stop) => (key === "max" ? 1 : heights[key])
-  const points = [
-    ...new Set(
-      (["peek", "middle", "content"] as const)
-        .map((key) => heights[key])
-        .filter((height) => height < heights.max - 1)
-    ),
-  ].sort((a, b) => a - b)
-  return {
-    active: true as const,
-    snapPoints: [...points, 1],
-    snapPoint:
-      stop === "content" && heights.content >= heights.max - 1
-        ? 1
-        : value(stop),
-    onSnapPointChange: (point: number | string | null) => {
-      if (point === null) return
-      if (point === 1) {
-        setStop("max")
-        return
-      }
-      const found = (["content", "middle", "peek"] as const).find(
-        (key) => heights[key] === point
-      )
-      if (found) setStop(found)
-    },
-    onFocusCapture: (event: React.FocusEvent) => {
-      if (
-        (event.target as HTMLElement).matches(
-          'input, textarea, [contenteditable="true"]'
-        )
-      ) {
-        setStop("max")
-      }
-    },
-  }
+  return enabled ? height : null
 }
 
-// A phone panel: the stock Drawer as a bottom sheet, like Google Maps. It
-// slides up edge to edge, swipes down to close and has three stops; its
-// buttons ride up with the visible edge so they stay on screen. Keep it
-// mounted and toggle `open` so it animates.
+// A phone panel: the stock Drawer as a bottom sheet. It floats at its
+// content's height, slides to a new height when the content changes and
+// swipes down to close. Keep it mounted and toggle `open` so it animates.
 export function BottomPanel({
   open,
   onClose,
@@ -155,7 +96,6 @@ export function BottomPanel({
   title,
   header,
   footer,
-  contentKey,
   children,
 }: {
   open: boolean
@@ -165,14 +105,12 @@ export function BottomPanel({
   title: string
   header?: React.ReactNode
   footer?: React.ReactNode
-  // A new value (a new step) opens the sheet at its content height again.
-  contentKey?: string
   children: React.ReactNode
 }) {
   const popup = React.useRef<HTMLDivElement | null>(null)
   const scroll = React.useRef<HTMLDivElement | null>(null)
   const inner = React.useRef<HTMLDivElement | null>(null)
-  const stops = useSheetStops(open, contentKey, { popup, scroll, inner })
+  const height = useSheetHeight(open, { popup, scroll, inner })
   return (
     <Drawer
       open={open}
@@ -184,25 +122,19 @@ export function BottomPanel({
       }}
       showSwipeHandle
       swipeDirection="down"
-      // Always controlled (null until the stops are measured): Base UI
-      // keeps the first mode it sees and warns on a switch.
-      snapPoint={stops.active ? stops.snapPoint : null}
-      {...(stops.active
-        ? {
-            snapPoints: stops.snapPoints,
-            onSnapPointChange: stops.onSnapPointChange,
-          }
-        : {})}
     >
       <DrawerPrimitive.VirtualKeyboardProvider>
         <DrawerContent
           ref={popup}
-          onFocusCapture={stops.active ? stops.onFocusCapture : undefined}
+          style={
+            height === null
+              ? undefined
+              : ({ "--sheet-height": `${height}px` } as React.CSSProperties)
+          }
           className={cn(
             "pb-[max(var(--drawer-keyboard-inset,0px),env(safe-area-inset-bottom))] [--drawer-content-max-height:calc(100dvh-3rem)]",
-            // Base UI's stop offset doesn't pass down to children, so copy
-            // it into one that does for the list and the buttons.
-            "[--sheet-offset:var(--drawer-snap-point-offset,0px)]",
+            // Base UI's own height (while a sheet is open on top) still wins.
+            "[--drawer-content-height:var(--drawer-height,var(--sheet-height,auto))]",
             // While the keyboard is open the sheet rises to its tallest.
             "min-h-[min(var(--drawer-content-max-height),calc(var(--drawer-keyboard-inset,0px)*1000))]"
           )}
@@ -214,27 +146,14 @@ export function BottomPanel({
           )}
           <div
             ref={scroll}
-            className={cn(
-              // shadcn's scroll-fade: the list fades out under the title
-              // and the buttons instead of being cut.
-              "flex-1 scroll-fade overflow-y-auto p-4",
-              // Below a lower stop, the hidden part is left as room so the
-              // last lines can scroll into view.
-              stops.active &&
-                "pb-[calc(1rem+var(--sheet-offset))]"
-            )}
+            // shadcn's scroll-fade: the list fades out under the title and
+            // the buttons instead of being cut.
+            className="min-h-0 flex-1 scroll-fade overflow-y-auto p-4"
           >
             <div ref={inner}>{children}</div>
           </div>
           {footer && (
-            <DrawerFooter
-              className={cn(
-                stops.active &&
-                  "translate-y-[calc(-1*var(--sheet-offset))] transition-[translate] duration-450 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              )}
-            >
-              {footer}
-            </DrawerFooter>
+            <DrawerFooter>{footer}</DrawerFooter>
           )}
         </DrawerContent>
       </DrawerPrimitive.VirtualKeyboardProvider>

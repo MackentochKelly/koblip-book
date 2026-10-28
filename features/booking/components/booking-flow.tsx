@@ -343,7 +343,6 @@ export function BookingFlow({
           replaceUrl(businessPath)
         }}
         title={booked ? m.booking.booked : title}
-        contentKey={booked ? "booked" : stacked ? "service" : step}
         header={
           booked ? (
             <DrawerTitle className="sr-only">{m.booking.booked}</DrawerTitle>
