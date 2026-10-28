@@ -43,6 +43,7 @@ const messages = {
     deleteMember: "removing needs the owner's tap first",
     hours: "changing hours needs the owner's tap first",
     booking: "booking needs the owner's tap first",
+    updateService: "changing needs the owner's tap first",
   },
   cards: {
     cancel: "Cancel this booking?",
@@ -50,6 +51,7 @@ const messages = {
     deleteMember: "Remove this team member?",
     hours: "Replace opening hours?",
     book: "Book this appointment?",
+    updateService: "Change this service?",
   },
   booking: {
     minutes: (durationMinutes: number) => `${durationMinutes} min`,
@@ -84,6 +86,12 @@ const messages = {
     unknown: "Could not delete: unknown service.",
     failed: (error: string) => `Could not delete the service (${error}).`,
     done: "Deleted the service.",
+  },
+  updateService: {
+    unknown: "Could not change: unknown service.",
+    failed: (error: string) => `Could not change the service (${error}).`,
+    done: "Changed the service.",
+    nothing: "Nothing to change.",
   },
   deleteMember: {
     unknown: "Could not remove: unknown team member.",

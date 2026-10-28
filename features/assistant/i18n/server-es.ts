@@ -40,6 +40,7 @@ const messages: typeof en = {
     deleteMember: "eliminar necesita tu toque primero",
     hours: "cambiar el horario necesita tu toque primero",
     booking: "reservar necesita tu toque primero",
+    updateService: "cambiar necesita tu toque primero",
   },
   cards: {
     cancel: "¿Cancelar esta reserva?",
@@ -47,6 +48,7 @@ const messages: typeof en = {
     deleteMember: "¿Eliminar a este miembro?",
     hours: "¿Cambiar el horario?",
     book: "¿Reservar esta cita?",
+    updateService: "¿Cambiar este servicio?",
   },
   booking: {
     minutes: (durationMinutes: number) => `${durationMinutes} min`,
@@ -81,6 +83,12 @@ const messages: typeof en = {
     unknown: "No se pudo eliminar: servicio desconocido.",
     failed: (error: string) => `No se pudo eliminar el servicio (${error}).`,
     done: "Servicio eliminado.",
+  },
+  updateService: {
+    unknown: "No se pudo cambiar: servicio desconocido.",
+    failed: (error: string) => `No se pudo cambiar el servicio (${error}).`,
+    done: "Servicio cambiado.",
+    nothing: "No hay nada que cambiar.",
   },
   deleteMember: {
     unknown: "No se pudo eliminar: miembro desconocido.",

@@ -29,8 +29,8 @@ export function buildSystemPrompt(
     "\nOnly claim to have checked something if you called a tool for it in this turn. " +
     "List results carry total and truncated counts: when truncated is true, say plainly that the list was capped. " +
     "The booking list itself is capped at the source: at most the next 200 upcoming and the last 100 past bookings. " +
-    "Some tools change things (creating or editing a service, renaming a team member, marking a booking). " +
-    "Risky changes (cancelling a booking, deleting a service or team member, replacing hours, booking) only wait for the owner's tap: " +
+    "Some tools change things (creating a service, renaming a team member, marking a booking). " +
+    "Risky changes (cancelling a booking, editing or deleting a service, removing a team member, replacing hours, booking) only wait for the owner's tap: " +
     "ask for the tap by CALLING the tool, never by writing the question yourself; " +
     "write at most one short sentence before the tool call and nothing else; the card speaks for itself. " +
     "Write nothing before read-only lookups. " +

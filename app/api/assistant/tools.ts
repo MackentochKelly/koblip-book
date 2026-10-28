@@ -255,6 +255,22 @@ async function checkBookingArgs(
   }
 }
 
+// Checked arguments for update_service, shared by describe and execute.
+interface CheckedServiceUpdate {
+  current: {
+    id: string
+    name: string
+    description: string | null
+    durationMinutes: number
+    priceMinor: number | null
+  }
+  name: string
+  durationMinutes: number
+  priceMinor: number | null
+  description: string | null
+  currency: string
+}
+
 // Missing or blank means no description; too long or wrong type rejects.
 function validDescription(value: unknown): string | null | "invalid" {
   if (value === undefined || value === null) {
@@ -296,6 +312,72 @@ export function buildAssistantTools(
       // The action already happened; the row is nice to have.
     }
   }
+  // Shared checks for update_service: describe and execute both use this,
+  // re-reading the service each time because it may change between calls.
+  const checkUpdateServiceArgs = async (
+    args: unknown
+  ): Promise<CheckedServiceUpdate | { error: string }> => {
+    const a = asRecord(args)
+    if (!a || typeof a.serviceId !== "string" || a.serviceId === "") {
+      return { error: t.errors.serviceIdRequired }
+    }
+    const { business, services } = await getOwnerBusiness(businessId)
+    const current = services.find((s) => s.id === a.serviceId)
+    if (!current) {
+      return { error: t.errors.serviceUnknown }
+    }
+    const name =
+      a.name === undefined
+        ? current.name
+        : validName(a.name, BOOKING_RULES.maxServiceName)
+    if (!name) {
+      return { error: t.errors.nameInvalid }
+    }
+    const durationMinutes =
+      a.minutes === undefined
+        ? current.durationMinutes
+        : validMinutes(a.minutes)
+    if (!durationMinutes) {
+      return {
+        error: t.errors.minutesInvalid(
+          (BOOKING_RULES.serviceMinutes as readonly number[]).join(", ")
+        ),
+      }
+    }
+    const priceMinor =
+      a.priceMinor === undefined
+        ? current.priceMinor
+        : validPriceMinor(a.priceMinor)
+    if (priceMinor === "invalid") {
+      return { error: t.errors.priceInvalid }
+    }
+    const description =
+      a.description === undefined
+        ? current.description
+        : validDescription(a.description)
+    if (description === "invalid") {
+      return { error: t.errors.descriptionInvalid }
+    }
+    return {
+      current: {
+        id: current.id,
+        name: current.name,
+        description: current.description ?? null,
+        durationMinutes: current.durationMinutes,
+        priceMinor: current.priceMinor ?? null,
+      },
+      name,
+      durationMinutes,
+      priceMinor,
+      description,
+      currency: business.currency,
+    }
+  }
+  // Price text like the booking card: localized money, or No price.
+  const describePrice = (priceMinor: number | null, currency: string): string =>
+    priceMinor === null
+      ? t.booking.noPrice
+      : formatPrice(priceMinor, currency, t.locale)
   return [
     {
       definition: {
@@ -565,7 +647,7 @@ export function buildAssistantTools(
       definition: {
         name: "update_service",
         description:
-          "Change a service. Use the id from list_services; only the given fields change.",
+          "Change a service. Use the id from list_services; only the given fields change. Needs the owner's tap.",
         parameters: schema({
           serviceId: { type: "string", description: "Id from list_services" },
           name: { type: "string", description: "New name, 1-80 characters" },
@@ -582,67 +664,75 @@ export function buildAssistantTools(
             description: "New description, max 300 characters",
           },
         }),
-        needsConfirm: false,
+        needsConfirm: true,
       },
       label: t.steps.updateService,
-      run: async (args: unknown) => {
-        const a = asRecord(args)
-        if (!a || typeof a.serviceId !== "string" || a.serviceId === "") {
-          return bad(t.errors.serviceIdRequired)
-        }
-        const { services } = await getOwnerBusiness(businessId)
-        const current = services.find((s) => s.id === a.serviceId)
-        if (!current) {
-          return bad(t.errors.serviceUnknown)
-        }
-        const name =
-          a.name === undefined
-            ? current.name
-            : validName(a.name, BOOKING_RULES.maxServiceName)
-        if (!name) {
-          return bad(t.errors.nameInvalid)
-        }
-        const minutes =
-          a.minutes === undefined
-            ? current.durationMinutes
-            : validMinutes(a.minutes)
-        if (!minutes) {
-          return bad(
-            t.errors.minutesInvalid(
-              (BOOKING_RULES.serviceMinutes as readonly number[]).join(", ")
+      run: async () => ({ error: t.tapFirst.updateService }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const checked = await checkUpdateServiceArgs(args)
+          if ("error" in checked) {
+            return checked
+          }
+          const parts: string[] = []
+          const nameChanged = checked.name !== checked.current.name
+          if (nameChanged) {
+            parts.push(`${checked.current.name} → ${checked.name}`)
+          }
+          if (checked.priceMinor !== checked.current.priceMinor) {
+            parts.push(
+              `${describePrice(checked.current.priceMinor, checked.currency)} → ${describePrice(checked.priceMinor, checked.currency)}`
             )
-          )
-        }
-        const price =
-          a.priceMinor === undefined
-            ? current.priceMinor
-            : validPriceMinor(a.priceMinor)
-        if (price === "invalid") {
-          return bad(t.errors.priceInvalid)
-        }
-        const description =
-          a.description === undefined
-            ? current.description
-            : validDescription(a.description)
-        if (description === "invalid") {
-          return bad(t.errors.descriptionInvalid)
-        }
-        const result = await updateService(businessId, current.id, {
-          name,
-          description,
-          durationMinutes: minutes,
-          priceMinor: price,
-        })
-        if (!result.ok) {
-          await audit(
-            "update_service",
-            `update "${current.name}" failed: ${result.error}`,
-            "failed"
-          )
-          return { error: result.error }
-        }
-        await audit("update_service", `updated "${name}"`, "ok")
-        return { updated: { id: current.id, name } }
+          }
+          if (checked.durationMinutes !== checked.current.durationMinutes) {
+            parts.push(
+              `${t.booking.minutes(checked.current.durationMinutes)} → ${t.booking.minutes(checked.durationMinutes)}`
+            )
+          }
+          const oldDescription = checked.current.description ?? null
+          const newDescription = checked.description ?? null
+          if (oldDescription !== newDescription) {
+            parts.push(`${oldDescription ?? ""} → ${newDescription ?? ""}`)
+          }
+          if (parts.length === 0) {
+            return { error: t.updateService.nothing }
+          }
+          return {
+            title: t.cards.updateService,
+            summary: nameChanged
+              ? parts.join(" · ")
+              : `${checked.current.name} · ${parts.join(" · ")}`,
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const checked = await checkUpdateServiceArgs(args)
+          if ("error" in checked) {
+            if (
+              checked.error === t.errors.serviceUnknown ||
+              checked.error === t.errors.serviceIdRequired
+            ) {
+              return { ok: false, doneText: t.updateService.unknown }
+            }
+            return {
+              ok: false,
+              doneText: t.updateService.failed(checked.error),
+            }
+          }
+          const result = await updateService(businessId, checked.current.id, {
+            name: checked.name,
+            description: checked.description,
+            durationMinutes: checked.durationMinutes,
+            priceMinor: checked.priceMinor,
+          })
+          if (!result.ok) {
+            return {
+              ok: false,
+              doneText: t.updateService.failed(result.error),
+            }
+          }
+          return { ok: true, doneText: t.updateService.done }
+        },
       },
     },
     {

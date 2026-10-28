@@ -260,65 +260,144 @@ test("create_service passes action errors back as data", async () => {
   expect(result).toEqual({ error: "invalid" })
 })
 
-test("update_service merges over the current row", async () => {
+function mockServiceShop() {
   vi.mocked(getOwnerBusiness).mockResolvedValue({
     business: BUSINESS,
     hours: [],
     services: [
       {
         id: "s1",
-        name: "Cut",
+        name: "Haircut",
         description: null,
         durationMinutes: 30,
-        priceMinor: 2500,
+        priceMinor: 2000,
       },
     ],
     team: [],
   } as never)
-  vi.mocked(updateService).mockResolvedValue({ ok: true })
-  const result = await byName("update_service").run({
-    serviceId: "s1",
-    minutes: 45,
-  })
-  expect(result).toEqual({ updated: { id: "s1", name: "Cut" } })
-  expect(updateService).toHaveBeenCalledWith("b1", "s1", {
-    name: "Cut",
-    description: null,
-    durationMinutes: 45,
-    priceMinor: 2500,
-  })
-})
+}
 
-test("update_service with an unknown id errors and never guesses", async () => {
-  const result = await byName("update_service").run({
-    serviceId: "nope",
-    minutes: 45,
-  })
-  expect(result).toEqual({ error: expect.any(String) })
+test("update_service run waits for the tap and changes nothing", async () => {
+  const tool = byName("update_service")
+  expect(tool.definition.needsConfirm).toBe(true)
+  const result = await tool.run({ serviceId: "s1", minutes: 45 })
+  expect(result).toEqual({ error: expect.stringMatching(/tap/) })
   expect(updateService).not.toHaveBeenCalled()
 })
 
-test("update_service passes action errors back as data", async () => {
-  vi.mocked(getOwnerBusiness).mockResolvedValue({
-    business: BUSINESS,
-    hours: [],
-    services: [
-      {
-        id: "s1",
-        name: "Cut",
-        description: null,
-        durationMinutes: 30,
-        priceMinor: 2500,
-      },
-    ],
-    team: [],
-  } as never)
-  vi.mocked(updateService).mockResolvedValue({ ok: false, error: "not_found" })
-  const result = await byName("update_service").run({
+test("update_service describe shows only the changed fields, old to new", async () => {
+  mockServiceShop()
+  const tool = byName("update_service")
+  const card = await tool.confirm!.describe({
+    serviceId: "s1",
+    priceMinor: 2500,
+  })
+  expect(card).toEqual({
+    title: "Change this service?",
+    summary: expect.stringContaining("Haircut"),
+    destructive: false,
+  })
+  const summary = (card as { summary: string }).summary
+  expect(summary).toContain("→")
+  expect(summary).toContain("€20")
+  expect(summary).toContain("€25")
+  expect(summary).not.toContain("30 min →")
+  expect(updateService).not.toHaveBeenCalled()
+})
+
+test("update_service describe shows minutes and name changes", async () => {
+  mockServiceShop()
+  const tool = byName("update_service")
+  const card = (await tool.confirm!.describe({
+    serviceId: "s1",
+    minutes: 45,
+  })) as { summary: string }
+  expect(card.summary).toContain("30 min → 45 min")
+  expect(card.summary).not.toContain("€20")
+  const renamed = (await tool.confirm!.describe({
+    serviceId: "s1",
+    name: "Fade",
+  })) as { summary: string }
+  expect(renamed.summary).toContain("Haircut → Fade")
+  expect(updateService).not.toHaveBeenCalled()
+})
+
+test("update_service describe with an unknown id errors and never guesses", async () => {
+  const card = await byName("update_service").confirm!.describe({
+    serviceId: "nope",
+    minutes: 45,
+  })
+  expect(card).toEqual({ error: expect.any(String) })
+  expect(card).not.toHaveProperty("title")
+  expect(updateService).not.toHaveBeenCalled()
+})
+
+test("update_service describe rejects bad input with no card", async () => {
+  mockServiceShop()
+  const describe = byName("update_service").confirm!.describe
+  for (const args of [
+    {},
+    { serviceId: "" },
+    { serviceId: "s1", minutes: 25 },
+    { serviceId: "s1", priceMinor: -5 },
+    { serviceId: "s1", description: "x".repeat(301) },
+  ]) {
+    const card = await describe(args)
+    expect(card).toEqual({ error: expect.any(String) })
+    expect(card).not.toHaveProperty("title")
+  }
+  expect(updateService).not.toHaveBeenCalled()
+})
+
+test("update_service describe with nothing changed errors and shows no card", async () => {
+  mockServiceShop()
+  const tool = byName("update_service")
+  for (const args of [
+    { serviceId: "s1" },
+    { serviceId: "s1", priceMinor: 2000, minutes: 30, name: "Haircut" },
+  ]) {
+    const card = await tool.confirm!.describe(args)
+    expect(card).toEqual({ error: "Nothing to change." })
+    expect(card).not.toHaveProperty("title")
+  }
+  expect(updateService).not.toHaveBeenCalled()
+})
+
+test("update_service execute merges over the current row on tap", async () => {
+  mockServiceShop()
+  vi.mocked(updateService).mockResolvedValue({ ok: true })
+  const done = await byName("update_service").confirm!.execute({
     serviceId: "s1",
     minutes: 45,
   })
-  expect(result).toEqual({ error: "not_found" })
+  expect(done).toEqual({ ok: true, doneText: "Changed the service." })
+  expect(updateService).toHaveBeenCalledWith("b1", "s1", {
+    name: "Haircut",
+    description: null,
+    durationMinutes: 45,
+    priceMinor: 2000,
+  })
+})
+
+test("update_service execute fails cleanly if the service was deleted", async () => {
+  const done = await byName("update_service").confirm!.execute({
+    serviceId: "s1",
+    priceMinor: 2500,
+  })
+  expect(done.ok).toBe(false)
+  expect(done.doneText).toContain("unknown service")
+  expect(updateService).not.toHaveBeenCalled()
+})
+
+test("update_service execute reports action errors", async () => {
+  mockServiceShop()
+  vi.mocked(updateService).mockResolvedValue({ ok: false, error: "not_found" })
+  const done = await byName("update_service").confirm!.execute({
+    serviceId: "s1",
+    minutes: 45,
+  })
+  expect(done.ok).toBe(false)
+  expect(done.doneText).toContain("not_found")
 })
 
 test("rename_team_member happy path and errors", async () => {
@@ -544,6 +623,7 @@ test("risky tools never run directly", async () => {
     "delete_service",
     "delete_team_member",
     "set_hours",
+    "update_service",
   ]) {
     const result = (await byName(name).run({})) as { error: string }
     expect(result.error).toMatch(/tap/)
@@ -552,6 +632,7 @@ test("risky tools never run directly", async () => {
   expect(vi.mocked(deleteService)).not.toHaveBeenCalled()
   expect(vi.mocked(deleteTeamMember)).not.toHaveBeenCalled()
   expect(vi.mocked(saveHours)).not.toHaveBeenCalled()
+  expect(vi.mocked(updateService)).not.toHaveBeenCalled()
 })
 
 const BOOKING_BUSINESS = {
