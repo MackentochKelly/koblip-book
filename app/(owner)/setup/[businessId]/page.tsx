@@ -27,6 +27,7 @@ export default async function SetupPage({
       )}
     >
       <TopBar
+        viewPage={false}
         business={business}
         owner={{ name: owner.name, email: owner.email, image: owner.image }}
       />
