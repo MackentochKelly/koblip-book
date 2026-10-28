@@ -2,10 +2,10 @@ import Link from "next/link"
 import {
   ChevronRightIcon,
   ClockIcon,
-  GlobeIcon,
   MapPinIcon,
   PhoneIcon,
   StoreIcon,
+  WebsiteIcon,
 } from "@/components/ui/icons"
 
 import {
@@ -54,7 +54,7 @@ export function BusinessDetails({
     { icon: StoreIcon, value: store },
     { icon: PhoneIcon, value: details.phone },
     { icon: MapPinIcon, value: details.address },
-    { icon: GlobeIcon, value: details.website },
+    { icon: WebsiteIcon, value: details.website },
   ].filter((row): row is { icon: typeof StoreIcon; value: string } =>
     Boolean(row.value)
   )

@@ -73,6 +73,7 @@ import {
   LayoutDashboardSolid as MynaLayoutDashboardSolid,
 } from "@mynaui/icons-react"
 import {
+  AppWindow as LucideAppWindow,
   BadgeCheck as LucideBadgeCheck,
   Banknote as LucideBanknote,
   CarFront as LucideCarFront,
@@ -221,6 +222,8 @@ export const TriangleAlertIcon = icon(
   "TriangleAlertIcon"
 )
 export const UsersIcon = icon(MynaUsers as Icon, "UsersIcon")
+// A business's website, everywhere it shows (mynaui has no browser window).
+export const WebsiteIcon = icon(LucideAppWindow as Icon, "WebsiteIcon")
 export const XIcon = icon(MynaX as Icon, "XIcon")
 
 // Filled twins of outline icons: the open tab of a phone tab bar shows its

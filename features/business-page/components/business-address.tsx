@@ -1,4 +1,4 @@
-import { LinkIcon, MapPinIcon } from "@/components/ui/icons"
+import { MapPinIcon, WebsiteIcon } from "@/components/ui/icons"
 import { Item, ItemContent, ItemMedia } from "@/components/ui/item"
 
 // Where the business is, on a soft chip with a pin.
@@ -34,7 +34,7 @@ export function BusinessWebsite({
       render={<a href={url} target="_blank" rel="noreferrer" />}
     >
       <ItemMedia>
-        <LinkIcon aria-hidden="true" />
+        <WebsiteIcon aria-hidden="true" />
       </ItemMedia>
       <ItemContent className="min-w-0 truncate">{label}</ItemContent>
     </Item>
