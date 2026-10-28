@@ -72,13 +72,14 @@ import {
   suggestServices,
   updateService,
 } from "../api/actions"
+import { createAddonGroup, suggestAddonGroups } from "../api/addon-actions"
 import { removeServicePhoto, setServicePhoto } from "../api/photo-actions"
 import { setServiceTeam } from "../api/team-services"
-import type { OwnerAddonGroup, ServiceInput, ServiceSuggestion } from "../types"
+import type { OwnerAddonGroup, ServiceInput } from "../types"
 import { ExtrasView } from "./extras-view"
 import { PhotoField } from "./photo-upload"
 import { noAutofill } from "@/lib/no-autofill"
-import { useOwnerMessages } from "../i18n/provider"
+import { useOwnerLanguage, useOwnerMessages } from "../i18n/provider"
 
 interface ServiceRow {
   id: string
@@ -152,18 +153,17 @@ export function ServicesView({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
         <div className="flex gap-2">
-          {view === "services" && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSuggestKey((value) => value + 1)
-                setSuggesting(true)
-              }}
-            >
-              <SparklesIcon data-icon="inline-start" />
-              {t.suggest}
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSuggestKey((value) => value + 1)
+              setSuggesting(true)
+            }}
+            disabled={view === "extras" && services.length === 0}
+          >
+            <SparklesIcon data-icon="inline-start" />
+            {t.suggest}
+          </Button>
           <Button
             onClick={() =>
               view === "services" ? openForm("new") : setAddingExtras(true)
@@ -348,6 +348,7 @@ export function ServicesView({
 
       <SuggestPanel
         key={suggestKey}
+        kind={view}
         open={suggesting}
         businessId={businessId}
         onClose={() => setSuggesting(false)}
@@ -510,14 +511,22 @@ function ServiceForm({
   )
 }
 
-// Meta AI's usual services for this kind of business; the owner ticks the
-// ones to add. Nothing is saved until Add.
+// What Meta AI suggests, in the owner's language: services, or extras for
+// the services there are. Each is ticked to start; Add saves the ticked ones.
+type Suggestion = {
+  name: string
+  detail: string
+  save: () => Promise<{ ok: boolean }>
+}
+
 function SuggestPanel({
+  kind,
   open,
   businessId,
   onClose,
   onAdded,
 }: {
+  kind: "services" | "extras"
   open: boolean
   businessId: string
   onClose: () => void
@@ -525,9 +534,11 @@ function SuggestPanel({
 }) {
   const [state, setState] = useState<
     | { status: "loading" | "failed" | "off" }
-    | { status: "ready"; services: ServiceSuggestion[] }
+    | { status: "ready"; items: Suggestion[] }
   >({ status: "loading" })
-  const t = useOwnerMessages().catalog.services
+  const m = useOwnerMessages()
+  const t = m.catalog.services
+  const [language] = useOwnerLanguage()
   const [ticked, setTicked] = useState<string[]>([])
   const [attempt, setAttempt] = useState(0)
   const [adding, startAdding] = useTransition()
@@ -536,13 +547,58 @@ function SuggestPanel({
   useEffect(() => {
     if (!open) return
     let live = true
-    suggestServices(businessId)
+    const load = async (): Promise<
+      { ok: true; items: Suggestion[] } | { ok: false; error: string }
+    > => {
+      if (kind === "services") {
+        const result = await suggestServices(businessId, language)
+        if (!result.ok) return result
+        return {
+          ok: true,
+          items: result.services.map((service) => ({
+            name: service.name,
+            detail: [
+              formatDuration(service.durationMinutes),
+              service.description,
+            ]
+              .filter(Boolean)
+              .join(" · "),
+            save: () =>
+              createService(businessId, {
+                name: service.name,
+                description: service.description,
+                durationMinutes: service.durationMinutes,
+                priceMinor: null,
+              }),
+          })),
+        }
+      }
+      const result = await suggestAddonGroups(businessId, language)
+      if (!result.ok) return result
+      return {
+        ok: true,
+        items: result.groups.map((group) => ({
+          name: group.name,
+          detail: group.options.map((option) => option.name).join(", "),
+          save: () =>
+            createAddonGroup(businessId, {
+              ...group,
+              options: group.options.map((option) => ({
+                ...option,
+                id: null,
+                priceMinor: null,
+              })),
+            }),
+        })),
+      }
+    }
+    load()
       .catch(() => null)
       .then((result) => {
         if (!live) return
         if (result?.ok) {
-          setState({ status: "ready", services: result.services })
-          setTicked(result.services.map((service) => service.name))
+          setState({ status: "ready", items: result.items })
+          setTicked(result.items.map((item) => item.name))
         } else {
           setState({
             status: result && result.error === "ai_off" ? "off" : "failed",
@@ -552,8 +608,8 @@ function SuggestPanel({
     return () => {
       live = false
     }
-  }, [open, businessId, attempt])
-  const suggestions = state.status === "ready" ? state.services : []
+  }, [open, kind, businessId, language, attempt])
+  const suggestions = state.status === "ready" ? state.items : []
   const retry = () => {
     setState({ status: "loading" })
     setAttempt((value) => value + 1)
@@ -561,18 +617,14 @@ function SuggestPanel({
 
   const add = () =>
     startAdding(async () => {
-      if (state.status !== "ready") return
-      for (const service of state.services.filter((item) =>
-        ticked.includes(item.name)
+      for (const item of suggestions.filter((found) =>
+        ticked.includes(found.name)
       )) {
-        const result = await createService(businessId, {
-          name: service.name,
-          description: service.description,
-          durationMinutes: service.durationMinutes,
-          priceMinor: null,
-        })
+        const result = await item.save()
         if (!result.ok) {
-          toast.error(t.someFailed)
+          toast.error(
+            kind === "services" ? t.someFailed : m.catalog.extras.someFailed
+          )
           break
         }
       }
@@ -583,9 +635,9 @@ function SuggestPanel({
     <ResponsivePanel
       open={open}
       onClose={onClose}
-      title={t.suggested}
+      title={kind === "services" ? t.suggested : m.catalog.extras.suggested}
       footer={
-        state.status === "ready" && state.services.length > 0 ? (
+        suggestions.length > 0 ? (
           <Button onClick={add} disabled={adding || ticked.length === 0}>
             {adding && <Spinner data-icon="inline-start" />}
             {t.addCount(ticked.length)}
@@ -601,9 +653,7 @@ function SuggestPanel({
         <p className="text-sm text-muted-foreground">{t.aiOff}</p>
       ) : state.status === "failed" ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="text-sm text-muted-foreground">
-            {t.noSuggestions}
-          </p>
+          <p className="text-sm text-muted-foreground">{t.noSuggestions}</p>
           <Button variant="outline" onClick={retry}>
             {t.tryAgain}
           </Button>
@@ -612,26 +662,25 @@ function SuggestPanel({
         <p className="text-sm text-muted-foreground">{t.nothingNew}</p>
       ) : (
         <FieldGroup className="gap-3">
-          {suggestions.map((service) => (
-            <FieldLabel key={service.name} htmlFor={`suggest-${service.name}`}>
+          {suggestions.map((item) => (
+            <FieldLabel key={item.name} htmlFor={`suggest-${item.name}`}>
               <Field orientation="horizontal">
                 <Checkbox
-                  id={`suggest-${service.name}`}
-                  checked={ticked.includes(service.name)}
+                  id={`suggest-${item.name}`}
+                  checked={ticked.includes(item.name)}
                   onCheckedChange={(on) =>
                     setTicked((current) =>
                       on
-                        ? [...current, service.name]
-                        : current.filter((name) => name !== service.name)
+                        ? [...current, item.name]
+                        : current.filter((name) => name !== item.name)
                     )
                   }
                 />
                 <FieldContent>
-                  <FieldTitle>{service.name}</FieldTitle>
-                  <FieldDescription>
-                    {formatDuration(service.durationMinutes)}
-                    {service.description && ` · ${service.description}`}
-                  </FieldDescription>
+                  <FieldTitle>{item.name}</FieldTitle>
+                  {item.detail && (
+                    <FieldDescription>{item.detail}</FieldDescription>
+                  )}
                 </FieldContent>
               </Field>
             </FieldLabel>

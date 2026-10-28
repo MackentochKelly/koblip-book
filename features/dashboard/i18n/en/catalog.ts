@@ -44,6 +44,8 @@ const catalog = {
     nothingNew: "Nothing new to suggest.",
   },
   extras: {
+    suggested: "Suggested extras",
+    someFailed: "Some extras could not be added.",
     empty: "No extras yet",
     removed: "Extras removed",
     edit: "Edit extras",

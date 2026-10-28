@@ -45,6 +45,8 @@ const catalog: typeof en = {
     nothingNew: "No hay nada nuevo que sugerir.",
   },
   extras: {
+    suggested: "Extras sugeridos",
+    someFailed: "Algunos extras no se pudieron agregar.",
     empty: "Aún no hay extras",
     removed: "Extras quitados",
     edit: "Editar extras",
