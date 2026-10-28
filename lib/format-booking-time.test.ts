@@ -24,9 +24,10 @@ describe("format-booking-time", () => {
   })
 
   it("shows a range of days", () => {
-    // Intl puts thin spaces around the dash.
-    expect(formatDayRange("2026-10-27", "2026-11-09")).toMatch(
-      /^Oct 27\s–\sNov 9$/
+    // Plain spaces, so the server and the browser write the same text.
+    expect(formatDayRange("2026-10-27", "2026-11-09")).toBe("Oct 27 – Nov 9")
+    expect(formatDayRange("2026-10-27", "2026-11-09", "es")).toBe(
+      "27 oct – 9 nov"
     )
   })
 

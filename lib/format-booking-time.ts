@@ -35,18 +35,21 @@ export function formatWeekdayShort(date: string, locale = "en-US"): string {
   }).format(asUtc(date))
 }
 
-// "2026-10-27", "2026-11-09" → "Oct 27 – Nov 9" (in the given locale, with
-// thin spaces around the dash).
+// "2026-10-27", "2026-11-09" → "Oct 27 – Nov 9" (in the given locale).
+// Built from two plain dates and our own " – ", not Intl's formatRange:
+// the server's and the browser's Intl put different spaces around the dash,
+// and the page must read the same in both.
 export function formatDayRange(
   from: string,
   to: string,
   locale = "en-US"
 ): string {
-  return new Intl.DateTimeFormat(locale, {
+  const day = new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     timeZone: "UTC",
-  }).formatRange(asUtc(from), asUtc(to))
+  })
+  return `${day.format(asUtc(from))} – ${day.format(asUtc(to))}`
 }
 
 // 0 = Sunday … 6 = Saturday → "Sunday".
