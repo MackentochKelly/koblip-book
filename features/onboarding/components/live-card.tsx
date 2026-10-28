@@ -3,7 +3,13 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import confetti from "canvas-confetti"
-import { ExternalLinkIcon, LinkIcon, ShareIcon, StoreIcon } from "lucide-react"
+import {
+  ArrowRightIcon,
+  ExternalLinkIcon,
+  LinkIcon,
+  ShareIcon,
+  StoreIcon,
+} from "lucide-react"
 import { motion } from "motion/react"
 import { toast } from "sonner"
 
@@ -113,11 +119,12 @@ export function LiveCard({
           <ExternalLinkIcon data-icon="inline-end" />
         </Button>
         <Button
-          variant="ghost"
+          variant="link"
           nativeButton={false}
           render={<Link href={dashboardHref} />}
         >
           Go to dashboard
+          <ArrowRightIcon data-icon="inline-end" />
         </Button>
       </div>
     </motion.div>
