@@ -78,7 +78,7 @@ export function ServiceList({
     <PageSection id="services" title={m.sections.services}>
       <ItemGroup className="gap-3">
         {shown.map((service) => (
-          <Item key={service.id} variant="muted">
+          <Item key={service.id} variant="outline">
             {service.photoUrl && (
               <ItemMedia variant="image" className="size-16">
                 <Image
