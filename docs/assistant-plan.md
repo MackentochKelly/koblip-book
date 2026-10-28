@@ -368,11 +368,14 @@ Same chat, saved like typed chats.
   (`PORT=3100 HOSTNAME=127.0.0.1 NODE_ENV=production node server.mjs`, via
   `npm start`), push.
 
-### Decisions needed from Kelly
+### Decisions from Kelly
 
-- Which ElevenLabs voice (one for English and Spanish, or one each).
-- An ElevenLabs API key just for this app, limited to text to speech and
-  single-use tokens, with a credit limit.
+- Voice: Savvy (`ogwqBH5bbF03DSbNiRNN`), warm and steady, English and
+  Spanish, for now; Kelly will change it later (a voice picker in Settings
+  is a later step, not now).
+- ElevenLabs key `koblip-book`: Text to Speech only, 50,000 credits per
+  period, in .env.local as ELEVENLABS_API_KEY. A single-use token
+  (tts_websocket) request with it returned 200.
 
 ### Notes
 
