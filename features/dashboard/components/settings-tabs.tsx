@@ -7,9 +7,9 @@ import type { Route } from "next"
 import { ViewTabs } from "@/components/view-tabs"
 
 const TABS = [
-  { id: "/settings", label: "Details" },
   { id: "/team", label: "Team" },
   { id: "/hours", label: "Hours" },
+  { id: "/settings", label: "Details" },
 ] as const
 
 type TabPath = (typeof TABS)[number]["id"]
