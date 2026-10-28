@@ -28,7 +28,12 @@ export function TopBar({
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background px-4">
       {menu && (
-        <SidebarTrigger size="icon" aria-label={m.menu} className="-ml-2" />
+        // Koblip Sales' header button: a 20 px icon, like the bar's others.
+        <SidebarTrigger
+          size="icon"
+          aria-label={m.menu}
+          className="-ml-1 shrink-0 [&_svg:not([class*='size-'])]:size-5"
+        />
       )}
       <p
         className={cn(
