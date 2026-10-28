@@ -112,6 +112,8 @@ export function GetStarted({
   // The box's place and corners on the page, kept while it is full screen.
   const [rest, setRest] = useState({ height: 0, radius: 0 })
   const frameRef = useRef<HTMLDivElement>(null)
+  // Where the page was scrolled when the search opened.
+  const scrollRef = useRef(0)
   const open = expanded && isMobile && !picked && mode === "search"
   // While full screen: the part of the screen above the keyboard.
   const visible = useVisualViewport(open)
@@ -144,6 +146,7 @@ export function GetStarted({
       height: frame.offsetHeight,
       radius: parseFloat(getComputedStyle(frame).borderTopLeftRadius),
     })
+    scrollRef.current = window.scrollY
     setExpanded(true)
   }
 
@@ -154,13 +157,22 @@ export function GetStarted({
     setExpanded(false)
   }
 
-  // The page behind the full screen search stays still.
+  // The page behind the full screen search stays still. When it closes, the
+  // page goes back to where it was: iPhone Safari scrolls the page down to
+  // make room for the keyboard and leaves it there. It is put back once
+  // now and once more when the keyboard has gone.
   useEffect(() => {
     if (!open) return
     const root = document.documentElement
     root.style.overflow = "hidden"
     return () => {
       root.style.overflow = ""
+      const top = scrollRef.current
+      const restore = () => window.scrollTo(0, top)
+      restore()
+      const viewport = window.visualViewport
+      viewport?.addEventListener("resize", restore, { once: true })
+      setTimeout(() => viewport?.removeEventListener("resize", restore), 1000)
     }
   }, [open])
 
