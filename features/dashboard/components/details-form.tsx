@@ -23,15 +23,20 @@ import { noAutofill } from "@/lib/no-autofill"
 type Invalid = "name" | "phone" | "website" | "seats" | null
 
 // The business's name, address, About, phone and website, and how many people can be booked at
-// the same time when there is no team.
+// the same time when there is no team. In Settings, and right after sign-up
+// (with `next`: where Save goes).
 export function DetailsForm({
   businessId,
   details,
   hasTeam,
+  title = "Settings",
+  next,
 }: {
   businessId: string
   details: BusinessDetailsInput
   hasTeam: boolean
+  title?: string
+  next?: string
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -69,7 +74,9 @@ export function DetailsForm({
         website: website.trim() || null,
         seats: seatsValue,
       })
-      if (result.ok) {
+      if (result.ok && next) {
+        router.push(next)
+      } else if (result.ok) {
         toast.success("Saved")
         router.refresh()
       } else {
@@ -81,7 +88,7 @@ export function DetailsForm({
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         <Button type="submit" disabled={pending}>
           {pending && <Spinner data-icon="inline-start" />}
           Save

@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import Image from "next/image"
 import { AnimatePresence, motion } from "motion/react"
 import { useRouter } from "next/navigation"
 import {
@@ -20,8 +19,8 @@ import {
   glassEdgeClassName,
   glassFrameClassName,
 } from "@/components/glass-frame"
-import { BusinessDetails } from "@/components/business-details"
 import { ViewTabs, type ViewTab } from "@/components/view-tabs"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Field, FieldError } from "@/components/ui/field"
@@ -125,7 +124,7 @@ export function GetStarted({
   const growOnce = open || undefined
   const [resuming, setResuming] = useState(Boolean(resume && signedIn))
 
-  // Back from Google: make the page the owner's and open its dashboard.
+  // Back from Google: make the page the owner's and open the details check.
   useEffect(() => {
     if (!resume || !signedIn) return
     let current = true
@@ -134,7 +133,7 @@ export function GetStarted({
       .then((claimed) => {
         if (!current) return
         if (claimed?.ok) {
-          router.replace(`/dashboard/${claimed.businessId}?welcome=1`)
+          router.replace(`/setup/${claimed.businessId}`)
           return
         }
         setResuming(false)
@@ -194,7 +193,7 @@ export function GetStarted({
   }
 
   // After login (or straight away when already logged in): wait for the
-  // page, make it the owner's, open its dashboard.
+  // page, make it the owner's, open the details check.
   const finish = async (current: Picked | null = picked) => {
     if (!current) return
     setFinishing(true)
@@ -209,7 +208,7 @@ export function GetStarted({
       setFinishing(false)
       return
     }
-    router.push(`/dashboard/${claimed.businessId}?welcome=1`)
+    router.push(`/setup/${claimed.businessId}`)
   }
 
   const back = () => {
@@ -340,20 +339,14 @@ export function GetStarted({
   return box(
     <div className="flex flex-col gap-5">
       <Item variant="muted" size="sm">
-        <ItemMedia variant={ready?.photoUrl ? "image" : "icon"}>
-          {ready?.photoUrl ? (
-            <Image
-              src={ready.photoUrl}
-              alt=""
-              width={40}
-              height={40}
-              unoptimized
-            />
-          ) : prepared ? (
-            <StoreIcon />
-          ) : (
-            <Spinner />
-          )}
+        <ItemMedia>
+          {/* Avatar: the same bordered photo as team members. */}
+          <Avatar size="lg">
+            {ready?.photoUrl && <AvatarImage src={ready.photoUrl} alt="" />}
+            <AvatarFallback>
+              {prepared ? <StoreIcon /> : <Spinner />}
+            </AvatarFallback>
+          </Avatar>
         </ItemMedia>
         <ItemContent>
           <ItemTitle>{picked.name}</ItemTitle>
@@ -364,17 +357,6 @@ export function GetStarted({
           )}
         </ItemContent>
       </Item>
-      {/* Signing up confirms these, so the owner checks them here. */}
-      {ready && !blocked && (
-        <BusinessDetails
-          details={{
-            category: ready.category,
-            phone: ready.phone,
-            website: ready.website,
-            openDays: ready.openDays,
-          }}
-        />
-      )}
       {blocked ? (
         <Field data-invalid>
           <FieldError>{error}</FieldError>
