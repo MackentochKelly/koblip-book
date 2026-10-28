@@ -184,7 +184,7 @@ export function ServicesView({
         value={view}
         onChange={setView}
         ariaLabel="Services and extras"
-        variant="line"
+        listClassName="w-full"
       />
 
       {view === "extras" ? (

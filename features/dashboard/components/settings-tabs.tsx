@@ -15,7 +15,7 @@ const TABS = [
 type TabPath = (typeof TABS)[number]["id"]
 
 // On a phone the tab bar has no room for Team and Hours, so Settings opens
-// them as tabs, the same row as Bookings' Upcoming and Past. The computer's sidebar
+// them as tabs, like an iPhone's segmented control. The computer's sidebar
 // lists them itself.
 export function SettingsTabs({ businessId }: { businessId: string }) {
   const router = useRouter()
@@ -35,8 +35,8 @@ export function SettingsTabs({ businessId }: { businessId: string }) {
       value={value}
       onChange={(id) => router.push(`${base}${id}` as Route)}
       ariaLabel="Settings"
-      variant="line"
       className="md:hidden"
+      listClassName="w-full"
     />
   )
 }

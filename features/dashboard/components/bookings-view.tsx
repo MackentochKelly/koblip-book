@@ -134,7 +134,7 @@ export function BookingsView({
         value={view}
         onChange={setView}
         ariaLabel="Bookings"
-        variant="line"
+        listClassName="w-full"
       />
       {days.length === 0 ? (
         <Empty>
