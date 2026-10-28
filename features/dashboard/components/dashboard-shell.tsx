@@ -6,13 +6,11 @@ import {
   CalendarDaysIcon,
   ClockIcon,
   ContactIcon,
-  ExternalLinkIcon,
   ScissorsIcon,
   SettingsIcon,
   UsersIcon,
 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -27,7 +25,7 @@ import {
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { AccountMenu } from "./account-menu"
+import { TopBar } from "./top-bar"
 
 const NAV = [
   { path: "", label: "Bookings", icon: CalendarDaysIcon },
@@ -89,27 +87,7 @@ export function DashboardShell({
           </SidebarContent>
         </Sidebar>
         <SidebarInset className="min-w-0">
-          <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background px-4">
-            <p className="min-w-0 flex-1 truncate font-semibold md:invisible">
-              {business.name}
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={
-                <a
-                  href={`/b/${business.slug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                />
-              }
-            >
-              View page
-              <ExternalLinkIcon data-icon="inline-end" />
-            </Button>
-            <AccountMenu owner={owner} />
-          </header>
+          <TopBar business={business} owner={owner} besideSidebar />
           <div className="mx-auto w-full max-w-3xl p-4 pb-28 md:p-8">
             {children}
           </div>
