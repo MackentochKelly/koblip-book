@@ -8,9 +8,12 @@ const messages: typeof en = {
   steps: {
     overview: "Viendo el negocio…",
     services: "Listando servicios…",
+    addons: "Listando extras…",
     team: "Listando el equipo…",
     bookings: "Buscando reservas…",
     customer: "Buscando cliente…",
+    stats: "Contando reservas…",
+    customers: "Listando clientes…",
     createService: "Creando servicio…",
     updateService: "Actualizando servicio…",
     deleteService: "Eliminando servicio…",
@@ -21,6 +24,13 @@ const messages: typeof en = {
     hours: "Actualizando horario…",
     freeTimes: "Buscando huecos…",
     booking: "Reservando…",
+    createMember: "Agregando miembro…",
+    serviceTeam: "Guardando equipo…",
+    memberServices: "Guardando servicios…",
+    createAddon: "Creando extras…",
+    updateAddon: "Actualizando extras…",
+    deleteAddon: "Eliminando extras…",
+    updateBusiness: "Guardando datos…",
     working: "Trabajando…",
     checking: "Revisando la respuesta…",
   },
@@ -30,7 +40,6 @@ const messages: typeof en = {
     tooMany: "demasiadas confirmaciones pendientes, responde una primero",
     stopped: (maxSteps: number) =>
       `Me quedé sin pasos después de ${maxSteps} búsquedas — pídeme algo más concreto.`,
-    unverified: "No pude comprobar esta respuesta, revísala por favor.",
   },
   confirm: {
     unchanged: "Vale, no se cambió nada.",
@@ -43,6 +52,12 @@ const messages: typeof en = {
     hours: "cambiar el horario necesita tu toque primero",
     booking: "reservar necesita tu toque primero",
     updateService: "cambiar necesita tu toque primero",
+    serviceTeam: "cambiar el equipo de un servicio necesita tu toque primero",
+    memberServices: "cambiar los servicios de un miembro necesita tu toque primero",
+    createAddon: "crear extras necesita tu toque primero",
+    updateAddon: "cambiar extras necesita tu toque primero",
+    deleteAddon: "eliminar extras necesita tu toque primero",
+    updateBusiness: "cambiar los datos del negocio necesita tu toque primero",
   },
   cards: {
     cancel: "¿Cancelar esta reserva?",
@@ -51,6 +66,12 @@ const messages: typeof en = {
     hours: "¿Cambiar el horario?",
     book: "¿Reservar esta cita?",
     updateService: "¿Cambiar este servicio?",
+    serviceTeam: "¿Cambiar quién hace este servicio?",
+    memberServices: "¿Cambiar los servicios de este miembro?",
+    createAddon: "¿Crear estos extras?",
+    updateAddon: "¿Cambiar estos extras?",
+    deleteAddon: "¿Eliminar estos extras?",
+    updateBusiness: "¿Cambiar los datos del negocio?",
   },
   actions: {
     cancelBooking: "Cancelar reserva",
@@ -59,6 +80,12 @@ const messages: typeof en = {
     hours: "Cambiar horario",
     book: "Reservar",
     updateService: "Cambiar",
+    serviceTeam: "Guardar",
+    memberServices: "Guardar",
+    createAddon: "Crear",
+    updateAddon: "Cambiar",
+    deleteAddon: "Eliminar",
+    updateBusiness: "Guardar",
   },
   booking: {
     minutes: (durationMinutes: number) => `${durationMinutes} min`,
@@ -99,12 +126,49 @@ const messages: typeof en = {
     unknown: "No se pudo cambiar: servicio desconocido.",
     failed: (error: string) => `No se pudo cambiar el servicio (${error}).`,
     done: "Servicio cambiado.",
-    nothing: "No hay nada que cambiar.",
   },
   deleteMember: {
     unknown: "No se pudo eliminar: miembro desconocido.",
     failed: (error: string) => `No se pudo eliminar al miembro (${error}).`,
     done: "Miembro eliminado.",
+  },
+  serviceTeam: {
+    anyone: "cualquiera",
+    unknown: "No se pudo guardar: servicio desconocido.",
+    failed: (error: string) => `No se pudo guardar el equipo (${error}).`,
+    done: "Equipo del servicio actualizado.",
+  },
+  memberServices: {
+    none: "sin servicios",
+    unknown: "No se pudo guardar: miembro desconocido.",
+    failed: (error: string) => `No se pudo guardar los servicios (${error}).`,
+    done: "Servicios del miembro actualizados.",
+  },
+  createAddon: {
+    failed: (error: string) => `No se pudo crear los extras (${error}).`,
+    done: "Extras creados.",
+  },
+  updateAddon: {
+    unknown: "No se pudo cambiar: grupo de extras desconocido.",
+    failed: (error: string) => `No se pudo cambiar los extras (${error}).`,
+    done: "Extras cambiados.",
+  },
+  deleteAddon: {
+    unknown: "No se pudo eliminar: grupo de extras desconocido.",
+    failed: (error: string) => `No se pudo eliminar los extras (${error}).`,
+    done: "Extras eliminados.",
+  },
+  updateBusiness: {
+    failed: (error: string) => `No se pudo guardar los datos (${error}).`,
+    done: "Datos del negocio actualizados.",
+    fields: {
+      name: "Nombre",
+      address: "Dirección",
+      about: "Descripción",
+      phone: "Teléfono",
+      website: "Web",
+      seats: "Asientos",
+    },
   },
   hours: {
     invalid: "No se pudo guardar: horario inválido.",
@@ -131,24 +195,42 @@ const messages: typeof en = {
     rangeInvalid: "range debe ser upcoming o past",
     dayInvalid: (key: string) => `${key} debe ser YYYY-MM-DD`,
     statusUnknown: "estado desconocido",
-    queryInvalid: "query debe tener 1-80 caracteres",
-    nameInvalid: "name debe tener 1-80 caracteres",
+    queryInvalid: (max: number) => `query debe tener 1-${max} caracteres`,
+    nameInvalid: (max: number) => `name debe tener 1-${max} caracteres`,
+    nothingToChange: "No hay nada que cambiar.",
     minutesInvalid: (options: string) => `minutes debe ser uno de ${options}`,
     priceInvalid: "priceMinor debe ser null o un entero dentro del rango",
-    descriptionInvalid: "description debe tener como máximo 300 caracteres",
+    descriptionInvalid: (max: number) =>
+      `description debe tener como máximo ${max} caracteres`,
     bookingIdRequired:
       "bookingId es obligatorio: lista las reservas primero y usa un id de la lista",
     bookingUnknown:
       "id de reserva desconocido: lista las reservas primero y usa un id de la lista",
     statusInvalid:
       "status debe ser confirmed, completed o no_show (cancelar necesita un toque)",
-    rowsInvalid:
-      "rows debe tener como máximo 14 filas de weekday 0-6 con open y close HH:mm",
+    rowsInvalid: (max: number) =>
+      `rows debe tener como máximo ${max} filas de weekday 0-6 con open y close HH:mm`,
     freeTimesUnknown:
       "servicio o miembro desconocido: lístalos primero y usa un id de la lista",
     fromInvalid: "from debe ser una fecha real YYYY-MM-DD, hoy o después",
     toInvalid: "to debe ser una fecha real YYYY-MM-DD igual o posterior a from",
-    spanInvalid: "pide como máximo 14 días a la vez",
+    spanInvalid: (max: number) => `pide como máximo ${max} días a la vez`,
+    rangeTooLong: (max: number) => `pide como máximo ${max} días a la vez`,
+    sortInvalid: "sort debe ser bookings, spent, lastVisit o firstBooking",
+    groupIdRequired:
+      "groupId es obligatorio: lista los extras primero y usa un id de la lista",
+    groupUnknown:
+      "id de grupo de extras desconocido: lista los extras primero y usa un id de la lista",
+    promptInvalid: (max: number) => `prompt debe ser 1-${max} caracteres`,
+    selectsInvalid:
+      "minSelect y maxSelect deben encajar con el número de opciones",
+    optionsInvalid: (max: number) =>
+      `options debe ser 1-${max} con nombre, duración y precio`,
+    businessNameInvalid: (max: number) => `name debe ser 1-${max} caracteres`,
+    addressInvalid: (max: number) => `address debe ser como máximo ${max} caracteres`,
+    aboutInvalid: (max: number) => `about debe ser como máximo ${max} caracteres`,
+    websiteInvalid: "website debe ser una URL http(s)",
+    seatsInvalid: (max: number) => `seats debe estar entre 1 y ${max}`,
   },
 }
 

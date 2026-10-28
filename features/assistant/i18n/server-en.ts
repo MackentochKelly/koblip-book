@@ -10,9 +10,12 @@ const messages = {
   steps: {
     overview: "Checking business…",
     services: "Listing services…",
+    addons: "Listing extras…",
     team: "Listing team…",
     bookings: "Finding bookings…",
     customer: "Finding customer…",
+    stats: "Counting bookings…",
+    customers: "Listing customers…",
     createService: "Creating service…",
     updateService: "Updating service…",
     deleteService: "Deleting service…",
@@ -23,6 +26,13 @@ const messages = {
     hours: "Replacing hours…",
     freeTimes: "Checking free times…",
     booking: "Booking…",
+    createMember: "Adding team member…",
+    serviceTeam: "Saving service team…",
+    memberServices: "Saving member services…",
+    createAddon: "Creating extras…",
+    updateAddon: "Updating extras…",
+    deleteAddon: "Deleting extras…",
+    updateBusiness: "Saving business details…",
     working: "Working…",
     checking: "Checking the answer…",
   },
@@ -32,8 +42,6 @@ const messages = {
     tooMany: "too many pending confirmations, answer one first",
     stopped: (maxSteps: number) =>
       `I ran out of steps after ${maxSteps} lookups — ask me to narrow it down.`,
-    unverified:
-      "I couldn't double-check this answer, please verify it.",
   },
   confirm: {
     unchanged: "Okay, nothing was changed.",
@@ -47,6 +55,12 @@ const messages = {
     hours: "changing hours needs the owner's tap first",
     booking: "booking needs the owner's tap first",
     updateService: "changing needs the owner's tap first",
+    serviceTeam: "changing a service team needs the owner's tap first",
+    memberServices: "changing a member's services needs the owner's tap first",
+    createAddon: "creating extras needs the owner's tap first",
+    updateAddon: "changing extras needs the owner's tap first",
+    deleteAddon: "deleting extras needs the owner's tap first",
+    updateBusiness: "changing the business details needs the owner's tap first",
   },
   cards: {
     cancel: "Cancel this booking?",
@@ -55,6 +69,12 @@ const messages = {
     hours: "Replace opening hours?",
     book: "Book this appointment?",
     updateService: "Change this service?",
+    serviceTeam: "Change who does this service?",
+    memberServices: "Change this member's services?",
+    createAddon: "Create these extras?",
+    updateAddon: "Change these extras?",
+    deleteAddon: "Delete these extras?",
+    updateBusiness: "Change the business details?",
   },
   actions: {
     cancelBooking: "Cancel booking",
@@ -63,6 +83,12 @@ const messages = {
     hours: "Replace hours",
     book: "Book",
     updateService: "Change",
+    serviceTeam: "Save",
+    memberServices: "Save",
+    createAddon: "Create",
+    updateAddon: "Change",
+    deleteAddon: "Delete",
+    updateBusiness: "Save",
   },
   booking: {
     minutes: (durationMinutes: number) => `${durationMinutes} min`,
@@ -103,12 +129,49 @@ const messages = {
     unknown: "Could not change: unknown service.",
     failed: (error: string) => `Could not change the service (${error}).`,
     done: "Changed the service.",
-    nothing: "Nothing to change.",
   },
   deleteMember: {
     unknown: "Could not remove: unknown team member.",
     failed: (error: string) => `Could not remove the team member (${error}).`,
     done: "Removed the team member.",
+  },
+  serviceTeam: {
+    anyone: "anyone",
+    unknown: "Could not save: unknown service.",
+    failed: (error: string) => `Could not save the service team (${error}).`,
+    done: "Service team updated.",
+  },
+  memberServices: {
+    none: "no services",
+    unknown: "Could not save: unknown team member.",
+    failed: (error: string) => `Could not save the member services (${error}).`,
+    done: "Member services updated.",
+  },
+  createAddon: {
+    failed: (error: string) => `Could not create the extras (${error}).`,
+    done: "Extras created.",
+  },
+  updateAddon: {
+    unknown: "Could not change: unknown extras group.",
+    failed: (error: string) => `Could not change the extras (${error}).`,
+    done: "Extras changed.",
+  },
+  deleteAddon: {
+    unknown: "Could not delete: unknown extras group.",
+    failed: (error: string) => `Could not delete the extras (${error}).`,
+    done: "Extras deleted.",
+  },
+  updateBusiness: {
+    failed: (error: string) => `Could not save the business details (${error}).`,
+    done: "Business details updated.",
+    fields: {
+      name: "Name",
+      address: "Address",
+      about: "About",
+      phone: "Phone",
+      website: "Website",
+      seats: "Seats",
+    },
   },
   hours: {
     invalid: "Could not save: invalid hours.",
@@ -137,24 +200,41 @@ const messages = {
     rangeInvalid: "range must be upcoming or past",
     dayInvalid: (key: string) => `${key} must be YYYY-MM-DD`,
     statusUnknown: "unknown status",
-    queryInvalid: "query must be 1-80 characters",
-    nameInvalid: "name must be 1-80 characters",
+    queryInvalid: (max: number) => `query must be 1-${max} characters`,
+    nameInvalid: (max: number) => `name must be 1-${max} characters`,
+    nothingToChange: "Nothing to change.",
     minutesInvalid: (options: string) => `minutes must be one of ${options}`,
     priceInvalid: "priceMinor must be null or an integer within range",
-    descriptionInvalid: "description must be at most 300 characters",
+    descriptionInvalid: (max: number) =>
+      `description must be at most ${max} characters`,
     bookingIdRequired:
       "bookingId is required: list bookings first and use an id from the list",
     bookingUnknown:
       "unknown booking id: list bookings first and use an id from the list",
     statusInvalid:
       "status must be confirmed, completed or no_show (cancelling needs a tap)",
-    rowsInvalid:
-      "rows must be at most 14 of weekday 0-6 with open and close HH:mm",
+    rowsInvalid: (max: number) =>
+      `rows must be at most ${max} of weekday 0-6 with open and close HH:mm`,
     freeTimesUnknown:
       "unknown service or team member: list them first and use an id from the list",
     fromInvalid: "from must be a real YYYY-MM-DD date, today or later",
     toInvalid: "to must be a real YYYY-MM-DD date on or after from",
-    spanInvalid: "ask for at most 14 days at once",
+    spanInvalid: (max: number) => `ask for at most ${max} days at once`,
+    rangeTooLong: (max: number) => `ask for at most ${max} days at once`,
+    sortInvalid: "sort must be bookings, spent, lastVisit or firstBooking",
+    groupIdRequired:
+      "groupId is required: list add-ons first and use an id from the list",
+    groupUnknown:
+      "unknown extras group id: list add-ons first and use an id from the list",
+    promptInvalid: (max: number) => `prompt must be 1-${max} characters`,
+    selectsInvalid: "minSelect and maxSelect must fit the number of options",
+    optionsInvalid: (max: number) =>
+      `options must be 1-${max} with a name, duration and price`,
+    businessNameInvalid: (max: number) => `name must be 1-${max} characters`,
+    addressInvalid: (max: number) => `address must be at most ${max} characters`,
+    aboutInvalid: (max: number) => `about must be at most ${max} characters`,
+    websiteInvalid: "website must be an http(s) URL",
+    seatsInvalid: (max: number) => `seats must be between 1 and ${max}`,
   },
 }
 

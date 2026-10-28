@@ -2,6 +2,7 @@ import type {
   AssistantMessage,
   AssistantStreamEvent,
   ResultKind,
+  SourceKind,
 } from "../types"
 
 export type ConfirmState = "pending" | "accepted" | "declined"
@@ -28,6 +29,12 @@ export interface ChatResult {
   kind: ResultKind
 }
 
+// What an answer was based on: records looked up, by kind.
+export interface ChatSource {
+  kind: SourceKind
+  count: number
+}
+
 export type ChatItem =
   | { id: string; role: "owner"; text: string }
   | {
@@ -39,6 +46,9 @@ export type ChatItem =
       // Quick answers the owner can tap instead of typing.
       choices: string[]
       result: ChatResult | null
+      sources: ChatSource[]
+      // Set when the answer could not be double-checked.
+      unverified: boolean
     }
 
 type AssistantItem = Extract<ChatItem, { role: "assistant" }>
@@ -66,6 +76,8 @@ export function newReply(): ChatItem {
     confirms: [],
     choices: [],
     result: null,
+    sources: [],
+    unverified: false,
   }
 }
 
@@ -119,6 +131,10 @@ export function applyEvent(
         ...reply,
         result: { ok: event.ok, text: event.text, kind: event.kind },
       }))
+    case "sources":
+      return withReply(items, (reply) => ({ ...reply, sources: event.items }))
+    case "notice":
+      return withReply(items, (reply) => ({ ...reply, unverified: true }))
     default:
       return items
   }
@@ -138,6 +154,16 @@ export function resolveConfirm(
           ),
         }
       : item
+  )
+}
+
+// A saved chat's words back as items: replies come back as plain words,
+// without their steps, cards or buttons.
+export function fromMessages(messages: AssistantMessage[]): ChatItem[] {
+  return messages.map((message) =>
+    message.role === "owner"
+      ? { id: crypto.randomUUID(), role: "owner", text: message.text }
+      : { ...(newReply() as AssistantItem), text: message.text }
   )
 }
 
@@ -164,7 +190,7 @@ export function toMessages(
 // Saved chats carry this number. Raise it whenever ChatItem changes:
 // a chat saved by another version starts fresh instead of breaking the
 // screen.
-export const CHAT_STORAGE_VERSION = 4
+export const CHAT_STORAGE_VERSION = 5
 
 const isText = (value: unknown): value is string => typeof value === "string"
 
@@ -180,6 +206,8 @@ function isChatItem(value: unknown): value is ChatItem {
     Array.isArray(item.confirms) &&
     Array.isArray(item.choices) &&
     item.choices.every(isText) &&
+    Array.isArray(item.sources) &&
+    typeof item.unverified === "boolean" &&
     (item.result === null ||
       (typeof item.result === "object" &&
         isText((item.result as Record<string, unknown>).text) &&

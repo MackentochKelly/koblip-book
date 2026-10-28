@@ -8,8 +8,10 @@ import type {
   AssistantRequest,
   AssistantStreamEvent,
 } from "../types"
+import { getChat, putChat } from "../utils/chats-client"
 import {
   applyEvent,
+  fromMessages,
   newReply,
   resolveConfirm,
   restoreChat,
@@ -39,38 +41,60 @@ export function useAssistantChat(
   const [restored, setRestored] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<ErrorCode | null>(null)
+  // This chat's id on the server; a new chat gets a new one.
+  const [chatId, setChatId] = useState(() => crypto.randomUUID())
+  // True after a reply until it has been saved.
+  const unsaved = useRef(false)
 
   // The conversation survives a visit to another tab, but not closing the
   // browser tab. Read after the first paint so the server and the browser
   // draw the same thing first.
   const storageKey = `assistant-chat:${businessId}`
+  const idKey = `assistant-chat-id:${businessId}`
   useEffect(() => {
     queueMicrotask(() => {
       try {
         // A chat from another version or of another shape starts fresh.
         setItems(restoreChat(sessionStorage.getItem(storageKey)))
+        const savedId = sessionStorage.getItem(idKey)
+        if (savedId) setChatId(savedId)
       } catch {
         // Nothing saved, or storage is off.
       }
       setRestored(true)
     })
-  }, [storageKey])
+  }, [storageKey, idKey])
   useEffect(() => {
     if (!restored) return
     try {
       if (items.length > 0) {
         sessionStorage.setItem(storageKey, saveChat(items))
+        sessionStorage.setItem(idKey, chatId)
       } else {
         sessionStorage.removeItem(storageKey)
+        sessionStorage.removeItem(idKey)
       }
     } catch {
       // Storage is off: the chat just will not be remembered.
     }
-  }, [items, restored, storageKey])
+  }, [items, restored, storageKey, idKey, chatId])
+
+  // After each reply, the chat is saved for the Recent list. A save that
+  // fails is tried again after the next reply.
+  useEffect(() => {
+    if (busy || !unsaved.current) return
+    const messages = toMessages(items, ASSISTANT_RULES.maxSavedMessages)
+    if (!messages.some((message) => message.role === "owner")) return
+    unsaved.current = false
+    void putChat(businessId, chatId, messages).then((saved) => {
+      if (!saved) unsaved.current = true
+    })
+  }, [busy, items, businessId, chatId])
 
   const consume = async (stream: AsyncIterable<AssistantStreamEvent>) => {
     setBusy(true)
     setError(null)
+    unsaved.current = true
     try {
       for await (const event of stream) {
         if (event.type === "error") setError(event.code)
@@ -139,7 +163,31 @@ export function useAssistantChat(
     if (busy) return
     setItems([])
     setError(null)
+    setChatId(crypto.randomUUID())
   }
 
-  return { items, busy, error, send, retry, answer, reset, stop, stoppable }
+  // Opens a saved chat in place of this one. False when it could not load.
+  const open = async (id: string) => {
+    if (busy) return false
+    const chat = await getChat(businessId, id)
+    if (!chat) return false
+    setItems(fromMessages(chat.messages))
+    setError(null)
+    setChatId(chat.id)
+    return true
+  }
+
+  return {
+    items,
+    busy,
+    error,
+    chatId,
+    send,
+    retry,
+    answer,
+    reset,
+    open,
+    stop,
+    stoppable,
+  }
 }

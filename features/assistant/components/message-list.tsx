@@ -5,12 +5,16 @@ import { useState } from "react"
 import { Streamdown } from "streamdown"
 import {
   AlertCircleIcon,
+  CalendarDaysIcon,
   CheckIcon,
   ChevronRightIcon,
   CircleCheckIcon,
+  ContactIcon,
   CopyIcon,
   RefreshIcon,
   SparklesIcon,
+  TagIcon,
+  UsersIcon,
 } from "@/components/ui/icons"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -42,8 +46,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import type { AssistantMessages } from "../i18n"
-import type { AssistantStreamEvent, ResultKind } from "../types"
-import type { ChatItem, ChatResult, ChatStep } from "../utils/chat-state"
+import type { AssistantStreamEvent, ResultKind, SourceKind } from "../types"
+import type {
+  ChatItem,
+  ChatResult,
+  ChatSource,
+  ChatStep,
+} from "../utils/chat-state"
 import { ConfirmCard } from "./confirm-card"
 
 type ErrorCode = Extract<AssistantStreamEvent, { type: "error" }>["code"]
@@ -58,6 +67,7 @@ const RESULT_PAGES: Record<ResultKind, string> = {
   team: "/team",
   hours: "/hours",
   customers: "/customers",
+  settings: "/settings",
 }
 
 // What a tapped action did, as one line that opens the page it changed.
@@ -85,6 +95,64 @@ function ResultLine({
   )
 }
 
+// The same icons as the owner menu.
+const SOURCE_ICONS: Record<SourceKind, typeof CalendarDaysIcon> = {
+  bookings: CalendarDaysIcon,
+  services: TagIcon,
+  team: UsersIcon,
+  customers: ContactIcon,
+}
+
+// What the answer was based on (AI Elements' Sources): one line per kind,
+// each opening the page with those records.
+function SourceLines({
+  sources,
+  businessId,
+  labels,
+}: {
+  sources: ChatSource[]
+  businessId: string
+  labels: AssistantMessages["sources"]
+}) {
+  return (
+    <Trace>
+      {sources.map(({ kind, count }) => {
+        const Icon = SOURCE_ICONS[kind]
+        return (
+          <Link
+            key={kind}
+            href={`/dashboard/${businessId}${RESULT_PAGES[kind]}`}
+          >
+            <TraceLine>
+              <TraceIcon>
+                <Icon />
+              </TraceIcon>
+              <TraceTitle>{labels[kind](count)}</TraceTitle>
+              <TraceIcon>
+                <ChevronRightIcon />
+              </TraceIcon>
+            </TraceLine>
+          </Link>
+        )
+      })}
+    </Trace>
+  )
+}
+
+// A small warning when the answer could not be double-checked.
+function UnverifiedLine({ label }: { label: string }) {
+  return (
+    <Trace>
+      <TraceLine>
+        <TraceIcon>
+          <AlertCircleIcon />
+        </TraceIcon>
+        <TraceTitle>{label}</TraceTitle>
+      </TraceLine>
+    </Trace>
+  )
+}
+
 // One icon per step: working, done or failed.
 function StepIcon({ status }: { status: ChatStep["status"] }) {
   if (status === "running") return <Spinner />
@@ -104,7 +172,9 @@ function WorkSteps({
 }) {
   const [open, setOpen] = useState<boolean | undefined>(undefined)
   const running = steps.find((step) => step.status === "running")
-  const failed = steps.some((step) => step.status === "failed")
+  // Red only when the work ended badly: a mistake the assistant caught
+  // and fixed shows its ✗ inside, but the line stays calm.
+  const failed = steps.at(-1)?.status === "failed"
   const summaryStatus = running ? "running" : failed ? "error" : undefined
   return (
     <Trace>
@@ -222,9 +292,12 @@ export function MessageList({
   return (
     <MessageScrollerProvider autoScroll>
       <MessageScroller className="flex-1">
-        <MessageScrollerViewport>
+        {/* Fade both edges (shadcn's scroll-fade), not only the bottom:
+            the stock viewport sets scroll-fade-b, so "!" lets this win
+            (Tailwind's documented override) without editing components/ui. */}
+        <MessageScrollerViewport className="scroll-fade! [--scroll-fade-mask:var(--scroll-fade-block)]!">
           {/* pb-12 keeps the last message clear of the bottom fade. */}
-          <MessageScrollerContent className="gap-4 p-4 pb-12">
+          <MessageScrollerContent className="mx-auto w-full max-w-3xl gap-4 p-4 pb-12">
             {/* Just the question, large, like big chat apps; the
                 suggestions sit above the message box. */}
             {items.length === 0 && !busy && (
@@ -245,7 +318,9 @@ export function MessageList({
                 >
                   <Message align="end">
                     <MessageContent>
-                      <Bubble align="end">
+                      {/* The owner's words: a light tint of the brand colour,
+                          like big chat apps. */}
+                      <Bubble align="end" variant="tinted">
                         <BubbleContent className="whitespace-pre-wrap">
                           {item.text}
                         </BubbleContent>
@@ -289,6 +364,16 @@ export function MessageList({
                           onAnswer={(accept) => onAnswer(confirm.id, accept)}
                         />
                       ))}
+                      {item.unverified && (
+                        <UnverifiedLine label={m.unverified} />
+                      )}
+                      {item.sources.length > 0 && (
+                        <SourceLines
+                          sources={item.sources}
+                          businessId={businessId}
+                          labels={m.sources}
+                        />
+                      )}
                       {item.result && (
                         <ResultLine
                           result={item.result}

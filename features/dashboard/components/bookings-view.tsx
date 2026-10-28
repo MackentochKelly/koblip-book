@@ -2,7 +2,11 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { CalendarDaysIcon, ChevronRightIcon, PlusIcon } from "@/components/ui/icons"
+import {
+  CalendarDaysIcon,
+  ChevronRightIcon,
+  PlusIcon,
+} from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
@@ -130,72 +134,79 @@ export function BookingsView({
           {t.add}
         </Button>
       </div>
-      <BookingsChart days={nextDays} />
-      <ViewTabs
-        views={views}
-        value={view}
-        onChange={setView}
-        ariaLabel={t.title}
-        listClassName="w-full"
-      />
-      {days.length === 0 ? (
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <CalendarDaysIcon />
-            </EmptyMedia>
-            <EmptyTitle>
-              {view === "upcoming" ? t.noUpcoming : t.noPast}
-            </EmptyTitle>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        days.map(([date, bookings]) => (
-          <section
-            key={date}
-            className="flex flex-col gap-3"
-            aria-label={formatDay(date, m.locale)}
-          >
-            <h2 className="text-sm font-medium text-muted-foreground">
-              {formatDay(date, m.locale)}
-            </h2>
-            <ItemGroup className="gap-3">
-              {bookings.map((booking) => (
-                <Item
-                  key={booking.id}
-                  variant="outline"
-                  render={
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOpened(booking)
-                        setOpenedAt(Date.now())
-                        setDetailsOpen(true)
-                      }}
-                    />
-                  }
-                  className="text-left"
-                >
-                  <ItemContent>
-                    <ItemTitle>
-                      {formatClock(booking.time, m.locale)} –{" "}
-                      {formatClock(booking.endTime, m.locale)}
-                      <BookingStatusBadge status={booking.status} />
-                    </ItemTitle>
-                    <ItemDescription>
-                      {booking.customerName} · {booking.serviceName}
-                      {booking.teamMemberName && ` · ${booking.teamMemberName}`}
-                    </ItemDescription>
-                  </ItemContent>
-                  <ItemActions>
-                    <ChevronRightIcon />
-                  </ItemActions>
-                </Item>
-              ))}
-            </ItemGroup>
-          </section>
-        ))
-      )}
+      {/* A phone stacks the chart over the list; a computer puts them
+          side by side, the list taking the wider column. */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
+        <BookingsChart days={nextDays} />
+        <div className="flex min-w-0 flex-col gap-6">
+          <ViewTabs
+            views={views}
+            value={view}
+            onChange={setView}
+            ariaLabel={t.title}
+            listClassName="w-full md:w-fit"
+          />
+          {days.length === 0 ? (
+            <Empty className="border">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <CalendarDaysIcon />
+                </EmptyMedia>
+                <EmptyTitle>
+                  {view === "upcoming" ? t.noUpcoming : t.noPast}
+                </EmptyTitle>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            days.map(([date, bookings]) => (
+              <section
+                key={date}
+                className="flex flex-col gap-3"
+                aria-label={formatDay(date, m.locale)}
+              >
+                <h2 className="text-sm font-medium text-muted-foreground">
+                  {formatDay(date, m.locale)}
+                </h2>
+                <ItemGroup className="gap-3">
+                  {bookings.map((booking) => (
+                    <Item
+                      key={booking.id}
+                      variant="outline"
+                      render={
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpened(booking)
+                            setOpenedAt(Date.now())
+                            setDetailsOpen(true)
+                          }}
+                        />
+                      }
+                      className="text-left"
+                    >
+                      <ItemContent>
+                        <ItemTitle>
+                          {formatClock(booking.time, m.locale)} –{" "}
+                          {formatClock(booking.endTime, m.locale)}
+                          <BookingStatusBadge status={booking.status} />
+                        </ItemTitle>
+                        <ItemDescription>
+                          {booking.customerName} · {booking.serviceName}
+                          {booking.teamMemberName &&
+                            ` · ${booking.teamMemberName}`}
+                        </ItemDescription>
+                      </ItemContent>
+                      <ItemActions>
+                        <ChevronRightIcon />
+                      </ItemActions>
+                    </Item>
+                  ))}
+                </ItemGroup>
+              </section>
+            ))
+          )}
+        </div>
+      </div>
 
       <ResponsivePanel
         open={detailsOpen}

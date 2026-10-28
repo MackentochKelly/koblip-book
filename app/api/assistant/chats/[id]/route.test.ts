@@ -12,12 +12,20 @@ vi.mock("@/features/dashboard/api/owned-business", () => ({
 vi.mock("@/features/assistant/api/rate-limit", () => ({
   checkAssistantRateLimit: vi.fn(() => true),
 }))
+vi.mock("@/features/assistant/api/run-chat", () => ({
+  runChat: vi.fn(),
+}))
+vi.mock("@/features/dashboard/i18n/server", () => ({
+  getOwnerLanguage: vi.fn(async () => "en"),
+}))
 
 const { getSession } = await import("@/lib/dal")
-const { ownedBusiness } = await import("@/features/dashboard/api/owned-business")
+const { ownedBusiness } =
+  await import("@/features/dashboard/api/owned-business")
 const { checkAssistantRateLimit } =
   await import("@/features/assistant/api/rate-limit")
 const { GET, PUT, DELETE } = await import("./route")
+const { runChat } = await import("@/features/assistant/api/run-chat")
 
 const OWNER = { userId: "u1", name: "Owner", email: "o@x.com" }
 const OTHER = { userId: "other", name: "Other", email: "other@x.com" }
@@ -57,7 +65,7 @@ beforeEach(async () => {
   vi.mocked(checkAssistantRateLimit).mockReturnValue(true)
   vi.mocked(getSession).mockResolvedValue(OWNER as never)
   vi.mocked(ownedBusiness).mockImplementation(async (businessId: string) =>
-    businessId === "b1" ? ({ business: { id: "b1" } }) as never : null
+    businessId === "b1" ? ({ business: { id: "b1" } } as never) : null
   )
   const { db } = await import("@/lib/db")
   const { assistantConversations } = await import("@/lib/db/schema")
@@ -107,18 +115,27 @@ async function seed(ownerId = "u1") {
 
 test("guards run in order on every method", async () => {
   const badOrigin = "https://evil.com"
-  expect(await GET(get(`/api/assistant/chats/${ID}?businessId=b1`, badOrigin), params(ID))).toMatchObject({ status: 403 })
   expect(
-    await PUT(put(ID, {}, badOrigin), params(ID))
+    await GET(
+      get(`/api/assistant/chats/${ID}?businessId=b1`, badOrigin),
+      params(ID)
+    )
   ).toMatchObject({ status: 403 })
+  expect(await PUT(put(ID, {}, badOrigin), params(ID))).toMatchObject({
+    status: 403,
+  })
   vi.mocked(getSession).mockResolvedValue(null)
-  expect(await GET(get(`/api/assistant/chats/${ID}?businessId=b1`), params(ID))).toMatchObject({ status: 401 })
+  expect(
+    await GET(get(`/api/assistant/chats/${ID}?businessId=b1`), params(ID))
+  ).toMatchObject({ status: 401 })
   expect(
     await DELETE(get(`/api/assistant/chats/${ID}?businessId=b1`), params(ID))
   ).toMatchObject({ status: 401 })
   vi.mocked(getSession).mockResolvedValue(OWNER as never)
   vi.mocked(checkAssistantRateLimit).mockReturnValue(false)
-  expect(await GET(get(`/api/assistant/chats/${ID}?businessId=b1`), params(ID))).toMatchObject({ status: 429 })
+  expect(
+    await GET(get(`/api/assistant/chats/${ID}?businessId=b1`), params(ID))
+  ).toMatchObject({ status: 429 })
   vi.mocked(checkAssistantRateLimit).mockReturnValue(true)
   expect(
     await GET(get(`/api/assistant/chats/${ID}?businessId=nope`), params(ID))
@@ -148,7 +165,9 @@ test("GET returns the chat, or 404", async () => {
       params("22222222-2222-4222-8222-222222222222")
     )
   ).toMatchObject({ status: 404 })
-  expect(await GET(get("/api/assistant/chats/nope?businessId=b1"), params("nope"))).toMatchObject({ status: 400 })
+  expect(
+    await GET(get("/api/assistant/chats/nope?businessId=b1"), params("nope"))
+  ).toMatchObject({ status: 400 })
 })
 
 test("another owner's chat answers 404 on GET, PUT and DELETE", async () => {
@@ -160,10 +179,7 @@ test("another owner's chat answers 404 on GET, PUT and DELETE", async () => {
     await PUT(put(ID, { businessId: "b1", messages: MESSAGES }), params(ID))
   ).toMatchObject({ status: 404 })
   expect(
-    await DELETE(
-      get(`/api/assistant/chats/${ID}?businessId=b1`),
-      params(ID)
-    )
+    await DELETE(get(`/api/assistant/chats/${ID}?businessId=b1`), params(ID))
   ).toMatchObject({ status: 404 })
   // Untouched: the other owner still sees their words.
   vi.mocked(getSession).mockResolvedValue(OTHER as never)
@@ -223,12 +239,21 @@ test("bad bodies answer 400", async () => {
   const bad: [string, unknown][] = [
     ["not an array", { businessId: "b1", messages: "hello" }],
     ["empty", { businessId: "b1", messages: [] }],
-    ["only empties", { businessId: "b1", messages: [{ role: "owner", text: "  " }] }],
-    ["bad role", { businessId: "b1", messages: [{ role: "user", text: "hi" }] }],
+    [
+      "only empties",
+      { businessId: "b1", messages: [{ role: "owner", text: "  " }] },
+    ],
+    [
+      "bad role",
+      { businessId: "b1", messages: [{ role: "user", text: "hi" }] },
+    ],
     ["bad text", { businessId: "b1", messages: [{ role: "owner", text: 42 }] }],
     [
       "too long",
-      { businessId: "b1", messages: [{ role: "owner", text: "x".repeat(8001) }] },
+      {
+        businessId: "b1",
+        messages: [{ role: "owner", text: "x".repeat(8001) }],
+      },
     ],
     [
       "too many",
@@ -248,24 +273,60 @@ test("bad bodies answer 400", async () => {
       status: 400,
     })
   }
-  expect(await PUT(put("nope", { businessId: "b1", messages: MESSAGES }), params("nope"))).toMatchObject({ status: 400 })
+  expect(
+    await PUT(
+      put("nope", { businessId: "b1", messages: MESSAGES }),
+      params("nope")
+    )
+  ).toMatchObject({ status: 400 })
+})
+
+test("chat saves use their own budget, not the asking one", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/features/assistant/api/rate-limit")
+  >("@/features/assistant/api/rate-limit")
+  actual.resetAssistantRateLimitForTests()
+  vi.mocked(checkAssistantRateLimit).mockImplementation(
+    (key: string, max: number) => actual.checkAssistantRateLimit(key, max)
+  )
+  vi.mocked(runChat).mockImplementation(async function* () {
+    yield { type: "text", delta: "hi" }
+    yield { type: "done" }
+  } as never)
+  const { POST: ask } = await import("../../route")
+  const save = () =>
+    PUT(put(ID, { businessId: "b1", messages: MESSAGES }), params(ID))
+  for (let i = 0; i < 20; i += 1) {
+    expect(await save()).toMatchObject({ status: 204 })
+  }
+  // 20 saves do not block asking.
+  const asked = await ask(
+    new Request("http://localhost/api/assistant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        businessId: "b1",
+        messages: [{ role: "owner", text: "hi" }],
+      }),
+    })
+  )
+  expect(asked.status).not.toBe(429)
+  // Saves 21..60 still pass; the 61st is rate limited.
+  for (let i = 20; i < 60; i += 1) {
+    expect(await save()).toMatchObject({ status: 204 })
+  }
+  expect(await save()).toMatchObject({ status: 429 })
 })
 
 test("DELETE removes the chat, then it is gone", async () => {
   await seed()
   expect(
-    await DELETE(
-      get(`/api/assistant/chats/${ID}?businessId=b1`),
-      params(ID)
-    )
+    await DELETE(get(`/api/assistant/chats/${ID}?businessId=b1`), params(ID))
   ).toMatchObject({ status: 204 })
   expect(
     await GET(get(`/api/assistant/chats/${ID}?businessId=b1`), params(ID))
   ).toMatchObject({ status: 404 })
   expect(
-    await DELETE(
-      get(`/api/assistant/chats/${ID}?businessId=b1`),
-      params(ID)
-    )
+    await DELETE(get(`/api/assistant/chats/${ID}?businessId=b1`), params(ID))
   ).toMatchObject({ status: 404 })
 })

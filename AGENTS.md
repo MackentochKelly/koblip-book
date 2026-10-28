@@ -39,6 +39,7 @@ Koblip Book is a booking app for any local business: customers book appointments
 
 ## Working rules
 
+- Work like a big professional team, every time: the proper, root-cause fix the official docs describe, never a shortcut, workaround or quick patch. If you take a shortcut, say so and fix it properly. Change only what was asked: no side work.
 - Read the official docs before anything new or unsure; never guess an API, option or model name.
 - Secrets only in `.env.local` and only in server code (use the `server-only` package).
 - Small steps. Run typecheck, lint, test and build before saying a task is done.

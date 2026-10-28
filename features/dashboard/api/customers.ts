@@ -52,6 +52,7 @@ export function toOwnerBooking(
     time: start.time,
     endTime: end.time,
     startAt: row.startAt,
+    endAt: row.endAt,
     serviceId: row.serviceId,
     serviceName: row.serviceName,
     teamMemberId: row.teamMemberId,
@@ -133,6 +134,9 @@ export function buildCustomers(
     const latestCompleted = [...completedRows].sort((a, b) =>
       a.startAt < b.startAt ? 1 : a.startAt > b.startAt ? -1 : 0
     )[0]
+    const earliest = [...list].sort((a, b) =>
+      a.startAt < b.startAt ? -1 : a.startAt > b.startAt ? 1 : 0
+    )[0]
     const next = list
       .filter(
         (row) => row.status === "confirmed" && Date.parse(row.startAt) > nowMs
@@ -150,6 +154,9 @@ export function buildCustomers(
       cancelled: list.filter((row) => row.status === "cancelled").length,
       lastVisit: latestCompleted
         ? zonedDateTime(latestCompleted.startAt, timeZone).date
+        : null,
+      firstBooking: earliest
+        ? zonedDateTime(earliest.startAt, timeZone).date
         : null,
       nextBooking: next
         ? zonedDateTime(next.startAt, timeZone).date

@@ -4,7 +4,7 @@ A chat in the middle of the phone tab bar. The owner types or speaks in plain
 words ("move Ana's 3pm to 4pm", "add a haircut for $25", "cancel tomorrow's
 last booking") and the assistant does it.
 
-Status: plan only. No code written yet.
+Status: sections 1-10 are built.
 
 ## 1. Who builds what
 
@@ -172,3 +172,63 @@ Each step ends with typecheck, lint, tests, build. Nothing is committed until yo
 2. **API style:** Responses API, once office hours confirm how long Meta keeps stored chats.
 3. **Chat history:** only while the chat is open. Saved history later if time allows.
 4. **Bookings by chat:** the assistant always asks for a tap before it creates one.
+
+## 10. Full access (started 2026-10-28)
+
+Goal: the assistant can see and do everything the owner can see and do in the
+app, so it answers every question correctly.
+
+How we work: read this section before each step. The exact prompt for a step
+is written just before it starts, from this section and the code as it is
+then. Muse sends a plan first; the step is built after the OK, then reviewed
+and tested. Tick the step here when it is reviewed, and add any decision to
+"Notes".
+
+Every step: reuse the app's own queries and actions (no second copy of the
+rules), keep the owner check on every tool, risky changes still wait for the
+owner's tap, tests next to the existing ones, typecheck + lint + test + build
+pass, no commit.
+
+### Steps
+
+- [x] **1. Past, now or upcoming.** Bug: at 17:50, "upcoming bookings today"
+  listed 3 bookings that were already over. Cause: `list_bookings` with
+  from/to ignores `range`, and rows don't say if a booking is over.
+  Fix: `OwnerBooking.endAt`; each row gets `endTime` and
+  `when: past | now | upcoming` (the app's rule: upcoming = endAt >= now);
+  `range` with from/to keeps only that side; "range given" is read from the
+  raw argument; one system prompt sentence. Status: done and reviewed
+  2026-10-28 (411 tests pass).
+- [x] **2. Full details.** Bookings: team member, price, length, end time,
+  extras, note, source. Services: description, extras, which team members do
+  it, photo yes/no. Team: which services each person does, photo yes/no.
+  Business: about text, website, category, booking link, photos count,
+  Spanish version status. New tool `list_addons`. Status: done and
+  reviewed 2026-10-28 (417 tests pass).
+- [x] **3. Customers and numbers.** Full customer list (`getCustomers`:
+  visits, no-shows, cancelled, last visit, next booking, money spent), new
+  customers, best customers. Numbers for any day range: bookings by status,
+  money earned, no-show rate, busiest days and hours. New tools `booking_stats`, `list_customers`.
+  Status: done and reviewed 2026-10-28 (436 tests pass).
+- [x] **4. Changes still missing.** Extras (create, edit, delete), which team
+  member does which service, business details and about text. Each risky one
+  waits for the owner's tap, like the others. Also: add a team member. Status: done and
+  reviewed 2026-10-28 (444 tests pass).
+
+### Notes
+
+- 2026-10-28: prompts are not written ahead; code changes after each step.
+- 2026-10-28: booking link is the path `/b/<slug>` (the app has no site URL
+  setting; screens build it the same way).
+- 2026-10-28: tests fix their fixtures; app code never guards for missing
+  test data (a `?? []` shortcut was redone properly in step 2).
+- 2026-10-28: the app's words: add-ons are "extras" / "extras" in labels.
+- 2026-10-28: step 3 numbers read every booking in the date range from the
+  database (a new owner-checked query), not the capped booking list. Money
+  earned = completed bookings' price, the same rule as customer "spent".
+- 2026-10-28: one day count for every range rule: `daysInRange` in
+  features/dashboard/api/queries.ts (both days included).
+- 2026-10-28: every limit comes from BOOKING_RULES or ASSISTANT_RULES,
+  never a typed number (maxTeamName, maxHoursRows, maxCustomerQuery,
+  maxFreeTimesDays added).
+- Not in the assistant on purpose: photos and reordering.

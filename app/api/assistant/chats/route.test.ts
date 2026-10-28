@@ -15,7 +15,8 @@ vi.mock("@/features/assistant/api/rate-limit", () => ({
 }))
 
 const { getSession } = await import("@/lib/dal")
-const { ownedBusiness } = await import("@/features/dashboard/api/owned-business")
+const { ownedBusiness } =
+  await import("@/features/dashboard/api/owned-business")
 const { checkAssistantRateLimit } =
   await import("@/features/assistant/api/rate-limit")
 const { GET } = await import("./route")
@@ -56,7 +57,7 @@ beforeEach(async () => {
   vi.mocked(checkAssistantRateLimit).mockReturnValue(true)
   vi.mocked(getSession).mockResolvedValue(OWNER as never)
   vi.mocked(ownedBusiness).mockImplementation(async (businessId: string) =>
-    businessId === "b1" ? ({ business: { id: "b1" } }) as never : null
+    businessId === "b1" ? ({ business: { id: "b1" } } as never) : null
   )
   const { db } = await import("@/lib/db")
   const { assistantConversations } = await import("@/lib/db/schema")
@@ -114,18 +115,18 @@ test("guards run in order: cross-site, session, rate limit, business", async () 
     await GET(get("/api/assistant/chats?businessId=b1", "https://evil.com"))
   ).toMatchObject({ status: 403 })
   vi.mocked(getSession).mockResolvedValue(null)
-  expect(await GET(get("/api/assistant/chats?businessId=b1"))).toMatchObject(
-    { status: 401 }
-  )
+  expect(await GET(get("/api/assistant/chats?businessId=b1"))).toMatchObject({
+    status: 401,
+  })
   vi.mocked(getSession).mockResolvedValue(OWNER as never)
   vi.mocked(checkAssistantRateLimit).mockReturnValue(false)
-  expect(await GET(get("/api/assistant/chats?businessId=b1"))).toMatchObject(
-    { status: 429 }
-  )
+  expect(await GET(get("/api/assistant/chats?businessId=b1"))).toMatchObject({
+    status: 429,
+  })
   vi.mocked(checkAssistantRateLimit).mockReturnValue(true)
-  expect(
-    await GET(get("/api/assistant/chats?businessId=nope"))
-  ).toMatchObject({ status: 404 })
+  expect(await GET(get("/api/assistant/chats?businessId=nope"))).toMatchObject({
+    status: 404,
+  })
   expect(await GET(get("/api/assistant/chats"))).toMatchObject({
     status: 400,
   })

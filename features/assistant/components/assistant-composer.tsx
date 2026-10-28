@@ -15,6 +15,21 @@ import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type { AssistantMessages } from "../i18n"
 import { useVoiceInput, type VoiceError } from "../hooks/use-voice-input"
 
+type Mode = "stop" | "recording" | "transcribing" | "working" | "send" | "mic"
+
+// What the one button says to a screen reader in each state.
+const MODE_LABELS: Record<
+  Mode,
+  (labels: AssistantMessages["composer"]) => string
+> = {
+  stop: (labels) => labels.stop,
+  recording: (labels) => labels.stop,
+  transcribing: (labels) => labels.mic,
+  working: (labels) => labels.send,
+  send: (labels) => labels.send,
+  mic: (labels) => labels.mic,
+}
+
 // The message box. Enter sends; Shift+Enter starts a new line.
 export function AssistantComposer({
   businessId,
@@ -42,6 +57,20 @@ export function AssistantComposer({
     (error: VoiceError) =>
       toast.error(error === "mic_denied" ? labels.micDenied : errors[error])
   )
+
+  // The one button: stop an answer, the voice states, send while there are
+  // words, the microphone while the box is empty.
+  const mode: Mode = stoppable
+    ? "stop"
+    : voice.state === "recording"
+      ? "recording"
+      : voice.state === "transcribing"
+        ? "transcribing"
+        : busy
+          ? "working"
+          : text.trim() !== "" || !voice.supported
+            ? "send"
+            : "mic"
 
   const submit = () => {
     if (!canSend) return
@@ -73,50 +102,43 @@ export function AssistantComposer({
           enterKeyHint="send"
           className="max-h-32 min-h-11"
         />
-        {/* Like big chat apps: the words on top, the buttons in a row
-            under them. */}
+        {/* Like big chat apps: the words on top, one round button under
+            them that changes with what the owner is doing. */}
         <InputGroupAddon align="block-end" className="justify-end">
-          {voice.supported && (
-            <InputGroupButton
-              type="button"
-              variant={voice.state === "recording" ? "destructive" : "ghost"}
-              size="icon-sm"
-              aria-label={
-                voice.state === "recording" ? labels.stop : labels.mic
-              }
-              disabled={busy || voice.state === "transcribing"}
-              onClick={voice.state === "recording" ? voice.stop : voice.start}
-            >
-              {voice.state === "transcribing" ? (
-                <Spinner />
-              ) : voice.state === "recording" ? (
-                <SquareIcon />
-              ) : (
-                <MicIcon />
-              )}
-            </InputGroupButton>
-          )}
-          {stoppable ? (
-            <InputGroupButton
-              type="button"
-              variant="default"
-              size="icon-sm"
-              aria-label={labels.stop}
-              onClick={onStop}
-            >
+          {/* A new key per state, so each change fades and grows in, in
+              the same spot (instant with reduced motion). */}
+          <InputGroupButton
+            key={mode}
+            type={mode === "send" ? "submit" : "button"}
+            variant={mode === "recording" ? "destructive" : "default"}
+            size="icon-sm"
+            aria-label={MODE_LABELS[mode](labels)}
+            disabled={
+              mode === "transcribing" ||
+              mode === "working" ||
+              (mode === "send" && !canSend)
+            }
+            onClick={
+              mode === "stop"
+                ? onStop
+                : mode === "mic"
+                  ? voice.start
+                  : mode === "recording"
+                    ? voice.stop
+                    : undefined
+            }
+            className="animate-in duration-150 zoom-in-75 fade-in motion-reduce:animate-none"
+          >
+            {mode === "transcribing" || mode === "working" ? (
+              <Spinner />
+            ) : mode === "stop" || mode === "recording" ? (
               <SquareIcon />
-            </InputGroupButton>
-          ) : (
-            <InputGroupButton
-              type="submit"
-              variant="default"
-              size="icon-sm"
-              aria-label={labels.send}
-              disabled={!canSend}
-            >
-              {busy ? <Spinner /> : <ArrowUpIcon />}
-            </InputGroupButton>
-          )}
+            ) : mode === "mic" ? (
+              <MicIcon />
+            ) : (
+              <ArrowUpIcon />
+            )}
+          </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
     </form>

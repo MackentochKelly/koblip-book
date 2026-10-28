@@ -2,14 +2,13 @@
 // One JSON object per line.
 // Which owner page a confirmed change belongs to, for the result link.
 export type ResultKind =
-  | "bookings"
-  | "services"
-  | "team"
-  | "hours"
-  | "customers"
+  "bookings" | "services" | "team" | "hours" | "customers" | "settings"
+export type SourceKind = "bookings" | "services" | "team" | "customers"
 export type AssistantStreamEvent =
   | { type: "text"; delta: string } // words appearing in the reply
   | { type: "result"; ok: boolean; text: string; kind: ResultKind } // tap outcome with a link
+  | { type: "notice"; kind: "unverified" } // warning instead of words
+  | { type: "sources"; items: { kind: SourceKind; count: number }[] } // what the answer was based on
   | {
       type: "step"
       id: string

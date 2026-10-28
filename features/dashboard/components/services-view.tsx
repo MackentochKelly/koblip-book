@@ -183,7 +183,7 @@ export function ServicesView({
         value={view}
         onChange={setView}
         ariaLabel={t.tabs.label}
-        listClassName="w-full"
+        listClassName="w-full md:w-fit"
       />
 
       {view === "extras" ? (

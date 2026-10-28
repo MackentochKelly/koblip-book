@@ -83,8 +83,8 @@ async function guard(
   }
   if (
     !checkAssistantRateLimit(
-      session.userId,
-      ASSISTANT_RULES.maxRequestsPerMinutePerOwner
+      `chats:${session.userId}`,
+      ASSISTANT_RULES.maxChatRequestsPerMinutePerOwner
     )
   ) {
     return {
@@ -148,7 +148,7 @@ export async function PUT(
   }
   const businessId =
     typeof (body as Record<string, unknown> | null)?.businessId === "string"
-      ? (body as Record<string, unknown>).businessId as string
+      ? ((body as Record<string, unknown>).businessId as string)
       : null
   const checked = await guard(request, businessId)
   if (!checked.ok) {
@@ -157,9 +157,7 @@ export async function PUT(
   if (!UUID_RE.test(id)) {
     return Response.json({ error: "bad_request" }, { status: 400 })
   }
-  const messages = cleanMessages(
-    (body as Record<string, unknown>)?.messages
-  )
+  const messages = cleanMessages((body as Record<string, unknown>)?.messages)
   if (!messages) {
     return Response.json({ error: "bad_request" }, { status: 400 })
   }

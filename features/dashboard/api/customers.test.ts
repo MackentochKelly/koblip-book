@@ -110,6 +110,33 @@ test("buildCustomers counts, totals and dates per customer", () => {
   })
 })
 
+test("buildCustomers sets firstBooking to the earliest booking of any status", () => {
+  const customers = buildCustomers(
+    [
+      {
+        customerName: "Luis",
+        customerPhone: "+15550100000",
+        status: "cancelled",
+        startAt: "2020-01-15T14:00:00.000Z",
+        priceMinor: 1000,
+      },
+      {
+        customerName: "Luis",
+        customerPhone: "+15550100000",
+        status: "completed",
+        startAt: "2020-06-01T14:00:00.000Z",
+        priceMinor: 2000,
+      },
+    ],
+    NOW,
+    TZ,
+    "DOP"
+  )
+  expect(customers).toHaveLength(1)
+  expect(customers[0].firstBooking).toBe("2020-01-15")
+  expect(customers[0].lastVisit).toBe("2020-06-01")
+})
+
 test("customers without a next booking order by latest activity", () => {
   const customers = buildCustomers(
     [

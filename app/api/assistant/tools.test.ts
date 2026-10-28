@@ -2,11 +2,17 @@
 import { beforeEach, expect, test, vi } from "vitest"
 
 vi.mock("server-only", () => ({}))
-vi.mock("@/features/dashboard/api/queries", () => ({
-  getOwnerBusiness: vi.fn(),
-  getBookings: vi.fn(),
-  getBookingCounts: vi.fn(),
-}))
+vi.mock("@/features/dashboard/api/queries", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/features/dashboard/api/queries")>()
+  return {
+    ...actual,
+    getOwnerBusiness: vi.fn(),
+    getBookings: vi.fn(),
+    getBookingCounts: vi.fn(),
+    getBookingsBetween: vi.fn(),
+  }
+})
 vi.mock("@/features/dashboard/api/actions", () => ({
   createService: vi.fn(),
   updateService: vi.fn(),
@@ -15,6 +21,17 @@ vi.mock("@/features/dashboard/api/actions", () => ({
   deleteService: vi.fn(),
   deleteTeamMember: vi.fn(),
   saveHours: vi.fn(),
+  createTeamMember: vi.fn(),
+  updateBusinessDetails: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/team-services", () => ({
+  setServiceTeam: vi.fn(),
+  setMemberServices: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/addon-actions", () => ({
+  createAddonGroup: vi.fn(),
+  updateAddonGroup: vi.fn(),
+  deleteAddonGroup: vi.fn(),
 }))
 vi.mock("@/features/dashboard/api/booking-actions", () => ({
   setBookingStatus: vi.fn(),
@@ -32,18 +49,36 @@ vi.mock("@/features/dashboard/api/customers", () => ({
   getCustomers: vi.fn(),
   getCustomerBookings: vi.fn(),
 }))
+vi.mock("@/features/dashboard/api/team-service-queries", () => ({
+  getBusinessPhotos: vi.fn(),
+  getServiceTeams: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/addon-queries", () => ({
+  getAddonGroups: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/translation-queries", () => ({
+  getTranslationStatus: vi.fn(),
+}))
 
-const { getOwnerBusiness, getBookings, getBookingCounts } =
+const { getOwnerBusiness, getBookings, getBookingCounts, getBookingsBetween } =
   await import("@/features/dashboard/api/queries")
 const {
   cancelBooking,
   createService,
+  createTeamMember,
   deleteService,
   deleteTeamMember,
   renameTeamMember,
   saveHours,
+  updateBusinessDetails,
   updateService,
 } = await import("@/features/dashboard/api/actions")
+const { setMemberServices, setServiceTeam } = await import(
+  "@/features/dashboard/api/team-services"
+)
+const { createAddonGroup, deleteAddonGroup, updateAddonGroup } = await import(
+  "@/features/dashboard/api/addon-actions"
+)
 const { setBookingStatus } =
   await import("@/features/dashboard/api/booking-actions")
 const { getAvailability } =
@@ -54,6 +89,13 @@ const { logAssistantAction } =
   await import("@/features/assistant/api/audit-log")
 const { getCustomers, getCustomerBookings } =
   await import("@/features/dashboard/api/customers")
+const { getBusinessPhotos, getServiceTeams } = await import(
+  "@/features/dashboard/api/team-service-queries"
+)
+const { getAddonGroups } = await import("@/features/dashboard/api/addon-queries")
+const { getTranslationStatus } = await import(
+  "@/features/dashboard/api/translation-queries"
+)
 const { buildAssistantTools } = await import("./tools")
 
 const BUSINESS = {
@@ -80,6 +122,12 @@ test("every needsConfirm tool carries its result kind", () => {
     ["delete_team_member", "team"],
     ["set_hours", "hours"],
     ["create_booking", "bookings"],
+    ["set_service_team", "services"],
+    ["set_member_services", "team"],
+    ["create_addon_group", "services"],
+    ["update_addon_group", "services"],
+    ["delete_addon_group", "services"],
+    ["update_business_details", "settings"],
   ]
   expect(
     tools.filter((t) => t.definition.needsConfirm).map((t) => t.definition.name).sort()
@@ -99,8 +147,18 @@ beforeEach(() => {
   } as never)
   vi.mocked(getBookingCounts).mockResolvedValue({ today: 2, upcoming: 5 })
   vi.mocked(getBookings).mockResolvedValue([])
+  vi.mocked(getBookingsBetween).mockResolvedValue([])
   vi.mocked(getCustomers).mockResolvedValue([])
   vi.mocked(getCustomerBookings).mockResolvedValue([])
+  vi.mocked(getBusinessPhotos).mockResolvedValue([])
+  vi.mocked(getServiceTeams).mockResolvedValue({})
+  vi.mocked(getAddonGroups).mockResolvedValue([])
+  vi.mocked(getTranslationStatus).mockResolvedValue({
+    language: "es",
+    enabled: false,
+    total: 0,
+    upToDate: 0,
+  })
 })
 
 test("business_overview returns business fields and counts", async () => {
@@ -137,6 +195,154 @@ test("list_services drops rows past the cap with total and truncated", async () 
   expect(result.truncated).toBe(true)
 })
 
+test("business_overview carries about, website, category, seats, bookingPath, photoCount and spanish", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue({
+    business: {
+      ...BUSINESS,
+      description: "About us",
+      website: "https://salon.example",
+      category: "Hairdresser",
+      seats: 3,
+      slug: "salon",
+    },
+    hours: [],
+    services: [],
+    team: [],
+  } as never)
+  vi.mocked(getBusinessPhotos).mockResolvedValue([
+    { id: "p1", url: "https://img/1" },
+    { id: "p2", url: "https://img/2" },
+  ])
+  vi.mocked(getTranslationStatus).mockResolvedValue({
+    language: "es",
+    enabled: true,
+    total: 10,
+    upToDate: 7,
+  })
+  const result = (await byName("business_overview").run({})) as Record<
+    string,
+    unknown
+  >
+  expect(result).toMatchObject({
+    name: "Salon",
+    about: "About us",
+    website: "https://salon.example",
+    category: "Hairdresser",
+    seats: 3,
+    bookingPath: "/b/salon",
+    photoCount: 2,
+    spanish: { enabled: true, total: 10, upToDate: 7 },
+  })
+})
+
+test("list_services row carries description, hasPhoto, teamMemberIds and addonGroupIds", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue({
+    business: BUSINESS,
+    hours: [],
+    services: [
+      {
+        id: "s1",
+        name: "Cut",
+        durationMinutes: 30,
+        priceMinor: 2000,
+        description: "A cut",
+        photoUrl: "https://img/s1",
+      },
+    ],
+    team: [],
+  } as never)
+  vi.mocked(getServiceTeams).mockResolvedValue({ s1: ["m1"] })
+  vi.mocked(getAddonGroups).mockResolvedValue([
+    {
+      id: "g1",
+      name: "Extras",
+      prompt: "Pick",
+      minSelect: 0,
+      maxSelect: 2,
+      serviceIds: ["s1"],
+      options: [],
+    },
+  ] as never)
+  const result = (await byName("list_services").run({})) as {
+    services: unknown[]
+  }
+  expect(result.services).toMatchObject([
+    {
+      id: "s1",
+      description: "A cut",
+      hasPhoto: true,
+      teamMemberIds: ["m1"],
+      addonGroupIds: ["g1"],
+    },
+  ])
+})
+
+test("list_addons returns groups with options and caps at 50", async () => {
+  vi.mocked(getAddonGroups).mockResolvedValue(
+    Array.from({ length: 60 }, (_, i) => ({
+      id: `g${i}`,
+      name: `Group ${i}`,
+      prompt: "Pick",
+      minSelect: 0,
+      maxSelect: 1,
+      serviceIds: ["s1"],
+      options: [
+        {
+          id: `o${i}`,
+          name: `Option ${i}`,
+          description: null,
+          priceMinor: 500,
+          durationMinutes: 10,
+        },
+      ],
+    })) as never
+  )
+  const result = (await byName("list_addons").run({})) as {
+    groups: { id: string; options: unknown[] }[]
+    total: number
+    truncated: boolean
+  }
+  expect(result.groups.length).toBe(50)
+  expect(result.total).toBe(60)
+  expect(result.truncated).toBe(true)
+  expect(result.groups[0]).toMatchObject({
+    id: "g0",
+    name: "Group 0",
+    serviceIds: ["s1"],
+    options: [
+      {
+        id: "o0",
+        name: "Option 0",
+        priceMinor: 500,
+        durationMinutes: 10,
+      },
+    ],
+  })
+})
+
+test("list_team row carries hasPhoto and serviceIds", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue({
+    business: BUSINESS,
+    hours: [],
+    services: [],
+    team: [{ id: "m1", name: "Ana", photoUrl: null }],
+  } as never)
+  vi.mocked(getServiceTeams).mockResolvedValue({ s1: ["m1"], s2: ["m1"] })
+  const result = (await byName("list_team").run({})) as {
+    team: unknown[]
+  }
+  expect(result.team).toMatchObject([
+    { id: "m1", hasPhoto: false, serviceIds: ["s1", "s2"] },
+  ])
+})
+
+test("list_addons has a Spanish step label", () => {
+  const tools = buildAssistantTools("b1", "u1", "es")
+  expect(
+    tools.find((t) => t.definition.name === "list_addons")!.label
+  ).toBe("Listando extras…")
+})
+
 test("list_bookings validates, filters and caps", async () => {
   const tool = byName("list_bookings")
   expect(await tool.run({ range: "nope" })).toEqual({
@@ -147,20 +353,30 @@ test("list_bookings validates, filters and caps", async () => {
   })
   vi.mocked(getBookings).mockResolvedValue([
     {
+      id: "k1",
       date: "2026-10-29",
       time: "10:00",
+      endTime: "10:30",
+      startAt: "2026-10-29T10:00:00.000Z",
+      endAt: "2026-10-29T10:30:00.000Z",
       serviceName: "Cut",
       customerName: "Ana",
       customerPhone: null,
       status: "confirmed",
+      addons: [],
     },
     {
+      id: "k2",
       date: "2026-10-30",
       time: "11:00",
+      endTime: "11:30",
+      startAt: "2099-10-30T11:00:00.000Z",
+      endAt: "2099-10-30T11:30:00.000Z",
       serviceName: "Cut",
       customerName: "Bo",
       customerPhone: null,
       status: "cancelled",
+      addons: [],
     },
   ] as never)
   const result = (await tool.run({
@@ -175,6 +391,211 @@ test("list_bookings validates, filters and caps", async () => {
   expect(result.total).toBe(1)
   expect(result.truncated).toBe(false)
   expect(getBookings).toHaveBeenCalledWith("b1", "upcoming")
+})
+
+test("list_bookings with from/to covers both sides of now, each id once", async () => {
+  const row = (
+    id: string,
+    date: string,
+    time: string,
+    customer: string
+  ): Record<string, unknown> => ({
+    id,
+    date,
+    time,
+    serviceName: "Cut",
+    customerName: customer,
+    customerPhone: null,
+    status: "confirmed",
+    addons: [],
+  })
+  vi.mocked(getBookings).mockImplementation(
+    async (_businessId, range) =>
+      (range === "upcoming"
+        ? [
+            row("k3", "2026-10-28", "16:45", "Lea"),
+            row("k4", "2026-10-29", "10:00", "Max"),
+            row("k5", "2026-10-28", "17:50", "Bo"),
+          ]
+        : [
+            row("k1", "2026-10-28", "11:45", "Ana"),
+            row("k2", "2026-10-28", "13:00", "Ivy"),
+            row("k5", "2026-10-28", "17:50", "Bo"),
+          ]) as never
+  )
+  const tool = byName("list_bookings")
+  const day = (await tool.run({
+    from: "2026-10-28",
+    to: "2026-10-28",
+  })) as { bookings: { time: string; customer: string }[]; total: number }
+  // Earlier today, later today, soonest first; the boundary booking
+  // (k5, in both sources) shows once.
+  expect(day.bookings.map((b) => b.time)).toEqual([
+    "11:45",
+    "13:00",
+    "16:45",
+    "17:50",
+  ])
+  expect(day.bookings.map((b) => b.customer)).toEqual([
+    "Ana",
+    "Ivy",
+    "Lea",
+    "Bo",
+  ])
+  expect(day.total).toBe(4)
+  // Without from/to the single-source order is untouched.
+  const upcoming = (await tool.run({})) as {
+    bookings: { time: string }[]
+  }
+  expect(upcoming.bookings.map((b) => b.time)).toEqual([
+    "16:45",
+    "10:00",
+    "17:50",
+  ])
+  expect(getBookings).toHaveBeenCalledWith("b1", "upcoming")
+  const past = (await tool.run({ range: "past" })) as {
+    bookings: { time: string }[]
+  }
+  expect(past.bookings.map((b) => b.time)).toEqual(["11:45", "13:00", "17:50"])
+})
+
+const HOUR = 3_600_000
+
+// startAt/endAt relative to the real now, so `when` is deterministic
+// no matter when the test runs. date/time stay on one fixed day.
+function timedRow(
+  id: string,
+  date: string,
+  time: string,
+  customer: string,
+  startOffsetMs: number,
+  endOffsetMs: number
+) {
+  const nowMs = Date.now()
+  return {
+    id,
+    date,
+    time,
+    endTime: time,
+    startAt: new Date(nowMs + startOffsetMs).toISOString(),
+    endAt: new Date(nowMs + endOffsetMs).toISOString(),
+    serviceName: "Cut",
+    customerName: customer,
+    customerPhone: null,
+    status: "confirmed",
+    addons: [],
+  } as never
+}
+
+function mockBothSides() {
+  vi.mocked(getBookings).mockImplementation(
+    async (_businessId, range) =>
+      (range === "upcoming"
+        ? [
+            timedRow("k0", "2026-10-28", "09:00", "Zoe", -4 * HOUR, -3 * HOUR),
+            timedRow("k3", "2026-10-28", "16:45", "Lea", HOUR, 2 * HOUR),
+            timedRow("k5", "2026-10-28", "17:50", "Bo", -30 * 60_000, 30 * 60_000),
+          ]
+        : [
+            timedRow("k1", "2026-10-28", "11:45", "Ana", -3 * HOUR, -2 * HOUR),
+            timedRow("k2", "2026-10-28", "13:00", "Ivy", -2 * HOUR, -HOUR),
+            timedRow("k5", "2026-10-28", "17:50", "Bo", -30 * 60_000, 30 * 60_000),
+            timedRow("k6", "2026-10-29", "18:30", "Max", HOUR, 90 * 60_000),
+          ]) as never
+  )
+}
+
+test("day query with no range reads the raw argument, not the default", async () => {
+  mockBothSides()
+  const tool = byName("list_bookings")
+  const day = (await tool.run({
+    from: "2026-10-28",
+    to: "2026-10-28",
+  })) as { bookings: { time: string; when: string }[]; total: number }
+  // Both sources were read: a defaulted "upcoming" would keep only later.
+  expect(getBookings).toHaveBeenCalledWith("b1", "upcoming")
+  expect(getBookings).toHaveBeenCalledWith("b1", "past")
+  expect(day.bookings.map((b) => b.time)).toEqual([
+    "09:00",
+    "11:45",
+    "13:00",
+    "16:45",
+    "17:50",
+  ])
+  expect(day.bookings.map((b) => b.when)).toEqual([
+    "past",
+    "past",
+    "past",
+    "upcoming",
+    "now",
+  ])
+  expect(day.total).toBe(5)
+})
+
+test("day query with range upcoming keeps later today and right now", async () => {
+  mockBothSides()
+  const day = (await byName("list_bookings").run({
+    from: "2026-10-28",
+    to: "2026-10-28",
+    range: "upcoming",
+  })) as { bookings: { time: string; when: string }[]; total: number }
+  expect(day.bookings.map((b) => b.time)).toEqual(["16:45", "17:50"])
+  expect(day.bookings.map((b) => b.when)).toEqual(["upcoming", "now"])
+  expect(day.total).toBe(2)
+})
+
+test("day query with range past keeps only what is over", async () => {
+  mockBothSides()
+  const day = (await byName("list_bookings").run({
+    from: "2026-10-28",
+    to: "2026-10-28",
+    range: "past",
+  })) as { bookings: { time: string; when: string }[]; total: number }
+  expect(day.bookings.map((b) => b.time)).toEqual(["11:45", "13:00"])
+  expect(day.bookings.map((b) => b.when)).toEqual(["past", "past"])
+  expect(day.total).toBe(2)
+})
+
+test("a booking that started but has not ended is now", async () => {
+  vi.mocked(getBookings).mockResolvedValue([
+    timedRow("k5", "2026-10-28", "17:50", "Bo", -30 * 60_000, 30 * 60_000),
+  ])
+  const day = (await byName("list_bookings").run({
+    from: "2026-10-28",
+    to: "2026-10-28",
+  })) as { bookings: { when: string }[] }
+  expect(day.bookings.map((b) => b.when)).toEqual(["now"])
+})
+
+test("list_bookings row carries teamMember, price, length, source, note and addons", async () => {
+  const row = timedRow("k9", "2026-10-28", "18:00", "Ana", HOUR, 2 * HOUR)
+  vi.mocked(getBookings).mockResolvedValue([
+    {
+      ...(row as unknown as Record<string, unknown>),
+      teamMemberName: "Bo",
+      durationMinutes: 45,
+      priceMinor: 2500,
+      currency: "EUR",
+      source: "online",
+      note: "Allergic to dye",
+      addons: [{ name: "Mask", priceMinor: 500, durationMinutes: 10 }],
+    },
+  ] as never)
+  const result = (await byName("list_bookings").run({})) as {
+    bookings: unknown[]
+  }
+  expect(result.bookings).toMatchObject([
+    {
+      id: "k9",
+      teamMember: "Bo",
+      durationMinutes: 45,
+      priceMinor: 2500,
+      currency: "EUR",
+      source: "online",
+      note: "Allergic to dye",
+      addons: [{ name: "Mask", priceMinor: 500, durationMinutes: 10 }],
+    },
+  ])
 })
 
 test("find_customer validates and matches name or phone", async () => {
@@ -213,6 +634,196 @@ test("find_customer validates and matches name or phone", async () => {
   expect(result.customers.map((c) => c.name)).toEqual(["Ana"])
   expect(result.customers[0].noShows).toBe(1)
   expect(result.total).toBe(1)
+})
+
+test("find_customer entries carry firstBooking and spentMinor", async () => {
+  vi.mocked(getCustomers).mockResolvedValue([
+    {
+      key: "n:ana",
+      name: "Ana",
+      phone: null,
+      bookings: 2,
+      completed: 1,
+      noShows: 0,
+      cancelled: 0,
+      firstBooking: "2026-09-01",
+      lastVisit: "2026-10-01",
+      nextBooking: null,
+      spentMinor: 2500,
+      currency: "EUR",
+    },
+  ] as never)
+  const result = (await byName("find_customer").run({ query: "ana" })) as {
+    customers: unknown[]
+  }
+  expect(result.customers).toMatchObject([
+    { name: "Ana", firstBooking: "2026-09-01", spentMinor: 2500 },
+  ])
+})
+
+test("booking_stats refuses bad dates in English and Spanish", async () => {
+  for (const tool of [
+    byName("booking_stats"),
+    byNameLang("booking_stats", "es"),
+  ]) {
+    expect(await tool.run({})).toEqual({ error: expect.any(String) })
+    expect(await tool.run({ from: "tomorrow", to: "2026-10-29" })).toEqual({
+      error: expect.any(String),
+    })
+    expect(
+      await tool.run({ from: "2026-10-29", to: "2026-10-28" })
+    ).toEqual({ error: expect.any(String) })
+    expect(
+      await tool.run({ from: "2026-01-01", to: "2027-01-02" })
+    ).toEqual({ error: expect.any(String) })
+  }
+  expect(vi.mocked(getBookingsBetween)).not.toHaveBeenCalled()
+})
+
+test("booking_stats returns the stats with from, to and the business currency", async () => {
+  vi.mocked(getBookingsBetween).mockResolvedValue([
+    {
+      id: "k1",
+      date: "2026-10-28",
+      time: "10:00",
+      endTime: "10:30",
+      startAt: "2026-10-28T10:00:00.000Z",
+      endAt: "2026-10-28T10:30:00.000Z",
+      serviceName: "Cut",
+      teamMemberName: "Ana",
+      priceMinor: 2000,
+      status: "completed",
+    },
+  ] as never)
+  const result = (await byName("booking_stats").run({
+    from: "2026-10-28",
+    to: "2026-10-28",
+  })) as Record<string, unknown>
+  expect(result).toMatchObject({
+    from: "2026-10-28",
+    to: "2026-10-28",
+    total: 1,
+    earnedMinor: 2000,
+    currency: "EUR",
+  })
+  expect(vi.mocked(getBookingsBetween)).toHaveBeenCalledWith(
+    "b1",
+    "2026-10-28",
+    "2026-10-28"
+  )
+})
+
+const CUSTOMER_ROWS = [
+  {
+    key: "n:ana",
+    name: "Ana",
+    phone: null,
+    bookings: 5,
+    completed: 4,
+    noShows: 1,
+    cancelled: 0,
+    firstBooking: "2026-08-01",
+    lastVisit: "2026-10-20",
+    nextBooking: null,
+    spentMinor: 8000,
+    currency: "EUR",
+  },
+  {
+    key: "n:bo",
+    name: "Bo",
+    phone: null,
+    bookings: 2,
+    completed: 0,
+    noShows: 0,
+    cancelled: 0,
+    firstBooking: "2026-10-01",
+    lastVisit: null,
+    nextBooking: "2026-11-01",
+    spentMinor: 0,
+    currency: "EUR",
+  },
+  {
+    key: "n:cy",
+    name: "Cy",
+    phone: null,
+    bookings: 1,
+    completed: 1,
+    noShows: 0,
+    cancelled: 0,
+    firstBooking: "2026-10-25",
+    lastVisit: "2026-10-25",
+    nextBooking: null,
+    spentMinor: 12000,
+    currency: "EUR",
+  },
+]
+
+test("list_customers sorts newest first by default with nulls last", async () => {
+  vi.mocked(getCustomers).mockResolvedValue(CUSTOMER_ROWS as never)
+  const result = (await byName("list_customers").run({})) as {
+    customers: { name: string }[]
+    total: number
+    truncated: boolean
+  }
+  expect(result.customers.map((c) => c.name)).toEqual(["Cy", "Ana", "Bo"])
+  expect(result.total).toBe(3)
+  expect(result.truncated).toBe(false)
+})
+
+test("list_customers sorts by bookings, spent and firstBooking", async () => {
+  vi.mocked(getCustomers).mockResolvedValue(CUSTOMER_ROWS as never)
+  const tool = byName("list_customers")
+  const names = async (sort: string) =>
+    (
+      (await tool.run({ sort })) as { customers: { name: string }[] }
+    ).customers.map((c) => c.name)
+  expect(await names("bookings")).toEqual(["Ana", "Bo", "Cy"])
+  expect(await names("spent")).toEqual(["Cy", "Ana", "Bo"])
+  expect(await names("firstBooking")).toEqual(["Cy", "Bo", "Ana"])
+  expect(await tool.run({ sort: "stars" })).toEqual({
+    error: expect.any(String),
+  })
+})
+
+test("list_customers newSince keeps only customers first seen on or after that day", async () => {
+  vi.mocked(getCustomers).mockResolvedValue(CUSTOMER_ROWS as never)
+  const tool = byName("list_customers")
+  const result = (await tool.run({ newSince: "2026-10-01" })) as {
+    customers: { name: string }[]
+    total: number
+  }
+  expect(result.customers.map((c) => c.name)).toEqual(["Cy", "Bo"])
+  expect(result.total).toBe(2)
+  expect(await tool.run({ newSince: "tomorrow" })).toEqual({
+    error: expect.any(String),
+  })
+})
+
+test("list_customers caps at 25 with total and truncated", async () => {
+  vi.mocked(getCustomers).mockResolvedValue(
+    Array.from({ length: 30 }, (_, i) => ({
+      key: `n:c${i}`,
+      name: `C${i}`,
+      phone: null,
+      bookings: 1,
+      completed: 1,
+      noShows: 0,
+      cancelled: 0,
+      firstBooking: "2026-10-01",
+      lastVisit: "2026-10-01",
+      nextBooking: null,
+      spentMinor: 100,
+      currency: "EUR",
+    })) as never
+  )
+  const result = (await byName("list_customers").run({})) as {
+    customers: unknown[]
+    total: number
+    truncated: boolean
+  }
+  expect(result.customers.length).toBe(25)
+  expect(result.total).toBe(30)
+  expect(result.truncated).toBe(true)
 })
 
 test("a hostile customer name comes back as plain data", async () => {
@@ -612,6 +1223,324 @@ test("delete_service and delete_team_member describe and execute", async () => {
   expect(failed.doneText).toContain("has_bookings")
 })
 
+function mockTeamShop() {
+  vi.mocked(getOwnerBusiness).mockResolvedValue({
+    business: {
+      ...BUSINESS,
+      description: "About the salon",
+      website: "https://salon.example",
+      category: "Hair",
+      seats: 2,
+      slug: "salon",
+    },
+    hours: [],
+    services: [{ id: "s1", name: "Cut", durationMinutes: 30, priceMinor: 100 }],
+    team: [
+      { id: "m1", name: "Bo" },
+      { id: "m2", name: "Cy" },
+    ],
+  } as never)
+}
+
+const ADDON_GROUP = {
+  id: "g1",
+  name: "Extras",
+  prompt: "Pick one",
+  minSelect: 0,
+  maxSelect: 1,
+  serviceIds: ["s1"],
+  options: [
+    {
+      id: "o1",
+      name: "Mask",
+      description: null,
+      priceMinor: 500,
+      durationMinutes: 10,
+    },
+    {
+      id: "o2",
+      name: "Dye",
+      description: null,
+      priceMinor: 900,
+      durationMinutes: 15,
+    },
+  ],
+}
+
+const ADDON_CREATE = {
+  name: "Extras",
+  prompt: "Pick one",
+  minSelect: 0,
+  maxSelect: 1,
+  serviceIds: ["s1"],
+  options: [
+    { name: "Mask", description: null, priceMinor: 500, durationMinutes: 10 },
+    { name: "Dye", description: null, priceMinor: 900, durationMinutes: 15 },
+  ],
+}
+
+test("create_team_member creates and refuses a blank name", async () => {
+  const tool = byName("create_team_member")
+  expect(tool.definition.needsConfirm).toBe(false)
+  vi.mocked(createTeamMember).mockResolvedValue({ ok: true, id: "m9" })
+  expect(await tool.run({ name: "Cy" })).toEqual({
+    created: { id: "m9", name: "Cy" },
+  })
+  expect(createTeamMember).toHaveBeenCalledWith("b1", "Cy")
+  expect(await tool.run({ name: "  " })).toEqual({
+    error: expect.any(String),
+  })
+  vi.mocked(createTeamMember).mockResolvedValue({ ok: false, error: "taken" })
+  expect(await tool.run({ name: "Cy" })).toEqual({ error: "taken" })
+})
+
+test("set_service_team describes, executes and refuses unknown ids", async () => {
+  mockTeamShop()
+  const tool = byName("set_service_team")
+  expect(await tool.confirm!.describe({ serviceId: "s1", teamMemberIds: ["m1"] })).toEqual({
+    title: "Change who does this service?",
+    action: "Save",
+    summary: "Cut · Bo",
+    destructive: false,
+  })
+  expect(
+    await tool.confirm!.describe({ serviceId: "s1", teamMemberIds: [] })
+  ).toMatchObject({ summary: "Cut · anyone" })
+  expect(
+    await tool.confirm!.describe({ serviceId: "nope", teamMemberIds: [] })
+  ).toEqual({ error: expect.any(String) })
+  expect(
+    await tool.confirm!.describe({ serviceId: "s1", teamMemberIds: ["nope"] })
+  ).toEqual({ error: expect.any(String) })
+  vi.mocked(setServiceTeam).mockResolvedValue({ ok: true })
+  expect(
+    await tool.confirm!.execute({ serviceId: "s1", teamMemberIds: ["m1", "m2"] })
+  ).toEqual({ ok: true, doneText: "Service team updated." })
+  expect(setServiceTeam).toHaveBeenCalledWith("b1", "s1", ["m1", "m2"])
+  expect(await tool.confirm!.execute({ serviceId: "gone", teamMemberIds: [] })).toEqual({
+    ok: false,
+    doneText: "Could not save: unknown service.",
+  })
+  vi.mocked(setServiceTeam).mockResolvedValue({ ok: false, error: "invalid" })
+  const failed = await tool.confirm!.execute({
+    serviceId: "s1",
+    teamMemberIds: ["m1"],
+  })
+  expect(failed.ok).toBe(false)
+  expect(failed.doneText).toContain("invalid")
+  const es = byNameLang("set_service_team", "es")
+  const esFailed = await es.confirm!.execute({
+    serviceId: "s1",
+    teamMemberIds: ["m1"],
+  })
+  expect(esFailed.doneText).toContain("No se pudo guardar")
+})
+
+test("set_member_services describes, executes and refuses unknown ids", async () => {
+  mockTeamShop()
+  const tool = byName("set_member_services")
+  expect(
+    await tool.confirm!.describe({ teamMemberId: "m1", serviceIds: ["s1"] })
+  ).toEqual({
+    title: "Change this member's services?",
+    action: "Save",
+    summary: "Bo · Cut",
+    destructive: false,
+  })
+  expect(
+    await tool.confirm!.describe({ teamMemberId: "m1", serviceIds: [] })
+  ).toMatchObject({ summary: "Bo · no services" })
+  expect(
+    await tool.confirm!.describe({ teamMemberId: "nope", serviceIds: [] })
+  ).toEqual({ error: expect.any(String) })
+  expect(
+    await tool.confirm!.describe({ teamMemberId: "m1", serviceIds: ["nope"] })
+  ).toEqual({ error: expect.any(String) })
+  vi.mocked(setMemberServices).mockResolvedValue({ ok: true })
+  expect(
+    await tool.confirm!.execute({ teamMemberId: "m1", serviceIds: ["s1"] })
+  ).toEqual({ ok: true, doneText: "Member services updated." })
+  expect(setMemberServices).toHaveBeenCalledWith("b1", "m1", ["s1"])
+  vi.mocked(setMemberServices).mockResolvedValue({ ok: false, error: "invalid" })
+  const failed = await tool.confirm!.execute({
+    teamMemberId: "m1",
+    serviceIds: ["s1"],
+  })
+  expect(failed.ok).toBe(false)
+  expect(failed.doneText).toContain("invalid")
+})
+
+test("create_addon_group describes, executes and refuses bad input", async () => {
+  mockTeamShop()
+  const tool = byName("create_addon_group")
+  expect(await tool.confirm!.describe(ADDON_CREATE)).toEqual({
+    title: "Create these extras?",
+    action: "Create",
+    summary: "Extras · Pick one · Mask, Dye",
+    destructive: false,
+  })
+  expect(await tool.confirm!.describe({ ...ADDON_CREATE, options: [] })).toEqual({
+    error: expect.any(String),
+  })
+  expect(
+    await tool.confirm!.describe({ ...ADDON_CREATE, serviceIds: ["nope"] })
+  ).toEqual({ error: expect.any(String) })
+  vi.mocked(createAddonGroup).mockResolvedValue({ ok: true, groupId: "g9" })
+  expect(await tool.confirm!.execute(ADDON_CREATE)).toEqual({
+    ok: true,
+    doneText: "Extras created.",
+  })
+  expect(createAddonGroup).toHaveBeenCalledWith("b1", {
+    ...ADDON_CREATE,
+    options: [
+      { ...ADDON_CREATE.options[0], id: null },
+      { ...ADDON_CREATE.options[1], id: null },
+    ],
+  })
+  vi.mocked(createAddonGroup).mockResolvedValue({ ok: false, error: "invalid" })
+  const failed = await tool.confirm!.execute(ADDON_CREATE)
+  expect(failed.ok).toBe(false)
+  expect(failed.doneText).toContain("invalid")
+  const esFailed = await byNameLang("create_addon_group", "es").confirm!.execute(
+    ADDON_CREATE
+  )
+  expect(esFailed.doneText).toContain("No se pudo crear")
+})
+
+test("update_addon_group keeps, adds and removes options by id", async () => {
+  mockTeamShop()
+  vi.mocked(getAddonGroups).mockResolvedValue([ADDON_GROUP] as never)
+  const tool = byName("update_addon_group")
+  const card = await tool.confirm!.describe({
+    groupId: "g1",
+    options: [
+      { id: "o1", name: "Mask", description: null, priceMinor: 500, durationMinutes: 10 },
+      { id: null, name: "Rinse", description: null, priceMinor: 100, durationMinutes: 5 },
+    ],
+  })
+  expect(card).toMatchObject({ title: "Change these extras?", action: "Change" })
+  expect((card as { summary: string }).summary).toContain("+ Rinse")
+  expect((card as { summary: string }).summary).toContain("- Dye")
+  const same = await tool.confirm!.describe({
+    groupId: "g1",
+    name: "Extras",
+    prompt: "Pick one",
+    minSelect: 0,
+    maxSelect: 1,
+    serviceIds: ["s1"],
+    options: [
+      { id: "o1", name: "Mask", description: null, priceMinor: 500, durationMinutes: 10 },
+      { id: "o2", name: "Dye", description: null, priceMinor: 900, durationMinutes: 15 },
+    ],
+  })
+  expect(same).toEqual({ error: "Nothing to change." })
+  expect(await tool.confirm!.describe({ groupId: "nope" })).toEqual({
+    error: expect.any(String),
+  })
+  vi.mocked(updateAddonGroup).mockResolvedValue({ ok: true })
+  const changed = {
+    groupId: "g1",
+    name: "Drinks",
+    options: [
+      { id: "o1", name: "Mask", description: null, priceMinor: 500, durationMinutes: 10 },
+    ],
+  }
+  expect(await tool.confirm!.execute(changed)).toEqual({
+    ok: true,
+    doneText: "Extras changed.",
+  })
+  expect(updateAddonGroup).toHaveBeenCalledWith("b1", "g1", {
+    name: "Drinks",
+    prompt: "Pick one",
+    minSelect: 0,
+    maxSelect: 1,
+    serviceIds: ["s1"],
+    options: [
+      { id: "o1", name: "Mask", description: null, priceMinor: 500, durationMinutes: 10 },
+    ],
+  })
+  vi.mocked(getAddonGroups).mockResolvedValue([])
+  expect(await tool.confirm!.execute(changed)).toEqual({
+    ok: false,
+    doneText: "Could not change: unknown extras group.",
+  })
+})
+
+test("delete_addon_group describes and executes", async () => {
+  mockTeamShop()
+  vi.mocked(getAddonGroups).mockResolvedValue([ADDON_GROUP] as never)
+  const tool = byName("delete_addon_group")
+  expect(await tool.confirm!.describe({ groupId: "g1" })).toEqual({
+    title: "Delete these extras?",
+    action: "Delete",
+    summary: "Extras · Mask, Dye",
+    destructive: true,
+  })
+  expect(await tool.confirm!.describe({ groupId: "nope" })).toEqual({
+    error: expect.any(String),
+  })
+  vi.mocked(deleteAddonGroup).mockResolvedValue({ ok: true })
+  expect(await tool.confirm!.execute({ groupId: "g1" })).toEqual({
+    ok: true,
+    doneText: "Extras deleted.",
+  })
+  expect(deleteAddonGroup).toHaveBeenCalledWith("b1", "g1")
+  vi.mocked(deleteAddonGroup).mockResolvedValue({ ok: false, error: "failed" })
+  const failed = await tool.confirm!.execute({ groupId: "g1" })
+  expect(failed.ok).toBe(false)
+  expect(failed.doneText).toContain("failed")
+})
+
+test("update_business_details changes only the given fields", async () => {
+  mockTeamShop()
+  const tool = byName("update_business_details")
+  expect(await tool.confirm!.describe({ phone: "+15551234567" })).toEqual({
+    title: "Change the business details?",
+    action: "Save",
+    summary: "Phone · +100 → +15551234567",
+    destructive: false,
+  })
+  expect(await tool.confirm!.describe({})).toEqual({
+    error: "Nothing to change.",
+  })
+  expect(await tool.confirm!.describe({ website: "not a url" })).toEqual({
+    error: expect.any(String),
+  })
+  vi.mocked(updateBusinessDetails).mockResolvedValue({ ok: true })
+  expect(await tool.confirm!.execute({ phone: "+15551234567", seats: 3 })).toEqual({
+    ok: true,
+    doneText: "Business details updated.",
+  })
+  expect(updateBusinessDetails).toHaveBeenCalledWith("b1", {
+    name: "Salon",
+    address: "Main 1",
+    description: "About the salon",
+    phone: "+15551234567",
+    website: "https://salon.example",
+    seats: 3,
+  })
+  vi.mocked(updateBusinessDetails).mockResolvedValue({ ok: false, error: "invalid" })
+  const failed = await tool.confirm!.execute({ phone: "+15551234567" })
+  expect(failed.ok).toBe(false)
+  expect(failed.doneText).toContain("invalid")
+})
+
+test("every new tool has a Spanish step label", () => {
+  const tools = buildAssistantTools("b1", "u1", "es")
+  const labels: [string, string][] = [
+    ["create_team_member", "Agregando miembro…"],
+    ["set_service_team", "Guardando equipo…"],
+    ["set_member_services", "Guardando servicios…"],
+    ["create_addon_group", "Creando extras…"],
+    ["update_addon_group", "Actualizando extras…"],
+    ["delete_addon_group", "Eliminando extras…"],
+    ["update_business_details", "Guardando datos…"],
+  ]
+  for (const [name, label] of labels) {
+    expect(tools.find((t) => t.definition.name === name)!.label).toBe(label)
+  }
+})
+
 test("set_hours validates, describes and executes", async () => {
   const tool = byName("set_hours")
   expect(tool.definition.needsConfirm).toBe(true)
@@ -645,6 +1574,12 @@ test("risky tools never run directly", async () => {
     "cancel_booking",
     "delete_service",
     "delete_team_member",
+    "set_service_team",
+    "set_member_services",
+    "create_addon_group",
+    "update_addon_group",
+    "delete_addon_group",
+    "update_business_details",
     "set_hours",
     "update_service",
   ]) {
@@ -656,6 +1591,12 @@ test("risky tools never run directly", async () => {
   expect(vi.mocked(deleteTeamMember)).not.toHaveBeenCalled()
   expect(vi.mocked(saveHours)).not.toHaveBeenCalled()
   expect(vi.mocked(updateService)).not.toHaveBeenCalled()
+  expect(vi.mocked(setServiceTeam)).not.toHaveBeenCalled()
+  expect(vi.mocked(setMemberServices)).not.toHaveBeenCalled()
+  expect(vi.mocked(createAddonGroup)).not.toHaveBeenCalled()
+  expect(vi.mocked(updateAddonGroup)).not.toHaveBeenCalled()
+  expect(vi.mocked(deleteAddonGroup)).not.toHaveBeenCalled()
+  expect(vi.mocked(updateBusinessDetails)).not.toHaveBeenCalled()
 })
 
 const BOOKING_BUSINESS = {
@@ -838,6 +1779,16 @@ test("no reschedule tool exists and the prompt says so", async () => {
   expect(clock).toBe("Today is Wednesday, 2026-10-28, 09:00 (Europe/Madrid).")
 })
 
+test("the prompt carries the Markdown formatting rule", async () => {
+  const { buildSystemPrompt } =
+    await import("@/features/assistant/utils/system-prompt")
+  const prompt = buildSystemPrompt("Salon", { tools: [] })
+  expect(prompt).toContain("Format answers in Markdown")
+  expect(prompt).toContain("'- '")
+  expect(prompt).toContain("**bold**")
+  expect(prompt).toContain("never the '•' character")
+})
+
 test("businessId comes from the closure, never from model arguments", async () => {
   const tools = buildAssistantTools("b1", "u1", "en")
   await tools
@@ -938,6 +1889,7 @@ test("capped list results stay bounded for the model", async () => {
     startAt: "2099-01-01T10:00:00.000Z",
     endAt: "2099-01-01T10:30:00.000Z",
     status: "confirmed",
+    addons: [],
   })
   vi.mocked(getOwnerBusiness).mockResolvedValue({
     business: BOOKING_BUSINESS,

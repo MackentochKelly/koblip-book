@@ -9,6 +9,7 @@ import type {
   AssistantStreamEvent,
   AssistantTool,
   ConfirmCard,
+  SourceKind,
 } from "../types"
 import { serverMessagesFor } from "../i18n/server"
 import {
@@ -32,6 +33,15 @@ interface CollectedCall {
   id: string
   name: string
   argsText: string
+}
+
+// Lookup tools and the kind + list key their records come back under.
+// Other tools add nothing to the sources event.
+const SOURCE_TOOLS: Record<string, { kind: SourceKind; key: string }> = {
+  list_bookings: { kind: "bookings", key: "bookings" },
+  list_services: { kind: "services", key: "services" },
+  list_team: { kind: "team", key: "team" },
+  find_customer: { kind: "customers", key: "customers" },
 }
 
 // Buttons from a passed answer check, or null for no buttons: trimmed,
@@ -257,6 +267,9 @@ export async function* runChat(
     let retriesLeft = ASSISTANT_RULES.answerCheckRetries
     // Last answer that failed a check and is still waiting on its retry.
     let pendingAnswer: string | null = null
+    // Records looked up this request, by kind in first-looked-up order.
+    // A repeat lookup keeps the highest count; empty kinds stay out.
+    const sources = new Map<SourceKind, number>()
     for (let turn = 0; turn < ASSISTANT_RULES.maxSteps; turn += 1) {
       const stream = await modelCall()
       // The owner only ever sees the final answer: every turn's text
@@ -327,21 +340,32 @@ export async function* runChat(
         const toolResults = history.flatMap((m) =>
           m.role === "tool" && typeof m.content === "string" ? [m.content] : []
         )
-        const verdict = await checkAnswer({
-          question,
-          toolResults,
-          answer: text,
-          signal: opts?.signal,
-        })
+        // A blank answer never reaches the judge: it rides the failed
+        // path with its problem, exactly like an unsupported answer.
+        const verdict =
+          text.trim() === ""
+            ? { ok: false as const, problems: ["The answer was empty."] }
+            : await checkAnswer({
+                question,
+                toolResults,
+                answer: text,
+                signal: opts?.signal,
+              })
         yield {
           type: "step",
           id: stepId,
           label: t.steps.checking,
-          status: "done",
+          status: verdict.ok === true ? "done" : "failed",
         }
         if (verdict.ok === true) {
           pendingAnswer = null
           yield { type: "text", delta: text }
+          const items = [...sources].flatMap(([kind, count]) =>
+            count > 0 ? [{ kind, count }] : []
+          )
+          if (items.length > 0) {
+            yield { type: "sources", items }
+          }
           const options = cleanChoices(verdict.choices, toolResults)
           if (options !== null) {
             yield { type: "choices", options }
@@ -364,9 +388,19 @@ export async function* runChat(
           })
           continue
         }
+        if (text.trim() === "") {
+          // No answer and no retries: the stopped path, never an
+          // empty text event.
+          yield {
+            type: "text",
+            delta: t.loop.stopped(ASSISTANT_RULES.maxSteps),
+          }
+          yield { type: "done" }
+          return
+        }
         pendingAnswer = null
         yield { type: "text", delta: text }
-        yield { type: "text", delta: "\n\n" + t.loop.unverified }
+        yield { type: "notice", kind: "unverified" }
         yield { type: "done" }
         return
       }
@@ -416,6 +450,18 @@ export async function* runChat(
           const parsedArgs = JSON.parse(call.function.arguments)
           toolsRan = true
           result = { data: await tool.run(parsedArgs) }
+          // Records for the sources event: the main list's length, or
+          // nothing when the tool is not a lookup.
+          const source = SOURCE_TOOLS[call.function.name]
+          const rows = (result as { data?: Record<string, unknown> }).data?.[
+            source?.key ?? ""
+          ]
+          if (source && Array.isArray(rows)) {
+            sources.set(
+              source.kind,
+              Math.max(sources.get(source.kind) ?? 0, rows.length)
+            )
+          }
         } catch {
           ok = false
           result = { error: t.loop.lookupFailed }
@@ -440,11 +486,11 @@ export async function* runChat(
         return
       }
     }
-    if (pendingAnswer !== null) {
+    if (pendingAnswer !== null && pendingAnswer.trim() !== "") {
       // A checked answer never got its retry: send the last one
-      // marked as unverified instead of the stopped message.
+      // with a notice instead of the stopped message.
       yield { type: "text", delta: pendingAnswer }
-      yield { type: "text", delta: "\n\n" + t.loop.unverified }
+      yield { type: "notice", kind: "unverified" }
       yield { type: "done" }
       return
     }

@@ -3,6 +3,7 @@ import { expect, test } from "vitest"
 import {
   applyEvent,
   CHAT_STORAGE_VERSION,
+  fromMessages,
   resolveConfirm,
   restoreChat,
   saveChat,
@@ -72,6 +73,8 @@ test("toMessages skips empty replies and keeps the newest", () => {
       confirms: [],
       choices: [],
       result: null,
+      sources: [],
+      unverified: false,
     },
     { id: "o2", role: "owner", text: "Again" },
   ]
@@ -152,4 +155,34 @@ test("a tapped action's result lands on the reply and goes back as words", () =>
     { role: "assistant", text: "Cancelled the booking." },
   ])
   expect(restoreChat(saveChat(items))).toEqual(items)
+})
+
+test("sources and the unverified notice land on the reply, not in its words", () => {
+  let items: ChatItem[] = [owner]
+  items = applyEvent(items, { type: "text", delta: "3 today." })
+  items = applyEvent(items, {
+    type: "sources",
+    items: [{ kind: "bookings", count: 3 }],
+  })
+  items = applyEvent(items, { type: "notice", kind: "unverified" })
+  const reply = items[1]
+  expect(reply.role === "assistant" && reply.sources).toEqual([
+    { kind: "bookings", count: 3 },
+  ])
+  expect(reply.role === "assistant" && reply.unverified).toBe(true)
+  expect(toMessages(items, 10).at(-1)).toEqual({
+    role: "assistant",
+    text: "3 today.",
+  })
+  expect(restoreChat(saveChat(items))).toEqual(items)
+})
+
+test("a saved chat's words come back as items with their words", () => {
+  const messages = [
+    { role: "owner" as const, text: "Hi" },
+    { role: "assistant" as const, text: "Hello" },
+  ]
+  const items = fromMessages(messages)
+  expect(items.map((item) => item.role)).toEqual(["owner", "assistant"])
+  expect(toMessages(items, 10)).toEqual(messages)
 })

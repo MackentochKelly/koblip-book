@@ -13,11 +13,20 @@ export const ASSISTANT_RULES = {
   // Choice buttons: how many options, and how long one option is.
   maxChoices: 6,
   maxChoiceChars: 60,
+  // Longest customer search text the find_customer tool accepts.
+  maxCustomerQuery: 80,
+  // Widest free-times window the find_free_times tool answers at once.
+  maxFreeTimesDays: 14,
   // Saved chats: how many the Recent list shows, and save limits.
   recentChats: 30,
   maxSavedMessages: 200,
   maxSavedMessageChars: 8000,
   maxChatTitleChars: 60,
+  // Saved chats get their own per-minute budget, so saving never eats
+  // the asking budget.
+  maxChatRequestsPerMinutePerOwner: 60,
+  // Stats ranges over this many days are refused (getBookingsBetween).
+  maxStatsRangeDays: 366,
   // Total wall time for one chat request, model calls and tools together.
   maxRequestMs: 120_000,
   // Voice transcription. The UI imports these so the browser records

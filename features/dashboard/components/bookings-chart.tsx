@@ -76,7 +76,7 @@ export function BookingsChart({
             setActive(null)
           }}
           ariaLabel={t.range}
-          listClassName="w-full"
+          listClassName="w-full md:w-fit"
         />
         <div className="flex flex-col gap-1">
           <CardTitle className="text-3xl font-semibold tabular-nums">

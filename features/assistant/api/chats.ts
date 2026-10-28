@@ -17,11 +17,15 @@ export interface SaveChatInput {
   messages: AssistantMessage[]
 }
 
-function toSummary(row: typeof assistantConversations.$inferSelect): AssistantChatSummary {
+function toSummary(
+  row: typeof assistantConversations.$inferSelect
+): AssistantChatSummary {
   return { id: row.id, title: row.title, updatedAt: row.updatedAt }
 }
 
-function toChat(row: typeof assistantConversations.$inferSelect): AssistantChat {
+function toChat(
+  row: typeof assistantConversations.$inferSelect
+): AssistantChat {
   let messages: AssistantMessage[] = []
   try {
     const parsed: unknown = JSON.parse(row.messages)

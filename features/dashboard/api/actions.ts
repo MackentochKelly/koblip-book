@@ -121,7 +121,7 @@ export async function saveHours(
   if (!owned) {
     return { ok: false, error: "not_found" }
   }
-  if (!Array.isArray(rows) || rows.length > 14) {
+  if (!Array.isArray(rows) || rows.length > BOOKING_RULES.maxHoursRows) {
     return invalid()
   }
   for (const row of rows) {
@@ -311,7 +311,7 @@ export async function reorderServices(
 
 function normalizeTeamName(name: string): string | null {
   const trimmed = name.trim()
-  if (trimmed.length < 1 || trimmed.length > 80) {
+  if (trimmed.length < 1 || trimmed.length > BOOKING_RULES.maxTeamName) {
     return null
   }
   return trimmed
@@ -543,7 +543,7 @@ function mapSuggestions(
     const name = candidate.name.trim()
     if (
       name.length === 0 ||
-      name.length > 80 ||
+      name.length > BOOKING_RULES.maxServiceName ||
       taken.has(name.toLowerCase())
     ) {
       continue

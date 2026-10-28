@@ -4,6 +4,17 @@ const messages = {
   title: "Assistant",
   back: "Back",
   newChat: "New chat",
+  // The two views in the header.
+  views: {
+    label: "Assistant views",
+    chat: "Chat",
+    recent: "Recent",
+  },
+  recent: {
+    empty: "No chats yet",
+    failed: "Couldn't load your chats",
+    openFailed: "Couldn't open that chat.",
+  },
   working: "Thinking…",
   retry: "Try again",
   // The one line that folds the assistant's steps.
@@ -11,6 +22,19 @@ const messages = {
     done: (count: number) =>
       count === 1 ? "Checked 1 thing" : `Checked ${count} things`,
   },
+  // What an answer was based on, e.g. "Based on 3 bookings".
+  sources: {
+    bookings: (n: number) =>
+      n === 1 ? "Based on 1 booking" : `Based on ${n} bookings`,
+    services: (n: number) =>
+      n === 1 ? "Based on 1 service" : `Based on ${n} services`,
+    team: (n: number) =>
+      n === 1 ? "Based on 1 team member" : `Based on ${n} team members`,
+    customers: (n: number) =>
+      n === 1 ? "Based on 1 client" : `Based on ${n} clients`,
+  },
+  // When the answer could not be double-checked.
+  unverified: "Not double-checked. Please verify.",
   // Under each answer.
   actions: {
     copy: "Copy",

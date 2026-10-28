@@ -3,7 +3,7 @@ export interface OwnedBusiness { id: string; slug: string; name: string; address
 export type BookingStatus = "confirmed" | "cancelled" | "completed" | "no_show"
 export interface OwnerBooking {
   id: string; date: string; time: string; endTime: string // business time zone
-  startAt: string; serviceId: string | null; serviceName: string; teamMemberId: string | null; teamMemberName: string | null
+  startAt: string; endAt: string; serviceId: string | null; serviceName: string; teamMemberId: string | null; teamMemberName: string | null
   durationMinutes: number; priceMinor: number | null; currency: string
   customerName: string; customerPhone: string | null; customerKey: string
   status: BookingStatus; source: "online" | "owner"; note: string | null
@@ -22,6 +22,7 @@ export interface OwnerCustomer {
   noShows: number
   cancelled: number
   lastVisit: string | null // "YYYY-MM-DD" of the latest completed booking, business time zone
+  firstBooking: string | null // "YYYY-MM-DD" of the earliest booking of any status, business time zone
   nextBooking: string | null // "YYYY-MM-DD" of the next confirmed booking that has not started
   spentMinor: number // sum of priceMinor of completed bookings
   currency: string

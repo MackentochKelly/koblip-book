@@ -20,11 +20,11 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ error: "unauthorized" }, { status: 401 })
   }
 
-  // 2. Rate limit, per owner.
+  // 2. Rate limit, per owner, on the chats budget (not the asking one).
   if (
     !checkAssistantRateLimit(
-      session.userId,
-      ASSISTANT_RULES.maxRequestsPerMinutePerOwner
+      `chats:${session.userId}`,
+      ASSISTANT_RULES.maxChatRequestsPerMinutePerOwner
     )
   ) {
     return Response.json({ error: "rate_limited" }, { status: 429 })

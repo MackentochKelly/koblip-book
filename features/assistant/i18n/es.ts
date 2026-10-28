@@ -3,6 +3,16 @@ import type en from "./en"
 const messages: typeof en = {
   title: "Asistente",
   back: "Atrás",
+  views: {
+    label: "Vistas del asistente",
+    chat: "Chat",
+    recent: "Recientes",
+  },
+  recent: {
+    empty: "Aún no hay chats",
+    failed: "No se pudieron cargar tus chats",
+    openFailed: "No se pudo abrir ese chat.",
+  },
   newChat: "Nuevo chat",
   working: "Pensando…",
   retry: "Reintentar",
@@ -11,6 +21,17 @@ const messages: typeof en = {
     done: (count: number) =>
       count === 1 ? "Revisé 1 cosa" : `Revisé ${count} cosas`,
   },
+  sources: {
+    bookings: (n: number) =>
+      n === 1 ? "Basado en 1 reserva" : `Basado en ${n} reservas`,
+    services: (n: number) =>
+      n === 1 ? "Basado en 1 servicio" : `Basado en ${n} servicios`,
+    team: (n: number) =>
+      n === 1 ? "Basado en 1 profesional" : `Basado en ${n} profesionales`,
+    customers: (n: number) =>
+      n === 1 ? "Basado en 1 cliente" : `Basado en ${n} clientes`,
+  },
+  unverified: "Sin comprobar. Revísalo, por favor.",
   // Under each answer.
   actions: {
     copy: "Copiar",
