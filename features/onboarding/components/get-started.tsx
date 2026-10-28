@@ -117,6 +117,12 @@ export function GetStarted({
   const open = expanded && isMobile && !picked && mode === "search"
   // While full screen: the part of the screen above the keyboard.
   const visible = useVisualViewport(open)
+  // While full screen, the grow animation runs only when the search opens
+  // or closes: the keyboard and Safari's bars move it after that, and each
+  // move would otherwise replay the 0.4s grow and lag behind (Motion
+  // measures on every render while this is undefined;
+  // motion.dev/docs/react-layout-animations).
+  const growOnce = open || undefined
   const [resuming, setResuming] = useState(Boolean(resume && signedIn))
 
   // Back from Google: make the page the owner's and open its dashboard.
@@ -253,6 +259,7 @@ export function GetStarted({
         <motion.div
           ref={frameRef}
           layout
+          layoutDependency={growOnce}
           transition={GROW}
           style={
             open
@@ -272,6 +279,7 @@ export function GetStarted({
         >
           <MotionCard
             layout
+            layoutDependency={growOnce}
             transition={GROW}
             className={cn(
               "text-left shadow-none ring-0",
@@ -281,6 +289,7 @@ export function GetStarted({
             <CardContent className={cn(open && "flex min-h-0 flex-1 flex-col")}>
               <motion.div
                 layout="position"
+                layoutDependency={growOnce}
                 transition={GROW}
                 className={cn(open && "flex min-h-0 flex-1 flex-col")}
               >
