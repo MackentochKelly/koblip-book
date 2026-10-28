@@ -3,31 +3,32 @@
 import { useRef, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { ArrowLeftIcon, CircleCheckIcon, XIcon } from "@/components/ui/icons"
+import {
+  ArrowLeftIcon,
+  ShareIcon,
+  StoreIcon,
+  XIcon,
+} from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { BottomBar } from "@/components/bottom-bar"
 import { BottomPanel } from "@/components/bottom-panel"
+import { Celebration } from "@/components/celebration"
+import { GlassCard } from "@/components/glass-frame"
 import { useMessages } from "@/components/language-provider"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer"
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
-import { Separator } from "@/components/ui/separator"
+import { Item, ItemContent } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { PHONE_PATTERN } from "@/lib/booking-rules"
 import { formatDuration } from "@/lib/format-duration"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
+import { shareLink } from "@/lib/share-link"
 import { createBooking } from "../api/create-booking"
 import type { BookingConfirmation } from "../types"
 import {
@@ -335,18 +336,19 @@ export function BookingFlow({
     // While the extras are on top, the sheet behind still shows the services.
     const shownIndex = stacked ? 0 : index
     return (
-      <BottomPanel
-        open={open}
-        onClose={close}
-        onClosed={() => {
-          pushes.current = 0
-          replaceUrl(businessPath)
-        }}
-        title={booked ? m.booking.booked : title}
-        header={
-          booked ? (
-            <DrawerTitle className="sr-only">{m.booking.booked}</DrawerTitle>
-          ) : (
+      <>
+        <BottomPanel
+          // Once booked, the sheet slides away under the full "You're booked"
+          // page, which leaves the booking in the address until Done.
+          open={open && !booked}
+          onClose={close}
+          onClosed={() => {
+            if (booked) return
+            pushes.current = 0
+            replaceUrl(businessPath)
+          }}
+          title={title}
+          header={
             <DrawerHeader>
               <DrawerDescription>
                 {m.booking.stepOf(shownIndex + 1, steps.length)}
@@ -355,14 +357,8 @@ export function BookingFlow({
                 {m.booking.titles[steps[shownIndex]]}
               </DrawerTitle>
             </DrawerHeader>
-          )
-        }
-        footer={
-          booked ? (
-            <Button type="button" onClick={close}>
-              {m.booking.done}
-            </Button>
-          ) : (
+          }
+          footer={
             <div className="flex items-center gap-2">
               <div className="me-4 min-w-0 flex-1">{total}</div>
               {shownIndex > 0 && (
@@ -372,52 +368,57 @@ export function BookingFlow({
               )}
               {action}
             </div>
-          )
-        }
-      >
-        {booked ? <Booked page={page} booking={booked} /> : body}
-        {groups.length > 0 && (
-          <BottomPanel
-            open={open && stacked && !booked}
-            onClose={back}
-            title={title}
-            header={
-              <DrawerHeader>
-                <DrawerDescription>
-                  {m.booking.stepOf(index + 1, steps.length)}
-                </DrawerDescription>
-                <DrawerTitle className="truncate">{title}</DrawerTitle>
-              </DrawerHeader>
-            }
-            footer={
-              <div className="flex items-center gap-2">
-                <div className="me-4 min-w-0 flex-1">{total}</div>
-                <Button type="button" variant="outline" onClick={back}>
-                  {m.booking.back}
-                </Button>
-                {action}
-              </div>
-            }
-          >
-            {extras}
-          </BottomPanel>
+          }
+        >
+          {body}
+          {groups.length > 0 && (
+            <BottomPanel
+              open={open && stacked && !booked}
+              onClose={back}
+              title={title}
+              header={
+                <DrawerHeader>
+                  <DrawerDescription>
+                    {m.booking.stepOf(index + 1, steps.length)}
+                  </DrawerDescription>
+                  <DrawerTitle className="truncate">{title}</DrawerTitle>
+                </DrawerHeader>
+              }
+              footer={
+                <div className="flex items-center gap-2">
+                  <div className="me-4 min-w-0 flex-1">{total}</div>
+                  <Button type="button" variant="outline" onClick={back}>
+                    {m.booking.back}
+                  </Button>
+                  {action}
+                </div>
+              }
+            >
+              {extras}
+            </BottomPanel>
+          )}
+        </BottomPanel>
+        {booked && (
+          <BookedPage
+            page={page}
+            booking={booked}
+            onDone={() => {
+              pushes.current = 0
+              replaceUrl(businessPath)
+            }}
+          />
         )}
-      </BottomPanel>
+      </>
     )
   }
 
   if (booked) {
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-4 py-10">
-        <Booked page={page} booking={booked} />
-        <Button
-          variant="outline"
-          nativeButton={false}
-          render={<Link href={businessPath} replace />}
-        >
-          {m.booking.backTo(page.name)}
-        </Button>
-      </main>
+      <BookedPage
+        page={page}
+        booking={booked}
+        onDone={() => router.replace(businessPath)}
+      />
     )
   }
 
@@ -477,56 +478,84 @@ export function BookingFlow({
 }
 
 // The booking, confirmed.
-function Booked({
+// After Confirm booking: a full page, like the owner's "Your page is live"
+// (the shared Celebration), with the booking to share and Done back to the
+// business page.
+function BookedPage({
   page,
   booking,
+  onDone,
 }: {
   page: BookingPage
   booking: BookingConfirmation
+  onDone: () => void
 }) {
   const m = useMessages()
   const price = priceLabel(booking.priceMinor, booking.currency, m)
+  const when = `${formatDay(booking.date, m.locale)} · ${formatClock(booking.time, m.locale)}`
+  const share = async () => {
+    const url = new URL(`/b/${page.slug}`, window.location.origin).toString()
+    const result = await shareLink({
+      title: page.name,
+      text: `${page.name} · ${when} · ${booking.serviceName}`,
+      url,
+    })
+    if (result === "copied") toast.success(m.page.linkCopied)
+  }
   return (
-    <div className="flex flex-col gap-6">
-      <Empty className="p-0">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <CircleCheckIcon />
-          </EmptyMedia>
-          <EmptyTitle>{m.booking.bookedTitle}</EmptyTitle>
-          <EmptyDescription>{m.booking.expecting(page.name)}</EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-      <Card>
-        <CardContent className="flex flex-col gap-3 text-sm">
-          <p className="font-medium">
-            {formatDay(booking.date, m.locale)} ·{" "}
-            {formatClock(booking.time, m.locale)}
-          </p>
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p>{booking.serviceName}</p>
-              {booking.addons.map((addon, index) => (
-                <p key={index} className="text-muted-foreground">
-                  + {addon.name}
-                </p>
-              ))}
-              <p className="text-muted-foreground">
-                {formatDuration(booking.durationMinutes)}
-                {booking.teamMemberName &&
-                  ` · ${m.booking.with(booking.teamMemberName)}`}
-              </p>
-            </div>
-            {price && <p>{price}</p>}
-          </div>
-          {booking.address && (
-            <>
-              <Separator />
-              <p className="text-muted-foreground">{booking.address}</p>
-            </>
-          )}
-        </CardContent>
-      </Card>
+    <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-background">
+      <main className="mx-auto flex min-h-full w-full max-w-lg flex-col justify-center px-4 py-10">
+        <GlassCard>
+          <Celebration
+            media={
+              <Avatar className="size-24">
+                {page.photoUrl && <AvatarImage src={page.photoUrl} alt="" />}
+                <AvatarFallback>
+                  <StoreIcon className="size-8" />
+                </AvatarFallback>
+              </Avatar>
+            }
+            title={m.booking.bookedTitle}
+            description={m.booking.expecting(page.name)}
+            actions={
+              <>
+                <Button size="lg" onClick={() => void share()}>
+                  <ShareIcon data-icon="inline-start" />
+                  {m.page.share}
+                </Button>
+                <Button variant="outline" size="lg" onClick={onDone}>
+                  {m.booking.done}
+                </Button>
+              </>
+            }
+          >
+            <Item variant="muted" className="w-full text-left">
+              <ItemContent className="gap-1 text-sm">
+                <p className="font-medium">{when}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p>{booking.serviceName}</p>
+                    {booking.addons.map((addon, index) => (
+                      <p key={index} className="text-muted-foreground">
+                        + {addon.name}
+                      </p>
+                    ))}
+                    <p className="text-muted-foreground">
+                      {formatDuration(booking.durationMinutes)}
+                      {booking.teamMemberName &&
+                        ` · ${m.booking.with(booking.teamMemberName)}`}
+                    </p>
+                  </div>
+                  {price && <p>{price}</p>}
+                </div>
+                {booking.address && (
+                  <p className="text-muted-foreground">{booking.address}</p>
+                )}
+              </ItemContent>
+            </Item>
+          </Celebration>
+        </GlassCard>
+      </main>
     </div>
   )
 }

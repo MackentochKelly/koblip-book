@@ -31,6 +31,8 @@ export interface BookingAddonGroup {
 export interface BookingPage {
   slug: string
   name: string
+  // The first photo, for the "You're booked" page.
+  photoUrl: string | null
   address: string | null
   phone: string | null
   timeZone: string
@@ -99,6 +101,7 @@ export function toBookingPage(data: {
     timezone: string
     currency: string
   }
+  photos: { url: string }[]
   services: ServiceRow[]
   team: TeamMemberRow[]
   serviceTeams: Record<string, string[]>
@@ -107,6 +110,7 @@ export function toBookingPage(data: {
   return {
     slug: data.business.slug,
     name: data.business.name,
+    photoUrl: data.photos[0]?.url ?? null,
     address: data.business.address,
     phone: data.business.phone,
     timeZone: data.business.timezone,
