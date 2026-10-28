@@ -19,6 +19,7 @@ import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { updateBusinessDetails } from "../api/actions"
 import type { BusinessDetailsInput } from "../types"
 import { noAutofill } from "@/lib/no-autofill"
+import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 
 type Invalid = "name" | "phone" | "website" | "seats" | null
 
@@ -29,7 +30,7 @@ export function DetailsForm({
   businessId,
   details,
   hasTeam,
-  title = "Settings",
+  title,
   next,
 }: {
   businessId: string
@@ -38,6 +39,8 @@ export function DetailsForm({
   title?: string
   next?: string
 }) {
+  const m = useOwnerMessages()
+  const t = m.settings.details
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [name, setName] = useState(details.name)
@@ -77,20 +80,22 @@ export function DetailsForm({
       if (result.ok && next) {
         router.push(next)
       } else if (result.ok) {
-        toast.success("Saved")
+        toast.success(m.settings.saved)
         router.refresh()
       } else {
-        toast.error("Could not save. Check the fields.")
+        toast.error(t.saveFailed)
       }
     })
   }
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">
+        {title ?? m.shell.nav.settings}
+      </h1>
       <FieldGroup>
         <Field data-invalid={invalid === "name" || undefined}>
-          <FieldLabel htmlFor="details-name">Name</FieldLabel>
+          <FieldLabel htmlFor="details-name">{t.name}</FieldLabel>
           <Input
             {...noAutofill("details_name")}
             id="details-name"
@@ -99,10 +104,10 @@ export function DetailsForm({
             maxLength={BOOKING_RULES.maxBusinessName}
             aria-invalid={invalid === "name" || undefined}
           />
-          {invalid === "name" && <FieldError>Add the business name</FieldError>}
+          {invalid === "name" && <FieldError>{t.addName}</FieldError>}
         </Field>
         <Field>
-          <FieldLabel htmlFor="details-about">About</FieldLabel>
+          <FieldLabel htmlFor="details-about">{t.about}</FieldLabel>
           <Textarea
             {...noAutofill("details_about")}
             id="details-about"
@@ -113,7 +118,7 @@ export function DetailsForm({
           />
         </Field>
         <Field data-invalid={invalid === "phone" || undefined}>
-          <FieldLabel htmlFor="details-phone">Phone</FieldLabel>
+          <FieldLabel htmlFor="details-phone">{t.phone}</FieldLabel>
           <Input
             {...noAutofill("details_phone")}
             id="details-phone"
@@ -123,12 +128,10 @@ export function DetailsForm({
             onChange={(event) => setPhone(event.target.value)}
             aria-invalid={invalid === "phone" || undefined}
           />
-          {invalid === "phone" && (
-            <FieldError>Check the phone number</FieldError>
-          )}
+          {invalid === "phone" && <FieldError>{t.checkPhone}</FieldError>}
         </Field>
         <Field>
-          <FieldLabel htmlFor="details-address">Address</FieldLabel>
+          <FieldLabel htmlFor="details-address">{t.address}</FieldLabel>
           <Input
             {...noAutofill("details_address")}
             id="details-address"
@@ -138,7 +141,7 @@ export function DetailsForm({
           />
         </Field>
         <Field data-invalid={invalid === "website" || undefined}>
-          <FieldLabel htmlFor="details-website">Website</FieldLabel>
+          <FieldLabel htmlFor="details-website">{t.website}</FieldLabel>
           <Input
             {...noAutofill("details_website")}
             id="details-website"
@@ -149,16 +152,12 @@ export function DetailsForm({
             placeholder="https://"
             aria-invalid={invalid === "website" || undefined}
           />
-          {invalid === "website" && (
-            <FieldError>Use a full link, with https://</FieldError>
-          )}
+          {invalid === "website" && <FieldError>{t.fullLink}</FieldError>}
         </Field>
         {/* Settings only: right after sign-up it would just confuse. */}
         {!hasTeam && !next && (
           <Field data-invalid={invalid === "seats" || undefined}>
-            <FieldLabel htmlFor="details-seats">
-              Bookings at the same time
-            </FieldLabel>
+            <FieldLabel htmlFor="details-seats">{t.seats}</FieldLabel>
             <Input
               id="details-seats"
               type="number"
@@ -170,11 +169,9 @@ export function DetailsForm({
               className="w-24"
               aria-invalid={invalid === "seats" || undefined}
             />
-            <FieldDescription>
-              With a team, each person takes one.
-            </FieldDescription>
+            <FieldDescription>{t.seatsHint}</FieldDescription>
             {invalid === "seats" && (
-              <FieldError>From 1 to {BOOKING_RULES.maxSeats}</FieldError>
+              <FieldError>{t.seatsRange(BOOKING_RULES.maxSeats)}</FieldError>
             )}
           </Field>
         )}
@@ -182,7 +179,7 @@ export function DetailsForm({
       {/* Save is the big button at the end of the form, like the login card's. */}
       <Button type="submit" size="lg" disabled={pending}>
         {pending && <Spinner data-icon="inline-start" />}
-        Save
+        {m.settings.save}
       </Button>
     </form>
   )

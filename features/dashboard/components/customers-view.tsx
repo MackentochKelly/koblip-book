@@ -40,6 +40,8 @@ import type { OwnerBooking, OwnerCustomer } from "../types"
 import { BookingStatusBadge } from "./booking-status-badge"
 import { ContactButtons } from "./contact-buttons"
 import { noAutofill } from "@/lib/no-autofill"
+import type { OwnerMessages } from "../i18n"
+import { useOwnerMessages } from "../i18n/provider"
 
 // Everyone who booked, from their bookings. Opening one shows their visits;
 // the open customer is in the address (?customer=), so their bookings load
@@ -55,6 +57,8 @@ export function CustomersView({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const m = useOwnerMessages()
+  const t = m.bookings.customers
   const [query, setQuery] = useState("")
   const [closing, setClosing] = useState(false)
   // Once the address has no customer in it, the next one opens normally.
@@ -84,9 +88,9 @@ export function CustomersView({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
         <p className="text-sm text-muted-foreground">
-          {customers.length} people
+          {t.people(customers.length)}
         </p>
       </div>
       {customers.length > 0 && (
@@ -99,8 +103,8 @@ export function CustomersView({
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Name or phone"
-            aria-label="Search customers"
+            placeholder={t.search}
+            aria-label={t.searchLabel}
           />
         </InputGroup>
       )}
@@ -111,7 +115,7 @@ export function CustomersView({
               <UsersIcon />
             </EmptyMedia>
             <EmptyTitle>
-              {needle ? "No one found" : "No customers yet"}
+              {needle ? t.noneFound : t.none}
             </EmptyTitle>
           </EmptyHeader>
         </Empty>
@@ -133,7 +137,7 @@ export function CustomersView({
               </ItemMedia>
               <ItemContent>
                 <ItemTitle>{customer.name}</ItemTitle>
-                <ItemDescription>{summary(customer)}</ItemDescription>
+                <ItemDescription>{summary(customer, m)}</ItemDescription>
               </ItemContent>
               <ItemActions>
                 <ChevronRightIcon />
@@ -146,7 +150,7 @@ export function CustomersView({
       <ResponsivePanel
         open={opened !== null && !closing}
         onClose={close}
-        title={opened?.name ?? "Customer"}
+        title={opened?.name ?? t.customer}
       >
         {opened && (
           <CustomerDetails customer={opened} bookings={openBookings} />
@@ -156,13 +160,14 @@ export function CustomersView({
   )
 }
 
-function summary(customer: OwnerCustomer): string {
-  const visits = `${customer.completed} ${customer.completed === 1 ? "visit" : "visits"}`
+function summary(customer: OwnerCustomer, m: OwnerMessages): string {
+  const t = m.bookings.customers
+  const visits = t.visits(customer.completed)
   if (customer.nextBooking)
-    return `${visits} · Next ${formatDay(customer.nextBooking)}`
+    return t.next(visits, formatDay(customer.nextBooking, m.locale))
   if (customer.lastVisit)
-    return `${visits} · Last ${formatDay(customer.lastVisit)}`
-  return `${customer.bookings} ${customer.bookings === 1 ? "booking" : "bookings"}`
+    return t.last(visits, formatDay(customer.lastVisit, m.locale))
+  return t.bookings(customer.bookings)
 }
 
 function CustomerDetails({
@@ -172,12 +177,14 @@ function CustomerDetails({
   customer: OwnerCustomer
   bookings: OwnerBooking[]
 }) {
+  const m = useOwnerMessages()
+  const t = m.bookings.customers
   const stats = [
-    { label: "Visits", value: String(customer.completed) },
-    { label: "No-shows", value: String(customer.noShows) },
+    { label: t.visitsLabel, value: String(customer.completed) },
+    { label: t.noShows, value: String(customer.noShows) },
     {
-      label: "Spent",
-      value: formatPrice(customer.spentMinor, customer.currency),
+      label: t.spent,
+      value: formatPrice(customer.spentMinor, customer.currency, m.locale),
     },
   ]
   return (
@@ -204,7 +211,8 @@ function CustomerDetails({
           <Item key={booking.id} size="sm" className="px-0">
             <ItemContent>
               <ItemTitle>
-                {formatDay(booking.date)} · {formatClock(booking.time)}
+                {formatDay(booking.date, m.locale)} ·{" "}
+                {formatClock(booking.time, m.locale)}
                 <BookingStatusBadge status={booking.status} />
               </ItemTitle>
               <ItemDescription>

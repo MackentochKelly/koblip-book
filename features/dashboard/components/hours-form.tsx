@@ -17,19 +17,13 @@ import {
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
+import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
+import { formatWeekday } from "@/lib/format-booking-time"
 import { saveHours } from "../api/actions"
 import type { HoursRow } from "../types"
 
 // Monday first, as people read a week; stored with 0 = Sunday.
-const WEEK = [
-  { weekday: 1, label: "Monday" },
-  { weekday: 2, label: "Tuesday" },
-  { weekday: 3, label: "Wednesday" },
-  { weekday: 4, label: "Thursday" },
-  { weekday: 5, label: "Friday" },
-  { weekday: 6, label: "Saturday" },
-  { weekday: 0, label: "Sunday" },
-]
+const WEEK = [1, 2, 3, 4, 5, 6, 0]
 const MAX_ROWS = 14
 
 interface Range {
@@ -46,11 +40,13 @@ export function HoursForm({
   businessId: string
   hours: HoursRow[]
 }) {
+  const m = useOwnerMessages()
+  const t = m.settings.hours
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [days, setDays] = useState<Record<number, Range[]>>(() => {
     const byDay: Record<number, Range[]> = {}
-    for (const { weekday } of WEEK) byDay[weekday] = []
+    for (const weekday of WEEK) byDay[weekday] = []
     for (const row of hours) {
       byDay[row.weekday].push({ opensAt: row.opensAt, closesAt: row.closesAt })
     }
@@ -65,27 +61,32 @@ export function HoursForm({
 
   const save = () =>
     startTransition(async () => {
-      const rows = WEEK.flatMap(({ weekday }) =>
+      const rows = WEEK.flatMap((weekday) =>
         days[weekday].map((range) => ({ weekday, ...range }))
       )
       if (rows.some((row) => !row.opensAt || !row.closesAt)) {
-        toast.error("Fill in every time.")
+        toast.error(t.fillEvery)
         return
       }
       const result = await saveHours(businessId, rows)
       if (result.ok) {
-        toast.success("Hours saved")
+        toast.success(t.saved)
         router.refresh()
       } else {
-        toast.error("Could not save. Check the times.")
+        toast.error(t.saveFailed)
       }
     })
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Hours</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">
+        {m.shell.nav.hours}
+      </h1>
       <FieldGroup>
-        {WEEK.map(({ weekday, label }, index) => {
+        {WEEK.map((weekday, index) => {
+          // Spanish weekdays come lowercase; a label starts with a capital.
+          const name = formatWeekday(weekday, m.locale)
+          const label = name.charAt(0).toUpperCase() + name.slice(1)
           const ranges = days[weekday]
           const open = ranges.length > 0
           const setTime = (
@@ -105,7 +106,7 @@ export function HoursForm({
               <Field orientation="horizontal">
                 <FieldContent>
                   <FieldLabel htmlFor={`day-${weekday}`}>{label}</FieldLabel>
-                  {!open && <FieldDescription>Closed</FieldDescription>}
+                  {!open && <FieldDescription>{t.closed}</FieldDescription>}
                 </FieldContent>
                 <Switch
                   id={`day-${weekday}`}
@@ -123,7 +124,7 @@ export function HoursForm({
                 <Field key={rangeIndex} orientation="horizontal">
                   <Input
                     type="time"
-                    aria-label={`${label} opens`}
+                    aria-label={t.opens(label)}
                     value={range.opensAt}
                     onChange={(event) =>
                       setTime(rangeIndex, "opensAt", event.target.value)
@@ -132,7 +133,7 @@ export function HoursForm({
                   <span className="text-muted-foreground">–</span>
                   <Input
                     type="time"
-                    aria-label={`${label} closes`}
+                    aria-label={t.closes(label)}
                     value={range.closesAt}
                     onChange={(event) =>
                       setTime(rangeIndex, "closesAt", event.target.value)
@@ -142,7 +143,7 @@ export function HoursForm({
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="Remove these hours"
+                      aria-label={t.remove}
                       onClick={() =>
                         update(
                           weekday,
@@ -166,7 +167,7 @@ export function HoursForm({
                   }
                 >
                   <PlusIcon data-icon="inline-start" />
-                  Add hours
+                  {t.add}
                 </Button>
               )}
             </div>
@@ -176,7 +177,7 @@ export function HoursForm({
       {/* Save is the big button at the end, like the Settings form's. */}
       <Button size="lg" onClick={save} disabled={pending}>
         {pending && <Spinner data-icon="inline-start" />}
-        Save
+        {m.settings.save}
       </Button>
     </div>
   )

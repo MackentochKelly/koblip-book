@@ -40,6 +40,7 @@ import type {
 } from "@/types/owner-booking"
 import { cancelBooking } from "../api/actions"
 import { setBookingStatus } from "../api/booking-actions"
+import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import { AddBookingPanel, type AddBookingOptions } from "./add-booking-panel"
 import { BookingDetails } from "./booking-details"
@@ -47,11 +48,6 @@ import { BookingStatusBadge } from "./booking-status-badge"
 import { BookingsChart } from "./bookings-chart"
 
 type View = "upcoming" | "past"
-
-const VIEWS = [
-  { id: "upcoming" as const, label: "Upcoming" },
-  { id: "past" as const, label: "Past" },
-]
 
 // The business's bookings, by day: upcoming first, past one tab away. Each
 // opens its details; once it has started it can be marked done or no-show.
@@ -82,6 +78,12 @@ export function BookingsView({
   const [cancelling, setCancelling] = useState<OwnerBooking | null>(null)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
+  const m = useOwnerMessages()
+  const t = m.bookings
+  const views = [
+    { id: "upcoming" as const, label: t.views.upcoming },
+    { id: "past" as const, label: t.views.past },
+  ]
   const list = view === "upcoming" ? upcoming : past
   const days = groupByDay(list)
 
@@ -94,7 +96,7 @@ export function BookingsView({
         toast.success(done)
         router.refresh()
       } else {
-        toast.error("That did not work. Please try again.")
+        toast.error(t.failed)
       }
     })
 
@@ -115,9 +117,9 @@ export function BookingsView({
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Bookings</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
           <p className="text-sm text-muted-foreground">
-            {counts.today} today · {counts.upcoming} upcoming
+            {t.summary(counts.today, counts.upcoming)}
           </p>
         </div>
         <Button
@@ -125,15 +127,15 @@ export function BookingsView({
           disabled={addOptions.services.length === 0}
         >
           <PlusIcon data-icon="inline-start" />
-          Add
+          {t.add}
         </Button>
       </div>
       <BookingsChart days={nextDays} />
       <ViewTabs
-        views={VIEWS}
+        views={views}
         value={view}
         onChange={setView}
-        ariaLabel="Bookings"
+        ariaLabel={t.title}
         listClassName="w-full"
       />
       {days.length === 0 ? (
@@ -143,9 +145,7 @@ export function BookingsView({
               <CalendarDaysIcon />
             </EmptyMedia>
             <EmptyTitle>
-              {view === "upcoming"
-                ? "No upcoming bookings"
-                : "No past bookings"}
+              {view === "upcoming" ? t.noUpcoming : t.noPast}
             </EmptyTitle>
           </EmptyHeader>
         </Empty>
@@ -154,10 +154,10 @@ export function BookingsView({
           <section
             key={date}
             className="flex flex-col gap-3"
-            aria-label={formatDay(date)}
+            aria-label={formatDay(date, m.locale)}
           >
             <h2 className="text-sm font-medium text-muted-foreground">
-              {formatDay(date)}
+              {formatDay(date, m.locale)}
             </h2>
             <ItemGroup className="gap-3">
               {bookings.map((booking) => (
@@ -178,8 +178,8 @@ export function BookingsView({
                 >
                   <ItemContent>
                     <ItemTitle>
-                      {formatClock(booking.time)} –{" "}
-                      {formatClock(booking.endTime)}
+                      {formatClock(booking.time, m.locale)} –{" "}
+                      {formatClock(booking.endTime, m.locale)}
                       <BookingStatusBadge status={booking.status} />
                     </ItemTitle>
                     <ItemDescription>
@@ -200,7 +200,7 @@ export function BookingsView({
       <ResponsivePanel
         open={detailsOpen}
         onClose={() => setDetailsOpen(false)}
-        title={opened ? opened.customerName : "Booking"}
+        title={opened ? opened.customerName : t.booking}
         footer={footer}
       >
         {opened && <BookingDetails booking={opened} />}
@@ -222,14 +222,20 @@ export function BookingsView({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+            <AlertDialogTitle>{t.cancel.title}</AlertDialogTitle>
             <AlertDialogDescription>
               {cancelling &&
-                `${cancelling.customerName}, ${formatDay(cancelling.date)} at ${formatClock(cancelling.time)}.`}
+                t.cancel.description(
+                  cancelling.customerName,
+                  formatDay(cancelling.date, m.locale),
+                  formatClock(cancelling.time, m.locale)
+                )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={pending}>Keep it</AlertDialogCancel>
+            <AlertDialogCancel disabled={pending}>
+              {t.cancel.keep}
+            </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={pending}
@@ -237,11 +243,11 @@ export function BookingsView({
                 cancelling &&
                 run(
                   () => cancelBooking(businessId, cancelling.id),
-                  "Booking cancelled"
+                  t.cancel.done
                 )
               }
             >
-              Cancel booking
+              {t.cancel.confirm}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -268,23 +274,24 @@ function BookingActions({
     done: string
   ) => void
 }) {
+  const t = useOwnerMessages().bookings
   if (booking.status === "cancelled") return null
   if (booking.status !== "confirmed") {
     return (
       <Button
         variant="outline"
         disabled={pending}
-        onClick={() => onStatus("confirmed", "Marked as booked")}
+        onClick={() => onStatus("confirmed", t.actions.undone)}
       >
         {pending && <Spinner data-icon="inline-start" />}
-        Undo
+        {t.actions.undo}
       </Button>
     )
   }
   if (!started) {
     return (
       <Button variant="outline" disabled={pending} onClick={onCancel}>
-        Cancel booking
+        {t.cancel.confirm}
       </Button>
     )
   }
@@ -293,16 +300,16 @@ function BookingActions({
       <Button
         variant="outline"
         disabled={pending}
-        onClick={() => onStatus("no_show", "Marked as no-show")}
+        onClick={() => onStatus("no_show", t.actions.markedNoShow)}
       >
-        No-show
+        {t.actions.noShow}
       </Button>
       <Button
         disabled={pending}
-        onClick={() => onStatus("completed", "Marked as done")}
+        onClick={() => onStatus("completed", t.actions.markedDone)}
       >
         {pending && <Spinner data-icon="inline-start" />}
-        Done
+        {t.actions.done}
       </Button>
     </div>
   )

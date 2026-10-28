@@ -1,6 +1,9 @@
+"use client"
+
 import { ExternalLinkIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { cn } from "@/lib/utils"
 import { AccountMenu } from "./account-menu"
 
@@ -19,6 +22,7 @@ export function TopBar({
   besideSidebar?: boolean
   viewPage?: boolean
 }) {
+  const m = useOwnerMessages().shell
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background px-4">
       <p
@@ -38,7 +42,7 @@ export function TopBar({
             <a href={`/b/${business.slug}`} target="_blank" rel="noreferrer" />
           }
         >
-          View page
+          {m.viewPage}
           <ExternalLinkIcon data-icon="inline-end" />
         </Button>
       )}

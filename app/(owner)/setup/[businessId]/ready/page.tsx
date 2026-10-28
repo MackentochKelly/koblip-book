@@ -5,12 +5,15 @@ import { Toaster } from "@/components/ui/sonner"
 import { getBusinessPage } from "@/features/business-page/api/get-business-page"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { TopBar } from "@/features/dashboard/components/top-bar"
+import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { LiveCard } from "@/features/onboarding/components/live-card"
 import { requireOwner } from "@/lib/dal"
 import { fontDisplay } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 
-export const metadata: Metadata = { title: "You're live" }
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getOwnerMessages()).shell.titles.live }
+}
 
 // The step after "Check your details": the page is live, share it. Same
 // plain page and top bar as that step.
@@ -21,6 +24,7 @@ export default async function ReadyPage({
   const owner = await requireOwner(`/setup/${businessId}/ready`)
   const { business } = await getOwnerBusiness(businessId)
   const page = await getBusinessPage(business.slug)
+  const share = (await getOwnerMessages()).settings.share
   return (
     <div
       className={cn(
@@ -40,6 +44,13 @@ export default async function ReadyPage({
             photoUrl={page?.photos[0]?.url ?? null}
             slug={business.slug}
             dashboardHref={`/dashboard/${businessId}`}
+            labels={{
+              live: share.live,
+              linkCopied: share.linkCopied,
+              shareLink: share.shareLink,
+              viewMyPage: share.viewMyPage,
+              toDashboard: share.toDashboard,
+            }}
           />
         </GlassCard>
       </main>

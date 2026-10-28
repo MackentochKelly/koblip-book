@@ -78,6 +78,7 @@ import type { OwnerAddonGroup, ServiceInput, ServiceSuggestion } from "../types"
 import { ExtrasView } from "./extras-view"
 import { PhotoField } from "./photo-upload"
 import { noAutofill } from "@/lib/no-autofill"
+import { useOwnerMessages } from "../i18n/provider"
 
 interface ServiceRow {
   id: string
@@ -94,11 +95,6 @@ interface MemberRow {
 }
 
 const SERVICE_FORM = "service-form"
-
-const DURATIONS = BOOKING_RULES.serviceMinutes.map((minutes) => ({
-  value: String(minutes),
-  label: formatDuration(minutes),
-}))
 
 // What the business sells: add, edit, reorder and remove services, or let
 // Meta AI suggest the usual ones for this kind of business.
@@ -119,6 +115,9 @@ export function ServicesView({
   addonGroups: OwnerAddonGroup[]
 }) {
   const router = useRouter()
+  const m = useOwnerMessages()
+  const t = m.catalog.services
+  const c = m.catalog.common
   const [editing, setEditing] = useState<ServiceRow | "new" | null>(null)
   const [formKey, setFormKey] = useState(0)
   const [suggesting, setSuggesting] = useState(false)
@@ -138,7 +137,7 @@ export function ServicesView({
         if (done) toast.success(done)
         router.refresh()
       } else {
-        toast.error("That did not work. Please try again.")
+        toast.error(c.failed)
       }
     })
   const move = (index: number, by: number) => {
@@ -151,7 +150,7 @@ export function ServicesView({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Services</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
         <div className="flex gap-2">
           {view === "services" && (
             <Button
@@ -162,7 +161,7 @@ export function ServicesView({
               }}
             >
               <SparklesIcon data-icon="inline-start" />
-              Suggest
+              {t.suggest}
             </Button>
           )}
           <Button
@@ -172,18 +171,18 @@ export function ServicesView({
             disabled={view === "extras" && services.length === 0}
           >
             <PlusIcon data-icon="inline-start" />
-            Add
+            {c.add}
           </Button>
         </div>
       </div>
       <ViewTabs
         views={[
-          { id: "services" as const, label: "Services" },
-          { id: "extras" as const, label: "Extras" },
+          { id: "services" as const, label: t.tabs.services },
+          { id: "extras" as const, label: t.tabs.extras },
         ]}
         value={view}
         onChange={setView}
-        ariaLabel="Services and extras"
+        ariaLabel={t.tabs.label}
         listClassName="w-full"
       />
 
@@ -201,10 +200,10 @@ export function ServicesView({
             <EmptyMedia variant="icon">
               <ScissorsIcon />
             </EmptyMedia>
-            <EmptyTitle>No services yet</EmptyTitle>
+            <EmptyTitle>{t.empty}</EmptyTitle>
           </EmptyHeader>
           <EmptyContent>
-            <Button onClick={() => openForm("new")}>Add a service</Button>
+            <Button onClick={() => openForm("new")}>{t.addService}</Button>
           </EmptyContent>
         </Empty>
       ) : (
@@ -216,7 +215,7 @@ export function ServicesView({
                 <ItemDescription>
                   {formatDuration(service.durationMinutes)}
                   {service.priceMinor !== null &&
-                    ` · ${service.priceMinor === 0 ? "Free" : formatPrice(service.priceMinor, currency)}`}
+                    ` · ${service.priceMinor === 0 ? c.free : formatPrice(service.priceMinor, currency, m.locale)}`}
                 </ItemDescription>
               </ItemContent>
               <ItemActions>
@@ -225,7 +224,7 @@ export function ServicesView({
                   size="sm"
                   onClick={() => openForm(service)}
                 >
-                  Edit
+                  {c.edit}
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger
@@ -233,7 +232,7 @@ export function ServicesView({
                       <Button
                         variant="outline"
                         size="icon-sm"
-                        aria-label="More"
+                        aria-label={c.more}
                       />
                     }
                   >
@@ -246,14 +245,14 @@ export function ServicesView({
                         onClick={() => move(index, -1)}
                       >
                         <ArrowUpIcon />
-                        Move up
+                        {c.moveUp}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         disabled={index === services.length - 1 || pending}
                         onClick={() => move(index, 1)}
                       >
                         <ArrowDownIcon />
-                        Move down
+                        {c.moveDown}
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
@@ -264,12 +263,12 @@ export function ServicesView({
                         onClick={() =>
                           run(
                             () => deleteService(businessId, service.id),
-                            "Service removed"
+                            t.removed
                           )
                         }
                       >
                         <Trash2Icon />
-                        Remove
+                        {c.remove}
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                   </DropdownMenuContent>
@@ -283,11 +282,11 @@ export function ServicesView({
       <ResponsivePanel
         open={editing !== null}
         onClose={() => setEditing(null)}
-        title={editing === "new" ? "Add a service" : "Edit service"}
+        title={editing === "new" ? t.addService : t.editService}
         footer={
           <Button type="submit" form={SERVICE_FORM} disabled={pending}>
             {pending && <Spinner data-icon="inline-start" />}
-            Save
+            {c.save}
           </Button>
         }
       >
@@ -304,7 +303,7 @@ export function ServicesView({
             photo={
               editing !== "new" && (
                 <PhotoField
-                  label={`${editing.name} photo`}
+                  label={t.photo(editing.name)}
                   photoUrl={editing.photoUrl}
                   upload={(formData) =>
                     setServicePhoto(businessId, editing.id, formData)
@@ -336,10 +335,10 @@ export function ServicesView({
                     : saved
                 if (result.ok) {
                   setEditing(null)
-                  toast.success("Saved")
+                  toast.success(c.saved)
                   router.refresh()
                 } else {
-                  toast.error("Could not save. Check the fields.")
+                  toast.error(c.checkFields)
                 }
               })
             }
@@ -374,6 +373,13 @@ function ServiceForm({
   photo: React.ReactNode
   onSave: (input: ServiceInput, memberIds: string[]) => void
 }) {
+  const m = useOwnerMessages()
+  const t = m.catalog.services
+  const c = m.catalog.common
+  const durations = BOOKING_RULES.serviceMinutes.map((minutes) => ({
+    value: String(minutes),
+    label: formatDuration(minutes),
+  }))
   const [name, setName] = useState(service?.name ?? "")
   const [duration, setDuration] = useState(
     String(service?.durationMinutes ?? 30)
@@ -410,7 +416,7 @@ function ServiceForm({
       <FieldGroup>
         {photo}
         <Field data-invalid={invalid === "name" || undefined}>
-          <FieldLabel htmlFor="service-name">Name</FieldLabel>
+          <FieldLabel htmlFor="service-name">{c.name}</FieldLabel>
           <Input
             {...noAutofill("service_name")}
             id="service-name"
@@ -419,13 +425,13 @@ function ServiceForm({
             maxLength={BOOKING_RULES.maxServiceName}
             aria-invalid={invalid === "name" || undefined}
           />
-          {invalid === "name" && <FieldError>Add a name</FieldError>}
+          {invalid === "name" && <FieldError>{c.addName}</FieldError>}
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field>
-            <FieldLabel htmlFor="service-duration">Length</FieldLabel>
+            <FieldLabel htmlFor="service-duration">{t.length}</FieldLabel>
             <Select
-              items={DURATIONS}
+              items={durations}
               value={duration}
               onValueChange={(value) => value && setDuration(String(value))}
             >
@@ -433,7 +439,7 @@ function ServiceForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {DURATIONS.map((item) => (
+                {durations.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     {item.label}
                   </SelectItem>
@@ -442,33 +448,33 @@ function ServiceForm({
             </Select>
           </Field>
           <Field data-invalid={invalid === "price" || undefined}>
-            <FieldLabel htmlFor="service-price">Price</FieldLabel>
+            <FieldLabel htmlFor="service-price">{t.price}</FieldLabel>
             <Input
               {...noAutofill("service_price")}
               id="service-price"
               inputMode="decimal"
               value={price}
               onChange={(event) => setPrice(event.target.value)}
-              placeholder="Optional"
+              placeholder={c.optional}
               aria-invalid={invalid === "price" || undefined}
             />
-            {invalid === "price" && <FieldError>Use a number</FieldError>}
+            {invalid === "price" && <FieldError>{t.useNumber}</FieldError>}
           </Field>
         </div>
         <Field>
-          <FieldLabel htmlFor="service-description">Description</FieldLabel>
+          <FieldLabel htmlFor="service-description">{t.description}</FieldLabel>
           <Textarea
             {...noAutofill("service_description")}
             id="service-description"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             maxLength={BOOKING_RULES.maxServiceDescription}
-            placeholder="Optional"
+            placeholder={c.optional}
           />
         </Field>
         {team.length > 1 && (
           <FieldSet data-invalid={invalid === "team" || undefined}>
-            <FieldLegend variant="label">Who does it</FieldLegend>
+            <FieldLegend variant="label">{t.whoDoesIt}</FieldLegend>
             <FieldGroup data-slot="checkbox-group">
               {team.map((member) => (
                 <Field key={member.id} orientation="horizontal">
@@ -496,7 +502,7 @@ function ServiceForm({
                 </Field>
               ))}
             </FieldGroup>
-            {invalid === "team" && <FieldError>Pick at least one</FieldError>}
+            {invalid === "team" && <FieldError>{t.pickOne}</FieldError>}
           </FieldSet>
         )}
       </FieldGroup>
@@ -521,6 +527,7 @@ function SuggestPanel({
     | { status: "loading" | "failed" | "off" }
     | { status: "ready"; services: ServiceSuggestion[] }
   >({ status: "loading" })
+  const t = useOwnerMessages().catalog.services
   const [ticked, setTicked] = useState<string[]>([])
   const [attempt, setAttempt] = useState(0)
   const [adding, startAdding] = useTransition()
@@ -565,7 +572,7 @@ function SuggestPanel({
           priceMinor: null,
         })
         if (!result.ok) {
-          toast.error("Some services could not be added.")
+          toast.error(t.someFailed)
           break
         }
       }
@@ -576,12 +583,12 @@ function SuggestPanel({
     <ResponsivePanel
       open={open}
       onClose={onClose}
-      title="Suggested services"
+      title={t.suggested}
       footer={
         state.status === "ready" && state.services.length > 0 ? (
           <Button onClick={add} disabled={adding || ticked.length === 0}>
             {adding && <Spinner data-icon="inline-start" />}
-            Add {ticked.length}
+            {t.addCount(ticked.length)}
           </Button>
         ) : undefined
       }
@@ -591,18 +598,18 @@ function SuggestPanel({
           <Spinner />
         </div>
       ) : state.status === "off" ? (
-        <p className="text-sm text-muted-foreground">Meta AI is off.</p>
+        <p className="text-sm text-muted-foreground">{t.aiOff}</p>
       ) : state.status === "failed" ? (
         <div className="flex flex-col items-start gap-3">
           <p className="text-sm text-muted-foreground">
-            No suggestions right now.
+            {t.noSuggestions}
           </p>
           <Button variant="outline" onClick={retry}>
-            Try again
+            {t.tryAgain}
           </Button>
         </div>
       ) : suggestions.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nothing new to suggest.</p>
+        <p className="text-sm text-muted-foreground">{t.nothingNew}</p>
       ) : (
         <FieldGroup className="gap-3">
           {suggestions.map((service) => (

@@ -16,10 +16,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { formatDay, formatWeekdayShort } from "@/lib/format-booking-time"
-
-const config = {
-  bookings: { label: "Bookings", color: "var(--chart-2)" },
-} satisfies ChartConfig
+import { useOwnerMessages } from "../i18n/provider"
 
 // Booked visits per day for the next two weeks.
 export function BookingsChart({
@@ -27,14 +24,17 @@ export function BookingsChart({
 }: {
   days: Array<{ date: string; bookings: number }>
 }) {
+  const m = useOwnerMessages()
+  const t = m.bookings.chart
+  const config = {
+    bookings: { label: t.series, color: "var(--chart-2)" },
+  } satisfies ChartConfig
   const total = days.reduce((sum, day) => sum + day.bookings, 0)
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Next 14 days</CardTitle>
-        <CardDescription>
-          {total} {total === 1 ? "booking" : "bookings"}
-        </CardDescription>
+        <CardTitle>{t.title}</CardTitle>
+        <CardDescription>{t.total(total)}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={config} className="aspect-auto h-40 w-full">
@@ -47,7 +47,7 @@ export function BookingsChart({
               tickMargin={8}
               minTickGap={8}
               tickFormatter={(date: string) =>
-                formatWeekdayShort(date).charAt(0)
+                formatWeekdayShort(date, m.locale).charAt(0).toUpperCase()
               }
             />
             <ChartTooltip
@@ -55,7 +55,7 @@ export function BookingsChart({
               content={
                 <ChartTooltipContent
                   labelFormatter={(_, payload) =>
-                    payload[0] ? formatDay(String(payload[0].payload.date)) : ""
+                    payload[0] ? formatDay(String(payload[0].payload.date), m.locale) : ""
                   }
                 />
               }

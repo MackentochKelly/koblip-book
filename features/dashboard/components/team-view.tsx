@@ -56,6 +56,7 @@ import {
 import { removeTeamMemberPhoto, setTeamMemberPhoto } from "../api/photo-actions"
 import { PhotoField } from "./photo-upload"
 import { noAutofill } from "@/lib/no-autofill"
+import { useOwnerMessages } from "../i18n/provider"
 
 interface MemberRow {
   id: string
@@ -74,6 +75,7 @@ export function TeamView({
   team: MemberRow[]
 }) {
   const router = useRouter()
+  const { common: c, team: t } = useOwnerMessages().catalog
   const [editing, setEditing] = useState<MemberRow | "new" | null>(null)
   const [formKey, setFormKey] = useState(0)
   const [pending, startTransition] = useTransition()
@@ -89,29 +91,29 @@ export function TeamView({
     startTransition(async () => {
       const result = await reorderTeam(businessId, ids)
       if (result.ok) router.refresh()
-      else toast.error("That did not work. Please try again.")
+      else toast.error(c.failed)
     })
   }
   const remove = (member: MemberRow) =>
     startTransition(async () => {
       const result = await deleteTeamMember(businessId, member.id)
       if (result.ok) {
-        toast.success(`${member.name} removed`)
+        toast.success(t.removed(member.name))
         router.refresh()
       } else if (result.error === "has_bookings") {
-        toast.error(`${member.name} has upcoming bookings. Cancel them first.`)
+        toast.error(t.hasBookings(member.name))
       } else {
-        toast.error("That did not work. Please try again.")
+        toast.error(c.failed)
       }
     })
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Team</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
         <Button onClick={() => openForm("new")}>
           <PlusIcon data-icon="inline-start" />
-          Add
+          {c.add}
         </Button>
       </div>
 
@@ -121,10 +123,10 @@ export function TeamView({
             <EmptyMedia variant="icon">
               <UsersIcon />
             </EmptyMedia>
-            <EmptyTitle>No team yet</EmptyTitle>
+            <EmptyTitle>{t.empty}</EmptyTitle>
           </EmptyHeader>
           <EmptyContent>
-            <Button onClick={() => openForm("new")}>Add a person</Button>
+            <Button onClick={() => openForm("new")}>{t.addPerson}</Button>
           </EmptyContent>
         </Empty>
       ) : (
@@ -148,7 +150,7 @@ export function TeamView({
                   size="sm"
                   onClick={() => openForm(member)}
                 >
-                  Edit
+                  {c.edit}
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger
@@ -156,7 +158,7 @@ export function TeamView({
                       <Button
                         variant="outline"
                         size="icon-sm"
-                        aria-label="More"
+                        aria-label={c.more}
                       />
                     }
                   >
@@ -169,14 +171,14 @@ export function TeamView({
                         onClick={() => move(index, -1)}
                       >
                         <ArrowUpIcon />
-                        Move up
+                        {c.moveUp}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         disabled={index === team.length - 1 || pending}
                         onClick={() => move(index, 1)}
                       >
                         <ArrowDownIcon />
-                        Move down
+                        {c.moveDown}
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
@@ -187,7 +189,7 @@ export function TeamView({
                         onClick={() => remove(member)}
                       >
                         <Trash2Icon />
-                        Remove
+                        {c.remove}
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                   </DropdownMenuContent>
@@ -201,11 +203,11 @@ export function TeamView({
       <ResponsivePanel
         open={editing !== null}
         onClose={() => setEditing(null)}
-        title={editing === "new" ? "Add a person" : "Edit person"}
+        title={editing === "new" ? t.addPerson : t.editPerson}
         footer={
           <Button type="submit" form={MEMBER_FORM} disabled={pending}>
             {pending && <Spinner data-icon="inline-start" />}
-            Save
+            {c.save}
           </Button>
         }
       >
@@ -216,7 +218,7 @@ export function TeamView({
             photo={
               editing !== "new" && (
                 <PhotoField
-                  label={`${editing.name}'s photo`}
+                  label={t.photo(editing.name)}
                   photoUrl={editing.photoUrl}
                   fallback={initials(editing.name)}
                   upload={(formData) =>
@@ -234,10 +236,10 @@ export function TeamView({
                     : await renameTeamMember(businessId, editing.id, name)
                 if (result.ok) {
                   setEditing(null)
-                  toast.success("Saved")
+                  toast.success(c.saved)
                   router.refresh()
                 } else {
-                  toast.error("Could not save. Please try again.")
+                  toast.error(t.saveFailed)
                 }
               })
             }
@@ -257,6 +259,7 @@ function MemberForm({
   photo: React.ReactNode
   onSave: (name: string) => void
 }) {
+  const c = useOwnerMessages().catalog.common
   const [name, setName] = useState(initial)
   const [invalid, setInvalid] = useState(false)
   return (
@@ -272,7 +275,7 @@ function MemberForm({
       <FieldGroup>
         {photo}
         <Field data-invalid={invalid || undefined}>
-          <FieldLabel htmlFor="member-name">Name</FieldLabel>
+          <FieldLabel htmlFor="member-name">{c.name}</FieldLabel>
           <Input
             {...noAutofill("member_name")}
             id="member-name"
@@ -281,7 +284,7 @@ function MemberForm({
             maxLength={80}
             aria-invalid={invalid || undefined}
           />
-          {invalid && <FieldError>Add a name</FieldError>}
+          {invalid && <FieldError>{c.addName}</FieldError>}
         </Field>
       </FieldGroup>
     </form>

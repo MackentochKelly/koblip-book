@@ -5,11 +5,12 @@ import { usePathname, useRouter } from "next/navigation"
 import type { Route } from "next"
 
 import { ViewTabs } from "@/components/view-tabs"
+import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 
 const TABS = [
-  { id: "/team", label: "Team" },
-  { id: "/hours", label: "Hours" },
-  { id: "/settings", label: "Details" },
+  { id: "/team", key: "team" },
+  { id: "/hours", key: "hours" },
+  { id: "/settings", key: "details" },
 ] as const
 
 type TabPath = (typeof TABS)[number]["id"]
@@ -19,6 +20,7 @@ type TabPath = (typeof TABS)[number]["id"]
 // lists them itself.
 export function SettingsTabs({ businessId }: { businessId: string }) {
   const router = useRouter()
+  const m = useOwnerMessages().shell.nav
   const pathname = usePathname()
   const base = `/dashboard/${businessId}`
   const value =
@@ -31,10 +33,10 @@ export function SettingsTabs({ businessId }: { businessId: string }) {
 
   return (
     <ViewTabs<TabPath>
-      views={TABS.map(({ id, label }) => ({ id, label }))}
+      views={TABS.map(({ id, key }) => ({ id, label: m[key] }))}
       value={value}
       onChange={(id) => router.push(`${base}${id}` as Route)}
-      ariaLabel="Settings"
+      ariaLabel={m.settings}
       className="md:hidden"
       listClassName="w-full"
     />

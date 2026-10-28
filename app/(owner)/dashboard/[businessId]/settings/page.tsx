@@ -6,8 +6,11 @@ import { BusinessPhotosEditor } from "@/features/dashboard/components/business-p
 import { DetailsForm } from "@/features/dashboard/components/details-form"
 import { SettingsTabs } from "@/features/dashboard/components/settings-tabs"
 import { SpanishSection } from "@/features/dashboard/components/spanish-section"
+import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 
-export const metadata: Metadata = { title: "Settings" }
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getOwnerMessages()).shell.nav.settings }
+}
 
 type Props = {
   params: Promise<{ businessId: string }>

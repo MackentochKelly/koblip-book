@@ -2,8 +2,11 @@ import type { Metadata } from "next"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { SettingsTabs } from "@/features/dashboard/components/settings-tabs"
 import { TeamView } from "@/features/dashboard/components/team-view"
+import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 
-export const metadata: Metadata = { title: "Team" }
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getOwnerMessages()).shell.nav.team }
+}
 
 type Props = {
   params: Promise<{ businessId: string }>

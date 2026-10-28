@@ -43,6 +43,7 @@ import type {
   OwnerBookingResult,
 } from "@/types/owner-booking"
 import { noAutofill } from "@/lib/no-autofill"
+import { useOwnerMessages } from "../i18n/provider"
 
 const FORM = "add-booking-form"
 const ANYONE = "any"
@@ -80,6 +81,7 @@ export function AddBookingPanel({
   createBooking: (input: OwnerBookingInput) => Promise<OwnerBookingResult>
 }) {
   const router = useRouter()
+  const t = useOwnerMessages().bookings.form
   const [pending, startTransition] = useTransition()
   const [formKey, setFormKey] = useState(0)
   const [invalid, setInvalid] = useState<InvalidField | null>(null)
@@ -98,7 +100,7 @@ export function AddBookingPanel({
         setInvalid(null)
         setFormKey((value) => value + 1)
         onClose()
-        toast.success("Booking added")
+        toast.success(t.added)
         router.refresh()
       } else if (result.status === "conflict") {
         setConflict({ input, reason: result.reason })
@@ -107,7 +109,7 @@ export function AddBookingPanel({
         setInvalid(result.field)
       } else {
         setConflict(null)
-        toast.error("Could not add it. Please try again.")
+        toast.error(t.failed)
       }
     })
 
@@ -116,11 +118,11 @@ export function AddBookingPanel({
       <ResponsivePanel
         open={open}
         onClose={onClose}
-        title="Add a booking"
+        title={t.title}
         footer={
           <Button type="submit" form={FORM} disabled={pending}>
             {pending && <Spinner data-icon="inline-start" />}
-            Add booking
+            {t.submit}
           </Button>
         }
       >
@@ -142,15 +144,13 @@ export function AddBookingPanel({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {conflict?.reason === "closed"
-                ? "Outside opening hours"
-                : "That time is taken"}
+              {conflict?.reason === "closed" ? t.closed : t.taken}
             </AlertDialogTitle>
-            <AlertDialogDescription>Book it anyway?</AlertDialogDescription>
+            <AlertDialogDescription>{t.bookAnyway}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>
-              Change time
+              {t.changeTime}
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={pending}
@@ -158,7 +158,7 @@ export function AddBookingPanel({
                 conflict && send({ ...conflict.input, allowConflict: true })
               }
             >
-              Book anyway
+              {t.confirmAnyway}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -180,6 +180,7 @@ function BookingForm({
   onInvalid: (field: InvalidField | null) => void
   onSubmit: (input: OwnerBookingInput) => void
 }) {
+  const t = useOwnerMessages().bookings.form
   const [serviceId, setServiceId] = useState(options.services[0]?.id ?? "")
   const [memberId, setMemberId] = useState(ANYONE)
   const [date, setDate] = useState(options.today)
@@ -198,7 +199,7 @@ function BookingForm({
   }))
   const allowed = options.serviceTeams[serviceId]
   const members = [
-    { value: ANYONE, label: "Anyone free" },
+    { value: ANYONE, label: t.anyone },
     ...options.team
       .filter((member) => !allowed || allowed.includes(member.id))
       .map((member) => ({ value: member.id, label: member.name })),
@@ -235,7 +236,7 @@ function BookingForm({
     >
       <FieldGroup>
         <Field data-invalid={error("service")}>
-          <FieldLabel htmlFor="add-service">Service</FieldLabel>
+          <FieldLabel htmlFor="add-service">{t.service}</FieldLabel>
           <Select
             items={services}
             value={serviceId}
@@ -257,11 +258,11 @@ function BookingForm({
               ))}
             </SelectContent>
           </Select>
-          {invalid === "service" && <FieldError>Pick a service</FieldError>}
+          {invalid === "service" && <FieldError>{t.pickService}</FieldError>}
         </Field>
         {options.team.length > 1 && (
           <Field data-invalid={error("teamMember")}>
-            <FieldLabel htmlFor="add-member">With</FieldLabel>
+            <FieldLabel htmlFor="add-member">{t.with}</FieldLabel>
             <Select
               items={members}
               value={memberId}
@@ -279,7 +280,7 @@ function BookingForm({
               </SelectContent>
             </Select>
             {invalid === "teamMember" && (
-              <FieldError>They don&apos;t do this service</FieldError>
+              <FieldError>{t.notTheirService}</FieldError>
             )}
           </Field>
         )}
@@ -331,10 +332,10 @@ function BookingForm({
             </FieldSet>
           )
         })}
-        {invalid === "addons" && <FieldError>Check the extras</FieldError>}
+        {invalid === "addons" && <FieldError>{t.checkExtras}</FieldError>}
         <div className="grid grid-cols-2 gap-4">
           <Field data-invalid={error("date")}>
-            <FieldLabel htmlFor="add-date">Day</FieldLabel>
+            <FieldLabel htmlFor="add-date">{t.day}</FieldLabel>
             <Input
               id="add-date"
               type="date"
@@ -344,10 +345,10 @@ function BookingForm({
               onChange={(event) => setDate(event.target.value)}
               aria-invalid={error("date")}
             />
-            {invalid === "date" && <FieldError>Pick a day</FieldError>}
+            {invalid === "date" && <FieldError>{t.pickDay}</FieldError>}
           </Field>
           <Field data-invalid={error("time")}>
-            <FieldLabel htmlFor="add-time">Time</FieldLabel>
+            <FieldLabel htmlFor="add-time">{t.time}</FieldLabel>
             <Input
               id="add-time"
               type="time"
@@ -356,11 +357,11 @@ function BookingForm({
               onChange={(event) => setTime(event.target.value)}
               aria-invalid={error("time")}
             />
-            {invalid === "time" && <FieldError>Pick a time</FieldError>}
+            {invalid === "time" && <FieldError>{t.pickTime}</FieldError>}
           </Field>
         </div>
         <Field data-invalid={error("name")}>
-          <FieldLabel htmlFor="add-name">Customer</FieldLabel>
+          <FieldLabel htmlFor="add-name">{t.customer}</FieldLabel>
           <Input
             {...noAutofill("add_name")}
             id="add-name"
@@ -369,10 +370,10 @@ function BookingForm({
             maxLength={BOOKING_RULES.maxCustomerName}
             aria-invalid={error("name")}
           />
-          {invalid === "name" && <FieldError>Add a name</FieldError>}
+          {invalid === "name" && <FieldError>{t.addName}</FieldError>}
         </Field>
         <Field data-invalid={error("phone")}>
-          <FieldLabel htmlFor="add-phone">Phone</FieldLabel>
+          <FieldLabel htmlFor="add-phone">{t.phone}</FieldLabel>
           <Input
             {...noAutofill("add_phone")}
             id="add-phone"
@@ -380,22 +381,22 @@ function BookingForm({
             inputMode="tel"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
-            placeholder="Optional"
+            placeholder={t.optional}
             aria-invalid={error("phone")}
           />
           {invalid === "phone" && (
-            <FieldError>Check the phone number</FieldError>
+            <FieldError>{t.checkPhone}</FieldError>
           )}
         </Field>
         <Field data-invalid={error("note")}>
-          <FieldLabel htmlFor="add-note">Note</FieldLabel>
+          <FieldLabel htmlFor="add-note">{t.note}</FieldLabel>
           <Textarea
             {...noAutofill("add_note")}
             id="add-note"
             value={note}
             onChange={(event) => setNote(event.target.value)}
             maxLength={BOOKING_RULES.maxNote}
-            placeholder="Optional"
+            placeholder={t.optional}
           />
         </Field>
       </FieldGroup>

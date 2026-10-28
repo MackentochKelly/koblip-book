@@ -4,11 +4,14 @@ import { GlassCard } from "@/components/glass-frame"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { DetailsForm } from "@/features/dashboard/components/details-form"
 import { TopBar } from "@/features/dashboard/components/top-bar"
+import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { requireOwner } from "@/lib/dal"
 import { fontDisplay } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 
-export const metadata: Metadata = { title: "Check your details" }
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getOwnerMessages()).shell.titles.checkDetails }
+}
 
 // Right after sign-up: the owner checks and fixes what came from Google
 // Maps, and Save (which confirms the details) opens the dashboard. A plain
@@ -19,6 +22,7 @@ export default async function SetupPage({
   const { businessId } = await params
   const owner = await requireOwner(`/setup/${businessId}`)
   const { business, team } = await getOwnerBusiness(businessId)
+  const m = await getOwnerMessages()
   return (
     <div
       className={cn(
@@ -36,7 +40,7 @@ export default async function SetupPage({
           <DetailsForm
             businessId={businessId}
             hasTeam={team.length > 0}
-            title="Check your details"
+            title={m.shell.titles.checkDetails}
             next={`/setup/${businessId}/ready`}
             details={{
               name: business.name,

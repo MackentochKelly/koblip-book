@@ -30,6 +30,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Spinner } from "@/components/ui/spinner"
+import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { UPLOAD_RULES } from "@/lib/upload-rules"
 import {
   deleteBusinessPhoto,
@@ -47,6 +48,8 @@ export function BusinessPhotosEditor({
   businessId: string
   photos: OwnerPhoto[]
 }) {
+  const m = useOwnerMessages()
+  const t = m.settings.photos
   const router = useRouter()
   const [busy, startTransition] = useTransition()
   const { pick, pending, field } = usePhotoUpload((formData) =>
@@ -58,7 +61,7 @@ export function BusinessPhotosEditor({
     startTransition(async () => {
       const result = await task().catch(() => ({ ok: false }))
       if (result.ok) router.refresh()
-      else toast.error("That did not work. Please try again.")
+      else toast.error(m.settings.tryAgain)
     })
   const move = (index: number, by: number) => {
     const ids = photos.map((photo) => photo.id)
@@ -70,7 +73,7 @@ export function BusinessPhotosEditor({
   return (
     <PageSection
       id="photos"
-      title="Photos"
+      title={t.title}
       action={
         <Button variant="outline" onClick={pick} disabled={pending || full}>
           {pending ? (
@@ -78,7 +81,7 @@ export function BusinessPhotosEditor({
           ) : (
             <PlusIcon data-icon="inline-start" />
           )}
-          Add
+          {t.add}
         </Button>
       }
     >
@@ -89,7 +92,7 @@ export function BusinessPhotosEditor({
             <EmptyMedia variant="icon">
               <ImageIcon />
             </EmptyMedia>
-            <EmptyTitle>No photos yet</EmptyTitle>
+            <EmptyTitle>{t.none}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : (
@@ -101,7 +104,7 @@ export function BusinessPhotosEditor({
             >
               <Image
                 src={photo.url}
-                alt={`Photo ${index + 1}`}
+                alt={t.photo(index + 1)}
                 fill
                 unoptimized
                 sizes="(max-width: 640px) 50vw, 33vw"
@@ -113,7 +116,7 @@ export function BusinessPhotosEditor({
                     <Button
                       variant="outline"
                       size="icon-sm"
-                      aria-label={`Photo ${index + 1} options`}
+                      aria-label={t.options(index + 1)}
                       className="absolute top-2 right-2"
                     />
                   }
@@ -127,14 +130,14 @@ export function BusinessPhotosEditor({
                       onClick={() => move(index, -1)}
                     >
                       <ArrowLeftIcon />
-                      Move left
+                      {t.moveLeft}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       disabled={index === photos.length - 1 || busy}
                       onClick={() => move(index, 1)}
                     >
                       <ArrowRightIcon />
-                      Move right
+                      {t.moveRight}
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
@@ -147,7 +150,7 @@ export function BusinessPhotosEditor({
                       }
                     >
                       <Trash2Icon />
-                      Remove
+                      {t.remove}
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                 </DropdownMenuContent>

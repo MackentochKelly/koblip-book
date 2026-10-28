@@ -13,11 +13,14 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
+import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { shareLink } from "@/lib/share-link"
 
 // Shown once, right after a new owner gets their business: the page link,
 // ready to share.
 export function WelcomePanel({ slug, name }: { slug: string; name: string }) {
+  const m = useOwnerMessages()
+  const t = m.settings.share
   const router = useRouter()
   const pathname = usePathname()
   const open = useSearchParams().get("welcome") === "1"
@@ -28,14 +31,14 @@ export function WelcomePanel({ slug, name }: { slug: string; name: string }) {
   const share = async () => {
     const url = new URL(path, window.location.origin).toString()
     const result = await shareLink({ title: name, url })
-    if (result === "copied") toast.success("Link copied")
+    if (result === "copied") toast.success(t.linkCopied)
   }
 
   return (
     <ResponsivePanel
       open={open}
       onClose={close}
-      title="Your page is ready"
+      title={t.ready}
       footer={
         <>
           <Button
@@ -44,12 +47,12 @@ export function WelcomePanel({ slug, name }: { slug: string; name: string }) {
             nativeButton={false}
             render={<a href={path} target="_blank" rel="noreferrer" />}
           >
-            View page
+            {t.viewPage}
             <ExternalLinkIcon data-icon="inline-end" />
           </Button>
           <Button size="lg" onClick={() => void share()}>
             <ShareIcon data-icon="inline-start" />
-            Share link
+            {t.shareLink}
           </Button>
         </>
       }

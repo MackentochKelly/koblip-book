@@ -8,18 +8,23 @@ import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
+import type { OwnerMessages } from "@/features/dashboard/i18n"
 import { resizeImage } from "@/lib/resize-image"
 import { UPLOAD_RULES } from "@/lib/upload-rules"
 import type { PhotoError, PhotoResult } from "../media-types"
 
 const ACCEPT = Object.keys(UPLOAD_RULES.types).join(",")
 
-const ERRORS: Record<PhotoError, string> = {
-  not_found: "That did not work. Please try again.",
-  missing: "Pick a photo.",
-  too_big: "That photo is too big.",
-  wrong_type: "Use a JPEG, PNG or WebP photo.",
-  limit: `Up to ${UPLOAD_RULES.maxBusinessPhotos} photos.`,
+function photoErrors(m: OwnerMessages): Record<PhotoError, string> {
+  const t = m.settings.photos
+  return {
+    not_found: m.settings.tryAgain,
+    missing: t.pick,
+    too_big: t.tooBig,
+    wrong_type: t.wrongType,
+    limit: t.limit(UPLOAD_RULES.maxBusinessPhotos),
+  }
 }
 
 // Picks a photo, makes it smaller in the browser and sends it as the
@@ -28,6 +33,7 @@ export function usePhotoUpload<T extends object>(
   upload: (formData: FormData) => Promise<PhotoResult<T>>,
   onDone?: (result: T) => void
 ) {
+  const m = useOwnerMessages()
   const router = useRouter()
   const input = useRef<HTMLInputElement>(null)
   const [pending, startTransition] = useTransition()
@@ -43,7 +49,7 @@ export function usePhotoUpload<T extends object>(
         onDone?.(result)
         router.refresh()
       } else {
-        toast.error(ERRORS[result.error])
+        toast.error(photoErrors(m)[result.error])
       }
     })
 
@@ -78,6 +84,7 @@ export function PhotoField({
   upload: (formData: FormData) => Promise<PhotoResult<{ photoUrl: string }>>
   remove: () => Promise<PhotoResult>
 }) {
+  const m = useOwnerMessages()
   const router = useRouter()
   const [url, setUrl] = useState(photoUrl)
   const [removing, startRemoving] = useTransition()
@@ -101,7 +108,7 @@ export function PhotoField({
           onClick={pick}
         >
           {pending && <Spinner data-icon="inline-start" />}
-          {url ? "Change" : "Add photo"}
+          {url ? m.settings.photos.change : m.settings.photos.addPhoto}
         </Button>
         {url && (
           <Button
@@ -118,12 +125,12 @@ export function PhotoField({
                   setUrl(null)
                   router.refresh()
                 } else {
-                  toast.error(ERRORS[result.error])
+                  toast.error(photoErrors(m)[result.error])
                 }
               })
             }
           >
-            Remove
+            {m.settings.photos.remove}
           </Button>
         )}
       </div>

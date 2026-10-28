@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
+import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { confirmBusinessDetails } from "../api/actions"
 
 // Shown on the dashboard until the owner confirms what came from Google
@@ -31,6 +32,8 @@ export function ConfirmDetailsCard({
   businessId: string
   details: BusinessDetailsData
 }) {
+  const m = useOwnerMessages()
+  const t = m.settings.confirm
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const base = `/dashboard/${businessId}`
@@ -39,21 +42,25 @@ export function ConfirmDetailsCard({
     startTransition(async () => {
       const result = await confirmBusinessDetails(businessId)
       if (result.ok) {
-        toast.success("Details confirmed")
+        toast.success(t.confirmed)
         router.refresh()
       } else {
-        toast.error("Could not confirm. Try again.")
+        toast.error(t.failed)
       }
     })
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Check your details</CardTitle>
-        <CardDescription>From Google Maps. Is this right?</CardDescription>
+        <CardTitle>{t.title}</CardTitle>
+        <CardDescription>{t.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <BusinessDetails details={details} hoursHref={`${base}/hours`} />
+        <BusinessDetails
+          details={details}
+          hoursHref={`${base}/hours`}
+          labels={{ noHours: t.noHours, openDays: t.openDays }}
+        />
       </CardContent>
       <CardFooter className="justify-end gap-2">
         <Button
@@ -61,11 +68,11 @@ export function ConfirmDetailsCard({
           nativeButton={false}
           render={<Link href={`${base}/settings`} />}
         >
-          Edit
+          {t.edit}
         </Button>
         <Button onClick={confirm} disabled={pending}>
           {pending && <Spinner data-icon="inline-start" />}
-          Looks right
+          {t.looksRight}
         </Button>
       </CardFooter>
     </Card>

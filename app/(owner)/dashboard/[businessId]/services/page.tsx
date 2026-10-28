@@ -3,8 +3,11 @@ import { getAddonGroups } from "@/features/dashboard/api/addon-queries"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { getServiceTeams } from "@/features/dashboard/api/team-service-queries"
 import { ServicesView } from "@/features/dashboard/components/services-view"
+import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 
-export const metadata: Metadata = { title: "Services" }
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getOwnerMessages()).shell.nav.services }
+}
 
 type Props = {
   params: Promise<{ businessId: string }>

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import {
   ChevronDownIcon,
+  LanguagesIcon,
   LogOutIcon,
   MonitorIcon,
   MoonIcon,
@@ -23,7 +24,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  useOwnerLanguage,
+  useOwnerMessages,
+} from "@/features/dashboard/i18n/provider"
+import { LANGUAGE_NAMES } from "@/features/dashboard/i18n/language"
 import { authClient } from "@/lib/auth-client"
+import { PAGE_LANGUAGES, isPageLanguage } from "@/lib/page-language"
 import { initials } from "@/lib/initials"
 
 interface Owner {
@@ -46,17 +53,19 @@ function OwnerAvatar({ owner }: { owner: Owner }) {
 
 // The owner's account menu, like Koblip Sales': their photo with a small ⌄
 // badge on its corner and a ring on hover and while open, so it reads as a
-// menu. Inside: who is logged in, light or dark (or as the device is), and
-// Sign out.
+// menu. Inside: who is logged in, light or dark (or as the device is), the
+// language, and Sign out.
 const THEMES = [
-  { value: "light", label: "Light", icon: SunIcon },
-  { value: "dark", label: "Dark", icon: MoonIcon },
-  { value: "system", label: "Device", icon: MonitorIcon },
-]
+  { value: "light", key: "light", icon: SunIcon },
+  { value: "dark", key: "dark", icon: MoonIcon },
+  { value: "system", key: "device", icon: MonitorIcon },
+] as const
 
 export function AccountMenu({ owner }: { owner: Owner }) {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const m = useOwnerMessages().shell
+  const [language, setLanguage] = useOwnerLanguage()
   const signOut = async () => {
     await authClient.signOut()
     router.replace("/")
@@ -70,7 +79,7 @@ export function AccountMenu({ owner }: { owner: Owner }) {
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Account"
+            aria-label={m.account}
             className="relative rounded-full hover:bg-transparent hover:ring-2 hover:ring-border data-popup-open:ring-2 data-popup-open:ring-border"
           />
         }
@@ -97,7 +106,7 @@ export function AccountMenu({ owner }: { owner: Owner }) {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Appearance</DropdownMenuLabel>
+          <DropdownMenuLabel>{m.appearance}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
             value={theme ?? "system"}
             onValueChange={setTheme}
@@ -105,7 +114,24 @@ export function AccountMenu({ owner }: { owner: Owner }) {
             {THEMES.map((item) => (
               <DropdownMenuRadioItem key={item.value} value={item.value}>
                 <item.icon />
-                {item.label}
+                {m[item.key]}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{m.language}</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={language}
+            onValueChange={(next) => {
+              if (isPageLanguage(next)) setLanguage(next)
+            }}
+          >
+            {PAGE_LANGUAGES.map((code) => (
+              <DropdownMenuRadioItem key={code} value={code} lang={code}>
+                <LanguagesIcon />
+                {LANGUAGE_NAMES[code]}
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>
@@ -113,7 +139,7 @@ export function AccountMenu({ owner }: { owner: Owner }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => void signOut()}>
           <LogOutIcon />
-          Sign out
+          {m.signOut}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -38,12 +38,21 @@ export function LiveCard({
   photoUrl,
   slug,
   dashboardHref,
+  labels: t,
 }: {
   name: string
   category: string | null
   photoUrl: string | null
   slug: string
   dashboardHref: string
+  // In the owner's language, from the page.
+  labels: {
+    live: string
+    linkCopied: string
+    shareLink: string
+    viewMyPage: string
+    toDashboard: string
+  }
 }) {
   const path = `/b/${slug}`
 
@@ -71,7 +80,7 @@ export function LiveCard({
   const share = async () => {
     const url = new URL(path, window.location.origin).toString()
     const result = await shareLink({ title: name, url })
-    if (result === "copied") toast.success("Link copied")
+    if (result === "copied") toast.success(t.linkCopied)
   }
 
   return (
@@ -89,7 +98,7 @@ export function LiveCard({
       </Avatar>
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight text-balance">
-          Congratulations, you&apos;re live!
+          {t.live}
         </h1>
         <p className="text-muted-foreground">
           {category ? `${name} · ${category}` : name}
@@ -107,7 +116,7 @@ export function LiveCard({
       <div className="flex w-full flex-col gap-3">
         <Button size="lg" onClick={() => void share()}>
           <ShareIcon data-icon="inline-start" />
-          Share link
+          {t.shareLink}
         </Button>
         <Button
           variant="outline"
@@ -115,7 +124,7 @@ export function LiveCard({
           nativeButton={false}
           render={<a href={path} target="_blank" rel="noreferrer" />}
         >
-          View my page
+          {t.viewMyPage}
           <ExternalLinkIcon data-icon="inline-end" />
         </Button>
         <Button
@@ -123,7 +132,7 @@ export function LiveCard({
           nativeButton={false}
           render={<Link href={dashboardHref} />}
         >
-          Go to dashboard
+          {t.toDashboard}
           <ArrowRightIcon data-icon="inline-end" />
         </Button>
       </div>

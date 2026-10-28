@@ -17,6 +17,12 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 
+// The caller's words for the hours row, in the page's language.
+export interface BusinessDetailsLabels {
+  noHours: string
+  openDays: (days: number) => string
+}
+
 export interface BusinessDetailsData {
   // Left out where the business's name and address already show above.
   name?: string
@@ -33,9 +39,11 @@ export interface BusinessDetailsData {
 export function BusinessDetails({
   details,
   hoursHref,
+  labels,
 }: {
   details: BusinessDetailsData
   hoursHref?: string
+  labels: BusinessDetailsLabels
 }) {
   const store = details.name
     ? details.category
@@ -76,8 +84,8 @@ export function BusinessDetails({
         <ItemContent>
           <ItemTitle className="font-normal">
             {details.openDays === 0
-              ? "No opening hours"
-              : `Open ${details.openDays} ${details.openDays === 1 ? "day" : "days"} a week`}
+              ? labels.noHours
+              : labels.openDays(details.openDays)}
           </ItemTitle>
         </ItemContent>
         {hoursHref && (

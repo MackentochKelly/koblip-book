@@ -6,12 +6,15 @@ import {
 } from "@/features/dashboard/api/queries"
 import { getAddonGroups } from "@/features/dashboard/api/addon-queries"
 import { getServiceTeams } from "@/features/dashboard/api/team-service-queries"
+import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { BookingsView } from "@/features/dashboard/components/bookings-view"
 import { ConfirmDetailsCard } from "@/features/dashboard/components/confirm-details-card"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import { addDaysTo, todayIn } from "@/lib/format-booking-time"
 
-export const metadata: Metadata = { title: "Bookings" }
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getOwnerMessages()).shell.nav.bookings }
+}
 
 type Props = {
   params: Promise<{ businessId: string }>

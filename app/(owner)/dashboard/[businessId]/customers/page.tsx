@@ -3,9 +3,12 @@ import {
   getCustomerBookings,
   getCustomers,
 } from "@/features/dashboard/api/customers"
+import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { CustomersView } from "@/features/dashboard/components/customers-view"
 
-export const metadata: Metadata = { title: "Customers" }
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getOwnerMessages()).shell.nav.customers }
+}
 
 export default async function CustomersPage({
   params,
