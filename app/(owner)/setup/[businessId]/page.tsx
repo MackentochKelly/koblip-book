@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Check your details" }
 
 // Right after sign-up: the owner checks and fixes what came from Google
 // Maps, and Save (which confirms the details) opens the dashboard. The
-// login page's look: one rounded panel on the moving gradient.
+// login page's moving gradient, here filling the whole screen.
 export default async function SetupPage({
   params,
 }: PageProps<"/setup/[businessId]">) {
@@ -23,12 +23,12 @@ export default async function SetupPage({
   return (
     <div
       className={cn(
-        "flex min-h-dvh flex-col bg-background p-2 sm:p-3",
+        "flex min-h-dvh flex-col bg-background",
         fontDisplay.variable
       )}
     >
-      <section className="relative isolate flex flex-1 flex-col overflow-hidden rounded-4xl">
-        <HeroGradient />
+      <section className="relative isolate flex flex-1 flex-col overflow-hidden">
+        <HeroGradient className="[clip-path:none]" />
         <SiteHeader />
         <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-6 px-2 pt-4 pb-24 sm:px-4">
           <GlassCard>

@@ -4,6 +4,7 @@ import { useMemo, useSyncExternalStore } from "react"
 import { MeshGradient } from "@paper-design/shaders-react"
 
 import { cssColorToRgb } from "@/lib/css-color"
+import { cn } from "@/lib/utils"
 
 // Paper's Mesh Gradient (https://shaders.paper.design/mesh-gradient): a
 // slow fluid colour wash, set up once for the app. The colours are theme
@@ -35,8 +36,9 @@ function subscribeToMotion(onChange: () => void) {
   return () => query.removeEventListener("change", onChange)
 }
 
-// Fills its `relative isolate` parent, behind the content.
-export function HeroGradient() {
+// Fills its `relative isolate` parent, behind the content. A full-screen
+// page passes `[clip-path:none]` to drop the rounded corners.
+export function HeroGradient({ className }: { className?: string }) {
   const themeClass = useSyncExternalStore(
     subscribeToTheme,
     () => document.documentElement.className,
@@ -62,7 +64,10 @@ export function HeroGradient() {
     // rounded corners for a moment, so they flash square.
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 -z-10 [clip-path:inset(0_round_var(--radius-4xl))]"
+      className={cn(
+        "pointer-events-none absolute inset-0 -z-10 [clip-path:inset(0_round_var(--radius-4xl))]",
+        className
+      )}
     >
       {colors && (
         <MeshGradient
