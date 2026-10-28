@@ -16,6 +16,7 @@ import {
   buildLanguageLine,
   buildSystemPrompt,
 } from "../utils/system-prompt"
+import { checkAnswer } from "./check-answer"
 import { storePendingAction } from "./pending-actions"
 
 export interface RunChatContext {
@@ -225,8 +226,16 @@ export async function* runChat(
     }
     let sentText = false
     let stopAfterReply = false
+    // A non-confirm tool ran in this request: later text may cite tool
+    // data, so it is held for the judge instead of streaming live.
+    let toolsRan = false
+    let retriesLeft = ASSISTANT_RULES.answerCheckRetries
+    // Last answer that failed a check and is still waiting on its retry.
+    let pendingAnswer: string | null = null
     for (let turn = 0; turn < ASSISTANT_RULES.maxSteps; turn += 1) {
       const stream = await modelCall()
+      // Decided before this turn streams: holding cannot start mid-turn.
+      const streamLive = !toolsRan
       let text = ""
       const calls: CollectedCall[] = []
       for await (const chunk of stream) {
@@ -255,13 +264,16 @@ export async function* runChat(
           continue
         }
         if (delta.content) {
+          text += delta.content
+          if (!streamLive) {
+            continue
+          }
           // A later turn's words would glue onto the earlier text
           // ("list.I checked"), so separate them once, only when
           // this turn really has text.
-          if (sentText && text === "") {
+          if (sentText && text === delta.content) {
             yield { type: "text", delta: "\n\n" }
           }
-          text += delta.content
           sentText = true
           yield { type: "text", delta: delta.content }
         }
@@ -279,8 +291,79 @@ export async function* runChat(
         }
       }
       if (calls.length === 0) {
+        if (streamLive || text === "") {
+          yield { type: "done" }
+          return
+        }
+        // Held final answer: check it against this request's tool
+        // results before the owner sees it.
+        const stepId = `check-${turn}`
+        yield {
+          type: "step",
+          id: stepId,
+          label: t.steps.checking,
+          status: "running",
+        }
+        const question =
+          [...messages].reverse().find((m) => m.role === "owner")?.text ?? ""
+        const toolResults = history.flatMap((m) =>
+          m.role === "tool" && typeof m.content === "string" ? [m.content] : []
+        )
+        const verdict = await checkAnswer({
+          question,
+          toolResults,
+          answer: text,
+          signal: opts?.signal,
+        })
+        yield {
+          type: "step",
+          id: stepId,
+          label: t.steps.checking,
+          status: "done",
+        }
+        if (verdict.ok === true) {
+          pendingAnswer = null
+          if (sentText) {
+            yield { type: "text", delta: "\n\n" }
+          }
+          sentText = true
+          yield { type: "text", delta: text }
+          yield { type: "done" }
+          return
+        }
+        if (verdict.ok === false && retriesLeft > 0) {
+          // Hide the bad answer and ask for another using only the
+          // tool results. This retry counts toward maxSteps.
+          retriesLeft -= 1
+          pendingAnswer = text
+          history.push({ role: "assistant", content: text })
+          history.push({
+            role: "developer",
+            content:
+              `Your answer had problems: ${verdict.problems.join("; ")}. ` +
+              "Answer again using only the tool results; " +
+              "call a tool if you need more data.",
+          })
+          continue
+        }
+        pendingAnswer = null
+        if (sentText) {
+          yield { type: "text", delta: "\n\n" }
+        }
+        sentText = true
+        yield { type: "text", delta: text }
+        yield { type: "text", delta: "\n\n" + t.loop.unverified }
         yield { type: "done" }
         return
+      }
+      if (!streamLive && text !== "") {
+        // Short lead-in to the tool calls: it carries no looked-up
+        // facts of its own, so it goes out as it is.
+        if (sentText) {
+          yield { type: "text", delta: "\n\n" }
+        }
+        sentText = true
+        yield { type: "text", delta: text }
       }
       // Full assistant message first, then one tool message per call,
       // in order, with the matching id.
@@ -325,7 +408,9 @@ export async function* runChat(
           if (!tool) {
             throw new Error(`unknown tool ${call.function.name}`)
           }
-          result = { data: await tool.run(JSON.parse(call.function.arguments)) }
+          const parsedArgs = JSON.parse(call.function.arguments)
+          toolsRan = true
+          result = { data: await tool.run(parsedArgs) }
         } catch {
           ok = false
           result = { error: t.loop.lookupFailed }
@@ -349,6 +434,18 @@ export async function* runChat(
         yield { type: "done" }
         return
       }
+    }
+    if (pendingAnswer !== null) {
+      // A checked answer never got its retry: send the last one
+      // marked as unverified instead of the stopped message.
+      if (sentText) {
+        yield { type: "text", delta: "\n\n" }
+      }
+      sentText = true
+      yield { type: "text", delta: pendingAnswer }
+      yield { type: "text", delta: "\n\n" + t.loop.unverified }
+      yield { type: "done" }
+      return
     }
     yield {
       type: "text",

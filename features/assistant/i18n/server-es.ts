@@ -22,6 +22,7 @@ const messages: typeof en = {
     freeTimes: "Buscando huecos…",
     booking: "Reservando…",
     working: "Trabajando…",
+    checking: "Revisando la respuesta…",
   },
   loop: {
     invalidArgs: "esos argumentos no eran válidos, pide lo que falte",
@@ -29,6 +30,7 @@ const messages: typeof en = {
     tooMany: "demasiadas confirmaciones pendientes, responde una primero",
     stopped: (maxSteps: number) =>
       `Me quedé sin pasos después de ${maxSteps} búsquedas — pídeme algo más concreto.`,
+    unverified: "No pude comprobar esta respuesta, revísala por favor.",
   },
   confirm: {
     unchanged: "Vale, no se cambió nada.",

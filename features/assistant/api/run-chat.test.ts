@@ -47,7 +47,9 @@ const toolChunk = (
 })
 
 // Each turn is a list of chunks; the last turn repeats when exhausted.
-function scriptedClient(turns: unknown[][]) {
+// Judge calls (non-streaming bodies with response_format) are answered
+// from judgeReplies instead, in order, repeating the last one.
+function scriptedClient(turns: unknown[][], judgeReplies: string[] = []) {
   const seen: {
     messages: {
       role: string
@@ -56,8 +58,17 @@ function scriptedClient(turns: unknown[][]) {
     }[]
   }[] = []
   let n = 0
-  const create = vi.fn(async (body: { messages: never[] }) => {
+  let j = 0
+  const create = vi.fn(async (body: {
+    messages: never[]
+    response_format?: unknown
+  }) => {
     seen.push(body as never)
+    if (body.response_format) {
+      const reply = judgeReplies[Math.min(j, judgeReplies.length - 1)]
+      j += 1
+      return { choices: [{ message: { content: reply } }] }
+    }
     const chunks = turns[Math.min(n, turns.length - 1)]
     n += 1
     return (async function* () {
@@ -70,6 +81,16 @@ function scriptedClient(turns: unknown[][]) {
     chat: { completions: { create } },
   } as never)
   return { seen, create }
+}
+
+const judgeOk = () => JSON.stringify({ supported: true, problems: [] })
+const judgeNo = (problems: string[]) =>
+  JSON.stringify({ supported: false, problems })
+
+function judgeBodies(create: ReturnType<typeof vi.fn>) {
+  return create.mock.calls
+    .map(([body]) => body as Record<string, unknown>)
+    .filter((body) => "response_format" in body)
 }
 
 async function collect(gen: AsyncGenerator<unknown>): Promise<unknown[]> {
@@ -104,20 +125,35 @@ test("plain answer streams text then done, with tools offered", async () => {
 
 test("tool call then final answer, ids matched in order", async () => {
   const run = vi.fn(async (args: unknown) => ({ echo: args }))
-  scriptedClient([
+  scriptedClient(
     [
-      toolChunk(0, "call-A", "pro", '{"a"'),
-      toolChunk(0, undefined, "be", ":1}"),
-      toolChunk(1, "call-B", "probe", "{}"),
+      [
+        toolChunk(0, "call-A", "pro", '{"a"'),
+        toolChunk(0, undefined, "be", ":1}"),
+        toolChunk(1, "call-B", "probe", "{}"),
+      ],
+      [textChunk("Done.")],
     ],
-    [textChunk("Done.")],
-  ])
+    [judgeOk()]
+  )
   const events = await collect(runChat(MESSAGES, CONTEXT, [probe(run)]))
   expect(events).toEqual([
     { type: "step", id: "call-A", label: "Probing…", status: "running" },
     { type: "step", id: "call-A", label: "Probing…", status: "done" },
     { type: "step", id: "call-B", label: "Probing…", status: "running" },
     { type: "step", id: "call-B", label: "Probing…", status: "done" },
+    {
+      type: "step",
+      id: "check-1",
+      label: "Checking the answer…",
+      status: "running",
+    },
+    {
+      type: "step",
+      id: "check-1",
+      label: "Checking the answer…",
+      status: "done",
+    },
     { type: "text", delta: "Done." },
     { type: "done" },
   ])
@@ -127,13 +163,16 @@ test("tool call then final answer, ids matched in order", async () => {
 })
 
 test("a later turn with text is separated by one blank line", async () => {
-  scriptedClient([
+  scriptedClient(
     [
-      textChunk("Checking your service list."),
-      toolChunk(0, "call-A", "probe", "{}"),
+      [
+        textChunk("Checking your service list."),
+        toolChunk(0, "call-A", "probe", "{}"),
+      ],
+      [textChunk("I checked: 8 services.")],
     ],
-    [textChunk("I checked: 8 services.")],
-  ])
+    [judgeOk()]
+  )
   const events = await collect(
     runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
   )
@@ -141,6 +180,18 @@ test("a later turn with text is separated by one blank line", async () => {
     { type: "text", delta: "Checking your service list." },
     { type: "step", id: "call-A", label: "Probing…", status: "running" },
     { type: "step", id: "call-A", label: "Probing…", status: "done" },
+    {
+      type: "step",
+      id: "check-1",
+      label: "Checking the answer…",
+      status: "running",
+    },
+    {
+      type: "step",
+      id: "check-1",
+      label: "Checking the answer…",
+      status: "done",
+    },
     { type: "text", delta: "\n\n" },
     { type: "text", delta: "I checked: 8 services." },
     { type: "done" },
@@ -148,11 +199,14 @@ test("a later turn with text is separated by one blank line", async () => {
 })
 
 test("no separator when the later turn has no text", async () => {
-  scriptedClient([
-    [textChunk("One."), toolChunk(0, "call-A", "probe", "{}")],
-    [toolChunk(0, "call-B", "probe", "{}")],
-    [textChunk("Two.")],
-  ])
+  scriptedClient(
+    [
+      [textChunk("One."), toolChunk(0, "call-A", "probe", "{}")],
+      [toolChunk(0, "call-B", "probe", "{}")],
+      [textChunk("Two.")],
+    ],
+    [judgeOk()]
+  )
   const events = await collect(
     runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
   )
@@ -165,13 +219,16 @@ test("no separator when the later turn has no text", async () => {
 })
 
 test("second model call carries full assistant message plus ordered tool results", async () => {
-  const { create } = scriptedClient([
+  const { create } = scriptedClient(
     [
-      toolChunk(0, "call-A", "probe", '{"a":1}'),
-      toolChunk(1, "call-B", "probe", "{}"),
+      [
+        toolChunk(0, "call-A", "probe", '{"a":1}'),
+        toolChunk(1, "call-B", "probe", "{}"),
+      ],
+      [textChunk("ok")],
     ],
-    [textChunk("ok")],
-  ])
+    [judgeOk()]
+  )
   await collect(
     runChat(MESSAGES, CONTEXT, [probe(async (args) => ({ echo: args }))])
   )
@@ -211,7 +268,10 @@ test("invalid JSON arguments fail the step without running", async () => {
 })
 
 test("throwing tool fails the step without leaking", async () => {
-  scriptedClient([[toolChunk(0, "call-A", "probe", "{}")], [textChunk("ok")]])
+  scriptedClient(
+    [[toolChunk(0, "call-A", "probe", "{}")], [textChunk("ok")]],
+    [judgeOk()]
+  )
   const events = await collect(
     runChat(MESSAGES, CONTEXT, [
       probe(async () => {
@@ -510,4 +570,170 @@ test("spanish context reports invalid arguments in spanish", async () => {
   }
   const toolMessage = second.messages.find((m) => m.role === "tool")
   expect(toolMessage?.content).toContain("esos argumentos no eran válidos")
+})
+
+test("no tool means live text and no judge call", async () => {
+  const { create } = scriptedClient([[textChunk("Hi"), textChunk("!")]])
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
+  )
+  expect(events).toEqual([
+    { type: "text", delta: "Hi" },
+    { type: "text", delta: "!" },
+    { type: "done" },
+  ])
+  expect(judgeBodies(create)).toEqual([])
+})
+
+test("tool then supported answer comes after a checking step", async () => {
+  const { create } = scriptedClient(
+    [
+      [toolChunk(0, "call-A", "probe", "{}")],
+      [textChunk("You have 2 bookings.")],
+    ],
+    [judgeOk()]
+  )
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [probe(async () => ({ today: 2 }))])
+  )
+  expect(events).toEqual([
+    { type: "step", id: "call-A", label: "Probing…", status: "running" },
+    { type: "step", id: "call-A", label: "Probing…", status: "done" },
+    {
+      type: "step",
+      id: "check-1",
+      label: "Checking the answer…",
+      status: "running",
+    },
+    {
+      type: "step",
+      id: "check-1",
+      label: "Checking the answer…",
+      status: "done",
+    },
+    { type: "text", delta: "You have 2 bookings." },
+    { type: "done" },
+  ])
+  expect(judgeBodies(create)).toHaveLength(1)
+})
+
+test("unsupported answer retries with the problems, bad answer never sent", async () => {
+  const { create } = scriptedClient(
+    [
+      [toolChunk(0, "call-A", "probe", "{}")],
+      [textChunk("Bad: 99 bookings.")],
+      [textChunk("Good: 2 bookings.")],
+    ],
+    [judgeNo(["Wrong count."]), judgeOk()]
+  )
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [probe(async () => ({ today: 2 }))])
+  )
+  expect(JSON.stringify(events)).not.toContain("Bad: 99 bookings.")
+  expect(events).toContainEqual({ type: "text", delta: "Good: 2 bookings." })
+  expect(events[events.length - 1]).toEqual({ type: "done" })
+  // Turn 0, turn 1, judge, retry turn, judge: the retry carries the
+  // bad answer plus a developer message with the problems.
+  const retry = create.mock.calls[3]?.[0] as {
+    messages: { role: string; content: string }[]
+  }
+  const [assistant, developer] = retry.messages.slice(-2)
+  expect(assistant).toMatchObject({
+    role: "assistant",
+    content: "Bad: 99 bookings.",
+  })
+  expect(developer.role).toBe("developer")
+  expect(developer.content).toContain("Wrong count.")
+})
+
+test("always unsupported sends the last answer marked unverified", async () => {
+  scriptedClient(
+    [
+      [toolChunk(0, "call-A", "probe", "{}")],
+      [textChunk("bad one")],
+      [textChunk("bad two")],
+      [textChunk("last try")],
+    ],
+    [judgeNo(["Off."])]
+  )
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
+  )
+  const flat = JSON.stringify(events)
+  expect(flat).not.toContain("bad one")
+  expect(flat).not.toContain("bad two")
+  expect(events).toContainEqual({ type: "text", delta: "last try" })
+  expect(events).toContainEqual({
+    type: "text",
+    delta: "\n\nI couldn't double-check this answer, please verify it.",
+  })
+  expect(events[events.length - 1]).toEqual({ type: "done" })
+})
+
+test("unknown judge verdict sends the answer marked unverified", async () => {
+  scriptedClient(
+    [
+      [toolChunk(0, "call-A", "probe", "{}")],
+      [textChunk("2 bookings.")],
+    ],
+    ["not json"]
+  )
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
+  )
+  expect(events).toContainEqual({ type: "text", delta: "2 bookings." })
+  expect(events).toContainEqual({
+    type: "text",
+    delta: "\n\nI couldn't double-check this answer, please verify it.",
+  })
+  expect(events[events.length - 1]).toEqual({ type: "done" })
+})
+
+test("confirm card makes no judge call", async () => {
+  resetPendingActionsForTests()
+  const { create } = scriptedClient([
+    [
+      textChunk("Tap to confirm."),
+      toolChunk(0, "call-A", "cancel_booking", '{"bookingId":"k1"}'),
+    ],
+  ])
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [
+      risky(async () => ({
+        title: "Cancel?",
+        summary: "Ana",
+        destructive: true,
+      })),
+    ])
+  )
+  expect(events.some((e) => (e as { type: string }).type === "confirm")).toBe(
+    true
+  )
+  expect(judgeBodies(create)).toEqual([])
+})
+
+test("maxSteps with a held answer sends it unverified instead of stopped", async () => {
+  const { create } = scriptedClient(
+    [
+      [toolChunk(0, "call-A", "probe", "{}")],
+      [textChunk("Held: 2 bookings.")],
+      ...Array.from({ length: ASSISTANT_RULES.maxSteps - 2 }, (_, i) => [
+        toolChunk(0, `call-${i}`, "probe", "{}"),
+      ]),
+    ],
+    [judgeNo(["Off."])]
+  )
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
+  )
+  expect(create.mock.calls.length).toBeGreaterThanOrEqual(
+    ASSISTANT_RULES.maxSteps
+  )
+  expect(events).toContainEqual({ type: "text", delta: "Held: 2 bookings." })
+  expect(events).toContainEqual({
+    type: "text",
+    delta: "\n\nI couldn't double-check this answer, please verify it.",
+  })
+  expect(JSON.stringify(events)).not.toContain("ran out of steps")
+  expect(events[events.length - 1]).toEqual({ type: "done" })
 })

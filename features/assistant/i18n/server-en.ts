@@ -24,6 +24,7 @@ const messages = {
     freeTimes: "Checking free times…",
     booking: "Booking…",
     working: "Working…",
+    checking: "Checking the answer…",
   },
   loop: {
     invalidArgs: "those arguments were not valid, ask for what is missing",
@@ -31,6 +32,8 @@ const messages = {
     tooMany: "too many pending confirmations, answer one first",
     stopped: (maxSteps: number) =>
       `I ran out of steps after ${maxSteps} lookups — ask me to narrow it down.`,
+    unverified:
+      "I couldn't double-check this answer, please verify it.",
   },
   confirm: {
     unchanged: "Okay, nothing was changed.",

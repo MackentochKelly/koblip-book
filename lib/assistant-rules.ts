@@ -6,6 +6,10 @@ export const ASSISTANT_RULES = {
   maxRequestsPerMinutePerOwner: 20,
   modelTimeoutMs: 60_000,
   maxCompletionTokens: 1024,
+  // Final-answer judge: retries after an unsupported answer, and the
+  // timeout for one judge call.
+  answerCheckRetries: 2,
+  answerCheckTimeoutMs: 20_000,
   // Total wall time for one chat request, model calls and tools together.
   maxRequestMs: 120_000,
   // Voice transcription. The UI imports these so the browser records
