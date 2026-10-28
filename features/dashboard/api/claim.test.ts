@@ -33,7 +33,7 @@ beforeAll(async () => {
       timezone: "America/Santo_Domingo",
       currency: "DOP",
       ownerId: "user-a",
-      detailsConfirmedAt: null,
+      detailsConfirmedAt: 1700000000000,
     },
     {
       id: "biz-mine",
@@ -42,7 +42,7 @@ beforeAll(async () => {
       timezone: "America/Santo_Domingo",
       currency: "DOP",
       ownerId: "user-b",
-      detailsConfirmedAt: null,
+      detailsConfirmedAt: 1700000000000,
     },
   ])
 })
@@ -72,22 +72,20 @@ async function confirmedAtOf(id: string) {
 
 test("user B takes over a business owned by user A", async () => {
   await expect(ownerIdOf("biz-taken")).resolves.toBe("user-a")
-  await expect(confirmedAtOf("biz-taken")).resolves.toBeNull()
   await expect(claimBusinessForUser("user-b", "taken-shop")).resolves.toEqual({
     ok: true,
     businessId: "biz-taken",
   })
   await expect(ownerIdOf("biz-taken")).resolves.toBe("user-b")
-  expect(typeof (await confirmedAtOf("biz-taken"))).toBe("number")
+  await expect(confirmedAtOf("biz-taken")).resolves.toBeNull()
 })
 
-test("claiming your own unconfirmed business confirms it", async () => {
-  await expect(confirmedAtOf("biz-mine")).resolves.toBeNull()
+test("claiming your own business leaves detailsConfirmedAt unchanged", async () => {
   await expect(claimBusinessForUser("user-b", "my-shop")).resolves.toEqual({
     ok: true,
     businessId: "biz-mine",
   })
-  expect(typeof (await confirmedAtOf("biz-mine"))).toBe("number")
+  await expect(confirmedAtOf("biz-mine")).resolves.toBe(1700000000000)
 })
 
 test("claiming your own business is ok", async () => {
