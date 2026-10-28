@@ -8,6 +8,15 @@ export const META_TEXT_MODEL = "muse-spark-1.3"
 // ASR endpoint (not an OpenAI-protocol path, so callers use fetch).
 export const META_VOICE_MODEL = "muse-voice-transcribe-1.0"
 
+// The one place the live-hearing handshake lives (schema fields only,
+// no key). The check route sends it to the relay per owner language.
+export const VOICE_HANDSHAKE = {
+  audioEncoding: "PCM_24KHZ",
+  model: META_VOICE_MODEL,
+  mode: "ENDPOINTING",
+  partialMode: "CUMULATIVE",
+} as const
+
 let sharedClient: OpenAI | null = null
 
 // Says whether the AI is off: without MODEL_API_KEY the callers skip AI.

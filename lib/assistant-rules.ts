@@ -25,6 +25,14 @@ export const ASSISTANT_RULES = {
   // Saved chats get their own per-minute budget, so saving never eats
   // the asking budget.
   maxChatRequestsPerMinutePerOwner: 60,
+  // Live voice: session starts per owner per minute.
+  maxVoiceSessionsPerMinutePerOwner: 6,
+  // Live voice: longest one relay session, well under Meta's 60 minutes.
+  maxVoiceSessionSeconds: 600,
+  // Live voice: pre-handshake audio buffer, 5 s of 24 kHz 16-bit mono.
+  voiceMaxBufferedBytes: 240_000,
+  // Live voice: biggest one audio frame, 200 ms of 24 kHz 16-bit mono.
+  voiceMaxFrameBytes: 9_600,
   // Stats ranges over this many days are refused (getBookingsBetween).
   maxStatsRangeDays: 366,
   // Total wall time for one chat request, model calls and tools together.

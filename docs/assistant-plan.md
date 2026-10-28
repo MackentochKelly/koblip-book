@@ -232,3 +232,160 @@ pass, no commit.
   never a typed number (maxTeamName, maxHoursRows, maxCustomerQuery,
   maxFreeTimesDays added).
 - Not in the assistant on purpose: photos and reordering.
+
+## 11. Live voice (started 2026-10-28)
+
+Goal: the owner taps one button and talks with the assistant live, like
+ChatGPT voice. Meta hears (Muse Voice Transcribe, live), Muse Spark thinks
+(the same assistant, same tools, same tap cards), ElevenLabs speaks (Meta has
+no voice output).
+
+How we work: same as section 10. Read this section before each step; the
+exact prompt is written just before the step, from this section and the code
+as it is then. Muse sends a plan first. Follow the sources below to the
+letter: no guessed field, value or behaviour.
+
+### Sources (read before each step)
+
+Meta (live hearing)
+- Speech to text guide: https://dev.meta.ai/docs/speech-to-text
+- Realtime API: https://dev.meta.ai/docs/api-reference/voice/realtime
+- Voice schemas: https://dev.meta.ai/docs/api-reference/voice/schemas
+- Voice overview: https://dev.meta.ai/docs/api-reference/voice
+- Cookbook: https://dev.meta.ai/docs/cookbook/muse-voice-transcribe
+- Authentication: https://dev.meta.ai/docs/authentication
+- Pricing and limits: https://dev.meta.ai/docs/pricing-rate-limits#muse-voice-transcribe-pricing
+
+ElevenLabs (speaking)
+- TTS WebSocket API: https://elevenlabs.io/docs/api-reference/text-to-speech/v-1-text-to-speech-voice-id-stream-input
+- Real-time guide: https://elevenlabs.io/docs/developers/websockets
+- Single-use tokens: https://elevenlabs.io/docs/api-reference/single-use/create
+- Authentication and key limits: https://elevenlabs.io/docs/api-reference/authentication
+- Models: https://elevenlabs.io/docs/overview/models
+- Latency: https://elevenlabs.io/docs/eleven-api/guides/how-to/best-practices/latency-optimization
+- Output formats (enum on): https://elevenlabs.io/docs/api-reference/text-to-speech/convert
+- Docs index: https://elevenlabs.io/docs/llms.txt
+- Eleven v4: https://elevenlabs.io/v4
+- TTS vs Text to Dialogue sockets: https://elevenlabs.io/docs/eleven-api/guides/how-to/websockets/tts-vs-ttd-websockets
+- Realtime Text to Dialogue guide: https://elevenlabs.io/docs/eleven-api/guides/how-to/websockets/realtime-tdd
+- Text to Dialogue WebSocket API: https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket
+
+Next.js and server
+- Custom server (bundled): node_modules/next/dist/docs/01-app/02-guides/custom-server.md
+- Route handlers can't hold WebSockets (bundled):
+  node_modules/next/dist/docs/01-app/02-guides/backend-for-frontend.md
+- Example: https://github.com/vercel/next.js/tree/canary/examples/custom-server
+- ws library (noServer + handleUpgrade): https://github.com/websockets/ws
+
+Browser (UI)
+- getUserMedia + echoCancellation: https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
+- MediaTrackConstraints.echoCancellation: https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/echoCancellation
+- AudioWorklet: https://developer.mozilla.org/en-US/docs/Web/API/AudioWorklet
+- AudioContext (sampleRate option): https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/AudioContext
+- WebSocket (binaryType): https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
+
+### Facts from the docs (2026-10-28)
+
+Meta live hearing
+- `wss://api.meta.ai/v1/asr/realtime`. The key goes in the first JSON frame
+  (`authorization.accessToken` = "Bearer <key>"), sent within 10 s. The HTTP
+  Authorization header and query keys are ignored. No short-lived browser
+  keys exist, so the browser can never connect directly: our server relays.
+- Handshake: `audioEncoding` PCM_24KHZ (or PCM_16KHZ), `model`
+  muse-voice-transcribe-1.0, `mode` ENDPOINTING (turn detection),
+  `partialMode` CUMULATIVE, optional `languageBias`, `keywords`. Fixed for
+  the session.
+- Audio: raw 16-bit little-endian mono PCM, binary frames, paced at real
+  time, never more than 5 s ahead. ~80 ms frames (3,840 bytes at 24 kHz).
+- Events: `speechStart`(turnId), `transcript`(partial, no turnId,
+  replaces the previous one), `speechEnd`, `speechComplete`(turnId, the
+  final turn text: use this one), `audioProgress`, `error`. Ignore unknown
+  types. Turns can overlap: track by turnId.
+- End: send `{"type":"endStream"}`, read until close 1000. Close codes: 1008
+  bad request or pacing (don't retry), 1011 failure (retry with backoff; new
+  session if "Max session duration reached"), 1013 rate limited (back off).
+- Limits: 60 min per session, idle input/output closes it, 256 concurrent.
+  25 languages incl. English and Spanish, code-switching. $0.18 per hour.
+
+ElevenLabs speaking
+- `wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input`,
+  query `model_id`, `output_format`, `language_code`, `inactivity_timeout`
+  (default 20, max 180), `auto_mode`, `single_use_token`.
+- Model: `eleven_flash_v2_5` (the docs' pick for low-latency WebSocket; the
+  WebSocket does not support v3/v4). Spanish supported.
+- Output: `pcm_24000` (no paid-tier note; 44.1 kHz PCM needs Pro).
+- Messages: first `{"text":" "}` (+ voice_settings), then text chunks ending
+  in a space, `flush: true` at the end of a turn, `{"text":""}` closes.
+  Server sends `{audio: base64}` chunks, then `{isFinal: true}`.
+- `auto_mode=true` handles generation triggers (lower latency).
+- Browser auth: a single-use token, type `tts_websocket`, made by our server
+  with the `xi-api-key` header (POST /v1/single-use-token/tts_websocket),
+  valid 15 min, used once. Never put the API key in the browser. Make the
+  key scope-limited with a credit quota.
+
+Our app
+- Next.js route handlers can't hold WebSockets, so a custom server
+  (server.mjs: Next + ws on one port) relays the live hearing. It keeps
+  Next's own upgrade handler for dev reload.
+- Live nginx already forwards Upgrade/Connection to 127.0.0.1:3100.
+- Owner checks stay in Next: the relay asks an internal route with the
+  request's cookie (same checks as /api/assistant/transcribe: same origin,
+  session, rate limit, owned business, owner language).
+
+### How it works
+
+```
+Phone mic -> (24 kHz PCM) -> our /voice/listen socket -> Meta realtime
+          <- speechStart / partial / speechComplete <-
+speechComplete text -> POST /api/assistant (voice: true) -> Muse + tools
+                    <- text stream (+ tap cards on screen)
+text stream -> ElevenLabs socket (single-use token) -> PCM -> speaker
+Owner starts talking while it speaks -> stop speaker, stop the answer.
+```
+
+Rules: risky changes still need a tap on the screen (the voice says so;
+never confirm by voice). Spoken answers are short, no lists or Markdown.
+Same chat, saved like typed chats.
+
+### Steps
+
+- [x] **1. Live hearing relay** (Muse): server.mjs custom server, the
+  internal check route, the Meta relay, tests, dev/start scripts. Status:
+  done and reviewed 2026-10-28 (463 tests pass; a real Meta stream came
+  back as speechStart, partials, speechComplete).
+- [ ] **2. Speaking token + talking mode** (Muse): GET
+  /api/voice/speak-token (ElevenLabs single-use token), VOICE_RULES config
+  (model, output format, voice id, timeouts), ELEVENLABS_API_KEY;
+  /api/assistant accepts `voice: true` and adds a short-spoken-answer line.
+- [ ] **3. Voice screen** (Claude): the talk button, full-screen orb
+  (HeroGradient), live captions, mic worklet to the socket, sending turns,
+  playing the voice, interrupting, stop, errors; phone light/dark.
+- [ ] **4. End-to-end check** (both): Chrome and Safari on a real phone
+  (the Browser pane blocks the mic), English and Spanish, interrupting,
+  a risky change shows its card.
+- [ ] **5. Go live** (Kelly + Claude): ElevenLabs key (scoped, quota) and
+  voice in .env.production, pm2 start command changes to the custom server
+  (`PORT=3100 HOSTNAME=127.0.0.1 NODE_ENV=production node server.mjs`, via
+  `npm start`), push.
+
+### Decisions needed from Kelly
+
+- Which ElevenLabs voice (one for English and Spanish, or one each).
+- An ElevenLabs API key just for this app, limited to text to speech and
+  single-use tokens, with a credit limit.
+
+### Notes
+
+- 2026-10-28: Kelly wants Eleven v4. v4 Turbo (`eleven_v4_turbo`, ~150 ms
+  to first speech, 90+ languages, one voice) only works on the Text to
+  Dialogue socket `wss://api.elevenlabs.io/v1/text-to-dialogue/stream-input`
+  (first message `voices: [id]`, then `inputs: [{text, voice_id}]`,
+  `flush`, `close_socket`, `keep_alive`; 20 s timeout). The docs mention a
+  `single_use_token` there but list no token type for it (only
+  `tts_websocket`). Step 2 starts with one real test: does a `tts_websocket`
+  token open that socket? Yes: use v4 Turbo. No: our server relays the
+  speaking socket too (like the hearing relay), so the key never leaves it.
+- 2026-10-28: plan B chosen (Meta hears, Muse thinks, ElevenLabs speaks) for
+  the most Meta in the hackathon score and to reuse the full assistant.
+- 2026-10-28: the app now starts with `node server.mjs`; the port comes
+  from PORT (not `--port`). Local preview: `PORT=3100 npm run dev`.
