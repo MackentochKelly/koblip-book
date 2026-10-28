@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  formatDayRange,
   addDaysTo,
   dayFromDate,
   dayOfMonth,
@@ -20,6 +21,13 @@ describe("format-booking-time", () => {
     expect(formatDay("2026-10-27")).toBe("Tuesday, October 27")
     expect(formatWeekdayShort("2026-10-27")).toBe("Tue")
     expect(dayOfMonth("2026-10-27")).toBe(27)
+  })
+
+  it("shows a range of days", () => {
+    // Intl puts thin spaces around the dash.
+    expect(formatDayRange("2026-10-27", "2026-11-09")).toMatch(
+      /^Oct 27\s–\sNov 9$/
+    )
   })
 
   it("adds days across a month", () => {

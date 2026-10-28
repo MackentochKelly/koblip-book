@@ -35,6 +35,20 @@ export function formatWeekdayShort(date: string, locale = "en-US"): string {
   }).format(asUtc(date))
 }
 
+// "2026-10-27", "2026-11-09" → "Oct 27 – Nov 9" (in the given locale, with
+// thin spaces around the dash).
+export function formatDayRange(
+  from: string,
+  to: string,
+  locale = "en-US"
+): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).formatRange(asUtc(from), asUtc(to))
+}
+
 // 0 = Sunday … 6 = Saturday → "Sunday".
 export function formatWeekday(weekday: number, locale = "en-US"): string {
   // 2000-01-02 was a Sunday.

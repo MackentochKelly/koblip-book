@@ -42,9 +42,11 @@ const bookings = {
     whatsapp: "WhatsApp",
   },
   chart: {
-    title: "Next 14 days",
     series: "Bookings",
-    total: (n: number): string => (n === 1 ? "1 booking" : `${n} bookings`),
+    range: "Days shown",
+    week: "7 days",
+    twoWeeks: "14 days",
+    unit: (n: number): string => (n === 1 ? "booking" : "bookings"),
   },
   form: {
     title: "Add a booking",
@@ -84,8 +86,7 @@ const bookings = {
     visits: (n: number): string => (n === 1 ? "1 visit" : `${n} visits`),
     next: (visits: string, day: string) => `${visits} · Next ${day}`,
     last: (visits: string, day: string) => `${visits} · Last ${day}`,
-    bookings: (n: number): string =>
-      n === 1 ? "1 booking" : `${n} bookings`,
+    bookings: (n: number): string => (n === 1 ? "1 booking" : `${n} bookings`),
     visitsLabel: "Visits",
     noShows: "No-shows",
     spent: "Spent",

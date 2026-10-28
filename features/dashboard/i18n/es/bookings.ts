@@ -43,9 +43,11 @@ const bookings: typeof en = {
     whatsapp: "WhatsApp",
   },
   chart: {
-    title: "Próximos 14 días",
     series: "Reservas",
-    total: (n: number) => (n === 1 ? "1 reserva" : `${n} reservas`),
+    range: "Días mostrados",
+    week: "7 días",
+    twoWeeks: "14 días",
+    unit: (n: number) => (n === 1 ? "reserva" : "reservas"),
   },
   form: {
     title: "Agregar una reserva",
