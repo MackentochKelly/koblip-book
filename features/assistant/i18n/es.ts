@@ -54,6 +54,14 @@ const messages: typeof en = {
     mic: "Hablar",
     stop: "Detener",
     micDenied: "Permite el micrófono para hablar.",
+    voiceIntro: {
+      title: "Habla con tu asistente",
+      speak:
+        "Di lo que necesitas. Tus palabras aparecen en el cuadro, listas para enviar.",
+      privacy: "Tu voz se convierte en texto. No guardamos la grabación.",
+      continue: "Continuar",
+      neverShow: "No mostrar de nuevo",
+    },
   },
   confirm: {
     // Closes the card; the other button says the action itself.

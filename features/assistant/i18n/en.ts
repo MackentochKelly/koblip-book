@@ -57,6 +57,14 @@ const messages = {
     mic: "Speak",
     stop: "Stop",
     micDenied: "Allow the microphone to speak.",
+    // The first-tap intro to talking.
+    voiceIntro: {
+      title: "Talk to your assistant",
+      speak: "Say what you need. Your words appear in the box, ready to send.",
+      privacy: "Your voice becomes text. We don't keep the recording.",
+      continue: "Continue",
+      neverShow: "Don't show again",
+    },
   },
   confirm: {
     // Closes the card; the other button says the action itself.

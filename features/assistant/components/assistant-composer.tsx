@@ -11,9 +11,14 @@ import {
   InputGroupTextarea,
 } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
+import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type { AssistantMessages } from "../i18n"
 import { useVoiceInput, type VoiceError } from "../hooks/use-voice-input"
+import { VoiceIntro } from "./voice-intro"
+
+// Set on this device once the owner picks "Don't show again".
+const VOICE_INTRO_HIDDEN_KEY = "assistant-voice-intro-hidden"
 
 type Mode = "stop" | "recording" | "transcribing" | "working" | "send" | "mic"
 
@@ -72,6 +77,17 @@ export function AssistantComposer({
             ? "send"
             : "mic"
 
+  // The mic opens the voice intro first, until "Don't show again".
+  const [introHidden, hideIntro] = useStoredFlag(VOICE_INTRO_HIDDEN_KEY)
+  const [introOpen, setIntroOpen] = useState(false)
+  const startVoice = () => {
+    if (introHidden) {
+      voice.start()
+    } else {
+      setIntroOpen(true)
+    }
+  }
+
   const submit = () => {
     if (!canSend) return
     onSend(text)
@@ -122,7 +138,7 @@ export function AssistantComposer({
               mode === "stop"
                 ? onStop
                 : mode === "mic"
-                  ? voice.start
+                  ? startVoice
                   : mode === "recording"
                     ? voice.stop
                     : undefined
@@ -141,6 +157,20 @@ export function AssistantComposer({
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
+      <VoiceIntro
+        open={introOpen}
+        labels={labels.voiceIntro}
+        onClose={() => setIntroOpen(false)}
+        onContinue={() => {
+          setIntroOpen(false)
+          voice.start()
+        }}
+        onNeverShow={() => {
+          hideIntro()
+          setIntroOpen(false)
+          voice.start()
+        }}
+      />
     </form>
   )
 }
