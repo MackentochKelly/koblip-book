@@ -1,12 +1,15 @@
 "use client"
 
+import Link from "next/link"
 import { useRouter } from "next/navigation"
+import type { Route } from "next"
 import {
   ChevronDownIcon,
   LanguagesIcon,
   LogOutIcon,
   MonitorIcon,
   MoonIcon,
+  SettingsIcon,
   SunIcon,
 } from "@/components/ui/icons"
 import { useTheme } from "next-themes"
@@ -60,7 +63,7 @@ export function OwnerAvatar({
 
 // The owner's account menu, like Koblip Sales': their photo with a small ⌄
 // badge on its corner and a ring on hover and while open, so it reads as a
-// menu. Inside: who is logged in, light or dark (or as the device is), the
+// menu. Inside: who is logged in, Settings (in a business), light or dark (or as the device is), the
 // language, and Sign out.
 export const THEMES = [
   { value: "light", key: "light", icon: SunIcon },
@@ -78,7 +81,13 @@ export function useSignOut() {
   }
 }
 
-export function AccountMenu({ owner }: { owner: Owner }) {
+export function AccountMenu({
+  owner,
+  settingsHref,
+}: {
+  owner: Owner
+  settingsHref?: string
+}) {
   const m = useOwnerMessages().shell
   return (
     <DropdownMenu>
@@ -100,7 +109,11 @@ export function AccountMenu({ owner }: { owner: Owner }) {
           <ChevronDownIcon />
         </span>
       </DropdownMenuTrigger>
-      <AccountMenuContent owner={owner} align="end" />
+      <AccountMenuContent
+        owner={owner}
+        settingsHref={settingsHref}
+        align="end"
+      />
     </DropdownMenu>
   )
 }
@@ -109,11 +122,13 @@ export function AccountMenu({ owner }: { owner: Owner }) {
 // (NavUser) both open it.
 export function AccountMenuContent({
   owner,
+  settingsHref,
   side,
   align,
   sideOffset,
 }: {
   owner: Owner
+  settingsHref?: string
 } & Pick<
   React.ComponentProps<typeof DropdownMenuContent>,
   "side" | "align" | "sideOffset"
@@ -142,6 +157,17 @@ export function AccountMenuContent({
         </DropdownMenuLabel>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
+      {settingsHref && (
+        <>
+          <DropdownMenuItem
+            render={<Link href={settingsHref as Route} />}
+          >
+            <SettingsIcon />
+            {m.nav.settings}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+        </>
+      )}
       <DropdownMenuGroup>
         <DropdownMenuLabel>{m.appearance}</DropdownMenuLabel>
         <DropdownMenuRadioGroup

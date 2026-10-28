@@ -4,12 +4,11 @@ import { getBusinessPhotos } from "@/features/dashboard/api/team-service-queries
 import { getTranslationStatus } from "@/features/dashboard/api/translation-queries"
 import { BusinessPhotosEditor } from "@/features/dashboard/components/business-photos-editor"
 import { DetailsForm } from "@/features/dashboard/components/details-form"
-import { SettingsTabs } from "@/features/dashboard/components/settings-tabs"
 import { SpanishSection } from "@/features/dashboard/components/spanish-section"
 import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.details }
+  return { title: (await getOwnerMessages()).shell.nav.settings }
 }
 
 type Props = {
@@ -25,7 +24,6 @@ export default async function SettingsPage({ params }: Props) {
   ])
   return (
     <div className="flex flex-col gap-10">
-      <SettingsTabs businessId={businessId} />
       <DetailsForm
         businessId={businessId}
         hasTeam={team.length > 0}

@@ -98,21 +98,16 @@ export function AppSidebar({
                 href,
                 label: m.nav[item.key],
                 icon: item.icon,
-                active:
-                  "under" in item
-                    ? item.under.some((path) =>
-                        pathname.startsWith(base + path)
-                      )
-                    : item.path
-                      ? pathname.startsWith(href)
-                      : pathname === base,
+                active: item.path
+                  ? pathname.startsWith(href)
+                  : pathname === base,
               }
             })}
           />
         ))}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser owner={owner} />
+        <NavUser owner={owner} settingsHref={`${base}/settings`} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

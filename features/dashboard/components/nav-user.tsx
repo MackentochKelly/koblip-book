@@ -16,7 +16,13 @@ import { AccountMenuContent, OwnerAvatar, type Owner } from "./account-menu"
 
 // The menu's footer, as in Koblip Sales' NavUser: who is logged in, opening
 // the same account menu as the top bar's photo.
-export function NavUser({ owner }: { owner: Owner }) {
+export function NavUser({
+  owner,
+  settingsHref,
+}: {
+  owner: Owner
+  settingsHref: string
+}) {
   const { isMobile } = useSidebar()
   return (
     <SidebarMenu>
@@ -42,6 +48,7 @@ export function NavUser({ owner }: { owner: Owner }) {
           </DropdownMenuTrigger>
           <AccountMenuContent
             owner={owner}
+            settingsHref={settingsHref}
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={16}

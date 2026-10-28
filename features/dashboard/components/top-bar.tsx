@@ -19,7 +19,7 @@ export function TopBar({
   menu = false,
   viewPage = true,
 }: {
-  business: { slug: string; name: string }
+  business: { id: string; slug: string; name: string }
   owner: { name: string; email: string; image: string | null }
   menu?: boolean
   viewPage?: boolean
@@ -56,7 +56,12 @@ export function TopBar({
           <ExternalLinkIcon data-icon="inline-end" />
         </Button>
       )}
-      <AccountMenu owner={owner} />
+      <AccountMenu
+        owner={owner}
+        settingsHref={
+          menu ? `/dashboard/${business.id}/settings` : undefined
+        }
+      />
     </header>
   )
 }
