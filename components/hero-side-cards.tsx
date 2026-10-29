@@ -27,27 +27,27 @@ const BOOKED = 2
 // The booking already there before it: Marta, for the second service.
 const EARLIER = { person: 1, service: 1, time: "11:30" }
 
-// Where each card sits, measured from the middle of the hero so it stays
-// clear of the title (max-w-3xl) and the search box (max-w-xl). `tilt` and
+// Where each card sits: out by the hero's edges, far from the title and the
+// search box, so no one takes a card for a box to type in. `tilt` and
 // `float` make each one drift a little differently.
 const CARDS = {
   listing: {
-    place: "top-[22%] right-[calc(50%+24rem)]",
+    place: "top-[22%] left-[4%] origin-left",
     tilt: "-rotate-2",
     float: { duration: 7, delay: 0 },
   },
   services: {
-    place: "bottom-[14%] right-[calc(50%+21rem)]",
+    place: "bottom-[14%] left-[8%] origin-left",
     tilt: "rotate-1",
     float: { duration: 8, delay: 1.2 },
   },
   booking: {
-    place: "top-[24%] left-[calc(50%+24rem)]",
+    place: "top-[24%] right-[4%] origin-right",
     tilt: "rotate-2",
     float: { duration: 7.5, delay: 0.6 },
   },
   assistant: {
-    place: "bottom-[16%] left-[calc(50%+21rem)]",
+    place: "bottom-[16%] right-[8%] origin-right",
     tilt: "-rotate-1",
     float: { duration: 8.5, delay: 1.8 },
   },
@@ -57,6 +57,9 @@ type CardName = keyof typeof CARDS
 
 // How far a card drifts up and back while it floats, in px.
 const FLOAT_RISE = 8
+// The cards are a little smaller and see-through, so the real search box is
+// the one bright box to type in.
+const CARD_LOOK = { scale: 0.9, opacity: 0.85 }
 
 // Four small pieces of the real app on each side of the hero, big screens
 // only (there is no room beside the title before that). Left: what the
@@ -248,8 +251,9 @@ function SideCard({
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={{ opacity: CARD_LOOK.opacity, y: 0 }}
       transition={{ duration: 0.6, delay: 0.4 + order * 0.15 }}
+      style={{ scale: CARD_LOOK.scale }}
       className={cn("absolute w-60", card.place)}
     >
       <motion.div
