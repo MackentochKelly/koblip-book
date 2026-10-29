@@ -24,7 +24,7 @@ export function WorksWith({ language }: { language: PageLanguage }) {
     { name: "Google Calendar", soon: true },
   ]
   return (
-    <section className="mx-auto flex w-full max-w-5xl flex-col items-center gap-6 px-4 py-12">
+    <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6 px-4 py-12">
       <p className="text-sm text-muted-foreground">{t.worksWith}</p>
       <ul className="flex flex-wrap justify-center gap-x-8 gap-y-4">
         {services.map(({ logo, name, soon }) => (

@@ -24,7 +24,7 @@ export function SiteHeader({
   action?: React.ReactNode
 }) {
   return (
-    <header className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4">
+    <header className="mx-auto flex h-16 w-full max-w-page items-center justify-between px-4">
       <Link href="/" className={cn(TOUCH_AREA, "flex items-center")}>
         <Logo />
       </Link>

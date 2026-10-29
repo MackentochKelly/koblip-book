@@ -43,6 +43,9 @@
        two lines (36px at the smallest, 48px at most). */
     --text-hero: clamp(2.25rem, 11vw, 3rem);
     --text-hero--line-height: 1.1;
+    /* The width of a whole page's content (home sections, header, footer,
+       business page, booking, dashboard): max-w-page. */
+    --container-page: 72rem;
     --font-sans: var(--font-sans);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
@@ -244,5 +247,10 @@
     }
   html {
     @apply font-sans;
+    /* Big screens: everything sized in rem (text, spacing, widths) grows
+       from 16px at 1280px wide to 18px at 1920px and up, starting from
+       the visitor's own text size. Phones, tablets and laptops up to
+       1280px stay exactly as designed. */
+    font-size: clamp(100%, 0.75rem + 0.3125vw, 112.5%);
     }
 }

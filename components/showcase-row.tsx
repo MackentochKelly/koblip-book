@@ -48,7 +48,7 @@ export function ShowcaseRow({
   // Two-finger trackpad swipes move the cards too (Embla only drags).
   const [wheel] = useState(() => WheelGesturesPlugin())
   return (
-    <section id={id} className="mx-auto w-full max-w-5xl px-2 pb-12 sm:px-4">
+    <section id={id} className="mx-auto w-full max-w-page px-2 pb-12 sm:px-4">
       <Carousel opts={{ align: "start" }} plugins={[wheel]}>
         <div className="mb-4 flex items-center justify-between gap-4 px-2">
           <h2 className={homeSectionTitleClassName}>{title}</h2>

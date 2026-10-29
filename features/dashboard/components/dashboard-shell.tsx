@@ -105,7 +105,7 @@ export function DashboardShell({
             <div
               className={cn(
                 "mx-auto w-full max-w-3xl p-4 pb-28 md:p-8",
-                !formPage && !assistantOpen && "lg:max-w-5xl",
+                !formPage && !assistantOpen && "lg:max-w-page",
                 assistantOpen &&
                   "flex min-h-0 max-w-none flex-1 flex-col p-0 pb-0 md:p-0"
               )}

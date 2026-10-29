@@ -17,6 +17,16 @@ Tailwind CSS 4.3, mobile first.
 - `max-md:` means "under 768px". Ranges: `md:max-xl:`.
 - New breakpoints only in `@theme` (`--breakpoint-*`), in rem.
 
+## Big screens
+
+- Everything is sized in rem, so it all grows together: the root text
+  size goes from 16px at 1280px wide to 18px at 1920px and up
+  (`app/globals.css`, `html`). Up to 1280px nothing changes.
+- A whole page's content is `max-w-page` (72rem: 1152px on a laptop,
+  1296px on a 1920px screen). Never `max-w-5xl`/`max-w-6xl` for a page.
+- Forms and reading columns stay narrow (`max-w-sm` … `max-w-3xl`,
+  `max-w-prose`); they grow only with the text size.
+
 ## Container queries first for parts
 
 A shared part should fit its box, not the screen: mark the parent

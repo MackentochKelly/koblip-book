@@ -101,7 +101,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
     <LanguageProvider language={language}>
       <main
         lang={language}
-        className="mx-auto w-full max-w-6xl pb-28 md:px-6 md:pt-6 md:pb-16"
+        className="mx-auto w-full max-w-page pb-28 md:px-6 md:pt-6 md:pb-16"
       >
         <BusinessPhotos photos={photos} />
         <div className="grid gap-8 px-4 pt-5 md:grid-cols-[minmax(0,1fr)_20rem] md:gap-10 md:px-0 md:pt-8 lg:grid-cols-[minmax(0,1fr)_22rem]">

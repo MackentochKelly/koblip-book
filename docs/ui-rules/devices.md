@@ -76,6 +76,7 @@ and shrinks on scroll, full-screen backgrounds run under the bars.
 
 ## Laptops and desktops
 
-- Content max width: don't stretch forms or text across 1920px.
+- Content max width: `max-w-page` for pages; don't stretch forms or text
+  across 1920px (see layout.md, Big screens).
 - Long text about 66 characters wide (`max-w-prose` or `66ch`).
 - Every screen works with keyboard only.

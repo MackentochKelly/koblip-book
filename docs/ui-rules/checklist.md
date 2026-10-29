@@ -28,6 +28,8 @@ Every UI change, before and after. Each line must pass.
       never hidden under a sticky bar or sheet.
 - [ ] Hover is a bonus, never the only way to find something.
 - [ ] Reading width stays comfortable (about 66 characters for long text).
+- [ ] Page content uses `max-w-page`; at 1920 it is 1296px wide with 18px
+      text, and nothing is sized in px.
 
 ## Look
 

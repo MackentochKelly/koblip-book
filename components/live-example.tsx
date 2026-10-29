@@ -19,7 +19,7 @@ export function LiveExample({
   words: Messages["home"]["live"]
 }) {
   return (
-    <section className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-2 pb-12 sm:px-4">
+    <section className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 pb-12 sm:px-4">
       <h2 className={cn(homeSectionTitleClassName, "px-2")}>{words.title}</h2>
       <div className="hidden justify-center md:flex">
         <div className={cn(glassFrameClassName, "w-auto")}>

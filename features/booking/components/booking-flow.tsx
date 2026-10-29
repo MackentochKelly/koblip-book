@@ -427,7 +427,7 @@ export function BookingFlow({
   return (
     <>
       <header className="sticky top-0 z-10 border-b bg-background">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-2 md:px-6">
+        <div className="mx-auto flex h-14 w-full max-w-page items-center gap-2 px-2 md:px-6">
           <Button
             type="button"
             variant="ghost"
@@ -455,7 +455,7 @@ export function BookingFlow({
         </div>
       </header>
 
-      <main className="mx-auto grid w-full max-w-5xl gap-8 px-4 pt-6 pb-32 md:grid-cols-[minmax(0,1fr)_20rem] md:px-6 md:pb-16 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <main className="mx-auto grid w-full max-w-page gap-8 px-4 pt-6 pb-32 md:grid-cols-[minmax(0,1fr)_20rem] md:px-6 md:pb-16 lg:grid-cols-[minmax(0,1fr)_22rem]">
         {body}
         <aside className="hidden md:block">
           <BookingSummary

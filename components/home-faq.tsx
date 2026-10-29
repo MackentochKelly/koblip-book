@@ -16,7 +16,7 @@ export function HomeFaq({ words }: { words: Messages["home"]["faq"] }) {
   return (
     <section
       id={HOME_SECTION_IDS.faq}
-      className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-2 pb-12 sm:px-4"
+      className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 pb-12 sm:px-4"
     >
       <h2 className={cn(homeSectionTitleClassName, "px-2")}>{words.title}</h2>
       <Accordion>

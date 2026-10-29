@@ -31,7 +31,7 @@ export function HomeCta({
     target.querySelector("input")?.focus({ preventScroll: true })
   }
   return (
-    <section className="mx-auto w-full max-w-5xl px-2 pb-12 sm:px-4">
+    <section className="mx-auto w-full max-w-page px-2 pb-12 sm:px-4">
       <div
         className={cn(
           "relative isolate flex flex-col items-center gap-6 overflow-hidden rounded-4xl px-6 py-16 text-center",

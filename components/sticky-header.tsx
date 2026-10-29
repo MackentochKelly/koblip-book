@@ -40,7 +40,7 @@ export function StickyHeader({ children }: { children: React.ReactNode }) {
       <div
         className={cn(
           "mx-auto rounded-full transition-[max-width,background-color,box-shadow] duration-300 ease-out *:transition-[height] *:duration-300 *:ease-out motion-reduce:transition-none *:motion-reduce:transition-none",
-          scrolled ? cn("max-w-3xl *:h-14", frostedClassName) : "max-w-5xl"
+          scrolled ? cn("max-w-3xl *:h-14", frostedClassName) : "max-w-page"
         )}
       >
         {children}

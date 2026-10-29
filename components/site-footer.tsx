@@ -21,7 +21,7 @@ export function SiteFooter({ language }: { language: PageLanguage }) {
     { label: t.terms, href: `/terms?lang=${language}` },
   ]
   return (
-    <footer className="mx-auto w-full max-w-5xl px-4 pb-8 sm:px-6">
+    <footer className="mx-auto w-full max-w-page px-4 pb-8 sm:px-6">
       <Separator />
       <div className="flex flex-wrap items-center justify-between gap-4 pt-6">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
