@@ -30,6 +30,8 @@ Koblip Book is a booking app for any local business: customers book appointments
 
 ## UI rules
 
+- Before and after every UI change, read and pass `docs/ui-rules/checklist.md`
+  (full rules and official sources in `docs/ui-rules/`).
 - Looks and feels like a modern app. Phone first (design at 375px wide, then desktop).
 - Owner area: bottom tab bar on phone, sidebar on desktop; panels open as sheets/drawers.
 - Touch targets at least 44px. One main action per screen.
