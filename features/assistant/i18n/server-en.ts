@@ -190,6 +190,15 @@ const messages = {
     memberUnknown:
       "unknown team member id: list the team first and use an id from the list",
     teamMemberInvalid: "teamMemberId must be an id from list_team or omitted",
+    serviceRequired: "service is required: the service name the owner said",
+    serviceWhich: (names: string) =>
+      `which service? ask the owner to pick one of: ${names}`,
+    memberWhich: (names: string) =>
+      `which team member? ask the owner to pick one of: ${names}`,
+    bookingDayInvalid: "day must be today or tomorrow; use date for other days",
+    slotNotFree: (times: string) =>
+      `that time is not free; free times that day: ${times}`,
+    dayNotFree: "nothing is free that day: ask for another day",
     dateInvalid: "date must be a real YYYY-MM-DD date",
     timeInvalid: "time must be HH:mm",
     nameRequired: "customer name is required",

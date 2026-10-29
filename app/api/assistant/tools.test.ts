@@ -153,6 +153,9 @@ beforeEach(() => {
   vi.mocked(getBusinessPhotos).mockResolvedValue([])
   vi.mocked(getServiceTeams).mockResolvedValue({})
   vi.mocked(getAddonGroups).mockResolvedValue([])
+  vi.mocked(getAvailability).mockResolvedValue({
+    days: [{ date: "2099-01-01", times: ["10:00", "10:30"] }],
+  })
   vi.mocked(getTranslationStatus).mockResolvedValue({
     language: "es",
     enabled: false,
@@ -1852,6 +1855,64 @@ test("create_booking maps every status to one sentence", async () => {
     expect(done.ok).toBe(false)
     expect(done.doneText).toContain(word)
   }
+})
+
+test("create_booking takes the names the owner said, in one step", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue({
+    business: BOOKING_BUSINESS,
+    hours: [],
+    services: [
+      {
+        id: "s1",
+        name: "Classic Haircut",
+        durationMinutes: 30,
+        priceMinor: 2500,
+      },
+      { id: "s2", name: "Kids Haircut", durationMinutes: 30, priceMinor: 1500 },
+    ],
+    team: [
+      { id: "m1", name: "Kelly Begin" },
+      { id: "m2", name: "Steve Bicol" },
+    ],
+  } as never)
+  const describe = byName("create_booking").confirm!.describe
+  const args = {
+    service: "classic haircut",
+    teamMember: "Kelly Bergen",
+    date: "2099-01-01",
+    time: "10:00",
+    name: "Julissa",
+  }
+  const card = (await describe(args)) as { summary: string }
+  expect(card.summary).toContain("Classic Haircut")
+  expect(card.summary).toContain("Kelly Begin")
+  expect(getAvailability).toHaveBeenCalledWith("salon", "s1", "m1", [])
+  // Two haircuts: ask which.
+  expect(await describe({ ...args, service: "haircut" })).toEqual({
+    error: expect.stringContaining("Classic Haircut, Kids Haircut"),
+  })
+  // A taken time offers the free ones.
+  expect(await describe({ ...args, time: "12:30" })).toEqual({
+    error: expect.stringContaining("10:00, 10:30"),
+  })
+  // A plain day.
+  vi.useFakeTimers({ now: new Date("2098-12-31T12:00:00.000Z") })
+  try {
+    const tomorrow = (await describe({
+      ...args,
+      date: undefined,
+      day: "tomorrow",
+    })) as { summary: string }
+    expect(tomorrow.summary).toContain("January 1")
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+test("find_free_times takes names too", async () => {
+  mockBookingShop()
+  await byName("find_free_times").run({ service: "cut", teamMember: "leo" })
+  expect(getAvailability).toHaveBeenCalledWith("salon", "s1", "m1", [])
 })
 
 test("create_booking rejects bad input with no card", async () => {

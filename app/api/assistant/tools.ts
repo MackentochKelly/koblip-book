@@ -112,6 +112,33 @@ function schema(
   }
 }
 
+// Finds a service or team member from the words the owner said ("classic
+// haircut", "Kelly"), or an id. One exact name wins; otherwise one name
+// sharing a word ("Kelly Bergen" heard for "Kelly Begin"). Anything else
+// returns the names to ask about. The tap card shows the full name, so the
+// owner sees who was picked.
+function pickByName<T extends { id: string; name: string }>(
+  list: T[],
+  wanted: string
+): { found: T } | { choices: string[] } {
+  const plain = (text: string) =>
+    text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim()
+  const words = (text: string) =>
+    plain(text)
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((word) => word.length > 1)
+  const exact = list.filter(
+    (item) => item.id === wanted || plain(item.name) === plain(wanted)
+  )
+  if (exact.length === 1) return { found: exact[0] }
+  const said = new Set(words(wanted))
+  const near = list.filter((item) =>
+    words(item.name).some((word) => said.has(word))
+  )
+  if (near.length === 1) return { found: near[0] }
+  return { choices: (near.length > 0 ? near : list).map((item) => item.name) }
+}
+
 function bad(message: string): { error: string } {
   return { error: message }
 }
@@ -209,17 +236,27 @@ async function checkBookingArgs(
   now = Date.now()
 ): Promise<CheckedBooking | { error: string }> {
   const a = asRecord(args)
-  if (!a || typeof a.serviceId !== "string" || a.serviceId === "") {
-    return { error: t.errors.serviceIdRequired }
+  // Names as the owner said them; ids still work (cards stored before).
+  const serviceWanted = a?.service ?? a?.serviceId
+  if (!a || typeof serviceWanted !== "string" || serviceWanted.trim() === "") {
+    return { error: t.errors.serviceRequired }
   }
-  const memberId =
-    a.teamMemberId === undefined || a.teamMemberId === null
-      ? null
-      : a.teamMemberId
-  if (memberId !== null && (typeof memberId !== "string" || memberId === "")) {
+  const memberRaw = a.teamMember ?? a.teamMemberId
+  const memberWanted =
+    memberRaw === undefined || memberRaw === null ? null : memberRaw
+  if (
+    memberWanted !== null &&
+    (typeof memberWanted !== "string" || memberWanted.trim() === "")
+  ) {
     return { error: t.errors.teamMemberInvalid }
   }
-  if (typeof a.date !== "string" || !isRealDate(a.date)) {
+  if (a.day !== undefined && a.day !== "today" && a.day !== "tomorrow") {
+    return { error: t.errors.bookingDayInvalid }
+  }
+  if (
+    a.day === undefined &&
+    (typeof a.date !== "string" || !isRealDate(a.date))
+  ) {
     return { error: t.errors.dateInvalid }
   }
   if (typeof a.time !== "string" || !TIME_RE.test(a.time)) {
@@ -246,16 +283,43 @@ async function checkBookingArgs(
     return { error: t.errors.noteTooLong }
   }
   const { business, services, team } = await getOwnerBusiness(businessId)
-  if (a.date < zonedToday(now, business.timezone)) {
+  const today = zonedToday(now, business.timezone)
+  const date =
+    a.day === "today"
+      ? today
+      : a.day === "tomorrow"
+        ? addDaysStr(today, 1)
+        : (a.date as string)
+  if (date < today) {
     return { error: t.errors.datePast }
   }
-  const service = services.find((s) => s.id === a.serviceId)
-  if (!service) {
-    return { error: t.errors.serviceUnknown }
+  const servicePick = pickByName(services, serviceWanted)
+  if ("choices" in servicePick) {
+    return { error: t.errors.serviceWhich(servicePick.choices.join(", ")) }
   }
-  const member = memberId === null ? null : team.find((m) => m.id === memberId)
-  if (memberId !== null && !member) {
-    return { error: t.errors.memberUnknown }
+  const service = servicePick.found
+  let member: { id: string; name: string } | null = null
+  if (memberWanted !== null) {
+    const memberPick = pickByName(team, memberWanted)
+    if ("choices" in memberPick) {
+      return { error: t.errors.memberWhich(memberPick.choices.join(", ")) }
+    }
+    member = memberPick.found
+  }
+  const memberId = member?.id ?? null
+  // Checked here, so a card is only shown for a time that is free.
+  const free = await getAvailability(business.slug, service.id, memberId, [])
+  if (!free) {
+    return { error: t.errors.freeTimesUnknown }
+  }
+  const times = free.days.find((day) => day.date === date)?.times ?? []
+  if (!times.includes(a.time)) {
+    return {
+      error:
+        times.length > 0
+          ? t.errors.slotNotFree(times.slice(0, 12).join(", "))
+          : t.errors.dayNotFree,
+    }
   }
   return {
     service: {
@@ -265,7 +329,7 @@ async function checkBookingArgs(
     },
     memberId,
     memberName: member?.name ?? t.booking.anyone,
-    date: a.date,
+    date,
     time: a.time,
     name,
     phone,
@@ -2256,12 +2320,15 @@ export function buildAssistantTools(
     {
       definition: {
         name: "find_free_times",
-        description: `Free start times per day for a service. Use ids from list_services and list_team. Default is today plus 6 days. At most ${ASSISTANT_RULES.maxFreeTimesDays} days at once.`,
+        description: `Free start times per day for a service, found by the names the owner said. Default is today plus 6 days. At most ${ASSISTANT_RULES.maxFreeTimesDays} days at once. When the service or team member is unclear, it returns the choices to ask about.`,
         parameters: schema({
-          serviceId: { type: "string", description: "Id from list_services" },
-          teamMemberId: {
+          service: {
             type: "string",
-            description: "Id from list_team, omit for anyone",
+            description: "Service name as the owner said it",
+          },
+          teamMember: {
+            type: "string",
+            description: "Team member name as said, omit for anyone",
           },
           from: {
             type: "string",
@@ -2277,20 +2344,37 @@ export function buildAssistantTools(
       label: t.steps.freeTimes,
       run: async (args: unknown) => {
         const a = asRecord(args)
-        if (!a || typeof a.serviceId !== "string" || a.serviceId === "") {
-          return bad(t.errors.serviceIdRequired)
-        }
-        const teamMemberId =
-          a.teamMemberId === undefined || a.teamMemberId === null
-            ? null
-            : a.teamMemberId
+        const serviceWanted = a?.service ?? a?.serviceId
         if (
-          teamMemberId !== null &&
-          (typeof teamMemberId !== "string" || teamMemberId === "")
+          !a ||
+          typeof serviceWanted !== "string" ||
+          serviceWanted.trim() === ""
+        ) {
+          return bad(t.errors.serviceRequired)
+        }
+        const memberRaw = a.teamMember ?? a.teamMemberId
+        const memberWanted =
+          memberRaw === undefined || memberRaw === null ? null : memberRaw
+        if (
+          memberWanted !== null &&
+          (typeof memberWanted !== "string" || memberWanted.trim() === "")
         ) {
           return bad(t.errors.teamMemberInvalid)
         }
-        const { business } = await getOwnerBusiness(businessId)
+        const { business, services, team } =
+          await getOwnerBusiness(businessId)
+        const servicePick = pickByName(services, serviceWanted)
+        if ("choices" in servicePick) {
+          return bad(t.errors.serviceWhich(servicePick.choices.join(", ")))
+        }
+        let teamMemberId: string | null = null
+        if (memberWanted !== null) {
+          const memberPick = pickByName(team, memberWanted)
+          if ("choices" in memberPick) {
+            return bad(t.errors.memberWhich(memberPick.choices.join(", ")))
+          }
+          teamMemberId = memberPick.found.id
+        }
         const today = zonedToday(Date.now(), business.timezone)
         const from = a.from === undefined ? today : a.from
         const to = a.to === undefined ? addDaysStr(today, 6) : a.to
@@ -2305,7 +2389,7 @@ export function buildAssistantTools(
         }
         const found = await getAvailability(
           business.slug,
-          a.serviceId,
+          servicePick.found.id,
           teamMemberId,
           []
         )
@@ -2325,17 +2409,26 @@ export function buildAssistantTools(
       definition: {
         name: "create_booking",
         description:
-          "Book an appointment for a CUSTOMER. name is the customer being booked, never a team member; teamMemberId (omit for anyone) is who performs the service. Only offer times find_free_times returned. Needs the owner's tap.",
+          "Book an appointment for a CUSTOMER in one step: pass what the owner said (service, team member, day or date, time, customer name). It finds the service and team member by name and checks the time is free; when something is unclear or taken, it returns the choices to ask about. name is the customer being booked, never a team member. Its card is the confirmation and needs the owner's tap.",
+        // One call instead of list_services → list_team → find_free_times →
+        // create_booking: "Combine functions that are always called in
+        // sequence" (OpenAI function calling guide:
+        // https://developers.openai.com/api/docs/guides/function-calling).
         parameters: schema(
           {
-            serviceId: { type: "string", description: "Id from list_services" },
-            teamMemberId: {
+            service: {
               type: "string",
-              description: "Id from list_team, omit for anyone",
+              description: "Service name as the owner said it",
             },
+            teamMember: {
+              type: "string",
+              description: "Team member name as said, omit for anyone",
+            },
+            day: { type: "string", enum: ["today", "tomorrow"] },
             date: {
               type: "string",
-              description: "YYYY-MM-DD in the business timezone",
+              description:
+                "YYYY-MM-DD in the business timezone, for other days",
             },
             time: {
               type: "string",
@@ -2348,7 +2441,7 @@ export function buildAssistantTools(
             },
             note: { type: "string", description: "Optional note" },
           },
-          ["serviceId", "date", "time", "name"]
+          ["service", "time", "name"]
         ),
         needsConfirm: true,
         resultKind: "bookings",

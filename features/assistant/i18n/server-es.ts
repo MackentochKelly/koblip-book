@@ -185,6 +185,17 @@ const messages: typeof en = {
     memberUnknown:
       "id de miembro desconocido: lista el equipo primero y usa un id de la lista",
     teamMemberInvalid: "teamMemberId debe ser un id de list_team u omitirse",
+    serviceRequired:
+      "service es obligatorio: el nombre del servicio que dijo el dueño",
+    serviceWhich: (names: string) =>
+      `¿qué servicio? pide al dueño que elija uno de: ${names}`,
+    memberWhich: (names: string) =>
+      `¿qué miembro del equipo? pide al dueño que elija uno de: ${names}`,
+    bookingDayInvalid:
+      "day debe ser today o tomorrow; usa date para otros días",
+    slotNotFree: (times: string) =>
+      `esa hora no está libre; horas libres ese día: ${times}`,
+    dayNotFree: "no hay nada libre ese día: pide otro día",
     dateInvalid: "date debe ser una fecha real YYYY-MM-DD",
     timeInvalid: "time debe ser HH:mm",
     nameRequired: "el nombre del cliente es obligatorio",
