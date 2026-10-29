@@ -30,7 +30,7 @@ export function LegalPage({
       <div className="flex min-h-dvh flex-col bg-background">
         {/* The header stays on top while the page scrolls. */}
         <StickyHeader>
-          <SiteHeader control={<LanguageMenu />} />
+          <SiteHeader floating control={<LanguageMenu />} />
         </StickyHeader>
         <main className="mx-auto flex w-full max-w-prose flex-1 flex-col gap-8 px-4 pt-32 pb-12">
           <div className="flex flex-col gap-2">

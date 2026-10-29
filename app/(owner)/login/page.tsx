@@ -37,7 +37,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       >
         {/* The header stays on top while the page scrolls. */}
         <StickyHeader>
-          <SiteHeader />
+          <SiteHeader floating />
         </StickyHeader>
         <section
           className={cn(

@@ -17,6 +17,12 @@
 }
 
 @theme inline {
+    /* Motion curves (Material 3, docs/ui-rules/motion.md): ease-standard
+       for most moves, ease-enter for things coming in, ease-exit for
+       things leaving. */
+    --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+    --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+    --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
     /* The see-through glass for small pieces on the moving gradient (the
        Meta badge, the Search / Maps link switch, the header buttons):
        bg-glass border-glass-edge backdrop-blur-md. The page colour at

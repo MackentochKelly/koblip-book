@@ -69,6 +69,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         {/* The header stays on top while the page scrolls. */}
         <StickyHeader>
           <SiteHeader
+            floating
             control={<LanguageMenu className={headerButtonClassName} />}
             action={
               <Button
