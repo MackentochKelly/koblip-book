@@ -130,6 +130,11 @@ const en = {
     worksWith: "Works with",
     remindersOnWhatsApp: "Reminders on WhatsApp",
     soon: "Soon",
+    live: {
+      title: "See a live page",
+      frameTitle: "A live booking page",
+      open: "Open a live page",
+    },
     steps: {
       title: "How it works",
       find: "Find your business",
@@ -332,6 +337,11 @@ const es: Messages = {
     worksWith: "Funciona con",
     remindersOnWhatsApp: "Recordatorios por WhatsApp",
     soon: "Pronto",
+    live: {
+      title: "Mira una página real",
+      frameTitle: "Una página de reservas real",
+      open: "Abrir una página real",
+    },
     steps: {
       title: "Cómo funciona",
       find: "Busca tu negocio",

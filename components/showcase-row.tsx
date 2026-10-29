@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { WheelGesturesPlugin } from "embla-carousel-wheel-gestures"
 
+import { homeSectionTitleClassName } from "@/components/home-section-title"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -47,9 +48,7 @@ export function ShowcaseRow({
     <section className="mx-auto w-full max-w-5xl px-2 pb-12 sm:px-4">
       <Carousel opts={{ align: "start" }} plugins={[wheel]}>
         <div className="mb-4 flex items-center justify-between gap-4 px-2">
-          <h2 className="font-display text-2xl font-medium tracking-tight">
-            {title}
-          </h2>
+          <h2 className={homeSectionTitleClassName}>{title}</h2>
           <div className="flex gap-2 md:hidden">
             <CarouselPrevious
               className="static translate-none"
