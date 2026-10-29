@@ -130,15 +130,6 @@ const en = {
     worksWith: "Works with",
     remindersOnWhatsApp: "Reminders on WhatsApp",
     soon: "Soon",
-    features: {
-      label: "What you get",
-      page: "Your page in 1 minute",
-      pageText: "Built from your Google Maps listing.",
-      book: "Clients book online, day or night",
-      bookText: "Your services, team and free times on one page.",
-      assistant: "Just ask your AI assistant",
-      assistantText: "Bookings, services and hours, by typing or voice.",
-    },
     provider: {
       badge: "Verified Meta Tech Provider",
       about: "Meta approved Koblip to connect businesses to WhatsApp.",
@@ -281,15 +272,6 @@ const es: Messages = {
     worksWith: "Funciona con",
     remindersOnWhatsApp: "Recordatorios por WhatsApp",
     soon: "Pronto",
-    features: {
-      label: "Lo que obtienes",
-      page: "Tu página en 1 minuto",
-      pageText: "Creada desde tu ficha de Google Maps.",
-      book: "Tus clientes reservan online, de día o de noche",
-      bookText: "Tus servicios, equipo y horas libres en una página.",
-      assistant: "Pídeselo a tu asistente de IA",
-      assistantText: "Reservas, servicios y horarios, escribiendo o por voz.",
-    },
     provider: {
       badge: "Meta Tech Provider verificado",
       about: "Meta aprobó a Koblip para conectar negocios a WhatsApp.",
