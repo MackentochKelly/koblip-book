@@ -65,6 +65,9 @@ export interface LiveVoiceParts {
   forgetHeard: () => void
   // The owner cut an answer off; `heard` is all they got of it.
   onCutOff: (heard: string) => void
+  // Takes the last question and its unfinished answer off the chat: the
+  // owner only paused and kept talking, so both parts go as one question.
+  withdraw: () => void
   // Closes the microphone and the listening socket.
   close: () => void
   // Said after an answer that waits for a tap on its card.
@@ -131,6 +134,8 @@ export class LiveVoiceSession {
   private cutInsUsed = 0
   // An answer is being written or spoken (not the hello).
   private answering = false
+  // The words of the question being answered.
+  private asked = ""
 
   constructor(private readonly parts: LiveVoiceParts) {
     parts.onState("connecting")
@@ -171,8 +176,19 @@ export class LiveVoiceSession {
         if (this.thinking) {
           this.turn += 1
           this.thinking = false
-          this.cutOff()
-          this.parts.cancelAnswer()
+          if (this.parts.heard() === "") {
+            // Nothing said back yet: the owner just paused mid-thought
+            // ("Yeah," … "Kelly"). Ask again with all of it, as one
+            // question, like OpenAI Realtime's interrupt_response.
+            this.answering = false
+            this.queued = `${this.asked} ${this.queued}`
+            this.stopSpeaking()
+            this.parts.cancelAnswer()
+            this.parts.withdraw()
+          } else {
+            this.cutOff()
+            this.parts.cancelAnswer()
+          }
           this.parts.onState("thinking")
           // Sent from idle() once the chat has let go of the old answer.
           break
@@ -239,6 +255,7 @@ export class LiveVoiceSession {
     if (!this.queued || this.thinking || this.parts.busy()) return
     const text = this.queued
     this.queued = ""
+    this.asked = text
     this.turn += 1
     const turn = this.turn
     this.thinking = true

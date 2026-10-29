@@ -56,6 +56,7 @@ export function useLiveVoice({
   send,
   stopAnswer,
   onCutOff,
+  onWithdraw,
   confirmLine,
   fillers,
   cutIns,
@@ -74,6 +75,8 @@ export function useLiveVoice({
   stopAnswer: () => void
   // The owner cut an answer off; `heard` is all they got of it.
   onCutOff: (heard: string) => void
+  // Takes the last question and its unfinished answer off the chat.
+  onWithdraw: () => void
   // Said after an answer that waits for a tap on the screen.
   confirmLine: string
   // Short lines for a slow answer ("Hmm, let me see.").
@@ -101,6 +104,7 @@ export function useLiveVoice({
     send,
     stopAnswer,
     onCutOff,
+    onWithdraw,
     confirmLine,
     fillers,
     cutIns,
@@ -114,6 +118,7 @@ export function useLiveVoice({
       send,
       stopAnswer,
       onCutOff,
+      onWithdraw,
       confirmLine,
       fillers,
       cutIns,
@@ -187,6 +192,7 @@ export function useLiveVoice({
       heard: () => speaker.heard(),
       forgetHeard: () => speaker.forget(),
       onCutOff: (heard) => latest.current.onCutOff(heard),
+      withdraw: () => latest.current.onWithdraw(),
       close: () => {
         try {
           if (socket.readyState === WebSocket.OPEN) {

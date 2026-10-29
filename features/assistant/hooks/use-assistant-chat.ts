@@ -15,6 +15,7 @@ import {
   fromMessages,
   markCutOff,
   newReply,
+  withdrawLast,
   resolveConfirm,
   restoreChat,
   saveChat,
@@ -165,6 +166,7 @@ export function useAssistantChat(
     asking.current.abort()
     cutOff()
   }
+  const withdraw = () => setItems(withdrawLast)
 
   // `voice`: said out loud in talking mode, so the answer is short and
   // spoken; `listen` hears its words as they are written. Resolves with the
@@ -234,6 +236,7 @@ export function useAssistantChat(
     open,
     stop,
     cutOff,
+    withdraw,
     stoppable,
   }
 }

@@ -85,6 +85,14 @@ export function markCutOff(items: ChatItem[], heard?: string): ChatItem[] {
 const letters = (text: string) =>
   text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "")
 
+// Takes the last question and the reply after it off the chat (talking
+// mode: the owner paused and kept talking, so it is asked again whole).
+export function withdrawLast(items: ChatItem[]): ChatItem[] {
+  const end = items.at(-1)?.role === "assistant" ? -1 : items.length
+  const rest = items.slice(0, end)
+  return rest.at(-1)?.role === "owner" ? rest.slice(0, -1) : rest
+}
+
 // An empty reply, so what comes next starts a new message.
 export function newReply(): ChatItem {
   return {

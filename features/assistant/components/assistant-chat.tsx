@@ -161,6 +161,7 @@ export function AssistantChat({
                 onSendSpoken={chat.send}
                 onStop={chat.stop}
                 onCutOff={chat.cutOff}
+                onWithdraw={chat.withdraw}
               />
             </div>
           </>

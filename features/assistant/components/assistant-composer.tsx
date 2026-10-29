@@ -60,6 +60,7 @@ export function AssistantComposer({
   onSendSpoken,
   onStop,
   onCutOff,
+  onWithdraw,
 }: {
   businessId: string
   labels: AssistantMessages["composer"]
@@ -76,6 +77,8 @@ export function AssistantComposer({
   onStop: () => void
   // Talking mode: the owner cut an answer off; `heard` is all they got.
   onCutOff: (heard: string) => void
+  // Talking mode: takes the last question and its unfinished answer off.
+  onWithdraw: () => void
 }) {
   const [text, setText] = useState("")
   const canSend = text.trim() !== "" && !busy
@@ -92,6 +95,7 @@ export function AssistantComposer({
     send: onSendSpoken,
     stopAnswer: onStop,
     onCutOff,
+    onWithdraw,
     confirmLine: labels.live.confirmLine,
     fillers: labels.live.fillers,
     cutIns: labels.live.cutIns,

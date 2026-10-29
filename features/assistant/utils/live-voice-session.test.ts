@@ -100,6 +100,7 @@ function setup() {
       heard = ""
     }),
     onCutOff: vi.fn(),
+    withdraw: vi.fn(),
     close: vi.fn(),
     confirmLine: "Tap the button on the screen.",
     fillers: ["Hmm, let me see.", "Okay, almost there."],
@@ -252,11 +253,36 @@ test("talking over an answer remembers only what was heard", () => {
   expect(t.parts.onCutOff).toHaveBeenCalledTimes(1)
 })
 
-test("new words while thinking report a cut-off with nothing heard", () => {
+test("a pause before any answer joins both parts into one question", async () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Yeah," })
+  t.session.hear({
+    type: "speechComplete",
+    turnId: 2,
+    transcript: "Kelly Begin",
+  })
+  expect(t.parts.onCutOff).not.toHaveBeenCalled()
+  expect(t.parts.withdraw).toHaveBeenCalled()
+  // The cancelled answer lets go, then the whole question goes.
+  t.answers[0].resolve(reply(""))
+  await flush()
+  t.session.idle()
+  expect(t.parts.send).toHaveBeenLastCalledWith(
+    "Yeah, Kelly Begin",
+    expect.any(Object)
+  )
+})
+
+test("new words after it started talking are a cut-off", () => {
   const t = setup()
   t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Sofia?" })
+  t.answers[0].write("Lemme see. ")
+  t.setPlaying(true)
+  t.voices[0].audio()
+  t.setHeard("Lemme see.")
   t.session.hear({ type: "speechComplete", turnId: 2, transcript: "Stingray?" })
-  expect(t.parts.onCutOff).toHaveBeenCalledWith("")
+  expect(t.parts.onCutOff).toHaveBeenCalledWith("Lemme see.")
+  expect(t.parts.withdraw).not.toHaveBeenCalled()
 })
 
 test("an answer heard to the end is not a cut-off", async () => {
@@ -403,7 +429,7 @@ test("more words while thinking cancel the answer and ask again", async () => {
   // Once the chat has let go of it, the new words go.
   t.session.idle()
   expect(t.parts.send).toHaveBeenLastCalledWith(
-    "and tomorrow",
+    "Bookings today and tomorrow",
     expect.any(Object)
   )
   t.answers[1].write("3 today and 2 tomorrow. ")

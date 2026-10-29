@@ -5,6 +5,7 @@ import {
   CHAT_STORAGE_VERSION,
   fromMessages,
   markCutOff,
+  withdrawLast,
   resolveConfirm,
   restoreChat,
   saveChat,
@@ -209,4 +210,11 @@ test("a cut-off reply keeps what the owner got; the first mark wins", () => {
   expect(toMessages(markCutOff(items, ""), 10)).toEqual([
     { role: "owner", text: "Hi" },
   ])
+})
+
+test("withdrawLast takes the last question and its reply off", () => {
+  const first: ChatItem = { id: "o0", role: "owner", text: "Earlier" }
+  const replied = applyEvent([first, owner], { type: "text", delta: "Hm" })
+  expect(withdrawLast(replied)).toEqual([first])
+  expect(withdrawLast([first, owner])).toEqual([first])
 })
