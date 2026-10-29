@@ -76,14 +76,20 @@ export function StickyHeader({ children }: { children: React.ReactNode }) {
             scrolled ? "w-5/6 lg:max-w-3xl" : "w-full"
           )}
         >
-          {/* The glass never animates: no fade, no change of size. Safari
-              redraws a moving or fading blur every frame, which flashes. */}
+          {/* The glass fades with the header on its own layer, never inside
+              a fading parent: an ancestor below full opacity cuts off what
+              a blur can see (MDN, backdrop-filter: backdrop root), so the
+              blur would vanish during the fade and pop back at the end.
+              At the top of the page it switches off and on at once. */}
           <div
             aria-hidden
             className={cn(
-              "pointer-events-none absolute inset-0 -z-10 rounded-full",
+              "pointer-events-none absolute inset-0 -z-10 origin-top rounded-full transition-[scale,opacity] motion-reduce:scale-100",
               frostedClassName,
-              (!scrolled || hidden) && "invisible"
+              hidden
+                ? "scale-95 opacity-0 duration-200 ease-exit"
+                : "duration-300 ease-enter",
+              !scrolled && "invisible"
             )}
           />
           {/* Shown and hidden by fading and shrinking in place, never
