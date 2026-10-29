@@ -54,16 +54,31 @@ const messages = {
     placeholder: "Ask or tell me what to do",
     label: "Message",
     send: "Send",
-    mic: "Speak",
+    mic: "Dictate",
     stop: "Stop",
     micDenied: "Allow the microphone to speak.",
-    // The first-tap intro to talking.
+    // The first-tap intro to talking live.
     voiceIntro: {
       title: "Talk to your assistant",
-      speak: "Say what you need. Your words appear in the box, ready to send.",
+      speak:
+        "Talk naturally. It answers out loud and writes it all in the chat.",
+      tap: "Changes still need a tap on the screen.",
       privacy: "Your voice becomes text. We don't keep the recording.",
       continue: "Continue",
       neverShow: "Don't show again",
+    },
+    // Talking live, like ChatGPT voice.
+    live: {
+      start: "Talk live",
+      connecting: "Connecting…",
+      listening: "Listening…",
+      thinking: "Thinking…",
+      talking: "Talking…",
+      mute: "Mute",
+      unmute: "Unmute",
+      end: "End",
+      // Said out loud when an answer waits for a tap on its card.
+      confirmLine: "To do it, tap the button on the screen.",
     },
   },
   confirm: {

@@ -1,7 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowUpIcon, MicIcon, SquareIcon } from "@/components/ui/icons"
+import {
+  ArrowUpIcon,
+  AudioLinesIcon,
+  MicIcon,
+  MicOffIcon,
+  SquareIcon,
+  XIcon,
+} from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {
@@ -11,16 +18,20 @@ import {
   InputGroupTextarea,
 } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
+import { VoiceOrb } from "@/components/voice-orb"
 import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
+import { VOICE_RULES } from "@/lib/voice-rules"
 import type { AssistantMessages } from "../i18n"
+import { useLiveVoice, type LiveVoiceError } from "../hooks/use-live-voice"
 import { useVoiceInput, type VoiceError } from "../hooks/use-voice-input"
+import type { Reply } from "../utils/live-voice-session"
 import { VoiceIntro } from "./voice-intro"
 
 // Set on this device once the owner picks "Don't show again".
 const VOICE_INTRO_HIDDEN_KEY = "assistant-voice-intro-hidden"
 
-type Mode = "stop" | "recording" | "transcribing" | "working" | "send" | "mic"
+type Mode = "stop" | "recording" | "transcribing" | "working" | "send" | "live"
 
 // What the one button says to a screen reader in each state.
 const MODE_LABELS: Record<
@@ -32,10 +43,12 @@ const MODE_LABELS: Record<
   transcribing: (labels) => labels.mic,
   working: (labels) => labels.send,
   send: (labels) => labels.send,
-  mic: (labels) => labels.mic,
+  live: (labels) => labels.live.start,
 }
 
-// The message box. Enter sends; Shift+Enter starts a new line.
+// The message box. Enter sends; Shift+Enter starts a new line. Like
+// ChatGPT: the microphone dictates into the box, the voice button talks
+// live (the box then shows what it hears, with mute and end).
 export function AssistantComposer({
   businessId,
   labels,
@@ -43,6 +56,7 @@ export function AssistantComposer({
   busy,
   stoppable,
   onSend,
+  onSendSpoken,
   onStop,
 }: {
   businessId: string
@@ -52,6 +66,11 @@ export function AssistantComposer({
   // While a question is being answered, the send button stops it.
   stoppable: boolean
   onSend: (text: string) => void
+  // A turn said in talking mode; resolves with the reply to read out.
+  onSendSpoken: (
+    text: string,
+    options: { voice: boolean }
+  ) => Promise<Reply | null>
   onStop: () => void
 }) {
   const [text, setText] = useState("")
@@ -62,9 +81,19 @@ export function AssistantComposer({
     (error: VoiceError) =>
       toast.error(error === "mic_denied" ? labels.micDenied : errors[error])
   )
+  const live = useLiveVoice({
+    businessId,
+    voiceId: VOICE_RULES.speakVoiceId,
+    busy,
+    send: onSendSpoken,
+    stopAnswer: onStop,
+    confirmLine: labels.live.confirmLine,
+    onError: (error: LiveVoiceError) =>
+      toast.error(error === "mic_denied" ? labels.micDenied : errors[error]),
+  })
 
-  // The one button: stop an answer, the voice states, send while there are
-  // words, the microphone while the box is empty.
+  // The main button: stop an answer, the dictation states, send while
+  // there are words, talk live while the box is empty.
   const mode: Mode = stoppable
     ? "stop"
     : voice.state === "recording"
@@ -73,16 +102,18 @@ export function AssistantComposer({
         ? "transcribing"
         : busy
           ? "working"
-          : text.trim() !== "" || !voice.supported
+          : text.trim() !== "" || !live.supported
             ? "send"
-            : "mic"
+            : "live"
+  // Dictation sits beside it while nothing else is happening.
+  const showMic = voice.supported && (mode === "send" || mode === "live")
 
-  // The mic opens the voice intro first, until "Don't show again".
+  // Talking live opens the voice intro first, until "Don't show again".
   const [introHidden, hideIntro] = useStoredFlag(VOICE_INTRO_HIDDEN_KEY)
   const [introOpen, setIntroOpen] = useState(false)
-  const startVoice = () => {
+  const startLive = () => {
     if (introHidden) {
-      voice.start()
+      void live.start()
     } else {
       setIntroOpen(true)
     }
@@ -92,6 +123,48 @@ export function AssistantComposer({
     if (!canSend) return
     onSend(text)
     setText("")
+  }
+
+  if (live.state !== "off") {
+    return (
+      <div className="flex flex-col items-center gap-4">
+        <VoiceOrb
+          state={live.state === "connecting" ? null : live.state}
+          getInputVolume={live.getInputVolume}
+          getOutputVolume={live.getOutputVolume}
+          className="size-32"
+        />
+        <InputGroup>
+          {/* What it hears, as it hears it; the state while it's quiet. */}
+          <InputGroupTextarea
+            readOnly
+            value={live.caption}
+            rows={1}
+            placeholder={labels.live[live.state]}
+            aria-label={labels.label}
+            aria-live="polite"
+            className="max-h-32 min-h-11"
+          />
+          <InputGroupAddon align="block-end" className="justify-end">
+            <InputGroupButton
+              variant="secondary"
+              size="icon-sm"
+              aria-label={live.muted ? labels.live.unmute : labels.live.mute}
+              onClick={live.toggleMute}
+            >
+              {live.muted ? <MicOffIcon /> : <MicIcon />}
+            </InputGroupButton>
+            <InputGroupButton
+              size="icon-sm"
+              aria-label={labels.live.end}
+              onClick={live.end}
+            >
+              <XIcon />
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+      </div>
+    )
   }
 
   return (
@@ -118,9 +191,19 @@ export function AssistantComposer({
           enterKeyHint="send"
           className="max-h-32 min-h-11"
         />
-        {/* Like big chat apps: the words on top, one round button under
-            them that changes with what the owner is doing. */}
+        {/* Like big chat apps: the words on top, the buttons under them;
+            the round one changes with what the owner is doing. */}
         <InputGroupAddon align="block-end" className="justify-end">
+          {showMic && (
+            <InputGroupButton
+              variant="ghost"
+              size="icon-sm"
+              aria-label={labels.mic}
+              onClick={voice.start}
+            >
+              <MicIcon />
+            </InputGroupButton>
+          )}
           {/* A new key per state, so each change fades and grows in, in
               the same spot (instant with reduced motion). */}
           <InputGroupButton
@@ -137,8 +220,8 @@ export function AssistantComposer({
             onClick={
               mode === "stop"
                 ? onStop
-                : mode === "mic"
-                  ? startVoice
+                : mode === "live"
+                  ? startLive
                   : mode === "recording"
                     ? voice.stop
                     : undefined
@@ -149,8 +232,8 @@ export function AssistantComposer({
               <Spinner />
             ) : mode === "stop" || mode === "recording" ? (
               <SquareIcon />
-            ) : mode === "mic" ? (
-              <MicIcon />
+            ) : mode === "live" ? (
+              <AudioLinesIcon />
             ) : (
               <ArrowUpIcon />
             )}
@@ -163,12 +246,12 @@ export function AssistantComposer({
         onClose={() => setIntroOpen(false)}
         onContinue={() => {
           setIntroOpen(false)
-          voice.start()
+          void live.start()
         }}
         onNeverShow={() => {
           hideIntro()
           setIntroOpen(false)
-          voice.start()
+          void live.start()
         }}
       />
     </form>

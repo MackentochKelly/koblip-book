@@ -1,6 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react"
 
 import { VOICE_RULES } from "@/lib/voice-rules"
 import {
@@ -32,6 +38,13 @@ const MIC_CONSTRAINTS = {
   autoGainControl: true,
 } as unknown as MediaTrackConstraints
 
+// Talking live needs the microphone and an audio worklet (Safari 14.1+,
+// every current Chrome and Firefox).
+const noop = () => () => {}
+const canTalk = () =>
+  typeof AudioWorkletNode !== "undefined" &&
+  typeof navigator.mediaDevices?.getUserMedia === "function"
+
 // Connects talking mode (utils/live-voice-session.ts) to the browser: the
 // microphone through the capture worklet to our relay, and the speaker.
 export function useLiveVoice({
@@ -53,6 +66,7 @@ export function useLiveVoice({
   confirmLine: string
   onError: (error: LiveVoiceError) => void
 }) {
+  const supported = useSyncExternalStore(noop, canTalk, () => false)
   // "off" when no session is running.
   const [state, setState] = useState<LiveVoiceState | "off">("off")
   // What Meta hears so far in this turn; empty between turns.
@@ -213,6 +227,7 @@ export function useLiveVoice({
   const getOutputVolume = useCallback(() => player.current?.volume() ?? 0, [])
 
   return {
+    supported,
     state,
     caption,
     muted,

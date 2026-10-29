@@ -158,6 +158,7 @@ export function AssistantChat({
                 busy={chat.busy}
                 stoppable={chat.stoppable}
                 onSend={chat.send}
+                onSendSpoken={chat.send}
                 onStop={chat.stop}
               />
             </div>

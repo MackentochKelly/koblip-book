@@ -1,6 +1,10 @@
 "use client"
 
-import { MicIcon, ShieldCheckIcon } from "@/components/ui/icons"
+import {
+  AudioLinesIcon,
+  CircleCheckIcon,
+  ShieldCheckIcon,
+} from "@/components/ui/icons"
 
 import { HeroGradient } from "@/components/hero-gradient"
 import { Button } from "@/components/ui/button"
@@ -20,9 +24,10 @@ import {
 } from "@/components/ui/item"
 import type { AssistantMessages } from "../i18n"
 
-// Shown when the owner taps the microphone, until they pick "Don't show
-// again": what talking does and that the recording is not kept. Continue
-// and "Don't show again" both start listening; the X only closes.
+// Shown when the owner taps the voice button, until they pick "Don't show
+// again": what talking live does, that changes still need a tap, and that
+// the recording is not kept. Continue and "Don't show again" both start
+// talking; the X only closes.
 export function VoiceIntro({
   open,
   labels,
@@ -37,7 +42,8 @@ export function VoiceIntro({
   onNeverShow: () => void
 }) {
   const rows = [
-    { icon: <MicIcon />, text: labels.speak },
+    { icon: <AudioLinesIcon />, text: labels.speak },
+    { icon: <CircleCheckIcon />, text: labels.tap },
     { icon: <ShieldCheckIcon />, text: labels.privacy },
   ]
   return (
