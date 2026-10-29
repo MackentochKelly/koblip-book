@@ -55,6 +55,7 @@ export function useLiveVoice({
   busy,
   send,
   stopAnswer,
+  onCutOff,
   confirmLine,
   fillers,
   cutIns,
@@ -71,6 +72,8 @@ export function useLiveVoice({
   // Stops an answer that is still being written (the owner said more, or
   // ended talking mode).
   stopAnswer: () => void
+  // The owner cut an answer off; `heard` is all they got of it.
+  onCutOff: (heard: string) => void
   // Said after an answer that waits for a tap on the screen.
   confirmLine: string
   // Short lines for a slow answer ("Hmm, let me see.").
@@ -97,6 +100,7 @@ export function useLiveVoice({
     busy,
     send,
     stopAnswer,
+    onCutOff,
     confirmLine,
     fillers,
     cutIns,
@@ -109,6 +113,7 @@ export function useLiveVoice({
       busy,
       send,
       stopAnswer,
+      onCutOff,
       confirmLine,
       fillers,
       cutIns,
@@ -167,8 +172,8 @@ export function useLiveVoice({
         openSpeech({
           businessId,
           voiceId: latest.current.voiceId,
-          onAudio: (chunk) => {
-            speaker.play(chunk)
+          onAudio: (chunk, words) => {
+            speaker.play(chunk, words)
             onAudio()
           },
           onDone,
@@ -179,6 +184,9 @@ export function useLiveVoice({
       onPlayerIdle: (callback) => {
         speaker.onIdle = callback
       },
+      heard: () => speaker.heard(),
+      forgetHeard: () => speaker.forget(),
+      onCutOff: (heard) => latest.current.onCutOff(heard),
       close: () => {
         try {
           if (socket.readyState === WebSocket.OPEN) {

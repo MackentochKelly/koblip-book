@@ -59,6 +59,7 @@ export function AssistantComposer({
   onSend,
   onSendSpoken,
   onStop,
+  onCutOff,
 }: {
   businessId: string
   labels: AssistantMessages["composer"]
@@ -73,6 +74,8 @@ export function AssistantComposer({
     options: { voice: boolean; listen: AnswerListener }
   ) => Promise<Reply | null>
   onStop: () => void
+  // Talking mode: the owner cut an answer off; `heard` is all they got.
+  onCutOff: (heard: string) => void
 }) {
   const [text, setText] = useState("")
   const canSend = text.trim() !== "" && !busy
@@ -88,6 +91,7 @@ export function AssistantComposer({
     busy,
     send: onSendSpoken,
     stopAnswer: onStop,
+    onCutOff,
     confirmLine: labels.live.confirmLine,
     fillers: labels.live.fillers,
     cutIns: labels.live.cutIns,

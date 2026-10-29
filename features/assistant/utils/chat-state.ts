@@ -49,6 +49,8 @@ export type ChatItem =
       sources: ChatSource[]
       // Set when the answer could not be double-checked.
       unverified: boolean
+      // Set when the owner cut it off: the part they saw or heard.
+      cutOff?: string
     }
 
 type AssistantItem = Extract<ChatItem, { role: "assistant" }>
@@ -64,6 +66,15 @@ function withReply(
     return [...items.slice(0, -1), change(last)]
   }
   return [...items, change(newReply() as AssistantItem)]
+}
+
+// The owner cut off the reply being written or spoken. `heard` is what
+// talking mode played of it; typed, it is what was on screen. The first
+// mark wins: a stop that follows a talk-over keeps what was heard.
+export function markCutOff(items: ChatItem[], heard?: string): ChatItem[] {
+  const last = items.at(-1)
+  if (last?.role !== "assistant" || last.cutOff !== undefined) return items
+  return [...items.slice(0, -1), { ...last, cutOff: heard ?? last.text }]
 }
 
 // An empty reply, so what comes next starts a new message.
@@ -206,6 +217,7 @@ function isChatItem(value: unknown): value is ChatItem {
     Array.isArray(item.confirms) &&
     Array.isArray(item.choices) &&
     item.choices.every(isText) &&
+    (item.cutOff === undefined || isText(item.cutOff)) &&
     Array.isArray(item.sources) &&
     typeof item.unverified === "boolean" &&
     (item.result === null ||

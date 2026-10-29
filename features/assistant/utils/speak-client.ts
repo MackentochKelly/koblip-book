@@ -38,8 +38,9 @@ export function openSpeech({
 }: {
   businessId: string
   voiceId: string
-  // One base64 PCM chunk (VOICE_RULES.speakOutputFormat).
-  onAudio: (base64: string) => void
+  // One base64 PCM chunk (VOICE_RULES.speakOutputFormat) and the words it
+  // says ("" when the chunk carries none).
+  onAudio: (base64: string, words: string) => void
   // Every chunk has arrived (the last one may still be playing).
   onDone: () => void
   onError: () => void
@@ -91,10 +92,17 @@ export function openSpeech({
     }
     socket.onmessage = (event) => {
       if (stopped || typeof event.data !== "string") return
-      const message: { audio?: string; is_final?: boolean; error?: string } =
-        JSON.parse(event.data)
+      const message: {
+        audio?: string
+        // With sync_alignment, the characters this chunk says.
+        alignment?: { chars: string[] } | null
+        is_final?: boolean
+        error?: string
+      } = JSON.parse(event.data)
       if (message.error) return stop(onError)
-      if (message.audio) onAudio(message.audio)
+      if (message.audio) {
+        onAudio(message.audio, message.alignment?.chars.join("") ?? "")
+      }
       if (message.is_final) stop(onDone)
     }
     socket.onerror = () => stop(onError)

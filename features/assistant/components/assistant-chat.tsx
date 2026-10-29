@@ -160,6 +160,7 @@ export function AssistantChat({
                 onSend={chat.send}
                 onSendSpoken={chat.send}
                 onStop={chat.stop}
+                onCutOff={chat.cutOff}
               />
             </div>
           </>

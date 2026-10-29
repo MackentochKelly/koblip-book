@@ -83,9 +83,20 @@ test("sentences said before the socket opens go out on open, each flushed", asyn
     { close_socket: true },
   ])
   socket.onmessage?.({ data: JSON.stringify({ audio: "AAAA" }) })
+  socket.onmessage?.({
+    data: JSON.stringify({
+      audio: "BBBB",
+      alignment: {
+        chars: ["Y", "o", "u", " "],
+        char_start_times_ms: [0, 40, 80, 120],
+        char_durations_ms: [40, 40, 40, 40],
+      },
+    }),
+  })
   socket.onmessage?.({ data: JSON.stringify({ is_final: true }) })
   socket.onclose?.()
-  expect(onAudio).toHaveBeenCalledWith("AAAA")
+  expect(onAudio).toHaveBeenCalledWith("AAAA", "")
+  expect(onAudio).toHaveBeenCalledWith("BBBB", "You ")
   expect(onDone).toHaveBeenCalledTimes(1)
 })
 

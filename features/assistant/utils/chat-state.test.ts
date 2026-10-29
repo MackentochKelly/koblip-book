@@ -4,6 +4,7 @@ import {
   applyEvent,
   CHAT_STORAGE_VERSION,
   fromMessages,
+  markCutOff,
   resolveConfirm,
   restoreChat,
   saveChat,
@@ -185,4 +186,15 @@ test("a saved chat's words come back as items with their words", () => {
   const items = fromMessages(messages)
   expect(items.map((item) => item.role)).toEqual(["owner", "assistant"])
   expect(toMessages(items, 10)).toEqual(messages)
+})
+
+test("a cut-off reply keeps what the owner got; the first mark wins", () => {
+  const items = applyEvent([owner], { type: "text", delta: "You have 2 today" })
+  const heard = markCutOff(items, "You have")
+  expect(heard.at(-1)).toMatchObject({ cutOff: "You have" })
+  expect(markCutOff(heard).at(-1)).toMatchObject({ cutOff: "You have" })
+  // Typed: what was on screen.
+  expect(markCutOff(items).at(-1)).toMatchObject({ cutOff: "You have 2 today" })
+  // No reply yet: nothing to mark.
+  expect(markCutOff([owner])).toEqual([owner])
 })

@@ -43,6 +43,7 @@ function setup() {
   let busy = false
   let playing = false
   let idle = () => {}
+  let heard = ""
   const answers: {
     write: (delta: string) => void
     lookup: () => void
@@ -94,6 +95,11 @@ function setup() {
     onPlayerIdle: (callback) => {
       idle = callback
     },
+    heard: () => heard,
+    forgetHeard: vi.fn(() => {
+      heard = ""
+    }),
+    onCutOff: vi.fn(),
     close: vi.fn(),
     confirmLine: "Tap the button on the screen.",
     fillers: ["Hmm, let me see.", "Okay, almost there."],
@@ -113,6 +119,7 @@ function setup() {
     voices,
     setBusy: (value: boolean) => (busy = value),
     setPlaying: (value: boolean) => (playing = value),
+    setHeard: (value: string) => (heard = value),
     playerIdle: () => idle(),
   }
 }
@@ -224,6 +231,56 @@ test("talking over the first line stops both voices", () => {
   t.session.hear({ type: "transcript", transcript: "Wait" })
   expect(t.voices[0].cancelled).toBe(true)
   expect(t.voices[1].cancelled).toBe(true)
+})
+
+test("talking over an answer remembers only what was heard", () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Sofia?" })
+  expect(t.parts.forgetHeard).toHaveBeenCalled()
+  t.answers[0].write("Yep, Sofia's at 11. ")
+  t.setPlaying(true)
+  t.voices[0].audio()
+  t.setHeard("Yep, Sofia's")
+  t.session.hear({ type: "transcript", transcript: "And Stingray?" })
+  expect(t.parts.onCutOff).toHaveBeenCalledWith("Yep, Sofia's")
+  // Said more while it was still thinking: no second report.
+  t.session.hear({
+    type: "speechComplete",
+    turnId: 2,
+    transcript: "And Stingray?",
+  })
+  expect(t.parts.onCutOff).toHaveBeenCalledTimes(1)
+})
+
+test("new words while thinking report a cut-off with nothing heard", () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Sofia?" })
+  t.session.hear({ type: "speechComplete", turnId: 2, transcript: "Stingray?" })
+  expect(t.parts.onCutOff).toHaveBeenCalledWith("")
+})
+
+test("an answer heard to the end is not a cut-off", async () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Sofia?" })
+  t.answers[0].write("Yep. ")
+  t.setPlaying(true)
+  t.voices[0].audio()
+  t.answers[0].resolve(reply("Yep."))
+  await flush()
+  t.voices[0].done()
+  t.setPlaying(false)
+  t.playerIdle()
+  t.session.hear({ type: "transcript", transcript: "Thanks" })
+  expect(t.parts.onCutOff).not.toHaveBeenCalled()
+})
+
+test("talking over the hello is not a cut-off", () => {
+  const t = setup()
+  t.session.opened()
+  t.setPlaying(true)
+  t.voices[0].audio()
+  t.session.hear({ type: "transcript", transcript: "Hey" })
+  expect(t.parts.onCutOff).not.toHaveBeenCalled()
 })
 
 test("says hello when talking starts, then listens", () => {

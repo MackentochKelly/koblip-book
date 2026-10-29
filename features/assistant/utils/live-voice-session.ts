@@ -59,6 +59,12 @@ export interface LiveVoiceParts {
   playing: () => boolean
   stopPlaying: () => void
   onPlayerIdle: (callback: () => void) => void
+  // The answer's words that have started playing, and a fresh start for
+  // the next answer.
+  heard: () => string
+  forgetHeard: () => void
+  // The owner cut an answer off; `heard` is all they got of it.
+  onCutOff: (heard: string) => void
   // Closes the microphone and the listening socket.
   close: () => void
   // Said after an answer that waits for a tap on its card.
@@ -123,6 +129,8 @@ export class LiveVoiceSession {
   } | null = null
   private lookedUp = false
   private cutInsUsed = 0
+  // An answer is being written or spoken (not the hello).
+  private answering = false
 
   constructor(private readonly parts: LiveVoiceParts) {
     parts.onState("connecting")
@@ -148,7 +156,7 @@ export class LiveVoiceSession {
         // Realtime prompting guide). Words still being written stay on
         // screen only.
         if (event.transcript.trim() && (this.speech || this.parts.playing())) {
-          this.stopSpeaking()
+          this.cutOff()
           this.parts.onState("listening")
         }
         break
@@ -163,7 +171,7 @@ export class LiveVoiceSession {
         if (this.thinking) {
           this.turn += 1
           this.thinking = false
-          this.stopSpeaking()
+          this.cutOff()
           this.parts.cancelAnswer()
           this.parts.onState("thinking")
           // Sent from idle() once the chat has let go of the old answer.
@@ -200,10 +208,20 @@ export class LiveVoiceSession {
     if (this.ended) return
     this.ended = true
     this.queued = ""
-    this.stopSpeaking()
+    this.cutOff()
     this.parts.close()
     this.parts.onCaption("")
     this.parts.onEnd()
+  }
+
+  // Stops the voice; an answer not fully heard is remembered as only the
+  // part the owner got, so the next answer can cover the rest.
+  private cutOff() {
+    if (this.answering) {
+      this.answering = false
+      this.parts.onCutOff(this.parts.heard())
+    }
+    this.stopSpeaking()
   }
 
   private stopSpeaking() {
@@ -225,6 +243,8 @@ export class LiveVoiceSession {
     const turn = this.turn
     this.thinking = true
     this.lookedUp = false
+    this.answering = true
+    this.parts.forgetHeard()
     this.parts.onState("thinking")
     this.openVoice(turn)
 
@@ -357,6 +377,7 @@ export class LiveVoiceSession {
 
   private next() {
     if (this.ended || this.thinking) return
+    this.answering = false
     this.parts.onPlayerIdle(() => {})
     if (this.queued) {
       this.parts.onState("thinking")

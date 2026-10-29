@@ -13,6 +13,7 @@ import { getChat, putChat } from "../utils/chats-client"
 import {
   applyEvent,
   fromMessages,
+  markCutOff,
   newReply,
   resolveConfirm,
   restoreChat,
@@ -155,7 +156,15 @@ export function useAssistantChat(
     const reply = latest.at(-1)
     return reply?.role === "assistant" ? reply : null
   }
-  const stop = () => asking.current?.abort()
+  // The owner cut the answer off: in talking mode with what they heard of
+  // it, typed with what was on screen.
+  const cutOff = (heard?: string) =>
+    setItems((current) => markCutOff(current, heard))
+  const stop = () => {
+    if (!asking.current) return
+    asking.current.abort()
+    cutOff()
+  }
 
   // `voice`: said out loud in talking mode, so the answer is short and
   // spoken; `listen` hears its words as they are written. Resolves with the
@@ -224,6 +233,7 @@ export function useAssistantChat(
     reset,
     open,
     stop,
+    cutOff,
     stoppable,
   }
 }
