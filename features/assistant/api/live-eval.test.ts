@@ -8,6 +8,7 @@ vi.mock("server-only", () => ({}))
 
 import type { AssistantTool } from "../types"
 import { runChat, type RunChatContext } from "./run-chat"
+import { getMetaAiClient } from "@/lib/meta-ai"
 
 const LIVE = process.env.RUN_LIVE_EVALS === "1"
 // Needs the real key in the environment, e.g.
@@ -222,6 +223,87 @@ function check(name: string, pass: boolean) {
 }
 
 describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
+  test("voice streams lookup speech before tool calls with timings", async () => {
+    const client = getMetaAiClient()
+    expect(client).not.toBeNull()
+    if (!client) return
+    type Chunk = {
+      choices: { delta: { content?: string | null; tool_calls?: unknown[] } }[]
+    }
+    const original = client.chat.completions.create.bind(
+      client.chat.completions
+    ) as unknown as (
+      body: unknown,
+      options: unknown
+    ) => Promise<AsyncIterable<Chunk>>
+    let firstTurn = true
+    const order: string[] = []
+    const spy = vi
+      .spyOn(client.chat.completions, "create")
+      .mockImplementation((async (body: unknown, options: unknown) => {
+        const stream = await original(body, options)
+        const observe = firstTurn
+        firstTurn = false
+        return (async function* () {
+          for await (const chunk of stream) {
+            if (observe) {
+              const delta = chunk.choices[0]?.delta
+              if (delta?.content) order.push("content")
+              if (delta?.tool_calls?.length) order.push("tool_calls")
+            }
+            yield chunk
+          }
+        })()
+      }) as never)
+    const started = performance.now()
+    let firstTextMs: number | null = null
+    let doneMs: number | null = null
+    const events: string[] = []
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: ZONE }).format(
+      Date.now()
+    )
+    const tools = [
+      immediate("list_bookings", async () => ({
+        bookings: fakeData().bookings.map((b) => ({ ...b, date: today })),
+        total: 2,
+        truncated: false,
+      })),
+    ]
+    try {
+      for await (const event of runChat(
+        [{ role: "owner", text: "How many bookings do I have today?" }],
+        { ...CONTEXT, now: Date.now(), voice: true },
+        tools
+      )) {
+        events.push(event.type)
+        if (event.type === "text" && event.delta.trim() && firstTextMs === null)
+          firstTextMs = performance.now() - started
+        if (event.type === "done") doneMs = performance.now() - started
+      }
+      const contentBeforeTool =
+        order.indexOf("content") >= 0 &&
+        order.indexOf("tool_calls") > order.indexOf("content")
+      console.log(
+        JSON.stringify({
+          firstTextMs,
+          doneMs,
+          contentBeforeTool,
+          firstTurnEvents: order,
+        })
+      )
+      expect(
+        contentBeforeTool,
+        "First model turn must send content before tool calls"
+      ).toBe(true)
+      expect(firstTextMs).not.toBeNull()
+      expect(doneMs).not.toBeNull()
+      expect(events).not.toContain("error")
+      expect(events.slice(-2)).toEqual(["sources", "done"])
+    } finally {
+      spy.mockRestore()
+    }
+  }, 120_000)
+
   test("service count reads only", async () => {
     const r = await chat("how many services do I have")
     check(

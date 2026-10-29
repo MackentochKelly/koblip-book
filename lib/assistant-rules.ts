@@ -6,9 +6,10 @@ export const ASSISTANT_RULES = {
   maxRequestsPerMinutePerOwner: 20,
   modelTimeoutMs: 60_000,
   maxCompletionTokens: 1024,
-  // Final-answer judge: retries after an unsupported answer, and the
-  // timeout for one judge call.
-  answerCheckRetries: 2,
+  // Shorter voice reasoning: https://dev.meta.ai/docs/reasoning
+  reasoningEffort: "low",
+  voiceReasoningEffort: "minimal",
+  // Timeout for one answer check.
   answerCheckTimeoutMs: 20_000,
   // Choice buttons: how many options, and how long one option is.
   maxChoices: 6,

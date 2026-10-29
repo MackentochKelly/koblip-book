@@ -1784,10 +1784,10 @@ test("buildVoiceLine speaks briefly in both languages", async () => {
     await import("@/features/assistant/utils/system-prompt")
   const en = buildVoiceLine("en")
   expect(en).toContain("speaking out loud")
-  expect(en).toContain("tap confirm")
+  expect(en).toContain("write nothing; the app says it out loud")
   const es = buildVoiceLine("es")
   expect(es).toContain("voz alta")
-  expect(es).toContain("confirmar")
+  expect(es).toContain("no escribas nada; la aplicación")
 })
 
 test("the prompt carries the Markdown formatting rule", async () => {

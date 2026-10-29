@@ -239,7 +239,10 @@ export async function* runChat(
             })),
             stream: true,
             stream_options: { include_usage: true },
-            reasoning_effort: "low",
+            reasoning_effort:
+              context.voice === true
+                ? ASSISTANT_RULES.voiceReasoningEffort
+                : ASSISTANT_RULES.reasoningEffort,
             // One call per turn: the model reads each result (e.g.
             // find_free_times) before it can ask for the next tool.
             parallel_tool_calls: false,
@@ -264,19 +267,14 @@ export async function* runChat(
       }
     }
     let stopAfterReply = false
-    // A non-confirm tool ran in this request: the final answer goes
-    // through the judge instead of going out directly.
     let toolsRan = false
-    let retriesLeft = ASSISTANT_RULES.answerCheckRetries
-    // Last answer that failed a check and is still waiting on its retry.
-    let pendingAnswer: string | null = null
+    let textSent = false
     // Records looked up this request, by kind in first-looked-up order.
     // A repeat lookup keeps the highest count; empty kinds stay out.
     const sources = new Map<SourceKind, number>()
     for (let turn = 0; turn < ASSISTANT_RULES.maxSteps; turn += 1) {
       const stream = await modelCall()
-      // The owner only ever sees the final answer: every turn's text
-      // is held, and only a turn with no tool calls goes out.
+      // Keep the full turn for history while sending each delta immediately.
       let text = ""
       const calls: CollectedCall[] = []
       for await (const chunk of stream) {
@@ -305,7 +303,12 @@ export async function* runChat(
           continue
         }
         if (delta.content) {
+          if (text === "" && textSent) {
+            yield { type: "text", delta: "\n\n" }
+          }
           text += delta.content
+          textSent = true
+          yield { type: "text", delta: delta.content }
         }
         for (const tc of delta.tool_calls ?? []) {
           const slot = (calls[tc.index] ??= { id: "", name: "", argsText: "" })
@@ -322,15 +325,25 @@ export async function* runChat(
       }
       if (calls.length === 0) {
         if (!toolsRan) {
-          // Nothing was looked up: the answer goes out as one event.
-          if (text !== "") {
-            yield { type: "text", delta: text }
+          yield { type: "done" }
+          return
+        }
+        if (text.trim() === "") {
+          yield {
+            type: "text",
+            delta: t.loop.stopped(ASSISTANT_RULES.maxSteps),
           }
           yield { type: "done" }
           return
         }
-        // Final answer after lookups: check it against this request's
-        // tool results before the owner sees it.
+        const items = [...sources].flatMap(([kind, count]) =>
+          count > 0 ? [{ kind, count }] : []
+        )
+        if (context.voice === true) {
+          if (items.length > 0) yield { type: "sources", items }
+          yield { type: "done" }
+          return
+        }
         const stepId = `check-${turn}`
         yield {
           type: "step",
@@ -343,67 +356,25 @@ export async function* runChat(
         const toolResults = history.flatMap((m) =>
           m.role === "tool" && typeof m.content === "string" ? [m.content] : []
         )
-        // A blank answer never reaches the judge: it rides the failed
-        // path with its problem, exactly like an unsupported answer.
-        const verdict =
-          text.trim() === ""
-            ? { ok: false as const, problems: ["The answer was empty."] }
-            : await checkAnswer({
-                question,
-                toolResults,
-                answer: text,
-                signal: opts?.signal,
-              })
+        const verdict = await checkAnswer({
+          question,
+          toolResults,
+          answer: text,
+          signal: opts?.signal,
+        })
         yield {
           type: "step",
           id: stepId,
           label: t.steps.checking,
           status: verdict.ok === true ? "done" : "failed",
         }
+        if (items.length > 0) yield { type: "sources", items }
         if (verdict.ok === true) {
-          pendingAnswer = null
-          yield { type: "text", delta: text }
-          const items = [...sources].flatMap(([kind, count]) =>
-            count > 0 ? [{ kind, count }] : []
-          )
-          if (items.length > 0) {
-            yield { type: "sources", items }
-          }
           const options = cleanChoices(verdict.choices, toolResults)
-          if (options !== null) {
-            yield { type: "choices", options }
-          }
-          yield { type: "done" }
-          return
+          if (options !== null) yield { type: "choices", options }
+        } else {
+          yield { type: "notice", kind: "unverified" }
         }
-        if (verdict.ok === false && retriesLeft > 0) {
-          // Hide the bad answer and ask for another using only the
-          // tool results. This retry counts toward maxSteps.
-          retriesLeft -= 1
-          pendingAnswer = text
-          history.push({ role: "assistant", content: text })
-          history.push({
-            role: "developer",
-            content:
-              `Your answer had problems: ${verdict.problems.join("; ")}. ` +
-              "Answer again using only the tool results; " +
-              "call a tool if you need more data.",
-          })
-          continue
-        }
-        if (text.trim() === "") {
-          // No answer and no retries: the stopped path, never an
-          // empty text event.
-          yield {
-            type: "text",
-            delta: t.loop.stopped(ASSISTANT_RULES.maxSteps),
-          }
-          yield { type: "done" }
-          return
-        }
-        pendingAnswer = null
-        yield { type: "text", delta: text }
-        yield { type: "notice", kind: "unverified" }
         yield { type: "done" }
         return
       }
@@ -482,20 +453,10 @@ export async function* runChat(
         }
       }
       if (stopAfterReply) {
-        // A confirm card went out: the card is the only message. End
-        // here with no second model call (cheaper, faster, and the
-        // model cannot repeat its pre-call line after the card).
+        // The card ends the response: no further model call or answer check.
         yield { type: "done" }
         return
       }
-    }
-    if (pendingAnswer !== null && pendingAnswer.trim() !== "") {
-      // A checked answer never got its retry: send the last one
-      // with a notice instead of the stopped message.
-      yield { type: "text", delta: pendingAnswer }
-      yield { type: "notice", kind: "unverified" }
-      yield { type: "done" }
-      return
     }
     yield {
       type: "text",
