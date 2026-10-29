@@ -14,6 +14,11 @@ export interface ViewTab<T extends string> {
 // The app's one row of tabs. A row that runs out of room scrolls sideways
 // with no bar and fades the edge where more tabs hide. `line`: plain words
 // with a bar under the open one; the row draws the one line under it.
+// On a touch screen each tab is at least 44px tall to tap (Apple's
+// minimum), drawn invisibly like the buttons' tap area, so the look and the
+// layout don't change. It uses ::before, since ::after is the line tab's bar.
+const TAB_TOUCH_AREA =
+  "pointer-coarse:before:absolute pointer-coarse:before:inset-x-0 pointer-coarse:before:top-1/2 pointer-coarse:before:min-h-11 pointer-coarse:before:-translate-y-1/2"
 export function ViewTabs<T extends string>({
   views,
   value,
@@ -55,9 +60,11 @@ export function ViewTabs<T extends string>({
       onValueChange={(next) => onChange(next as T)}
       className={cn("min-w-0 gap-1", line && "border-b", className)}
     >
+      {/* The side scroll also clips up and down, so the row gets room for
+          the 44px tap areas (padding, taken back by a negative margin). */}
       <div
         ref={row}
-        className="no-scrollbar min-w-0 flex-1 scroll-fade-x overflow-x-auto whitespace-nowrap"
+        className="-my-1.5 no-scrollbar min-w-0 flex-1 scroll-fade-x overflow-x-auto py-1.5 whitespace-nowrap"
       >
         <TabsList
           variant={variant}
@@ -65,7 +72,11 @@ export function ViewTabs<T extends string>({
           className={cn(line && "min-w-full justify-start", listClassName)}
         >
           {views.map((view) => (
-            <TabsTrigger key={view.id} value={view.id}>
+            <TabsTrigger
+              key={view.id}
+              value={view.id}
+              className={TAB_TOUCH_AREA}
+            >
               {view.icon}
               {view.label}
             </TabsTrigger>
