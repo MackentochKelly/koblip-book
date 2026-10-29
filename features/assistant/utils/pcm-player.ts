@@ -3,7 +3,7 @@ import { VOICE_RULES } from "@/lib/voice-rules"
 import { base64Pcm16ToFloat, level } from "./pcm"
 
 // Plays ElevenLabs' PCM chunks back to back, gapless, and says how loud it
-// is right now for the orb. stop() cuts it off at once (the owner talked
+// is right now for the globe. stop() cuts it off at once (the owner talked
 // over it). It also knows which words have started playing, so a cut-off
 // answer is remembered as only what the owner heard (OpenAI's Realtime
 // guide truncates an interrupted reply the same way:
@@ -50,6 +50,11 @@ export class PcmPlayer {
 
   get playing() {
     return this.sources.size > 0
+  }
+
+  // Also sends what plays to `node` (the waveform's analyser).
+  connect(node: AudioNode) {
+    this.analyser.connect(node)
   }
 
   volume = () => {

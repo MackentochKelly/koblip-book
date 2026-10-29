@@ -96,6 +96,8 @@ export function useLiveVoice({
   const session = useRef<LiveVoiceSession | null>(null)
   const player = useRef<PcmPlayer | null>(null)
   const inputLevel = useRef(0)
+  // The voice in the air, mic and answer together, for the waveform.
+  const voiceAnalyser = useRef<AnalyserNode | null>(null)
   // The props as last drawn, for the session's callbacks.
   const latest = useRef({
     busy,
@@ -212,6 +214,7 @@ export function useLiveVoice({
         if (session.current === current) {
           session.current = null
           player.current = null
+          voiceAnalyser.current = null
         }
         inputLevel.current = 0
         setState("off")
@@ -247,7 +250,15 @@ export function useLiveVoice({
         socket.send(pcm.buffer)
       }
     }
-    context.createMediaStreamSource(stream).connect(capture)
+    // The waveform's analyser hears the microphone and the answer.
+    const analyser = context.createAnalyser()
+    analyser.fftSize = VOICE_RULES.waveformFftSize
+    analyser.smoothingTimeConstant = VOICE_RULES.waveformSmoothing
+    voiceAnalyser.current = analyser
+    speaker.connect(analyser)
+    const microphone = context.createMediaStreamSource(stream)
+    microphone.connect(capture)
+    microphone.connect(analyser)
     void context.resume()
   }, [businessId])
 
@@ -266,6 +277,14 @@ export function useLiveVoice({
 
   const getInputVolume = useCallback(() => inputLevel.current, [])
   const getOutputVolume = useCallback(() => player.current?.volume() ?? 0, [])
+  // Fills `into` with the voice's loudness per pitch (0 to 255); false
+  // when no session is running.
+  const getVoiceFrequencies = useCallback((into: Uint8Array<ArrayBuffer>) => {
+    const analyser = voiceAnalyser.current
+    if (!analyser) return false
+    analyser.getByteFrequencyData(into)
+    return true
+  }, [])
 
   return {
     supported,
@@ -275,5 +294,6 @@ export function useLiveVoice({
     end,
     getInputVolume,
     getOutputVolume,
+    getVoiceFrequencies,
   }
 }

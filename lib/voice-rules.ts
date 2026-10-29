@@ -11,6 +11,10 @@ export const VOICE_RULES = {
   speakSyncAlignment: true,
   speakOutputFormat: "pcm_24000",
   speakSampleRate: 24000,
+  // Talking-live waveform analyser, ElevenLabs UI Live Waveform defaults
+  // (https://ui.elevenlabs.io/docs/components/live-waveform).
+  waveformFftSize: 256,
+  waveformSmoothing: 0.8,
   // Token mint base; the route appends the type below.
   speakTokenUrl: "https://api.elevenlabs.io/v1/single-use-token/",
   // Proven by a live test on 2026-10-28: this type opens the TTD socket.
