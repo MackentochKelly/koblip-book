@@ -19,13 +19,13 @@ export const glassButtonClassName = cn(
 )
 
 // A thin glass edge around a big hero panel (home, login, first dashboard):
-// the glass frame's recipe (blur, colour boost, faint tint) on a 4px band,
+// the glass frame's recipe (blur, colour boost, faint tint) on a 1px band,
 // so it shifts colour with the moving gradient under it. The mask keeps the
 // blur to the band (MDN mask-composite). Drawn over the panel's gradient,
 // so it goes on the panel, not on HeroGradient (the voice globe uses that
 // gradient with no edge).
 export const heroEdgeClassName =
-  "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:p-1 after:inset-ring-4 after:inset-ring-glass-frame-edge after:backdrop-blur-md after:backdrop-saturate-(--glass-saturate) after:[mask:linear-gradient(#000_0_0)_content-box_exclude,linear-gradient(#000_0_0)]"
+  "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:p-px after:inset-ring after:inset-ring-glass-frame-edge after:backdrop-blur-md after:backdrop-saturate-(--glass-saturate) after:[mask:linear-gradient(#000_0_0)_content-box_exclude,linear-gradient(#000_0_0)]"
 
 // A frosted glass frame around a card on the moving gradient, like
 // Fresha's: it blurs the gradient behind it and draws a faint edge; no drop
