@@ -68,6 +68,7 @@ import {
 import type { AddonGroupInput, OwnerAddonGroup } from "../types"
 import { noAutofill } from "@/lib/no-autofill"
 import { useOwnerMessages } from "../i18n/provider"
+import { ConfirmRemove } from "./confirm-remove"
 
 const FORM = "extras-form"
 
@@ -109,6 +110,7 @@ export function ExtrasView({
   const { common: c, extras: t } = useOwnerMessages().catalog
   const [editing, setEditing] = useState<OwnerAddonGroup | null>(null)
   const [formKey, setFormKey] = useState(0)
+  const [removing, setRemoving] = useState<OwnerAddonGroup | null>(null)
   const [pending, startTransition] = useTransition()
   const panelOpen = adding || editing !== null
   const names = new Map(services.map((service) => [service.id, service.name]))
@@ -205,12 +207,7 @@ export function ExtrasView({
                       <DropdownMenuItem
                         variant="destructive"
                         disabled={pending}
-                        onClick={() =>
-                          run(
-                            () => deleteAddonGroup(businessId, group.id),
-                            t.removed
-                          )
-                        }
+                        onClick={() => setRemoving(group)}
                       >
                         <Trash2Icon />
                         {c.remove}
@@ -223,6 +220,15 @@ export function ExtrasView({
           ))}
         </ItemGroup>
       )}
+
+      <ConfirmRemove
+        name={removing?.name ?? null}
+        onClose={() => setRemoving(null)}
+        onConfirm={() =>
+          removing &&
+          run(() => deleteAddonGroup(businessId, removing.id), t.removed)
+        }
+      />
 
       <ResponsivePanel
         open={panelOpen}

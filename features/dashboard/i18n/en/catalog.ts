@@ -8,6 +8,12 @@ const catalog = {
     moveUp: "Move up",
     moveDown: "Move down",
     remove: "Remove",
+    // Asked before something is removed for good.
+    confirmRemove: {
+      title: (name: string) => `Remove ${name}?`,
+      description: "This can't be undone.",
+      keep: "Keep",
+    },
     name: "Name",
     addName: "Add a name",
     optional: "Optional",

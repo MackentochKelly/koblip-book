@@ -58,6 +58,7 @@ import { removeTeamMemberPhoto, setTeamMemberPhoto } from "../api/photo-actions"
 import { PhotoField } from "./photo-upload"
 import { noAutofill } from "@/lib/no-autofill"
 import { useOwnerMessages } from "../i18n/provider"
+import { ConfirmRemove } from "./confirm-remove"
 
 interface MemberRow {
   id: string
@@ -80,6 +81,7 @@ export function TeamView({
   const { common: c, team: t } = messages.catalog
   const [editing, setEditing] = useState<MemberRow | "new" | null>(null)
   const [formKey, setFormKey] = useState(0)
+  const [removing, setRemoving] = useState<MemberRow | null>(null)
   const [pending, startTransition] = useTransition()
 
   const openForm = (member: MemberRow | "new") => {
@@ -197,7 +199,7 @@ export function TeamView({
                       <DropdownMenuItem
                         variant="destructive"
                         disabled={pending}
-                        onClick={() => remove(member)}
+                        onClick={() => setRemoving(member)}
                       >
                         <Trash2Icon />
                         {c.remove}
@@ -210,6 +212,12 @@ export function TeamView({
           ))}
         </ItemGroup>
       )}
+
+      <ConfirmRemove
+        name={removing?.name ?? null}
+        onClose={() => setRemoving(null)}
+        onConfirm={() => removing && remove(removing)}
+      />
 
       <ResponsivePanel
         open={editing !== null}

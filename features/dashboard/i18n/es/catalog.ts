@@ -9,6 +9,11 @@ const catalog: typeof en = {
     moveUp: "Subir",
     moveDown: "Bajar",
     remove: "Quitar",
+    confirmRemove: {
+      title: (name: string) => `¿Quitar ${name}?`,
+      description: "No se puede deshacer.",
+      keep: "Conservar",
+    },
     name: "Nombre",
     addName: "Escribe un nombre",
     optional: "Opcional",

@@ -76,6 +76,7 @@ import { createAddonGroup, suggestAddonGroups } from "../api/addon-actions"
 import { removeServicePhoto, setServicePhoto } from "../api/photo-actions"
 import { setServiceTeam } from "../api/team-services"
 import type { OwnerAddonGroup, ServiceInput } from "../types"
+import { ConfirmRemove } from "./confirm-remove"
 import { ExtrasView } from "./extras-view"
 import { PhotoField } from "./photo-upload"
 import { noAutofill } from "@/lib/no-autofill"
@@ -123,6 +124,7 @@ export function ServicesView({
   const [formKey, setFormKey] = useState(0)
   const [suggesting, setSuggesting] = useState(false)
   const [suggestKey, setSuggestKey] = useState(0)
+  const [removing, setRemoving] = useState<ServiceRow | null>(null)
   const [pending, startTransition] = useTransition()
   const [view, setView] = useState<"services" | "extras">("services")
   const [addingExtras, setAddingExtras] = useState(false)
@@ -257,12 +259,7 @@ export function ServicesView({
                       <DropdownMenuItem
                         variant="destructive"
                         disabled={pending}
-                        onClick={() =>
-                          run(
-                            () => deleteService(businessId, service.id),
-                            t.removed
-                          )
-                        }
+                        onClick={() => setRemoving(service)}
                       >
                         <Trash2Icon />
                         {c.remove}
@@ -275,6 +272,15 @@ export function ServicesView({
           ))}
         </ItemGroup>
       )}
+
+      <ConfirmRemove
+        name={removing?.name ?? null}
+        onClose={() => setRemoving(null)}
+        onConfirm={() =>
+          removing &&
+          run(() => deleteService(businessId, removing.id), t.removed)
+        }
+      />
 
       <ResponsivePanel
         open={editing !== null}
