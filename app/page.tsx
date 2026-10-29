@@ -3,6 +3,7 @@ import { headers } from "next/headers"
 import Link from "next/link"
 
 import { heroEdgeClassName } from "@/components/glass-frame"
+import { StickyHeader } from "@/components/sticky-header"
 import { HeroGradient } from "@/components/hero-gradient"
 import { HomeCta } from "@/components/home-cta"
 import { HomeFaq } from "@/components/home-faq"
@@ -10,6 +11,7 @@ import { HomeFeatures } from "@/components/home-features"
 import { GET_STARTED_ID } from "@/components/home-section-title"
 import { HowItWorks } from "@/components/how-it-works"
 import { LiveExample } from "@/components/live-example"
+import { LanguageMenu } from "@/components/language-menu"
 import { LanguageProvider } from "@/components/language-provider"
 import { MetaProviderBadge } from "@/components/meta-provider-badge"
 import { SiteFooter } from "@/components/site-footer"
@@ -64,16 +66,10 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           fontSerif.variable
         )}
       >
-        {/* The hero: one rounded panel with a moving gradient, everything
-          centered on it. */}
-        <section
-          className={cn(
-            "relative isolate flex flex-1 flex-col overflow-hidden rounded-4xl",
-            heroEdgeClassName
-          )}
-        >
-          <HeroGradient />
+        {/* The header stays on top while the page scrolls. */}
+        <StickyHeader>
           <SiteHeader
+            control={<LanguageMenu className={headerButtonClassName} />}
             action={
               <Button
                 variant="outline"
@@ -85,7 +81,17 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
               </Button>
             }
           />
-          <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-4 pt-12 pb-24 text-center">
+        </StickyHeader>
+        {/* The hero: one rounded panel with a moving gradient, everything
+          centered on it. */}
+        <section
+          className={cn(
+            "relative isolate flex flex-1 flex-col overflow-hidden rounded-4xl",
+            heroEdgeClassName
+          )}
+        >
+          <HeroGradient />
+          <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-4 pt-28 pb-24 text-center">
             <div className="flex flex-col gap-4">
               <MetaProviderBadge language={language} />
               <h1 className="font-display text-hero font-medium tracking-tight text-balance text-hero-foreground sm:text-7xl">
@@ -133,7 +139,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           button={t.cta.button}
           hint={onboardingWordsFor(language).hint}
         />
-        <SiteFooter language={language} signedIn={signedIn} />
+        <SiteFooter language={language} />
       </div>
     </LanguageProvider>
   )

@@ -14,15 +14,22 @@ export const headerButtonClassName = cn(
 )
 
 // The top bar of the owner-facing pages (home, login): the name on the
-// left, light/dark and one action on the right.
-export function SiteHeader({ action }: { action?: React.ReactNode }) {
+// left, one small button and one action on the right. The small button is
+// light/dark unless the page passes another (the home page: language).
+export function SiteHeader({
+  control = <ThemeToggle className={headerButtonClassName} />,
+  action,
+}: {
+  control?: React.ReactNode
+  action?: React.ReactNode
+}) {
   return (
     <header className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4">
       <Link href="/" className={cn(TOUCH_AREA, "flex items-center")}>
         <Logo />
       </Link>
       <div className="flex items-center gap-2">
-        <ThemeToggle className={headerButtonClassName} />
+        {control}
         {action}
       </div>
     </header>

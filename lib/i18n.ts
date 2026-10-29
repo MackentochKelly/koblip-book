@@ -130,7 +130,7 @@ const en = {
     worksWith: "Works with",
     remindersOnWhatsApp: "Reminders on WhatsApp",
     soon: "Soon",
-    footer: { product: "Product", account: "Account" },
+    footer: { legal: "Legal", privacy: "Privacy", terms: "Terms" },
     faq: {
       title: "Questions",
       items: [
@@ -368,7 +368,7 @@ const es: Messages = {
     worksWith: "Funciona con",
     remindersOnWhatsApp: "Recordatorios por WhatsApp",
     soon: "Pronto",
-    footer: { product: "Producto", account: "Cuenta" },
+    footer: { legal: "Legal", privacy: "Privacidad", terms: "Términos" },
     faq: {
       title: "Preguntas",
       items: [

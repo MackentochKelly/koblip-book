@@ -10,13 +10,18 @@ import {
   type PageLanguage,
 } from "@/lib/page-language"
 
-// The language a page is shown in, as its own page picks it: a business page
-// and the home page from ?lang= or the phone's language, the owner area from
-// the owner's pick or the phone's language.
+// The language a page is shown in, as its own page picks it: a business,
+// home or legal page from ?lang= or the phone's language, the owner area
+// from the owner's pick or the phone's language.
 function pageLanguage(request: NextRequest): PageLanguage {
   const { pathname, searchParams } = request.nextUrl
   const accept = request.headers.get("accept-language")
-  if (pathname.startsWith("/b/") || pathname === "/") {
+  if (
+    pathname.startsWith("/b/") ||
+    pathname === "/" ||
+    pathname === "/privacy" ||
+    pathname === "/terms"
+  ) {
     return pickLanguage(searchParams.getAll("lang"), accept)
   }
   const picked = request.cookies.get(OWNER_LANGUAGE_COOKIE)?.value

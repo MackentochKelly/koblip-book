@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { GlassCard, heroEdgeClassName } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
 import { LanguageProvider } from "@/components/language-provider"
+import { StickyHeader } from "@/components/sticky-header"
 import { SiteHeader } from "@/components/site-header"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { AuthForm } from "@/features/owner-auth/components/auth-form"
@@ -34,6 +35,10 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           fontDisplay.variable
         )}
       >
+        {/* The header stays on top while the page scrolls. */}
+        <StickyHeader>
+          <SiteHeader />
+        </StickyHeader>
         <section
           className={cn(
             "relative isolate flex flex-1 flex-col overflow-hidden rounded-4xl",
@@ -41,8 +46,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           )}
         >
           <HeroGradient />
-          <SiteHeader />
-          <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center gap-6 px-4 pt-6 pb-24">
+          <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center gap-6 px-4 pt-22 pb-24">
             <h1 className="font-display text-3xl font-medium tracking-tight text-hero-foreground">
               {authWordsFor(language).logIn}
             </h1>

@@ -71,6 +71,11 @@ const eslintConfig = defineConfig([
               from: "./features",
               except: ["./assistant"],
             },
+            {
+              target: "./features/legal",
+              from: "./features",
+              except: ["./legal"],
+            },
             // onboarding imports the place importer, the business page
             // reader and the login form.
             {

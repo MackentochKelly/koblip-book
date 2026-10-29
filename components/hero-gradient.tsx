@@ -8,7 +8,7 @@ import { useReducedMotion, useThemeColors } from "@/hooks/use-theme-colors"
 // slow fluid colour wash, set up once for the app. The colours are theme
 // tokens from globals.css, read in the browser so a new theme recolours it.
 const HERO_GRADIENT = {
-  colorTokens: ["--background", "--chart-1", "--hero-accent", "--chart-2"],
+  colorTokens: ["--background", "--hero-1", "--hero-2", "--hero-3"],
   distortion: 0.4,
   swirl: 0.1,
   speed: 0.3,

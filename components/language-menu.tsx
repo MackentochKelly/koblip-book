@@ -16,7 +16,13 @@ import { isPageLanguage } from "@/lib/page-language"
 
 // The globe that switches the page between English and Spanish. Each
 // language is named in itself; the choice is kept in the address (?lang=).
-export function LanguageMenu({ size = "icon" }: { size?: "icon" | "icon-sm" }) {
+export function LanguageMenu({
+  size = "icon",
+  className,
+}: {
+  size?: "icon" | "icon-sm"
+  className?: string
+}) {
   const m = useMessages()
   const language = usePageLanguage()
   const router = useRouter()
@@ -36,6 +42,7 @@ export function LanguageMenu({ size = "icon" }: { size?: "icon" | "icon-sm" }) {
             type="button"
             variant="outline"
             size={size}
+            className={className}
             aria-label={m.page.language}
             title={m.page.language}
           />
@@ -45,10 +52,12 @@ export function LanguageMenu({ size = "icon" }: { size?: "icon" | "icon-sm" }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuRadioGroup value={language} onValueChange={change}>
-          <DropdownMenuRadioItem value="en" lang="en">
+          {/* Picking a language closes the menu (Base UI keeps a radio
+              menu open by default). */}
+          <DropdownMenuRadioItem value="en" lang="en" closeOnClick>
             English
           </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="es" lang="es">
+          <DropdownMenuRadioItem value="es" lang="es" closeOnClick>
             Español
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>

@@ -119,6 +119,11 @@
     --chart-4: oklch(0.457 0.24 277.023);
     --chart-5: oklch(0.398 0.195 277.366);
     --hero-accent: oklch(0.833 0.145 321.434);
+    /* The moving hero gradient's colours, over the page colour
+       (HeroGradient). Light: the chart and accent colours. */
+    --hero-1: var(--chart-1);
+    --hero-2: var(--hero-accent);
+    --hero-3: var(--chart-2);
     /* The home marker on "Google Maps": Google Maps blue (#1A73E8), white
        words on it. */
     --hero-marker: #1a73e8;
@@ -182,6 +187,11 @@
     --chart-4: oklch(0.457 0.24 277.023);
     --chart-5: oklch(0.398 0.195 277.366);
     --hero-accent: oklch(0.833 0.145 321.434);
+    /* Dark: the same colours, deeper, so the light hero words stay at
+       least 5:1 over every part of the gradient (WCAG 1.4.3). */
+    --hero-1: oklch(0.5 0.12 274.713);
+    --hero-2: oklch(0.52 0.13 321.434);
+    --hero-3: oklch(0.46 0.17 277.117);
     /* The home marker on "Google Maps": Google Maps blue (#1A73E8), white
        words on it. */
     --hero-marker: #1a73e8;
