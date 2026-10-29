@@ -40,6 +40,7 @@ import {
   Mail as MynaMail,
   MapPin as MynaMapPin,
   Microphone as MynaMicrophone,
+  MicrophoneOff as MynaMicrophoneOff,
   Monitor as MynaMonitor,
   Moon as MynaMoon,
   Navigation as MynaNavigation,
@@ -75,6 +76,7 @@ import {
   LayoutDashboardSolid as MynaLayoutDashboardSolid,
 } from "@mynaui/icons-react"
 import {
+  AudioLines as LucideAudioLines,
   BadgeCheck as LucideBadgeCheck,
   Banknote as LucideBanknote,
   CarFront as LucideCarFront,
@@ -140,6 +142,7 @@ export const ArrowLeftIcon = icon(MynaArrowLeft as Icon, "ArrowLeftIcon")
 export const ArrowRightIcon = icon(MynaArrowRight as Icon, "ArrowRightIcon")
 export const ArrowUpIcon = icon(MynaArrowUp as Icon, "ArrowUpIcon")
 export const BabyIcon = icon(MynaBaby as Icon, "BabyIcon")
+export const AudioLinesIcon = icon(LucideAudioLines as Icon, "AudioLinesIcon")
 export const BadgeCheckIcon = icon(LucideBadgeCheck as Icon, "BadgeCheckIcon")
 export const BanknoteIcon = icon(LucideBanknote as Icon, "BanknoteIcon")
 export const CalendarDaysIcon = icon(MynaCalendar as Icon, "CalendarDaysIcon")
@@ -196,6 +199,7 @@ export const MailIcon = icon(MynaMail as Icon, "MailIcon")
 export const MapPinIcon = icon(MynaMapPin as Icon, "MapPinIcon")
 export const MessageCircleIcon = icon(MynaChat as Icon, "MessageCircleIcon")
 export const MicIcon = icon(MynaMicrophone as Icon, "MicIcon")
+export const MicOffIcon = icon(MynaMicrophoneOff as Icon, "MicOffIcon")
 export const MonitorIcon = icon(MynaMonitor as Icon, "MonitorIcon")
 export const MoonIcon = icon(MynaMoon as Icon, "MoonIcon")
 export const NavigationIcon = icon(MynaNavigation as Icon, "NavigationIcon")
