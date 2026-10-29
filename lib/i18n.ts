@@ -130,6 +130,36 @@ const en = {
     worksWith: "Works with",
     remindersOnWhatsApp: "Reminders on WhatsApp",
     soon: "Soon",
+    faq: {
+      title: "Questions",
+      items: [
+        { q: "Is it free?", a: "Yes, it's free for now. No card needed." },
+        {
+          q: "What do I need to start?",
+          a: "Just your business on Google Maps. We build your page from it.",
+        },
+        {
+          q: "Which businesses can use it?",
+          a: "Any business clients book with: clinics, studios, beauty, fitness and more.",
+        },
+        {
+          q: "Do my clients need an app?",
+          a: "No. Your link opens in any browser, on any phone or computer.",
+        },
+        {
+          q: "Can I change my page later?",
+          a: "Yes. Edit it in your dashboard, or just ask your AI assistant.",
+        },
+        {
+          q: "Does it work in Spanish?",
+          a: "Yes. Your page shows in your client's language, English or Spanish.",
+        },
+      ],
+    },
+    cta: {
+      title: "Get your booking page today",
+      button: "Find your business",
+    },
     live: {
       title: "See a live page",
       frameTitle: "A live booking page",
@@ -337,6 +367,36 @@ const es: Messages = {
     worksWith: "Funciona con",
     remindersOnWhatsApp: "Recordatorios por WhatsApp",
     soon: "Pronto",
+    faq: {
+      title: "Preguntas",
+      items: [
+        { q: "¿Es gratis?", a: "Sí, por ahora es gratis. Sin tarjeta." },
+        {
+          q: "¿Qué necesito para empezar?",
+          a: "Solo tu negocio en Google Maps. Creamos tu página a partir de él.",
+        },
+        {
+          q: "¿Qué negocios pueden usarlo?",
+          a: "Cualquier negocio con citas: clínicas, estudios, belleza, fitness y más.",
+        },
+        {
+          q: "¿Mis clientes necesitan una app?",
+          a: "No. Tu enlace se abre en cualquier navegador, en cualquier móvil u ordenador.",
+        },
+        {
+          q: "¿Puedo cambiar mi página después?",
+          a: "Sí. Edítala en tu panel o pídeselo a tu asistente de IA.",
+        },
+        {
+          q: "¿Funciona en español?",
+          a: "Sí. Tu página se muestra en el idioma de tu cliente, inglés o español.",
+        },
+      ],
+    },
+    cta: {
+      title: "Consigue hoy tu página de reservas",
+      button: "Busca tu negocio",
+    },
     live: {
       title: "Mira una página real",
       frameTitle: "Una página de reservas real",

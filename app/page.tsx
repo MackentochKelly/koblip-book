@@ -4,7 +4,10 @@ import Link from "next/link"
 
 import { heroEdgeClassName } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
+import { HomeCta } from "@/components/home-cta"
+import { HomeFaq } from "@/components/home-faq"
 import { HomeFeatures } from "@/components/home-features"
+import { GET_STARTED_ID } from "@/components/home-section-title"
 import { HowItWorks } from "@/components/how-it-works"
 import { LiveExample } from "@/components/live-example"
 import { LanguageProvider } from "@/components/language-provider"
@@ -16,6 +19,7 @@ import { Highlighter } from "@/components/ui/highlighter"
 import { claimBusiness } from "@/features/dashboard/api/actions"
 import { getBusinessPage } from "@/features/business-page/api/get-business-page"
 import { GetStarted } from "@/features/onboarding/components/get-started"
+import { onboardingWordsFor } from "@/features/onboarding/i18n"
 import { getSession } from "@/lib/dal"
 import { fontDisplay, fontSerif } from "@/lib/fonts"
 import { messagesFor } from "@/lib/i18n"
@@ -104,18 +108,30 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                 <span>{t.weTurn}</span>
               </p>
             </div>
-            <GetStarted
-              signedIn={signedIn}
-              claim={claimBusiness}
-              resume={typeof claim === "string" ? claim : null}
-              language={language}
-            />
+            {/* The last call to action brings people back here. */}
+            <div
+              id={GET_STARTED_ID}
+              className="flex w-full flex-col items-center"
+            >
+              <GetStarted
+                signedIn={signedIn}
+                claim={claimBusiness}
+                resume={typeof claim === "string" ? claim : null}
+                language={language}
+              />
+            </div>
           </main>
         </section>
         <WorksWith language={language} />
         <HowItWorks words={t} />
         <HomeFeatures words={t.features} />
         {liveHref && <LiveExample href={liveHref} words={t.live} />}
+        <HomeFaq words={t.faq} />
+        <HomeCta
+          title={t.cta.title}
+          button={t.cta.button}
+          hint={onboardingWordsFor(language).hint}
+        />
       </div>
     </LanguageProvider>
   )
