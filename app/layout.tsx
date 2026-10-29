@@ -3,6 +3,7 @@ import { headers } from "next/headers"
 import { Geist, Geist_Mono, Inter } from "next/font/google"
 
 import "./globals.css"
+import { MotionProvider } from "@/components/motion-provider"
 import { ScrollTopOnReload } from "@/components/scroll-top-on-reload"
 import { ThemeProvider } from "@/components/theme-provider"
 import {
@@ -50,7 +51,9 @@ export default async function RootLayout({
     >
       <body>
         <ScrollTopOnReload />
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <MotionProvider>{children}</MotionProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
