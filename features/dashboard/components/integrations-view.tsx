@@ -128,7 +128,8 @@ function IntegrationRow({
       <ItemMedia>
         <Logo src={logo} className="size-10" />
       </ItemMedia>
-      <ItemContent>
+      {/* Room between Read more and the row's button. */}
+      <ItemContent className="pe-3">
         <ItemTitle>{name}</ItemTitle>
         <ReadMore
           text={description}

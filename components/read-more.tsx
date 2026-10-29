@@ -2,12 +2,18 @@
 
 import { useLayoutEffect, useRef, useState } from "react"
 
-import { ResponsivePanel } from "@/components/responsive-panel"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 // A text cut to its first lines, with "Read more" only when it was cut. It
-// opens the whole text in the shared panel (a sheet on a phone, a dialog on
-// a computer), under `media` and `title`. `children` draws the short text
+// opens the whole text in a dialog in the middle of the screen (phone and
+// computer alike), under `media` and `title`. `children` draws the short text
 // with the ref, so a row keeps its own text style (e.g. ItemDescription,
 // which shows two lines).
 export function ReadMore({
@@ -57,14 +63,15 @@ export function ReadMore({
           </Button>
         )}
       </div>
-      <ResponsivePanel
-        open={open}
-        onClose={() => setOpen(false)}
-        title={title}
-        media={media}
-      >
-        <p className="text-center text-pretty text-muted-foreground">{text}</p>
-      </ResponsivePanel>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader className="items-center gap-3 text-center">
+            {media}
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription className="text-pretty">{text}</DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
