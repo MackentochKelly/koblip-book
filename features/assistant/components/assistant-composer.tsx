@@ -18,7 +18,7 @@ import {
   InputGroupTextarea,
 } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
-import { VoiceOrb } from "@/components/voice-orb"
+import { VoiceGlobe } from "@/components/voice-globe"
 import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { VOICE_RULES } from "@/lib/voice-rules"
@@ -125,8 +125,7 @@ export function AssistantComposer({
   if (live.state !== "off") {
     return (
       <div className="flex flex-col items-center gap-4">
-        <VoiceOrb
-          state={live.state === "connecting" ? null : live.state}
+        <VoiceGlobe
           getInputVolume={live.getInputVolume}
           getOutputVolume={live.getOutputVolume}
           className="size-32"

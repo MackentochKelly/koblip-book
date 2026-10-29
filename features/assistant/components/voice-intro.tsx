@@ -6,7 +6,7 @@ import {
   ShieldCheckIcon,
 } from "@/components/ui/icons"
 
-import { HeroGradient } from "@/components/hero-gradient"
+import { VoiceGlobe } from "@/components/voice-globe"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -54,12 +54,7 @@ export function VoiceIntro({
       }}
     >
       <DialogContent className="sm:max-w-sm">
-        <div
-          aria-hidden
-          className="relative isolate mx-auto mt-6 size-32 overflow-hidden rounded-full"
-        >
-          <HeroGradient />
-        </div>
+        <VoiceGlobe className="mx-auto mt-6 size-32" />
         <DialogHeader className="items-center text-center">
           <DialogTitle className="text-xl">{labels.title}</DialogTitle>
         </DialogHeader>
