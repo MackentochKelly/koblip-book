@@ -3,7 +3,7 @@ const integrations = {
   messaging: "Messaging",
   whatsapp: {
     name: "WhatsApp",
-    description: "Reminders and broadcasts, via Koblip Chat",
+    description: "Reminders and broadcasts",
     connect: "Connect",
     connected: "Connected",
   },

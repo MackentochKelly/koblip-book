@@ -4,7 +4,7 @@ const integrations: typeof en = {
   messaging: "Mensajes",
   whatsapp: {
     name: "WhatsApp",
-    description: "Recordatorios y difusiones, con Koblip Chat",
+    description: "Recordatorios y difusiones",
     connect: "Conectar",
     connected: "Conectado",
   },

@@ -47,14 +47,17 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
         <ItemGroup className="gap-3">
           <Item variant="outline">
             {/* WhatsApp's own file from the official pack, never recoloured
-                (meta.com/brand/resources/whatsapp/whatsapp-brand). */}
-            <ItemMedia variant="image">
+                (meta.com/brand/resources/whatsapp/whatsapp-brand). Shown
+                whole: the "image" media is for photos and clips its
+                corners, which cut off the logo's tail. */}
+            <ItemMedia>
               <Image
                 src="/brands/whatsapp-glyph-green.svg"
                 alt=""
                 width={40}
                 height={40}
                 unoptimized
+                className="size-10"
               />
             </ItemMedia>
             <ItemContent>
