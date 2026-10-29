@@ -19,7 +19,7 @@
 
 <p align="center">
   <a href="https://book.koblip.com">
-    <img src="docs/images/booking-preview.jpg" width="960" alt="Koblip Book landing page with a Google Maps business search and a purple gradient background">
+    <img src="docs/images/booking-preview.png" width="960" alt="Koblip Book landing page with a Google Maps business search and a purple gradient background">
   </a>
 </p>
 
