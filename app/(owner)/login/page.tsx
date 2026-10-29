@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
-import { GlassCard } from "@/components/glass-frame"
+import { GlassCard, heroEdgeClassName } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
 import { LanguageProvider } from "@/components/language-provider"
 import { SiteHeader } from "@/components/site-header"
@@ -34,7 +34,12 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           fontDisplay.variable
         )}
       >
-        <section className="relative isolate flex flex-1 flex-col overflow-hidden rounded-4xl">
+        <section
+          className={cn(
+            "relative isolate flex flex-1 flex-col overflow-hidden rounded-4xl",
+            heroEdgeClassName
+          )}
+        >
           <HeroGradient />
           <SiteHeader />
           <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center gap-6 px-4 pt-6 pb-24">

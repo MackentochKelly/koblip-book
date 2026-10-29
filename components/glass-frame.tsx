@@ -18,6 +18,13 @@ export const glassButtonClassName = cn(
   "hover:bg-background/50 dark:hover:bg-background/70"
 )
 
+// A thin soft edge around a big hero panel (home, login, first dashboard),
+// in the glass frame's faint line colour, light and dark. Drawn over the
+// panel's moving gradient, so it goes on the panel, not on HeroGradient
+// (the voice globe uses that gradient with no edge).
+export const heroEdgeClassName =
+  "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-glass-frame-edge"
+
 // A frosted glass frame around a card on the moving gradient, like
 // Fresha's: it blurs the gradient behind it and draws a faint edge; no drop
 // shadow. Shared by the home box and the login card; its thick edge is

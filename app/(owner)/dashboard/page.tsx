@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 
+import { heroEdgeClassName } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
 import { LanguageProvider } from "@/components/language-provider"
 import { SiteHeader } from "@/components/site-header"
@@ -36,7 +37,12 @@ export default async function DashboardPage() {
           fontDisplay.variable
         )}
       >
-        <section className="relative isolate flex flex-1 flex-col overflow-hidden rounded-4xl">
+        <section
+          className={cn(
+            "relative isolate flex flex-1 flex-col overflow-hidden rounded-4xl",
+            heroEdgeClassName
+          )}
+        >
           <HeroGradient />
           <SiteHeader
             action={
