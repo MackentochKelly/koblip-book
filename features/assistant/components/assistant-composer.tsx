@@ -155,6 +155,7 @@ export function AssistantComposer({
               {live.muted ? <MicOffIcon /> : <MicIcon />}
             </InputGroupButton>
             <InputGroupButton
+              variant="default"
               size="icon-sm"
               aria-label={labels.live.end}
               onClick={live.end}
