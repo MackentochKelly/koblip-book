@@ -448,13 +448,25 @@ accepted (no 400) and a little faster than "low".
 
 ### Steps
 
-- [ ] **1. Server** (Codex): talking mode uses `reasoning_effort`
+- [x] **1. Server** (Codex): talking mode uses `reasoning_effort`
   "minimal" and skips the answer check; every answer streams as it is
   written; typed answers are checked after they show (a failed check adds
   the "not double-checked" notice, no hidden retry); in talking mode the
   model says one short line before a read-only lookup.
-- [ ] **2. Voice screen** (Claude): speak the answer while it streams; open
+- [x] **2. Voice screen** (Claude): speak the answer while it streams; open
   the speaking connection while it thinks; a short natural line if it is
   still quiet after 3 s (once per turn).
 - [ ] **3. Check** (both): timings before/after, English and Spanish, a tap
   card in talking mode, typed answers still checked.
+
+### Notes (section 12)
+
+- 2026-10-28 measured after steps 1-2 (local, voice, "How many bookings
+  do I have today?"): first words ("Let me check today's bookings for
+  you.") at 0.8-1.5 s, the answer at 2.4-3.5 s (was 6.6 s of silence).
+  The TTD socket speaks ~0.15 s after each flushed sentence.
+- New words while it thinks cancel that answer and ask again with
+  everything said (OpenAI Realtime `interrupt_response` pattern).
+- Seen once in ~7 runs: with no answer check in talking mode, one answer
+  said "no bookings" after a lookup that returned none (the other runs:
+  3, correct). Lookup arguments are not logged, so the cause is unknown.
