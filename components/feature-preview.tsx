@@ -2,6 +2,7 @@
 
 import { MeshGradient } from "@paper-design/shaders-react"
 
+import { glassFrameClassName } from "@/components/glass-frame"
 import { Rating } from "@/components/rating"
 import { Badge } from "@/components/ui/badge"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
@@ -10,6 +11,7 @@ import { Card } from "@/components/ui/card"
 import { CheckIcon, MapPinIcon } from "@/components/ui/icons"
 import { useThemeColors } from "@/hooks/use-theme-colors"
 import type { Messages } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
 
 type Sample = Messages["home"]["features"]["sample"]
 
@@ -24,6 +26,18 @@ const PREVIEWS = {
 } as const
 
 export type FeaturePreviewName = keyof typeof PREVIEWS
+
+// The sample's box: the white card in the glass frame, as on the home
+// search box, so it sits light on the colour wash.
+function Box({ children }: { children: React.ReactNode }) {
+  return (
+    <div className={cn(glassFrameClassName, "max-w-60")}>
+      <Card size="sm" className="w-full shadow-none ring-0">
+        {children}
+      </Card>
+    </div>
+  )
+}
 
 export function FeaturePreview({
   name,
@@ -59,7 +73,7 @@ export function FeaturePreview({
 // A business page: name, rating, Book.
 function PagePreview({ sample }: { sample: Sample }) {
   return (
-    <Card size="sm" className="w-full max-w-60 shadow-none">
+    <Box>
       <div className="flex flex-col gap-3 px-(--card-spacing)">
         <div className="flex items-center gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
@@ -74,14 +88,14 @@ function PagePreview({ sample }: { sample: Sample }) {
           {sample.book}
         </Button>
       </div>
-    </Card>
+    </Box>
   )
 }
 
 // Free times for a day, one picked.
 function BookPreview({ sample }: { sample: Sample }) {
   return (
-    <Card size="sm" className="w-full max-w-60 shadow-none">
+    <Box>
       <div className="flex flex-col gap-3 px-(--card-spacing)">
         <span className="font-medium">{sample.day}</span>
         <div className="flex flex-wrap gap-2">
@@ -97,7 +111,7 @@ function BookPreview({ sample }: { sample: Sample }) {
           ))}
         </div>
       </div>
-    </Card>
+    </Box>
   )
 }
 
@@ -108,7 +122,13 @@ function AssistantPreview({ sample }: { sample: Sample }) {
       <Bubble align="end">
         <BubbleContent>{sample.ask}</BubbleContent>
       </Bubble>
-      <Bubble variant="outline">
+      <Bubble
+        variant="outline"
+        className={cn(
+          glassFrameClassName,
+          "w-fit rounded-[calc(var(--radius-3xl)+--spacing(1.5))]"
+        )}
+      >
         <BubbleContent className="flex items-center gap-1.5">
           <CheckIcon className="size-4 shrink-0 text-primary" />
           {sample.done}
