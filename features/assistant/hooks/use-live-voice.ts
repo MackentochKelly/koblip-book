@@ -60,7 +60,8 @@ export function useLiveVoice({
   voiceId: string
   busy: boolean
   send: (text: string, options: { voice: boolean }) => Promise<Reply | null>
-  // Stops an answer that is still being written (ending talking mode).
+  // Stops an answer that is still being written (the owner said more, or
+  // ended talking mode).
   stopAnswer: () => void
   // Said after an answer that waits for a tap on the screen.
   confirmLine: string
@@ -133,6 +134,7 @@ export function useLiveVoice({
     const current = new LiveVoiceSession({
       send: (text) => latest.current.send(text, { voice: true }),
       busy: () => latest.current.busy,
+      cancelAnswer: () => latest.current.stopAnswer(),
       speak: (text, handlers) =>
         speak({
           businessId,

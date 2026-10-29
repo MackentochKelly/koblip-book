@@ -31,6 +31,8 @@ export type ListenEvent =
 export interface LiveVoiceParts {
   // Sends the turn to the assistant; resolves with its reply.
   send: (text: string) => Promise<Reply | null>
+  // Cancels the answer still being written (the owner said more).
+  cancelAnswer: () => void
   // True while an answer is still being written. It must come from the
   // screen as last drawn, the same state `send` uses.
   busy: () => boolean
@@ -55,10 +57,12 @@ export interface LiveVoiceParts {
 export class LiveVoiceSession {
   private ended = false
   private speech: { cancel: () => void } | null = null
-  // Turns the owner finished while the last answer was still being
-  // written; sent as soon as that one is done.
+  // What the owner said that the assistant has not been asked yet.
   private queued = ""
   private thinking = false
+  // Counts questions, so the answer to one the owner talked over is
+  // dropped when it arrives.
+  private turn = 0
 
   constructor(private readonly parts: LiveVoiceParts) {
     parts.onState("connecting")
@@ -87,6 +91,16 @@ export class LiveVoiceSession {
         const text = event.transcript.trim()
         if (!text) break
         this.queued = this.queued ? `${this.queued} ${text}` : text
+        // Like ChatGPT voice (OpenAI Realtime `interrupt_response`): new
+        // words cancel the answer being written, and the assistant answers
+        // again with everything said so far. Nothing waits in line.
+        if (this.thinking) {
+          this.turn += 1
+          this.thinking = false
+          this.parts.cancelAnswer()
+          // Sent from idle() once the chat has let go of the old answer.
+          break
+        }
         void this.ask()
         break
       }
@@ -131,16 +145,20 @@ export class LiveVoiceSession {
   }
 
   // While the chat is still busy (or has not redrawn since its last
-  // answer), the turn waits for idle().
+  // answer, or is letting go of a cancelled one), it waits for idle().
   private async ask() {
     if (!this.queued || this.thinking || this.parts.busy()) return
     const text = this.queued
     this.queued = ""
+    this.turn += 1
+    const turn = this.turn
     this.thinking = true
     this.parts.onState("thinking")
     const reply = await this.parts.send(text)
+    // Talked over: the newer question is already on its way.
+    if (this.ended || turn !== this.turn) return
     this.thinking = false
-    if (!this.ended) this.say(reply)
+    this.say(reply)
   }
 
   // Reads the reply out, then listens again (or sends the queued turn).

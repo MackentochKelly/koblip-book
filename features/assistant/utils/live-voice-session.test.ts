@@ -53,6 +53,7 @@ function setup() {
         })
     ),
     busy: () => busy,
+    cancelAnswer: vi.fn(),
     speak: (text, handlers) => {
       const cancel = vi.fn()
       spoken.push({ text, onDone: handlers.onDone, cancel })
@@ -134,23 +135,45 @@ test("talking over the answer stops it", async () => {
   expect(t.states.at(-1)).toBe("listening")
 })
 
-test("a turn said while thinking waits, then goes once the chat is idle", async () => {
+test("more words while thinking cancel the answer and ask again", async () => {
   const t = setup()
-  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "First" })
+  t.session.hear({
+    type: "speechComplete",
+    turnId: 1,
+    transcript: "Bookings today",
+  })
   t.session.hear({
     type: "speechComplete",
     turnId: 2,
-    transcript: "and second",
+    transcript: "and tomorrow",
   })
+  expect(t.parts.cancelAnswer).toHaveBeenCalledTimes(1)
   expect(t.parts.send).toHaveBeenCalledTimes(1)
+  // The cancelled answer arrives anyway: it is never spoken.
+  t.answers[0](reply("You have 3 today."))
+  await flush()
+  expect(t.spoken).toEqual([])
+  // Once the chat has let go of it, the new words go.
+  t.session.idle()
+  expect(t.parts.send).toHaveBeenLastCalledWith("and tomorrow")
+  t.answers[1](reply("3 today and 2 tomorrow."))
+  await flush()
+  expect(t.spoken[0].text).toBe("3 today and 2 tomorrow.")
+})
+
+test("words said before the screen catches up wait for idle", async () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "First" })
   // No words to speak; the screen has not redrawn yet, so still busy.
   t.answers[0](reply(""))
   t.setBusy(true)
   await flush()
+  t.session.hear({ type: "speechComplete", turnId: 2, transcript: "Second" })
+  expect(t.parts.cancelAnswer).not.toHaveBeenCalled()
   expect(t.parts.send).toHaveBeenCalledTimes(1)
   t.setBusy(false)
   t.session.idle()
-  expect(t.parts.send).toHaveBeenLastCalledWith("and second")
+  expect(t.parts.send).toHaveBeenLastCalledWith("Second")
 })
 
 test("an error from the relay ends the session", () => {
