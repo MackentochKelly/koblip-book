@@ -1,5 +1,8 @@
 "use client"
 
+import { useRef } from "react"
+import { WheelGesturesPlugin } from "embla-carousel-wheel-gestures"
+
 import {
   FeaturePattern,
   type FeaturePatternName,
@@ -37,9 +40,11 @@ export function HomeFeatures({
     { pattern: "zigzag", title: words.book, text: words.bookText },
     { pattern: "flow", title: words.assistant, text: words.assistantText },
   ]
+  // Two-finger trackpad swipes move the cards too (Embla only drags).
+  const wheel = useRef(WheelGesturesPlugin())
   return (
     <section className="mx-auto w-full max-w-5xl px-2 pb-12 sm:px-4">
-      <Carousel opts={{ align: "start" }}>
+      <Carousel opts={{ align: "start" }} plugins={[wheel.current]}>
         <div className="mb-4 flex items-center justify-between gap-4 px-2">
           <h2 className="font-display text-2xl font-medium tracking-tight">
             {words.title}
