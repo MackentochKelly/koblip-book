@@ -176,9 +176,7 @@ test("voice true reaches runChat, absent stays false", async () => {
     post({ businessId: "b1", messages: [{ role: "owner", text: "hi" }] })
   )
   const later = vi.mocked(runChat).mock.calls
-  expect((later[later.length - 1]?.[1] as { voice: boolean }).voice).toBe(
-    false
-  )
+  expect((later[later.length - 1]?.[1] as { voice: boolean }).voice).toBe(false)
 })
 
 test("a non-boolean voice is a bad request", async () => {
@@ -191,4 +189,42 @@ test("a non-boolean voice is a bad request", async () => {
   )
   expect(res.status).toBe(400)
   expect(await res.json()).toEqual({ error: "bad_request" })
+})
+
+test.each([true, false])(
+  "accepts assistant interrupted=%s and preserves it",
+  async (interrupted) => {
+    const messages = [
+      { role: "owner", text: "first" },
+      { role: "assistant", text: "partial", interrupted },
+      { role: "owner", text: "next" },
+    ]
+    const res = await POST(post({ businessId: "b1", messages }))
+    expect(res.status).toBe(200)
+    await res.text()
+    expect(vi.mocked(runChat).mock.calls.at(-1)?.[0]).toEqual(messages)
+  }
+)
+
+test.each(["true", 1, null, {}, []])(
+  "rejects invalid interruption flag %j",
+  async (interrupted) => {
+    const res = await POST(
+      post({
+        businessId: "b1",
+        messages: [{ role: "assistant", text: "partial", interrupted }],
+      })
+    )
+    expect(res.status).toBe(400)
+  }
+)
+
+test("rejects an interruption flag on an owner message", async () => {
+  const res = await POST(
+    post({
+      businessId: "b1",
+      messages: [{ role: "owner", text: "hi", interrupted: true }],
+    })
+  )
+  expect(res.status).toBe(400)
 })

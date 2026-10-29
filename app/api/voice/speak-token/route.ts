@@ -65,6 +65,10 @@ export async function GET(request: Request) {
   const url = new URL(VOICE_RULES.speakSocketUrl)
   url.searchParams.set("model_id", VOICE_RULES.speakModel)
   url.searchParams.set("output_format", VOICE_RULES.speakOutputFormat)
+  url.searchParams.set("sync_alignment", String(VOICE_RULES.speakSyncAlignment))
   url.searchParams.set("single_use_token", token)
-  return Response.json({ url: url.toString(), voiceId: VOICE_RULES.speakVoiceId })
+  return Response.json({
+    url: url.toString(),
+    voiceId: VOICE_RULES.speakVoiceId,
+  })
 }

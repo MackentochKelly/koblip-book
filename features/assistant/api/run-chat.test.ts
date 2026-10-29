@@ -894,3 +894,56 @@ test.each([false, true])(
     ])
   }
 )
+
+test.each([false, true])(
+  "interruption history notes apply in typed and voice modes, voice=%s",
+  async (voice) => {
+    const { INTERRUPTED_REPLY_NOTE, INTERRUPTED_BEFORE_WORDS_NOTE } =
+      await import("../utils/system-prompt")
+    for (const language of ["en", "es"] as const) {
+      for (const scenario of [
+        "partial",
+        "silent",
+        "normal",
+        "false",
+      ] as const) {
+        const { create } = scriptedClient([[textChunk("Hi")]])
+        const history: import("../types").AssistantMessage[] = [
+          { role: "owner", text: "Sofia?" },
+        ]
+        if (scenario !== "silent")
+          history.push({
+            role: "assistant",
+            text: "Yep, let me",
+            ...(scenario === "partial"
+              ? { interrupted: true }
+              : scenario === "false"
+                ? { interrupted: false }
+                : {}),
+          })
+        history.push({ role: "owner", text: "Stingray?" })
+        await collect(runChat(history, { ...CONTEXT, language, voice }, []))
+        const body = create.mock.calls[0][0] as {
+          messages: { role: string; content: string }[]
+        }
+        const expected =
+          scenario === "partial"
+            ? `${INTERRUPTED_REPLY_NOTE}\nStingray?`
+            : scenario === "silent"
+              ? `${INTERRUPTED_BEFORE_WORDS_NOTE}\nStingray?`
+              : "Stingray?"
+        expect(body.messages.at(-1)).toEqual({
+          role: "user",
+          content: expected,
+        })
+        expect(history.at(-1)?.text).toBe("Stingray?")
+        expect(body.messages[2]).toEqual({ role: "user", content: "Sofia?" })
+        if (scenario !== "silent")
+          expect(body.messages[3]).toEqual({
+            role: "assistant",
+            content: "Yep, let me",
+          })
+      }
+    }
+  }
+)

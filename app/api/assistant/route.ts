@@ -39,7 +39,10 @@ function isValidMessages(value: unknown): value is AssistantMessage[] {
       m !== null &&
       ((m as AssistantMessage).role === "owner" ||
         (m as AssistantMessage).role === "assistant") &&
-      typeof (m as AssistantMessage).text === "string"
+      typeof (m as AssistantMessage).text === "string" &&
+      ((m as AssistantMessage).interrupted === undefined ||
+        ((m as AssistantMessage).role === "assistant" &&
+          typeof (m as AssistantMessage).interrupted === "boolean"))
   )
 }
 

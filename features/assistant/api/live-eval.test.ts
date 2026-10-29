@@ -311,6 +311,12 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
           order.indexOf("tool_calls") > order.indexOf("content")
         const firstLine = turnTexts[0]?.trim() ?? ""
         const answer = turnTexts.slice(1).join("\n").trim()
+        const firstLineWords = firstLine.split(/\s+/).filter(Boolean).length
+        const answerWords = answer.split(/\s+/).filter(Boolean).length
+        const shortPreamble =
+          firstLineWords >= 2 &&
+          firstLineWords <= 4 &&
+          firstLineWords < answerWords
         const countMatches =
           lookupCount === 2 &&
           /\b(?:2|two|dos)\b/i.test(answer) &&
@@ -323,6 +329,8 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
             answer,
             lookupCount,
             countMatches,
+            firstLineWords,
+            shortPreamble,
             firstTextMs,
             doneMs,
             contentBeforeTool,
@@ -337,6 +345,10 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
           countMatches,
           "Answer count must match the two returned bookings"
         ).toBe(true)
+        expect(
+          shortPreamble,
+          "Preamble must be 2–4 words and shorter than answer"
+        ).toBe(true)
         expect(firstTextMs).not.toBeNull()
         expect(doneMs).not.toBeNull()
         expect(events).not.toContain("error")
@@ -346,6 +358,134 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
       }
     },
     120_000
+  )
+
+  test.each([
+    { language: "en" as const, run: 1, silent: false },
+    { language: "en" as const, run: 2, silent: false },
+    { language: "es" as const, run: 1, silent: false },
+    { language: "en" as const, run: 1, silent: true },
+  ])(
+    "voice cutoff $language run $run silent=$silent",
+    async ({ language, run, silent }) => {
+      const history: import("../types").AssistantMessage[] = [
+        { role: "owner", text: "Do I have Sofia today?" },
+      ]
+      if (!silent)
+        history.push({
+          role: "assistant",
+          text: "Yep, let me",
+          interrupted: true,
+        })
+      history.push({ role: "owner", text: "What about Stingray?" })
+      const now = Date.now()
+      const today = new Intl.DateTimeFormat("en-CA", { timeZone: ZONE }).format(
+        now
+      )
+      const tools = [
+        immediate("list_bookings", async () => ({
+          bookings: [
+            {
+              id: "k1",
+              date: today,
+              time: "11:00",
+              customer: "Sofia",
+              status: "confirmed",
+            },
+          ],
+          total: 1,
+          truncated: false,
+        })),
+      ]
+      const started = performance.now()
+      let firstTextMs: number | null = null
+      let doneMs: number | null = null
+      let text = ""
+      let lookup = false
+      let firstLine = ""
+      let answer = ""
+      for await (const event of runChat(
+        history,
+        { ...CONTEXT, language, now, voice: true },
+        tools
+      )) {
+        if (event.type === "step" && event.status === "running") lookup = true
+        if (event.type === "text") {
+          if (firstTextMs === null && event.delta.trim())
+            firstTextMs = performance.now() - started
+          text += event.delta
+          if (lookup) answer += event.delta
+          else firstLine += event.delta
+        }
+        if (event.type === "done") doneMs = performance.now() - started
+      }
+      const bothMentioned = /sof[ií]a/i.test(answer) && /stingray/i.test(answer)
+      console.log(
+        JSON.stringify({
+          language,
+          run,
+          silent,
+          firstLine: firstLine.trim(),
+          answer: answer.trim(),
+          firstTextMs,
+          doneMs,
+          bothMentioned,
+        })
+      )
+      expect(bothMentioned, "Must answer both Sofia and Stingray").toBe(true)
+      expect(text).not.toBe("")
+      expect(doneMs).not.toBeNull()
+    },
+    120_000
+  )
+
+  test.each(["en" as const, "es" as const])(
+    "voice first lines don't repeat in one chat ($language)",
+    async (language) => {
+      const questions =
+        language === "es"
+          ? [
+              "¿Cuántas reservas tengo mañana?",
+              "¿Quién está en el equipo?",
+              "¿Cuántos servicios tengo?",
+              "¿Y a qué hora es la primera reserva de mañana?",
+            ]
+          : [
+              "How many bookings do I have tomorrow?",
+              "Who's on the team?",
+              "How many services do I have?",
+              "And what time is the first booking tomorrow?",
+            ]
+      const history: import("../types").AssistantMessage[] = []
+      const firstLines: string[] = []
+      for (const question of questions) {
+        history.push({ role: "owner", text: question })
+        let lookup = false
+        let firstLine = ""
+        let reply = ""
+        for await (const event of runChat(
+          history,
+          { ...CONTEXT, language, now: Date.now(), voice: true },
+          evalTools()
+        )) {
+          if (event.type === "step" && event.status === "running") {
+            lookup = true
+          }
+          if (event.type === "text") {
+            reply += event.delta
+            if (!lookup) firstLine += event.delta
+          }
+        }
+        firstLines.push(firstLine.trim())
+        history.push({ role: "assistant", text: reply.trim() })
+      }
+      const said = firstLines.filter(Boolean).map((line) => line.toLowerCase())
+      console.log(JSON.stringify({ language, firstLines, history }))
+      expect(new Set(said).size, "First lines must not repeat").toBe(
+        said.length
+      )
+    },
+    240_000
   )
 
   test("service count reads only", async () => {

@@ -107,9 +107,11 @@ test("200 mints with the proven type and returns url plus voiceId", async () => 
       `${VOICE_RULES.speakSocketUrl}` +
       `?model_id=${VOICE_RULES.speakModel}` +
       `&output_format=${VOICE_RULES.speakOutputFormat}` +
+      `&sync_alignment=${VOICE_RULES.speakSyncAlignment}` +
       `&single_use_token=tok`,
     voiceId: VOICE_RULES.speakVoiceId,
   })
+  expect(VOICE_RULES.speakSyncAlignment).toBe(true)
   expect(VOICE_RULES.speakSampleRate).toBe(24000)
   expect(VOICE_RULES.maxSpeakTokensPerMinutePerOwner).toBe(30)
   expect(JSON.stringify(body)).not.toContain("test-key")

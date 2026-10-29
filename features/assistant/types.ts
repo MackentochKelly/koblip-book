@@ -42,6 +42,8 @@ export type AssistantStreamEvent =
 export interface AssistantMessage {
   role: "owner" | "assistant"
   text: string
+  // Assistant only. The owner cut this reply off; `text` is only the part they saw or heard.
+  interrupted?: boolean
 }
 
 // One row of the Recent list: id, title, and last-write time.

@@ -17,6 +17,8 @@ import {
   buildLanguageLine,
   buildSystemPrompt,
   buildVoiceLine,
+  INTERRUPTED_REPLY_NOTE,
+  INTERRUPTED_BEFORE_WORDS_NOTE,
 } from "../utils/system-prompt"
 import { checkAnswer } from "./check-answer"
 import { storePendingAction } from "./pending-actions"
@@ -206,10 +208,21 @@ export async function* runChat(
         buildLanguageLine(context.language) +
         (context.voice === true ? " " + buildVoiceLine(context.language) : ""),
     },
-    ...messages.map((m): OpenAI.Chat.ChatCompletionMessageParam => ({
-      role: m.role === "owner" ? "user" : "assistant",
-      content: m.text,
-    })),
+    ...messages.map((m, index): OpenAI.Chat.ChatCompletionMessageParam => {
+      const previous = messages[index - 1]
+      const note =
+        m.role === "owner"
+          ? previous?.role === "assistant" && previous.interrupted === true
+            ? INTERRUPTED_REPLY_NOTE
+            : previous?.role === "owner"
+              ? INTERRUPTED_BEFORE_WORDS_NOTE
+              : null
+          : null
+      return {
+        role: m.role === "owner" ? "user" : "assistant",
+        content: note === null ? m.text : `${note}\n${m.text}`,
+      }
+    }),
   ]
   const sleep = (ms: number): Promise<void> =>
     new Promise((resolve) => setTimeout(resolve, ms))

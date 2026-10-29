@@ -187,13 +187,19 @@ function wordsOf(item: ChatItem): string {
     .join("\n\n")
 }
 
-// What the server gets: the words only, the newest `limit` messages.
+// What the server gets: the words only, the newest `limit` messages. A
+// cut-off reply goes as only the part the owner got, marked, so the next
+// answer covers the rest; one cut off before any words is left out.
 export function toMessages(
   items: ChatItem[],
   limit: number
 ): AssistantMessage[] {
   return items
-    .map((item) => ({ role: item.role, text: wordsOf(item) }))
+    .map((item): AssistantMessage =>
+      item.role === "assistant" && item.cutOff !== undefined
+        ? { role: item.role, text: item.cutOff, interrupted: true }
+        : { role: item.role, text: wordsOf(item) }
+    )
     .filter((message) => message.text.trim() !== "")
     .slice(-limit)
 }

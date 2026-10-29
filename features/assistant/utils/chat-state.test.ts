@@ -197,4 +197,13 @@ test("a cut-off reply keeps what the owner got; the first mark wins", () => {
   expect(markCutOff(items).at(-1)).toMatchObject({ cutOff: "You have 2 today" })
   // No reply yet: nothing to mark.
   expect(markCutOff([owner])).toEqual([owner])
+  // The server gets only what was heard, marked.
+  expect(toMessages(heard, 10).at(-1)).toEqual({
+    role: "assistant",
+    text: "You have",
+    interrupted: true,
+  })
+  expect(toMessages(markCutOff(items, ""), 10)).toEqual([
+    { role: "owner", text: "Hi" },
+  ])
 })

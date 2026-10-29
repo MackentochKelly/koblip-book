@@ -73,12 +73,10 @@ const {
   updateBusinessDetails,
   updateService,
 } = await import("@/features/dashboard/api/actions")
-const { setMemberServices, setServiceTeam } = await import(
-  "@/features/dashboard/api/team-services"
-)
-const { createAddonGroup, deleteAddonGroup, updateAddonGroup } = await import(
-  "@/features/dashboard/api/addon-actions"
-)
+const { setMemberServices, setServiceTeam } =
+  await import("@/features/dashboard/api/team-services")
+const { createAddonGroup, deleteAddonGroup, updateAddonGroup } =
+  await import("@/features/dashboard/api/addon-actions")
 const { setBookingStatus } =
   await import("@/features/dashboard/api/booking-actions")
 const { getAvailability } =
@@ -89,13 +87,12 @@ const { logAssistantAction } =
   await import("@/features/assistant/api/audit-log")
 const { getCustomers, getCustomerBookings } =
   await import("@/features/dashboard/api/customers")
-const { getBusinessPhotos, getServiceTeams } = await import(
-  "@/features/dashboard/api/team-service-queries"
-)
-const { getAddonGroups } = await import("@/features/dashboard/api/addon-queries")
-const { getTranslationStatus } = await import(
-  "@/features/dashboard/api/translation-queries"
-)
+const { getBusinessPhotos, getServiceTeams } =
+  await import("@/features/dashboard/api/team-service-queries")
+const { getAddonGroups } =
+  await import("@/features/dashboard/api/addon-queries")
+const { getTranslationStatus } =
+  await import("@/features/dashboard/api/translation-queries")
 const { buildAssistantTools } = await import("./tools")
 
 const BUSINESS = {
@@ -130,7 +127,10 @@ test("every needsConfirm tool carries its result kind", () => {
     ["update_business_details", "settings"],
   ]
   expect(
-    tools.filter((t) => t.definition.needsConfirm).map((t) => t.definition.name).sort()
+    tools
+      .filter((t) => t.definition.needsConfirm)
+      .map((t) => t.definition.name)
+      .sort()
   ).toEqual(kinds.map(([name]) => name).sort())
   for (const [name, kind] of kinds) {
     expect(byName(name).definition.resultKind).toBe(kind)
@@ -338,9 +338,9 @@ test("list_team row carries hasPhoto and serviceIds", async () => {
 
 test("list_addons has a Spanish step label", () => {
   const tools = buildAssistantTools("b1", "u1", "es")
-  expect(
-    tools.find((t) => t.definition.name === "list_addons")!.label
-  ).toBe("Listando extras…")
+  expect(tools.find((t) => t.definition.name === "list_addons")!.label).toBe(
+    "Listando extras…"
+  )
 })
 
 test("list_bookings validates, filters and caps", async () => {
@@ -494,12 +494,26 @@ function mockBothSides() {
         ? [
             timedRow("k0", "2026-10-28", "09:00", "Zoe", -4 * HOUR, -3 * HOUR),
             timedRow("k3", "2026-10-28", "16:45", "Lea", HOUR, 2 * HOUR),
-            timedRow("k5", "2026-10-28", "17:50", "Bo", -30 * 60_000, 30 * 60_000),
+            timedRow(
+              "k5",
+              "2026-10-28",
+              "17:50",
+              "Bo",
+              -30 * 60_000,
+              30 * 60_000
+            ),
           ]
         : [
             timedRow("k1", "2026-10-28", "11:45", "Ana", -3 * HOUR, -2 * HOUR),
             timedRow("k2", "2026-10-28", "13:00", "Ivy", -2 * HOUR, -HOUR),
-            timedRow("k5", "2026-10-28", "17:50", "Bo", -30 * 60_000, 30 * 60_000),
+            timedRow(
+              "k5",
+              "2026-10-28",
+              "17:50",
+              "Bo",
+              -30 * 60_000,
+              30 * 60_000
+            ),
             timedRow("k6", "2026-10-29", "18:30", "Max", HOUR, 90 * 60_000),
           ]) as never
   )
@@ -670,12 +684,12 @@ test("booking_stats refuses bad dates in English and Spanish", async () => {
     expect(await tool.run({ from: "tomorrow", to: "2026-10-29" })).toEqual({
       error: expect.any(String),
     })
-    expect(
-      await tool.run({ from: "2026-10-29", to: "2026-10-28" })
-    ).toEqual({ error: expect.any(String) })
-    expect(
-      await tool.run({ from: "2026-01-01", to: "2027-01-02" })
-    ).toEqual({ error: expect.any(String) })
+    expect(await tool.run({ from: "2026-10-29", to: "2026-10-28" })).toEqual({
+      error: expect.any(String),
+    })
+    expect(await tool.run({ from: "2026-01-01", to: "2027-01-02" })).toEqual({
+      error: expect.any(String),
+    })
   }
   expect(vi.mocked(getBookingsBetween)).not.toHaveBeenCalled()
 })
@@ -1297,7 +1311,9 @@ test("create_team_member creates and refuses a blank name", async () => {
 test("set_service_team describes, executes and refuses unknown ids", async () => {
   mockTeamShop()
   const tool = byName("set_service_team")
-  expect(await tool.confirm!.describe({ serviceId: "s1", teamMemberIds: ["m1"] })).toEqual({
+  expect(
+    await tool.confirm!.describe({ serviceId: "s1", teamMemberIds: ["m1"] })
+  ).toEqual({
     title: "Change who does this service?",
     action: "Save",
     summary: "Cut · Bo",
@@ -1314,10 +1330,15 @@ test("set_service_team describes, executes and refuses unknown ids", async () =>
   ).toEqual({ error: expect.any(String) })
   vi.mocked(setServiceTeam).mockResolvedValue({ ok: true })
   expect(
-    await tool.confirm!.execute({ serviceId: "s1", teamMemberIds: ["m1", "m2"] })
+    await tool.confirm!.execute({
+      serviceId: "s1",
+      teamMemberIds: ["m1", "m2"],
+    })
   ).toEqual({ ok: true, doneText: "Service team updated." })
   expect(setServiceTeam).toHaveBeenCalledWith("b1", "s1", ["m1", "m2"])
-  expect(await tool.confirm!.execute({ serviceId: "gone", teamMemberIds: [] })).toEqual({
+  expect(
+    await tool.confirm!.execute({ serviceId: "gone", teamMemberIds: [] })
+  ).toEqual({
     ok: false,
     doneText: "Could not save: unknown service.",
   })
@@ -1361,7 +1382,10 @@ test("set_member_services describes, executes and refuses unknown ids", async ()
     await tool.confirm!.execute({ teamMemberId: "m1", serviceIds: ["s1"] })
   ).toEqual({ ok: true, doneText: "Member services updated." })
   expect(setMemberServices).toHaveBeenCalledWith("b1", "m1", ["s1"])
-  vi.mocked(setMemberServices).mockResolvedValue({ ok: false, error: "invalid" })
+  vi.mocked(setMemberServices).mockResolvedValue({
+    ok: false,
+    error: "invalid",
+  })
   const failed = await tool.confirm!.execute({
     teamMemberId: "m1",
     serviceIds: ["s1"],
@@ -1379,7 +1403,9 @@ test("create_addon_group describes, executes and refuses bad input", async () =>
     summary: "Extras · Pick one · Mask, Dye",
     destructive: false,
   })
-  expect(await tool.confirm!.describe({ ...ADDON_CREATE, options: [] })).toEqual({
+  expect(
+    await tool.confirm!.describe({ ...ADDON_CREATE, options: [] })
+  ).toEqual({
     error: expect.any(String),
   })
   expect(
@@ -1401,9 +1427,10 @@ test("create_addon_group describes, executes and refuses bad input", async () =>
   const failed = await tool.confirm!.execute(ADDON_CREATE)
   expect(failed.ok).toBe(false)
   expect(failed.doneText).toContain("invalid")
-  const esFailed = await byNameLang("create_addon_group", "es").confirm!.execute(
-    ADDON_CREATE
-  )
+  const esFailed = await byNameLang(
+    "create_addon_group",
+    "es"
+  ).confirm!.execute(ADDON_CREATE)
   expect(esFailed.doneText).toContain("No se pudo crear")
 })
 
@@ -1414,11 +1441,26 @@ test("update_addon_group keeps, adds and removes options by id", async () => {
   const card = await tool.confirm!.describe({
     groupId: "g1",
     options: [
-      { id: "o1", name: "Mask", description: null, priceMinor: 500, durationMinutes: 10 },
-      { id: null, name: "Rinse", description: null, priceMinor: 100, durationMinutes: 5 },
+      {
+        id: "o1",
+        name: "Mask",
+        description: null,
+        priceMinor: 500,
+        durationMinutes: 10,
+      },
+      {
+        id: null,
+        name: "Rinse",
+        description: null,
+        priceMinor: 100,
+        durationMinutes: 5,
+      },
     ],
   })
-  expect(card).toMatchObject({ title: "Change these extras?", action: "Change" })
+  expect(card).toMatchObject({
+    title: "Change these extras?",
+    action: "Change",
+  })
   expect((card as { summary: string }).summary).toContain("+ Rinse")
   expect((card as { summary: string }).summary).toContain("- Dye")
   const same = await tool.confirm!.describe({
@@ -1429,8 +1471,20 @@ test("update_addon_group keeps, adds and removes options by id", async () => {
     maxSelect: 1,
     serviceIds: ["s1"],
     options: [
-      { id: "o1", name: "Mask", description: null, priceMinor: 500, durationMinutes: 10 },
-      { id: "o2", name: "Dye", description: null, priceMinor: 900, durationMinutes: 15 },
+      {
+        id: "o1",
+        name: "Mask",
+        description: null,
+        priceMinor: 500,
+        durationMinutes: 10,
+      },
+      {
+        id: "o2",
+        name: "Dye",
+        description: null,
+        priceMinor: 900,
+        durationMinutes: 15,
+      },
     ],
   })
   expect(same).toEqual({ error: "Nothing to change." })
@@ -1442,7 +1496,13 @@ test("update_addon_group keeps, adds and removes options by id", async () => {
     groupId: "g1",
     name: "Drinks",
     options: [
-      { id: "o1", name: "Mask", description: null, priceMinor: 500, durationMinutes: 10 },
+      {
+        id: "o1",
+        name: "Mask",
+        description: null,
+        priceMinor: 500,
+        durationMinutes: 10,
+      },
     ],
   }
   expect(await tool.confirm!.execute(changed)).toEqual({
@@ -1456,7 +1516,13 @@ test("update_addon_group keeps, adds and removes options by id", async () => {
     maxSelect: 1,
     serviceIds: ["s1"],
     options: [
-      { id: "o1", name: "Mask", description: null, priceMinor: 500, durationMinutes: 10 },
+      {
+        id: "o1",
+        name: "Mask",
+        description: null,
+        priceMinor: 500,
+        durationMinutes: 10,
+      },
     ],
   })
   vi.mocked(getAddonGroups).mockResolvedValue([])
@@ -1507,7 +1573,9 @@ test("update_business_details changes only the given fields", async () => {
     error: expect.any(String),
   })
   vi.mocked(updateBusinessDetails).mockResolvedValue({ ok: true })
-  expect(await tool.confirm!.execute({ phone: "+15551234567", seats: 3 })).toEqual({
+  expect(
+    await tool.confirm!.execute({ phone: "+15551234567", seats: 3 })
+  ).toEqual({
     ok: true,
     doneText: "Business details updated.",
   })
@@ -1519,7 +1587,10 @@ test("update_business_details changes only the given fields", async () => {
     website: "https://salon.example",
     seats: 3,
   })
-  vi.mocked(updateBusinessDetails).mockResolvedValue({ ok: false, error: "invalid" })
+  vi.mocked(updateBusinessDetails).mockResolvedValue({
+    ok: false,
+    error: "invalid",
+  })
   const failed = await tool.confirm!.execute({ phone: "+15551234567" })
   expect(failed.ok).toBe(false)
   expect(failed.doneText).toContain("invalid")
@@ -1681,9 +1752,7 @@ test("a price of 0 shows as Free on the booking and update cards", async () => {
   vi.mocked(getOwnerBusiness).mockResolvedValue({
     business: BOOKING_BUSINESS,
     hours: [],
-    services: [
-      { id: "s1", name: "Cut", durationMinutes: 30, priceMinor: 0 },
-    ],
+    services: [{ id: "s1", name: "Cut", durationMinutes: 30, priceMinor: 0 }],
     team: [{ id: "m1", name: "Leo" }],
   } as never)
   const booked = (await byName("create_booking").confirm!.describe(
@@ -1761,7 +1830,9 @@ test("a hostile customer name is only data in the booking card", async () => {
 })
 
 test("no reschedule tool exists and the prompt says so", async () => {
-  const names = buildAssistantTools("b1", "u1", "en").map((t) => t.definition.name)
+  const names = buildAssistantTools("b1", "u1", "en").map(
+    (t) => t.definition.name
+  )
   expect(names).not.toContain("reschedule_booking")
   expect(names.some((n) => n.includes("resched") || n.includes("move"))).toBe(
     false
@@ -1784,29 +1855,33 @@ test("buildVoiceLine speaks briefly in both languages", async () => {
     await import("@/features/assistant/utils/system-prompt")
   const en = buildVoiceLine("en")
   for (const heading of [
-    "Talking mode",
+    "Personality",
     "Length",
     "Before a lookup",
+    "Variety",
+    "Cut off",
     "Unclear words",
     "Facts",
     "Changes that need a tap",
   ])
     expect(en).toContain(`# ${heading}`)
-  expect(en).toContain("DO NOT ALWAYS USE THESE; VARY YOUR WORDS EVERY TIME")
-  expect(en).toContain("NEVER guess what they meant")
+  expect(en).toContain("NEVER say the same sentence twice in this chat")
+  expect(en).toContain("ONE very short line of 2 to 4 words")
   expect(en).toContain("write nothing; the app says it out loud")
   const es = buildVoiceLine("es")
   for (const heading of [
-    "Modo de voz",
+    "Personalidad",
     "Extensión",
     "Antes de una consulta",
+    "Variedad",
+    "Te cortaron",
     "Palabras poco claras",
     "Datos",
     "Cambios que necesitan un toque",
   ])
     expect(es).toContain(`# ${heading}`)
-  expect(es).toContain("NO USES SIEMPRE ESTAS; CAMBIA LAS PALABRAS CADA VEZ")
-  expect(es).toContain("NUNCA adivines lo que quiso decir")
+  expect(es).toContain("NUNCA digas la misma frase dos veces en este chat")
+  expect(es).toContain("UNA frase muy corta de 2 a 4 palabras")
   expect(es).toContain("no escribas nada; la aplicación")
 })
 
@@ -2001,7 +2076,9 @@ test("spanish validation errors are server-built sentences", async () => {
   const unknown = await byNameLang("cancel_booking", "es").confirm!.describe({
     bookingId: "nope",
   })
-  expect(unknown).toEqual({ error: expect.stringContaining("lista las reservas") })
+  expect(unknown).toEqual({
+    error: expect.stringContaining("lista las reservas"),
+  })
   const badRange = await byNameLang("list_bookings", "es").run({
     range: "soon",
   })

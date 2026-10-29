@@ -7,6 +7,8 @@ export const VOICE_RULES = {
   speakModel: "eleven_v4_turbo",
   // Savvy, warm and steady, English and Spanish. A picker comes later.
   speakVoiceId: "ogwqBH5bbF03DSbNiRNN",
+  // https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket
+  speakSyncAlignment: true,
   speakOutputFormat: "pcm_24000",
   speakSampleRate: 24000,
   // Token mint base; the route appends the type below.
