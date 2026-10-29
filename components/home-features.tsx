@@ -64,7 +64,7 @@ export function HomeFeatures({
         <CarouselContent className="p-px">
           {features.map(({ pattern, title, text }) => (
             <CarouselItem key={pattern} className="basis-[85%] md:basis-1/3">
-              <Card className="h-full pt-2 shadow-none">
+              <Card className="h-full pt-2 shadow-none ring-border dark:ring-border">
                 <div
                   aria-hidden
                   className="mx-2 aspect-video overflow-hidden rounded-t-[calc(var(--radius-4xl)-(--spacing(2)))] rounded-b-lg bg-muted"
