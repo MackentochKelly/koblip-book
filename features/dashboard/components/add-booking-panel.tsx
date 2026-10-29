@@ -4,7 +4,9 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
+import { DatePicker } from "@/components/date-picker"
 import { ResponsivePanel } from "@/components/responsive-panel"
+import { TimeInput } from "@/components/time-input"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -180,7 +182,9 @@ function BookingForm({
   onInvalid: (field: InvalidField | null) => void
   onSubmit: (input: OwnerBookingInput) => void
 }) {
-  const t = useOwnerMessages().bookings.form
+  const m = useOwnerMessages()
+  const t = m.bookings.form
+  const locale = m.locale
   const [serviceId, setServiceId] = useState(options.services[0]?.id ?? "")
   const [memberId, setMemberId] = useState(ANYONE)
   const [date, setDate] = useState(options.today)
@@ -336,22 +340,21 @@ function BookingForm({
         <div className="grid grid-cols-2 gap-4">
           <Field data-invalid={error("date")}>
             <FieldLabel htmlFor="add-date">{t.day}</FieldLabel>
-            <Input
+            <DatePicker
               id="add-date"
-              type="date"
               value={date}
               min={addDaysTo(options.today, -BOOKING_RULES.ownerDaysBack)}
               max={addDaysTo(options.today, BOOKING_RULES.ownerDaysAhead)}
-              onChange={(event) => setDate(event.target.value)}
-              aria-invalid={error("date")}
+              onChange={setDate}
+              locale={locale}
+              invalid={error("date")}
             />
             {invalid === "date" && <FieldError>{t.pickDay}</FieldError>}
           </Field>
           <Field data-invalid={error("time")}>
             <FieldLabel htmlFor="add-time">{t.time}</FieldLabel>
-            <Input
+            <TimeInput
               id="add-time"
-              type="time"
               step={300}
               value={time}
               onChange={(event) => setTime(event.target.value)}

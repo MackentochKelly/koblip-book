@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { PlusIcon, XIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
+import { TimeInput } from "@/components/time-input"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -14,7 +15,6 @@ import {
   FieldLabel,
   FieldTitle,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
@@ -125,8 +125,7 @@ export function HoursForm({
               </FieldLabel>
               {ranges.map((range, rangeIndex) => (
                 <Field key={rangeIndex} orientation="horizontal">
-                  <Input
-                    type="time"
+                  <TimeInput
                     aria-label={t.opens(label)}
                     value={range.opensAt}
                     onChange={(event) =>
@@ -134,8 +133,7 @@ export function HoursForm({
                     }
                   />
                   <span className="text-muted-foreground">–</span>
-                  <Input
-                    type="time"
+                  <TimeInput
                     aria-label={t.closes(label)}
                     value={range.closesAt}
                     onChange={(event) =>
