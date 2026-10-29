@@ -59,12 +59,10 @@ export function HomeFeatures({
         <CarouselContent className="p-px">
           {features.map(({ pattern, title, text }) => (
             <CarouselItem key={pattern} className="basis-[85%] md:basis-1/3">
-              <Card className="h-full pt-3 shadow-none ring-foreground/10">
-                {/* The picture, set in like dev.meta.ai's: the same gap on top and
-                    sides, corners matching the card's, its own faint edge. */}
+              <Card className="h-full pt-2 shadow-none">
                 <div
                   aria-hidden
-                  className="relative mx-3 aspect-video overflow-hidden rounded-[calc(var(--radius-4xl)-(--spacing(3)))] bg-muted after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/10"
+                  className="mx-2 aspect-video overflow-hidden rounded-[calc(var(--radius-4xl)-(--spacing(2)))] bg-muted"
                 >
                   <FeaturePattern name={pattern} />
                 </div>
