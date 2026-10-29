@@ -256,6 +256,16 @@
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
     }
+  /* Phones and tablets (a finger, no mouse): no scroll bar anywhere, like
+     an app; scrolling still works. A computer keeps its scroll bars. */
+  @media (pointer: coarse) {
+    * {
+      scrollbar-width: none;
+      }
+    *::-webkit-scrollbar {
+      display: none;
+      }
+    }
   html {
     @apply font-sans;
     /* Big screens: everything sized in rem (text, spacing, widths) grows
