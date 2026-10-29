@@ -14,8 +14,13 @@ const HERO_GRADIENT = {
   speed: 0.3,
 } as const
 
-// Fills its `relative isolate` parent, behind the content.
-export function HeroGradient() {
+// Fills its `relative isolate` parent, behind the content. `speed` lets a
+// smaller use (the voice globe) move a little faster than the hero.
+export function HeroGradient({
+  speed = HERO_GRADIENT.speed,
+}: {
+  speed?: number
+}) {
   const colors = useThemeColors(HERO_GRADIENT.colorTokens)
   const still = useReducedMotion()
 
@@ -33,7 +38,7 @@ export function HeroGradient() {
           colors={colors}
           distortion={HERO_GRADIENT.distortion}
           swirl={HERO_GRADIENT.swirl}
-          speed={still ? 0 : HERO_GRADIENT.speed}
+          speed={still ? 0 : speed}
           // Fades in over the plain page colour instead of popping in.
           className="size-full duration-700 motion-safe:animate-in motion-safe:fade-in"
         />
