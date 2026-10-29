@@ -39,12 +39,6 @@ text, light and dark.
 
 ## Known gaps (found while writing this, not fixed yet)
 
-- Text boxes (Input, InputGroup, SelectTrigger) are 36px on touch screens:
-  under our 44px rule.
-- "Checked N things" rows (`TraceCollapsibleTrigger`) are 20px: under the
-  WCAG 24px minimum on every device.
-- No app-wide `MotionConfig reducedMotion="user"`, so Motion animations
-  ignore the phone's Reduce Motion setting ([motion.md](motion.md)).
 - Glass surfaces have no `prefers-reduced-transparency` fallback; iPhones
   don't support that setting, so glass must stay readable on its own.
 - shadcn now ships its own Toast (built on Base UI); we still use Sonner,
