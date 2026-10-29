@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useState } from "react"
 import { WheelGesturesPlugin } from "embla-carousel-wheel-gestures"
 
 import {
@@ -41,10 +41,10 @@ export function HomeFeatures({
     { preview: "assistant", title: words.assistant, text: words.assistantText },
   ]
   // Two-finger trackpad swipes move the cards too (Embla only drags).
-  const wheel = useRef(WheelGesturesPlugin())
+  const [wheel] = useState(() => WheelGesturesPlugin())
   return (
     <section className="mx-auto w-full max-w-5xl px-2 pb-12 sm:px-4">
-      <Carousel opts={{ align: "start" }} plugins={[wheel.current]}>
+      <Carousel opts={{ align: "start" }} plugins={[wheel]}>
         <div className="mb-4 flex items-center justify-between gap-4 px-2">
           <h2 className="font-display text-2xl font-medium tracking-tight">
             {words.title}
@@ -66,7 +66,6 @@ export function HomeFeatures({
             <CarouselItem key={preview} className="basis-[85%] md:basis-1/3">
               <Card className="h-full pt-2 shadow-none ring-border dark:ring-border">
                 <div
-                  aria-hidden
                   className="relative mx-2 aspect-video overflow-hidden rounded-t-[calc(var(--radius-4xl)-(--spacing(2)))] rounded-b-lg bg-muted after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/5 dark:after:inset-ring-foreground/10"
                 >
                   <FeaturePreview name={preview} sample={words.sample} />

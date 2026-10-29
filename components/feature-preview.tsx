@@ -1,14 +1,16 @@
 "use client"
 
 import { MeshGradient } from "@paper-design/shaders-react"
+import { AnimatePresence, motion } from "motion/react"
+import { useEffect, useRef, useState } from "react"
 
 import { glassFrameClassName } from "@/components/glass-frame"
 import { Rating } from "@/components/rating"
-import { Badge } from "@/components/ui/badge"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { CheckIcon, MapPinIcon } from "@/components/ui/icons"
+import { Spinner } from "@/components/ui/spinner"
 import { useThemeColors } from "@/hooks/use-theme-colors"
 import type { Messages } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
@@ -17,8 +19,8 @@ type Sample = Messages["home"]["features"]["sample"]
 
 // The pictures on the home feature cards: a small piece of the real app,
 // built from its own parts, on a still colour wash (the hero's Paper Mesh
-// Gradient, not moving), a different colour per card. Pictures only:
-// hidden from screen readers and not focusable.
+// Gradient, not moving), a different colour per card. Each one can be
+// tapped to play what it shows.
 const PREVIEWS = {
   page: { colors: ["--background", "--chart-1", "--chart-3"], seed: 0 },
   book: { colors: ["--background", "--hero-accent", "--chart-1"], seed: 40 },
@@ -48,13 +50,10 @@ export function FeaturePreview({
 }) {
   const colors = useThemeColors(PREVIEWS[name].colors)
   return (
-    <div
-      aria-hidden
-      inert
-      className="relative isolate flex size-full items-center justify-center p-4"
-    >
+    <div className="relative isolate flex size-full items-center justify-center p-4">
       {colors && (
         <MeshGradient
+          aria-hidden
           colors={colors}
           distortion={0.4}
           swirl={0.1}
@@ -70,8 +69,25 @@ export function FeaturePreview({
   )
 }
 
-// A business page: name, rating, Book.
+// Short, soft moves (MotionProvider turns them into fades for Reduce
+// Motion).
+const POP = {
+  initial: { opacity: 0, scale: 0.9 },
+  animate: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, scale: 0.9 },
+  transition: { duration: 0.2 },
+}
+const RISE = {
+  initial: { opacity: 0, y: 6 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: 6 },
+  transition: { duration: 0.25 },
+}
+
+// A business page: name, rating, Book. Tap Book: it turns "Booked";
+// tap again to start over.
 function PagePreview({ sample }: { sample: Sample }) {
+  const [booked, setBooked] = useState(false)
   return (
     <Box>
       <div className="flex flex-col gap-3 px-(--card-spacing)">
@@ -84,30 +100,64 @@ function PagePreview({ sample }: { sample: Sample }) {
             <Rating rating={4.9} reviewCount={128} locale={sample.locale} />
           </div>
         </div>
-        <Button size="sm" className="w-full">
-          {sample.book}
+        <Button
+          size="sm"
+          aria-pressed={booked}
+          onClick={() => setBooked(!booked)}
+          className={cn(
+            "w-full",
+            booked && "bg-success text-success-foreground hover:bg-success/90"
+          )}
+        >
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={booked ? "booked" : "book"}
+              {...POP}
+              className="flex items-center gap-1"
+            >
+              {booked && <CheckIcon />}
+              {booked ? sample.booked : sample.book}
+            </motion.span>
+          </AnimatePresence>
         </Button>
       </div>
     </Box>
   )
 }
 
-// Free times for a day, one picked.
+// Free times for a day. Tap one: it is picked and "Confirmed" shows; tap it
+// again to start over.
 function BookPreview({ sample }: { sample: Sample }) {
+  const [picked, setPicked] = useState<string | null>(null)
   return (
     <Box>
       <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <span className="font-medium">{sample.day}</span>
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-medium">{sample.day}</span>
+          <AnimatePresence>
+            {picked && (
+              <motion.span
+                {...RISE}
+                role="status"
+                className="flex items-center gap-1 text-xs font-medium text-success"
+              >
+                <CheckIcon className="size-3.5" />
+                {sample.confirmed}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
         <div className="flex flex-wrap gap-2">
-          {sample.times.map((time, index) => (
-            <Badge
+          {sample.times.map((time) => (
+            <Button
               key={time}
-              variant={
-                index === sample.times.length - 1 ? "default" : "outline"
-              }
+              size="sm"
+              variant={picked === time ? "default" : "outline"}
+              aria-pressed={picked === time}
+              onClick={() => setPicked(picked === time ? null : time)}
             >
               {time}
-            </Badge>
+            </Button>
           ))}
         </div>
       </div>
@@ -115,12 +165,25 @@ function BookPreview({ sample }: { sample: Sample }) {
   )
 }
 
-// The owner asks, the assistant does it.
+// The owner asks, the assistant does it. Tap the question: it plays again
+// (thinking, then the answer).
+const THINKING_MS = 900
+
 function AssistantPreview({ sample }: { sample: Sample }) {
+  const [step, setStep] = useState<"thinking" | "done">("done")
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(timer.current), [])
+  function replay() {
+    clearTimeout(timer.current)
+    setStep("thinking")
+    timer.current = setTimeout(() => setStep("done"), THINKING_MS)
+  }
   return (
     <div className="flex w-full max-w-60 flex-col gap-2">
       <Bubble align="end">
-        <BubbleContent>{sample.ask}</BubbleContent>
+        <BubbleContent render={<button type="button" onClick={replay} />}>
+          {sample.ask}
+        </BubbleContent>
       </Bubble>
       <Bubble
         variant="outline"
@@ -129,9 +192,26 @@ function AssistantPreview({ sample }: { sample: Sample }) {
           "w-fit rounded-[calc(var(--radius-3xl)+--spacing(1.5))]"
         )}
       >
-        <BubbleContent className="flex items-center gap-1.5">
-          <CheckIcon className="size-4 shrink-0 text-primary" />
-          {sample.done}
+        <BubbleContent
+          className="flex min-h-10 items-center gap-1.5"
+          role="status"
+        >
+          <AnimatePresence mode="popLayout" initial={false}>
+            {step === "thinking" ? (
+              <motion.span key="thinking" {...POP} className="flex">
+                <Spinner />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="done"
+                {...RISE}
+                className="flex items-center gap-1.5"
+              >
+                <CheckIcon className="size-4 shrink-0 text-success" />
+                {sample.done}
+              </motion.span>
+            )}
+          </AnimatePresence>
         </BubbleContent>
       </Bubble>
     </div>

@@ -17,179 +17,190 @@
 }
 
 @theme inline {
-    /* The see-through glass for small pieces on the moving gradient (the
+  /* The see-through glass for small pieces on the moving gradient (the
        Meta badge, the Search / Maps link switch, the header buttons):
        bg-glass border-glass-edge backdrop-blur-md. The page colour at
        --glass-fill (35% light, 30% dark). */
-    --color-glass: color-mix(in oklab, var(--background) var(--glass-fill), transparent);
-    /* The edge of every glass piece and every frosted menu (--glass-edge):
+  --color-glass: color-mix(
+    in oklab,
+    var(--background) var(--glass-fill),
+    transparent
+  );
+  /* The edge of every glass piece and every frosted menu (--glass-edge):
        always a light line. Use border-glass-edge / ring-glass-edge. */
-    --color-glass-edge: var(--glass-edge);
-    --color-glass-frame-edge: var(--glass-frame-edge);
-    --color-google-button: var(--google-button);
-    --color-google-button-border: var(--google-button-border);
-    --color-google-button-foreground: var(--google-button-foreground);
-    --color-warning: var(--warning);
-    --color-verified: var(--verified);
-    --color-verified-foreground: var(--verified-foreground);
-    --font-heading: var(--font-sans);
-    --font-display: var(--font-display);
-    --color-hero-foreground: var(--hero-foreground);
-    --color-hero-marker-foreground: var(--hero-marker-foreground);
-    --font-serif: var(--font-serif);
-    /* The home title on phones: grows with the screen, as big as fits on
+  --color-glass-edge: var(--glass-edge);
+  --color-glass-frame-edge: var(--glass-frame-edge);
+  --color-google-button: var(--google-button);
+  --color-google-button-border: var(--google-button-border);
+  --color-google-button-foreground: var(--google-button-foreground);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-verified: var(--verified);
+  --color-verified-foreground: var(--verified-foreground);
+  --font-heading: var(--font-sans);
+  --font-display: var(--font-display);
+  --color-hero-foreground: var(--hero-foreground);
+  --color-hero-marker-foreground: var(--hero-marker-foreground);
+  --font-serif: var(--font-serif);
+  /* The home title on phones: grows with the screen, as big as fits on
        two lines (36px at the smallest, 48px at most). */
-    --text-hero: clamp(2.25rem, 11vw, 3rem);
-    --text-hero--line-height: 1.1;
-    --font-sans: var(--font-sans);
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+  --text-hero: clamp(2.25rem, 11vw, 3rem);
+  --text-hero--line-height: 1.1;
+  --font-sans: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 :root {
-    --warning: oklch(0.666 0.179 58.318);
-    --verified: #1d9bf0;
-    --verified-foreground: #0c447c;
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.457 0.24 277.023);
-    --primary-foreground: oklch(0.962 0.018 272.314);
-    --secondary: oklch(0.967 0.001 286.375);
-    --secondary-foreground: oklch(0.21 0.006 285.885);
-    --muted: oklch(0.97 0 0);
-    /* A shade darker than the preset's 0.556 so grey text passes WCAG AA
+  --warning: oklch(0.666 0.179 58.318);
+  /* Something went through ("Booked"): white words on it pass AA. */
+  --success: oklch(0.52 0.14 150);
+  --success-foreground: oklch(1 0 0);
+  --verified: #1d9bf0;
+  --verified-foreground: #0c447c;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.457 0.24 277.023);
+  --primary-foreground: oklch(0.962 0.018 272.314);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.97 0 0);
+  /* A shade darker than the preset's 0.556 so grey text passes WCAG AA
        (4.5:1) on muted and input fills too, not only on white: 4.84:1 on
        --muted, 5.28:1 on white. */
-    --muted-foreground: oklch(0.53 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.785 0.115 274.713);
-    --chart-2: oklch(0.585 0.233 277.117);
-    --chart-3: oklch(0.511 0.262 276.966);
-    --chart-4: oklch(0.457 0.24 277.023);
-    --chart-5: oklch(0.398 0.195 277.366);
-    --hero-accent: oklch(0.833 0.145 321.434);
-    /* The home marker on "Google Maps": Google Maps blue (#1A73E8), white
+  --muted-foreground: oklch(0.53 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.785 0.115 274.713);
+  --chart-2: oklch(0.585 0.233 277.117);
+  --chart-3: oklch(0.511 0.262 276.966);
+  --chart-4: oklch(0.457 0.24 277.023);
+  --chart-5: oklch(0.398 0.195 277.366);
+  --hero-accent: oklch(0.833 0.145 321.434);
+  /* The home marker on "Google Maps": Google Maps blue (#1A73E8), white
        words on it. */
-    --hero-marker: #1a73e8;
-    --hero-marker-foreground: #ffffff;
-    /* "Continue with Google": Google's own button colours
+  --hero-marker: #1a73e8;
+  --hero-marker-foreground: #ffffff;
+  /* "Continue with Google": Google's own button colours
        (developers.google.com/identity/branding-guidelines). */
-    --google-button: #ffffff;
-    --google-button-border: #747775;
-    --google-button-foreground: #1f1f1f;
-    --hero-foreground: color-mix(in oklch, var(--foreground) 70%, var(--primary));
-    /* How much a glass frame boosts the colours behind it. Fresha uses 4.5
+  --google-button: #ffffff;
+  --google-button-border: #747775;
+  --google-button-foreground: #1f1f1f;
+  --hero-foreground: color-mix(in oklch, var(--foreground) 70%, var(--primary));
+  /* How much a glass frame boosts the colours behind it. Fresha uses 4.5
        on a pale page; our gradient is already strong, so far less. */
-    --glass-saturate: 1.5;
-    --glass-fill: 35%;
-    --glass-edge: color-mix(in oklab, var(--background) 30%, transparent);
-    --glass-frame-edge: color-mix(in oklab, var(--foreground) 8%, transparent);
-    /* How solid the frosted menus are; same as Koblip Sales. */
-    --menu-glass: 40%;
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.511 0.262 276.966);
-    --sidebar-primary-foreground: oklch(0.962 0.018 272.314);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+  --glass-saturate: 1.5;
+  --glass-fill: 35%;
+  --glass-edge: color-mix(in oklab, var(--background) 30%, transparent);
+  --glass-frame-edge: color-mix(in oklab, var(--foreground) 8%, transparent);
+  /* How solid the frosted menus are; same as Koblip Sales. */
+  --menu-glass: 40%;
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.511 0.262 276.966);
+  --sidebar-primary-foreground: oklch(0.962 0.018 272.314);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
 }
 
 .dark {
-    --glass-fill: 30%;
-    /* On dark glass a dark edge disappears: a faint light line instead. */
-    --glass-edge: color-mix(in oklab, var(--foreground) 15%, transparent);
-    --glass-frame-edge: color-mix(in oklab, var(--foreground) 8%, transparent);
-    --warning: oklch(0.828 0.189 84.429);
-    --verified: #1d9bf0;
-    --verified-foreground: #b5d4f4;
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.398 0.195 277.366);
-    --primary-foreground: oklch(0.962 0.018 272.314);
-    --secondary: oklch(0.274 0.006 286.033);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.785 0.115 274.713);
-    --chart-2: oklch(0.585 0.233 277.117);
-    --chart-3: oklch(0.511 0.262 276.966);
-    --chart-4: oklch(0.457 0.24 277.023);
-    --chart-5: oklch(0.398 0.195 277.366);
-    --hero-accent: oklch(0.833 0.145 321.434);
-    /* The home marker on "Google Maps": Google Maps blue (#1A73E8), white
+  --glass-fill: 30%;
+  /* On dark glass a dark edge disappears: a faint light line instead. */
+  --glass-edge: color-mix(in oklab, var(--foreground) 15%, transparent);
+  --glass-frame-edge: color-mix(in oklab, var(--foreground) 8%, transparent);
+  --warning: oklch(0.828 0.189 84.429);
+  --success: oklch(0.52 0.14 150);
+  --success-foreground: oklch(1 0 0);
+  --verified: #1d9bf0;
+  --verified-foreground: #b5d4f4;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.398 0.195 277.366);
+  --primary-foreground: oklch(0.962 0.018 272.314);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.785 0.115 274.713);
+  --chart-2: oklch(0.585 0.233 277.117);
+  --chart-3: oklch(0.511 0.262 276.966);
+  --chart-4: oklch(0.457 0.24 277.023);
+  --chart-5: oklch(0.398 0.195 277.366);
+  --hero-accent: oklch(0.833 0.145 321.434);
+  /* The home marker on "Google Maps": Google Maps blue (#1A73E8), white
        words on it. */
-    --hero-marker: #1a73e8;
-    --hero-marker-foreground: #ffffff;
-    --google-button: #131314;
-    --google-button-border: #8e918f;
-    --google-button-foreground: #e3e3e3;
-    --hero-foreground: color-mix(in oklch, var(--foreground) 85%, var(--chart-1));
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.585 0.233 277.117);
-    --sidebar-primary-foreground: oklch(0.962 0.018 272.314);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+  --hero-marker: #1a73e8;
+  --hero-marker-foreground: #ffffff;
+  --google-button: #131314;
+  --google-button-border: #8e918f;
+  --google-button-foreground: #e3e3e3;
+  --hero-foreground: color-mix(in oklch, var(--foreground) 85%, var(--chart-1));
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.585 0.233 277.117);
+  --sidebar-primary-foreground: oklch(0.962 0.018 272.314);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
 }
 
 /* Reduce Transparency on: every glass piece and frosted menu turns solid,
@@ -206,13 +217,13 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
     @apply bg-background text-foreground;
     /* Clear of the notch when a phone is turned sideways (the page fills the
        screen: viewport-fit=cover in app/layout.tsx). */
     padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
-    }
+  }
   /* A full page put over the current one (the "You're booked" page) takes
      its place: everything else in the body is hidden while it is there, so
      the page is just that one (Safari tints its bars from what is under
@@ -221,10 +232,11 @@
   body:has(> [data-full-page]) > :not([data-full-page], section, canvas) {
     display: none;
   }
-  button:not(:disabled), [role="button"]:not(:disabled) {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
     cursor: pointer;
-    }
+  }
   html {
     @apply font-sans;
-    }
+  }
 }

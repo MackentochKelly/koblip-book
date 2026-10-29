@@ -149,6 +149,8 @@ const en = {
         times: ["10:00 am", "11:30 am", "3:00 pm"],
         ask: "Book Ana at 3 pm",
         done: "Done. Ana is booked for 3 pm.",
+        booked: "Booked",
+        confirmed: "Confirmed",
       },
     },
     provider: {
@@ -311,6 +313,8 @@ const es: Messages = {
         times: ["10:00", "11:30", "15:00"],
         ask: "Reserva a Ana a las 15:00",
         done: "Listo. Ana tiene cita a las 15:00.",
+        booked: "Reservado",
+        confirmed: "Confirmada",
       },
     },
     provider: {
