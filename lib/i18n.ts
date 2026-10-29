@@ -130,6 +130,27 @@ const en = {
     worksWith: "Works with",
     remindersOnWhatsApp: "Reminders on WhatsApp",
     soon: "Soon",
+    steps: {
+      title: "How it works",
+      find: "Find your business",
+      findText: "Search it like on Google Maps.",
+      check: "Check your page",
+      checkText: "Your services, hours and photos are ready.",
+      share: "Share your link",
+      shareText: "Clients book from it, day or night.",
+      // The sample shown in the step pictures.
+      sample: {
+        search: "Search",
+        address: "Calle Mayor 12, Madrid",
+        services: [
+          { name: "Haircut", priceMinor: 2500 },
+          { name: "Colour", priceMinor: 6000 },
+        ],
+        link: "book.koblip.com/lumen",
+        copy: "Copy",
+        copied: "Copied",
+      },
+    },
     features: {
       title: "What you get",
       previous: "Previous",
@@ -295,6 +316,26 @@ const es: Messages = {
     worksWith: "Funciona con",
     remindersOnWhatsApp: "Recordatorios por WhatsApp",
     soon: "Pronto",
+    steps: {
+      title: "Cómo funciona",
+      find: "Busca tu negocio",
+      findText: "Búscalo como en Google Maps.",
+      check: "Revisa tu página",
+      checkText: "Tus servicios, horarios y fotos ya están listos.",
+      share: "Comparte tu enlace",
+      shareText: "Tus clientes reservan desde ahí, a cualquier hora.",
+      sample: {
+        search: "Buscar",
+        address: "Calle Mayor 12, Madrid",
+        services: [
+          { name: "Corte", priceMinor: 2500 },
+          { name: "Color", priceMinor: 6000 },
+        ],
+        link: "book.koblip.com/lumen",
+        copy: "Copiar",
+        copied: "Copiado",
+      },
+    },
     features: {
       title: "Lo que obtienes",
       previous: "Anterior",

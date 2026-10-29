@@ -32,12 +32,41 @@ export type FeaturePreviewName = keyof typeof PREVIEWS
 
 // The sample's box: the white card in the glass frame, as on the home
 // search box, so it sits light on the colour wash.
-function Box({ children }: { children: React.ReactNode }) {
+export function Box({ children }: { children: React.ReactNode }) {
   return (
     <div className={cn(glassFrameClassName, "max-w-60")}>
       <Card size="sm" className="w-full shadow-none ring-0">
         {children}
       </Card>
+    </div>
+  )
+}
+
+// A picture's still colour wash, with the sample centred on it.
+export function Scene({
+  colors: tokens,
+  seed,
+  children,
+}: {
+  colors: readonly string[]
+  seed: number
+  children: React.ReactNode
+}) {
+  const colors = useThemeColors(tokens)
+  return (
+    <div className="relative isolate flex size-full items-center justify-center p-4">
+      {colors && (
+        <MeshGradient
+          aria-hidden
+          colors={colors}
+          distortion={0.4}
+          swirl={0.1}
+          speed={0}
+          frame={seed * 1000}
+          className="absolute inset-0 -z-10 duration-700 motion-safe:animate-in motion-safe:fade-in"
+        />
+      )}
+      {children}
     </div>
   )
 }
@@ -49,36 +78,24 @@ export function FeaturePreview({
   name: FeaturePreviewName
   sample: Sample
 }) {
-  const colors = useThemeColors(PREVIEWS[name].colors)
   return (
-    <div className="relative isolate flex size-full items-center justify-center p-4">
-      {colors && (
-        <MeshGradient
-          aria-hidden
-          colors={colors}
-          distortion={0.4}
-          swirl={0.1}
-          speed={0}
-          frame={PREVIEWS[name].seed * 1000}
-          className="absolute inset-0 -z-10 duration-700 motion-safe:animate-in motion-safe:fade-in"
-        />
-      )}
+    <Scene {...PREVIEWS[name]}>
       {name === "page" && <PagePreview sample={sample} />}
       {name === "book" && <BookPreview sample={sample} />}
       {name === "assistant" && <AssistantPreview sample={sample} />}
-    </div>
+    </Scene>
   )
 }
 
 // Short, soft moves (MotionProvider turns them into fades for Reduce
 // Motion).
-const POP = {
+export const POP = {
   initial: { opacity: 0, scale: 0.9 },
   animate: { opacity: 1, scale: 1 },
   exit: { opacity: 0, scale: 0.9 },
   transition: { duration: 0.2 },
 }
-const RISE = {
+export const RISE = {
   initial: { opacity: 0, y: 6 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: 6 },
