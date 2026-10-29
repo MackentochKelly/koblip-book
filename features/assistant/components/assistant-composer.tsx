@@ -20,7 +20,6 @@ import { VoiceGlobe } from "@/components/voice-globe"
 import { VoiceWaveform } from "@/components/voice-waveform"
 import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
-import { cn } from "@/lib/utils"
 import { VOICE_RULES } from "@/lib/voice-rules"
 import type { AssistantMessages } from "../i18n"
 import type { AnswerListener } from "../types"
@@ -210,12 +209,7 @@ export function AssistantComposer({
             onClick={
               mode === "stop" ? onStop : mode === "live" ? startLive : undefined
             }
-            className={cn(
-              "animate-in duration-150 zoom-in-75 fade-in motion-reduce:animate-none",
-              // Talk live: no edge, just a soft shadow in its own colour
-              // under it, so it looks raised.
-              mode === "live" && "shadow-md shadow-primary/30"
-            )}
+            className="animate-in duration-150 zoom-in-75 fade-in motion-reduce:animate-none"
           >
             {mode === "working" ? (
               <Spinner />
