@@ -20,6 +20,7 @@ import { VoiceGlobe } from "@/components/voice-globe"
 import { VoiceWaveform } from "@/components/voice-waveform"
 import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
+import { cn } from "@/lib/utils"
 import { VOICE_RULES } from "@/lib/voice-rules"
 import type { AssistantMessages } from "../i18n"
 import type { AnswerListener } from "../types"
@@ -209,7 +210,12 @@ export function AssistantComposer({
             onClick={
               mode === "stop" ? onStop : mode === "live" ? startLive : undefined
             }
-            className="animate-in duration-150 zoom-in-75 fade-in motion-reduce:animate-none"
+            className={cn(
+              "animate-in duration-150 zoom-in-75 fade-in motion-reduce:animate-none",
+              // Talk live: a soft ring in the brand colour, so the voice
+              // button stands out like a real control.
+              mode === "live" && "ring-4 ring-primary/15"
+            )}
           >
             {mode === "working" ? (
               <Spinner />
