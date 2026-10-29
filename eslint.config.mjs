@@ -101,6 +101,18 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "off",
     },
   },
+  // ElevenLabs UI's Orb (https://ui.elevenlabs.io/docs/components/orb), kept
+  // as its registry writes it: a three.js render loop that reads refs and
+  // mutates shader uniforms by design.
+  {
+    files: ["components/ui/orb.tsx"],
+    rules: {
+      "react-hooks/immutability": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/refs": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
