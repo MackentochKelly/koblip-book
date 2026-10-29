@@ -70,12 +70,20 @@ function withReply(
 
 // The owner cut off the reply being written or spoken. `heard` is what
 // talking mode played of it; typed, it is what was on screen. The first
-// mark wins: a stop that follows a talk-over keeps what was heard.
+// mark wins: a stop that follows a talk-over keeps what was heard. Talking
+// over the last words of a reply heard in full is not a cut-off, like
+// OpenAI's truncation, which removes only audio that never played.
 export function markCutOff(items: ChatItem[], heard?: string): ChatItem[] {
   const last = items.at(-1)
   if (last?.role !== "assistant" || last.cutOff !== undefined) return items
+  if (heard !== undefined && letters(heard).length >= letters(last.text).length)
+    return items
   return [...items.slice(0, -1), { ...last, cutOff: heard ?? last.text }]
 }
+
+// Letters and digits only, so spoken words compare with written Markdown.
+const letters = (text: string) =>
+  text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "")
 
 // An empty reply, so what comes next starts a new message.
 export function newReply(): ChatItem {

@@ -195,6 +195,9 @@ test("a cut-off reply keeps what the owner got; the first mark wins", () => {
   expect(markCutOff(heard).at(-1)).toMatchObject({ cutOff: "You have" })
   // Typed: what was on screen.
   expect(markCutOff(items).at(-1)).toMatchObject({ cutOff: "You have 2 today" })
+  // Heard to the end (Markdown aside): not a cut-off.
+  const bold = applyEvent([owner], { type: "text", delta: "**Sofia** at 11." })
+  expect(markCutOff(bold, "Sofia at 11.")).toEqual(bold)
   // No reply yet: nothing to mark.
   expect(markCutOff([owner])).toEqual([owner])
   // The server gets only what was heard, marked.
