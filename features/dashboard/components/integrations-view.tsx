@@ -31,8 +31,8 @@ import { useOwnerMessages } from "../i18n/provider"
 const CONNECT_FORM = "connect-whatsapp-form"
 
 // The apps a business connects, as a settings list: each row is the app,
-// what it does and its state. WhatsApp goes through Koblip Chat, which holds
-// the official Meta connection.
+// what it does and its state. WhatsApp straight from Meta is coming; until
+// then WhatsApp goes through Koblip Chat, which holds the Meta connection.
 export function IntegrationsView({ connected }: { connected: boolean }) {
   const m = useOwnerMessages()
   const t = m.integrations
@@ -45,40 +45,34 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
       </h1>
       <PageSection id="messaging" title={t.messaging}>
         <ItemGroup className="gap-3">
-          <Item variant="outline">
-            {/* WhatsApp's own file from the official pack, never recoloured
-                (meta.com/brand/resources/whatsapp/whatsapp-brand). Shown
-                whole: the "image" media is for photos and clips its
-                corners, which cut off the logo's tail. */}
-            <ItemMedia>
-              <Image
-                src="/brands/whatsapp-glyph-green.svg"
-                alt=""
-                width={40}
-                height={40}
-                unoptimized
-                className="size-10"
-              />
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle>{t.whatsapp.name}</ItemTitle>
-              <ItemDescription>{t.whatsapp.description}</ItemDescription>
-            </ItemContent>
-            <ItemActions>
-              {connected ? (
-                <Badge variant="secondary">{t.whatsapp.connected}</Badge>
+          {/* WhatsApp's own file from the official pack, never recoloured
+              (meta.com/brand/resources/whatsapp/whatsapp-brand). */}
+          <IntegrationRow
+            logo="/brands/whatsapp-glyph-green.svg"
+            name={t.whatsapp.name}
+            description={t.whatsapp.description}
+            action={<Badge variant="secondary">{t.whatsapp.soon}</Badge>}
+          />
+          {/* Koblip Chat's app icon, from its own app. */}
+          <IntegrationRow
+            logo="/brands/koblip-chat.png"
+            name={t.koblipChat.name}
+            description={t.koblipChat.description}
+            action={
+              connected ? (
+                <Badge variant="secondary">{t.koblipChat.connected}</Badge>
               ) : (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setConnecting(true)}
                 >
-                  {t.whatsapp.connect}
+                  {t.koblipChat.connect}
                   <ChevronRightIcon data-icon="inline-end" />
                 </Button>
-              )}
-            </ItemActions>
-          </Item>
+              )
+            }
+          />
         </ItemGroup>
       </PageSection>
 
@@ -95,6 +89,40 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
         {connecting && <ConnectForm />}
       </ResponsivePanel>
     </div>
+  )
+}
+
+// One app: its logo shown whole (the "image" media is for photos and clips
+// its corners), its name, what it does, and its state or action.
+function IntegrationRow({
+  logo,
+  name,
+  description,
+  action,
+}: {
+  logo: string
+  name: string
+  description: string
+  action: React.ReactNode
+}) {
+  return (
+    <Item variant="outline">
+      <ItemMedia>
+        <Image
+          src={logo}
+          alt=""
+          width={40}
+          height={40}
+          unoptimized
+          className="size-10 object-contain"
+        />
+      </ItemMedia>
+      <ItemContent>
+        <ItemTitle>{name}</ItemTitle>
+        <ItemDescription>{description}</ItemDescription>
+      </ItemContent>
+      <ItemActions>{action}</ItemActions>
+    </Item>
   )
 }
 
