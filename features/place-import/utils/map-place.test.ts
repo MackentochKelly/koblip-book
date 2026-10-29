@@ -1,6 +1,6 @@
 import { expect, test } from "vitest"
 import type { GooglePlace } from "../api/fetch-place"
-import { mapPlace, slugify, uniqueSlug } from "./map-place"
+import { mapPlace, slugBase, slugify, uniqueSlug } from "./map-place"
 
 function place(overrides: Partial<GooglePlace> = {}): GooglePlace {
   return {
@@ -127,6 +127,13 @@ test("builds slugs and appends -2, -3 when taken", () => {
     "barbarock-barbershop-churchill"
   )
   expect(slugify("Peliquería ¡Hola!")).toBe("peliqueria-hola")
+
+  // No Latin letters or digits: the business type, then "business".
+  expect(slugBase("東京理容", "Barber shop")).toBe("barber-shop")
+  expect(slugBase("Салон Красоты", "Beauty salon")).toBe("beauty-salon")
+  expect(slugBase("", null)).toBe("business")
+  expect(slugBase("東京理容", "東京")).toBe("business")
+  expect(slugBase("Barbarock", "Barber shop")).toBe("barbarock")
 
   const taken = new Set(["shop", "shop-2"])
   expect(uniqueSlug("barbershop", () => false)).toBe("barbershop")

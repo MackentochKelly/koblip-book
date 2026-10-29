@@ -1,5 +1,18 @@
 // @vitest-environment node
-import { expect, test, vi } from "vitest"
+import { mkdtempSync, rmSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  expect,
+  test,
+  vi,
+} from "vitest"
+import { customerKey } from "@/lib/customer-key"
+import { bookings, businesses, user } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
 vi.mock("next/navigation", () => ({ notFound: vi.fn() }))
@@ -11,11 +24,77 @@ vi.mock("@/lib/dal", () => ({
   })),
 }))
 
-const { buildCustomers, customerKey } = await import("./customers")
+const { getCustomerBookings, getCustomers } = await import("./customers")
 
-const TZ = "America/Santo_Domingo"
-// Monday 2026-06-01 08:00 local.
+// Monday 2026-06-01 08:00 in Santo Domingo.
 const NOW = Date.UTC(2026, 5, 1, 12, 0)
+
+let dir: string
+let closeDb: () => void
+let count = 0
+
+async function book(
+  customerName: string,
+  customerPhone: string | null,
+  status: string,
+  startAt: string,
+  priceMinor: number | null = 1000
+) {
+  const { db } = await import("@/lib/db")
+  count += 1
+  await db.insert(bookings).values({
+    id: `bk-${count}`,
+    businessId: "b1",
+    serviceName: "Cut",
+    durationMinutes: 30,
+    priceMinor,
+    currency: "DOP",
+    startAt,
+    endAt: startAt,
+    customerName,
+    customerPhone,
+    customerKey: customerKey(customerPhone, customerName),
+    status,
+  })
+}
+
+beforeAll(async () => {
+  dir = mkdtempSync(join(tmpdir(), "koblip-customers-test-"))
+  process.env.DATABASE_URL = `file:${join(dir, "test.db")}`
+  const { migrate } = await import("drizzle-orm/libsql/migrator")
+  const { db } = await import("@/lib/db")
+  await migrate(db, { migrationsFolder: "drizzle" })
+  closeDb = () => db.$client.close()
+  await db.insert(user).values({
+    id: "u1",
+    name: "Owner",
+    email: "owner@example.com",
+    emailVerified: true,
+  })
+  await db.insert(businesses).values({
+    id: "b1",
+    slug: "b1",
+    name: "Shop",
+    timezone: "America/Santo_Domingo",
+    currency: "DOP",
+    ownerId: "u1",
+  })
+})
+
+beforeEach(() => {
+  vi.spyOn(Date, "now").mockReturnValue(NOW)
+})
+
+afterEach(async () => {
+  vi.restoreAllMocks()
+  const { db } = await import("@/lib/db")
+  await db.delete(bookings)
+})
+
+afterAll(() => {
+  closeDb()
+  rmSync(dir, { recursive: true, force: true })
+})
 
 test("customerKey ignores phone formatting", () => {
   expect(customerKey("+1 (555) 010-0000", "Luis")).toBe(
@@ -30,61 +109,51 @@ test("customerKey falls back to the normalized name", () => {
   expect(customerKey(null, "ANA")).toBe("n:ana")
 })
 
-test("buildCustomers counts, totals and dates per customer", () => {
-  const customers = buildCustomers(
-    [
-      {
-        customerName: "Luis",
-        customerPhone: "+1 (555) 010-0000",
-        status: "completed",
-        startAt: "2020-03-01T14:00:00.000Z",
-        priceMinor: 1000,
-      },
-      {
-        customerName: "Luis P",
-        customerPhone: "15550100000",
-        status: "completed",
-        startAt: "2020-06-01T14:00:00.000Z",
-        priceMinor: 2000,
-      },
-      {
-        customerName: "Luis P",
-        customerPhone: "15550100000",
-        status: "no_show",
-        startAt: "2020-07-01T14:00:00.000Z",
-        priceMinor: 2000,
-      },
-      {
-        customerName: "Luis P",
-        customerPhone: "+15550100000",
-        status: "cancelled",
-        startAt: "2020-08-01T14:00:00.000Z",
-        priceMinor: 2000,
-      },
-      {
-        customerName: "Luis P",
-        customerPhone: "+15550100000",
-        status: "confirmed",
-        startAt: "2099-06-01T14:00:00.000Z",
-        priceMinor: 5000,
-      },
-      {
-        customerName: "Ana",
-        customerPhone: null,
-        status: "completed",
-        startAt: "2020-05-01T14:00:00.000Z",
-        priceMinor: null,
-      },
-    ],
-    NOW,
-    TZ,
-    "DOP"
+test("counts, totals and dates per customer", async () => {
+  await book(
+    "Luis",
+    "+1 (555) 010-0000",
+    "completed",
+    "2020-03-01T14:00:00.000Z",
+    1000
   )
+  await book(
+    "Luis P",
+    "15550100000",
+    "completed",
+    "2020-06-01T14:00:00.000Z",
+    2000
+  )
+  await book(
+    "Luis P",
+    "15550100000",
+    "no_show",
+    "2020-07-01T14:00:00.000Z",
+    2000
+  )
+  await book(
+    "Luis P",
+    "+15550100000",
+    "cancelled",
+    "2020-08-01T14:00:00.000Z",
+    2000
+  )
+  await book(
+    "Luis P",
+    "+15550100000",
+    "confirmed",
+    "2099-06-01T14:00:00.000Z",
+    5000
+  )
+  await book("Ana", null, "completed", "2020-05-01T14:00:00.000Z", null)
+
+  const customers = await getCustomers("b1")
+
   expect(customers).toHaveLength(2)
   const [luis, ana] = customers
   // Next booking first.
-  expect(luis.key).toBe("p:15550100000")
-  expect(luis).toMatchObject({
+  expect(luis).toEqual({
+    key: "p:15550100000",
     name: "Luis P",
     phone: "+15550100000",
     bookings: 5,
@@ -92,11 +161,12 @@ test("buildCustomers counts, totals and dates per customer", () => {
     noShows: 1,
     cancelled: 1,
     lastVisit: "2020-06-01",
+    firstBooking: "2020-03-01",
     nextBooking: "2099-06-01",
     spentMinor: 3000,
     currency: "DOP",
   })
-  expect(ana).toMatchObject({
+  expect(ana).toEqual({
     key: "n:ana",
     name: "Ana",
     phone: null,
@@ -105,64 +175,76 @@ test("buildCustomers counts, totals and dates per customer", () => {
     noShows: 0,
     cancelled: 0,
     lastVisit: "2020-05-01",
+    firstBooking: "2020-05-01",
     nextBooking: null,
     spentMinor: 0,
+    currency: "DOP",
   })
 })
 
-test("buildCustomers sets firstBooking to the earliest booking of any status", () => {
-  const customers = buildCustomers(
-    [
-      {
-        customerName: "Luis",
-        customerPhone: "+15550100000",
-        status: "cancelled",
-        startAt: "2020-01-15T14:00:00.000Z",
-        priceMinor: 1000,
-      },
-      {
-        customerName: "Luis",
-        customerPhone: "+15550100000",
-        status: "completed",
-        startAt: "2020-06-01T14:00:00.000Z",
-        priceMinor: 2000,
-      },
-    ],
-    NOW,
-    TZ,
-    "DOP"
-  )
+test("firstBooking is the earliest booking of any status", async () => {
+  await book("Luis", "+15550100000", "cancelled", "2020-01-15T14:00:00.000Z")
+  await book("Luis", "+15550100000", "completed", "2020-06-01T14:00:00.000Z")
+
+  const customers = await getCustomers("b1")
+
   expect(customers).toHaveLength(1)
   expect(customers[0].firstBooking).toBe("2020-01-15")
   expect(customers[0].lastVisit).toBe("2020-06-01")
 })
 
-test("customers without a next booking order by latest activity", () => {
-  const customers = buildCustomers(
-    [
-      {
-        customerName: "Old",
-        customerPhone: null,
-        status: "completed",
-        startAt: "2020-01-01T14:00:00.000Z",
-        priceMinor: 100,
-      },
-      {
-        customerName: "New",
-        customerPhone: null,
-        status: "cancelled",
-        startAt: "2021-01-01T14:00:00.000Z",
-        priceMinor: 100,
-      },
-    ],
-    NOW,
-    TZ,
-    "DOP"
-  )
-  expect(customers.map((customer) => customer.key)).toEqual([
-    "n:new",
-    "n:old",
-  ])
+test("a booking that already started is not the next one", async () => {
+  await book("Luis", "+15550100000", "confirmed", "2026-06-01T11:00:00.000Z")
+
+  const [luis] = await getCustomers("b1")
+
+  expect(luis.nextBooking).toBeNull()
+})
+
+test("customers without a next booking order by latest activity", async () => {
+  await book("Old", null, "completed", "2020-01-01T14:00:00.000Z", 100)
+  await book("New", null, "cancelled", "2021-01-01T14:00:00.000Z", 100)
+
+  const customers = await getCustomers("b1")
+
+  expect(customers.map((customer) => customer.key)).toEqual(["n:new", "n:old"])
   expect(customers[0].lastVisit).toBeNull()
   expect(customers[1].lastVisit).toBe("2020-01-01")
+})
+
+test("at most 500 customers", async () => {
+  const { db } = await import("@/lib/db")
+  await db.insert(bookings).values(
+    Array.from({ length: 501 }, (_, i) => ({
+      id: `many-${i}`,
+      businessId: "b1",
+      serviceName: "Cut",
+      durationMinutes: 30,
+      currency: "DOP",
+      startAt: "2020-01-01T14:00:00.000Z",
+      endAt: "2020-01-01T14:30:00.000Z",
+      customerName: `Person ${i}`,
+      customerKey: customerKey(null, `Person ${i}`),
+    }))
+  )
+
+  expect(await getCustomers("b1")).toHaveLength(500)
+})
+
+test("one customer's bookings, newest first, no one else's", async () => {
+  await book("Luis", "+15550100000", "completed", "2020-03-01T14:00:00.000Z")
+  await book("Ana", null, "completed", "2020-04-01T14:00:00.000Z")
+  await book(
+    "Luis P",
+    "1 555 010 0000",
+    "confirmed",
+    "2099-06-01T14:00:00.000Z"
+  )
+
+  const list = await getCustomerBookings("b1", "p:15550100000")
+
+  expect(list.map((booking) => booking.startAt)).toEqual([
+    "2099-06-01T14:00:00.000Z",
+    "2020-03-01T14:00:00.000Z",
+  ])
 })

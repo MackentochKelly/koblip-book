@@ -1,19 +1,12 @@
 import "server-only"
 
-import { asc, desc, eq, inArray } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm"
 import { notFound } from "next/navigation"
+import { customerKey } from "@/lib/customer-key"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { bookingAddons, bookings, businesses } from "@/lib/db/schema"
 import type { OwnerBooking, OwnerCustomer } from "../types"
-
-export function customerKey(phone: string | null, name: string): string {
-  const digits = (phone ?? "").replace(/\D/g, "")
-  if (digits.length > 0) {
-    return `p:${digits}`
-  }
-  return `n:${name.trim().toLowerCase().replace(/\s+/g, " ")}`
-}
 
 function zonedDateTime(
   iso: string,
@@ -100,98 +93,6 @@ export async function getBookingAddons(
   return byBooking
 }
 
-export interface CustomerBookingRow {
-  customerName: string
-  customerPhone: string | null
-  status: string
-  startAt: string
-  priceMinor: number | null
-}
-
-// Pure aggregation so the counting can be tested without the database.
-export function buildCustomers(
-  rows: CustomerBookingRow[],
-  nowMs: number,
-  timeZone: string,
-  currency: string
-): OwnerCustomer[] {
-  const groups = new Map<string, CustomerBookingRow[]>()
-  for (const row of rows) {
-    const key = customerKey(row.customerPhone, row.customerName)
-    const list = groups.get(key)
-    if (list) {
-      list.push(row)
-    } else {
-      groups.set(key, [row])
-    }
-  }
-  const withActivity = [...groups].map(([key, list]) => {
-    const byStartDesc = [...list].sort((a, b) =>
-      a.startAt < b.startAt ? 1 : a.startAt > b.startAt ? -1 : 0
-    )
-    const latest = byStartDesc[0]
-    const completedRows = list.filter((row) => row.status === "completed")
-    const latestCompleted = [...completedRows].sort((a, b) =>
-      a.startAt < b.startAt ? 1 : a.startAt > b.startAt ? -1 : 0
-    )[0]
-    const earliest = [...list].sort((a, b) =>
-      a.startAt < b.startAt ? -1 : a.startAt > b.startAt ? 1 : 0
-    )[0]
-    const next = list
-      .filter(
-        (row) => row.status === "confirmed" && Date.parse(row.startAt) > nowMs
-      )
-      .sort((a, b) =>
-        a.startAt < b.startAt ? -1 : a.startAt > b.startAt ? 1 : 0
-      )[0]
-    const customer: OwnerCustomer = {
-      key,
-      name: latest.customerName,
-      phone: latest.customerPhone,
-      bookings: list.length,
-      completed: completedRows.length,
-      noShows: list.filter((row) => row.status === "no_show").length,
-      cancelled: list.filter((row) => row.status === "cancelled").length,
-      lastVisit: latestCompleted
-        ? zonedDateTime(latestCompleted.startAt, timeZone).date
-        : null,
-      firstBooking: earliest
-        ? zonedDateTime(earliest.startAt, timeZone).date
-        : null,
-      nextBooking: next
-        ? zonedDateTime(next.startAt, timeZone).date
-        : null,
-      spentMinor: completedRows.reduce(
-        (sum, row) => sum + (row.priceMinor ?? 0),
-        0
-      ),
-      currency,
-    }
-    return {
-      customer,
-      nextStart: next ? next.startAt : null,
-      lastActivity: latest.startAt,
-    }
-  })
-  // Next booking first (soonest), then latest activity.
-  withActivity.sort((a, b) => {
-    if (a.nextStart !== null && b.nextStart !== null) {
-      if (a.nextStart !== b.nextStart) {
-        return a.nextStart < b.nextStart ? -1 : 1
-      }
-    } else if (a.nextStart !== null) {
-      return -1
-    } else if (b.nextStart !== null) {
-      return 1
-    }
-    if (a.lastActivity === b.lastActivity) {
-      return 0
-    }
-    return a.lastActivity < b.lastActivity ? 1 : -1
-  })
-  return withActivity.slice(0, 500).map((entry) => entry.customer)
-}
-
 async function ownedBusinessOrNotFound(businessId: string) {
   const session = await requireOwner()
   const [business] = await db
@@ -205,35 +106,112 @@ async function ownedBusinessOrNotFound(businessId: string) {
   return business
 }
 
+const MAX_CUSTOMERS = 500
+const MAX_CUSTOMER_BOOKINGS = 100
+
+// Up to 500 customers, counted by the database (one row per customer, not
+// per booking): those with a next booking first (soonest), then by latest
+// activity. Name and phone come from each customer's latest booking.
 export async function getCustomers(
   businessId: string
 ): Promise<OwnerCustomer[]> {
   const business = await ownedBusinessOrNotFound(businessId)
-  const rows = await db
-    .select()
+  const now = new Date(Date.now()).toISOString()
+  const startAt = bookings.startAt
+  const status = bookings.status
+  const nextStart = sql<
+    string | null
+  >`min(case when ${status} = 'confirmed' and ${startAt} > ${now} then ${startAt} end)`
+  const lastActivity = sql<string>`max(${startAt})`
+  const groups = await db
+    .select({
+      key: sql<string>`${bookings.customerKey}`,
+      bookings: sql<number>`count(*)`,
+      completed: sql<number>`sum(${status} = 'completed')`,
+      noShows: sql<number>`sum(${status} = 'no_show')`,
+      cancelled: sql<number>`sum(${status} = 'cancelled')`,
+      lastCompleted: sql<
+        string | null
+      >`max(case when ${status} = 'completed' then ${startAt} end)`,
+      firstStart: sql<string>`min(${startAt})`,
+      nextStart,
+      spentMinor: sql<number>`coalesce(sum(case when ${status} = 'completed' then ${bookings.priceMinor} end), 0)`,
+    })
     .from(bookings)
-    .where(eq(bookings.businessId, business.id))
-  return buildCustomers(rows, Date.now(), business.timezone, business.currency)
+    .where(
+      and(eq(bookings.businessId, business.id), isNotNull(bookings.customerKey))
+    )
+    .groupBy(bookings.customerKey)
+    .orderBy(
+      sql`${nextStart} is null`,
+      nextStart,
+      desc(lastActivity),
+      bookings.customerKey
+    )
+    .limit(MAX_CUSTOMERS)
+  if (groups.length === 0) {
+    return []
+  }
+
+  const ranked = db
+    .select({
+      key: bookings.customerKey,
+      name: bookings.customerName,
+      phone: bookings.customerPhone,
+      rank: sql<number>`row_number() over (partition by ${bookings.customerKey} order by ${startAt} desc)`.as(
+        "rank"
+      ),
+    })
+    .from(bookings)
+    .where(
+      and(
+        eq(bookings.businessId, business.id),
+        inArray(
+          bookings.customerKey,
+          groups.map((group) => group.key)
+        )
+      )
+    )
+    .as("ranked")
+  const latestRows = await db
+    .select({ key: ranked.key, name: ranked.name, phone: ranked.phone })
+    .from(ranked)
+    .where(eq(ranked.rank, 1))
+  const latest = new Map(latestRows.map((row) => [row.key, row]))
+
+  const day = (iso: string | null) =>
+    iso === null ? null : zonedDateTime(iso, business.timezone).date
+  return groups.map((group) => ({
+    key: group.key,
+    name: latest.get(group.key)?.name ?? "",
+    phone: latest.get(group.key)?.phone ?? null,
+    bookings: group.bookings,
+    completed: group.completed,
+    noShows: group.noShows,
+    cancelled: group.cancelled,
+    lastVisit: day(group.lastCompleted),
+    firstBooking: day(group.firstStart),
+    nextBooking: day(group.nextStart),
+    spentMinor: group.spentMinor,
+    currency: business.currency,
+  }))
 }
 
+// One customer's latest 100 bookings, newest first.
 export async function getCustomerBookings(
   businessId: string,
   key: string
 ): Promise<OwnerBooking[]> {
   const business = await ownedBusinessOrNotFound(businessId)
-  const rows = await db
+  const listed = await db
     .select()
     .from(bookings)
-    .where(eq(bookings.businessId, business.id))
-    .orderBy(desc(bookings.startAt))
-  const listed = rows
-    .filter(
-      (row) => customerKey(row.customerPhone, row.customerName) === key
+    .where(
+      and(eq(bookings.businessId, business.id), eq(bookings.customerKey, key))
     )
-    .slice(0, 100)
-  const addonsByBooking = await getBookingAddons(
-    listed.map((row) => row.id)
-  )
+    .orderBy(desc(bookings.startAt))
+    .limit(MAX_CUSTOMER_BOOKINGS)
+  const addonsByBooking = await getBookingAddons(listed.map((row) => row.id))
   return listed.map((row) =>
     toOwnerBooking(row, business.timezone, addonsByBooking.get(row.id) ?? [])
   )

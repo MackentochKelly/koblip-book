@@ -76,14 +76,15 @@ export function DetailsForm({
         phone: phone.trim() || null,
         website: website.trim() || null,
         seats: seatsValue,
-      })
-      if (result.ok && next) {
+      }).catch(() => null)
+      if (result?.ok && next) {
         router.push(next)
-      } else if (result.ok) {
+      } else if (result?.ok) {
         toast.success(m.settings.saved)
         router.refresh()
       } else {
-        toast.error(t.saveFailed)
+        // No answer at all (offline, server down) is not the fields' fault.
+        toast.error(result ? t.saveFailed : m.settings.tryAgain)
       }
     })
   }

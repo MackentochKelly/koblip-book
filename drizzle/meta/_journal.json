@@ -64,6 +64,13 @@
       "when": 1793221419116,
       "tag": "0008_skinny_leper_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1793285979222,
+      "tag": "0009_customer_key",
+      "breakpoints": true
     }
   ]
 }

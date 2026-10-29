@@ -14,7 +14,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "import:place": "tsx --conditions=react-server scripts/import-place.ts",
-    "about:write": "tsx --conditions=react-server scripts/write-about.ts"
+    "about:write": "tsx --conditions=react-server scripts/write-about.ts",
+    "customers:backfill": "tsx --conditions=react-server scripts/backfill-customer-keys.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

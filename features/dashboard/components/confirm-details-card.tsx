@@ -40,8 +40,8 @@ export function ConfirmDetailsCard({
 
   const confirm = () =>
     startTransition(async () => {
-      const result = await confirmBusinessDetails(businessId)
-      if (result.ok) {
+      const result = await confirmBusinessDetails(businessId).catch(() => null)
+      if (result?.ok) {
         toast.success(t.confirmed)
         router.refresh()
       } else {

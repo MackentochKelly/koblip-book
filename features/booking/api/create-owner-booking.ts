@@ -2,9 +2,11 @@
 
 import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { customerKey } from "@/lib/customer-key"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
+import { saveAll } from "@/lib/db/save-all"
 import {
   bookingAddons,
   bookings,
@@ -21,6 +23,7 @@ import type {
 import { availability, dayOpenStretches } from "../utils/availability"
 import { checkAddons } from "../utils/addons"
 import { loadGroupsForService } from "./addon-groups"
+import { inBookingTurn } from "./booking-turn"
 import {
   allowedServiceMemberIds,
   firstFreeMember,
@@ -159,14 +162,14 @@ export async function createOwnerBooking(
     )
     const endInstant = startInstant + totalMinutes * 60_000
 
-    const outcome = await db.transaction(async (tx) => {
+    const outcome = await inBookingTurn(business.id, async () => {
       const dayStart = zonedInstant(input.date, 0, business.timezone)
       const dayEnd = zonedInstant(
         addDays(input.date, 1),
         0,
         business.timezone
       )
-      const taken = await tx
+      const taken = await db
         .select()
         .from(bookings)
         .where(
@@ -226,37 +229,42 @@ export async function createOwnerBooking(
       }
 
       const bookingId = crypto.randomUUID()
-      await tx.insert(bookings).values({
-        id: bookingId,
-        businessId: business.id,
-        serviceId: service.id,
-        teamMemberId,
-        serviceName: service.name,
-        teamMemberName,
-        durationMinutes: totalMinutes,
-        priceMinor: totalPrice,
-        currency: business.currency,
-        startAt: new Date(startInstant).toISOString(),
-        endAt: new Date(endInstant).toISOString(),
-        customerName: name,
-        customerPhone: phone,
-        source: "owner",
-        status: "confirmed",
-        note,
-      })
-      if (addonCheck.options.length > 0) {
-        await tx.insert(bookingAddons).values(
-          addonCheck.options.map((option, index) => ({
-            businessId: business.id,
-            bookingId,
-            optionId: option.id,
-            name: option.name,
-            priceMinor: option.priceMinor,
-            durationMinutes: option.durationMinutes,
-            position: index,
-          }))
-        )
-      }
+      await saveAll([
+        db.insert(bookings).values({
+          id: bookingId,
+          businessId: business.id,
+          serviceId: service.id,
+          teamMemberId,
+          serviceName: service.name,
+          teamMemberName,
+          durationMinutes: totalMinutes,
+          priceMinor: totalPrice,
+          currency: business.currency,
+          startAt: new Date(startInstant).toISOString(),
+          endAt: new Date(endInstant).toISOString(),
+          customerName: name,
+          customerPhone: phone,
+          customerKey: customerKey(phone, name),
+          source: "owner",
+          status: "confirmed",
+          note,
+        }),
+        ...(addonCheck.options.length > 0
+          ? [
+              db.insert(bookingAddons).values(
+                addonCheck.options.map((option, index) => ({
+                  businessId: business.id,
+                  bookingId,
+                  optionId: option.id,
+                  name: option.name,
+                  priceMinor: option.priceMinor,
+                  durationMinutes: option.durationMinutes,
+                  position: index,
+                }))
+              ),
+            ]
+          : []),
+      ])
       return { status: "booked", bookingId } as const
     })
 

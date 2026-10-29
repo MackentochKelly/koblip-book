@@ -2,6 +2,7 @@ import "server-only"
 
 import { and, inArray, isNull, lt } from "drizzle-orm"
 import { db } from "@/lib/db"
+import { saveAll } from "@/lib/db/save-all"
 import { businessHours, businesses } from "@/lib/db/schema"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 
@@ -29,12 +30,10 @@ export async function purgeUnclaimedImports(
       return
     }
     const ids = stale.map((row) => row.id)
-    await db.transaction(async (tx) => {
-      await tx
-        .delete(businessHours)
-        .where(inArray(businessHours.businessId, ids))
-      await tx.delete(businesses).where(inArray(businesses.id, ids))
-    })
+    await saveAll([
+      db.delete(businessHours).where(inArray(businessHours.businessId, ids)),
+      db.delete(businesses).where(inArray(businesses.id, ids)),
+    ])
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
   }

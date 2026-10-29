@@ -21,6 +21,17 @@ const eslintConfig = defineConfig([
           })),
         },
       ],
+      // An open db.transaction() keeps the write lock while other code runs,
+      // so every other save at that moment fails (see lib/db/save-all.ts).
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "db",
+          property: "transaction",
+          message:
+            "Use saveAll from '@/lib/db/save-all'; to check and then save, wrap it in runInTurn from '@/lib/run-in-turn'.",
+        },
+      ],
       // Each new feature adds its own zone:
       // { target: "./features/<name>", from: "./features", except: ["./<name>"] }
       "import/no-restricted-paths": [

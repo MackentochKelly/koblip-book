@@ -5,8 +5,8 @@
 // a dash in the name brings the contact suggestions back).
 // (bytes.grubhub.com/disabling-safari-autofill-for-a-single-line-address-input-b83137b5b1c7,
 // developer.apple.com/forums/thread/764041)
-// Spread on every typing box. Passwords keep their own autoComplete, so
-// saved passwords still work.
+// Spread on every typing box. Passwords and the login email keep their
+// own autoComplete, so password managers still fill them.
 export function noAutofill(field: string) {
   return { name: `search_${field}`, autoComplete: "off" } as const
 }

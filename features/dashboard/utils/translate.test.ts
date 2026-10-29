@@ -117,6 +117,22 @@ test("calls once per batch of at most 40 items", async () => {
   expect(got.size).toBe(41)
 })
 
+test("keeps the batches that worked when a later one fails", async () => {
+  fresh()
+  const items = Array.from({ length: 41 }, (_, i) => ({
+    id: translationId(`svc-${i}`, "service.name"),
+    text: `Service ${i}`,
+  }))
+  createMock
+    .mockResolvedValueOnce(
+      reply(items.slice(0, 40).map((item) => ({ id: item.id, text: "ES" })))
+    )
+    .mockRejectedValueOnce(new Error("boom"))
+  const got = await translateTexts(items)
+  expect(got.size).toBe(40)
+  expect(got.has(items[40].id)).toBe(false)
+})
+
 test("collectTranslatableTexts counts About, names and descriptions", () => {
   const all = collectTranslatableTexts(
     "biz-1",

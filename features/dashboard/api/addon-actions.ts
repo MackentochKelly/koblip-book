@@ -3,6 +3,7 @@
 import { and, eq } from "drizzle-orm"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
+import { saveAll } from "@/lib/db/save-all"
 import { getMetaAiClient, isMetaAiEnabled, META_TEXT_MODEL } from "@/lib/meta-ai"
 import { isPageLanguage, type PageLanguage } from "@/lib/page-language"
 import {
@@ -182,8 +183,8 @@ export async function createAddonGroup(
     return invalid()
   }
   const groupId = crypto.randomUUID()
-  await db.transaction(async (tx) => {
-    await tx.insert(addonGroups).values({
+  await saveAll([
+    db.insert(addonGroups).values({
       id: groupId,
       businessId: owned.business.id,
       name: normalized.name,
@@ -191,8 +192,8 @@ export async function createAddonGroup(
       minSelect: normalized.minSelect,
       maxSelect: normalized.maxSelect,
       position: existing.length,
-    })
-    await tx.insert(addonOptions).values(
+    }),
+    db.insert(addonOptions).values(
       normalized.options.map((option, index) => ({
         id: crypto.randomUUID(),
         businessId: owned.business.id,
@@ -203,18 +204,20 @@ export async function createAddonGroup(
         durationMinutes: option.durationMinutes,
         position: index,
       }))
-    )
-    if (normalized.serviceIds.length > 0) {
-      await tx.insert(serviceAddonGroups).values(
-        normalized.serviceIds.map((serviceId, index) => ({
-          businessId: owned.business.id,
-          serviceId,
-          groupId,
-          position: index,
-        }))
-      )
-    }
-  })
+    ),
+    ...(normalized.serviceIds.length > 0
+      ? [
+          db.insert(serviceAddonGroups).values(
+            normalized.serviceIds.map((serviceId, index) => ({
+              businessId: owned.business.id,
+              serviceId,
+              groupId,
+              position: index,
+            }))
+          ),
+        ]
+      : []),
+  ])
   revalidateBusiness(owned.business.slug)
   return { ok: true, groupId }
 }
@@ -263,8 +266,8 @@ export async function updateAddonGroup(
       seen.add(option.id)
     }
   }
-  await db.transaction(async (tx) => {
-    await tx
+  await saveAll([
+    db
       .update(addonGroups)
       .set({
         name: normalized.name,
@@ -272,51 +275,49 @@ export async function updateAddonGroup(
         minSelect: normalized.minSelect,
         maxSelect: normalized.maxSelect,
       })
-      .where(eq(addonGroups.id, group.id))
-    for (const [index, option] of normalized.options.entries()) {
-      if (option.id !== null) {
-        await tx
-          .update(addonOptions)
-          .set({
+      .where(eq(addonGroups.id, group.id)),
+    ...normalized.options.map((option, index) =>
+      option.id !== null
+        ? db
+            .update(addonOptions)
+            .set({
+              name: option.name,
+              description: option.description,
+              priceMinor: option.priceMinor,
+              durationMinutes: option.durationMinutes,
+              position: index,
+            })
+            .where(eq(addonOptions.id, option.id))
+        : db.insert(addonOptions).values({
+            id: crypto.randomUUID(),
+            businessId: owned.business.id,
+            groupId: group.id,
             name: option.name,
             description: option.description,
             priceMinor: option.priceMinor,
             durationMinutes: option.durationMinutes,
             position: index,
           })
-          .where(eq(addonOptions.id, option.id))
-      } else {
-        await tx.insert(addonOptions).values({
-          id: crypto.randomUUID(),
-          businessId: owned.business.id,
-          groupId: group.id,
-          name: option.name,
-          description: option.description,
-          priceMinor: option.priceMinor,
-          durationMinutes: option.durationMinutes,
-          position: index,
-        })
-      }
-    }
-    for (const row of currentOptions) {
-      if (!seen.has(row.id)) {
-        await tx.delete(addonOptions).where(eq(addonOptions.id, row.id))
-      }
-    }
-    await tx
+    ),
+    ...currentOptions
+      .filter((row) => !seen.has(row.id))
+      .map((row) => db.delete(addonOptions).where(eq(addonOptions.id, row.id))),
+    db
       .delete(serviceAddonGroups)
-      .where(eq(serviceAddonGroups.groupId, group.id))
-    if (normalized.serviceIds.length > 0) {
-      await tx.insert(serviceAddonGroups).values(
-        normalized.serviceIds.map((serviceId, index) => ({
-          businessId: owned.business.id,
-          serviceId,
-          groupId: group.id,
-          position: index,
-        }))
-      )
-    }
-  })
+      .where(eq(serviceAddonGroups.groupId, group.id)),
+    ...(normalized.serviceIds.length > 0
+      ? [
+          db.insert(serviceAddonGroups).values(
+            normalized.serviceIds.map((serviceId, index) => ({
+              businessId: owned.business.id,
+              serviceId,
+              groupId: group.id,
+              position: index,
+            }))
+          ),
+        ]
+      : []),
+  ])
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }
@@ -342,9 +343,7 @@ export async function deleteAddonGroup(
   if (!group) {
     return { ok: false, error: "not_found" }
   }
-  await db.transaction(async (tx) => {
-    await tx.delete(addonGroups).where(eq(addonGroups.id, group.id))
-  })
+  await db.delete(addonGroups).where(eq(addonGroups.id, group.id))
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }
@@ -370,14 +369,11 @@ export async function reorderAddonGroups(
   ) {
     return invalid()
   }
-  await db.transaction(async (tx) => {
-    for (const [position, id] of groupIds.entries()) {
-      await tx
-        .update(addonGroups)
-        .set({ position })
-        .where(eq(addonGroups.id, id))
-    }
-  })
+  await saveAll(
+    groupIds.map((id, position) =>
+      db.update(addonGroups).set({ position }).where(eq(addonGroups.id, id))
+    )
+  )
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }

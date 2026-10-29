@@ -4,6 +4,7 @@ import { and, asc, eq } from "drizzle-orm"
 import { deletePhoto, savePhoto } from "@/lib/uploads"
 import { UPLOAD_RULES } from "@/lib/upload-rules"
 import { db } from "@/lib/db"
+import { saveAll } from "@/lib/db/save-all"
 import {
   businessPhotos,
   services,
@@ -103,14 +104,14 @@ export async function reorderBusinessPhotos(
   ) {
     return { ok: false, error: "not_found" }
   }
-  await db.transaction(async (tx) => {
-    for (const [position, id] of photoIds.entries()) {
-      await tx
+  await saveAll(
+    photoIds.map((id, position) =>
+      db
         .update(businessPhotos)
         .set({ position })
         .where(eq(businessPhotos.id, id))
-    }
-  })
+    )
+  )
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }

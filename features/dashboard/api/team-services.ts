@@ -2,6 +2,7 @@
 
 import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
+import { saveAll } from "@/lib/db/save-all"
 import {
   services,
   teamMembers,
@@ -44,20 +45,22 @@ export async function setServiceTeam(
   if (!planned.ok) {
     return planned
   }
-  await db.transaction(async (tx) => {
-    await tx
+  await saveAll([
+    db
       .delete(teamMemberServices)
-      .where(eq(teamMemberServices.serviceId, service.id))
-    if (planned.rows.length > 0) {
-      await tx.insert(teamMemberServices).values(
-        planned.rows.map((teamMemberId) => ({
-          businessId: owned.business.id,
-          teamMemberId,
-          serviceId: service.id,
-        }))
-      )
-    }
-  })
+      .where(eq(teamMemberServices.serviceId, service.id)),
+    ...(planned.rows.length > 0
+      ? [
+          db.insert(teamMemberServices).values(
+            planned.rows.map((teamMemberId) => ({
+              businessId: owned.business.id,
+              teamMemberId,
+              serviceId: service.id,
+            }))
+          ),
+        ]
+      : []),
+  ])
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }
@@ -105,21 +108,21 @@ export async function setMemberServices(
     return planned
   }
   const entries = Object.entries(planned.rows)
-  await db.transaction(async (tx) => {
-    await tx
+  const values = entries.flatMap(([serviceId, memberIds]) =>
+    memberIds.map((id) => ({
+      businessId: owned.business.id,
+      teamMemberId: id,
+      serviceId,
+    }))
+  )
+  await saveAll([
+    db
       .delete(teamMemberServices)
-      .where(eq(teamMemberServices.businessId, owned.business.id))
-    const values = entries.flatMap(([serviceId, memberIds]) =>
-      memberIds.map((id) => ({
-        businessId: owned.business.id,
-        teamMemberId: id,
-        serviceId,
-      }))
-    )
-    if (values.length > 0) {
-      await tx.insert(teamMemberServices).values(values)
-    }
-  })
+      .where(eq(teamMemberServices.businessId, owned.business.id)),
+    ...(values.length > 0
+      ? [db.insert(teamMemberServices).values(values)]
+      : []),
+  ])
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }

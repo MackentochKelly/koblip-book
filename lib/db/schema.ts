@@ -231,12 +231,23 @@ export const bookings = sqliteTable(
     endAt: text().notNull(),
     customerName: text().notNull(),
     customerPhone: text(),
+    // customerKey(customerPhone, customerName) from lib/customer-key.ts,
+    // set on every new booking. Null only on bookings made before it
+    // existed, until `npm run customers:backfill` fills them.
+    customerKey: text(),
     source: text().notNull().default("online"),
     note: text(),
     status: text().notNull().default("confirmed"),
     ...timestamps(),
   },
-  (table) => [index("bookings_business_idx").on(table.businessId, table.startAt)]
+  (table) => [
+    index("bookings_business_idx").on(table.businessId, table.startAt),
+    index("bookings_customer_idx").on(
+      table.businessId,
+      table.customerKey,
+      table.startAt
+    ),
+  ]
 )
 
 // a service with NO rows here is done by everyone on the team; a service with rows is done only by those members.

@@ -77,17 +77,23 @@ export function AuthForm({
       setError(t.errors.password)
       return
     }
-    const { error: failed } =
+    // Null when the server could not be reached.
+    const result = await (
       step === "create"
-        ? await authClient.signUp.email({
+        ? authClient.signUp.email({
             name: name.trim(),
             email: email.trim(),
             password,
             // The link in the sign-up email opens this page, signed in.
             callbackURL: next,
           })
-        : await authClient.signIn.email({ email: email.trim(), password })
-    if (failed) {
+        : authClient.signIn.email({ email: email.trim(), password })
+    ).catch(() => null)
+    if (!result) {
+      setError(t.errors.signUp)
+      return
+    }
+    if (result.error) {
       setError(step === "create" ? t.errors.signUp : t.errors.wrongPassword)
       return
     }
@@ -135,9 +141,12 @@ export function AuthForm({
         )}
         <Field data-invalid={(step === "email" && Boolean(error)) || undefined}>
           <FieldLabel htmlFor="auth-email">{t.email}</FieldLabel>
+          {/* The account's username: password managers fill it with the
+              saved password, so it keeps autofill (not noAutofill). */}
           <Input
-            {...noAutofill("auth_email")}
             id="auth-email"
+            name="email"
+            autoComplete="username"
             type="email"
             inputMode="email"
             value={email}

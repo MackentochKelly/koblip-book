@@ -46,8 +46,9 @@ async function toPrepared(slug: string): Promise<PreparedBusiness> {
   }
 }
 
-// Imports the picked place (creating or refreshing the business row, no
-// login needed) and returns what the login page shows for it.
+// Imports the picked place (a new business row, or the one already saved,
+// left as it is; no login needed) and returns what the login page shows
+// for it.
 export async function prepareBusiness({
   placeId,
   sessionToken,

@@ -82,6 +82,13 @@ export function slugify(name: string): string {
   return words.join("-")
 }
 
+// The link's start: the name, or for a name with no Latin letters or
+// digits (東京理容) the business type Google gives in English, or else
+// "business". Never empty.
+export function slugBase(name: string, category: string | null): string {
+  return slugify(name) || slugify(category ?? "") || "business"
+}
+
 // First free slug: the base, then "-2", "-3", …
 export function uniqueSlug(
   base: string,

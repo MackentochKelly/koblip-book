@@ -173,8 +173,10 @@ function userMessage(batch: { id: string; text: string }[]): string {
 
 // Translates a batch of texts with Meta AI, at most 40 items per call.
 // Drops any returned item whose id was not asked, is empty, or is longer
-// than its limit; one bad item never fails the rest. Meta AI off or a
-// failed call gives an empty Map, which the callers report.
+// than its limit; one bad item never fails the rest. A failed call stops
+// there and keeps what the calls before it got (the rest stay to be
+// translated next time); Meta AI off or a first call that fails gives an
+// empty Map, which the callers report.
 export async function translateTexts(
   items: { id: string; text: string }[]
 ): Promise<Map<string, string>> {
@@ -214,18 +216,18 @@ export async function translateTexts(
       )
       const content = completion.choices[0]?.message?.content
       if (!content) {
-        return new Map()
+        return translated
       }
       returned = JSON.parse(content) as unknown
     } catch {
-      return new Map()
+      return translated
     }
     if (!returned || typeof returned !== "object" || !("items" in returned)) {
-      return new Map()
+      return translated
     }
     const rawItems = (returned as { items?: unknown }).items
     if (!Array.isArray(rawItems)) {
-      return new Map()
+      return translated
     }
     for (const raw of rawItems) {
       if (!raw || typeof raw !== "object") {

@@ -4,6 +4,7 @@ import { and, eq, gte } from "drizzle-orm"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
+import { saveAll } from "@/lib/db/save-all"
 import {
   bookings,
   businessHours,
@@ -138,25 +139,27 @@ export async function saveHours(
       return invalid()
     }
   }
-  await db.transaction(async (tx) => {
-    await tx
+  await saveAll([
+    db
       .delete(businessHours)
-      .where(eq(businessHours.businessId, owned.business.id))
-    if (rows.length > 0) {
-      await tx.insert(businessHours).values(
-        rows.map((row) => ({
-          businessId: owned.business.id,
-          weekday: row.weekday,
-          opensAt: row.opensAt,
-          closesAt: row.closesAt,
-        }))
-      )
-    }
-    await tx
+      .where(eq(businessHours.businessId, owned.business.id)),
+    ...(rows.length > 0
+      ? [
+          db.insert(businessHours).values(
+            rows.map((row) => ({
+              businessId: owned.business.id,
+              weekday: row.weekday,
+              opensAt: row.opensAt,
+              closesAt: row.closesAt,
+            }))
+          ),
+        ]
+      : []),
+    db
       .update(businesses)
       .set({ detailsConfirmedAt: Date.now() })
-      .where(eq(businesses.id, owned.business.id))
-  })
+      .where(eq(businesses.id, owned.business.id)),
+  ])
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }
@@ -297,14 +300,11 @@ export async function reorderServices(
   ) {
     return invalid()
   }
-  await db.transaction(async (tx) => {
-    for (const [position, id] of ids.entries()) {
-      await tx
-        .update(services)
-        .set({ position })
-        .where(eq(services.id, id))
-    }
-  })
+  await saveAll(
+    ids.map((id, position) =>
+      db.update(services).set({ position }).where(eq(services.id, id))
+    )
+  )
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }
@@ -444,14 +444,11 @@ export async function reorderTeam(
   ) {
     return invalid()
   }
-  await db.transaction(async (tx) => {
-    for (const [position, id] of ids.entries()) {
-      await tx
-        .update(teamMembers)
-        .set({ position })
-        .where(eq(teamMembers.id, id))
-    }
-  })
+  await saveAll(
+    ids.map((id, position) =>
+      db.update(teamMembers).set({ position }).where(eq(teamMembers.id, id))
+    )
+  )
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }

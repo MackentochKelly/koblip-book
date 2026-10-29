@@ -68,12 +68,13 @@ export function HoursForm({
         toast.error(t.fillEvery)
         return
       }
-      const result = await saveHours(businessId, rows)
-      if (result.ok) {
+      const result = await saveHours(businessId, rows).catch(() => null)
+      if (result?.ok) {
         toast.success(t.saved)
         router.refresh()
       } else {
-        toast.error(t.saveFailed)
+        // No answer at all (offline, server down) is not the fields' fault.
+        toast.error(result ? t.saveFailed : m.settings.tryAgain)
       }
     })
 
