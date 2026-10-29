@@ -151,6 +151,8 @@ const en = {
         copied: "Copied",
         replay: "Play again",
         ready: "Ready",
+        openToday: "Open today",
+        hours: { opens: "09:00", closes: "19:00" },
       },
     },
     features: {
@@ -338,6 +340,8 @@ const es: Messages = {
         copied: "Copiado",
         replay: "Reproducir de nuevo",
         ready: "Lista",
+        openToday: "Abierto hoy",
+        hours: { opens: "09:00", closes: "19:00" },
       },
     },
     features: {

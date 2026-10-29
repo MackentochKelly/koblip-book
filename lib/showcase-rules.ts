@@ -14,11 +14,10 @@ export const SHOWCASE_LOOP = {
   },
   check: {
     building: 1000,
+    photos: 600,
     nameIn: 700,
+    hoursIn: 700,
     serviceIn: 700,
-    beforeTap: 900,
-    tap: 700,
-    off: 1100,
     beforeReady: 600,
     ready: 2800,
   },

@@ -7,12 +7,7 @@ import { Box, POP, RISE, Scene } from "@/components/feature-preview"
 import { Rating } from "@/components/rating"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  CheckIcon,
-  MapPinIcon,
-  RefreshIcon,
-  SearchIcon,
-} from "@/components/ui/icons"
+import { CheckIcon, MapPinIcon, SearchIcon } from "@/components/ui/icons"
 import {
   InputGroup,
   InputGroupAddon,
@@ -20,6 +15,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatClock } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
 import { useStoryLoop } from "@/hooks/use-story-loop"
 import type { Messages } from "@/lib/i18n"
@@ -173,145 +169,145 @@ function TapMark({ ms }: { ms: number }) {
   )
 }
 
-// Plays by itself (useStoryLoop): placeholders while the page builds, the
-// name and rating, the services one by one, a tap turns one off and on
-// again, then "Ready". Rests on the finished page, where the services can
-// be tapped; the replay button plays it again.
+type CheckPhase = "building" | "photos" | "name" | "hours" | "services"
+
+const CHECK_ORDER: CheckPhase[] = [
+  "building",
+  "photos",
+  "name",
+  "hours",
+  "services",
+]
+
+// A small copy of the page building itself (useStoryLoop): placeholders,
+// then the photos, the name and rating, today's hours and the services one
+// by one, then "Ready". Rests on the finished page; tap the picture to play
+// it again.
 function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
   const services = words.services
   const box = useRef<HTMLDivElement>(null)
-  const [building, setBuilding] = useState(false)
+  const [phase, setPhase] = useState<CheckPhase>("services")
   const [shown, setShown] = useState(services.length)
-  const [off, setOff] = useState<string[]>([])
-  const [tapped, setTapped] = useState<string | null>(null)
   const [ready, setReady] = useState(true)
   const time = SHOWCASE_LOOP.check
-  const target = services[services.length - 1].name
   const replay = useStoryLoop(
     box,
     async (wait) => {
       setReady(false)
-      setOff([])
       setShown(0)
-      setBuilding(true)
+      setPhase("building")
       await wait(time.building)
-      setBuilding(false)
+      setPhase("photos")
+      await wait(time.photos)
+      setPhase("name")
       await wait(time.nameIn)
+      setPhase("hours")
+      await wait(time.hoursIn)
+      setPhase("services")
       for (let count = 1; count <= services.length; count++) {
         setShown(count)
         await wait(time.serviceIn)
       }
-      await wait(time.beforeTap)
-      setTapped(target)
-      await wait(time.tap)
-      setTapped(null)
-      setOff([target])
-      await wait(time.off)
-      setTapped(target)
-      await wait(time.tap)
-      setTapped(null)
-      setOff([])
       await wait(time.beforeReady)
       setReady(true)
       await wait(time.ready)
     },
     () => {
-      setBuilding(false)
+      setPhase("services")
       setShown(services.length)
-      setTapped(null)
-      setOff([])
       setReady(true)
     }
   )
+  const reached = (step: CheckPhase) =>
+    CHECK_ORDER.indexOf(phase) >= CHECK_ORDER.indexOf(step)
+  const hours = `${formatClock(words.hours.opens, shared.locale)}–${formatClock(words.hours.closes, shared.locale)}`
 
   return (
-    <div ref={box} className="relative w-full max-w-60">
-      <Box>
-        <div className="flex flex-col gap-2 px-(--card-spacing)">
-          {building ? (
-            <>
-              <div className="flex h-8 items-center justify-between">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-10" />
-              </div>
-              {services.map((service) => (
-                <Skeleton key={service.name} className="h-8 w-full" />
-              ))}
-            </>
-          ) : (
-            <>
-              <motion.div
-                {...RISE}
-                className="flex h-8 items-center justify-between gap-2"
-              >
-                <span className="flex min-w-0 items-center gap-1">
-                  <span className="truncate font-medium">
-                    {shared.business}
-                  </span>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={words.replay}
-                    onClick={replay}
+    <>
+      {/* Tap the picture to play it again. */}
+      <Button
+        variant="ghost"
+        aria-label={words.replay}
+        onClick={replay}
+        className="absolute inset-0 z-10 h-auto rounded-none hover:bg-transparent dark:hover:bg-transparent"
+      />
+      <div ref={box} className="relative w-full max-w-60">
+        <Box>
+          <div className="flex flex-col gap-3 px-(--card-spacing)">
+            <div className="flex items-center gap-3">
+              {/* The photos: four soft colour tiles. */}
+              {reached("photos") ? (
+                <motion.div
+                  {...POP}
+                  className="grid size-10 shrink-0 grid-cols-2 gap-0.5 overflow-hidden rounded-lg"
+                >
+                  <span className="bg-chart-1" />
+                  <span className="bg-chart-2" />
+                  <span className="bg-chart-3" />
+                  <span className="bg-chart-4" />
+                </motion.div>
+              ) : (
+                <Skeleton className="size-10 shrink-0 rounded-lg" />
+              )}
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                {reached("name") ? (
+                  <motion.div
+                    {...RISE}
+                    className="flex items-center justify-between gap-2"
                   >
-                    <RefreshIcon />
-                  </Button>
-                </span>
-                <Rating rating={4.9} locale={shared.locale} />
-              </motion.div>
-              {services.map((service, index) => {
-                const on = !off.includes(service.name)
-                return index < shown ? (
-                  <motion.div key={service.name} {...RISE}>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      aria-pressed={on}
-                      onClick={() =>
-                        setOff(
-                          on
-                            ? [...off, service.name]
-                            : off.filter((name) => name !== service.name)
-                        )
-                      }
-                      className="relative w-full justify-between"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <AnimatePresence initial={false}>
-                          {on && (
-                            <motion.span {...POP} className="flex">
-                              <CheckIcon className="text-success" />
-                            </motion.span>
-                          )}
-                        </AnimatePresence>
-                        {service.name}
-                      </span>
-                      <span className="text-muted-foreground tabular-nums">
-                        {formatPrice(service.priceMinor, "EUR", shared.locale)}
-                      </span>
-                      {tapped === service.name && <TapMark ms={time.tap} />}
-                    </Button>
+                    <span className="truncate font-medium">
+                      {shared.business}
+                    </span>
+                    <Rating rating={4.9} locale={shared.locale} />
                   </motion.div>
                 ) : (
-                  <div key={service.name} className="h-8" />
+                  <Skeleton className="h-4 w-28" />
+                )}
+                {reached("hours") ? (
+                  <motion.span
+                    {...RISE}
+                    className="truncate text-xs text-muted-foreground"
+                  >
+                    {words.openToday} · {hours}
+                  </motion.span>
+                ) : (
+                  <Skeleton className="h-3 w-20" />
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5 text-xs">
+              {services.map((service, index) =>
+                phase === "services" && index < shown ? (
+                  <motion.div
+                    key={service.name}
+                    {...RISE}
+                    className="flex h-4 items-center justify-between gap-2"
+                  >
+                    <span>{service.name}</span>
+                    <span className="text-muted-foreground tabular-nums">
+                      {formatPrice(service.priceMinor, "EUR", shared.locale)}
+                    </span>
+                  </motion.div>
+                ) : (
+                  <Skeleton key={service.name} className="h-4 w-full" />
                 )
-              })}
-            </>
+              )}
+            </div>
+          </div>
+        </Box>
+        {/* "Ready", stuck on the box's corner so nothing moves under it. */}
+        <AnimatePresence>
+          {ready && (
+            <motion.span {...POP} className="absolute -top-2 -right-2">
+              <Badge className="bg-success text-success-foreground">
+                <CheckIcon />
+                {words.ready}
+              </Badge>
+            </motion.span>
           )}
-        </div>
-      </Box>
-      {/* "Ready", stuck on the box's corner so nothing moves under it. */}
-      <AnimatePresence>
-        {ready && !building && (
-          <motion.span {...POP} className="absolute -top-2 -right-2">
-            <Badge className="bg-success text-success-foreground">
-              <CheckIcon />
-              {words.ready}
-            </Badge>
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </div>
+        </AnimatePresence>
+      </div>
+    </>
   )
 }
 
