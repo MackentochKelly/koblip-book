@@ -54,7 +54,6 @@ const messages = {
     placeholder: "Ask or tell me what to do",
     label: "Message",
     send: "Send",
-    mic: "Dictate",
     stop: "Stop",
     micDenied: "Allow the microphone to speak.",
     // The first-tap intro to talking live.
@@ -99,7 +98,6 @@ const messages = {
     too_long: "That message is too long.",
     not_allowed: "I can't do that here.",
     expired: "That request expired. Ask again.",
-    empty_audio: "I didn't hear anything. Try again.",
     bad_request: "That recording didn't work. Try again.",
   },
 }

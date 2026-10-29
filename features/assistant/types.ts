@@ -33,10 +33,9 @@ export type AssistantStreamEvent =
         | "too_long"
         | "not_allowed"
         | "expired"
-        | "empty_audio"
         | "bad_request"
     } // short message and Retry; expired = confirm card too old or unknown.
-// empty_audio = nothing heard; bad_request = malformed transcribe upload.
+// bad_request = malformed live voice audio.
 // The screen's words for these live in features/assistant/i18n (UI-owned).
 
 export interface AssistantMessage {

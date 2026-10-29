@@ -51,7 +51,6 @@ const messages: typeof en = {
     placeholder: "Pregunta o dime qué hacer",
     label: "Mensaje",
     send: "Enviar",
-    mic: "Dictar",
     stop: "Detener",
     micDenied: "Permite el micrófono para hablar.",
     voiceIntro: {
@@ -90,7 +89,6 @@ const messages: typeof en = {
     too_long: "Ese mensaje es demasiado largo.",
     not_allowed: "No puedo hacer eso aquí.",
     expired: "Esa solicitud caducó. Pídelo de nuevo.",
-    empty_audio: "No oí nada. Inténtalo de nuevo.",
     bad_request: "Esa grabación no funcionó. Inténtalo de nuevo.",
   },
 }

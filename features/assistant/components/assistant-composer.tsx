@@ -25,14 +25,13 @@ import { VOICE_RULES } from "@/lib/voice-rules"
 import type { AssistantMessages } from "../i18n"
 import type { AnswerListener } from "../types"
 import { useLiveVoice, type LiveVoiceError } from "../hooks/use-live-voice"
-import { useVoiceInput, type VoiceError } from "../hooks/use-voice-input"
 import type { Reply } from "../utils/live-voice-session"
 import { VoiceIntro } from "./voice-intro"
 
 // Set on this device once the owner picks "Don't show again".
 const VOICE_INTRO_HIDDEN_KEY = "assistant-voice-intro-hidden"
 
-type Mode = "stop" | "recording" | "transcribing" | "working" | "send" | "live"
+type Mode = "stop" | "working" | "send" | "live"
 
 // What the one button says to a screen reader in each state.
 const MODE_LABELS: Record<
@@ -40,16 +39,14 @@ const MODE_LABELS: Record<
   (labels: AssistantMessages["composer"]) => string
 > = {
   stop: (labels) => labels.stop,
-  recording: (labels) => labels.stop,
-  transcribing: (labels) => labels.mic,
   working: (labels) => labels.send,
   send: (labels) => labels.send,
   live: (labels) => labels.live.start,
 }
 
 // The message box. Enter sends; Shift+Enter starts a new line. Like
-// ChatGPT: the microphone dictates into the box, the voice button talks
-// live (the box then shows what it hears, with mute and end).
+// ChatGPT: the voice button talks live (the box then shows what it hears,
+// with mute and end).
 export function AssistantComposer({
   businessId,
   labels,
@@ -82,12 +79,6 @@ export function AssistantComposer({
 }) {
   const [text, setText] = useState("")
   const canSend = text.trim() !== "" && !busy
-  const voice = useVoiceInput(
-    businessId,
-    (heard) => setText((current) => (current ? `${current} ${heard}` : heard)),
-    (error: VoiceError) =>
-      toast.error(error === "mic_denied" ? labels.micDenied : errors[error])
-  )
   const live = useLiveVoice({
     businessId,
     voiceId: VOICE_RULES.speakVoiceId,
@@ -104,21 +95,15 @@ export function AssistantComposer({
       toast.error(error === "mic_denied" ? labels.micDenied : errors[error]),
   })
 
-  // The main button: stop an answer, the dictation states, send while
-  // there are words, talk live while the box is empty.
+  // The main button: stop an answer, send while there are words, talk
+  // live while the box is empty.
   const mode: Mode = stoppable
     ? "stop"
-    : voice.state === "recording"
-      ? "recording"
-      : voice.state === "transcribing"
-        ? "transcribing"
-        : busy
-          ? "working"
-          : text.trim() !== "" || !live.supported
-            ? "send"
-            : "live"
-  // Dictation sits beside it while nothing else is happening.
-  const showMic = voice.supported && (mode === "send" || mode === "live")
+    : busy
+      ? "working"
+      : text.trim() !== "" || !live.supported
+        ? "send"
+        : "live"
 
   // Talking live opens the voice intro first, until "Don't show again".
   const [introHidden, hideIntro] = useStoredFlag(VOICE_INTRO_HIDDEN_KEY)
@@ -207,43 +192,23 @@ export function AssistantComposer({
         {/* Like big chat apps: the words on top, the buttons under them;
             the round one changes with what the owner is doing. */}
         <InputGroupAddon align="block-end" className="justify-end">
-          {showMic && (
-            <InputGroupButton
-              variant="ghost"
-              size="icon-sm"
-              aria-label={labels.mic}
-              onClick={voice.start}
-            >
-              <MicIcon />
-            </InputGroupButton>
-          )}
           {/* A new key per state, so each change fades and grows in, in
               the same spot (instant with reduced motion). */}
           <InputGroupButton
             key={mode}
             type={mode === "send" ? "submit" : "button"}
-            variant={mode === "recording" ? "destructive" : "default"}
+            variant="default"
             size="icon-sm"
             aria-label={MODE_LABELS[mode](labels)}
-            disabled={
-              mode === "transcribing" ||
-              mode === "working" ||
-              (mode === "send" && !canSend)
-            }
+            disabled={mode === "working" || (mode === "send" && !canSend)}
             onClick={
-              mode === "stop"
-                ? onStop
-                : mode === "live"
-                  ? startLive
-                  : mode === "recording"
-                    ? voice.stop
-                    : undefined
+              mode === "stop" ? onStop : mode === "live" ? startLive : undefined
             }
             className="animate-in duration-150 zoom-in-75 fade-in motion-reduce:animate-none"
           >
-            {mode === "transcribing" || mode === "working" ? (
+            {mode === "working" ? (
               <Spinner />
-            ) : mode === "stop" || mode === "recording" ? (
+            ) : mode === "stop" ? (
               <SquareIcon />
             ) : mode === "live" ? (
               <AudioLinesIcon />
