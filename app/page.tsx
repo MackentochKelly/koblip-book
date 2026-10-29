@@ -96,29 +96,32 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         >
           <HeroGradient />
           <HeroSideCards words={t.steps.sample} shared={t.features.sample} />
-          <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-4 pt-28 pb-24 text-center">
-            <div className="flex flex-col gap-4">
+          <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-10 px-4 pt-28 pb-24 text-center">
+            {/* A little more room round the title than between its lines. */}
+            <div className="flex flex-col gap-6">
               <MetaProviderBadge language={language} />
-              <h1 className="font-display text-hero font-medium tracking-tight text-balance text-hero-foreground sm:text-7xl">
-                {t.titleStart}{" "}
-                <span className="font-serif font-normal tracking-normal italic">
-                  {t.titleEnd}
-                </span>
-              </h1>
-              {/* One sentence per line, quieter than the title. */}
-              <p className="font-display text-lg/snug text-balance text-hero-foreground *:block sm:text-xl/snug">
-                {/* Magic UI's marker, its words kept above the drawn mark. The
+              <div className="flex flex-col gap-4">
+                <h1 className="font-display text-hero font-medium tracking-tight text-balance text-hero-foreground sm:text-7xl">
+                  {t.titleStart}{" "}
+                  <span className="font-serif font-normal tracking-normal italic">
+                    {t.titleEnd}
+                  </span>
+                </h1>
+                {/* One sentence per line, quieter than the title. */}
+                <p className="font-display text-lg/snug text-balance text-hero-foreground *:block sm:text-xl/snug">
+                  {/* Magic UI's marker, its words kept above the drawn mark. The
                   mark is see-through so the moving gradient shows in it. */}
-                <span className="[&_.rough-annotation]:opacity-80">
-                  {t.findOn}{" "}
-                  <Highlighter color="var(--hero-marker)">
-                    <span className="relative z-10 text-hero-marker-foreground">
-                      {t.maps}
-                    </span>
-                  </Highlighter>
-                </span>{" "}
-                <span>{t.weTurn}</span>
-              </p>
+                  <span className="[&_.rough-annotation]:opacity-80">
+                    {t.findOn}{" "}
+                    <Highlighter color="var(--hero-marker)">
+                      <span className="relative z-10 text-hero-marker-foreground">
+                        {t.maps}
+                      </span>
+                    </Highlighter>
+                  </span>{" "}
+                  <span>{t.weTurn}</span>
+                </p>
+              </div>
             </div>
             {/* The last call to action brings people back here. */}
             <div
