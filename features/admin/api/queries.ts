@@ -1,12 +1,17 @@
 import "server-only"
 
-import { count, desc, eq, gte, sql } from "drizzle-orm"
+import { and, count, desc, eq, gte, sql } from "drizzle-orm"
 import { requireAdmin } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { bookings, businesses, user } from "@/lib/db/schema"
 
 // Every list stops here; the newest come first.
 const MAX_ROWS = 200
+
+// Home page demo copies and their guests (features/demo) are not real
+// businesses or owners: every count and list leaves them out.
+const realBusiness = eq(businesses.isDemo, false)
+const realUser = sql`coalesce(${user.isAnonymous}, 0) = 0`
 
 export interface AdminOverview {
   businesses: number
@@ -19,10 +24,17 @@ export async function getOverview(): Promise<AdminOverview> {
   await requireAdmin()
   const weekAgo = new Date(Date.now() - 7 * 86_400_000)
   const [[b], [o], [k], [n]] = await Promise.all([
-    db.select({ n: count() }).from(businesses),
-    db.select({ n: count() }).from(user),
-    db.select({ n: count() }).from(bookings),
-    db.select({ n: count() }).from(user).where(gte(user.createdAt, weekAgo)),
+    db.select({ n: count() }).from(businesses).where(realBusiness),
+    db.select({ n: count() }).from(user).where(realUser),
+    db
+      .select({ n: count() })
+      .from(bookings)
+      .innerJoin(businesses, eq(businesses.id, bookings.businessId))
+      .where(realBusiness),
+    db
+      .select({ n: count() })
+      .from(user)
+      .where(and(realUser, gte(user.createdAt, weekAgo))),
   ])
   return {
     businesses: b.n,
@@ -62,6 +74,7 @@ export async function getBusinesses(): Promise<AdminBusiness[]> {
     .from(businesses)
     .leftJoin(user, eq(user.id, businesses.ownerId))
     .leftJoin(bookingCount, eq(bookingCount.businessId, businesses.id))
+    .where(realBusiness)
     .orderBy(desc(businesses.createdAt))
     .limit(MAX_ROWS)
   return rows
@@ -82,6 +95,7 @@ export async function getOwners(): Promise<AdminOwner[]> {
   const owned = db
     .select({ ownerId: businesses.ownerId, n: count().as("n") })
     .from(businesses)
+    .where(realBusiness)
     .groupBy(businesses.ownerId)
     .as("owned")
   const rows = await db
@@ -96,6 +110,7 @@ export async function getOwners(): Promise<AdminOwner[]> {
     })
     .from(user)
     .leftJoin(owned, eq(owned.ownerId, user.id))
+    .where(realUser)
     .orderBy(desc(user.createdAt))
     .limit(MAX_ROWS)
   return rows.map((row) => ({
@@ -129,6 +144,7 @@ export async function getBookings(): Promise<AdminBooking[]> {
     })
     .from(bookings)
     .innerJoin(businesses, eq(businesses.id, bookings.businessId))
+    .where(realBusiness)
     .orderBy(desc(bookings.createdAt))
     .limit(MAX_ROWS)
 }

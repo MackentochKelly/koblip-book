@@ -12,6 +12,9 @@ export interface OwnerSession {
   image: string | null
   // False until a password account opens its sign-up email link.
   emailVerified: boolean
+  // A home page demo visitor (Better Auth's anonymous plugin): no account,
+  // owns only their demo copy. Kept out of everything for real owners.
+  isGuest: boolean
 }
 
 export const getSession = cache(async (): Promise<OwnerSession | null> => {
@@ -27,6 +30,7 @@ export const getSession = cache(async (): Promise<OwnerSession | null> => {
     email: session.user.email,
     image: session.user.image ?? null,
     emailVerified: session.user.emailVerified,
+    isGuest: session.user.isAnonymous === true,
   }
 })
 
@@ -38,11 +42,21 @@ export async function requireOwner(next?: string): Promise<OwnerSession> {
   return session
 }
 
+// A real owner's account, for what only real owners do (claim a business,
+// set one up). A demo guest goes to log in, like someone signed out.
+export async function requireAccount(next?: string): Promise<OwnerSession> {
+  const session = await getSession()
+  if (!session || session.isGuest) {
+    redirect("/login" + (next ? "?next=" + encodeURIComponent(next) : ""))
+  }
+  return session
+}
+
 // The app owner's admin area: a signed-in account that Better Auth's admin
 // plugin counts as an admin (ADMIN_USER_IDS). Anyone else gets "not found",
 // so the area doesn't show that it exists.
 export async function requireAdmin(): Promise<OwnerSession> {
-  const session = await requireOwner("/admin")
+  const session = await requireAccount("/admin")
   const { success } = await auth.api.userHasPermission({
     body: { userId: session.userId, permissions: { user: ["list"] } },
   })

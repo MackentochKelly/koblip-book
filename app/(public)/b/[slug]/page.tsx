@@ -64,6 +64,8 @@ export async function generateMetadata({
   return {
     title: data.business.name,
     description: data.business.description ?? undefined,
+    // A visitor's demo copy is not a real business: kept out of search.
+    ...(data.business.isDemo && { robots: { index: false, follow: false } }),
   }
 }
 

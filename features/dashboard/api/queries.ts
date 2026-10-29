@@ -126,7 +126,13 @@ export async function getMyBusinesses(): Promise<OwnedBusiness[]> {
       address: businesses.address,
     })
     .from(businesses)
-    .where(eq(businesses.ownerId, session.userId))
+    // A real owner's list never shows a demo copy; a guest owns only theirs.
+    .where(
+      and(
+        eq(businesses.ownerId, session.userId),
+        eq(businesses.isDemo, session.isGuest)
+      )
+    )
     .orderBy(asc(businesses.name))
   return rows
 }

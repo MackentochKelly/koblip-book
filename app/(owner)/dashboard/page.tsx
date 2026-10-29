@@ -26,6 +26,10 @@ export default async function DashboardPage() {
   if (businesses.length) {
     redirect(`/dashboard/${businesses[0].id}`)
   }
+  // A demo guest whose copy is gone has nothing here: back to the home page.
+  if (owner.isGuest) {
+    redirect("/")
+  }
   const firstName = owner.name.trim().split(/\s+/)[0]
   const t = (await getOwnerMessages()).shell.start
   const language = await getOwnerLanguage()

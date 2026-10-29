@@ -23,7 +23,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const { next, error } = await searchParams
   const target = safeNext(typeof next === "string" ? next : undefined)
-  if (await getSession()) {
+  // A demo guest has no account yet: they see the form like anyone else.
+  const session = await getSession()
+  if (session && !session.isGuest) {
     redirect(target)
   }
   const language = await getOwnerLanguage()

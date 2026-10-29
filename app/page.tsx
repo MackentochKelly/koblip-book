@@ -54,7 +54,9 @@ export async function generateMetadata({
 }
 
 export default async function HomePage({ searchParams }: PageProps<"/">) {
-  const signedIn = (await getSession()) !== null
+  // A demo guest is not signed in for this page: they still see Log in.
+  const session = await getSession()
+  const signedIn = session !== null && !session.isGuest
   const { claim } = await searchParams
   const language = await pageLanguage(searchParams)
   const t = messagesFor(language).home

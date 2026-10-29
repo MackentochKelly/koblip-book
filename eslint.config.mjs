@@ -88,6 +88,13 @@ const eslintConfig = defineConfig([
                 "./owner-auth",
               ],
             },
+            // demo builds its copies with the booking feature's time-zone
+            // helpers.
+            {
+              target: "./features/demo",
+              from: "./features",
+              except: ["./demo", "./booking"],
+            },
             {
               target: "./features/admin",
               from: "./features",

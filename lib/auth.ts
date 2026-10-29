@@ -2,7 +2,7 @@ import "server-only"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { nextCookies } from "better-auth/next-js"
-import { admin } from "better-auth/plugins"
+import { admin, anonymous } from "better-auth/plugins"
 import { db } from "./db"
 import * as authSchema from "./db/auth-schema"
 import { sendEmail } from "./email"
@@ -55,6 +55,11 @@ export const auth = betterAuth({
         .map((id) => id.trim())
         .filter(Boolean),
     }),
+    // Home page demo visitors (better-auth.com/docs/plugins/anonymous): a
+    // session with no account, so the real dashboard and assistant can run
+    // on the visitor's own demo copy. A guest owns nothing but that copy
+    // (features/demo). Signing up later deletes the guest, as by default.
+    anonymous({ generateName: () => "Demo" }),
     // Must stay last (better-auth.com/docs/integrations/next).
     nextCookies(),
   ],

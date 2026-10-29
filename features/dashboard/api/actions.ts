@@ -2,7 +2,7 @@
 
 import { and, eq, gte } from "drizzle-orm"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
-import { requireOwner } from "@/lib/dal"
+import { requireAccount } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import {
@@ -485,7 +485,8 @@ export async function cancelBooking(
 export async function claimBusiness(
   slug: string
 ): Promise<ActionResult<{ businessId: string }>> {
-  const session = await requireOwner()
+  // Only a real account claims a business, never a demo guest.
+  const session = await requireAccount()
   const result = await claimBusinessForUser(session.userId, slug)
   if (!result.ok) {
     return result

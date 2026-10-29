@@ -21,6 +21,9 @@ export const user = sqliteTable("user", {
   banned: integer("banned", { mode: "boolean" }).default(false),
   banReason: text("ban_reason"),
   banExpires: integer("ban_expires", { mode: "timestamp_ms" }),
+  // Better Auth's anonymous plugin (better-auth.com/docs/plugins/anonymous):
+  // a home page demo visitor, signed in without an account.
+  isAnonymous: integer("is_anonymous", { mode: "boolean" }).default(false),
 });
 
 export const session = sqliteTable(

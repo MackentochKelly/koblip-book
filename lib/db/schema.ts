@@ -49,9 +49,16 @@ export const businesses = sqliteTable(
     ownerId: text().references(() => user.id, { onDelete: "set null" }),
     detailsConfirmedAt: integer(),
     seats: integer().notNull().default(1),
+    // A visitor's copy of the home page demo (features/demo): never listed
+    // in the admin area or to real owners, never indexed, deleted after
+    // DEMO_RULES.keepHours.
+    isDemo: integer({ mode: "boolean" }).notNull().default(false),
     ...timestamps(),
   },
-  (table) => [index("businesses_owner_idx").on(table.ownerId)]
+  (table) => [
+    index("businesses_owner_idx").on(table.ownerId),
+    index("businesses_demo_idx").on(table.isDemo, table.createdAt),
+  ]
 )
 
 export const businessHours = sqliteTable(

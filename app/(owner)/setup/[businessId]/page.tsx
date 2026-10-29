@@ -5,7 +5,7 @@ import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { DetailsForm } from "@/features/dashboard/components/details-form"
 import { TopBar } from "@/features/dashboard/components/top-bar"
 import { getOwnerMessages } from "@/features/dashboard/i18n/server"
-import { requireOwner } from "@/lib/dal"
+import { requireAccount } from "@/lib/dal"
 import { fontDisplay } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 
@@ -20,7 +20,7 @@ export default async function SetupPage({
   params,
 }: PageProps<"/setup/[businessId]">) {
   const { businessId } = await params
-  const owner = await requireOwner(`/setup/${businessId}`)
+  const owner = await requireAccount(`/setup/${businessId}`)
   const { business, team } = await getOwnerBusiness(businessId)
   const m = await getOwnerMessages()
   return (

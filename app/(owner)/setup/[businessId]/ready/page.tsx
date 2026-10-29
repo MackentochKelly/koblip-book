@@ -7,7 +7,7 @@ import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { TopBar } from "@/features/dashboard/components/top-bar"
 import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { LiveCard } from "@/features/onboarding/components/live-card"
-import { requireOwner } from "@/lib/dal"
+import { requireAccount } from "@/lib/dal"
 import { fontDisplay } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 
@@ -21,7 +21,7 @@ export default async function ReadyPage({
   params,
 }: PageProps<"/setup/[businessId]/ready">) {
   const { businessId } = await params
-  const owner = await requireOwner(`/setup/${businessId}/ready`)
+  const owner = await requireAccount(`/setup/${businessId}/ready`)
   const { business } = await getOwnerBusiness(businessId)
   const page = await getBusinessPage(business.slug)
   const share = (await getOwnerMessages()).settings.share

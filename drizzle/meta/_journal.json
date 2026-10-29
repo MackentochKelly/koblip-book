@@ -78,6 +78,13 @@
       "when": 1793303488431,
       "tag": "0010_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1793317939363,
+      "tag": "0011_demo",
+      "breakpoints": true
     }
   ]
 }
