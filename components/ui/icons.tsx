@@ -43,6 +43,7 @@ import {
   Moon as MynaMoon,
   Navigation as MynaNavigation,
   Plus as MynaPlus,
+  Puzzle as MynaPuzzle,
   Refresh as MynaRefresh,
   Tag as MynaTag,
   Search as MynaSearch,
@@ -70,6 +71,7 @@ import {
   HomeSolid as MynaHomeSolid,
   StoreSolid as MynaStoreSolid,
   ChatSolid as MynaChatSolid,
+  PuzzleSolid as MynaPuzzleSolid,
   LayoutDashboard as MynaLayoutDashboard,
   LayoutDashboardSolid as MynaLayoutDashboardSolid,
 } from "@mynaui/icons-react"
@@ -206,6 +208,7 @@ export const PawPrintIcon = icon(LucidePawPrint as Icon, "PawPrintIcon")
 export const PhoneCallIcon = icon(MynaTelephoneCall as Icon, "PhoneCallIcon")
 export const PhoneIcon = icon(MynaTelephone as Icon, "PhoneIcon")
 export const PlusIcon = icon(MynaPlus as Icon, "PlusIcon")
+export const PuzzleIcon = icon(MynaPuzzle as Icon, "PuzzleIcon")
 export const RefreshIcon = icon(MynaRefresh as Icon, "RefreshIcon")
 export const TagIcon = icon(MynaTag as Icon, "TagIcon")
 export const SearchIcon = icon(MynaSearch as Icon, "SearchIcon")
@@ -248,6 +251,7 @@ const FILLED = new Map<Icon, Icon>([
   [HouseIcon, icon(MynaHomeSolid as Icon, "HouseFilledIcon")],
   [StoreIcon, icon(MynaStoreSolid as Icon, "StoreFilledIcon")],
   [MessageCircleIcon, icon(MynaChatSolid as Icon, "MessageCircleFilledIcon")],
+  [PuzzleIcon, icon(MynaPuzzleSolid as Icon, "PuzzleFilledIcon")],
 ])
 
 export function filledIcon(outline: Icon): Icon {

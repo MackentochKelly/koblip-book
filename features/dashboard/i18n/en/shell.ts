@@ -8,6 +8,7 @@ const shell = {
     services: "Services",
     team: "Team",
     hours: "Hours",
+    integrations: "Integrations",
     settings: "Settings",
     assistant: "Assistant",
     details: "Details",

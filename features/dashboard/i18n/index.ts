@@ -1,10 +1,12 @@
 import type { PageLanguage } from "@/lib/page-language"
 import enBookings from "./en/bookings"
 import enCatalog from "./en/catalog"
+import enIntegrations from "./en/integrations"
 import enSettings from "./en/settings"
 import enShell from "./en/shell"
 import esBookings from "./es/bookings"
 import esCatalog from "./es/catalog"
+import esIntegrations from "./es/integrations"
 import esSettings from "./es/settings"
 import esShell from "./es/shell"
 
@@ -15,6 +17,7 @@ const en = {
   shell: enShell,
   bookings: enBookings,
   catalog: enCatalog,
+  integrations: enIntegrations,
   settings: enSettings,
 }
 
@@ -25,6 +28,7 @@ const es: OwnerMessages = {
   shell: esShell,
   bookings: esBookings,
   catalog: esCatalog,
+  integrations: esIntegrations,
   settings: esSettings,
 }
 
