@@ -1,5 +1,6 @@
 import Image from "next/image"
 
+import { HomeRowLabel } from "@/components/home-section-title"
 import { Badge } from "@/components/ui/badge"
 import { messagesFor } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
@@ -39,7 +40,7 @@ export function WorksWith({ language }: { language: PageLanguage }) {
   ]
   return (
     <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6 px-4 py-12">
-      <p className="text-sm text-muted-foreground">{t.worksWith}</p>
+      <HomeRowLabel>{t.worksWith}</HomeRowLabel>
       <ul className="flex flex-wrap justify-center gap-x-8 gap-y-4">
         {services.map(({ logo, logoDark, name, soon }) => (
           <li

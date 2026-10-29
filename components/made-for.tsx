@@ -1,3 +1,4 @@
+import { HomeRowLabel } from "@/components/home-section-title"
 import { Badge } from "@/components/ui/badge"
 import {
   CarFrontIcon,
@@ -52,7 +53,7 @@ export function MadeFor({ language }: { language: PageLanguage }) {
   ))
   return (
     <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6 pb-12">
-      <p className="px-4 text-sm text-muted-foreground">{t.title}</p>
+      <HomeRowLabel>{t.title}</HomeRowLabel>
       <ul className="sr-only">
         {KINDS.map(([kind]) => (
           <li key={kind}>{t[kind]}</li>
