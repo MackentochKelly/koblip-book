@@ -1,6 +1,6 @@
 "use client"
 
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence, motion, useInView } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 
 import { Box, POP, RISE, Scene } from "@/components/feature-preview"
@@ -14,6 +14,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { formatPrice } from "@/lib/format-price"
+import { useReducedMotion } from "@/hooks/use-theme-colors"
 import type { Messages } from "@/lib/i18n"
 
 type Words = Messages["home"]["steps"]["sample"]
@@ -47,63 +48,143 @@ export function StepPreview({
   )
 }
 
-const TYPE_MS = 70
+// The find loop's timing, in ms.
+const FIND_LOOP = {
+  type: 70,
+  beforeResult: 400,
+  beforeTap: 700,
+  tap: 450,
+  page: 1800,
+  rounds: 3,
+}
 
-// The search box types the business name, then the Google Maps result
-// shows. Tap Search to type it again.
+type FindPhase = "typing" | "result" | "tap" | "page"
+
+const wait = (ms: number) => new Promise((done) => setTimeout(done, ms))
+
+// Plays by itself while on screen: the name types in, the Google Maps
+// result shows, a tap lands on it and the business page appears. Stops
+// after three rounds on the search with its result (WCAG 2.2.2); Search
+// plays it again. Reduce Motion: just that still picture.
 function FindPreview({ words, shared }: { words: Words; shared: Shared }) {
   const name = shared.business
+  const box = useRef<HTMLDivElement>(null)
+  const inView = useInView(box, { amount: 0.6 })
+  const still = useReducedMotion()
+  const [run, setRun] = useState(0)
   const [typed, setTyped] = useState(name.length)
-  const timer = useRef<ReturnType<typeof setInterval>>(undefined)
-  useEffect(() => () => clearInterval(timer.current), [])
-  function replay() {
-    clearInterval(timer.current)
-    setTyped(0)
-    timer.current = setInterval(() => {
-      setTyped((count) => {
-        if (count + 1 >= name.length) clearInterval(timer.current)
-        return Math.min(count + 1, name.length)
-      })
-    }, TYPE_MS)
-  }
-  const found = typed === name.length
+  const [phase, setPhase] = useState<FindPhase>("result")
+
+  useEffect(() => {
+    if (!inView || still) return
+    let stopped = false
+    async function play() {
+      for (let round = 0; round < FIND_LOOP.rounds; round++) {
+        setPhase("typing")
+        for (let count = 0; count <= name.length; count++) {
+          if (stopped) return
+          setTyped(count)
+          await wait(FIND_LOOP.type)
+        }
+        await wait(FIND_LOOP.beforeResult)
+        if (stopped) return
+        setPhase("result")
+        await wait(FIND_LOOP.beforeTap)
+        if (stopped) return
+        setPhase("tap")
+        await wait(FIND_LOOP.tap)
+        if (stopped) return
+        setPhase("page")
+        await wait(FIND_LOOP.page)
+      }
+      if (stopped) return
+      setTyped(name.length)
+      setPhase("result")
+    }
+    void play()
+    return () => {
+      stopped = true
+      setTyped(name.length)
+      setPhase("result")
+    }
+  }, [inView, still, run, name])
+
   return (
-    <Box>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <InputGroup>
-          <InputGroupInput
-            readOnly
-            tabIndex={-1}
-            aria-hidden
-            value={name.slice(0, typed)}
-          />
-          <InputGroupAddon align="inline-end">
-            <InputGroupButton
-              size="icon-xs"
-              aria-label={words.search}
-              onClick={replay}
-            >
-              <SearchIcon />
-            </InputGroupButton>
-          </InputGroupAddon>
-        </InputGroup>
-        <div className="min-h-9" role="status">
-          <AnimatePresence>
-            {found && (
-              <motion.div {...RISE} className="flex items-center gap-2">
-                <MapPinIcon className="size-4 shrink-0 text-primary" />
+    <div ref={box} className="w-full max-w-60">
+      <Box>
+        <div className="flex min-h-24 flex-col justify-center gap-3 px-(--card-spacing)">
+          <AnimatePresence mode="wait" initial={false}>
+            {phase === "page" ? (
+              <motion.div
+                key="page"
+                {...POP}
+                className="flex items-center gap-3"
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/25 dark:text-primary-foreground">
+                  <MapPinIcon className="size-4" />
+                </span>
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate font-medium">{name}</span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    {words.address}
-                  </span>
+                  <Rating
+                    rating={4.9}
+                    reviewCount={128}
+                    locale={shared.locale}
+                  />
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div key="search" {...POP} className="flex flex-col gap-3">
+                <InputGroup>
+                  <InputGroupInput
+                    readOnly
+                    tabIndex={-1}
+                    aria-hidden
+                    value={name.slice(0, typed)}
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      size="icon-xs"
+                      aria-label={words.search}
+                      onClick={() => setRun(run + 1)}
+                    >
+                      <SearchIcon />
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
+                <div className="min-h-9">
+                  <AnimatePresence>
+                    {phase !== "typing" && (
+                      <motion.div
+                        {...RISE}
+                        className="relative flex items-center gap-2"
+                      >
+                        <MapPinIcon className="size-4 shrink-0 text-primary" />
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate font-medium">{name}</span>
+                          <span className="truncate text-xs text-muted-foreground">
+                            {words.address}
+                          </span>
+                        </div>
+                        {/* The tap: a soft circle that grows and fades. */}
+                        {phase === "tap" && (
+                          <motion.span
+                            aria-hidden
+                            initial={{ opacity: 0.5, scale: 0.4 }}
+                            animate={{ opacity: 0, scale: 1.4 }}
+                            transition={{ duration: FIND_LOOP.tap / 1000 }}
+                            className="pointer-events-none absolute top-1/2 left-1/3 size-10 -translate-1/2 rounded-full bg-primary/40"
+                          />
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-      </div>
-    </Box>
+      </Box>
+    </div>
   )
 }
 
