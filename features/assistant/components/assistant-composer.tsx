@@ -212,9 +212,9 @@ export function AssistantComposer({
             }
             className={cn(
               "animate-in duration-150 zoom-in-75 fade-in motion-reduce:animate-none",
-              // Talk live: a soft ring in the brand colour, so the voice
-              // button stands out like a real control.
-              mode === "live" && "ring-4 ring-primary/15"
+              // Talk live: a hairline ring in a lighter shade of its own
+              // colour, barely there, for a little depth.
+              mode === "live" && "ring-1 ring-primary/30"
             )}
           >
             {mode === "working" ? (
