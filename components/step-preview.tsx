@@ -50,11 +50,11 @@ export function StepPreview({
 
 // The find loop's timing, in ms.
 const FIND_LOOP = {
-  type: 70,
-  beforeResult: 400,
-  beforeTap: 700,
-  tap: 450,
-  page: 1800,
+  type: 130,
+  beforeResult: 700,
+  beforeTap: 1300,
+  tap: 700,
+  page: 3200,
   rounds: 3,
 }
 
