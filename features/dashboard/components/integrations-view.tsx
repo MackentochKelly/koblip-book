@@ -5,7 +5,6 @@ import Image from "next/image"
 import {
   ChevronRightIcon,
   MailIcon,
-  MessageCircleIcon,
   type Icon,
 } from "@/components/ui/icons"
 
@@ -80,13 +79,16 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
               )
             }
           />
-          {/* Plain messages and email have no brand: an app-style tile. */}
+          {/* Texts go through Twilio: its own app icon, as twilio.com uses
+              it; a square, so its corners are rounded. */}
           <IntegrationRow
-            logo={MessageCircleIcon}
+            logo="/brands/twilio.png"
+            square
             name={t.sms.name}
             description={t.sms.description}
             action={<Badge variant="secondary">{t.soon}</Badge>}
           />
+          {/* Email has no brand: an app-style tile. */}
           <IntegrationRow
             logo={MailIcon}
             name={t.email.name}
