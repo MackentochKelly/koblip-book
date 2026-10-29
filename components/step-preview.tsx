@@ -6,8 +6,14 @@ import { useEffect, useRef, useState } from "react"
 import { Box, POP, RISE, Scene } from "@/components/feature-preview"
 import { Rating } from "@/components/rating"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { CheckIcon, MapPinIcon, SearchIcon } from "@/components/ui/icons"
+import {
+  CheckIcon,
+  MapPinIcon,
+  SearchIcon,
+  StoreIcon,
+} from "@/components/ui/icons"
 import {
   InputGroup,
   InputGroupAddon,
@@ -180,7 +186,7 @@ const CHECK_ORDER: CheckPhase[] = [
 ]
 
 // A small copy of the page building itself (useStoryLoop): placeholders,
-// then the photos, the name and rating, today's hours and the services one
+// then the business's avatar, the name and rating, today's hours and the services one
 // by one, then "Ready". Rests on the finished page; tap the picture to play
 // it again.
 function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
@@ -235,19 +241,18 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
         <Box>
           <div className="flex flex-col gap-3 px-(--card-spacing)">
             <div className="flex items-center gap-3">
-              {/* The photos: four soft colour tiles. */}
+              {/* The business's avatar, as on the real page and the "Is this
+                  your business?" card. */}
               {reached("photos") ? (
-                <motion.div
-                  {...POP}
-                  className="grid size-10 shrink-0 grid-cols-2 gap-0.5 overflow-hidden rounded-lg"
-                >
-                  <span className="bg-chart-1" />
-                  <span className="bg-chart-2" />
-                  <span className="bg-chart-3" />
-                  <span className="bg-chart-4" />
+                <motion.div {...POP} className="flex shrink-0">
+                  <Avatar size="lg">
+                    <AvatarFallback>
+                      <StoreIcon />
+                    </AvatarFallback>
+                  </Avatar>
                 </motion.div>
               ) : (
-                <Skeleton className="size-10 shrink-0 rounded-lg" />
+                <Skeleton className="size-10 shrink-0 rounded-full" />
               )}
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 {reached("name") ? (
