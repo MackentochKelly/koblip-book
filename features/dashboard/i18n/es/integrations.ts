@@ -2,7 +2,7 @@ import type en from "../en/integrations"
 
 const integrations: typeof en = {
   messaging: "Mensajes",
-  readMore: "Leer más",
+  about: (name: string) => `Sobre ${name}`,
   whatsapp: {
     name: "WhatsApp",
     description:

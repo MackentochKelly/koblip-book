@@ -1,7 +1,7 @@
 // The Integrations page: the apps a business connects to Koblip Book.
 const integrations = {
   messaging: "Messaging",
-  readMore: "Read more",
+  about: (name: string) => `About ${name}`,
   whatsapp: {
     name: "WhatsApp",
     description:

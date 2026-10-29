@@ -35,6 +35,7 @@ import {
   Home as MynaHome,
   Image as MynaImage,
   Info as MynaInfo,
+  InfoCircle as MynaInfoCircle,
   Link as MynaLink,
   Logout as MynaLogout,
   Mail as MynaMail,
@@ -183,6 +184,7 @@ export const GlobeIcon = icon(MynaGlobe as Icon, "GlobeIcon")
 export const HouseIcon = icon(MynaHome as Icon, "HouseIcon")
 export const ImageIcon = icon(MynaImage as Icon, "ImageIcon")
 export const InfoIcon = icon(MynaInfo as Icon, "InfoIcon")
+export const InfoCircleIcon = icon(MynaInfoCircle as Icon, "InfoCircleIcon")
 export const LanguagesIcon = icon(LucideLanguages as Icon, "LanguagesIcon")
 export const LayoutDashboardIcon = icon(
   MynaLayoutDashboard as Icon,

@@ -5,7 +5,7 @@ import Image from "next/image"
 import { ChevronRightIcon } from "@/components/ui/icons"
 
 import { PageSection } from "@/components/page-section"
-import { ReadMore } from "@/components/read-more"
+import { DetailsButton } from "@/components/details-button"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -109,8 +109,8 @@ function Logo({ src, className }: { src: string; className: string }) {
   )
 }
 
-// One app: its logo, name, what it does (cut to two lines, the rest behind
-// Read more) and its state or action.
+// One app: its logo, its name with ⓘ (the whole text), what it does in two
+// lines, and its state or action.
 function IntegrationRow({
   logo,
   name,
@@ -128,19 +128,18 @@ function IntegrationRow({
       <ItemMedia>
         <Logo src={logo} className="size-10" />
       </ItemMedia>
-      {/* Room between Read more and the row's button. */}
-      <ItemContent className="pe-3">
-        <ItemTitle>{name}</ItemTitle>
-        <ReadMore
-          text={description}
-          title={name}
-          media={<Logo src={logo} className="size-16" />}
-          label={t.readMore}
-        >
-          {(ref) => (
-            <ItemDescription ref={ref}>{description}</ItemDescription>
-          )}
-        </ReadMore>
+      <ItemContent>
+        {/* ⓘ beside the name, where the row has room to spare. */}
+        <ItemTitle className="gap-0.5 overflow-visible">
+          {name}
+          <DetailsButton
+            title={name}
+            text={description}
+            media={<Logo src={logo} className="size-16" />}
+            label={t.about(name)}
+          />
+        </ItemTitle>
+        <ItemDescription>{description}</ItemDescription>
       </ItemContent>
       <ItemActions>{action}</ItemActions>
     </Item>
