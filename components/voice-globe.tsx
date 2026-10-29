@@ -50,7 +50,7 @@ export function VoiceGlobe({
         className
       )}
     >
-      <HeroGradient speed={GLOBE_SPEED} />
+      <HeroGradient speed={GLOBE_SPEED} veiled={false} />
       {/* Shine and edge light from the top left (the near-white
           --primary-foreground, the same in light and dark), shade on the
           bottom right (--primary), and a soft rim of light all round its

@@ -57,6 +57,10 @@
     /* The width of a whole page's content (home sections, header, footer,
        business page, booking, dashboard): max-w-page. */
     --container-page: 72rem;
+    /* The scrolled header pill on phones and tablets: w-pill. Under 90% of
+       the screen, or iPhone Safari paints its top bar solid behind it
+       (components/sticky-header.tsx). */
+    --container-pill: 88vw;
     --font-sans: var(--font-sans);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);

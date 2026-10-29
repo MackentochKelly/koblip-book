@@ -8,6 +8,7 @@ import {
 } from "motion/react"
 import { useRef, useState } from "react"
 
+import { useIsFullScreen } from "@/hooks/use-full-screen"
 import { cn } from "@/lib/utils"
 
 // How far the page scrolls before the header turns into its pill, and
@@ -35,19 +36,23 @@ const frostedClassName =
 export function StickyHeader({ children }: { children: React.ReactNode }) {
   const { scrollY } = useScroll()
   const [scrolled, setScrolled] = useState(false)
-  const [hidden, setHidden] = useState(false)
+  const [scrolledAway, setScrolledAway] = useState(false)
+  // Hidden while scrolled away, or while a full screen view (the phone
+  // search) is open over the page.
+  const fullScreen = useIsFullScreen()
+  const hidden = scrolledAway || fullScreen
   // Where the current scroll direction started: the lowest point while
   // shown, the highest while hidden.
   const turnedAt = useRef(0)
   useMotionValueEvent(scrollY, "change", (y) => {
     setScrolled(y > SCROLLED_AT)
     if (y <= HIDE_AFTER) {
-      setHidden(false)
+      setScrolledAway(false)
       turnedAt.current = y
-    } else if (hidden ? y > turnedAt.current : y < turnedAt.current) {
+    } else if (scrolledAway ? y > turnedAt.current : y < turnedAt.current) {
       turnedAt.current = y
     } else if (Math.abs(y - turnedAt.current) > SCROLL_INTENT) {
-      setHidden(!hidden)
+      setScrolledAway(!scrolledAway)
       turnedAt.current = y
     }
   })
@@ -73,18 +78,25 @@ export function StickyHeader({ children }: { children: React.ReactNode }) {
             // paints its top bar solid behind a fixed element at least that
             // wide (WebKit's LocalFrameView::fixedContainerEdges), which
             // would stop the page showing under the status bar.
-            scrolled ? "w-5/6 lg:max-w-3xl" : "w-full"
+            scrolled ? "w-pill lg:max-w-3xl" : "w-full"
           )}
         >
           {/* The glass fades with the header on its own layer, never inside
               a fading parent: an ancestor below full opacity cuts off what
               a blur can see (MDN, backdrop-filter: backdrop root), so the
               blur would vanish during the fade and pop back at the end.
-              At the top of the page it switches off and on at once. */}
-          <div
+              At the top of the page it switches off and on at once, then
+              shrinks into the pill with the header (Motion layout: a
+              scale, which doesn't cut off the blur). Kept in place while
+              invisible so it can be measured. The radius is set here, not
+              as a class, so Motion keeps it round: 9999 is rounded-full. */}
+          <motion.div
             aria-hidden
+            layout
+            transition={LAYOUT_TRANSITION}
+            style={{ borderRadius: 9999 }}
             className={cn(
-              "pointer-events-none absolute inset-0 -z-10 origin-top rounded-full transition-[scale,opacity] motion-reduce:scale-100",
+              "pointer-events-none absolute inset-0 -z-10 origin-top transition-[scale,opacity] motion-reduce:scale-100",
               frostedClassName,
               hidden
                 ? "scale-95 opacity-0 duration-200 ease-exit"

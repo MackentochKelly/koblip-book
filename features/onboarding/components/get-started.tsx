@@ -40,6 +40,8 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useVisualViewport } from "@/hooks/use-visual-viewport"
+import { useMarkFullScreen } from "@/hooks/use-full-screen"
+import { useTypingPlaceholder } from "@/features/onboarding/hooks/use-typing-placeholder"
 import { AuthForm } from "@/features/owner-auth/components/auth-form"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import { cn } from "@/lib/utils"
@@ -159,6 +161,9 @@ export function GetStarted({
     }
     setExpanded(false)
   }
+
+  // The header and other floating parts step aside while it's open.
+  useMarkFullScreen(open)
 
   // The page behind the full screen search stays still. When it closes, the
   // page goes back to where it was: iPhone Safari scrolls the page down to
@@ -402,6 +407,12 @@ function FindBusiness({
   t: OnboardingWords
 }) {
   const [query, setQuery] = useState("")
+  const [focused, setFocused] = useState(false)
+  const placeholder = useTypingPlaceholder({
+    lines: t.businessNameExamples,
+    rest: t.businessName,
+    paused: focused || query !== "",
+  })
   const [results, setResults] = useState<BusinessSuggestion[] | null>(null)
   const [searching, setSearching] = useState(false)
   const [area, setArea] = useState<SearchArea | null>(null)
@@ -524,10 +535,11 @@ function FindBusiness({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => {
+            setFocused(true)
             askLocation()
             onExpand()
           }}
-          placeholder={t.businessName}
+          placeholder={placeholder}
           className="text-base [&::-webkit-search-cancel-button]:appearance-none"
           aria-label={t.businessName}
           enterKeyHint="search"

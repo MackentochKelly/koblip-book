@@ -43,8 +43,17 @@ export function HomeCta({
           {title}
         </h2>
         <div className="flex flex-col items-center gap-3">
-          <Button size="lg" onClick={findBusiness}>
-            <SearchIcon data-icon="inline-start" />
+          <Button
+            size="lg"
+            onClick={findBusiness}
+            // A glass ring around it, like the frame around the search box.
+            className="ring-6 ring-glass-frame-edge"
+          >
+            <SearchIcon
+              data-icon="inline-start"
+              // A little bigger and bolder, to match the button's words.
+              className="size-5 stroke-[2.25]"
+            />
             {button}
           </Button>
           <p className="text-sm text-hero-foreground">{hint}</p>

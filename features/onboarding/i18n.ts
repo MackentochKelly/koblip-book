@@ -21,6 +21,12 @@ const en = {
   anywhere: "Anywhere",
   closeSearch: "Close search",
   businessName: "Your business name",
+  // Typed one after another in the empty search box, then businessName.
+  businessNameExamples: [
+    "Search your business name",
+    "Lumen Studio",
+    "Your salon, clinic or shop",
+  ],
   clear: "Clear",
   noneFound: "No business found",
   mapsLink: "Google Maps link",
@@ -53,6 +59,11 @@ const es: OnboardingWords = {
   anywhere: "En cualquier lugar",
   closeSearch: "Cerrar búsqueda",
   businessName: "Nombre de tu negocio",
+  businessNameExamples: [
+    "Busca el nombre de tu negocio",
+    "Lumen Studio",
+    "Tu salón, clínica o tienda",
+  ],
   clear: "Borrar",
   noneFound: "No se encontró ningún negocio",
   mapsLink: "Enlace de Google Maps",

@@ -61,7 +61,9 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
     <LanguageProvider language={language}>
       <div
         className={cn(
-          "flex min-h-dvh flex-col bg-background p-2 sm:p-3",
+          // overflow-x-clip: rows that slide sideways (ShowcaseRow) run to
+          // the screen's edge and stop there.
+          "flex min-h-dvh flex-col overflow-x-clip bg-background p-2 sm:p-3",
           fontDisplay.variable,
           fontSerif.variable
         )}

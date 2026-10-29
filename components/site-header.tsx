@@ -18,8 +18,8 @@ export const headerButtonClassName = cn(
 // left, one small button and one action on the right. The small button is
 // light/dark unless the page passes another (the home page: language).
 // `floating`: the header sits in a StickyHeader (public pages). Its edge
-// then lines up with the page's sections, its buttons keep the 12px apart
-// bordered controls need, and both ends slide when it turns into the pill.
+// then lines up with the page's sections, and both ends slide when it
+// turns into the pill.
 export function SiteHeader({
   control = <ThemeToggle className={headerButtonClassName} />,
   action,
@@ -35,7 +35,7 @@ export function SiteHeader({
     </Link>
   )
   const actions = (
-    <div className={cn("flex items-center", floating ? "gap-3" : "gap-2")}>
+    <div className="flex items-center gap-2">
       {control}
       {action}
     </div>

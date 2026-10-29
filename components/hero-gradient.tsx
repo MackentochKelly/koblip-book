@@ -16,10 +16,15 @@ const HERO_GRADIENT = {
 
 // Fills its `relative isolate` parent, behind the content. `speed` lets a
 // smaller use (the voice globe) move a little faster than the hero.
+// `veiled`: a thin wash of the page colour over it, calming the colours so
+// the words on top read more easily. On for every panel with words on it;
+// off for the voice globe, which has none.
 export function HeroGradient({
   speed = HERO_GRADIENT.speed,
+  veiled = true,
 }: {
   speed?: number
+  veiled?: boolean
 }) {
   const colors = useThemeColors(HERO_GRADIENT.colorTokens)
   const still = useReducedMotion()
@@ -43,6 +48,7 @@ export function HeroGradient({
           className="size-full duration-700 motion-safe:animate-in motion-safe:fade-in"
         />
       )}
+      {veiled && <div className="absolute inset-0 bg-background/35" />}
     </div>
   )
 }
