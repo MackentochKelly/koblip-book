@@ -9,8 +9,9 @@ import { cn } from "@/lib/utils"
 // How much the globe grows at full volume, and how fast it follows.
 const PULSE = { maxGrow: 0.1, smoothing: 0.2 } as const
 
-// The voice globe: the hero's colour wash in a ball, with a very light
-// edge, a soft highlight and a shaded side so it reads as a sphere. While
+// The voice globe: the hero's colour wash in a ball, lit like a sphere
+// (no outline): a soft shine on the top left, light along that edge, the
+// bottom right in shade, and a faint glow under it in the brand colour. While
 // talking live it swells a little with the owner's voice and the answer.
 export function VoiceGlobe({
   getInputVolume,
@@ -43,13 +44,15 @@ export function VoiceGlobe({
       ref={ball}
       aria-hidden
       className={cn(
-        "relative isolate aspect-square overflow-hidden rounded-full ring-1 ring-foreground/10",
+        "relative isolate aspect-square overflow-hidden rounded-full shadow-[0_1.25rem_2.5rem_-1rem_color-mix(in_oklch,var(--primary)_35%,transparent)]",
         className
       )}
     >
       <HeroGradient />
-      {/* Light from the top left, shade on the bottom right. */}
-      <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_32%_26%,color-mix(in_oklch,var(--background)_55%,transparent),transparent_50%)] shadow-[inset_-0.6rem_-0.8rem_1.6rem_color-mix(in_oklch,var(--foreground)_14%,transparent)]" />
+      {/* Shine and edge light from the top left (the near-white
+          --primary-foreground, the same in light and dark), shade on the
+          bottom right (--primary), so the ball looks round. */}
+      <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_24%,color-mix(in_oklch,var(--primary-foreground)_75%,transparent),transparent_28%)] shadow-[inset_0.35rem_0.45rem_0.9rem_color-mix(in_oklch,var(--primary-foreground)_45%,transparent),inset_-1rem_-1.4rem_2.2rem_color-mix(in_oklch,var(--primary)_30%,transparent)]" />
     </div>
   )
 }
