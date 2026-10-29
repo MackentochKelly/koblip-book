@@ -10,12 +10,10 @@ export class PcmPlayer {
   private readonly samples: Float32Array<ArrayBuffer>
   private readonly sources = new Set<AudioBufferSourceNode>()
   private nextStart = 0
+  // Called when the last queued chunk has finished playing.
+  onIdle: () => void = () => {}
 
-  constructor(
-    private readonly context: AudioContext,
-    // Called when the last queued chunk has finished playing.
-    private readonly onIdle: () => void
-  ) {
+  constructor(private readonly context: AudioContext) {
     this.analyser = context.createAnalyser()
     this.analyser.fftSize = 512
     this.analyser.connect(context.destination)

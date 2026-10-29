@@ -91,54 +91,74 @@ export function useAssistantChat(
     })
   }, [busy, items, businessId, chatId])
 
-  const consume = async (stream: AsyncIterable<AssistantStreamEvent>) => {
+  // Shows each event as it comes, and gives back the items as they end, so
+  // a caller (talking mode) can read the finished reply without waiting for
+  // the screen to update.
+  const consume = async (
+    stream: AsyncIterable<AssistantStreamEvent>,
+    start: ChatItem[]
+  ): Promise<ChatItem[]> => {
     setBusy(true)
     setError(null)
     unsaved.current = true
+    let latest = start
     try {
       for await (const event of stream) {
         if (event.type === "error") setError(event.code)
-        else setItems((current) => applyEvent(current, event))
+        else {
+          latest = applyEvent(latest, event)
+          setItems((current) => applyEvent(current, event))
+        }
       }
     } catch {
       setError("unavailable")
     } finally {
       setBusy(false)
     }
+    return latest
   }
 
   // Only a question can be stopped; a tapped action always finishes.
   const asking = useRef<AbortController | null>(null)
   const [stoppable, setStoppable] = useState(false)
-  const ask = async (history: ChatItem[]) => {
+  // Resolves with the reply, or null when nothing came back.
+  const ask = async (history: ChatItem[], voice = false) => {
     const controller = new AbortController()
     asking.current = controller
     setStoppable(true)
-    await consume(
+    const latest = await consume(
       transport.chat(
         {
           businessId,
           messages: toMessages(history, ASSISTANT_RULES.maxHistoryMessages),
+          ...(voice ? { voice: true } : {}),
         },
         controller.signal
-      )
+      ),
+      history
     )
     if (asking.current === controller) {
       asking.current = null
       setStoppable(false)
     }
+    const reply = latest.at(-1)
+    return reply?.role === "assistant" ? reply : null
   }
   const stop = () => asking.current?.abort()
 
-  const send = (text: string) => {
+  // `voice`: said out loud in talking mode, so the answer is short and
+  // spoken. Resolves with the reply (null when not sent or none came).
+  const send = async (text: string, options?: { voice?: boolean }) => {
     const clean = text.trim()
-    if (!clean || busy || clean.length > ASSISTANT_RULES.maxMessageChars) return
+    if (!clean || busy || clean.length > ASSISTANT_RULES.maxMessageChars) {
+      return null
+    }
     const next: ChatItem[] = [
       ...items,
       { id: crypto.randomUUID(), role: "owner", text: clean },
     ]
     setItems(next)
-    void ask(next)
+    return ask(next, options?.voice === true)
   }
 
   // Try the last message again, without the half-written reply.
@@ -152,11 +172,12 @@ export function useAssistantChat(
 
   const answer = (id: string, accept: boolean) => {
     if (busy) return
-    setItems((current) => [
-      ...resolveConfirm(current, id, accept ? "accepted" : "declined"),
+    const next = [
+      ...resolveConfirm(items, id, accept ? "accepted" : "declined"),
       newReply(),
-    ])
-    void consume(transport.confirm({ businessId, id, accept }))
+    ]
+    setItems(next)
+    void consume(transport.confirm({ businessId, id, accept }), next)
   }
 
   const reset = () => {

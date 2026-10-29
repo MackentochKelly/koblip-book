@@ -62,6 +62,7 @@ export interface AssistantChat {
 export interface AssistantRequest {
   businessId: string
   messages: AssistantMessage[]
+  voice?: boolean // talking mode: short spoken answers
 }
 
 // Request for POST /api/assistant/confirm (tap on a confirm card).
