@@ -1,16 +1,19 @@
 "use client"
 
 import { AnimatePresence, motion } from "motion/react"
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 
-import { Box, POP, RISE, Scene } from "@/components/feature-preview"
+import { Box, burstFrom, POP, RISE, Scene } from "@/components/feature-preview"
 import { Rating } from "@/components/rating"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import {
+  CalendarDaysIcon,
   CheckIcon,
+  MailIcon,
   MapPinIcon,
+  MessageCircleIcon,
   SearchIcon,
   StoreIcon,
 } from "@/components/ui/icons"
@@ -26,6 +29,7 @@ import { formatPrice } from "@/lib/format-price"
 import { useStoryLoop } from "@/hooks/use-story-loop"
 import type { Messages } from "@/lib/i18n"
 import { SHOWCASE_LOOP } from "@/lib/showcase-rules"
+import { cn } from "@/lib/utils"
 
 type Words = Messages["home"]["steps"]["sample"]
 type Shared = Messages["home"]["features"]["sample"]
@@ -53,7 +57,7 @@ export function StepPreview({
     <Scene {...STEPS[name]}>
       {name === "find" && <FindPreview words={words} shared={shared} />}
       {name === "check" && <CheckPreview words={words} shared={shared} />}
-      {name === "share" && <SharePreview words={words} />}
+      {name === "share" && <SharePreview words={words} shared={shared} />}
     </Scene>
   )
 }
@@ -163,14 +167,17 @@ function FindPreview({ words, shared }: { words: Words; shared: Shared }) {
 
 // A tap: a soft circle that grows and fades on what is tapped (a
 // `relative` parent).
-function TapMark({ ms }: { ms: number }) {
+function TapMark({ ms, className }: { ms: number; className?: string }) {
   return (
     <motion.span
       aria-hidden
       initial={{ opacity: 0.5, scale: 0.4 }}
       animate={{ opacity: 0, scale: 1.4 }}
       transition={{ duration: ms / 1000 }}
-      className="pointer-events-none absolute top-1/2 left-1/3 size-10 -translate-1/2 rounded-full bg-primary/40"
+      className={cn(
+        "pointer-events-none absolute top-1/2 left-1/3 size-10 -translate-1/2 rounded-full bg-primary/40",
+        className
+      )}
     />
   )
 }
@@ -316,44 +323,129 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
   )
 }
 
-// The page's link with Copy: tap it and it says "Copied". A sample, so
+type SharePhase =
+  "link" | "tapCopy" | "copied" | "share" | "tapShare" | "booked"
+
+// The link's story (useStoryLoop): Copy is tapped and says "Copied", the
+// share choices show and WhatsApp is tapped, then a new booking comes in,
+// with confetti. Rests on the link; Copy plays it again. A sample, so
 // nothing goes to the clipboard.
-function SharePreview({ words }: { words: Words }) {
-  const [copied, setCopied] = useState(false)
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
-  useEffect(() => () => clearTimeout(timer.current), [])
-  function copy() {
-    clearTimeout(timer.current)
-    setCopied(true)
-    timer.current = setTimeout(() => setCopied(false), 1800)
-  }
+function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [phase, setPhase] = useState<SharePhase>("link")
+  const time = SHOWCASE_LOOP.share
+  const replay = useStoryLoop(
+    box,
+    async (wait) => {
+      setPhase("link")
+      await wait(time.beforeTap)
+      setPhase("tapCopy")
+      await wait(time.tap)
+      setPhase("copied")
+      await wait(time.copied)
+      setPhase("share")
+      await wait(time.beforeShareTap)
+      setPhase("tapShare")
+      await wait(time.sending)
+      setPhase("booked")
+      if (box.current) burstFrom(box.current)
+      await wait(time.booked)
+    },
+    () => setPhase("link")
+  )
+  const copied = phase === "copied"
+  const sharing = phase === "share" || phase === "tapShare"
+
   return (
-    <Box>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <span className="truncate text-sm text-muted-foreground">
-          {words.link}
-        </span>
-        <Button
-          size="sm"
-          onClick={copy}
-          className={
-            copied
-              ? "w-full bg-success text-success-foreground hover:bg-success/90"
-              : "w-full"
-          }
-        >
-          <AnimatePresence mode="popLayout" initial={false}>
-            <motion.span
-              key={copied ? "copied" : "copy"}
-              {...POP}
-              className="flex items-center gap-1"
-            >
-              {copied && <CheckIcon />}
-              {copied ? words.copied : words.copy}
-            </motion.span>
+    <div ref={box} className="w-full max-w-60">
+      <Box>
+        <div className="flex min-h-20 flex-col justify-center px-(--card-spacing)">
+          <AnimatePresence mode="wait" initial={false}>
+            {phase === "booked" ? (
+              <motion.div
+                key="booked"
+                {...POP}
+                className="flex items-center gap-3"
+                role="status"
+              >
+                <Avatar size="lg">
+                  <AvatarFallback className="bg-success text-success-foreground">
+                    <CalendarDaysIcon />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate font-medium">
+                    {words.newBooking}
+                  </span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {words.bookingWho} ·{" "}
+                    {formatClock(words.bookingTime, shared.locale)}
+                  </span>
+                </div>
+              </motion.div>
+            ) : sharing ? (
+              <motion.div key="share" {...POP} className="flex flex-col gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {words.share}
+                </span>
+                <div className="flex gap-3">
+                  <span className="relative flex">
+                    <Avatar size="lg">
+                      <AvatarImage
+                        src="/brands/whatsapp-glyph-green.svg"
+                        alt=""
+                        className="p-2"
+                      />
+                    </Avatar>
+                    {phase === "tapShare" && (
+                      <TapMark ms={time.tap} className="left-1/2" />
+                    )}
+                  </span>
+                  <Avatar size="lg">
+                    <AvatarFallback>
+                      <MessageCircleIcon />
+                    </AvatarFallback>
+                  </Avatar>
+                  <Avatar size="lg">
+                    <AvatarFallback>
+                      <MailIcon />
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div key="link" {...POP} className="flex flex-col gap-3">
+                <span className="truncate text-sm text-muted-foreground">
+                  {words.link}
+                </span>
+                <Button
+                  size="sm"
+                  onClick={replay}
+                  className={cn(
+                    "relative w-full",
+                    copied &&
+                      "bg-success text-success-foreground hover:bg-success/90"
+                  )}
+                >
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.span
+                      key={copied ? "copied" : "copy"}
+                      {...POP}
+                      className="flex items-center gap-1"
+                    >
+                      {copied && <CheckIcon />}
+                      {copied ? words.copied : words.copy}
+                    </motion.span>
+                  </AnimatePresence>
+                  {phase === "tapCopy" && (
+                    <TapMark ms={time.tap} className="left-1/2" />
+                  )}
+                </Button>
+              </motion.div>
+            )}
           </AnimatePresence>
-        </Button>
-      </div>
-    </Box>
+        </div>
+      </Box>
+    </div>
   )
 }

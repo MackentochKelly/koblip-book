@@ -21,4 +21,12 @@ export const SHOWCASE_LOOP = {
     beforeReady: 600,
     ready: 2800,
   },
+  share: {
+    beforeTap: 1200,
+    tap: 700,
+    copied: 1100,
+    beforeShareTap: 1200,
+    sending: 900,
+    booked: 3200,
+  },
 } as const

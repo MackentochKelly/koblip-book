@@ -103,7 +103,7 @@ export const RISE = {
 }
 
 // A small burst from the button just tapped.
-function burstFrom(element: HTMLElement) {
+export function burstFrom(element: HTMLElement) {
   const box = element.getBoundingClientRect()
   celebrate({
     particleCount: 60,
