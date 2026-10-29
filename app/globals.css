@@ -34,6 +34,11 @@
     --color-success-foreground: var(--success-foreground);
     --color-verified: var(--verified);
     --color-verified-foreground: var(--verified-foreground);
+    /* Text over a photo (the "+3" on the last photo), the same in light and
+       dark: the 50% black keeps white large text at 3:1 or more over any
+       photo, even a white one. bg-photo-scrim text-photo-scrim-foreground. */
+    --color-photo-scrim: oklch(0 0 0 / 50%);
+    --color-photo-scrim-foreground: oklch(1 0 0);
     --font-heading: var(--font-sans);
     --font-display: var(--font-display);
     --color-hero-foreground: var(--hero-foreground);

@@ -59,7 +59,7 @@ export function SectionTabs({ sections }: { sections: ViewTab<string>[] }) {
       <div
         inert={!pinned}
         className={cn(
-          "-mx-4 bg-background pt-2 md:mx-0",
+          "-mx-4 bg-background pt-[max(--spacing(2),env(safe-area-inset-top))] md:mx-0",
           pinned
             ? "transition-[opacity,translate] duration-300 ease-out motion-reduce:transition-none"
             : "-translate-y-2 opacity-0"

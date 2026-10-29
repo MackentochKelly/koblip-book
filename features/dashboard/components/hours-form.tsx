@@ -12,7 +12,7 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
+  FieldTitle,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
@@ -84,7 +84,7 @@ export function HoursForm({
         {m.shell.nav.hours}
       </h1>
       <FieldGroup>
-        {WEEK.map((weekday, index) => {
+        {WEEK.map((weekday) => {
           // Spanish weekdays come lowercase; a label starts with a capital.
           const name = formatWeekday(weekday, m.locale)
           const label = name.charAt(0).toUpperCase() + name.slice(1)
@@ -103,24 +103,26 @@ export function HoursForm({
             )
           return (
             <div key={weekday} className="flex flex-col gap-3">
-              {index > 0 && <FieldSeparator />}
-              <Field orientation="horizontal">
-                <FieldContent>
-                  <FieldLabel htmlFor={`day-${weekday}`}>{label}</FieldLabel>
-                  {!open && <FieldDescription>{t.closed}</FieldDescription>}
-                </FieldContent>
-                <Switch
-                  id={`day-${weekday}`}
-                  checked={open}
-                  disabled={!open && total >= MAX_ROWS}
-                  onCheckedChange={(on) =>
-                    update(
-                      weekday,
-                      on ? [{ opensAt: "09:00", closesAt: "17:00" }] : []
-                    )
-                  }
-                />
-              </Field>
+              {/* The whole day row is the switch's tap area. */}
+              <FieldLabel htmlFor={`day-${weekday}`}>
+                <Field orientation="horizontal">
+                  <FieldContent>
+                    <FieldTitle>{label}</FieldTitle>
+                    {!open && <FieldDescription>{t.closed}</FieldDescription>}
+                  </FieldContent>
+                  <Switch
+                    id={`day-${weekday}`}
+                    checked={open}
+                    disabled={!open && total >= MAX_ROWS}
+                    onCheckedChange={(on) =>
+                      update(
+                        weekday,
+                        on ? [{ opensAt: "09:00", closesAt: "17:00" }] : []
+                      )
+                    }
+                  />
+                </Field>
+              </FieldLabel>
               {ranges.map((range, rangeIndex) => (
                 <Field key={rangeIndex} orientation="horizontal">
                   <Input

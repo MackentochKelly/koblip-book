@@ -426,7 +426,7 @@ export function BookingFlow({
 
   return (
     <>
-      <header className="sticky top-0 z-10 border-b bg-background">
+      <header className="sticky top-0 z-10 border-b bg-background pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex h-14 w-full max-w-page items-center gap-2 px-2 md:px-6">
           <Button
             type="button"

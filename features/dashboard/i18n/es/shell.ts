@@ -40,6 +40,11 @@ const shell: typeof en = {
     checkDetails: "Revisa tus datos",
     live: "Ya estás en línea",
   },
+  error: {
+    title: "Algo salió mal",
+    description: "Inténtalo de nuevo en unos minutos.",
+    retry: "Intentar de nuevo",
+  },
 }
 
 export default shell

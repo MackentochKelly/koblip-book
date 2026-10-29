@@ -39,6 +39,12 @@ const shell = {
     checkDetails: "Check your details",
     live: "You're live",
   },
+  // When an owner page fails to load.
+  error: {
+    title: "Something went wrong",
+    description: "Try again in a few minutes.",
+    retry: "Try again",
+  },
 }
 
 export default shell

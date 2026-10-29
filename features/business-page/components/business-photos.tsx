@@ -228,7 +228,7 @@ export function BusinessPortfolio({ photos }: { photos: PagePhoto[] }) {
               {last && (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-0 flex items-center justify-center bg-black/40 text-2xl font-semibold text-white"
+                  className="absolute inset-0 flex items-center justify-center bg-photo-scrim text-2xl font-semibold text-photo-scrim-foreground"
                 >
                   +{more}
                 </span>

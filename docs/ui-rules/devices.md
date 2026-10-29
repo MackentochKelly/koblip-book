@@ -61,6 +61,10 @@ and shrinks on scroll, full-screen backgrounds run under the bars.
 - **Fixed bottom bars:** pad with `env(safe-area-max-inset-bottom)` and set
   `bottom: calc(env(safe-area-inset-bottom, 0px) - var(--safe-area-max-inset-bottom))`.
   Not `padding-bottom: env(safe-area-inset-bottom)` (jank).
+- **Top bars (iPhone and Android):** every sticky or fixed top bar adds
+  `env(safe-area-inset-top)` on top of its own height, so it clears the
+  notch when the page runs from the Home Screen (the inset is 0 in a
+  browser tab).
 - **Keyboard:** default shrinks only the visible area, like iOS.
 - **Window sizes (Material 3):** compact under 600, medium 600-839,
   expanded 840-1199, large 1200-1599, extra-large 1600+.

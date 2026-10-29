@@ -90,7 +90,7 @@ export function AssistantChat({
       className="fixed inset-x-0 top-0 z-40 flex h-dvh flex-col bg-background md:static md:z-auto md:h-auto md:min-h-0 md:flex-1"
       style={visible ? { top: visible.top, height: visible.height } : undefined}
     >
-      <header className="shrink-0 bg-background">
+      <header className="shrink-0 bg-background pt-[env(safe-area-inset-top)]">
         {/* Back | Chat · Recent | new chat, the tabs in the middle. */}
         <div className="mx-auto grid h-14 w-full max-w-3xl grid-cols-[1fr_auto_1fr] items-center gap-2 px-2">
           <h1 className="sr-only">{messages.title}</h1>

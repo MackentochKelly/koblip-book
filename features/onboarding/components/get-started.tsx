@@ -270,7 +270,7 @@ export function GetStarted({
           className={cn(
             glassFrameClassName,
             open &&
-              "fixed inset-x-0 top-0 z-50 h-dvh bg-background p-0 inset-ring-0"
+              "fixed inset-x-0 top-0 z-50 h-dvh bg-background p-0 pt-[env(safe-area-inset-top)] inset-ring-0"
           )}
         >
           <MotionCard

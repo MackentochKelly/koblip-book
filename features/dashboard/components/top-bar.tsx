@@ -30,7 +30,9 @@ export function TopBar({
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background px-4",
+        // Clear of the notch when the page runs from the Home Screen (the
+        // inset is 0 elsewhere): the 56px bar sits below it.
+        "sticky top-0 z-30 flex h-[calc(--spacing(14)+env(safe-area-inset-top))] items-center gap-2 border-b bg-background px-4 pt-[env(safe-area-inset-top)]",
         className
       )}
     >

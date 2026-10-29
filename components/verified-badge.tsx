@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { touchArea } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 // Lucide's badge-check seal outline, filled here so it reads as a badge even when small.
@@ -51,6 +52,8 @@ export function VerifiedBadge({
       data-open={open || undefined}
       onClick={() => show(TAP_OPEN_MS)}
       className={cn(
+        // Small to look at, but a full 44px to tap (same as every Button).
+        touchArea,
         "group/verified inline-flex items-center rounded-full p-0.5 text-sm font-medium tracking-normal text-verified-foreground transition-[background-color,padding] duration-300 ease-out outline-none hover:bg-verified/15 hover:pr-2.5 focus-visible:ring-3 focus-visible:ring-ring/30 data-open:bg-verified/15 data-open:pr-2.5",
         className
       )}
