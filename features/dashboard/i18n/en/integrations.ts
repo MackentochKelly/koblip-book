@@ -1,12 +1,18 @@
 // The Integrations page: the apps a business connects to Koblip Book.
 const integrations = {
   messaging: "Messaging",
+  calendar: "Calendar",
+  soon: "Coming soon",
   about: (name: string) => `About ${name}`,
   whatsapp: {
     name: "WhatsApp",
     description:
       "Official WhatsApp Business, straight from Meta. Send booking reminders and broadcasts from your own business number.",
-    soon: "Coming soon",
+  },
+  googleCalendar: {
+    name: "Google Calendar",
+    description:
+      "Your bookings in your Google Calendar, kept up to date as they change.",
   },
   koblipChat: {
     name: "Koblip Chat",

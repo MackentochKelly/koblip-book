@@ -2,12 +2,18 @@ import type en from "../en/integrations"
 
 const integrations: typeof en = {
   messaging: "Mensajes",
+  calendar: "Calendario",
+  soon: "Próximamente",
   about: (name: string) => `Sobre ${name}`,
   whatsapp: {
     name: "WhatsApp",
     description:
       "WhatsApp Business oficial, directo de Meta. Envía recordatorios de reservas y difusiones desde el número de tu negocio.",
-    soon: "Próximamente",
+  },
+  googleCalendar: {
+    name: "Google Calendar",
+    description:
+      "Tus reservas en tu Google Calendar, al día con cada cambio.",
   },
   koblipChat: {
     name: "Koblip Chat",

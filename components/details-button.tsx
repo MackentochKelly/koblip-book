@@ -33,8 +33,9 @@ export function DetailsButton({
       <Button
         variant="ghost"
         size="icon-sm"
-        // Beside a line of text without making it taller.
-        className="-my-2 text-muted-foreground"
+        // Beside a line of text without making it taller or wider: only
+        // the icon takes room, the tap area stays.
+        className="-m-2 text-muted-foreground"
         aria-label={label}
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
