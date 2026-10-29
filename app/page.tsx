@@ -12,6 +12,7 @@ import { HomeFeatures } from "@/components/home-features"
 import { GET_STARTED_ID } from "@/components/home-section-title"
 import { HowItWorks } from "@/components/how-it-works"
 import { LiveExample } from "@/components/live-example"
+import { MadeFor } from "@/components/made-for"
 import { LanguageMenu } from "@/components/language-menu"
 import { LanguageProvider } from "@/components/language-provider"
 import { MetaProviderBadge } from "@/components/meta-provider-badge"
@@ -138,6 +139,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           </main>
         </section>
         <WorksWith language={language} />
+        <MadeFor language={language} />
         <HowItWorks words={t} />
         <HomeFeatures words={t.features} />
         {liveHref && <LiveExample href={liveHref} words={t.live} />}

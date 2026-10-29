@@ -75,6 +75,10 @@ import {
   PuzzleSolid as MynaPuzzleSolid,
   LayoutDashboard as MynaLayoutDashboard,
   LayoutDashboardSolid as MynaLayoutDashboardSolid,
+  Flower as MynaFlower,
+  GraduationCap as MynaGraduationCap,
+  Smile as MynaSmile,
+  Wrench as MynaWrench,
 } from "@mynaui/icons-react"
 import {
   AudioLines as LucideAudioLines,
@@ -82,12 +86,15 @@ import {
   Banknote as LucideBanknote,
   CarFront as LucideCarFront,
   Compass as LucideCompass,
+  Dumbbell as LucideDumbbell,
+  HandHeart as LucideHandHeart,
   Languages as LucideLanguages,
   LoaderCircle as LucideLoaderCircle,
   LocateFixed as LucideLocateFixed,
   Nfc as LucideNfc,
   OctagonX as LucideOctagonX,
   PawPrint as LucidePawPrint,
+  Stethoscope as LucideStethoscope,
   Toilet as LucideToilet,
 } from "lucide-react"
 
@@ -176,11 +183,18 @@ export const EllipsisVerticalIcon = icon(
   MynaDotsVertical as Icon,
   "EllipsisVerticalIcon"
 )
+export const DumbbellIcon = icon(LucideDumbbell as Icon, "DumbbellIcon")
 export const ExternalLinkIcon = icon(
   MynaExternalLink as Icon,
   "ExternalLinkIcon"
 )
+export const FlowerIcon = icon(MynaFlower as Icon, "FlowerIcon")
 export const GlobeIcon = icon(MynaGlobe as Icon, "GlobeIcon")
+export const GraduationCapIcon = icon(
+  MynaGraduationCap as Icon,
+  "GraduationCapIcon"
+)
+export const HandHeartIcon = icon(LucideHandHeart as Icon, "HandHeartIcon")
 export const HouseIcon = icon(MynaHome as Icon, "HouseIcon")
 export const ImageIcon = icon(MynaImage as Icon, "ImageIcon")
 export const InfoIcon = icon(MynaInfo as Icon, "InfoIcon")
@@ -219,9 +233,14 @@ export const SettingsIcon = icon(MynaCog as Icon, "SettingsIcon")
 export const ShareIcon = icon(MynaShare as Icon, "ShareIcon")
 export const ShieldCheckIcon = icon(MynaShieldCheck as Icon, "ShieldCheckIcon")
 export const SparklesIcon = icon(MynaSparkles as Icon, "SparklesIcon")
+export const SmileIcon = icon(MynaSmile as Icon, "SmileIcon")
 export const SquareIcon = icon(MynaSquare as Icon, "SquareIcon")
 export const SquarePenIcon = icon(MynaEdit as Icon, "SquarePenIcon")
 export const StarIcon = icon(MynaStar as Icon, "StarIcon")
+export const StethoscopeIcon = icon(
+  LucideStethoscope as Icon,
+  "StethoscopeIcon"
+)
 export const StoreIcon = icon(MynaStore as Icon, "StoreIcon")
 export const SunIcon = icon(MynaSun as Icon, "SunIcon")
 export const ToiletIcon = icon(LucideToilet as Icon, "ToiletIcon")
@@ -231,6 +250,7 @@ export const TriangleAlertIcon = icon(
   "TriangleAlertIcon"
 )
 export const UsersIcon = icon(MynaUsers as Icon, "UsersIcon")
+export const WrenchIcon = icon(MynaWrench as Icon, "WrenchIcon")
 // A business's website, everywhere it shows (mynaui has no compass).
 export const WebsiteIcon = icon(LucideCompass as Icon, "WebsiteIcon")
 export const XIcon = icon(MynaX as Icon, "XIcon")
