@@ -52,10 +52,10 @@ export function StickyHeader({ children }: { children: React.ReactNode }) {
     }
   })
   return (
-    // Motion's layout animation turns the jump between the two sizes into
-    // a move and scale (docs/ui-rules/motion.md: transform only, never
-    // width or height). LayoutGroup lets the slots inside the page's
-    // header, which don't re-render, measure along with the glass.
+    // Motion's layout animation slides the logo and buttons to their new
+    // places when the header changes size (docs/ui-rules/motion.md:
+    // transform only, never width or height). LayoutGroup lets them, inside
+    // the page's header, which doesn't re-render, measure on each change.
     // layoutRoot: measured against the screen, as it's fixed.
     <LayoutGroup>
       <motion.div
@@ -66,43 +66,39 @@ export function StickyHeader({ children }: { children: React.ReactNode }) {
           hidden && "pointer-events-none"
         )}
       >
-        {/* Shown and hidden by fading and shrinking in place, never moving
-            up across the screen's top edge, where Safari would catch it
-            mid-way and paint its top bar solid until it next checks. */}
         <div
           className={cn(
-            "origin-top transition-[scale,opacity] motion-reduce:scale-100",
-            hidden
-              ? "scale-95 opacity-0 duration-200 ease-exit"
-              : "duration-300 ease-enter"
+            "relative mx-auto max-w-page",
+            // Scrolled: under 90% of the screen's width. iPhone Safari
+            // paints its top bar solid behind a fixed element at least that
+            // wide (WebKit's LocalFrameView::fixedContainerEdges), which
+            // would stop the page showing under the status bar.
+            scrolled ? "w-5/6 lg:max-w-3xl" : "w-full"
           )}
         >
+          {/* The glass never animates: no fade, no change of size. Safari
+              redraws a moving or fading blur every frame, which flashes. */}
+          <div
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-0 -z-10 rounded-full",
+              frostedClassName,
+              (!scrolled || hidden) && "invisible"
+            )}
+          />
+          {/* Shown and hidden by fading and shrinking in place, never
+              moving up across the screen's top edge, where Safari would
+              catch it mid-way and paint its top bar solid until it next
+              checks. */}
           <div
             className={cn(
-              "relative mx-auto max-w-page",
-              // Scrolled: under 90% of the screen's width. iPhone Safari
-              // paints its top bar solid behind a fixed element at least
-              // that wide (WebKit's LocalFrameView::fixedContainerEdges),
-              // which would stop the page showing under the status bar.
-              scrolled ? "w-5/6 *:h-14 lg:max-w-3xl" : "w-full"
+              "origin-top transition-[scale,opacity] motion-reduce:scale-100",
+              hidden
+                ? "scale-95 opacity-0 duration-200 ease-exit"
+                : "duration-300 ease-enter",
+              scrolled && "*:h-14"
             )}
           >
-            {/* The glass is on or off with no fade: Safari redraws a fading
-                blur every frame, which flashes. Kept in place (invisible)
-                at rest so it can be measured and scale into the pill. The
-                radius is set here, not as a class, so Motion keeps it round
-                while scaling: 9999 is rounded-full. */}
-            <motion.div
-              aria-hidden
-              layout
-              transition={LAYOUT_TRANSITION}
-              style={{ borderRadius: 9999 }}
-              className={cn(
-                "pointer-events-none absolute inset-0 -z-10",
-                frostedClassName,
-                !scrolled && "invisible"
-              )}
-            />
             {children}
           </div>
         </div>
