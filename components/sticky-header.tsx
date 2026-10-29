@@ -33,18 +33,18 @@ export function StickyHeader({ children }: { children: React.ReactNode }) {
     <div
       className={cn(
         // At rest: the hero's own inset, so the header sits where it did.
-        "fixed inset-x-0 top-0 z-50 p-2 transition-[translate,opacity] duration-300 ease-out motion-reduce:transition-none sm:p-3",
+        "fixed top-2 right-2 left-2 z-50 mx-auto rounded-full transition-[translate,opacity,max-width,background-color,box-shadow] duration-300 ease-out *:transition-[height] *:duration-300 *:ease-out motion-reduce:transition-none *:motion-reduce:transition-none sm:top-3 sm:right-3 sm:left-3",
+        // Scrolled: under 90% of the screen's width. iPhone Safari paints its
+        // top bar solid behind a fixed element at least that wide (WebKit's
+        // LocalFrameView::fixedContainerEdges), which would stop the page
+        // showing under the status bar.
+        scrolled
+          ? cn("max-w-5/6 *:h-14 lg:max-w-3xl", frostedClassName)
+          : "max-w-page",
         hidden && "-translate-y-full opacity-0"
       )}
     >
-      <div
-        className={cn(
-          "mx-auto rounded-full transition-[max-width,background-color,box-shadow] duration-300 ease-out *:transition-[height] *:duration-300 *:ease-out motion-reduce:transition-none *:motion-reduce:transition-none",
-          scrolled ? cn("max-w-3xl *:h-14", frostedClassName) : "max-w-page"
-        )}
-      >
-        {children}
-      </div>
+      {children}
     </div>
   )
 }
