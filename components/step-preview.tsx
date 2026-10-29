@@ -11,9 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   CalendarDaysIcon,
   CheckIcon,
-  MailIcon,
   MapPinIcon,
-  MessageCircleIcon,
   SearchIcon,
   StoreIcon,
 } from "@/components/ui/icons"
@@ -26,6 +24,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatClock } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
+import { initials } from "@/lib/initials"
 import { useStoryLoop } from "@/hooks/use-story-loop"
 import type { Messages } from "@/lib/i18n"
 import { SHOWCASE_LOOP } from "@/lib/showcase-rules"
@@ -324,12 +323,25 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
 }
 
 type SharePhase =
-  "link" | "tapCopy" | "copied" | "share" | "tapShare" | "booked"
+  | "link"
+  | "tapCopy"
+  | "copied"
+  | "share"
+  | "scroll"
+  | "tapPerson"
+  | "picked"
+  | "booked"
+
+// The person who books: the third in the share row.
+const PICKED = 2
+// How far the share row slides: two avatars (size-10) and their gaps
+// (gap-3), so the third person sits in view.
+const SHARE_SLIDE = "-6.5rem"
 
 // The link's story (useStoryLoop): Copy is tapped and says "Copied", the
-// share choices show and WhatsApp is tapped, then a new booking comes in,
-// with confetti. Rests on the link; Copy plays it again. A sample, so
-// nothing goes to the clipboard.
+// share row slides to show more people and one is picked, then that
+// person's booking comes in, with confetti. Rests on the link; Copy plays
+// it again. A sample, so nothing goes to the clipboard.
 function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
   const box = useRef<HTMLDivElement>(null)
   const [phase, setPhase] = useState<SharePhase>("link")
@@ -344,9 +356,13 @@ function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
       setPhase("copied")
       await wait(time.copied)
       setPhase("share")
-      await wait(time.beforeShareTap)
-      setPhase("tapShare")
-      await wait(time.sending)
+      await wait(time.beforeScroll)
+      setPhase("scroll")
+      await wait(time.scroll + time.beforePersonTap)
+      setPhase("tapPerson")
+      await wait(time.tap)
+      setPhase("picked")
+      await wait(time.picked)
       setPhase("booked")
       if (box.current) burstFrom(box.current)
       await wait(time.booked)
@@ -354,7 +370,9 @@ function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
     () => setPhase("link")
   )
   const copied = phase === "copied"
-  const sharing = phase === "share" || phase === "tapShare"
+  const sharing = ["share", "scroll", "tapPerson", "picked"].includes(phase)
+  const slid = phase !== "share"
+  const person = words.people[PICKED]
 
   return (
     <div ref={box} className="w-full max-w-60">
@@ -378,7 +396,7 @@ function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
                     {words.newBooking}
                   </span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {words.bookingWho} ·{" "}
+                    {person.split(" ")[0]} · {words.bookingService} ·{" "}
                     {formatClock(words.bookingTime, shared.locale)}
                   </span>
                 </div>
@@ -388,29 +406,41 @@ function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
                 <span className="text-xs text-muted-foreground">
                   {words.share}
                 </span>
-                <div className="flex gap-3">
-                  <span className="relative flex">
+                <div className="-mx-1 overflow-hidden px-1 py-1">
+                  <motion.div
+                    className="flex gap-3"
+                    animate={{ x: slid ? SHARE_SLIDE : 0 }}
+                    transition={{
+                      duration: time.scroll / 1000,
+                      ease: "easeInOut",
+                    }}
+                  >
                     <Avatar size="lg">
                       <AvatarImage
                         src="/brands/whatsapp-glyph-green.svg"
-                        alt=""
-                        className="p-2"
+                        alt="WhatsApp"
+                        className="object-contain p-2"
                       />
                     </Avatar>
-                    {phase === "tapShare" && (
-                      <TapMark ms={time.tap} className="left-1/2" />
-                    )}
-                  </span>
-                  <Avatar size="lg">
-                    <AvatarFallback>
-                      <MessageCircleIcon />
-                    </AvatarFallback>
-                  </Avatar>
-                  <Avatar size="lg">
-                    <AvatarFallback>
-                      <MailIcon />
-                    </AvatarFallback>
-                  </Avatar>
+                    {words.people.map((name, index) => (
+                      <span key={name} className="relative flex">
+                        <Avatar
+                          size="lg"
+                          className={cn(
+                            "transition-shadow",
+                            index === PICKED &&
+                              phase === "picked" &&
+                              "ring-2 ring-primary"
+                          )}
+                        >
+                          <AvatarFallback>{initials(name)}</AvatarFallback>
+                        </Avatar>
+                        {index === PICKED && phase === "tapPerson" && (
+                          <TapMark ms={time.tap} className="left-1/2" />
+                        )}
+                      </span>
+                    ))}
+                  </motion.div>
                 </div>
               </motion.div>
             ) : (

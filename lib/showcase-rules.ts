@@ -25,8 +25,10 @@ export const SHOWCASE_LOOP = {
     beforeTap: 1200,
     tap: 700,
     copied: 1100,
-    beforeShareTap: 1200,
-    sending: 900,
+    beforeScroll: 900,
+    scroll: 1400,
+    beforePersonTap: 500,
+    picked: 700,
     booked: 3200,
   },
 } as const
