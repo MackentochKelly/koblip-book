@@ -8,9 +8,9 @@ import { VOICE_RULES } from "@/lib/voice-rules"
 
 // ElevenLabs UI's Live Waveform in "static" mode
 // (https://ui.elevenlabs.io/docs/components/live-waveform), the one on
-// shadcn's Create page. Changed in two ways: it reads an analyser it is
-// given instead of opening the microphone a second time, and every bar is
-// solid (no see-through quiet bars).
+// shadcn's Create page, with the library's look: quiet bars lighter, loud
+// ones full colour, soft faded ends. Changed in one way: it reads an
+// analyser it is given instead of opening the microphone a second time.
 const WAVEFORM = {
   barWidth: 3,
   barGap: 2,
@@ -23,6 +23,8 @@ const WAVEFORM = {
   // The part of the spectrum where voices are (the library's 5% to 40%).
   fromBin: 0.05,
   toBin: 0.4,
+  // Pixels faded out at each end.
+  fadeWidth: 24,
 } as const
 
 // Bars stay in place and grow from the middle out with the voice: low
@@ -117,6 +119,7 @@ export function VoiceWaveform({
       const left = (width - bars.length * step + WAVEFORM.barGap) / 2
       bars.forEach((value, i) => {
         const barHeight = Math.max(WAVEFORM.minBarHeight, value * height * 0.8)
+        context.globalAlpha = 0.4 + value * 0.6
         context.beginPath()
         context.roundRect(
           left + i * step,
@@ -127,6 +130,19 @@ export function VoiceWaveform({
         )
         context.fill()
       })
+
+      // Soft ends, as in the library: cut out with a see-through gradient.
+      const fade = Math.min(0.3, WAVEFORM.fadeWidth / Math.max(width, 1))
+      const gradient = context.createLinearGradient(0, 0, width, 0)
+      gradient.addColorStop(0, "rgba(0,0,0,1)")
+      gradient.addColorStop(fade, "rgba(0,0,0,0)")
+      gradient.addColorStop(1 - fade, "rgba(0,0,0,0)")
+      gradient.addColorStop(1, "rgba(0,0,0,1)")
+      context.globalAlpha = 1
+      context.globalCompositeOperation = "destination-out"
+      context.fillStyle = gradient
+      context.fillRect(0, 0, width, height)
+      context.globalCompositeOperation = "source-over"
     })
     return () => cancelAnimationFrame(frame)
   }, [getFrequencies, processing, still])

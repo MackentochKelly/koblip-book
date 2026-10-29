@@ -153,7 +153,7 @@ export function AssistantComposer({
                 live.state === "connecting" || live.state === "thinking"
               }
               label={labels.live.waveform}
-              className="col-start-2 h-8 w-40 text-primary"
+              className="col-start-2 h-10 w-56 text-muted-foreground sm:w-72"
             />
             <InputGroupButton
               className="justify-self-end"
