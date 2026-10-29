@@ -1,3 +1,7 @@
+# Voice timing and conversation task brief
+
+> Historical task brief, archived on 2026-10-29. Retained for context; not current setup guidance or an active work request.
+
 Plan first, then wait for my OK. Don't commit.
 
 Three server changes for talking mode, in the koblip-book repo.

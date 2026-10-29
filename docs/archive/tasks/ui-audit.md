@@ -1,5 +1,9 @@
+# UI audit task brief
+
+> Historical task brief, archived on 2026-10-29. Retained for context; not current setup guidance or an active work request.
+
 Audit only. Do not change, commit or push anything. Write the result to
-`docs/audit-2026-10-29.md` and stop.
+`docs/reviews/ui-audit-2026-10-29.md` and stop.
 
 Read `AGENTS.md` first: its UI rules (phone first, 44px touch targets,
 little text, only shadcn parts from `components/ui`, theme tokens only, light
@@ -72,7 +76,7 @@ code instead and write "code only" next to that page.
   "Checked N things" rows (`TraceCollapsibleTrigger`) are 20px tall, under
   44px.
 
-## Result format (`docs/audit-2026-10-29.md`)
+## Result format (`docs/reviews/ui-audit-2026-10-29.md`)
 
 One table per page:
 

@@ -1,6 +1,10 @@
+# Voice variety task brief
+
+> Historical task brief, archived on 2026-10-29. Retained for context; not current setup guidance or an active work request.
+
 Plan first, then wait for my OK. Don't commit.
 
-Follow-up to docs/codex-voice-casual-and-cutoffs.md: the talking-mode text
+Follow-up to docs/archive/tasks/voice-casual-and-cutoffs.md: the talking-mode text
 gives too many sample lines, and the model copies them word for word (two
 of the last live runs both said "Checking today's bookings for you").
 
