@@ -393,6 +393,57 @@ test("list_bookings validates, filters and caps", async () => {
   expect(getBookings).toHaveBeenCalledWith("b1", "upcoming")
 })
 
+test("list_bookings day is a whole day in the business timezone, past and upcoming", async () => {
+  // 23:30 in Madrid on Oct 28 is already Oct 29 in UTC.
+  vi.useFakeTimers({ now: new Date("2026-10-28T22:30:00.000Z") })
+  const row = (id: string, date: string, time: string, endAt: string) => ({
+    id,
+    date,
+    time,
+    endAt,
+    startAt: endAt,
+    serviceName: "Cut",
+    customerName: id,
+    customerPhone: null,
+    status: "confirmed",
+    addons: [],
+  })
+  vi.mocked(getBookings).mockImplementation(
+    async (_businessId, range) =>
+      (range === "upcoming"
+        ? [row("k3", "2026-10-29", "10:00", "2026-10-29T09:30:00.000Z")]
+        : [
+            row("k1", "2026-10-28", "11:45", "2026-10-28T11:15:00.000Z"),
+            row("k2", "2026-10-28", "16:45", "2026-10-28T16:15:00.000Z"),
+          ]) as never
+  )
+  const tool = byName("list_bookings")
+  try {
+    const today = (await tool.run({ day: "today" })) as {
+      date: string
+      bookings: { customer: string; when: string }[]
+      total: number
+    }
+    expect(today.date).toBe("2026-10-28")
+    expect(today.total).toBe(2)
+    expect(today.bookings.map((b) => b.when)).toEqual(["past", "past"])
+    const tomorrow = (await tool.run({ day: "tomorrow" })) as {
+      date: string
+      total: number
+    }
+    expect(tomorrow).toMatchObject({ date: "2026-10-29", total: 1 })
+  } finally {
+    vi.useRealTimers()
+  }
+  // No other sides or dates to mix in.
+  expect(await tool.run({ day: "today", range: "upcoming" })).toEqual({
+    error: expect.stringContaining("leave out from, to and range"),
+  })
+  expect(await tool.run({ day: "next week" })).toEqual({
+    error: expect.stringContaining("yesterday, today or tomorrow"),
+  })
+})
+
 test("list_bookings with from/to covers both sides of now, each id once", async () => {
   const row = (
     id: string,

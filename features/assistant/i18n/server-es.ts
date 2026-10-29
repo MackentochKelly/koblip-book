@@ -194,6 +194,8 @@ const messages: typeof en = {
     datePast: "date está en el pasado: reserva hoy o después",
     rangeInvalid: "range debe ser upcoming o past",
     dayInvalid: (key: string) => `${key} debe ser YYYY-MM-DD`,
+    dayChoiceInvalid: "day debe ser yesterday, today o tomorrow",
+    dayAlone: "day ya cubre el día entero: no pongas from, to ni range",
     statusUnknown: "estado desconocido",
     queryInvalid: (max: number) => `query debe tener 1-${max} caracteres`,
     nameInvalid: (max: number) => `name debe tener 1-${max} caracteres`,

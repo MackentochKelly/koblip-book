@@ -199,6 +199,8 @@ const messages = {
     datePast: "date is in the past: book today or later",
     rangeInvalid: "range must be upcoming or past",
     dayInvalid: (key: string) => `${key} must be YYYY-MM-DD`,
+    dayChoiceInvalid: "day must be yesterday, today or tomorrow",
+    dayAlone: "day already covers the whole day: leave out from, to and range",
     statusUnknown: "unknown status",
     queryInvalid: (max: number) => `query must be 1-${max} characters`,
     nameInvalid: (max: number) => `name must be 1-${max} characters`,

@@ -60,6 +60,8 @@ import { formatPrice } from "@/lib/format-price"
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
 const STATUSES = ["confirmed", "cancelled", "completed", "no_show"] as const
+// list_bookings' plain day choice, as days from today.
+const DAY_OFFSETS = { yesterday: -1, today: 0, tomorrow: 1 } as const
 const SETTABLE_STATUSES = ["confirmed", "completed", "no_show"] as const
 
 // YYYY-MM-DD of today in the business timezone.
@@ -933,8 +935,18 @@ export function buildAssistantTools(
       definition: {
         name: "list_bookings",
         description:
-          "Bookings, each with when (past / now / upcoming), team member, length, price, source, note and add-ons. Without from/to: upcoming (soonest first) or past (most recent first). With from/to: every booking on those days; adding range keeps only that side of now. Source caps: next 200 upcoming, last 100 past.",
+          "Bookings, each with when (past / now / upcoming), team member, length, price, source, note and add-ons. For yesterday, today or tomorrow, pass only day: every booking that day, past and upcoming (count them all for 'how many today'). For other days, from/to: every booking on those days; adding range keeps only that side of now. With none of these: upcoming (soonest first) or past (most recent first). Source caps: next 200 upcoming, last 100 past.",
+        // `day` is worked out here in the business timezone, so the model
+        // never has to compute a date or pick a side of now for a plain day
+        // ("Don't make the model fill arguments you already know", OpenAI
+        // function calling guide:
+        // https://developers.openai.com/api/docs/guides/function-calling).
         parameters: schema({
+          day: {
+            type: "string",
+            enum: Object.keys(DAY_OFFSETS),
+            description: "A whole day in the business timezone",
+          },
           range: { type: "string", enum: ["upcoming", "past"] },
           from: {
             type: "string",
@@ -950,7 +962,24 @@ export function buildAssistantTools(
       },
       label: t.steps.bookings,
       run: async (args: unknown) => {
-        const a = (args ?? {}) as Record<string, unknown>
+        const a = { ...((args ?? {}) as Record<string, unknown>) }
+        if (a.day !== undefined) {
+          if (!Object.hasOwn(DAY_OFFSETS, a.day as string)) {
+            return bad(t.errors.dayChoiceInvalid)
+          }
+          if (
+            a.from !== undefined ||
+            a.to !== undefined ||
+            a.range !== undefined
+          ) {
+            return bad(t.errors.dayAlone)
+          }
+          const { business } = await getOwnerBusiness(businessId)
+          a.from = a.to = addDaysStr(
+            zonedToday(Date.now(), business.timezone),
+            DAY_OFFSETS[a.day as keyof typeof DAY_OFFSETS]
+          )
+        }
         const range = a.range ?? "upcoming"
         if (range !== "upcoming" && range !== "past") {
           return bad(t.errors.rangeInvalid)
@@ -1043,6 +1072,8 @@ export function buildAssistantTools(
           })),
         }))
         return {
+          // The date a plain day stood for, so the answer can name it.
+          ...(a.day !== undefined ? { date: a.from } : {}),
           bookings: capped,
           total: filtered.length,
           truncated: filtered.length > capped.length,
