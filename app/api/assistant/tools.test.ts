@@ -1783,10 +1783,30 @@ test("buildVoiceLine speaks briefly in both languages", async () => {
   const { buildVoiceLine } =
     await import("@/features/assistant/utils/system-prompt")
   const en = buildVoiceLine("en")
-  expect(en).toContain("speaking out loud")
+  for (const heading of [
+    "Talking mode",
+    "Length",
+    "Before a lookup",
+    "Unclear words",
+    "Facts",
+    "Changes that need a tap",
+  ])
+    expect(en).toContain(`# ${heading}`)
+  expect(en).toContain("DO NOT ALWAYS USE THESE; VARY YOUR WORDS EVERY TIME")
+  expect(en).toContain("NEVER guess what they meant")
   expect(en).toContain("write nothing; the app says it out loud")
   const es = buildVoiceLine("es")
-  expect(es).toContain("voz alta")
+  for (const heading of [
+    "Modo de voz",
+    "Extensión",
+    "Antes de una consulta",
+    "Palabras poco claras",
+    "Datos",
+    "Cambios que necesitan un toque",
+  ])
+    expect(es).toContain(`# ${heading}`)
+  expect(es).toContain("NO USES SIEMPRE ESTAS; CAMBIA LAS PALABRAS CADA VEZ")
+  expect(es).toContain("NUNCA adivines lo que quiso decir")
   expect(es).toContain("no escribas nada; la aplicación")
 })
 

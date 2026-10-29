@@ -223,86 +223,130 @@ function check(name: string, pass: boolean) {
 }
 
 describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
-  test("voice streams lookup speech before tool calls with timings", async () => {
-    const client = getMetaAiClient()
-    expect(client).not.toBeNull()
-    if (!client) return
-    type Chunk = {
-      choices: { delta: { content?: string | null; tool_calls?: unknown[] } }[]
-    }
-    const original = client.chat.completions.create.bind(
-      client.chat.completions
-    ) as unknown as (
-      body: unknown,
-      options: unknown
-    ) => Promise<AsyncIterable<Chunk>>
-    let firstTurn = true
-    const order: string[] = []
-    const spy = vi
-      .spyOn(client.chat.completions, "create")
-      .mockImplementation((async (body: unknown, options: unknown) => {
-        const stream = await original(body, options)
-        const observe = firstTurn
-        firstTurn = false
-        return (async function* () {
-          for await (const chunk of stream) {
-            if (observe) {
-              const delta = chunk.choices[0]?.delta
-              if (delta?.content) order.push("content")
-              if (delta?.tool_calls?.length) order.push("tool_calls")
-            }
-            yield chunk
-          }
-        })()
-      }) as never)
-    const started = performance.now()
-    let firstTextMs: number | null = null
-    let doneMs: number | null = null
-    const events: string[] = []
-    const today = new Intl.DateTimeFormat("en-CA", { timeZone: ZONE }).format(
-      Date.now()
-    )
-    const tools = [
-      immediate("list_bookings", async () => ({
-        bookings: fakeData().bookings.map((b) => ({ ...b, date: today })),
-        total: 2,
-        truncated: false,
-      })),
-    ]
-    try {
-      for await (const event of runChat(
-        [{ role: "owner", text: "How many bookings do I have today?" }],
-        { ...CONTEXT, now: Date.now(), voice: true },
-        tools
-      )) {
-        events.push(event.type)
-        if (event.type === "text" && event.delta.trim() && firstTextMs === null)
-          firstTextMs = performance.now() - started
-        if (event.type === "done") doneMs = performance.now() - started
+  test.each([
+    ...Array.from({ length: 5 }, (_, i) => ({
+      language: "en" as const,
+      run: i + 1,
+      prompt: "How many bookings do I have today?",
+    })),
+    ...Array.from({ length: 3 }, (_, i) => ({
+      language: "es" as const,
+      run: i + 1,
+      prompt: "¿Cuántas reservas tengo hoy?",
+    })),
+  ])(
+    "voice human phrasing $language run $run",
+    async ({ language, run, prompt }) => {
+      const client = getMetaAiClient()
+      expect(client).not.toBeNull()
+      if (!client) return
+      type Chunk = {
+        choices: {
+          delta: { content?: string | null; tool_calls?: unknown[] }
+        }[]
       }
-      const contentBeforeTool =
-        order.indexOf("content") >= 0 &&
-        order.indexOf("tool_calls") > order.indexOf("content")
-      console.log(
-        JSON.stringify({
-          firstTextMs,
-          doneMs,
-          contentBeforeTool,
-          firstTurnEvents: order,
-        })
+      const original = client.chat.completions.create.bind(
+        client.chat.completions
+      ) as unknown as (
+        body: unknown,
+        options: unknown
+      ) => Promise<AsyncIterable<Chunk>>
+      let turn = 0
+      const turnTexts: string[] = []
+      let lookupCount = 0
+      const order: string[] = []
+      const spy = vi
+        .spyOn(client.chat.completions, "create")
+        .mockImplementation((async (body: unknown, options: unknown) => {
+          const stream = await original(body, options)
+          const index = turn++
+          turnTexts[index] = ""
+          const observe = index === 0
+          return (async function* () {
+            for await (const chunk of stream) {
+              const delta = chunk.choices[0]?.delta
+              if (delta?.content) turnTexts[index] += delta.content
+              if (observe) {
+                if (delta?.content) order.push("content")
+                if (delta?.tool_calls?.length) order.push("tool_calls")
+              }
+              yield chunk
+            }
+          })()
+        }) as never)
+      const started = performance.now()
+      let firstTextMs: number | null = null
+      let doneMs: number | null = null
+      const events: string[] = []
+      const today = new Intl.DateTimeFormat("en-CA", { timeZone: ZONE }).format(
+        Date.now()
       )
-      expect(
-        contentBeforeTool,
-        "First model turn must send content before tool calls"
-      ).toBe(true)
-      expect(firstTextMs).not.toBeNull()
-      expect(doneMs).not.toBeNull()
-      expect(events).not.toContain("error")
-      expect(events.slice(-2)).toEqual(["sources", "done"])
-    } finally {
-      spy.mockRestore()
-    }
-  }, 120_000)
+      const tools = [
+        immediate("list_bookings", async () => {
+          const bookings = fakeData().bookings.map((b) => ({
+            ...b,
+            date: today,
+          }))
+          lookupCount = bookings.length
+          return { bookings, total: lookupCount, truncated: false }
+        }),
+      ]
+      try {
+        for await (const event of runChat(
+          [{ role: "owner", text: prompt }],
+          { ...CONTEXT, language, now: Date.now(), voice: true },
+          tools
+        )) {
+          events.push(event.type)
+          if (
+            event.type === "text" &&
+            event.delta.trim() &&
+            firstTextMs === null
+          )
+            firstTextMs = performance.now() - started
+          if (event.type === "done") doneMs = performance.now() - started
+        }
+        const contentBeforeTool =
+          order.indexOf("content") >= 0 &&
+          order.indexOf("tool_calls") > order.indexOf("content")
+        const firstLine = turnTexts[0]?.trim() ?? ""
+        const answer = turnTexts.slice(1).join("\n").trim()
+        const countMatches =
+          lookupCount === 2 &&
+          /\b(?:2|two|dos)\b/i.test(answer) &&
+          !/\b(?:no bookings|zero|cero|ninguna reserva)\b/i.test(answer)
+        console.log(
+          JSON.stringify({
+            language,
+            run,
+            firstLine,
+            answer,
+            lookupCount,
+            countMatches,
+            firstTextMs,
+            doneMs,
+            contentBeforeTool,
+            firstTurnEvents: order,
+          })
+        )
+        expect(
+          contentBeforeTool,
+          "First model turn must send content before tool calls"
+        ).toBe(true)
+        expect(
+          countMatches,
+          "Answer count must match the two returned bookings"
+        ).toBe(true)
+        expect(firstTextMs).not.toBeNull()
+        expect(doneMs).not.toBeNull()
+        expect(events).not.toContain("error")
+        expect(events.slice(-2)).toEqual(["sources", "done"])
+      } finally {
+        spy.mockRestore()
+      }
+    },
+    120_000
+  )
 
   test("service count reads only", async () => {
     const r = await chat("how many services do I have")
