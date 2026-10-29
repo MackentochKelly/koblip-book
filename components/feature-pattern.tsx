@@ -8,7 +8,7 @@ import { useThemeColors } from "@/hooks/use-theme-colors"
 // (shaders.paper.design/waves), thin lines on a pale field like
 // dev.meta.ai's model cards. Drawn in theme tokens, so a new theme or dark
 // mode recolours them. Same library as HeroGradient. Waves has no motion.
-const PATTERN_TOKENS = ["--chart-1", "--primary"]
+const PATTERN_TOKENS = ["--secondary", "--chart-2"]
 
 const PATTERNS = {
   calm: {
@@ -34,7 +34,8 @@ const PATTERNS = {
   },
 } as const
 
-const LINE = { proportion: 0.06, softness: 0.3 }
+// Thin, crisp lines: softness widens every line, so none.
+const LINE = { proportion: 0.04, softness: 0 }
 
 export type FeaturePatternName = keyof typeof PATTERNS
 
