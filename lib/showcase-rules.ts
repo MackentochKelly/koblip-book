@@ -21,6 +21,15 @@ export const SHOWCASE_LOOP = {
     beforeReady: 600,
     ready: 2800,
   },
+  // The cards beside the hero on big screens (HeroSideCards).
+  hero: {
+    start: 1200,
+    serviceIn: 600,
+    beforeAsk: 700,
+    thinking: 1100,
+    beforeBooking: 600,
+    booked: 4200,
+  },
   share: {
     beforeTap: 1200,
     tap: 700,

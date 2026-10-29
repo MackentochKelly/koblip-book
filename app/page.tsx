@@ -5,6 +5,7 @@ import Link from "next/link"
 import { heroEdgeClassName } from "@/components/glass-frame"
 import { StickyHeader } from "@/components/sticky-header"
 import { HeroGradient } from "@/components/hero-gradient"
+import { HeroSideCards } from "@/components/hero-side-cards"
 import { HomeCta } from "@/components/home-cta"
 import { HomeFaq } from "@/components/home-faq"
 import { HomeFeatures } from "@/components/home-features"
@@ -94,6 +95,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           )}
         >
           <HeroGradient />
+          <HeroSideCards words={t.steps.sample} shared={t.features.sample} />
           <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-4 pt-28 pb-24 text-center">
             <div className="flex flex-col gap-4">
               <MetaProviderBadge language={language} />
