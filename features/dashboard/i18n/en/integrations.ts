@@ -2,6 +2,8 @@
 const integrations = {
   messaging: "Messaging",
   calendar: "Calendar",
+  payments: "Payments",
+  tracking: "Tracking",
   soon: "Coming soon",
   about: (name: string) => `About ${name}`,
   whatsapp: {
@@ -13,6 +15,31 @@ const integrations = {
     name: "Google Calendar",
     description:
       "Your bookings in your Google Calendar, kept up to date as they change.",
+  },
+  appleCalendar: {
+    name: "Apple Calendar",
+    description:
+      "Your bookings in Apple Calendar on iPhone, iPad and Mac, kept up to date.",
+  },
+  outlook: {
+    name: "Outlook Calendar",
+    description:
+      "Your bookings in your Outlook calendar, kept up to date as they change.",
+  },
+  stripe: {
+    name: "Stripe",
+    description:
+      "Take deposits or full payment when customers book, so fewer skip their visit.",
+  },
+  metaPixel: {
+    name: "Meta Pixel",
+    description:
+      "See which Facebook and Instagram ads bring you bookings.",
+  },
+  googleAnalytics: {
+    name: "Google Analytics",
+    description:
+      "See who visits your booking page and how many of them book.",
   },
   koblipChat: {
     name: "Koblip Chat",

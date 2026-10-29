@@ -47,6 +47,7 @@ import {
   Puzzle as MynaPuzzle,
   Refresh as MynaRefresh,
   Tag as MynaTag,
+  Target as MynaTarget,
   Search as MynaSearch,
   SearchX as MynaSearchX,
   Share as MynaShare,
@@ -213,6 +214,7 @@ export const PlusIcon = icon(MynaPlus as Icon, "PlusIcon")
 export const PuzzleIcon = icon(MynaPuzzle as Icon, "PuzzleIcon")
 export const RefreshIcon = icon(MynaRefresh as Icon, "RefreshIcon")
 export const TagIcon = icon(MynaTag as Icon, "TagIcon")
+export const TargetIcon = icon(MynaTarget as Icon, "TargetIcon")
 export const SearchIcon = icon(MynaSearch as Icon, "SearchIcon")
 export const SearchXIcon = icon(MynaSearchX as Icon, "SearchXIcon")
 export const SettingsIcon = icon(MynaCog as Icon, "SettingsIcon")

@@ -3,6 +3,8 @@ import type en from "../en/integrations"
 const integrations: typeof en = {
   messaging: "Mensajes",
   calendar: "Calendario",
+  payments: "Pagos",
+  tracking: "Seguimiento",
   soon: "Próximamente",
   about: (name: string) => `Sobre ${name}`,
   whatsapp: {
@@ -14,6 +16,31 @@ const integrations: typeof en = {
     name: "Google Calendar",
     description:
       "Tus reservas en tu Google Calendar, al día con cada cambio.",
+  },
+  appleCalendar: {
+    name: "Apple Calendar",
+    description:
+      "Tus reservas en Apple Calendar en iPhone, iPad y Mac, siempre al día.",
+  },
+  outlook: {
+    name: "Outlook Calendar",
+    description:
+      "Tus reservas en tu calendario de Outlook, al día con cada cambio.",
+  },
+  stripe: {
+    name: "Stripe",
+    description:
+      "Cobra un depósito o el pago completo al reservar, para que menos clientes falten.",
+  },
+  metaPixel: {
+    name: "Meta Pixel",
+    description:
+      "Mira qué anuncios de Facebook e Instagram te traen reservas.",
+  },
+  googleAnalytics: {
+    name: "Google Analytics",
+    description:
+      "Mira quién visita tu página de reservas y cuántos reservan.",
   },
   koblipChat: {
     name: "Koblip Chat",
