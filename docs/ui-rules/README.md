@@ -39,7 +39,5 @@ text, light and dark.
 
 ## Known gaps (found while writing this, not fixed yet)
 
-- Glass surfaces have no `prefers-reduced-transparency` fallback; iPhones
-  don't support that setting, so glass must stay readable on its own.
 - shadcn now ships its own Toast (built on Base UI); we still use Sonner,
   which still works. Decide before adding new toast code.

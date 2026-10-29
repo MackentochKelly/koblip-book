@@ -192,6 +192,17 @@
     --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Reduce Transparency on: every glass piece and frosted menu turns solid,
+   light and dark (MDN prefers-reduced-transparency; Apple HIG). iPhone
+   Safari doesn't report this setting yet, so glass must read well without it. */
+@media (prefers-reduced-transparency: reduce) {
+  :root,
+  .dark {
+    --glass-fill: 100%;
+    --menu-glass: 100%;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
