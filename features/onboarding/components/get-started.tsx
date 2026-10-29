@@ -54,6 +54,8 @@ import { useSessionToken } from "../utils/use-session-token"
 import { SearchAreaPanel, type SearchArea } from "./search-area"
 import { SuggestionList } from "./suggestion-list"
 import { noAutofill } from "@/lib/no-autofill"
+import type { PageLanguage } from "@/lib/page-language"
+import { onboardingWordsFor, type OnboardingWords } from "../i18n"
 
 type ClaimResult =
   { ok: true; businessId: string } | { ok: false; error: string }
@@ -63,12 +65,6 @@ interface Picked {
   address: string | null
   prepared: Promise<PreparedBusiness>
 }
-
-const ERRORS = {
-  invalid: "Paste a Google Maps link",
-  not_found: "That business was not found on Google Maps",
-  failed: "That did not work. Please try again.",
-} as const
 
 type Mode = "search" | "link"
 
@@ -80,11 +76,6 @@ const GROW = { type: "spring", bounce: 0, duration: 0.4 } as const
 const COVER = { duration: 0.2, ease: "easeOut" } as const
 const MotionCard = motion.create(Card)
 
-const MODES: ViewTab<Mode>[] = [
-  { id: "search", label: "Search", icon: <SearchIcon /> },
-  { id: "link", label: "Maps link", icon: <LinkIcon /> },
-]
-
 // The home page's one box: find your business (or paste its Maps link),
 // tap it, log in. The page is built while the owner logs in, then the
 // business becomes theirs and its dashboard opens.
@@ -93,13 +84,20 @@ export function GetStarted({
   claim,
   resume = null,
   hint = true,
+  language,
 }: {
   signedIn: boolean
   claim: (slug: string) => Promise<ClaimResult>
   // Back from Google login: the page to make the owner's.
   resume?: string | null
   hint?: boolean
+  language: PageLanguage
 }) {
+  const t = onboardingWordsFor(language)
+  const modes: ViewTab<Mode>[] = [
+    { id: "search", label: t.modes.search, icon: <SearchIcon /> },
+    { id: "link", label: t.modes.link, icon: <LinkIcon /> },
+  ]
   const router = useRouter()
   const [mode, setMode] = useState<Mode>("search")
   const [picked, setPicked] = useState<Picked | null>(null)
@@ -187,7 +185,7 @@ export function GetStarted({
     setError("")
     void next.prepared.then((result) => {
       setPrepared(result)
-      if (!result.ok) setError(ERRORS[result.error])
+      if (!result.ok) setError(t.errors[result.error])
     })
     if (signedIn) void finish(next)
   }
@@ -204,7 +202,7 @@ export function GetStarted({
     }
     const claimed = await claim(result.slug).catch(() => null)
     if (!claimed?.ok) {
-      setError(ERRORS.failed)
+      setError(t.errors.failed)
       setFinishing(false)
       return
     }
@@ -222,10 +220,10 @@ export function GetStarted({
     <div className="flex w-full max-w-xl flex-col items-center gap-6">
       {!picked && (
         <ViewTabs
-          views={MODES}
+          views={modes}
           value={mode}
           onChange={setMode}
-          ariaLabel="How to find your business"
+          ariaLabel={t.modes.label}
           listClassName={cn(
             glassClassName,
             glassEdgeClassName,
@@ -301,7 +299,7 @@ export function GetStarted({
       {!picked && hint && (
         <p className="flex items-center gap-2 text-sm font-medium">
           <CornerLeftUpIcon className="size-4" />
-          Free to try, no card needed
+          {t.hint}
         </p>
       )}
     </div>
@@ -311,7 +309,7 @@ export function GetStarted({
     return box(
       <Button size="lg" disabled className="w-full">
         <Spinner data-icon="inline-start" />
-        Building your page…
+        {t.building}
       </Button>
     )
   }
@@ -319,7 +317,7 @@ export function GetStarted({
   if (!picked) {
     return box(
       mode === "link" ? (
-        <PasteLink onChoose={choose} />
+        <PasteLink onChoose={choose} t={t} />
       ) : (
         <FindBusiness
           onChoose={(next) => {
@@ -329,6 +327,7 @@ export function GetStarted({
           expanded={open}
           onExpand={expand}
           onCollapse={collapse}
+          t={t}
         />
       )
     )
@@ -362,13 +361,13 @@ export function GetStarted({
           <FieldError>{error}</FieldError>
           <Button variant="outline" size="lg" onClick={back}>
             <ArrowLeftIcon data-icon="inline-start" />
-            Search again
+            {t.searchAgain}
           </Button>
         </Field>
       ) : signedIn ? (
         <Button size="lg" disabled>
           <Spinner data-icon="inline-start" />
-          Building your page…
+          {t.building}
         </Button>
       ) : (
         <>
@@ -377,9 +376,10 @@ export function GetStarted({
             disabled={finishing}
             googleNext={ready ? `/?claim=${ready.slug}` : undefined}
             googleReady={Boolean(ready)}
+            language={language}
           />
           <Button variant="ghost" onClick={back} disabled={finishing}>
-            Not your business?
+            {t.notYours}
           </Button>
         </>
       )}
@@ -393,11 +393,13 @@ function FindBusiness({
   expanded,
   onExpand,
   onCollapse,
+  t,
 }: {
   onChoose: (picked: Picked) => void
   expanded: boolean
   onExpand: () => void
   onCollapse: () => void
+  t: OnboardingWords
 }) {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<BusinessSuggestion[] | null>(null)
@@ -417,7 +419,7 @@ function FindBusiness({
         setLocating(false)
         setAreaOpen(false)
         setArea({
-          label: "Near me",
+          label: t.nearMe,
           center: {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
@@ -497,13 +499,13 @@ function FindBusiness({
           ) : (
             <MapPinIcon data-icon="inline-start" />
           )}
-          {area?.label ?? "Anywhere"}
+          {area?.label ?? t.anywhere}
         </Button>
         {expanded && (
           <Button
             variant="outline"
             size="icon-sm"
-            aria-label="Close search"
+            aria-label={t.closeSearch}
             onClick={onCollapse}
             className="ml-auto"
           >
@@ -525,16 +527,16 @@ function FindBusiness({
             askLocation()
             onExpand()
           }}
-          placeholder="Your business name"
+          placeholder={t.businessName}
           className="text-base [&::-webkit-search-cancel-button]:appearance-none"
-          aria-label="Your business name"
+          aria-label={t.businessName}
           enterKeyHint="search"
         />
         {query && (
           <InputGroupAddon align="inline-end">
             <InputGroupButton
               size="icon-xs"
-              aria-label="Clear"
+              aria-label={t.clear}
               onClick={() => setQuery("")}
             >
               <XIcon />
@@ -549,9 +551,7 @@ function FindBusiness({
         )}
       >
         {results && results.length === 0 && !searching && (
-          <p className="px-1 text-sm text-muted-foreground">
-            No business found
-          </p>
+          <p className="px-1 text-sm text-muted-foreground">{t.noneFound}</p>
         )}
         {results && results.length > 0 && (
           <SuggestionList
@@ -580,13 +580,20 @@ function FindBusiness({
         }}
         locate={() => locate()}
         locating={locating}
+        words={t.area}
       />
     </div>
   )
 }
 
 // The backup way in: a link shared from Google Maps.
-function PasteLink({ onChoose }: { onChoose: (picked: Picked) => void }) {
+function PasteLink({
+  onChoose,
+  t,
+}: {
+  onChoose: (picked: Picked) => void
+  t: OnboardingWords
+}) {
   const [link, setLink] = useState("")
   const [sending, setSending] = useState(false)
   const [error, setError] = useState("")
@@ -595,7 +602,7 @@ function PasteLink({ onChoose }: { onChoose: (picked: Picked) => void }) {
     event.preventDefault()
     if (sending) return
     if (!link.trim()) {
-      setError(ERRORS.invalid)
+      setError(t.errors.invalid)
       return
     }
     setSending(true)
@@ -605,7 +612,7 @@ function PasteLink({ onChoose }: { onChoose: (picked: Picked) => void }) {
     )
     setSending(false)
     if (!result.ok) {
-      setError(ERRORS[result.error])
+      setError(t.errors[result.error])
       return
     }
     onChoose({
@@ -634,7 +641,7 @@ function PasteLink({ onChoose }: { onChoose: (picked: Picked) => void }) {
             onChange={(event) => setLink(event.target.value)}
             placeholder="https://maps.app.goo.gl/…"
             className="text-base"
-            aria-label="Google Maps link"
+            aria-label={t.mapsLink}
             aria-invalid={Boolean(error) || undefined}
             autoFocus
           />
@@ -643,7 +650,7 @@ function PasteLink({ onChoose }: { onChoose: (picked: Picked) => void }) {
       </Field>
       <Button type="submit" size="lg" disabled={sending}>
         {sending && <Spinner data-icon="inline-start" />}
-        Continue
+        {t.continue}
       </Button>
     </form>
   )

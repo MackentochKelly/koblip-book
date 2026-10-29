@@ -3,6 +3,7 @@
 import { MoonIcon, SunIcon } from "@/components/ui/icons"
 import { useTheme } from "next-themes"
 
+import { useMessages } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 
 // One tap switches the page between light and dark. The icon follows the
@@ -15,14 +16,15 @@ export function ThemeToggle({
   className?: string
 }) {
   const { resolvedTheme, setTheme } = useTheme()
+  const label = useMessages().page.theme
   return (
     <Button
       type="button"
       variant="outline"
       size={size}
       className={className}
-      aria-label="Light or dark mode"
-      title="Light or dark mode"
+      aria-label={label}
+      title={label}
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >
       <SunIcon className="hidden dark:block" />

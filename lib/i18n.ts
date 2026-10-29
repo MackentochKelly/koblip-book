@@ -24,6 +24,7 @@ const en = {
     language: "Language",
     verified: "Verified",
     seeAll: "See all",
+    theme: "Light or dark mode",
   },
   status: {
     temporarilyClosed: "Temporarily closed",
@@ -116,6 +117,31 @@ const en = {
     extrasUpTo: (max: number) => `Up to ${max}`,
     optional: "Optional",
   },
+  // The home page (Koblip Book's own page for owners).
+  home: {
+    description: "Your booking page in one minute.",
+    logIn: "Log in",
+    dashboard: "Dashboard",
+    titleStart: "Your booking page in one",
+    titleEnd: "minute",
+    findOn: "Find your business on",
+    maps: "Google Maps.",
+    weTurn: "We turn it into your booking page.",
+    worksWith: "Works with",
+    remindersOnWhatsApp: "Reminders on WhatsApp",
+    soon: "Soon",
+    provider: {
+      badge: "Verified Meta Tech Provider",
+      about: "Meta approved Koblip to connect businesses to WhatsApp.",
+      ownNumber: "Your own WhatsApp number",
+      ownNumberText: "Connect your business number in a few taps.",
+      reminders: "Reminders on WhatsApp",
+      remindersText: "Clients get their booking reminders on WhatsApp.",
+      checked: "Checked by Meta",
+      checkedText:
+        "Meta verified our business and approved us to connect yours.",
+    },
+  },
 }
 
 export type Messages = typeof en
@@ -142,6 +168,7 @@ const es: Messages = {
     language: "Idioma",
     verified: "Verificado",
     seeAll: "Ver todo",
+    theme: "Modo claro u oscuro",
   },
   status: {
     temporarilyClosed: "Cerrado temporalmente",
@@ -232,6 +259,30 @@ const es: Messages = {
     extrasRequired: (min: number) => (min === 1 ? "Elige uno" : `Elige ${min}`),
     extrasUpTo: (max: number) => `Hasta ${max}`,
     optional: "Opcional",
+  },
+  home: {
+    description: "Tu página de reservas en un minuto.",
+    logIn: "Iniciar sesión",
+    dashboard: "Panel",
+    titleStart: "Tu página de reservas en un",
+    titleEnd: "minuto",
+    findOn: "Encuentra tu negocio en",
+    maps: "Google Maps.",
+    weTurn: "Lo convertimos en tu página de reservas.",
+    worksWith: "Funciona con",
+    remindersOnWhatsApp: "Recordatorios por WhatsApp",
+    soon: "Pronto",
+    provider: {
+      badge: "Meta Tech Provider verificado",
+      about: "Meta aprobó a Koblip para conectar negocios a WhatsApp.",
+      ownNumber: "Tu propio número de WhatsApp",
+      ownNumberText: "Conecta el número de tu negocio en pocos toques.",
+      reminders: "Recordatorios por WhatsApp",
+      remindersText: "Tus clientes reciben sus recordatorios por WhatsApp.",
+      checked: "Verificado por Meta",
+      checkedText:
+        "Meta verificó nuestro negocio y nos aprobó para conectar el tuyo.",
+    },
   },
 }
 

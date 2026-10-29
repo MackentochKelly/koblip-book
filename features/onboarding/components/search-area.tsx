@@ -18,6 +18,7 @@ import { useDebounced } from "../utils/use-debounced"
 import { useSessionToken } from "../utils/use-session-token"
 import { SuggestionList } from "./suggestion-list"
 import { noAutofill } from "@/lib/no-autofill"
+import type { OnboardingWords } from "../i18n"
 
 export interface SearchArea {
   label: string
@@ -31,12 +32,14 @@ export function SearchAreaPanel({
   onPick,
   locate,
   locating,
+  words: t,
 }: {
   open: boolean
   onClose: () => void
   onPick: (area: SearchArea) => void
   locate: () => void
   locating: boolean
+  words: OnboardingWords["area"]
 }) {
   const [query, setQuery] = useState("")
   const [cities, setCities] = useState<CitySuggestion[]>([])
@@ -74,7 +77,7 @@ export function SearchAreaPanel({
   }
 
   return (
-    <ResponsivePanel open={open} onClose={onClose} title="Search near">
+    <ResponsivePanel open={open} onClose={onClose} title={t.title}>
       <div className="flex flex-col gap-3">
         <Item
           variant="outline"
@@ -85,7 +88,7 @@ export function SearchAreaPanel({
             {locating ? <Spinner /> : <LocateFixedIcon />}
           </ItemMedia>
           <ItemContent>
-            <ItemTitle>Use my location</ItemTitle>
+            <ItemTitle>{t.useLocation}</ItemTitle>
           </ItemContent>
         </Item>
         <InputGroup>
@@ -97,8 +100,8 @@ export function SearchAreaPanel({
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="City"
-            aria-label="City"
+            placeholder={t.city}
+            aria-label={t.city}
           />
         </InputGroup>
         {cities.length > 0 && (

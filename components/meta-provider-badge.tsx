@@ -1,5 +1,9 @@
 import Image from "next/image"
-import { BadgeCheckIcon, ChevronRightIcon, ShieldCheckIcon } from "@/components/ui/icons"
+import {
+  BadgeCheckIcon,
+  ChevronRightIcon,
+  ShieldCheckIcon,
+} from "@/components/ui/icons"
 
 import { glassButtonClassName } from "@/components/glass-frame"
 import { Badge } from "@/components/ui/badge"
@@ -19,37 +23,40 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
+import { messagesFor } from "@/lib/i18n"
+import type { PageLanguage } from "@/lib/page-language"
 import { cn } from "@/lib/utils"
-
-// What being a Meta Tech Provider lets Koblip Book do. `soon`: on the
-// roadmap, not built yet. WhatsApp: its own file from the official pack,
-// never recoloured, its name never joined to other words
-// (meta.com/brand/resources/whatsapp/whatsapp-brand).
-const FEATURES = [
-  {
-    whatsapp: true,
-    title: "Your own WhatsApp number",
-    description: "Connect your business number in a few taps.",
-    soon: true,
-  },
-  {
-    whatsapp: true,
-    title: "Reminders on WhatsApp",
-    description: "Clients get their booking reminders on WhatsApp.",
-    soon: true,
-  },
-  {
-    whatsapp: false,
-    title: "Checked by Meta",
-    description: "Meta verified our business and approved us to connect yours.",
-    soon: false,
-  },
-] as const
 
 // The home page's glass pill. Plain words only: Meta's logo needs Meta's
 // approval (meta.com/brand/resources/meta/company-brand). Tap it to see
 // what it means.
-export function MetaProviderBadge() {
+export function MetaProviderBadge({ language }: { language: PageLanguage }) {
+  const home = messagesFor(language).home
+  const t = home.provider
+  // What being a Meta Tech Provider lets Koblip Book do. `soon`: on the
+  // roadmap, not built yet. WhatsApp: its own file from the official pack,
+  // never recoloured, its name never joined to other words
+  // (meta.com/brand/resources/whatsapp/whatsapp-brand).
+  const features = [
+    {
+      whatsapp: true,
+      title: t.ownNumber,
+      description: t.ownNumberText,
+      soon: true,
+    },
+    {
+      whatsapp: true,
+      title: t.reminders,
+      description: t.remindersText,
+      soon: true,
+    },
+    {
+      whatsapp: false,
+      title: t.checked,
+      description: t.checkedText,
+      soon: false,
+    },
+  ]
   return (
     <Dialog>
       <DialogTrigger
@@ -65,18 +72,16 @@ export function MetaProviderBadge() {
         }
       >
         <BadgeCheckIcon data-icon="inline-start" />
-        Verified Meta Tech Provider
+        {t.badge}
         <ChevronRightIcon data-icon="inline-end" />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Verified Meta Tech Provider</DialogTitle>
-          <DialogDescription>
-            Meta approved Koblip to connect businesses to WhatsApp.
-          </DialogDescription>
+          <DialogTitle>{t.badge}</DialogTitle>
+          <DialogDescription>{t.about}</DialogDescription>
         </DialogHeader>
         <ItemGroup className="gap-2">
-          {FEATURES.map(({ whatsapp, title, description, soon }) => (
+          {features.map(({ whatsapp, title, description, soon }) => (
             <Item key={title} variant="muted" size="sm">
               <ItemMedia variant="icon">
                 {whatsapp ? (
@@ -94,7 +99,7 @@ export function MetaProviderBadge() {
               <ItemContent>
                 <ItemTitle>
                   {title}
-                  {soon && <Badge variant="secondary">Soon</Badge>}
+                  {soon && <Badge variant="secondary">{home.soon}</Badge>}
                 </ItemTitle>
                 <ItemDescription>{description}</ItemDescription>
               </ItemContent>
