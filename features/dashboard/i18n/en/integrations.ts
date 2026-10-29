@@ -14,9 +14,9 @@ const integrations = {
       "Official WhatsApp Business, straight from Meta. Send booking reminders and broadcasts from your own business number.",
   },
   sms: {
-    name: "SMS",
+    name: "Twilio SMS",
     description:
-      "Booking confirmations and reminders by text message, for customers without WhatsApp.",
+      "Booking confirmations and reminders by text message through Twilio, for customers without WhatsApp.",
   },
   email: {
     name: "Email",

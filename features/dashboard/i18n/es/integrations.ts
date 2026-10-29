@@ -15,9 +15,9 @@ const integrations: typeof en = {
       "WhatsApp Business oficial, directo de Meta. Envía recordatorios de reservas y difusiones desde el número de tu negocio.",
   },
   sms: {
-    name: "SMS",
+    name: "SMS de Twilio",
     description:
-      "Confirmaciones y recordatorios de reservas por mensaje de texto, para clientes sin WhatsApp.",
+      "Confirmaciones y recordatorios de reservas por mensaje de texto con Twilio, para clientes sin WhatsApp.",
   },
   email: {
     name: "Email",
