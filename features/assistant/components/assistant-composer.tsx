@@ -4,8 +4,6 @@ import { useState } from "react"
 import {
   ArrowUpIcon,
   AudioLinesIcon,
-  MicIcon,
-  MicOffIcon,
   SquareIcon,
   XIcon,
 } from "@/components/ui/icons"
@@ -46,7 +44,7 @@ const MODE_LABELS: Record<
 
 // The message box. Enter sends; Shift+Enter starts a new line. Like
 // ChatGPT: the voice button talks live (the box then shows what it hears,
-// with mute and end).
+// and an end button).
 export function AssistantComposer({
   businessId,
   labels,
@@ -142,14 +140,6 @@ export function AssistantComposer({
             className="max-h-32 min-h-11"
           />
           <InputGroupAddon align="block-end" className="justify-end">
-            <InputGroupButton
-              variant="secondary"
-              size="icon-sm"
-              aria-label={live.muted ? labels.live.unmute : labels.live.mute}
-              onClick={live.toggleMute}
-            >
-              {live.muted ? <MicOffIcon /> : <MicIcon />}
-            </InputGroupButton>
             <InputGroupButton
               variant="default"
               size="icon-sm"

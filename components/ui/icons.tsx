@@ -39,8 +39,6 @@ import {
   Logout as MynaLogout,
   Mail as MynaMail,
   MapPin as MynaMapPin,
-  Microphone as MynaMicrophone,
-  MicrophoneOff as MynaMicrophoneOff,
   Monitor as MynaMonitor,
   Moon as MynaMoon,
   Navigation as MynaNavigation,
@@ -198,8 +196,6 @@ export const LogOutIcon = icon(MynaLogout as Icon, "LogOutIcon")
 export const MailIcon = icon(MynaMail as Icon, "MailIcon")
 export const MapPinIcon = icon(MynaMapPin as Icon, "MapPinIcon")
 export const MessageCircleIcon = icon(MynaChat as Icon, "MessageCircleIcon")
-export const MicIcon = icon(MynaMicrophone as Icon, "MicIcon")
-export const MicOffIcon = icon(MynaMicrophoneOff as Icon, "MicOffIcon")
 export const MonitorIcon = icon(MynaMonitor as Icon, "MonitorIcon")
 export const MoonIcon = icon(MynaMoon as Icon, "MoonIcon")
 export const NavigationIcon = icon(MynaNavigation as Icon, "NavigationIcon")

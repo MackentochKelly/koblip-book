@@ -73,8 +73,6 @@ const messages = {
       listening: "Listening…",
       thinking: "Thinking…",
       talking: "Talking…",
-      mute: "Mute",
-      unmute: "Unmute",
       end: "End",
       // Said out loud when an answer waits for a tap on its card.
       confirmLine: "To do it, tap the button on the screen.",

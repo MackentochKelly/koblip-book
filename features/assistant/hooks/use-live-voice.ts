@@ -92,11 +92,9 @@ export function useLiveVoice({
   const [state, setState] = useState<LiveVoiceState | "off">("off")
   // What Meta hears so far in this turn; empty between turns.
   const [caption, setCaption] = useState("")
-  const [muted, setMuted] = useState(false)
 
   const session = useRef<LiveVoiceSession | null>(null)
   const player = useRef<PcmPlayer | null>(null)
-  const mutedRef = useRef(false)
   const inputLevel = useRef(0)
   // The props as last drawn, for the session's callbacks.
   const latest = useRef({
@@ -135,8 +133,6 @@ export function useLiveVoice({
 
   const start = useCallback(async () => {
     if (session.current) return
-    setMuted(false)
-    mutedRef.current = false
     setState("connecting")
     // Made inside the tap, so phones let it play sound.
     const context = new AudioContext()
@@ -234,8 +230,7 @@ export function useLiveVoice({
     }
     socket.onclose = (close) => current.closed(close.code)
 
-    // Microphone -> 24 kHz 16-bit ~80 ms frames -> the relay. While muted
-    // it keeps sending silence, or Meta closes an idle session.
+    // Microphone -> 24 kHz 16-bit ~80 ms frames -> the relay.
     const resample = createResampler(
       context.sampleRate,
       VOICE_RULES.speakSampleRate
@@ -245,9 +240,7 @@ export function useLiveVoice({
       numberOfOutputs: 0,
     })
     capture.port.onmessage = (message: MessageEvent<Float32Array>) => {
-      const samples = mutedRef.current
-        ? new Float32Array(message.data.length)
-        : message.data
+      const samples = message.data
       inputLevel.current = level(samples)
       if (socket.readyState !== WebSocket.OPEN) return
       for (const pcm of frame(floatToPcm16(resample(samples)))) {
@@ -265,11 +258,6 @@ export function useLiveVoice({
     session.current?.end()
   }, [])
 
-  const toggleMute = useCallback(() => {
-    mutedRef.current = !mutedRef.current
-    setMuted(mutedRef.current)
-  }, [])
-
   // The screen stays on while talking, like a phone call.
   useWakeLock(state !== "off")
 
@@ -283,10 +271,8 @@ export function useLiveVoice({
     supported,
     state,
     caption,
-    muted,
     start,
     end,
-    toggleMute,
     getInputVolume,
     getOutputVolume,
   }

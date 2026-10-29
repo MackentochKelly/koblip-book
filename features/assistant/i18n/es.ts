@@ -68,8 +68,6 @@ const messages: typeof en = {
       listening: "Escuchando…",
       thinking: "Pensando…",
       talking: "Hablando…",
-      mute: "Silenciar",
-      unmute: "Activar micrófono",
       end: "Terminar",
       confirmLine: "Para hacerlo, toca el botón en la pantalla.",
       greeting: "¡Hola! ¿Qué onda?",
