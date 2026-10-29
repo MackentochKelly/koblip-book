@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import {
   ArrowUpIcon,
   AudioLinesIcon,
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
 import { VoiceGlobe } from "@/components/voice-globe"
+import { VoiceWaveform } from "@/components/voice-waveform"
 import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { VOICE_RULES } from "@/lib/voice-rules"
@@ -93,6 +94,13 @@ export function AssistantComposer({
       toast.error(error === "mic_denied" ? labels.micDenied : errors[error]),
   })
 
+  // The waveform follows whoever is talking: the owner, then the answer.
+  const { getInputVolume, getOutputVolume } = live
+  const getVoiceLevel = useCallback(
+    () => Math.max(getInputVolume(), getOutputVolume()),
+    [getInputVolume, getOutputVolume]
+  )
+
   // The main button: stop an answer, send while there are words, talk
   // live while the box is empty.
   const mode: Mode = stoppable
@@ -139,7 +147,17 @@ export function AssistantComposer({
             aria-live="polite"
             className="max-h-32 min-h-11"
           />
-          <InputGroupAddon align="block-end" className="justify-end">
+          <InputGroupAddon align="block-end">
+            {/* Like Claude's voice mode: the voice as bars, a soft wave
+                while connecting or thinking. */}
+            <VoiceWaveform
+              getLevel={getVoiceLevel}
+              processing={
+                live.state === "connecting" || live.state === "thinking"
+              }
+              label={labels.live.waveform}
+              className="h-8 flex-1 text-primary"
+            />
             <InputGroupButton
               variant="default"
               size="icon-sm"

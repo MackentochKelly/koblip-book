@@ -69,6 +69,7 @@ const messages: typeof en = {
       thinking: "Pensando…",
       talking: "Hablando…",
       end: "Terminar",
+      waveform: "Nivel de voz",
       confirmLine: "Para hacerlo, toca el botón en la pantalla.",
       greeting: "¡Hola! ¿Qué onda?",
       fillers: ["Mmm, a ver.", "Espérate, ya casi.", "Va, un seg."],
