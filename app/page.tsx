@@ -4,6 +4,7 @@ import Link from "next/link"
 
 import { heroEdgeClassName } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
+import { HomeFeatures } from "@/components/home-features"
 import { LanguageProvider } from "@/components/language-provider"
 import { MetaProviderBadge } from "@/components/meta-provider-badge"
 import { headerButtonClassName, SiteHeader } from "@/components/site-header"
@@ -99,6 +100,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
             />
           </main>
         </section>
+        <HomeFeatures language={language} />
         <WorksWith language={language} />
       </div>
     </LanguageProvider>
