@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type {
+  AnswerListener,
   AssistantConfirmRequest,
   AssistantRequest,
   AssistantStreamEvent,
@@ -97,7 +98,7 @@ export function useAssistantChat(
   const consume = async (
     stream: AsyncIterable<AssistantStreamEvent>,
     start: ChatItem[],
-    onText?: (delta: string) => void
+    listen?: AnswerListener
   ): Promise<ChatItem[]> => {
     setBusy(true)
     setError(null)
@@ -107,7 +108,10 @@ export function useAssistantChat(
       for await (const event of stream) {
         if (event.type === "error") setError(event.code)
         else {
-          if (event.type === "text") onText?.(event.delta)
+          if (event.type === "text") listen?.onText(event.delta)
+          if (event.type === "step" && event.status === "running") {
+            listen?.onLookup()
+          }
           latest = applyEvent(latest, event)
           setItems((current) => applyEvent(current, event))
         }
@@ -127,7 +131,7 @@ export function useAssistantChat(
   const ask = async (
     history: ChatItem[],
     voice = false,
-    onText?: (delta: string) => void
+    listen?: AnswerListener
   ) => {
     const controller = new AbortController()
     asking.current = controller
@@ -142,7 +146,7 @@ export function useAssistantChat(
         controller.signal
       ),
       history,
-      onText
+      listen
     )
     if (asking.current === controller) {
       asking.current = null
@@ -154,11 +158,11 @@ export function useAssistantChat(
   const stop = () => asking.current?.abort()
 
   // `voice`: said out loud in talking mode, so the answer is short and
-  // spoken; `onText` gets its words as they are written. Resolves with the
+  // spoken; `listen` hears its words as they are written. Resolves with the
   // reply (null when not sent or none came).
   const send = async (
     text: string,
-    options?: { voice?: boolean; onText?: (delta: string) => void }
+    options?: { voice?: boolean; listen?: AnswerListener }
   ) => {
     const clean = text.trim()
     if (!clean || busy || clean.length > ASSISTANT_RULES.maxMessageChars) {
@@ -169,7 +173,7 @@ export function useAssistantChat(
       { id: crypto.randomUUID(), role: "owner", text: clean },
     ]
     setItems(next)
-    return ask(next, options?.voice === true, options?.onText)
+    return ask(next, options?.voice === true, options?.listen)
   }
 
   // Try the last message again, without the half-written reply.

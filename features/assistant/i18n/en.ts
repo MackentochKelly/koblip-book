@@ -79,15 +79,12 @@ const messages = {
       end: "End",
       // Said out loud when an answer waits for a tap on its card.
       confirmLine: "To do it, tap the button on the screen.",
-      // Said once if an answer is slow; no time words ("one second"), as
-      // ElevenLabs advises.
       // Said once when talking starts.
-      greeting: "Hi! What can I do for you?",
-      fillers: [
-        "Hmm, let me see.",
-        "Okay, almost there.",
-        "Alright, let me look.",
-      ],
+      greeting: "Hey! What's up?",
+      // Said once if an answer is slow.
+      fillers: ["Hmm, lemme see.", "Hang on, almost got it.", "Okay, one sec."],
+      // Put in front of the answer when it cuts the first line off.
+      cutIns: ["Oh,", "Okay,", "Ah,"],
     },
   },
   confirm: {

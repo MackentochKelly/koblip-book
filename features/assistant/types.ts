@@ -104,3 +104,10 @@ export interface ConfirmCard {
   destructive: boolean
   action: string // the button's word, e.g. "Book", "Delete"
 }
+
+// Hears an answer while it is written (talking mode): its words, and the
+// moment a lookup starts, which ends the line said before it.
+export interface AnswerListener {
+  onText: (delta: string) => void
+  onLookup: () => void
+}

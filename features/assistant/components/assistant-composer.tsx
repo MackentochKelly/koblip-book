@@ -23,6 +23,7 @@ import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { VOICE_RULES } from "@/lib/voice-rules"
 import type { AssistantMessages } from "../i18n"
+import type { AnswerListener } from "../types"
 import { useLiveVoice, type LiveVoiceError } from "../hooks/use-live-voice"
 import { useVoiceInput, type VoiceError } from "../hooks/use-voice-input"
 import type { Reply } from "../utils/live-voice-session"
@@ -69,7 +70,7 @@ export function AssistantComposer({
   // A turn said in talking mode; resolves with the reply to read out.
   onSendSpoken: (
     text: string,
-    options: { voice: boolean; onText: (delta: string) => void }
+    options: { voice: boolean; listen: AnswerListener }
   ) => Promise<Reply | null>
   onStop: () => void
 }) {
@@ -89,6 +90,7 @@ export function AssistantComposer({
     stopAnswer: onStop,
     confirmLine: labels.live.confirmLine,
     fillers: labels.live.fillers,
+    cutIns: labels.live.cutIns,
     greeting: labels.live.greeting,
     onError: (error: LiveVoiceError) =>
       toast.error(error === "mic_denied" ? labels.micDenied : errors[error]),

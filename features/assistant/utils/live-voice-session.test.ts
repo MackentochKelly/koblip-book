@@ -2,6 +2,8 @@ import { afterEach, expect, test, vi } from "vitest"
 
 import { VOICE_RULES } from "@/lib/voice-rules"
 
+import type { AnswerListener } from "../types"
+
 import {
   LiveVoiceSession,
   takeSentences,
@@ -43,6 +45,7 @@ function setup() {
   let idle = () => {}
   const answers: {
     write: (delta: string) => void
+    lookup: () => void
     resolve: (r: Reply | null) => void
   }[] = []
   const voices: {
@@ -54,11 +57,12 @@ function setup() {
   }[] = []
   const parts: LiveVoiceParts = {
     send: vi.fn(
-      (_text: string, onText: (delta: string) => void) =>
+      (_text: string, listen: AnswerListener) =>
         new Promise<Reply | null>((resolve) => {
           busy = true
           answers.push({
-            write: onText,
+            write: listen.onText,
+            lookup: listen.onLookup,
             resolve: (r) => {
               busy = false
               resolve(r)
@@ -93,6 +97,7 @@ function setup() {
     close: vi.fn(),
     confirmLine: "Tap the button on the screen.",
     fillers: ["Hmm, let me see.", "Okay, almost there."],
+    cutIns: ["Oh,"],
     greeting: "Hi! What can I do for you?",
     onState: (state) => void states.push(state),
     onCaption: vi.fn(),
@@ -140,7 +145,7 @@ test("speaks each sentence as it is written, then listens", async () => {
   })
   expect(t.parts.send).toHaveBeenCalledWith(
     "What's on today?",
-    expect.any(Function)
+    expect.any(Object)
   )
   // The voice opens while it thinks.
   expect(t.voices).toHaveLength(1)
@@ -162,6 +167,63 @@ test("speaks each sentence as it is written, then listens", async () => {
   t.setPlaying(false)
   t.playerIdle()
   expect(t.states).toEqual(["connecting", "thinking", "talking", "listening"])
+})
+
+test("an answer ready during the first line cuts it off", async () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Today?" })
+  t.answers[0].write("Sure, pulling up today's bookings.")
+  t.answers[0].lookup()
+  // The first line keeps its own voice; the answer gets a new one.
+  expect(t.voices[0].said).toEqual(["Sure, pulling up today's bookings."])
+  expect(t.voices[0].finished).toBe(true)
+  expect(t.voices).toHaveLength(2)
+  t.setPlaying(true)
+  t.voices[0].audio()
+  t.answers[0].write("\n\nYou have 2 today, at 2 and 4. ")
+  expect(t.voices[0].cancelled).toBe(true)
+  expect(t.parts.stopPlaying).toHaveBeenCalled()
+  expect(t.voices[1].said).toEqual(["Oh, You have 2 today, at 2 and 4."])
+  t.answers[0].resolve(reply("You have 2 today, at 2 and 4."))
+  await flush()
+  expect(t.voices[1].finished).toBe(true)
+})
+
+test("a first line that already finished is not cut", () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Today?" })
+  t.answers[0].write("Lemme see. ")
+  t.answers[0].lookup()
+  t.setPlaying(true)
+  t.voices[0].audio()
+  t.voices[0].done()
+  t.setPlaying(false)
+  t.playerIdle()
+  expect(t.states.at(-1)).toBe("thinking")
+  t.answers[0].write("\n\nYou have 2 today. ")
+  expect(t.parts.stopPlaying).not.toHaveBeenCalled()
+  expect(t.voices[1].said).toEqual(["You have 2 today."])
+})
+
+test("a lookup with nothing said keeps one voice", () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Today?" })
+  t.answers[0].lookup()
+  expect(t.voices).toHaveLength(1)
+  t.answers[0].write("You have 2 today. ")
+  expect(t.voices[0].said).toEqual(["You have 2 today."])
+})
+
+test("talking over the first line stops both voices", () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Today?" })
+  t.answers[0].write("Lemme see. ")
+  t.answers[0].lookup()
+  t.setPlaying(true)
+  t.voices[0].audio()
+  t.session.hear({ type: "transcript", transcript: "Wait" })
+  expect(t.voices[0].cancelled).toBe(true)
+  expect(t.voices[1].cancelled).toBe(true)
 })
 
 test("says hello when talking starts, then listens", () => {
@@ -285,7 +347,7 @@ test("more words while thinking cancel the answer and ask again", async () => {
   t.session.idle()
   expect(t.parts.send).toHaveBeenLastCalledWith(
     "and tomorrow",
-    expect.any(Function)
+    expect.any(Object)
   )
   t.answers[1].write("3 today and 2 tomorrow. ")
   expect(t.voices[1].said).toEqual(["3 today and 2 tomorrow."])
@@ -303,7 +365,7 @@ test("words said before the screen catches up wait for idle", async () => {
   expect(t.parts.send).toHaveBeenCalledTimes(1)
   t.setBusy(false)
   t.session.idle()
-  expect(t.parts.send).toHaveBeenLastCalledWith("Second", expect.any(Function))
+  expect(t.parts.send).toHaveBeenLastCalledWith("Second", expect.any(Object))
 })
 
 test("an error from the relay ends the session", () => {

@@ -10,6 +10,7 @@ import {
 
 import { useWakeLock } from "@/hooks/use-wake-lock"
 import { VOICE_RULES } from "@/lib/voice-rules"
+import type { AnswerListener } from "../types"
 import {
   LISTEN_FRAME_SAMPLES,
   LiveVoiceSession,
@@ -56,6 +57,7 @@ export function useLiveVoice({
   stopAnswer,
   confirmLine,
   fillers,
+  cutIns,
   greeting,
   onError,
 }: {
@@ -64,7 +66,7 @@ export function useLiveVoice({
   busy: boolean
   send: (
     text: string,
-    options: { voice: boolean; onText: (delta: string) => void }
+    options: { voice: boolean; listen: AnswerListener }
   ) => Promise<Reply | null>
   // Stops an answer that is still being written (the owner said more, or
   // ended talking mode).
@@ -73,6 +75,8 @@ export function useLiveVoice({
   confirmLine: string
   // Short lines for a slow answer ("Hmm, let me see.").
   fillers: readonly string[]
+  // Put in front of the answer when it cuts the first line off ("Oh,").
+  cutIns: readonly string[]
   // Said once when talking starts.
   greeting: string
   onError: (error: LiveVoiceError) => void
@@ -95,6 +99,7 @@ export function useLiveVoice({
     stopAnswer,
     confirmLine,
     fillers,
+    cutIns,
     greeting,
     onError,
     voiceId,
@@ -106,6 +111,7 @@ export function useLiveVoice({
       stopAnswer,
       confirmLine,
       fillers,
+      cutIns,
       greeting,
       onError,
       voiceId,
@@ -153,8 +159,8 @@ export function useLiveVoice({
     player.current = speaker
 
     const current = new LiveVoiceSession({
-      send: (text, onText) =>
-        latest.current.send(text, { voice: true, onText }),
+      send: (text, listen) =>
+        latest.current.send(text, { voice: true, listen }),
       busy: () => latest.current.busy,
       cancelAnswer: () => latest.current.stopAnswer(),
       openSpeech: ({ onAudio, onDone, onError }) =>
@@ -187,6 +193,7 @@ export function useLiveVoice({
       },
       confirmLine: latest.current.confirmLine,
       fillers: latest.current.fillers,
+      cutIns: latest.current.cutIns,
       greeting: latest.current.greeting,
       onState: setState,
       onCaption: setCaption,

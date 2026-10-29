@@ -73,8 +73,9 @@ const messages: typeof en = {
       unmute: "Activar micrófono",
       end: "Terminar",
       confirmLine: "Para hacerlo, toca el botón en la pantalla.",
-      greeting: "¡Hola! ¿En qué te ayudo?",
-      fillers: ["Mmm, déjame ver.", "Bueno, ya casi.", "A ver, déjame mirar."],
+      greeting: "¡Hola! ¿Qué onda?",
+      fillers: ["Mmm, a ver.", "Espérate, ya casi.", "Va, un seg."],
+      cutIns: ["Ah,", "Bueno,", "Va,"],
     },
   },
   confirm: {

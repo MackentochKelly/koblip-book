@@ -1,13 +1,15 @@
 import { VOICE_RULES } from "@/lib/voice-rules"
 
-import type { AssistantStreamEvent } from "../types"
+import type { AnswerListener, AssistantStreamEvent } from "../types"
 import type { ChatItem } from "./chat-state"
 
 // Talking mode, like ChatGPT voice: the owner speaks, Meta hears it live
 // (through our /api/voice/listen relay), the assistant answers in the chat,
 // and ElevenLabs reads the answer out sentence by sentence while it is
-// still being written ("Let me check your bookings." comes first). Talking
-// over it stops it; new words while it thinks start a fresh answer.
+// still being written ("Lemme see…" comes first). If the answer is ready
+// while that first line is still playing, it is cut off and the answer
+// comes in at once ("Sure, pulling up today's… oh, you've got 2 today").
+// Talking over it stops it; new words while it thinks start a fresh answer.
 // Sources: docs/assistant-plan.md, sections 11 and 12.
 //
 // This class only decides what happens when; the microphone, the sockets
@@ -38,9 +40,9 @@ export interface Speech {
 }
 
 export interface LiveVoiceParts {
-  // Sends the turn to the assistant; onText gets the words as they are
-  // written; resolves with the reply.
-  send: (text: string, onText: (delta: string) => void) => Promise<Reply | null>
+  // Sends the turn to the assistant; `listen` hears the words as they are
+  // written and when a lookup starts; resolves with the reply.
+  send: (text: string, listen: AnswerListener) => Promise<Reply | null>
   // Cancels the answer still being written (the owner said more).
   cancelAnswer: () => void
   // True while an answer is still being written. It must come from the
@@ -61,9 +63,12 @@ export interface LiveVoiceParts {
   close: () => void
   // Said after an answer that waits for a tap on its card.
   confirmLine: string
-  // Short natural lines for a slow answer ("Hmm, let me see."); one is
+  // Short natural lines for a slow answer ("Hmm, lemme see."); one is
   // said per turn, in turn.
   fillers: readonly string[]
+  // Put in front of an answer that cuts the first line off ("Oh,"), in
+  // turn.
+  cutIns: readonly string[]
   // Said once when talking starts, like an ElevenLabs agent's first
   // message.
   greeting: string
@@ -107,6 +112,17 @@ export class LiveVoiceSession {
   private written = ""
   private filler: ReturnType<typeof setTimeout> | undefined
   private fillersUsed = 0
+  // The line said before a lookup ("Lemme see…"), on its own voice so the
+  // answer can cut it off: ElevenLabs can only stop audio by closing the
+  // socket (https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket).
+  // Null once it has finished playing or was cut off.
+  private firstLine: {
+    speech: Speech
+    heard: boolean
+    arrived: boolean
+  } | null = null
+  private lookedUp = false
+  private cutInsUsed = 0
 
   constructor(private readonly parts: LiveVoiceParts) {
     parts.onState("connecting")
@@ -192,6 +208,8 @@ export class LiveVoiceSession {
 
   private stopSpeaking() {
     clearTimeout(this.filler)
+    this.firstLine?.speech.cancel()
+    this.firstLine = null
     this.speech?.cancel()
     this.speech = null
     this.parts.stopPlaying()
@@ -206,15 +224,23 @@ export class LiveVoiceSession {
     this.turn += 1
     const turn = this.turn
     this.thinking = true
+    this.lookedUp = false
     this.parts.onState("thinking")
     this.openVoice(turn)
 
-    const reply = await this.parts.send(text, (delta) => {
-      if (turn !== this.turn) return
-      this.written += delta
-      const { sentences, rest } = takeSentences(this.written)
-      this.written = rest
-      for (const sentence of sentences) this.say(sentence)
+    const reply = await this.parts.send(text, {
+      onText: (delta) => {
+        if (turn !== this.turn) return
+        this.written += delta
+        const { sentences, rest } = takeSentences(this.written)
+        this.written = rest
+        for (const sentence of sentences) this.sayAnswer(sentence)
+      },
+      onLookup: () => {
+        if (turn !== this.turn || this.lookedUp) return
+        this.lookedUp = true
+        this.keepFirstLine(turn)
+      },
     })
     // Talked over: the newer question is already on its way.
     if (this.ended || turn !== this.turn) return
@@ -226,7 +252,7 @@ export class LiveVoiceSession {
       .join(" ")
       .trim()
     this.written = ""
-    if (rest) this.say(rest)
+    if (rest) this.sayAnswer(rest)
     clearTimeout(this.filler)
     if (!this.speech) return this.next()
     if (!this.spoke) {
@@ -247,9 +273,17 @@ export class LiveVoiceSession {
     this.written = ""
     const speech = this.parts.openSpeech({
       onAudio: () => {
+        if (this.firstLine?.speech === speech) {
+          this.firstLine.heard = true
+          this.parts.onState("talking")
+        }
         if (this.speech === speech) this.parts.onState("talking")
       },
       onDone: () => {
+        if (this.firstLine?.speech === speech) {
+          this.firstLine.arrived = true
+          if (!this.parts.playing()) this.firstLine = null
+        }
         if (this.speech !== speech) return
         this.speechDone = true
         if (!this.parts.playing()) this.afterSpeech()
@@ -264,6 +298,7 @@ export class LiveVoiceSession {
     this.speech = speech
     this.parts.onPlayerIdle(() => {
       if (this.speech !== speech) return
+      if (this.firstLine?.arrived) this.firstLine = null
       if (this.speechDone) this.afterSpeech()
       // Said "Let me check…"; now waiting for the rest of the answer.
       else if (this.thinking) this.parts.onState("thinking")
@@ -276,6 +311,36 @@ export class LiveVoiceSession {
         this.fillersUsed += 1
       }, VOICE_RULES.fillerAfterMs)
     }
+  }
+
+  // A lookup started after the first line ("Lemme see…"): that line keeps
+  // its voice and the answer gets a new one, so it can cut the line off.
+  private keepFirstLine(turn: number) {
+    if (!this.speech) return
+    if (this.written.trim()) this.say(this.written)
+    this.written = ""
+    if (!this.spoke) return
+    this.speech.finish()
+    this.firstLine = { speech: this.speech, heard: false, arrived: false }
+    this.speech = null
+    this.openVoice(turn)
+  }
+
+  // The answer's words. If the first line is still going, it stops there
+  // and the answer comes in with a short word ("Oh, you've got 2 today").
+  private sayAnswer(text: string) {
+    const first = this.firstLine
+    if (first) {
+      this.firstLine = null
+      first.speech.cancel()
+      this.parts.stopPlaying()
+      const { cutIns } = this.parts
+      if (first.heard && cutIns.length > 0) {
+        text = `${cutIns[this.cutInsUsed % cutIns.length]} ${text}`
+        this.cutInsUsed += 1
+      }
+    }
+    this.say(text)
   }
 
   private say(text: string) {
