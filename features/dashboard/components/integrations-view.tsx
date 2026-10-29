@@ -45,7 +45,7 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
       <h1 className="text-2xl font-semibold tracking-tight">
         {m.shell.nav.integrations}
       </h1>
-      <PageSection id="messaging" title={t.messaging}>
+      <PageSection sticky id="messaging" title={t.messaging}>
         <ItemGroup className="gap-3">
           {/* WhatsApp's own file from the official pack, never recoloured
               (meta.com/brand/resources/whatsapp/whatsapp-brand). */}
@@ -77,7 +77,7 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
           />
         </ItemGroup>
       </PageSection>
-      <PageSection id="calendar" title={t.calendar}>
+      <PageSection sticky id="calendar" title={t.calendar}>
         <ItemGroup className="gap-3">
           {/* Google's own Calendar logo (2026), unaltered, from the
               Google Workspace branding pack, only to name the app. */}
@@ -103,7 +103,7 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
           />
         </ItemGroup>
       </PageSection>
-      <PageSection id="payments" title={t.payments}>
+      <PageSection sticky id="payments" title={t.payments}>
         <ItemGroup className="gap-3">
           {/* Stripe's own app icon, as stripe.com uses it; a square, so
               its corners are rounded like the other app icons. */}
@@ -116,7 +116,7 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
           />
         </ItemGroup>
       </PageSection>
-      <PageSection id="tracking" title={t.tracking}>
+      <PageSection sticky id="tracking" title={t.tracking}>
         <ItemGroup className="gap-3">
           {/* Meta's symbol, from the logo in its brand pack: colour on
               light, white on dark. */}
