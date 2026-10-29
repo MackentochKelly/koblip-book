@@ -2,7 +2,12 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { ChevronRightIcon } from "@/components/ui/icons"
+import {
+  ChevronRightIcon,
+  MailIcon,
+  MessageCircleIcon,
+  type Icon,
+} from "@/components/ui/icons"
 
 import { PageSection } from "@/components/page-section"
 import { DetailsButton } from "@/components/details-button"
@@ -75,6 +80,43 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
               )
             }
           />
+          {/* Plain messages and email have no brand: an app-style tile. */}
+          <IntegrationRow
+            logo={MessageCircleIcon}
+            name={t.sms.name}
+            description={t.sms.description}
+            action={<Badge variant="secondary">{t.soon}</Badge>}
+          />
+          <IntegrationRow
+            logo={MailIcon}
+            name={t.email.name}
+            description={t.email.description}
+            action={<Badge variant="secondary">{t.soon}</Badge>}
+          />
+        </ItemGroup>
+      </PageSection>
+      <PageSection id="social" title={t.social}>
+        <ItemGroup className="gap-3">
+          {/* Instagram's and Facebook's own icons, from their own sites. */}
+          <IntegrationRow
+            logo="/brands/instagram.png"
+            name={t.instagram.name}
+            description={t.instagram.description}
+            action={<Badge variant="secondary">{t.soon}</Badge>}
+          />
+          <IntegrationRow
+            logo="/brands/facebook.png"
+            name={t.facebook.name}
+            description={t.facebook.description}
+            action={<Badge variant="secondary">{t.soon}</Badge>}
+          />
+          {/* Google's own Business Profile icon, from Google's servers. */}
+          <IntegrationRow
+            logo="/brands/google-business.png"
+            name={t.googleBusiness.name}
+            description={t.googleBusiness.description}
+            action={<Badge variant="secondary">{t.soon}</Badge>}
+          />
         </ItemGroup>
       </PageSection>
       <PageSection id="calendar" title={t.calendar}>
@@ -112,6 +154,18 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
             square
             name={t.stripe.name}
             description={t.stripe.description}
+            action={<Badge variant="secondary">{t.soon}</Badge>}
+          />
+        </ItemGroup>
+      </PageSection>
+      <PageSection id="reviews" title={t.reviews}>
+        <ItemGroup className="gap-3">
+          {/* Google's own "G", colour on light and its dark-mode file. */}
+          <IntegrationRow
+            logo="/brands/google-g-light.png"
+            logoDark="/brands/google-g-dark.png"
+            name={t.googleReviews.name}
+            description={t.googleReviews.description}
             action={<Badge variant="secondary">{t.soon}</Badge>}
           />
         </ItemGroup>
@@ -155,15 +209,28 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
 
 // An app's logo, shown whole (the "image" media is for photos and clips its
 // corners), with its dark-mode file if it has one. A `square` icon gets
-// app-icon corners.
+// app-icon corners. A service with no brand gets its icon on a tile.
 type LogoProps = {
-  logo: string
+  logo: string | Icon
   logoDark?: string
   square?: boolean
   className: string
 }
 
 function Logo({ logo, logoDark, square, className }: LogoProps) {
+  if (typeof logo !== "string") {
+    const Glyph = logo
+    return (
+      <span
+        className={cn(
+          "flex items-center justify-center rounded-xl bg-muted text-muted-foreground",
+          className
+        )}
+      >
+        <Glyph className="size-1/2" />
+      </span>
+    )
+  }
   const image = (src: string, mode?: string) => (
     <Image
       src={src}
@@ -193,7 +260,7 @@ function IntegrationRow({
   description,
   action,
 }: {
-  logo: string
+  logo: string | Icon
   logoDark?: string
   square?: boolean
   name: string

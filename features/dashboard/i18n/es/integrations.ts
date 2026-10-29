@@ -5,12 +5,44 @@ const integrations: typeof en = {
   calendar: "Calendario",
   payments: "Pagos",
   tracking: "Seguimiento",
+  social: "Que te encuentren",
+  reviews: "Reseñas",
   soon: "Próximamente",
   about: (name: string) => `Sobre ${name}`,
   whatsapp: {
     name: "WhatsApp",
     description:
       "WhatsApp Business oficial, directo de Meta. Envía recordatorios de reservas y difusiones desde el número de tu negocio.",
+  },
+  sms: {
+    name: "SMS",
+    description:
+      "Confirmaciones y recordatorios de reservas por mensaje de texto, para clientes sin WhatsApp.",
+  },
+  email: {
+    name: "Email",
+    description:
+      "Confirmaciones, recordatorios y cambios de reservas enviados a tus clientes por email.",
+  },
+  instagram: {
+    name: "Instagram",
+    description:
+      "Un botón Reservar en tu perfil de Instagram, para que tus seguidores reserven en pocos toques.",
+  },
+  facebook: {
+    name: "Facebook",
+    description:
+      "Un botón Reservar en tu página de Facebook, para que reserven sin salir.",
+  },
+  googleBusiness: {
+    name: "Perfil de Empresa de Google",
+    description:
+      "Un botón Reservar en la Búsqueda y Maps de Google, donde te encuentran tus clientes.",
+  },
+  googleReviews: {
+    name: "Reseñas de Google",
+    description:
+      "Después de cada visita, pide a tus clientes una reseña en Google para conseguir más reservas.",
   },
   googleCalendar: {
     name: "Google Calendar",

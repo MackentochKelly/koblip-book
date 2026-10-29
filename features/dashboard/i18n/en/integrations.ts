@@ -4,12 +4,44 @@ const integrations = {
   calendar: "Calendar",
   payments: "Payments",
   tracking: "Tracking",
+  social: "Get found",
+  reviews: "Reviews",
   soon: "Coming soon",
   about: (name: string) => `About ${name}`,
   whatsapp: {
     name: "WhatsApp",
     description:
       "Official WhatsApp Business, straight from Meta. Send booking reminders and broadcasts from your own business number.",
+  },
+  sms: {
+    name: "SMS",
+    description:
+      "Booking confirmations and reminders by text message, for customers without WhatsApp.",
+  },
+  email: {
+    name: "Email",
+    description:
+      "Booking confirmations, reminders and changes sent to your customers by email.",
+  },
+  instagram: {
+    name: "Instagram",
+    description:
+      "A Book button on your Instagram profile, so followers book in a few taps.",
+  },
+  facebook: {
+    name: "Facebook",
+    description:
+      "A Book button on your Facebook Page, so visitors book without leaving.",
+  },
+  googleBusiness: {
+    name: "Google Business Profile",
+    description:
+      "A Book button on Google Search and Maps, where customers find you.",
+  },
+  googleReviews: {
+    name: "Google reviews",
+    description:
+      "After each visit, ask customers for a Google review to win more bookings.",
   },
   googleCalendar: {
     name: "Google Calendar",
