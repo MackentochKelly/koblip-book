@@ -11,6 +11,26 @@ const CONFETTI_TOKENS = ["--primary", "--chart-1", "--hero-accent", "--chart-2"]
 // The card pops in a moment after the page, with the confetti.
 const POP = { type: "spring", bounce: 0.35, duration: 0.6 } as const
 
+// A burst of confetti in the app's colours. `origin` is where it starts,
+// as a share of the screen (0 to 1).
+export function celebrate(
+  options: Pick<confetti.Options, "particleCount" | "spread" | "origin">
+) {
+  const styles = getComputedStyle(document.documentElement)
+  // canvas-confetti only reads hex colours.
+  const colors = CONFETTI_TOKENS.map((token) => {
+    const rgb = cssColorToRgb(styles.getPropertyValue(token).trim())
+    const parts = rgb.match(/\d+/g) ?? []
+    return `#${parts.map((part) => Number(part).toString(16).padStart(2, "0")).join("")}`
+  })
+  void confetti({
+    ...options,
+    colors,
+    // Nothing flies for people who turned motion off.
+    disableForReducedMotion: true,
+  })
+}
+
 // The app's one "it worked" moment: confetti once, then a picture, a title,
 // a line under it, the details and the buttons pop in
 // (github.com/catdad/canvas-confetti). Used when an owner's page goes live
@@ -29,21 +49,7 @@ export function Celebration({
   actions: React.ReactNode
 }) {
   useEffect(() => {
-    const styles = getComputedStyle(document.documentElement)
-    // canvas-confetti only reads hex colours.
-    const colors = CONFETTI_TOKENS.map((token) => {
-      const rgb = cssColorToRgb(styles.getPropertyValue(token).trim())
-      const parts = rgb.match(/\d+/g) ?? []
-      return `#${parts.map((part) => Number(part).toString(16).padStart(2, "0")).join("")}`
-    })
-    void confetti({
-      particleCount: 120,
-      spread: 80,
-      origin: { y: 0.35 },
-      colors,
-      // Nothing flies for people who turned motion off.
-      disableForReducedMotion: true,
-    })
+    celebrate({ particleCount: 120, spread: 80, origin: { y: 0.35 } })
     return () => {
       confetti.reset()
     }

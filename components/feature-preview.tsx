@@ -4,6 +4,7 @@ import { MeshGradient } from "@paper-design/shaders-react"
 import { AnimatePresence, motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 
+import { celebrate } from "@/components/celebration"
 import { glassFrameClassName } from "@/components/glass-frame"
 import { Rating } from "@/components/rating"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
@@ -84,8 +85,21 @@ const RISE = {
   transition: { duration: 0.25 },
 }
 
-// A business page: name, rating, Book. Tap Book: it turns "Booked";
-// tap again to start over.
+// A small burst from the button just tapped.
+function burstFrom(element: HTMLElement) {
+  const box = element.getBoundingClientRect()
+  celebrate({
+    particleCount: 60,
+    spread: 70,
+    origin: {
+      x: (box.left + box.width / 2) / window.innerWidth,
+      y: (box.top + box.height / 2) / window.innerHeight,
+    },
+  })
+}
+
+// A business page: name, rating, Book. Tap Book: it turns "Booked" with
+// confetti; tap again to start over.
 function PagePreview({ sample }: { sample: Sample }) {
   const [booked, setBooked] = useState(false)
   return (
@@ -103,7 +117,10 @@ function PagePreview({ sample }: { sample: Sample }) {
         <Button
           size="sm"
           aria-pressed={booked}
-          onClick={() => setBooked(!booked)}
+          onClick={(event) => {
+            if (!booked) burstFrom(event.currentTarget)
+            setBooked(!booked)
+          }}
           className={cn(
             "w-full",
             booked && "bg-success text-success-foreground hover:bg-success/90"
