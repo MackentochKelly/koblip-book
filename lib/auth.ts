@@ -2,6 +2,7 @@ import "server-only"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { nextCookies } from "better-auth/next-js"
+import { admin } from "better-auth/plugins"
 import { db } from "./db"
 import * as authSchema from "./db/auth-schema"
 import { sendEmail } from "./email"
@@ -44,5 +45,17 @@ export const auth = betterAuth({
         }
       : undefined,
   advanced: { database: { generateId: () => crypto.randomUUID() } },
-  plugins: [nextCookies()],
+  // The app owner's admin area (better-auth.com/docs/plugins/admin): the
+  // accounts in ADMIN_USER_IDS (comma-separated user ids, .env.local) are
+  // admins; everyone else is an owner. Adds role and ban fields.
+  plugins: [
+    admin({
+      adminUserIds: (process.env.ADMIN_USER_IDS ?? "")
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean),
+    }),
+    // Must stay last (better-auth.com/docs/integrations/next).
+    nextCookies(),
+  ],
 })

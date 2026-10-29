@@ -88,6 +88,11 @@ const eslintConfig = defineConfig([
                 "./owner-auth",
               ],
             },
+            {
+              target: "./features/admin",
+              from: "./features",
+              except: ["./admin"],
+            },
             // shared code cannot import from features/ or app/
             { target: "./components", from: "./features" },
             { target: "./components", from: "./app" },

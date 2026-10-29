@@ -1,11 +1,10 @@
 "use client"
 
+import { AppTopBar } from "@/components/app-top-bar"
 import { ExternalLinkIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
-import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
-import { cn } from "@/lib/utils"
 import { AccountMenu } from "./account-menu"
 
 // The owner area's top bar: the business name, its public page and the
@@ -28,30 +27,11 @@ export function TopBar({
 }) {
   const m = useOwnerMessages().shell
   return (
-    <header
-      className={cn(
-        // Clear of the notch when the page runs from the Home Screen (the
-        // inset is 0 elsewhere): the 56px bar sits below it.
-        "sticky top-0 z-30 flex h-[calc(--spacing(14)+env(safe-area-inset-top))] items-center gap-2 border-b bg-background px-4 pt-[env(safe-area-inset-top)]",
-        className
-      )}
+    <AppTopBar
+      title={business.name}
+      menuLabel={menu ? m.menu : undefined}
+      className={className}
     >
-      {menu && (
-        // Koblip Sales' header button: a 20 px icon, like the bar's others.
-        <SidebarTrigger
-          size="icon"
-          aria-label={m.menu}
-          className="-ml-1 shrink-0 [&_svg:not([class*='size-'])]:size-5"
-        />
-      )}
-      <p
-        className={cn(
-          "min-w-0 flex-1 truncate font-semibold",
-          menu && "md:invisible"
-        )}
-      >
-        {business.name}
-      </p>
       {viewPage && (
         <Button
           variant="outline"
@@ -69,6 +49,6 @@ export function TopBar({
         owner={owner}
         settingsHref={menu ? `/dashboard/${business.id}/settings` : undefined}
       />
-    </header>
+    </AppTopBar>
   )
 }

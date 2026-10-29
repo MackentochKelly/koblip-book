@@ -1,7 +1,7 @@
 import "server-only"
 import { cache } from "react"
 import { headers } from "next/headers"
-import { redirect } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { auth } from "./auth"
 
 export interface OwnerSession {
@@ -34,6 +34,20 @@ export async function requireOwner(next?: string): Promise<OwnerSession> {
   const session = await getSession()
   if (!session) {
     redirect("/login" + (next ? "?next=" + encodeURIComponent(next) : ""))
+  }
+  return session
+}
+
+// The app owner's admin area: a signed-in account that Better Auth's admin
+// plugin counts as an admin (ADMIN_USER_IDS). Anyone else gets "not found",
+// so the area doesn't show that it exists.
+export async function requireAdmin(): Promise<OwnerSession> {
+  const session = await requireOwner("/admin")
+  const { success } = await auth.api.userHasPermission({
+    body: { userId: session.userId, permissions: { user: ["list"] } },
+  })
+  if (!success) {
+    notFound()
   }
   return session
 }
