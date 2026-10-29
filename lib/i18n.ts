@@ -140,6 +140,16 @@ const en = {
       bookText: "Your services, team and free times on one page.",
       assistant: "Just ask your AI assistant",
       assistantText: "Bookings, services and hours, by typing or voice.",
+      // The sample app shown in the card pictures.
+      sample: {
+        locale: "en-US",
+        business: "Lumen Studio",
+        book: "Book",
+        day: "Tuesday 14",
+        times: ["10:00 am", "11:30 am", "3:00 pm"],
+        ask: "Book Ana at 3 pm",
+        done: "Done. Ana is booked for 3 pm.",
+      },
     },
     provider: {
       badge: "Verified Meta Tech Provider",
@@ -293,6 +303,15 @@ const es: Messages = {
       bookText: "Tus servicios, equipo y horas libres en una página.",
       assistant: "Pídeselo a tu asistente de IA",
       assistantText: "Reservas, servicios y horarios, escribiendo o por voz.",
+      sample: {
+        locale: "es-ES",
+        business: "Lumen Studio",
+        book: "Reservar",
+        day: "Martes 14",
+        times: ["10:00", "11:30", "15:00"],
+        ask: "Reserva a Ana a las 15:00",
+        done: "Listo. Ana tiene cita a las 15:00.",
+      },
     },
     provider: {
       badge: "Meta Tech Provider verificado",

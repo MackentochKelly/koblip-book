@@ -4,9 +4,9 @@ import { useRef } from "react"
 import { WheelGesturesPlugin } from "embla-carousel-wheel-gestures"
 
 import {
-  FeaturePattern,
-  type FeaturePatternName,
-} from "@/components/feature-pattern"
+  FeaturePreview,
+  type FeaturePreviewName,
+} from "@/components/feature-preview"
 import {
   Card,
   CardDescription,
@@ -24,7 +24,7 @@ import type { Messages } from "@/lib/i18n"
 
 // What an owner gets, under "Works with": only features that work today
 // (WhatsApp reminders are "Soon" in WorksWith, so not here). The stock Card
-// with a pattern inset on top, like dev.meta.ai's model cards. Phones swipe
+// with a small preview of the app inset on top, like dev.meta.ai's model cards. Phones swipe
 // (or tap the arrows); computers show all three.
 export function HomeFeatures({
   words,
@@ -32,13 +32,13 @@ export function HomeFeatures({
   words: Messages["home"]["features"]
 }) {
   const features: {
-    pattern: FeaturePatternName
+    preview: FeaturePreviewName
     title: string
     text: string
   }[] = [
-    { pattern: "calm", title: words.page, text: words.pageText },
-    { pattern: "zigzag", title: words.book, text: words.bookText },
-    { pattern: "flow", title: words.assistant, text: words.assistantText },
+    { preview: "page", title: words.page, text: words.pageText },
+    { preview: "book", title: words.book, text: words.bookText },
+    { preview: "assistant", title: words.assistant, text: words.assistantText },
   ]
   // Two-finger trackpad swipes move the cards too (Embla only drags).
   const wheel = useRef(WheelGesturesPlugin())
@@ -62,14 +62,14 @@ export function HomeFeatures({
         </div>
         {/* p-px: room for the card edge, which the carousel would clip. */}
         <CarouselContent className="p-px">
-          {features.map(({ pattern, title, text }) => (
-            <CarouselItem key={pattern} className="basis-[85%] md:basis-1/3">
+          {features.map(({ preview, title, text }) => (
+            <CarouselItem key={preview} className="basis-[85%] md:basis-1/3">
               <Card className="h-full pt-2 shadow-none ring-border dark:ring-border">
                 <div
                   aria-hidden
                   className="relative mx-2 aspect-video overflow-hidden rounded-t-[calc(var(--radius-4xl)-(--spacing(2)))] rounded-b-lg bg-muted after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/5 dark:after:inset-ring-foreground/10"
                 >
-                  <FeaturePattern name={pattern} />
+                  <FeaturePreview name={preview} sample={words.sample} />
                 </div>
                 <CardHeader>
                   <CardTitle>{title}</CardTitle>
