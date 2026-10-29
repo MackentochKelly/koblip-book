@@ -2,12 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import {
-  CalendarDaysIcon,
-  ChevronRightIcon,
-  TargetIcon,
-  type Icon,
-} from "@/components/ui/icons"
+import { ChevronRightIcon } from "@/components/ui/icons"
 
 import { PageSection } from "@/components/page-section"
 import { DetailsButton } from "@/components/details-button"
@@ -92,11 +87,9 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
             description={t.googleCalendar.description}
             action={<Badge variant="secondary">{t.soon}</Badge>}
           />
-          {/* Apple and Meta don't allow their logos without approval
-              (Apple's marketing guidelines; meta.com/brand/resources/meta):
-              a plain icon until it is given. */}
+          {/* Apple's own Calendar app icon, unaltered. */}
           <IntegrationRow
-            logo={CalendarDaysIcon}
+            logo="/brands/apple-calendar.png"
             name={t.appleCalendar.name}
             description={t.appleCalendar.description}
             action={<Badge variant="secondary">{t.soon}</Badge>}
@@ -112,11 +105,11 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
       </PageSection>
       <PageSection id="payments" title={t.payments}>
         <ItemGroup className="gap-3">
-          {/* Stripe's wordmark from its logo kit (stripe.com/newsroom/
-              brand-assets): blurple on light, white on dark. */}
+          {/* Stripe's own app icon, as stripe.com uses it; a square, so
+              its corners are rounded like the other app icons. */}
           <IntegrationRow
-            logo="/brands/stripe-wordmark-blurple.svg"
-            logoDark="/brands/stripe-wordmark-white.svg"
+            logo="/brands/stripe.svg"
+            square
             name={t.stripe.name}
             description={t.stripe.description}
             action={<Badge variant="secondary">{t.soon}</Badge>}
@@ -125,8 +118,11 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
       </PageSection>
       <PageSection id="tracking" title={t.tracking}>
         <ItemGroup className="gap-3">
+          {/* Meta's symbol, from the logo in its brand pack: colour on
+              light, white on dark. */}
           <IntegrationRow
-            logo={TargetIcon}
+            logo="/brands/meta-symbol.png"
+            logoDark="/brands/meta-symbol-white.png"
             name={t.metaPixel.name}
             description={t.metaPixel.description}
             action={<Badge variant="secondary">{t.soon}</Badge>}
@@ -158,24 +154,16 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
 }
 
 // An app's logo, shown whole (the "image" media is for photos and clips its
-// corners): its file (with its dark-mode file, if it has one), or a plain
-// icon on a tile where its logo can't be used.
-type LogoProps = { logo: string | Icon; logoDark?: string; className: string }
+// corners), with its dark-mode file if it has one. A `square` icon gets
+// app-icon corners.
+type LogoProps = {
+  logo: string
+  logoDark?: string
+  square?: boolean
+  className: string
+}
 
-function Logo({ logo, logoDark, className }: LogoProps) {
-  if (typeof logo !== "string") {
-    const LogoIcon = logo
-    return (
-      <span
-        className={cn(
-          "flex items-center justify-center rounded-xl bg-muted text-muted-foreground",
-          className
-        )}
-      >
-        <LogoIcon className="size-1/2" />
-      </span>
-    )
-  }
+function Logo({ logo, logoDark, square, className }: LogoProps) {
   const image = (src: string, mode?: string) => (
     <Image
       src={src}
@@ -183,7 +171,7 @@ function Logo({ logo, logoDark, className }: LogoProps) {
       width={64}
       height={64}
       unoptimized
-      className={cn("object-contain", mode, className)}
+      className={cn("object-contain", square && "rounded-xl", mode, className)}
     />
   )
   if (!logoDark) return image(logo)
@@ -200,12 +188,14 @@ function Logo({ logo, logoDark, className }: LogoProps) {
 function IntegrationRow({
   logo,
   logoDark,
+  square,
   name,
   description,
   action,
 }: {
-  logo: string | Icon
+  logo: string
   logoDark?: string
+  square?: boolean
   name: string
   description: string
   action: React.ReactNode
@@ -214,7 +204,7 @@ function IntegrationRow({
   return (
     <Item variant="outline">
       <ItemMedia>
-        <Logo logo={logo} logoDark={logoDark} className="size-10" />
+        <Logo logo={logo} logoDark={logoDark} square={square} className="size-10" />
       </ItemMedia>
       <ItemContent className="min-w-0">
         {/* ⓘ beside the name, where the row has room to spare. */}
@@ -223,7 +213,7 @@ function IntegrationRow({
           <DetailsButton
             title={name}
             text={description}
-            media={<Logo logo={logo} logoDark={logoDark} className="size-16" />}
+            media={<Logo logo={logo} logoDark={logoDark} square={square} className="size-16" />}
             label={t.about(name)}
           />
         </ItemTitle>
