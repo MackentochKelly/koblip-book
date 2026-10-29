@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/item"
 import { messagesFor } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
+import { TOUCH_AREA } from "@/lib/touch-area"
 import { cn } from "@/lib/utils"
 
 // The home page's glass pill. Plain words only: Meta's logo needs Meta's
@@ -66,7 +67,8 @@ export function MetaProviderBadge({ language }: { language: PageLanguage }) {
             variant="outline"
             className={cn(
               glassButtonClassName,
-              "h-auto cursor-pointer self-center px-3 py-1 text-sm"
+              TOUCH_AREA,
+              "h-auto cursor-pointer self-center overflow-visible px-3 py-1 text-sm"
             )}
           />
         }

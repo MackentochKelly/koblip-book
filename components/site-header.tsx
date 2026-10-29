@@ -3,6 +3,7 @@ import Link from "next/link"
 import { glassButtonClassName } from "@/components/glass-frame"
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { TOUCH_AREA } from "@/lib/touch-area"
 import { cn } from "@/lib/utils"
 
 // The header's buttons: plain white in light mode, glass in dark. Put it on
@@ -17,7 +18,7 @@ export const headerButtonClassName = cn(
 export function SiteHeader({ action }: { action?: React.ReactNode }) {
   return (
     <header className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4">
-      <Link href="/" className="flex items-center">
+      <Link href="/" className={cn(TOUCH_AREA, "flex items-center")}>
         <Logo />
       </Link>
       <div className="flex items-center gap-2">
