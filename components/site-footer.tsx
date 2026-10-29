@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { HOME_SECTION_IDS } from "@/components/home-section-title"
+import { LanguageMenu } from "@/components/language-menu"
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { BadgeCheckIcon } from "@/components/ui/icons"
@@ -15,8 +16,8 @@ const linkClassName = cn(
   "text-sm text-muted-foreground transition-colors hover:text-foreground"
 )
 
-// The home page's footer: who we are, links to the page's sections, log in
-// and language, then © and light/dark. Only real links (no Privacy or Terms
+// The home page's footer: who we are, links to the page's sections and log
+// in, then ©, language and light/dark. Only real links (no Privacy or Terms
 // pages yet). Columns stack on phones.
 export function SiteFooter({
   language,
@@ -43,29 +44,12 @@ export function SiteFooter({
           : { label: t.logIn, href: "/login" },
       ],
     },
-    {
-      title: t.footer.language,
-      links: [
-        {
-          label: "English",
-          href: "/?lang=en",
-          lang: "en",
-          current: language === "en",
-        },
-        {
-          label: "Español",
-          href: "/?lang=es",
-          lang: "es",
-          current: language === "es",
-        },
-      ],
-    },
   ]
   return (
     <footer className="mx-auto w-full max-w-5xl px-4 pb-8 sm:px-6">
       <Separator />
-      <div className="grid gap-8 py-10 sm:grid-cols-[1fr_auto_auto_auto] sm:gap-16">
-        <div className="flex flex-col items-start gap-3">
+      <div className="grid grid-cols-2 gap-8 py-10 sm:grid-cols-[1fr_auto_auto] sm:gap-16">
+        <div className="col-span-2 flex flex-col items-start gap-3 sm:col-span-1">
           <Logo className="text-foreground" />
           <p className="text-sm text-muted-foreground">{t.description}</p>
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -83,17 +67,7 @@ export function SiteFooter({
             <ul className="flex flex-col gap-2">
               {column.links.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    lang={"lang" in link ? link.lang : undefined}
-                    aria-current={
-                      "current" in link && link.current ? "page" : undefined
-                    }
-                    className={cn(
-                      linkClassName,
-                      "current" in link && link.current && "text-foreground"
-                    )}
-                  >
+                  <Link href={link.href} className={linkClassName}>
                     {link.label}
                   </Link>
                 </li>
@@ -107,7 +81,10 @@ export function SiteFooter({
         <p className="text-xs text-muted-foreground">
           © {new Date().getFullYear()} Koblip
         </p>
-        <ThemeToggle size="icon-sm" />
+        <div className="flex items-center gap-2">
+          <LanguageMenu size="icon-sm" />
+          <ThemeToggle size="icon-sm" />
+        </div>
       </div>
     </footer>
   )

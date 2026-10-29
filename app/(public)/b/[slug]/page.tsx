@@ -22,7 +22,7 @@ import { BusinessAmenities } from "@/features/business-page/components/business-
 import { ExternalLinkIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import { BusinessFooter } from "@/features/business-page/components/business-footer"
-import { LanguageMenu } from "@/features/business-page/components/language-menu"
+import { LanguageMenu } from "@/components/language-menu"
 import { BusinessMap } from "@/features/business-page/components/business-map"
 import { BusinessReviews } from "@/features/business-page/components/business-reviews"
 import { Rating } from "@/components/rating"

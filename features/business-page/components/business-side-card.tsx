@@ -11,7 +11,7 @@ import type { PageLanguage } from "@/lib/page-language"
 import type { Business } from "../types"
 import { BusinessActions } from "./business-actions"
 import { BusinessFacts } from "./business-facts"
-import { LanguageMenu } from "./language-menu"
+import { LanguageMenu } from "@/components/language-menu"
 import { ShareButton } from "./share-button"
 
 // On a computer: the business and its buttons, kept in view beside the page.
