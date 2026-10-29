@@ -6,6 +6,7 @@ import { ChevronRightIcon, SearchIcon, UsersIcon } from "@/components/ui/icons"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardDescription,
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/card"
 import {
   Empty,
+  EmptyContent,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
@@ -114,10 +116,15 @@ export function CustomersView({
             <EmptyMedia variant="icon">
               <UsersIcon />
             </EmptyMedia>
-            <EmptyTitle>
-              {needle ? t.noneFound : t.none}
-            </EmptyTitle>
+            <EmptyTitle>{needle ? t.noneFound : t.none}</EmptyTitle>
           </EmptyHeader>
+          {needle && (
+            <EmptyContent>
+              <Button variant="outline" onClick={() => setQuery("")}>
+                {t.clearSearch}
+              </Button>
+            </EmptyContent>
+          )}
         </Empty>
       ) : (
         <ItemGroup className="gap-3">

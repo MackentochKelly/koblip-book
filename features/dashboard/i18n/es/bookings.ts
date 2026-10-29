@@ -82,6 +82,7 @@ const bookings: typeof en = {
     search: "Nombre o teléfono",
     searchLabel: "Buscar clientes",
     noneFound: "No se encontró a nadie",
+    clearSearch: "Borrar búsqueda",
     none: "Aún no hay clientes",
     customer: "Cliente",
     visits: (n: number) => (n === 1 ? "1 visita" : `${n} visitas`),

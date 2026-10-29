@@ -81,6 +81,7 @@ const bookings = {
     search: "Name or phone",
     searchLabel: "Search customers",
     noneFound: "No one found",
+    clearSearch: "Clear search",
     none: "No customers yet",
     customer: "Customer",
     visits: (n: number): string => (n === 1 ? "1 visit" : `${n} visits`),

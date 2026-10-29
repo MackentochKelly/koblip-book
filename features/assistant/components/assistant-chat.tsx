@@ -134,7 +134,10 @@ export function AssistantChat({
             businessId={businessId}
             language={language}
             labels={messages.recent}
+            newChatLabel={messages.newChat}
+            retryLabel={messages.retry}
             onOpen={openChat}
+            onNew={newChat}
           />
         ) : (
           <>
