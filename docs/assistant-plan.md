@@ -416,3 +416,45 @@ Same chat, saved like typed chats.
   - Orb: ElevenLabs UI `Orb` (official, three.js), read from
     https://github.com/elevenlabs/ui (apps/www/registry/elevenlabs-ui/ui/orb.tsx
     and content/docs/components/orb.mdx). Colours from theme tokens.
+
+## 12. Faster talking (started 2026-10-28)
+
+Goal: talking mode starts speaking in about 2 s and answers in about 3 s,
+like a person ("Let me check your bookings…", then the answer). Typed
+answers also show at once.
+
+Measured 2026-10-28 (local, "How many bookings do I have today?", voice):
+2.5 s model picks the lookup, 1.4 s model writes the answer (held back),
+2.7 s answer check, then ~0.5 s to the first sound = 6.6 s of silence.
+A bare muse-spark-1.3 call: 0.5–1.5 s; `reasoning_effort: "minimal"`
+accepted (no 400) and a little faster than "low".
+
+### Sources
+
+- Models: https://dev.meta.ai/docs/models (Spark is the fast model; no
+  smaller hosted text model)
+- Reasoning effort: https://dev.meta.ai/docs/reasoning ("none" is a 400 on
+  Spark; "minimal" is the shortest pass)
+- Prompt caching: https://dev.meta.ai/docs/prompt-caching (automatic,
+  stable prefix first, `prompt_cache_key`)
+- ElevenLabs soft timeout (filler after ~3 s, no time words like "one
+  second"): https://elevenlabs.io/docs/agents-platform/customization/conversation-flow
+- ElevenLabs pre-tool speech ("Let me check that for you..." before a tool):
+  https://elevenlabs.io/docs/eleven-agents/customization/tools/tool-configuration/tool-call-sounds.md
+- ElevenLabs latency (stream LLM text into the socket):
+  https://elevenlabs.io/docs/eleven-api/guides/how-to/best-practices/latency-optimization.md
+- Text to Dialogue socket (`flush`, ~40 chars / 8 words buffering):
+  https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket
+
+### Steps
+
+- [ ] **1. Server** (Codex): talking mode uses `reasoning_effort`
+  "minimal" and skips the answer check; every answer streams as it is
+  written; typed answers are checked after they show (a failed check adds
+  the "not double-checked" notice, no hidden retry); in talking mode the
+  model says one short line before a read-only lookup.
+- [ ] **2. Voice screen** (Claude): speak the answer while it streams; open
+  the speaking connection while it thinks; a short natural line if it is
+  still quiet after 3 s (once per turn).
+- [ ] **3. Check** (both): timings before/after, English and Spanish, a tap
+  card in talking mode, typed answers still checked.
