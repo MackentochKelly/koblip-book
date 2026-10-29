@@ -400,3 +400,19 @@ Same chat, saved like typed chats.
   the token docs page) opens it with `single_use_token` in the query: audio
   chunks and is_final arrived. Branch A: the browser speaks with ElevenLabs
   directly; no speaking relay.
+- 2026-10-28 (checked before building the voice screen):
+  - Echo: request `echoCancellation: { ideal: "all" }` so the mic also drops
+    the voice the page plays (Chrome 141+, "all" shipped:
+    https://groups.google.com/a/chromium.org/g/blink-dev/c/x5nfoaUAUWY ;
+    values: https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/echoCancellation ).
+    Other browsers treat it as on. Proven only on a real phone (step 4).
+  - Safari 14.1+ (iPhone too) has AudioWorklet and the AudioContext
+    sampleRate option (MDN browser-compat-data). The mic is still captured
+    at the device rate and converted to 24 kHz in our worklet, so no
+    mixed-rate audio graph is ever built.
+  - Wait before the answer starts (local, 2026-10-28): 2.8 s with no
+    lookup, 3.3-6.3 s with a lookup and the answer check. The orb shows
+    "thinking" and the step label meanwhile; the check stays.
+  - Orb: ElevenLabs UI `Orb` (official, three.js), read from
+    https://github.com/elevenlabs/ui (apps/www/registry/elevenlabs-ui/ui/orb.tsx
+    and content/docs/components/orb.mdx). Colours from theme tokens.
