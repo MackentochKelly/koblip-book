@@ -55,10 +55,11 @@ export function HomeFeatures({
             />
           </div>
         </div>
-        <CarouselContent>
+        {/* p-px: room for the card edge, which the carousel would clip. */}
+        <CarouselContent className="p-px">
           {features.map(({ pattern, title, text }) => (
             <CarouselItem key={pattern} className="basis-[85%] md:basis-1/3">
-              <Card className="h-full pt-2">
+              <Card className="h-full pt-2 shadow-none">
                 <div
                   aria-hidden
                   className="mx-2 aspect-video overflow-hidden rounded-[calc(var(--radius-4xl)-(--spacing(2)))] bg-muted"
