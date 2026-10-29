@@ -67,7 +67,7 @@ export function HomeFeatures({
               <Card className="h-full pt-2 shadow-none ring-border dark:ring-border">
                 <div
                   aria-hidden
-                  className="mx-2 aspect-video overflow-hidden rounded-t-[calc(var(--radius-4xl)-(--spacing(2)))] rounded-b-lg bg-muted"
+                  className="relative mx-2 aspect-video overflow-hidden rounded-t-[calc(var(--radius-4xl)-(--spacing(2)))] rounded-b-lg bg-muted after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/5 dark:after:inset-ring-foreground/10"
                 >
                   <FeaturePattern name={pattern} />
                 </div>
