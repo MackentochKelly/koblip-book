@@ -5,6 +5,7 @@ import Image from "next/image"
 import { ChevronRightIcon } from "@/components/ui/icons"
 
 import { PageSection } from "@/components/page-section"
+import { ReadMore } from "@/components/read-more"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -26,6 +27,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { noAutofill } from "@/lib/no-autofill"
+import { cn } from "@/lib/utils"
 import { useOwnerMessages } from "../i18n/provider"
 
 const CONNECT_FORM = "connect-whatsapp-form"
@@ -92,8 +94,23 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
   )
 }
 
-// One app: its logo shown whole (the "image" media is for photos and clips
-// its corners), its name, what it does, and its state or action.
+// An app's logo, shown whole (the "image" media is for photos and clips its
+// corners).
+function Logo({ src, className }: { src: string; className: string }) {
+  return (
+    <Image
+      src={src}
+      alt=""
+      width={64}
+      height={64}
+      unoptimized
+      className={cn("object-contain", className)}
+    />
+  )
+}
+
+// One app: its logo, name, what it does (cut to two lines, the rest behind
+// Read more) and its state or action.
 function IntegrationRow({
   logo,
   name,
@@ -105,21 +122,24 @@ function IntegrationRow({
   description: string
   action: React.ReactNode
 }) {
+  const t = useOwnerMessages().integrations
   return (
     <Item variant="outline">
       <ItemMedia>
-        <Image
-          src={logo}
-          alt=""
-          width={40}
-          height={40}
-          unoptimized
-          className="size-10 object-contain"
-        />
+        <Logo src={logo} className="size-10" />
       </ItemMedia>
       <ItemContent>
         <ItemTitle>{name}</ItemTitle>
-        <ItemDescription>{description}</ItemDescription>
+        <ReadMore
+          text={description}
+          title={name}
+          media={<Logo src={logo} className="size-16" />}
+          label={t.readMore}
+        >
+          {(ref) => (
+            <ItemDescription ref={ref}>{description}</ItemDescription>
+          )}
+        </ReadMore>
       </ItemContent>
       <ItemActions>{action}</ItemActions>
     </Item>
