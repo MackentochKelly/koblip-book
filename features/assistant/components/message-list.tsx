@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Streamdown } from "streamdown"
 import {
   AlertCircleIcon,
@@ -29,6 +29,7 @@ import {
   MessageScrollerItem,
   MessageScrollerProvider,
   MessageScrollerViewport,
+  useMessageScroller,
 } from "@/components/ui/message-scroller"
 import { Spinner } from "@/components/ui/spinner"
 import {
@@ -263,8 +264,22 @@ function CopyAnswer({ text, label }: { text: string; label: string }) {
   )
 }
 
-// The conversation, on the stock message scroller: the owner's message
-// settles near the top and the reply streams in below it.
+// A new question from the owner (typed or said) brings the chat back down,
+// even if they had scrolled up to read; from there it follows again.
+function FollowNewQuestion({ id }: { id: string | undefined }) {
+  const { scrollToEnd } = useMessageScroller()
+  const seen = useRef(id)
+  useEffect(() => {
+    if (id === seen.current) return
+    seen.current = id
+    scrollToEnd({ behavior: "smooth" })
+  }, [id, scrollToEnd])
+  return null
+}
+
+// The conversation, on the stock message scroller: it keeps the newest
+// words in view as they arrive (answers, cards, talking live) until the
+// owner scrolls up; the arrow brings it back down.
 export function MessageList({
   businessId,
   messages: m,
@@ -285,12 +300,14 @@ export function MessageList({
   onAnswer: (id: string, accept: boolean) => void
 }) {
   const last = items.at(-1)
+  const lastQuestion = items.findLast((item) => item.role === "owner")
   const waiting =
     busy &&
     (last?.role === "owner" || (last?.role === "assistant" && !last.text))
 
   return (
     <MessageScrollerProvider autoScroll>
+      <FollowNewQuestion id={lastQuestion?.id} />
       <MessageScroller className="flex-1">
         {/* Fade both edges (shadcn's scroll-fade), not only the bottom:
             the stock viewport sets scroll-fade-b, so "!" lets this win
@@ -311,11 +328,7 @@ export function MessageList({
             )}
             {items.map((item) =>
               item.role === "owner" ? (
-                <MessageScrollerItem
-                  key={item.id}
-                  messageId={item.id}
-                  scrollAnchor
-                >
+                <MessageScrollerItem key={item.id} messageId={item.id}>
                   <Message align="end">
                     <MessageContent>
                       {/* The owner's words: a light tint of the brand colour,
