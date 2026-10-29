@@ -2,11 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import {
-  CalendarDaysIcon,
-  ChevronRightIcon,
-  type Icon,
-} from "@/components/ui/icons"
+import { ChevronRightIcon } from "@/components/ui/icons"
 
 import { PageSection } from "@/components/page-section"
 import { DetailsButton } from "@/components/details-button"
@@ -83,10 +79,10 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
       </PageSection>
       <PageSection id="calendar" title={t.calendar}>
         <ItemGroup className="gap-3">
-          {/* A plain calendar icon: Google's Calendar logo isn't cleared
-              for use in other apps yet. */}
+          {/* Google's own Calendar logo (2026), unaltered, from the
+              Google Workspace branding pack, only to name the app. */}
           <IntegrationRow
-            logo={CalendarDaysIcon}
+            logo="/brands/google-calendar.png"
             name={t.googleCalendar.name}
             description={t.googleCalendar.description}
             action={<Badge variant="secondary">{t.soon}</Badge>}
@@ -111,24 +107,11 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
 }
 
 // An app's logo, shown whole (the "image" media is for photos and clips its
-// corners): its file, or an icon on a tile when there is no file to use.
-function Logo({ logo, className }: { logo: string | Icon; className: string }) {
-  if (typeof logo !== "string") {
-    const LogoIcon = logo
-    return (
-      <span
-        className={cn(
-          "flex items-center justify-center rounded-xl bg-muted text-muted-foreground",
-          className
-        )}
-      >
-        <LogoIcon className="size-1/2" />
-      </span>
-    )
-  }
+// corners).
+function Logo({ src, className }: { src: string; className: string }) {
   return (
     <Image
-      src={logo}
+      src={src}
       alt=""
       width={64}
       height={64}
@@ -146,7 +129,7 @@ function IntegrationRow({
   description,
   action,
 }: {
-  logo: string | Icon
+  logo: string
   name: string
   description: string
   action: React.ReactNode
@@ -155,7 +138,7 @@ function IntegrationRow({
   return (
     <Item variant="outline">
       <ItemMedia>
-        <Logo logo={logo} className="size-10" />
+        <Logo src={logo} className="size-10" />
       </ItemMedia>
       <ItemContent className="min-w-0">
         {/* ⓘ beside the name, where the row has room to spare. */}
@@ -164,7 +147,7 @@ function IntegrationRow({
           <DetailsButton
             title={name}
             text={description}
-            media={<Logo logo={logo} className="size-16" />}
+            media={<Logo src={logo} className="size-16" />}
             label={t.about(name)}
           />
         </ItemTitle>
