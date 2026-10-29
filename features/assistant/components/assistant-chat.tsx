@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import {
   ArrowLeftIcon,
@@ -49,6 +49,21 @@ export function AssistantChat({
   // Full screen on a phone only; on a computer it sits in the page.
   const phone = useIsMobile()
   const visible = useVisualViewport(phone)
+  // On a phone the dashboard page behind stays still: with nothing to
+  // scroll in an empty chat, iPhone Safari would scroll and bounce that
+  // page instead, dragging this layer with it. Same lock as the full-screen
+  // search (get-started); overscroll-behavior stops the bounce
+  // (developer.mozilla.org/docs/Web/CSS/overscroll-behavior).
+  useEffect(() => {
+    if (!phone) return
+    const root = document.documentElement
+    root.style.overflow = "hidden"
+    root.style.overscrollBehavior = "none"
+    return () => {
+      root.style.overflow = ""
+      root.style.overscrollBehavior = ""
+    }
+  }, [phone])
   // Like ChatGPT: the chat, or the list of saved chats.
   const [view, setView] = useState<"chat" | "recent">("chat")
   const openChat = async (id: string) => {
