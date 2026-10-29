@@ -106,7 +106,7 @@ function PagePreview({ sample }: { sample: Sample }) {
     <Box>
       <div className="flex flex-col gap-3 px-(--card-spacing)">
         <div className="flex items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-(--hero-accent)/30 text-primary dark:bg-(--hero-accent)/20 dark:text-(--hero-accent)">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/25 dark:text-primary-foreground">
             <MapPinIcon className="size-4" />
           </span>
           <div className="flex min-w-0 flex-col">
