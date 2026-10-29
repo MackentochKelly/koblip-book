@@ -58,6 +58,7 @@ vi.mock("@/features/dashboard/api/addon-queries", () => ({
 }))
 vi.mock("@/features/dashboard/api/translation-queries", () => ({
   getTranslationStatus: vi.fn(),
+  getServiceNameTranslations: vi.fn(),
 }))
 
 const { getOwnerBusiness, getBookings, getBookingCounts, getBookingsBetween } =
@@ -91,7 +92,7 @@ const { getBusinessPhotos, getServiceTeams } =
   await import("@/features/dashboard/api/team-service-queries")
 const { getAddonGroups } =
   await import("@/features/dashboard/api/addon-queries")
-const { getTranslationStatus } =
+const { getTranslationStatus, getServiceNameTranslations } =
   await import("@/features/dashboard/api/translation-queries")
 const { buildAssistantTools } = await import("./tools")
 
@@ -139,6 +140,7 @@ test("every needsConfirm tool carries its result kind", () => {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(getServiceNameTranslations).mockResolvedValue([])
   vi.mocked(getOwnerBusiness).mockResolvedValue({
     business: BUSINESS,
     hours: [{ weekday: 1, opensAt: "09:00", closesAt: "18:00" }],
@@ -1907,6 +1909,41 @@ test("create_booking takes the names the owner said, in one step", async () => {
   } finally {
     vi.useRealTimers()
   }
+})
+
+test("create_booking knows a service by its Spanish name", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue({
+    business: BOOKING_BUSINESS,
+    hours: [],
+    services: [
+      {
+        id: "s1",
+        name: "Classic Haircut",
+        durationMinutes: 30,
+        priceMinor: 2500,
+      },
+      { id: "s2", name: "Kids Haircut", durationMinutes: 30, priceMinor: 1500 },
+    ],
+    team: [],
+  } as never)
+  vi.mocked(getServiceNameTranslations).mockResolvedValue([
+    { serviceId: "s1", sourceText: "Classic Haircut", text: "Corte clásico" },
+    { serviceId: "s2", sourceText: "Kids Haircut", text: "Corte para niños" },
+  ])
+  const describe = byName("create_booking").confirm!.describe
+  const args = { date: "2099-01-01", time: "10:00", name: "Julissa" }
+  const card = (await describe({ ...args, service: "corte clasico" })) as {
+    summary: string
+  }
+  expect(card.summary).toContain("Classic Haircut")
+  expect(getAvailability).toHaveBeenCalledWith("salon", "s1", null, [])
+  // A Spanish name made from an old English name no longer counts.
+  vi.mocked(getServiceNameTranslations).mockResolvedValue([
+    { serviceId: "s1", sourceText: "Haircut", text: "Corte clásico" },
+  ])
+  expect(await describe({ ...args, service: "corte clásico" })).toEqual({
+    error: expect.stringContaining("Classic Haircut, Kids Haircut"),
+  })
 })
 
 test("find_free_times takes names too", async () => {

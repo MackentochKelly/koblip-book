@@ -43,7 +43,10 @@ import {
   getBusinessPhotos,
   getServiceTeams,
 } from "@/features/dashboard/api/team-service-queries"
-import { getTranslationStatus } from "@/features/dashboard/api/translation-queries"
+import {
+  getServiceNameTranslations,
+  getTranslationStatus,
+} from "@/features/dashboard/api/translation-queries"
 import { logAssistantAction } from "@/features/assistant/api/audit-log"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import { getAvailability } from "@/features/booking/api/get-availability"
@@ -114,29 +117,53 @@ function schema(
 
 // Finds a service or team member from the words the owner said ("classic
 // haircut", "Kelly"), or an id. One exact name wins; otherwise one name
-// sharing a word ("Kelly Bergen" heard for "Kelly Begin"). Anything else
-// returns the names to ask about. The tap card shows the full name, so the
-// owner sees who was picked.
-function pickByName<T extends { id: string; name: string }>(
-  list: T[],
-  wanted: string
-): { found: T } | { choices: string[] } {
+// sharing a word ("Kelly Bergen" heard for "Kelly Begin"). A service's
+// Spanish name counts too (`otherNames`). Anything else returns the names
+// to ask about. The tap card shows the full name, so the owner sees who was
+// picked.
+function pickByName<
+  T extends { id: string; name: string; otherNames?: string[] },
+>(list: T[], wanted: string): { found: T } | { choices: string[] } {
   const plain = (text: string) =>
     text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim()
   const words = (text: string) =>
     plain(text)
       .split(/[^\p{L}\p{N}]+/u)
       .filter((word) => word.length > 1)
+  const names = (item: T) => [item.name, ...(item.otherNames ?? [])]
   const exact = list.filter(
-    (item) => item.id === wanted || plain(item.name) === plain(wanted)
+    (item) =>
+      item.id === wanted ||
+      names(item).some((name) => plain(name) === plain(wanted))
   )
   if (exact.length === 1) return { found: exact[0] }
   const said = new Set(words(wanted))
   const near = list.filter((item) =>
-    words(item.name).some((word) => said.has(word))
+    names(item).some((name) => words(name).some((word) => said.has(word)))
   )
   if (near.length === 1) return { found: near[0] }
   return { choices: (near.length > 0 ? near : list).map((item) => item.name) }
+}
+
+// The business with each service's up-to-date Spanish name added as
+// `otherNames`, for pickByName.
+async function getBusinessForNames(businessId: string) {
+  const [owned, spanish] = await Promise.all([
+    getOwnerBusiness(businessId),
+    getServiceNameTranslations(businessId),
+  ])
+  return {
+    ...owned,
+    services: owned.services.map((service) => ({
+      ...service,
+      otherNames: spanish
+        .filter(
+          (row) =>
+            row.serviceId === service.id && row.sourceText === service.name
+        )
+        .map((row) => row.text),
+    })),
+  }
 }
 
 function bad(message: string): { error: string } {
@@ -282,7 +309,7 @@ async function checkBookingArgs(
   if (note !== null && note.length > BOOKING_RULES.maxNote) {
     return { error: t.errors.noteTooLong }
   }
-  const { business, services, team } = await getOwnerBusiness(businessId)
+  const { business, services, team } = await getBusinessForNames(businessId)
   const today = zonedToday(now, business.timezone)
   const date =
     a.day === "today"
@@ -2362,7 +2389,7 @@ export function buildAssistantTools(
           return bad(t.errors.teamMemberInvalid)
         }
         const { business, services, team } =
-          await getOwnerBusiness(businessId)
+          await getBusinessForNames(businessId)
         const servicePick = pickByName(services, serviceWanted)
         if ("choices" in servicePick) {
           return bad(t.errors.serviceWhich(servicePick.choices.join(", ")))

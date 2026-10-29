@@ -83,3 +83,26 @@ export async function getTranslationStatus(
     upToDate: all.length - pending.length,
   }
 }
+
+// The saved Spanish service names, with the English name each was made
+// from: the assistant also knows a service by its Spanish name ("corte
+// clásico" for "Classic Haircut") while it is still up to date.
+export async function getServiceNameTranslations(
+  businessId: string
+): Promise<{ serviceId: string; sourceText: string; text: string }[]> {
+  const business = await ownedBusiness(businessId)
+  return db
+    .select({
+      serviceId: translations.entityId,
+      sourceText: translations.sourceText,
+      text: translations.text,
+    })
+    .from(translations)
+    .where(
+      and(
+        eq(translations.businessId, business.id),
+        eq(translations.language, "es"),
+        eq(translations.field, "service.name")
+      )
+    )
+}
