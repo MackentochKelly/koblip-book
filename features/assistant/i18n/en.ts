@@ -81,6 +81,8 @@ const messages = {
       confirmLine: "To do it, tap the button on the screen.",
       // Said once if an answer is slow; no time words ("one second"), as
       // ElevenLabs advises.
+      // Said once when talking starts.
+      greeting: "Hi! What can I do for you?",
       fillers: [
         "Hmm, let me see.",
         "Okay, almost there.",

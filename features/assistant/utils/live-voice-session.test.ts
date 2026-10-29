@@ -93,6 +93,7 @@ function setup() {
     close: vi.fn(),
     confirmLine: "Tap the button on the screen.",
     fillers: ["Hmm, let me see.", "Okay, almost there."],
+    greeting: "Hi! What can I do for you?",
     onState: (state) => void states.push(state),
     onCaption: vi.fn(),
     onError: vi.fn(),
@@ -130,7 +131,6 @@ test("sentences split only where a space or line follows", () => {
 
 test("speaks each sentence as it is written, then listens", async () => {
   const t = setup()
-  t.session.opened()
   t.session.hear({ type: "transcript", transcript: "what's on" })
   expect(t.parts.onCaption).toHaveBeenLastCalledWith("what's on")
   t.session.hear({
@@ -161,13 +161,38 @@ test("speaks each sentence as it is written, then listens", async () => {
   t.voices[0].done()
   t.setPlaying(false)
   t.playerIdle()
-  expect(t.states).toEqual([
-    "connecting",
-    "listening",
-    "thinking",
-    "talking",
-    "listening",
-  ])
+  expect(t.states).toEqual(["connecting", "thinking", "talking", "listening"])
+})
+
+test("says hello when talking starts, then listens", () => {
+  const t = setup()
+  t.session.opened()
+  expect(t.voices[0].said).toEqual(["Hi! What can I do for you?"])
+  expect(t.voices[0].finished).toBe(true)
+  t.setPlaying(true)
+  t.voices[0].audio()
+  t.voices[0].done()
+  t.setPlaying(false)
+  t.playerIdle()
+  expect(t.states).toEqual(["connecting", "listening", "talking", "listening"])
+})
+
+test("a question during the hello replaces it", () => {
+  const t = setup()
+  t.session.opened()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Today?" })
+  expect(t.voices[0].cancelled).toBe(true)
+  expect(t.voices).toHaveLength(2)
+})
+
+test("a noise with no words doesn't cut the voice off", () => {
+  const t = setup()
+  t.session.opened()
+  t.setPlaying(true)
+  t.session.hear({ type: "speechStart", turnId: 1 })
+  t.session.hear({ type: "transcript", transcript: "  " })
+  expect(t.voices[0].cancelled).toBe(false)
+  expect(t.parts.stopPlaying).not.toHaveBeenCalled()
 })
 
 test("after the first line it shows thinking until more words come", () => {
@@ -224,6 +249,8 @@ test("talking over the voice stops it; later words stay on screen", async () => 
   t.setPlaying(true)
   t.voices[0].audio()
   t.session.hear({ type: "speechStart", turnId: 2 })
+  expect(t.voices[0].cancelled).toBe(false)
+  t.session.hear({ type: "transcript", transcript: "Wait" })
   expect(t.voices[0].cancelled).toBe(true)
   expect(t.parts.stopPlaying).toHaveBeenCalled()
   expect(t.states.at(-1)).toBe("listening")

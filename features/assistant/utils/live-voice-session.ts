@@ -64,6 +64,9 @@ export interface LiveVoiceParts {
   // Short natural lines for a slow answer ("Hmm, let me see."); one is
   // said per turn, in turn.
   fillers: readonly string[]
+  // Said once when talking starts, like an ElevenLabs agent's first
+  // message.
+  greeting: string
   onState: (state: LiveVoiceState) => void
   onCaption: (text: string) => void
   onError: (error: LiveVoiceError) => void
@@ -109,24 +112,29 @@ export class LiveVoiceSession {
     parts.onState("connecting")
   }
 
-  // The listening socket is open.
+  // The listening socket is open: say hello, then listen.
   opened() {
-    if (!this.ended) this.parts.onState("listening")
+    if (this.ended) return
+    this.parts.onState("listening")
+    this.openVoice(this.turn, false)
+    this.say(this.parts.greeting)
+    this.speech?.finish()
   }
 
   hear(event: ListenEvent) {
     if (this.ended) return
     switch (event.type) {
-      case "speechStart":
-        // The owner talked over the voice: stop it and listen. The words
-        // still being written stay on screen only.
-        if (this.speech || this.parts.playing()) {
+      case "transcript":
+        this.parts.onCaption(event.transcript)
+        // The owner talked over the voice: stop it and listen. Only real
+        // words count, not the start of any sound, so a cough or a door
+        // doesn't cut it off ("Only respond to clear audio", OpenAI's
+        // Realtime prompting guide). Words still being written stay on
+        // screen only.
+        if (event.transcript.trim() && (this.speech || this.parts.playing())) {
           this.stopSpeaking()
           this.parts.onState("listening")
         }
-        break
-      case "transcript":
-        this.parts.onCaption(event.transcript)
         break
       case "speechComplete": {
         this.parts.onCaption("")
@@ -231,7 +239,9 @@ export class LiveVoiceSession {
 
   // Opens the voice while the assistant thinks, so the first sentence
   // plays at once, and says a short line if it stays quiet too long.
-  private openVoice(turn: number) {
+  private openVoice(turn: number, withFiller = true) {
+    // A voice still going (the hello) gives way to the answer.
+    if (this.speech) this.stopSpeaking()
     this.spoke = false
     this.speechDone = false
     this.written = ""
@@ -259,7 +269,7 @@ export class LiveVoiceSession {
       else if (this.thinking) this.parts.onState("thinking")
     })
     const { fillers } = this.parts
-    if (fillers.length > 0) {
+    if (withFiller && fillers.length > 0) {
       this.filler = setTimeout(() => {
         if (this.spoke || turn !== this.turn || this.speech !== speech) return
         this.say(fillers[this.fillersUsed % fillers.length])

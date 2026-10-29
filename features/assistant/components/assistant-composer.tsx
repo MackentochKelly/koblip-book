@@ -89,6 +89,7 @@ export function AssistantComposer({
     stopAnswer: onStop,
     confirmLine: labels.live.confirmLine,
     fillers: labels.live.fillers,
+    greeting: labels.live.greeting,
     onError: (error: LiveVoiceError) =>
       toast.error(error === "mic_denied" ? labels.micDenied : errors[error]),
   })

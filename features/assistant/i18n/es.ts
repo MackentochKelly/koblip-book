@@ -73,6 +73,7 @@ const messages: typeof en = {
       unmute: "Activar micrófono",
       end: "Terminar",
       confirmLine: "Para hacerlo, toca el botón en la pantalla.",
+      greeting: "¡Hola! ¿En qué te ayudo?",
       fillers: ["Mmm, déjame ver.", "Bueno, ya casi.", "A ver, déjame mirar."],
     },
   },

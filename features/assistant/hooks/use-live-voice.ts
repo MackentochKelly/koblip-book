@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
 } from "react"
 
+import { useWakeLock } from "@/hooks/use-wake-lock"
 import { VOICE_RULES } from "@/lib/voice-rules"
 import {
   LISTEN_FRAME_SAMPLES,
@@ -55,6 +56,7 @@ export function useLiveVoice({
   stopAnswer,
   confirmLine,
   fillers,
+  greeting,
   onError,
 }: {
   businessId: string
@@ -71,6 +73,8 @@ export function useLiveVoice({
   confirmLine: string
   // Short lines for a slow answer ("Hmm, let me see.").
   fillers: readonly string[]
+  // Said once when talking starts.
+  greeting: string
   onError: (error: LiveVoiceError) => void
 }) {
   const supported = useSyncExternalStore(noop, canTalk, () => false)
@@ -91,6 +95,7 @@ export function useLiveVoice({
     stopAnswer,
     confirmLine,
     fillers,
+    greeting,
     onError,
     voiceId,
   })
@@ -101,6 +106,7 @@ export function useLiveVoice({
       stopAnswer,
       confirmLine,
       fillers,
+      greeting,
       onError,
       voiceId,
     }
@@ -181,6 +187,7 @@ export function useLiveVoice({
       },
       confirmLine: latest.current.confirmLine,
       fillers: latest.current.fillers,
+      greeting: latest.current.greeting,
       onState: setState,
       onCaption: setCaption,
       onError: (error) => latest.current.onError(error),
@@ -241,6 +248,9 @@ export function useLiveVoice({
     mutedRef.current = !mutedRef.current
     setMuted(mutedRef.current)
   }, [])
+
+  // The screen stays on while talking, like a phone call.
+  useWakeLock(state !== "off")
 
   // Leaving the page ends the session.
   useEffect(() => () => session.current?.end(), [])
