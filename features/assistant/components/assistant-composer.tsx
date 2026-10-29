@@ -212,9 +212,9 @@ export function AssistantComposer({
             }
             className={cn(
               "animate-in duration-150 zoom-in-75 fade-in motion-reduce:animate-none",
-              // Talk live: a hairline ring in a lighter shade of its own
-              // colour, barely there, for a little depth.
-              mode === "live" && "ring-1 ring-primary/30"
+              // Talk live: no edge, just a soft shadow in its own colour
+              // under it, so it looks raised.
+              mode === "live" && "shadow-md shadow-primary/30"
             )}
           >
             {mode === "working" ? (
