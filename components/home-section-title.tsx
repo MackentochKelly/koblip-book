@@ -6,3 +6,10 @@ export const homeSectionTitleClassName =
 // back to: the one search on the page, no copy of it. Here, not in the
 // client HomeCta, so the server page reads the real value.
 export const GET_STARTED_ID = "get-started"
+
+// The home sections the footer links to.
+export const HOME_SECTION_IDS = {
+  howItWorks: "how-it-works",
+  features: "features",
+  faq: "faq",
+} as const

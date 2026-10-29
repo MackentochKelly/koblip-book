@@ -1,5 +1,6 @@
 "use client"
 
+import { HOME_SECTION_IDS } from "@/components/home-section-title"
 import { ShowcaseRow } from "@/components/showcase-row"
 import { StepPreview } from "@/components/step-preview"
 import type { Messages } from "@/lib/i18n"
@@ -10,6 +11,7 @@ export function HowItWorks({ words }: { words: Messages["home"] }) {
   const { steps, features } = words
   return (
     <ShowcaseRow
+      id={HOME_SECTION_IDS.howItWorks}
       title={steps.title}
       previous={features.previous}
       next={features.next}

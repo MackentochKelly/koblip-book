@@ -1,6 +1,7 @@
 "use client"
 
 import { FeaturePreview } from "@/components/feature-preview"
+import { HOME_SECTION_IDS } from "@/components/home-section-title"
 import { ShowcaseRow } from "@/components/showcase-row"
 import type { Messages } from "@/lib/i18n"
 
@@ -14,6 +15,7 @@ export function HomeFeatures({
 }) {
   return (
     <ShowcaseRow
+      id={HOME_SECTION_IDS.features}
       title={words.title}
       previous={words.previous}
       next={words.next}

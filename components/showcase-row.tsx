@@ -32,11 +32,14 @@ export type ShowcaseItem = {
 // the stock Card with a picture inset on top, like dev.meta.ai's model
 // cards. Phones swipe (or tap the arrows); computers show all three.
 export function ShowcaseRow({
+  id,
   title,
   previous,
   next,
   items,
 }: {
+  // For links to this row (the footer's).
+  id: string
   title: string
   previous: string
   next: string
@@ -45,7 +48,7 @@ export function ShowcaseRow({
   // Two-finger trackpad swipes move the cards too (Embla only drags).
   const [wheel] = useState(() => WheelGesturesPlugin())
   return (
-    <section className="mx-auto w-full max-w-5xl px-2 pb-12 sm:px-4">
+    <section id={id} className="mx-auto w-full max-w-5xl px-2 pb-12 sm:px-4">
       <Carousel opts={{ align: "start" }} plugins={[wheel]}>
         <div className="mb-4 flex items-center justify-between gap-4 px-2">
           <h2 className={homeSectionTitleClassName}>{title}</h2>

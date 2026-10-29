@@ -12,6 +12,7 @@ import { HowItWorks } from "@/components/how-it-works"
 import { LiveExample } from "@/components/live-example"
 import { LanguageProvider } from "@/components/language-provider"
 import { MetaProviderBadge } from "@/components/meta-provider-badge"
+import { SiteFooter } from "@/components/site-footer"
 import { headerButtonClassName, SiteHeader } from "@/components/site-header"
 import { WorksWith } from "@/components/works-with"
 import { Button } from "@/components/ui/button"
@@ -132,6 +133,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           button={t.cta.button}
           hint={onboardingWordsFor(language).hint}
         />
+        <SiteFooter language={language} signedIn={signedIn} />
       </div>
     </LanguageProvider>
   )
