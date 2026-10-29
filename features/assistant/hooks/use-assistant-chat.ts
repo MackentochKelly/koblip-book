@@ -96,7 +96,8 @@ export function useAssistantChat(
   // the screen to update.
   const consume = async (
     stream: AsyncIterable<AssistantStreamEvent>,
-    start: ChatItem[]
+    start: ChatItem[],
+    onText?: (delta: string) => void
   ): Promise<ChatItem[]> => {
     setBusy(true)
     setError(null)
@@ -106,6 +107,7 @@ export function useAssistantChat(
       for await (const event of stream) {
         if (event.type === "error") setError(event.code)
         else {
+          if (event.type === "text") onText?.(event.delta)
           latest = applyEvent(latest, event)
           setItems((current) => applyEvent(current, event))
         }
@@ -122,7 +124,11 @@ export function useAssistantChat(
   const asking = useRef<AbortController | null>(null)
   const [stoppable, setStoppable] = useState(false)
   // Resolves with the reply, or null when nothing came back.
-  const ask = async (history: ChatItem[], voice = false) => {
+  const ask = async (
+    history: ChatItem[],
+    voice = false,
+    onText?: (delta: string) => void
+  ) => {
     const controller = new AbortController()
     asking.current = controller
     setStoppable(true)
@@ -135,7 +141,8 @@ export function useAssistantChat(
         },
         controller.signal
       ),
-      history
+      history,
+      onText
     )
     if (asking.current === controller) {
       asking.current = null
@@ -147,8 +154,12 @@ export function useAssistantChat(
   const stop = () => asking.current?.abort()
 
   // `voice`: said out loud in talking mode, so the answer is short and
-  // spoken. Resolves with the reply (null when not sent or none came).
-  const send = async (text: string, options?: { voice?: boolean }) => {
+  // spoken; `onText` gets its words as they are written. Resolves with the
+  // reply (null when not sent or none came).
+  const send = async (
+    text: string,
+    options?: { voice?: boolean; onText?: (delta: string) => void }
+  ) => {
     const clean = text.trim()
     if (!clean || busy || clean.length > ASSISTANT_RULES.maxMessageChars) {
       return null
@@ -158,7 +169,7 @@ export function useAssistantChat(
       { id: crypto.randomUUID(), role: "owner", text: clean },
     ]
     setItems(next)
-    return ask(next, options?.voice === true)
+    return ask(next, options?.voice === true, options?.onText)
   }
 
   // Try the last message again, without the half-written reply.

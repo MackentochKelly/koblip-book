@@ -24,7 +24,7 @@ import {
   level,
 } from "../utils/pcm"
 import { PcmPlayer } from "../utils/pcm-player"
-import { speak } from "../utils/speak-client"
+import { openSpeech } from "../utils/speak-client"
 
 export type { LiveVoiceError, LiveVoiceState }
 
@@ -54,17 +54,23 @@ export function useLiveVoice({
   send,
   stopAnswer,
   confirmLine,
+  fillers,
   onError,
 }: {
   businessId: string
   voiceId: string
   busy: boolean
-  send: (text: string, options: { voice: boolean }) => Promise<Reply | null>
+  send: (
+    text: string,
+    options: { voice: boolean; onText: (delta: string) => void }
+  ) => Promise<Reply | null>
   // Stops an answer that is still being written (the owner said more, or
   // ended talking mode).
   stopAnswer: () => void
   // Said after an answer that waits for a tap on the screen.
   confirmLine: string
+  // Short lines for a slow answer ("Hmm, let me see.").
+  fillers: readonly string[]
   onError: (error: LiveVoiceError) => void
 }) {
   const supported = useSyncExternalStore(noop, canTalk, () => false)
@@ -84,11 +90,20 @@ export function useLiveVoice({
     send,
     stopAnswer,
     confirmLine,
+    fillers,
     onError,
     voiceId,
   })
   useEffect(() => {
-    latest.current = { busy, send, stopAnswer, confirmLine, onError, voiceId }
+    latest.current = {
+      busy,
+      send,
+      stopAnswer,
+      confirmLine,
+      fillers,
+      onError,
+      voiceId,
+    }
   })
   // After the screen has caught up with a finished answer, a turn that
   // waited for it can go.
@@ -132,16 +147,20 @@ export function useLiveVoice({
     player.current = speaker
 
     const current = new LiveVoiceSession({
-      send: (text) => latest.current.send(text, { voice: true }),
+      send: (text, onText) =>
+        latest.current.send(text, { voice: true, onText }),
       busy: () => latest.current.busy,
       cancelAnswer: () => latest.current.stopAnswer(),
-      speak: (text, handlers) =>
-        speak({
+      openSpeech: ({ onAudio, onDone, onError }) =>
+        openSpeech({
           businessId,
           voiceId: latest.current.voiceId,
-          text,
-          onAudio: (chunk) => speaker.play(chunk),
-          ...handlers,
+          onAudio: (chunk) => {
+            speaker.play(chunk)
+            onAudio()
+          },
+          onDone,
+          onError,
         }),
       playing: () => speaker.playing,
       stopPlaying: () => speaker.stop(),
@@ -161,6 +180,7 @@ export function useLiveVoice({
         void context.close()
       },
       confirmLine: latest.current.confirmLine,
+      fillers: latest.current.fillers,
       onState: setState,
       onCaption: setCaption,
       onError: (error) => latest.current.onError(error),

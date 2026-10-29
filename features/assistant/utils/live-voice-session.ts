@@ -5,8 +5,10 @@ import type { ChatItem } from "./chat-state"
 
 // Talking mode, like ChatGPT voice: the owner speaks, Meta hears it live
 // (through our /api/voice/listen relay), the assistant answers in the chat,
-// and ElevenLabs reads the answer out. Talking over it stops it.
-// Sources: docs/assistant-plan.md, section 11.
+// and ElevenLabs reads the answer out sentence by sentence while it is
+// still being written ("Let me check your bookings." comes first). Talking
+// over it stops it; new words while it thinks start a fresh answer.
+// Sources: docs/assistant-plan.md, sections 11 and 12.
 //
 // This class only decides what happens when; the microphone, the sockets
 // and the speaker come in as `parts`, so tests drive it without a browser.
@@ -28,41 +30,80 @@ export type ListenEvent =
   | { type: "speechComplete"; turnId: number; transcript: string }
   | { type: "error"; code: ErrorCode }
 
+// One answer's voice, open from the moment the assistant starts thinking.
+export interface Speech {
+  say: (text: string) => void
+  finish: () => void
+  cancel: () => void
+}
+
 export interface LiveVoiceParts {
-  // Sends the turn to the assistant; resolves with its reply.
-  send: (text: string) => Promise<Reply | null>
+  // Sends the turn to the assistant; onText gets the words as they are
+  // written; resolves with the reply.
+  send: (text: string, onText: (delta: string) => void) => Promise<Reply | null>
   // Cancels the answer still being written (the owner said more).
   cancelAnswer: () => void
   // True while an answer is still being written. It must come from the
   // screen as last drawn, the same state `send` uses.
   busy: () => boolean
-  // Reads text out; calls onDone once every chunk has arrived.
-  speak: (
-    text: string,
-    handlers: { onDone: () => void; onError: () => void }
-  ) => { cancel: () => void }
+  // Opens the voice for one answer. onAudio: a chunk started playing;
+  // onDone: every chunk has arrived.
+  openSpeech: (handlers: {
+    onAudio: () => void
+    onDone: () => void
+    onError: () => void
+  }) => Speech
   // The speaker: still playing, cut off, and told when it falls silent.
   playing: () => boolean
   stopPlaying: () => void
   onPlayerIdle: (callback: () => void) => void
   // Closes the microphone and the listening socket.
   close: () => void
+  // Said after an answer that waits for a tap on its card.
   confirmLine: string
+  // Short natural lines for a slow answer ("Hmm, let me see."); one is
+  // said per turn, in turn.
+  fillers: readonly string[]
   onState: (state: LiveVoiceState) => void
   onCaption: (text: string) => void
   onError: (error: LiveVoiceError) => void
   onEnd: () => void
 }
 
+// Splits finished sentences (or lines) off the front of the words written
+// so far. A full stop only ends a sentence when a space or new line
+// follows, so "3.5" or a half-written "today." waits for more.
+export function takeSentences(text: string): {
+  sentences: string[]
+  rest: string
+} {
+  const sentences: string[] = []
+  const end = /[.!?…]["')\]]*\s+|\n+/g
+  let start = 0
+  for (const match of text.matchAll(end)) {
+    const stop = match.index + match[0].length
+    const sentence = text.slice(start, stop).trim()
+    if (sentence) sentences.push(sentence)
+    start = stop
+  }
+  return { sentences, rest: text.slice(start) }
+}
+
 export class LiveVoiceSession {
   private ended = false
-  private speech: { cancel: () => void } | null = null
   // What the owner said that the assistant has not been asked yet.
   private queued = ""
+  // An answer is being written.
   private thinking = false
-  // Counts questions, so the answer to one the owner talked over is
-  // dropped when it arrives.
+  // Counts questions, so a talked-over answer's late words are dropped.
   private turn = 0
+  // This turn's voice; null once it is done or the owner talked over it.
+  private speech: Speech | null = null
+  private spoke = false
+  private speechDone = false
+  private written = ""
+  private filler: ReturnType<typeof setTimeout> | undefined
+  private fillersUsed = 0
 
   constructor(private readonly parts: LiveVoiceParts) {
     parts.onState("connecting")
@@ -77,7 +118,8 @@ export class LiveVoiceSession {
     if (this.ended) return
     switch (event.type) {
       case "speechStart":
-        // The owner talked over the answer: stop it and listen.
+        // The owner talked over the voice: stop it and listen. The words
+        // still being written stay on screen only.
         if (this.speech || this.parts.playing()) {
           this.stopSpeaking()
           this.parts.onState("listening")
@@ -97,7 +139,9 @@ export class LiveVoiceSession {
         if (this.thinking) {
           this.turn += 1
           this.thinking = false
+          this.stopSpeaking()
           this.parts.cancelAnswer()
+          this.parts.onState("thinking")
           // Sent from idle() once the chat has let go of the old answer.
           break
         }
@@ -119,7 +163,7 @@ export class LiveVoiceSession {
     this.end()
   }
 
-  // The chat finished an answer and the screen has caught up: a turn that
+  // The chat finished an answer and the screen has caught up: words that
   // waited for it can go now.
   idle() {
     if (this.ended || this.thinking || this.speech || this.parts.playing()) {
@@ -139,6 +183,7 @@ export class LiveVoiceSession {
   }
 
   private stopSpeaking() {
+    clearTimeout(this.filler)
     this.speech?.cancel()
     this.speech = null
     this.parts.stopPlaying()
@@ -154,49 +199,89 @@ export class LiveVoiceSession {
     const turn = this.turn
     this.thinking = true
     this.parts.onState("thinking")
-    const reply = await this.parts.send(text)
+    this.openVoice(turn)
+
+    const reply = await this.parts.send(text, (delta) => {
+      if (turn !== this.turn) return
+      this.written += delta
+      const { sentences, rest } = takeSentences(this.written)
+      this.written = rest
+      for (const sentence of sentences) this.say(sentence)
+    })
     // Talked over: the newer question is already on its way.
     if (this.ended || turn !== this.turn) return
     this.thinking = false
-    this.say(reply)
-  }
 
-  // Reads the reply out, then listens again (or sends the queued turn).
-  private say(reply: Reply | null) {
+    // The last words, and the tap reminder when a card waits.
     const waitsForTap = reply?.confirms.some((c) => c.state === "pending")
-    const text = [reply?.text ?? "", waitsForTap ? this.parts.confirmLine : ""]
+    const rest = [this.written, waitsForTap ? this.parts.confirmLine : ""]
       .join(" ")
       .trim()
-    if (!text) return this.next()
+    this.written = ""
+    if (rest) this.say(rest)
+    clearTimeout(this.filler)
+    if (!this.speech) return this.next()
+    if (!this.spoke) {
+      // Nothing to say (no words came): close the voice and listen.
+      this.stopSpeaking()
+      return this.next()
+    }
+    this.speech.finish()
+  }
 
-    this.parts.onState("talking")
-    let arrived = false
-    // Set before speaking starts, so even an instant reply can tell
-    // whether it is still the current one.
-    const turn = { cancel: () => {} }
-    this.speech = turn
-    this.parts.onPlayerIdle(() => {
-      if (arrived && !this.speech) this.next()
-    })
-    const handle = this.parts.speak(text, {
+  // Opens the voice while the assistant thinks, so the first sentence
+  // plays at once, and says a short line if it stays quiet too long.
+  private openVoice(turn: number) {
+    this.spoke = false
+    this.speechDone = false
+    this.written = ""
+    const speech = this.parts.openSpeech({
+      onAudio: () => {
+        if (this.speech === speech) this.parts.onState("talking")
+      },
       onDone: () => {
-        if (this.speech !== turn) return
-        arrived = true
-        this.speech = null
-        if (!this.parts.playing()) this.next()
+        if (this.speech !== speech) return
+        this.speechDone = true
+        if (!this.parts.playing()) this.afterSpeech()
       },
       onError: () => {
-        if (this.speech !== turn) return
+        if (this.speech !== speech) return
         this.speech = null
         this.parts.onError("unavailable")
-        this.next()
+        if (!this.thinking) this.next()
       },
     })
-    turn.cancel = handle.cancel
+    this.speech = speech
+    this.parts.onPlayerIdle(() => {
+      if (this.speech !== speech) return
+      if (this.speechDone) this.afterSpeech()
+      // Said "Let me check…"; now waiting for the rest of the answer.
+      else if (this.thinking) this.parts.onState("thinking")
+    })
+    const { fillers } = this.parts
+    if (fillers.length > 0) {
+      this.filler = setTimeout(() => {
+        if (this.spoke || turn !== this.turn || this.speech !== speech) return
+        this.say(fillers[this.fillersUsed % fillers.length])
+        this.fillersUsed += 1
+      }, VOICE_RULES.fillerAfterMs)
+    }
+  }
+
+  private say(text: string) {
+    if (!this.speech) return
+    this.spoke = true
+    clearTimeout(this.filler)
+    this.speech.say(text)
+  }
+
+  private afterSpeech() {
+    this.speech = null
+    this.next()
   }
 
   private next() {
-    if (this.ended) return
+    if (this.ended || this.thinking) return
     this.parts.onPlayerIdle(() => {})
     if (this.queued) {
       this.parts.onState("thinking")

@@ -79,6 +79,13 @@ const messages = {
       end: "End",
       // Said out loud when an answer waits for a tap on its card.
       confirmLine: "To do it, tap the button on the screen.",
+      // Said once if an answer is slow; no time words ("one second"), as
+      // ElevenLabs advises.
+      fillers: [
+        "Hmm, let me see.",
+        "Okay, almost there.",
+        "Alright, let me look.",
+      ],
     },
   },
   confirm: {

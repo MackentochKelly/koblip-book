@@ -1,7 +1,10 @@
-import { expect, test, vi } from "vitest"
+import { afterEach, expect, test, vi } from "vitest"
+
+import { VOICE_RULES } from "@/lib/voice-rules"
 
 import {
   LiveVoiceSession,
+  takeSentences,
   type LiveVoiceParts,
   type Reply,
 } from "./live-voice-session"
@@ -31,33 +34,54 @@ function reply(text: string, pendingConfirm = false): Reply {
   }
 }
 
-// Fake parts: answers come back when the test resolves them, speaking
-// finishes when the test says so.
+// Fake parts: the test writes the answer's words, resolves it, and plays
+// the voice's events.
 function setup() {
   const states: string[] = []
   let busy = false
   let playing = false
   let idle = () => {}
-  const answers: ((r: Reply | null) => void)[] = []
-  const spoken: { text: string; onDone: () => void; cancel: () => void }[] = []
+  const answers: {
+    write: (delta: string) => void
+    resolve: (r: Reply | null) => void
+  }[] = []
+  const voices: {
+    said: string[]
+    finished: boolean
+    cancelled: boolean
+    audio: () => void
+    done: () => void
+  }[] = []
   const parts: LiveVoiceParts = {
     send: vi.fn(
-      (text: string) =>
+      (_text: string, onText: (delta: string) => void) =>
         new Promise<Reply | null>((resolve) => {
-          void text
           busy = true
-          answers.push((r) => {
-            busy = false
-            resolve(r)
+          answers.push({
+            write: onText,
+            resolve: (r) => {
+              busy = false
+              resolve(r)
+            },
           })
         })
     ),
     busy: () => busy,
     cancelAnswer: vi.fn(),
-    speak: (text, handlers) => {
-      const cancel = vi.fn()
-      spoken.push({ text, onDone: handlers.onDone, cancel })
-      return { cancel }
+    openSpeech: (handlers) => {
+      const voice = {
+        said: [] as string[],
+        finished: false,
+        cancelled: false,
+        audio: handlers.onAudio,
+        done: handlers.onDone,
+      }
+      voices.push(voice)
+      return {
+        say: (text) => void voice.said.push(text),
+        finish: () => void (voice.finished = true),
+        cancel: () => void (voice.cancelled = true),
+      }
     },
     playing: () => playing,
     stopPlaying: vi.fn(() => {
@@ -68,7 +92,8 @@ function setup() {
     },
     close: vi.fn(),
     confirmLine: "Tap the button on the screen.",
-    onState: (state) => states.push(state),
+    fillers: ["Hmm, let me see.", "Okay, almost there."],
+    onState: (state) => void states.push(state),
     onCaption: vi.fn(),
     onError: vi.fn(),
     onEnd: vi.fn(),
@@ -79,7 +104,7 @@ function setup() {
     parts,
     states,
     answers,
-    spoken,
+    voices,
     setBusy: (value: boolean) => (busy = value),
     setPlaying: (value: boolean) => (playing = value),
     playerIdle: () => idle(),
@@ -88,7 +113,22 @@ function setup() {
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 
-test("a finished sentence is sent and its answer spoken, then it listens", async () => {
+afterEach(() => {
+  vi.useRealTimers()
+})
+
+test("sentences split only where a space or line follows", () => {
+  expect(takeSentences("Let me check. You have 3.5 hours")).toEqual({
+    sentences: ["Let me check."],
+    rest: "You have 3.5 hours",
+  })
+  expect(takeSentences("Done!\n\nNext line\nand")).toEqual({
+    sentences: ["Done!", "Next line"],
+    rest: "and",
+  })
+})
+
+test("speaks each sentence as it is written, then listens", async () => {
   const t = setup()
   t.session.opened()
   t.session.hear({ type: "transcript", transcript: "what's on" })
@@ -98,12 +138,27 @@ test("a finished sentence is sent and its answer spoken, then it listens", async
     turnId: 1,
     transcript: " What's on today? ",
   })
-  expect(t.parts.send).toHaveBeenCalledWith("What's on today?")
-  t.answers[0](reply("You have 3 bookings."))
-  await flush()
-  expect(t.spoken[0].text).toBe("You have 3 bookings.")
+  expect(t.parts.send).toHaveBeenCalledWith(
+    "What's on today?",
+    expect.any(Function)
+  )
+  // The voice opens while it thinks.
+  expect(t.voices).toHaveLength(1)
+  t.answers[0].write("Let me check your bookings.")
+  expect(t.voices[0].said).toEqual([])
+  t.answers[0].write("\n\nYou have 3 ")
+  expect(t.voices[0].said).toEqual(["Let me check your bookings."])
   t.setPlaying(true)
-  t.spoken[0].onDone()
+  t.voices[0].audio()
+  t.answers[0].write("bookings today.")
+  t.answers[0].resolve(reply("Let me check…\n\nYou have 3 bookings today."))
+  await flush()
+  expect(t.voices[0].said).toEqual([
+    "Let me check your bookings.",
+    "You have 3 bookings today.",
+  ])
+  expect(t.voices[0].finished).toBe(true)
+  t.voices[0].done()
   t.setPlaying(false)
   t.playerIdle()
   expect(t.states).toEqual([
@@ -115,23 +170,67 @@ test("a finished sentence is sent and its answer spoken, then it listens", async
   ])
 })
 
+test("after the first line it shows thinking until more words come", () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Today?" })
+  t.answers[0].write("Let me check. ")
+  t.setPlaying(true)
+  t.voices[0].audio()
+  t.setPlaying(false)
+  t.playerIdle()
+  expect(t.states.slice(-2)).toEqual(["talking", "thinking"])
+})
+
 test("an answer waiting for a tap says so", async () => {
   const t = setup()
   t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Book Ana" })
-  t.answers[0](reply("Ana at 3pm.", true))
+  t.answers[0].resolve(reply("", true))
   await flush()
-  expect(t.spoken[0].text).toBe("Ana at 3pm. Tap the button on the screen.")
+  expect(t.voices[0].said).toEqual(["Tap the button on the screen."])
 })
 
-test("talking over the answer stops it", async () => {
+test("a slow answer gets one short line, once", () => {
+  vi.useFakeTimers()
   const t = setup()
   t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Hi" })
-  t.answers[0](reply("Hello, how can I help?"))
+  vi.advanceTimersByTime(VOICE_RULES.fillerAfterMs)
+  expect(t.voices[0].said).toEqual(["Hmm, let me see."])
+  vi.advanceTimersByTime(VOICE_RULES.fillerAfterMs)
+  expect(t.voices[0].said).toHaveLength(1)
+})
+
+test("no extra line when words came in time", () => {
+  vi.useFakeTimers()
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Hi" })
+  t.answers[0].write("Hello there. ")
+  vi.advanceTimersByTime(VOICE_RULES.fillerAfterMs)
+  expect(t.voices[0].said).toEqual(["Hello there."])
+})
+
+test("no words at all: the voice closes and it listens", async () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Hm" })
+  t.answers[0].resolve(reply(""))
   await flush()
+  expect(t.voices[0].cancelled).toBe(true)
+  expect(t.states.at(-1)).toBe("listening")
+})
+
+test("talking over the voice stops it; later words stay on screen", async () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Hi" })
+  t.answers[0].write("Hello, how can I help? ")
   t.setPlaying(true)
+  t.voices[0].audio()
   t.session.hear({ type: "speechStart", turnId: 2 })
-  expect(t.spoken[0].cancel).toHaveBeenCalled()
+  expect(t.voices[0].cancelled).toBe(true)
   expect(t.parts.stopPlaying).toHaveBeenCalled()
+  expect(t.states.at(-1)).toBe("listening")
+  t.answers[0].write("Anything else? ")
+  t.answers[0].resolve(reply("Hello, how can I help? Anything else?"))
+  await flush()
+  expect(t.voices[0].said).toEqual(["Hello, how can I help?"])
   expect(t.states.at(-1)).toBe("listening")
 })
 
@@ -148,24 +247,28 @@ test("more words while thinking cancel the answer and ask again", async () => {
     transcript: "and tomorrow",
   })
   expect(t.parts.cancelAnswer).toHaveBeenCalledTimes(1)
+  expect(t.voices[0].cancelled).toBe(true)
   expect(t.parts.send).toHaveBeenCalledTimes(1)
-  // The cancelled answer arrives anyway: it is never spoken.
-  t.answers[0](reply("You have 3 today."))
+  // The cancelled answer's words are never spoken.
+  t.answers[0].write("You have 3 today. ")
+  t.answers[0].resolve(reply("You have 3 today."))
   await flush()
-  expect(t.spoken).toEqual([])
+  expect(t.voices[0].said).toEqual([])
   // Once the chat has let go of it, the new words go.
   t.session.idle()
-  expect(t.parts.send).toHaveBeenLastCalledWith("and tomorrow")
-  t.answers[1](reply("3 today and 2 tomorrow."))
-  await flush()
-  expect(t.spoken[0].text).toBe("3 today and 2 tomorrow.")
+  expect(t.parts.send).toHaveBeenLastCalledWith(
+    "and tomorrow",
+    expect.any(Function)
+  )
+  t.answers[1].write("3 today and 2 tomorrow. ")
+  expect(t.voices[1].said).toEqual(["3 today and 2 tomorrow."])
 })
 
 test("words said before the screen catches up wait for idle", async () => {
   const t = setup()
   t.session.hear({ type: "speechComplete", turnId: 1, transcript: "First" })
-  // No words to speak; the screen has not redrawn yet, so still busy.
-  t.answers[0](reply(""))
+  t.answers[0].resolve(reply(""))
+  // The screen has not redrawn yet, so still busy.
   t.setBusy(true)
   await flush()
   t.session.hear({ type: "speechComplete", turnId: 2, transcript: "Second" })
@@ -173,7 +276,7 @@ test("words said before the screen catches up wait for idle", async () => {
   expect(t.parts.send).toHaveBeenCalledTimes(1)
   t.setBusy(false)
   t.session.idle()
-  expect(t.parts.send).toHaveBeenLastCalledWith("Second")
+  expect(t.parts.send).toHaveBeenLastCalledWith("Second", expect.any(Function))
 })
 
 test("an error from the relay ends the session", () => {
@@ -191,11 +294,12 @@ test("a clean close at the time limit ends without an error", () => {
   expect(t.parts.onEnd).toHaveBeenCalled()
 })
 
-test("nothing happens after the end", async () => {
+test("nothing is spoken after the end", async () => {
   const t = setup()
   t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Hi" })
   t.session.end()
-  t.answers[0](reply("Hello"))
+  t.answers[0].write("Hello. ")
+  t.answers[0].resolve(reply("Hello"))
   await flush()
-  expect(t.spoken).toEqual([])
+  expect(t.voices[0].said).toEqual([])
 })

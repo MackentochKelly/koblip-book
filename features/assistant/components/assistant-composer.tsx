@@ -69,7 +69,7 @@ export function AssistantComposer({
   // A turn said in talking mode; resolves with the reply to read out.
   onSendSpoken: (
     text: string,
-    options: { voice: boolean }
+    options: { voice: boolean; onText: (delta: string) => void }
   ) => Promise<Reply | null>
   onStop: () => void
 }) {
@@ -88,6 +88,7 @@ export function AssistantComposer({
     send: onSendSpoken,
     stopAnswer: onStop,
     confirmLine: labels.live.confirmLine,
+    fillers: labels.live.fillers,
     onError: (error: LiveVoiceError) =>
       toast.error(error === "mic_denied" ? labels.micDenied : errors[error]),
   })

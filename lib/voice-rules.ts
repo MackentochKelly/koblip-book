@@ -17,4 +17,9 @@ export const VOICE_RULES = {
   speakTokenType: "ttd_websocket",
   // Speak-token mints per owner per minute.
   maxSpeakTokensPerMinutePerOwner: 30,
+  // Talking mode: if nothing has been said this long after the owner
+  // finished, say a short line ("Hmm, let me see."), once per turn.
+  // ElevenLabs recommends 3 s for this "soft timeout":
+  // https://elevenlabs.io/docs/agents-platform/customization/conversation-flow
+  fillerAfterMs: 3000,
 } as const
