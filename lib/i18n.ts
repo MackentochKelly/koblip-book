@@ -149,6 +149,8 @@ const en = {
         link: "book.koblip.com/lumen",
         copy: "Copy",
         copied: "Copied",
+        replay: "Play again",
+        ready: "Ready",
       },
     },
     features: {
@@ -334,6 +336,8 @@ const es: Messages = {
         link: "book.koblip.com/lumen",
         copy: "Copiar",
         copied: "Copiado",
+        replay: "Reproducir de nuevo",
+        ready: "Lista",
       },
     },
     features: {

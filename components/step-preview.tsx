@@ -1,21 +1,29 @@
 "use client"
 
-import { AnimatePresence, motion, useInView } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 
 import { Box, POP, RISE, Scene } from "@/components/feature-preview"
 import { Rating } from "@/components/rating"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, MapPinIcon, SearchIcon } from "@/components/ui/icons"
+import { Badge } from "@/components/ui/badge"
+import {
+  CheckIcon,
+  MapPinIcon,
+  RefreshIcon,
+  SearchIcon,
+} from "@/components/ui/icons"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
+import { Skeleton } from "@/components/ui/skeleton"
 import { formatPrice } from "@/lib/format-price"
-import { useReducedMotion } from "@/hooks/use-theme-colors"
+import { useStoryLoop } from "@/hooks/use-story-loop"
 import type { Messages } from "@/lib/i18n"
+import { SHOWCASE_LOOP } from "@/lib/showcase-rules"
 
 type Words = Messages["home"]["steps"]["sample"]
 type Shared = Messages["home"]["features"]["sample"]
@@ -48,66 +56,38 @@ export function StepPreview({
   )
 }
 
-// The find loop's timing, in ms.
-const FIND_LOOP = {
-  type: 130,
-  beforeResult: 700,
-  beforeTap: 1300,
-  tap: 700,
-  page: 3200,
-  rounds: 3,
-}
-
 type FindPhase = "typing" | "result" | "tap" | "page"
 
-const wait = (ms: number) => new Promise((done) => setTimeout(done, ms))
-
-// Plays by itself while on screen: the name types in, the Google Maps
-// result shows, a tap lands on it and the business page appears. Stops
-// after three rounds on the search with its result (WCAG 2.2.2); Search
-// plays it again. Reduce Motion: just that still picture.
+// Plays by itself (useStoryLoop): the name types in, the Google Maps
+// result shows, a tap lands on it and the business page appears. Rests on
+// the search with its result; Search plays it again.
 function FindPreview({ words, shared }: { words: Words; shared: Shared }) {
   const name = shared.business
   const box = useRef<HTMLDivElement>(null)
-  const inView = useInView(box, { amount: 0.6 })
-  const still = useReducedMotion()
-  const [run, setRun] = useState(0)
   const [typed, setTyped] = useState(name.length)
   const [phase, setPhase] = useState<FindPhase>("result")
-
-  useEffect(() => {
-    if (!inView || still) return
-    let stopped = false
-    async function play() {
-      for (let round = 0; round < FIND_LOOP.rounds; round++) {
-        setPhase("typing")
-        for (let count = 0; count <= name.length; count++) {
-          if (stopped) return
-          setTyped(count)
-          await wait(FIND_LOOP.type)
-        }
-        await wait(FIND_LOOP.beforeResult)
-        if (stopped) return
-        setPhase("result")
-        await wait(FIND_LOOP.beforeTap)
-        if (stopped) return
-        setPhase("tap")
-        await wait(FIND_LOOP.tap)
-        if (stopped) return
-        setPhase("page")
-        await wait(FIND_LOOP.page)
+  const time = SHOWCASE_LOOP.find
+  const replay = useStoryLoop(
+    box,
+    async (wait) => {
+      setPhase("typing")
+      for (let count = 0; count <= name.length; count++) {
+        setTyped(count)
+        await wait(time.type)
       }
-      if (stopped) return
+      await wait(time.beforeResult)
+      setPhase("result")
+      await wait(time.beforeTap)
+      setPhase("tap")
+      await wait(time.tap)
+      setPhase("page")
+      await wait(time.page)
+    },
+    () => {
       setTyped(name.length)
       setPhase("result")
     }
-    void play()
-    return () => {
-      stopped = true
-      setTyped(name.length)
-      setPhase("result")
-    }
-  }, [inView, still, run, name])
+  )
 
   return (
     <div ref={box} className="w-full max-w-60">
@@ -145,7 +125,7 @@ function FindPreview({ words, shared }: { words: Words; shared: Shared }) {
                     <InputGroupButton
                       size="icon-xs"
                       aria-label={words.search}
-                      onClick={() => setRun(run + 1)}
+                      onClick={replay}
                     >
                       <SearchIcon />
                     </InputGroupButton>
@@ -165,16 +145,7 @@ function FindPreview({ words, shared }: { words: Words; shared: Shared }) {
                             {words.address}
                           </span>
                         </div>
-                        {/* The tap: a soft circle that grows and fades. */}
-                        {phase === "tap" && (
-                          <motion.span
-                            aria-hidden
-                            initial={{ opacity: 0.5, scale: 0.4 }}
-                            animate={{ opacity: 0, scale: 1.4 }}
-                            transition={{ duration: FIND_LOOP.tap / 1000 }}
-                            className="pointer-events-none absolute top-1/2 left-1/3 size-10 -translate-1/2 rounded-full bg-primary/40"
-                          />
-                        )}
+                        {phase === "tap" && <TapMark ms={time.tap} />}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -188,52 +159,159 @@ function FindPreview({ words, shared }: { words: Words; shared: Shared }) {
   )
 }
 
-// The page, ready: name, rating and the services. Tap a service to take it
-// off or put it back.
-function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
-  const [off, setOff] = useState<string[]>([])
+// A tap: a soft circle that grows and fades on what is tapped (a
+// `relative` parent).
+function TapMark({ ms }: { ms: number }) {
   return (
-    <Box>
-      <div className="flex flex-col gap-2 px-(--card-spacing)">
-        <div className="flex items-center justify-between gap-2">
-          <span className="truncate font-medium">{shared.business}</span>
-          <Rating rating={4.9} locale={shared.locale} />
-        </div>
-        {words.services.map((service) => {
-          const on = !off.includes(service.name)
-          return (
-            <Button
-              key={service.name}
-              size="sm"
-              variant="outline"
-              aria-pressed={on}
-              onClick={() =>
-                setOff(
-                  on
-                    ? [...off, service.name]
-                    : off.filter((name) => name !== service.name)
+    <motion.span
+      aria-hidden
+      initial={{ opacity: 0.5, scale: 0.4 }}
+      animate={{ opacity: 0, scale: 1.4 }}
+      transition={{ duration: ms / 1000 }}
+      className="pointer-events-none absolute top-1/2 left-1/3 size-10 -translate-1/2 rounded-full bg-primary/40"
+    />
+  )
+}
+
+// Plays by itself (useStoryLoop): placeholders while the page builds, the
+// name and rating, the services one by one, a tap turns one off and on
+// again, then "Ready". Rests on the finished page, where the services can
+// be tapped; the replay button plays it again.
+function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
+  const services = words.services
+  const box = useRef<HTMLDivElement>(null)
+  const [building, setBuilding] = useState(false)
+  const [shown, setShown] = useState(services.length)
+  const [off, setOff] = useState<string[]>([])
+  const [tapped, setTapped] = useState<string | null>(null)
+  const [ready, setReady] = useState(true)
+  const time = SHOWCASE_LOOP.check
+  const target = services[services.length - 1].name
+  const replay = useStoryLoop(
+    box,
+    async (wait) => {
+      setReady(false)
+      setOff([])
+      setShown(0)
+      setBuilding(true)
+      await wait(time.building)
+      setBuilding(false)
+      await wait(time.nameIn)
+      for (let count = 1; count <= services.length; count++) {
+        setShown(count)
+        await wait(time.serviceIn)
+      }
+      await wait(time.beforeTap)
+      setTapped(target)
+      await wait(time.tap)
+      setTapped(null)
+      setOff([target])
+      await wait(time.off)
+      setTapped(target)
+      await wait(time.tap)
+      setTapped(null)
+      setOff([])
+      await wait(time.beforeReady)
+      setReady(true)
+      await wait(time.ready)
+    },
+    () => {
+      setBuilding(false)
+      setShown(services.length)
+      setTapped(null)
+      setOff([])
+      setReady(true)
+    }
+  )
+
+  return (
+    <div ref={box} className="relative w-full max-w-60">
+      <Box>
+        <div className="flex flex-col gap-2 px-(--card-spacing)">
+          {building ? (
+            <>
+              <div className="flex h-8 items-center justify-between">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-10" />
+              </div>
+              {services.map((service) => (
+                <Skeleton key={service.name} className="h-8 w-full" />
+              ))}
+            </>
+          ) : (
+            <>
+              <motion.div
+                {...RISE}
+                className="flex h-8 items-center justify-between gap-2"
+              >
+                <span className="flex min-w-0 items-center gap-1">
+                  <span className="truncate font-medium">
+                    {shared.business}
+                  </span>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={words.replay}
+                    onClick={replay}
+                  >
+                    <RefreshIcon />
+                  </Button>
+                </span>
+                <Rating rating={4.9} locale={shared.locale} />
+              </motion.div>
+              {services.map((service, index) => {
+                const on = !off.includes(service.name)
+                return index < shown ? (
+                  <motion.div key={service.name} {...RISE}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      aria-pressed={on}
+                      onClick={() =>
+                        setOff(
+                          on
+                            ? [...off, service.name]
+                            : off.filter((name) => name !== service.name)
+                        )
+                      }
+                      className="relative w-full justify-between"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <AnimatePresence initial={false}>
+                          {on && (
+                            <motion.span {...POP} className="flex">
+                              <CheckIcon className="text-success" />
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
+                        {service.name}
+                      </span>
+                      <span className="text-muted-foreground tabular-nums">
+                        {formatPrice(service.priceMinor, "EUR", shared.locale)}
+                      </span>
+                      {tapped === service.name && <TapMark ms={time.tap} />}
+                    </Button>
+                  </motion.div>
+                ) : (
+                  <div key={service.name} className="h-8" />
                 )
-              }
-              className="w-full justify-between"
-            >
-              <span className="flex items-center gap-1.5">
-                <AnimatePresence initial={false}>
-                  {on && (
-                    <motion.span {...POP} className="flex">
-                      <CheckIcon className="text-success" />
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-                {service.name}
-              </span>
-              <span className="text-muted-foreground tabular-nums">
-                {formatPrice(service.priceMinor, "EUR", shared.locale)}
-              </span>
-            </Button>
-          )
-        })}
-      </div>
-    </Box>
+              })}
+            </>
+          )}
+        </div>
+      </Box>
+      {/* "Ready", stuck on the box's corner so nothing moves under it. */}
+      <AnimatePresence>
+        {ready && !building && (
+          <motion.span {...POP} className="absolute -top-2 -right-2">
+            <Badge className="bg-success text-success-foreground">
+              <CheckIcon />
+              {words.ready}
+            </Badge>
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 
