@@ -80,7 +80,7 @@ export function ServiceList({
     <PageSection
       id="services"
       title={m.sections.services}
-      className="-mx-4 bg-card px-4 py-6 md:mx-0 md:rounded-2xl md:p-6"
+      className="-mx-4 bg-muted px-4 py-6 dark:bg-card md:mx-0 md:rounded-2xl md:p-6"
     >
       <ItemGroup className="gap-3">
         {shown.map((service) => (
