@@ -19,6 +19,7 @@ const whatsapp: typeof en = {
   sendingFrom: { koblip: "Enviando desde el número de Koblip", own: "Enviando desde tu número" },
   koblipHint: "Mensajes listos de Koblip. Activa o desactiva cada uno.",
   useOwnNumber: "Usar tu propio número",
+  untilApproved: (names: string) => `Tu número empieza cuando Meta apruebe ${names}.`,
   koblipWording: "Texto listo de Koblip. Usa tu propio número para cambiarlo.",
   // Resumen: la lista de pasos y la prueba.
   setup: "Puesta en marcha",

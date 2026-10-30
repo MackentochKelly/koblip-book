@@ -373,10 +373,14 @@ export async function sendableTemplate(
   }
 }
 
-// Whether Meta approved the business's own copy of each of these messages in
-// every language: then its own number can send them all (K3).
-export async function ownTemplatesApproved(businessId: string, messages: BookingMessage[]) {
-  if (!messages.length) return true
+// Which of these messages Meta has not approved yet in every language, in
+// the business's own copy: until none is left its own number does not send
+// (K3); the WhatsApp page names them (D34).
+export async function ownTemplatesNotApproved(
+  businessId: string,
+  messages: readonly BookingMessage[]
+): Promise<BookingMessage[]> {
+  if (!messages.length) return []
   const rows = await db
     .select({ message: chatTemplates.message })
     .from(chatTemplates)
@@ -384,10 +388,18 @@ export async function ownTemplatesApproved(businessId: string, messages: Booking
       and(
         eq(chatTemplates.businessId, businessId),
         eq(chatTemplates.status, "approved"),
-        inArray(chatTemplates.message, messages)
+        inArray(chatTemplates.message, [...messages])
       )
     )
-  return rows.length === messages.length * TEMPLATE_LANGUAGES.length
+  return messages.filter(
+    (message) => rows.filter((row) => row.message === message).length < TEMPLATE_LANGUAGES.length
+  )
+}
+
+// Whether Meta approved the business's own copy of each of these messages in
+// every language: then its own number can send them all (K3).
+export async function ownTemplatesApproved(businessId: string, messages: BookingMessage[]) {
+  return (await ownTemplatesNotApproved(businessId, messages)).length === 0
 }
 
 // The same as sendableTemplate, from Koblip's ready-made set in Koblip's own

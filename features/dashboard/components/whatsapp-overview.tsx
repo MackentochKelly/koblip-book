@@ -49,18 +49,34 @@ export function WhatsappOverview({
   connection,
   sender,
   messages,
+  waiting,
   ownerPhone,
 }: {
   businessId: string
   connection: ChatConnection | null
   sender: Sender | null
   messages: NotificationMessage[]
+  // Messages Meta must still approve before the business's own number sends.
+  waiting: BookingMessage[]
   ownerPhone: string | null
 }) {
   const m = useOwnerMessages()
   const t = m.whatsapp
   const own = connection && !connection.needsReconnect ? connection : null
   const steps = setupSteps(connection, messages)
+  // One line: with its own number connected but Koblip's sending, the
+  // messages Meta must still approve (D34); else the workspace's state.
+  const status = waiting.length
+    ? t.untilApproved(
+        new Intl.ListFormat(m.locale, { type: "conjunction" }).format(
+          waiting.map((message) => t.names[message])
+        )
+      )
+    : own
+      ? `${own.workspaceName} · ${
+          own.messages === "ready" ? t.ready : m.integrations.koblipChat.messages[own.messages]
+        }`
+      : t.koblipHint
   // Only the first step not done says what to do next.
   const next = SETUP_STEPS.find((step) => !steps[step])
   const hrefOf = (step: SetupStep) =>
@@ -77,13 +93,7 @@ export function WhatsappOverview({
         <ItemContent className="min-w-0">
           <ItemTitle>{sender ? t.sendingFrom[sender] : own?.workspaceName}</ItemTitle>
           {/* The whole status, never cut short (Spanish runs longer). */}
-          <ItemDescription className="line-clamp-none">
-            {own
-              ? `${own.workspaceName} · ${
-                  own.messages === "ready" ? t.ready : m.integrations.koblipChat.messages[own.messages]
-                }`
-              : t.koblipHint}
-          </ItemDescription>
+          <ItemDescription className="line-clamp-none">{status}</ItemDescription>
         </ItemContent>
         {!own && (
           <ItemActions>
