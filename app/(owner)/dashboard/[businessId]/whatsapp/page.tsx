@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { chatConnectionFor } from "@/features/dashboard/api/chat-templates"
+import { senderFor } from "@/features/dashboard/api/notification-sender"
 import {
   notificationMessagesFor,
   notificationSettingsFor,
@@ -18,8 +19,9 @@ export default async function WhatsappOverviewPage({
   const { businessId } = await params
   // Only the business's owner gets here.
   await getOwnerBusiness(businessId)
-  const [connection, messages, settings] = await Promise.all([
+  const [connection, sender, messages, settings] = await Promise.all([
     chatConnectionFor(businessId),
+    senderFor(businessId),
     notificationMessagesFor(businessId),
     notificationSettingsFor(businessId),
   ])
@@ -27,6 +29,7 @@ export default async function WhatsappOverviewPage({
     <WhatsappOverview
       businessId={businessId}
       connection={connection}
+      sender={sender}
       messages={messages}
       ownerPhone={settings.ownerPhone}
     />

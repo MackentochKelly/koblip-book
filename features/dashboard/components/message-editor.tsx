@@ -256,13 +256,17 @@ export function MessageEditor({
               </TabsList>
             </Tabs>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">{t.metaStatus}</span>
-              <Badge variant={text.review === "rejected" ? "destructive" : "secondary"}>
-                {t.review[text.review]}
-              </Badge>
-            </div>
-            {text.review === "rejected" && text.reason && (
+            {editable ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{t.metaStatus}</span>
+                <Badge variant={text.review === "rejected" ? "destructive" : "secondary"}>
+                  {t.review[text.review]}
+                </Badge>
+              </div>
+            ) : (
+              <FieldDescription>{t.koblipWording}</FieldDescription>
+            )}
+            {editable && text.review === "rejected" && text.reason && (
               <Alert variant="destructive">
                 <AlertTitle>{t.metaReason}</AlertTitle>
                 <AlertDescription>{text.reason}</AlertDescription>
@@ -372,7 +376,7 @@ export function MessageEditor({
                   </Button>
                 ))}
               </div>
-              <FieldDescription>{t.reviewHint}</FieldDescription>
+              {editable && <FieldDescription>{t.reviewHint}</FieldDescription>}
             </Field>
           </FieldGroup>
         </form>

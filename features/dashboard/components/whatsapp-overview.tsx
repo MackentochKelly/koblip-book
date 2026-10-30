@@ -28,7 +28,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { sendTestToMyPhone } from "../api/notification-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { ChatConnection } from "../types/chat-connection"
-import type { NotificationMessage, SetupStep } from "../types/notifications"
+import type { NotificationMessage, Sender, SetupStep } from "../types/notifications"
 import type { BookingMessage } from "../utils/booking-templates"
 import { SETUP_STEPS, setupSteps } from "../utils/setup-steps"
 
@@ -41,23 +41,25 @@ const STEP_PARTS: Record<SetupStep, "integrations" | "messages"> = {
   live: "messages",
 }
 
-// Overview: which Koblip Chat workspace sends the messages, the setup
-// checklist (D23) and a test to the owner's own phone (S8, D17).
+// Overview: which number sends (K4), the setup checklist of the business's
+// own number (D23) and a test to the owner's own phone (S8, D17). Without a
+// working workspace of its own, "Use your own number" takes its place.
 export function WhatsappOverview({
   businessId,
   connection,
+  sender,
   messages,
   ownerPhone,
 }: {
   businessId: string
   connection: ChatConnection | null
+  sender: Sender | null
   messages: NotificationMessage[]
   ownerPhone: string | null
 }) {
   const m = useOwnerMessages()
   const t = m.whatsapp
-  if (!connection) return null
-  const state = connection.messages
+  const own = connection && !connection.needsReconnect ? connection : null
   const steps = setupSteps(connection, messages)
   // Only the first step not done says what to do next.
   const next = SETUP_STEPS.find((step) => !steps[step])
@@ -73,63 +75,83 @@ export function WhatsappOverview({
           <MessageCircleIcon />
         </ItemMedia>
         <ItemContent className="min-w-0">
-          <ItemTitle>{connection.workspaceName}</ItemTitle>
+          <ItemTitle>{sender ? t.sendingFrom[sender] : own?.workspaceName}</ItemTitle>
           {/* The whole status, never cut short (Spanish runs longer). */}
           <ItemDescription className="line-clamp-none">
-            {state === "ready" ? t.ready : m.integrations.koblipChat.messages[state]}
+            {own
+              ? `${own.workspaceName} · ${
+                  own.messages === "ready" ? t.ready : m.integrations.koblipChat.messages[own.messages]
+                }`
+              : t.koblipHint}
           </ItemDescription>
         </ItemContent>
+        {!own && (
+          <ItemActions>
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href={`/dashboard/${businessId}/integrations`} />}
+            >
+              {connection ? m.integrations.koblipChat.reconnect : t.useOwnNumber}
+            </Button>
+          </ItemActions>
+        )}
       </Item>
 
-      <PageSection id="setup" title={t.setup}>
-        <ItemGroup className="gap-2">
-          {SETUP_STEPS.map((step, index) => (
-            <Item key={step} role="listitem" variant="outline" size="sm">
-              <ItemMedia variant="icon">
-                {steps[step] ? (
-                  <CircleCheckIcon className="text-primary" />
-                ) : (
-                  <span className="text-sm font-medium text-muted-foreground">{index + 1}</span>
+      {own && (
+        <PageSection id="setup" title={t.setup}>
+          <ItemGroup className="gap-2">
+            {SETUP_STEPS.map((step, index) => (
+              <Item key={step} role="listitem" variant="outline" size="sm">
+                <ItemMedia variant="icon">
+                  {steps[step] ? (
+                    <CircleCheckIcon className="text-primary" />
+                  ) : (
+                    <span className="text-sm font-medium text-muted-foreground">{index + 1}</span>
+                  )}
+                </ItemMedia>
+                <ItemContent className="min-w-0">
+                  <ItemTitle>
+                    {t.steps[step]}
+                    <span className="sr-only">
+                      {" "}
+                      ({steps[step] ? t.stepDone : t.stepToDo})
+                    </span>
+                  </ItemTitle>
+                  {step === next && (
+                    <ItemDescription className="line-clamp-none">
+                      {t.stepHints[step]}
+                    </ItemDescription>
+                  )}
+                </ItemContent>
+                {step === next && step !== "approved" && (
+                  <ItemActions>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={<Link href={hrefOf(step)} />}
+                    >
+                      {t.open}
+                    </Button>
+                  </ItemActions>
                 )}
-              </ItemMedia>
-              <ItemContent className="min-w-0">
-                <ItemTitle>
-                  {t.steps[step]}
-                  <span className="sr-only">
-                    {" "}
-                    ({steps[step] ? t.stepDone : t.stepToDo})
-                  </span>
-                </ItemTitle>
-                {step === next && (
-                  <ItemDescription className="line-clamp-none">
-                    {t.stepHints[step]}
-                  </ItemDescription>
-                )}
-              </ItemContent>
-              {step === next && step !== "approved" && (
-                <ItemActions>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    nativeButton={false}
-                    render={<Link href={hrefOf(step)} />}
-                  >
-                    {t.open}
-                  </Button>
-                </ItemActions>
-              )}
-            </Item>
-          ))}
-        </ItemGroup>
-      </PageSection>
+              </Item>
+            ))}
+          </ItemGroup>
+        </PageSection>
+      )}
 
-      <PageSection id="test" title={t.test}>
-        <TestSend
-          businessId={businessId}
-          messages={messages.map((item) => item.message)}
-          ownerPhone={ownerPhone}
-        />
-      </PageSection>
+      {sender && (
+        <PageSection id="test" title={t.test}>
+          <TestSend
+            businessId={businessId}
+            messages={messages.map((item) => item.message)}
+            ownerPhone={ownerPhone}
+          />
+        </PageSection>
+      )}
     </div>
   )
 }

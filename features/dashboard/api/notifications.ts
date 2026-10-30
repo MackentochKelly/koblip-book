@@ -4,6 +4,7 @@ import { and, desc, eq, or, sql, type SQL } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   bookings,
+  chatConnections,
   chatTemplates,
   notificationSends,
   notificationSettings,
@@ -26,6 +27,7 @@ import {
   defaultWording,
   type TemplateLanguage,
 } from "../utils/booking-templates"
+import { chatConnectionUsable } from "./chat-oauth"
 
 // The business's WhatsApp notification settings, or the defaults as the
 // admin set them (lib/platform-settings.ts).
@@ -75,18 +77,26 @@ function review(
 }
 
 // Each message: on or off, and per language its wording (the owner's or
-// Book's) and Meta's review.
+// Book's) and Meta's review. Without a working Koblip Chat workspace of its
+// own the business sends Koblip's ready-made set, Book's wording, which only
+// turns on or off (K4, D26).
 export async function notificationMessagesFor(businessId: string): Promise<NotificationMessage[]> {
-  const [settings, own, made] = await Promise.all([
+  const [settings, texts, made, [connection]] = await Promise.all([
     notificationSettingsFor(businessId),
     db.select().from(notificationTexts).where(eq(notificationTexts.businessId, businessId)),
     db.select().from(chatTemplates).where(eq(chatTemplates.businessId, businessId)),
+    db
+      .select({ needsReconnect: chatConnections.needsReconnect, scopes: chatConnections.scopes })
+      .from(chatConnections)
+      .where(eq(chatConnections.businessId, businessId))
+      .limit(1),
   ])
+  const editable = !!connection && chatConnectionUsable(connection)
+  const own = editable ? texts : []
   return BOOKING_MESSAGES.map((message) => ({
     message,
     on: !settings.turnedOff.includes(message),
-    // Every business sends from its own number today; Koblip's number is K3.
-    editable: true,
+    editable,
     texts: Object.fromEntries(
       TEMPLATE_LANGUAGES.map((language): [TemplateLanguage, NotificationText] => {
         const mine = own.find((row) => row.message === message && row.language === language)

@@ -15,6 +15,11 @@ const whatsapp: typeof en = {
   },
   partsLabel: "Partes de WhatsApp",
   ready: "Listo para enviar",
+  // Qué número envía (K4).
+  sendingFrom: { koblip: "Enviando desde el número de Koblip", own: "Enviando desde tu número" },
+  koblipHint: "Mensajes listos de Koblip. Activa o desactiva cada uno.",
+  useOwnNumber: "Usar tu propio número",
+  koblipWording: "Texto listo de Koblip. Usa tu propio número para cambiarlo.",
   // Resumen: la lista de pasos y la prueba.
   setup: "Puesta en marcha",
   steps: {

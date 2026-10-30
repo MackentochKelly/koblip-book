@@ -13,6 +13,11 @@ const whatsapp = {
   },
   partsLabel: "WhatsApp parts",
   ready: "Ready to send",
+  // Which number sends (K4).
+  sendingFrom: { koblip: "Sending from Koblip's number", own: "Sending from your number" },
+  koblipHint: "Koblip's ready-made messages. Turn each on or off.",
+  useOwnNumber: "Use your own number",
+  koblipWording: "Koblip's ready-made wording. Use your own number to change it.",
   // Overview: the setup checklist and the test send.
   setup: "Setup",
   steps: {
