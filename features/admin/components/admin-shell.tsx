@@ -5,6 +5,7 @@ import {
   CalendarDaysIcon,
   ContactIcon,
   LayoutDashboardIcon,
+  MessageCircleIcon,
   StoreIcon,
 } from "@/components/ui/icons"
 
@@ -27,6 +28,7 @@ const NAV = [
   { path: "/businesses", key: "businesses", icon: StoreIcon },
   { path: "/owners", key: "owners", icon: ContactIcon },
   { path: "/bookings", key: "bookings", icon: CalendarDaysIcon },
+  { path: "/whatsapp", key: "whatsapp", icon: MessageCircleIcon },
 ] as const
 
 // The admin area, built like the owner dashboard: the same menu (folding on

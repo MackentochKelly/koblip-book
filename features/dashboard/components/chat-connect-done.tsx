@@ -30,7 +30,7 @@ export function ChatConnectDone({
     const back = window.setTimeout(() => {
       window.location.replace(
         koblip
-          ? `/admin?chat=${result}`
+          ? `/admin/whatsapp/koblip-number?chat=${result}`
           : businessId
             ? `/dashboard/${encodeURIComponent(businessId)}/integrations?chat=${result}`
             : "/dashboard"

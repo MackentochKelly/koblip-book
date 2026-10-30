@@ -64,7 +64,7 @@ export function KoblipChatCard({
     }
     if (result) {
       ended(result)
-      router.replace("/admin")
+      router.replace("/admin/whatsapp/koblip-number")
     }
     const channel = new BroadcastChannel(CHAT_CONNECT_CHANNEL)
     channel.onmessage = (event: MessageEvent<ChatConnectMessage>) => {
