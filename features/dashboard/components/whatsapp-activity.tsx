@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { CalendarDaysIcon, SearchIcon } from "@/components/ui/icons"
+import { CalendarDaysIcon, RefreshIcon, SearchIcon } from "@/components/ui/icons"
+import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Empty,
   EmptyContent,
@@ -35,6 +37,7 @@ import {
 } from "@/components/ui/select"
 import { noAutofill } from "@/lib/no-autofill"
 import { cn } from "@/lib/utils"
+import { sendAgain } from "../api/notification-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { ActivityFilter, NotificationSend } from "../types/notifications"
 import { ACTIVITY_STATES, activityQuery } from "../utils/activity-filter"
@@ -45,12 +48,15 @@ const ANY = "any"
 
 // Activity: every message, who, which, when, normal or template, whether it
 // went and the customer's answer; filtered by message and status, searched
-// by name or phone. The filters are in the address (activity-filter.ts).
+// by name or phone, and a failed one can be sent again. The filters are in
+// the address (activity-filter.ts).
 export function WhatsappActivity({
+  businessId,
   history,
   filter,
   timeZone,
 }: {
+  businessId: string
   history: NotificationSend[]
   filter: ActivityFilter
   timeZone: string
@@ -221,6 +227,9 @@ export function WhatsappActivity({
                       {t.states[shown] ?? shown}
                     </Badge>
                     {send.reply && <Badge variant="outline">{t.replies[send.reply.action]}</Badge>}
+                    {send.state === "failed" && (
+                      <SendAgainButton businessId={businessId} send={send} />
+                    )}
                   </ItemActions>
                 </Item>
               )
@@ -229,5 +238,35 @@ export function WhatsappActivity({
         )}
       </div>
     </div>
+  )
+}
+
+// Puts a failed message back in line; the next check sends it (D17).
+function SendAgainButton({ businessId, send }: { businessId: string; send: NotificationSend }) {
+  const t = useOwnerMessages().whatsapp
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+  const again = () =>
+    startTransition(async () => {
+      const result = await sendAgain(businessId, send.id).catch(() => null)
+      if (result?.ok) {
+        toast.success(t.sentAgain)
+        router.refresh()
+      } else {
+        toast.error((result && t.sendAgainProblems[result.error]) ?? t.sendAgainFailed)
+        if (result) router.refresh()
+      }
+    })
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={pending}
+      onClick={again}
+      aria-label={t.sendAgainLabel(t.names[send.message])}
+    >
+      {pending ? <Spinner data-icon="inline-start" /> : <RefreshIcon data-icon="inline-start" />}
+      {t.sendAgain}
+    </Button>
   )
 }

@@ -219,7 +219,7 @@ task is in Lanes above.
 | P4 | Your alerts screen | `whatsapp-alerts.tsx` | P1, S5 | `To do` |
 | P5 | Timing screen with the 24-hour setting | `whatsapp-timing.tsx` | P1, S4 | `To do` |
 | P6 | Replies screen | `whatsapp-replies.tsx` | P1, S3 | `To do` |
-| P7 | Activity screen: filters, search, send again | `whatsapp-activity.tsx` | P1, S9 | `Blocked` Dev 4: filters and search done (D14); "Send again" waits on S8 (Dev 2) |
+| P7 | Activity screen: filters, search, send again | `whatsapp-activity.tsx` | P1, S9 | `Done` 2026-10-30, see git log (P7, D14) |
 
 ### Booking changes and finish
 

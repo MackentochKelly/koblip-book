@@ -19,6 +19,6 @@ export default async function WhatsappActivityPage({
   const filter = activityFilterFrom(await searchParams)
   const history = await notificationHistoryFor(businessId, filter)
   return (
-    <WhatsappActivity history={history} filter={filter} timeZone={business.timezone} />
+    <WhatsappActivity businessId={businessId} history={history} filter={filter} timeZone={business.timezone} />
   )
 }

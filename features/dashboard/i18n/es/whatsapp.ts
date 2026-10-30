@@ -121,6 +121,16 @@ const whatsapp: typeof en = {
   allStates: "Cualquier estado",
   noneFound: "Ningún mensaje coincide",
   clearFilters: "Quitar filtros",
+  // "Reenviar" en un mensaje que falló.
+  sendAgain: "Reenviar",
+  sendAgainLabel: (name: string) => `Reenviar: ${name}`,
+  sentAgain: "Sale en un momento.",
+  sendAgainFailed: "No se pudo reenviar. Inténtalo de nuevo.",
+  sendAgainProblems: {
+    notFailed: "Ya está en camino.",
+    cancelled: "La reserva se canceló.",
+    late: "Demasiado tarde: la cita ya empezó.",
+  } as Record<string, string>,
   via: { text: "Mensaje normal", template: "Plantilla" },
   replies: { confirm: "Ahí estaré", cantCome: "No podré ir", ok: "De acuerdo" },
   states: {
