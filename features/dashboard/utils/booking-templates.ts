@@ -1,8 +1,10 @@
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
+import type { ButtonAction, MessageButton } from "../types/notifications"
 
 // Book's WhatsApp booking messages, as Meta templates (Utility) in English and
 // Spanish (docs/koblip-chat-integration.md, step 2). Book creates them in each
-// business's Koblip Chat; inside the 24-hour window the same words go as
+// business's Koblip Chat when the owner submits them to Meta; inside the
+// 24-hour window the same words go as
 // plain text. Owners edit them with named fields ({name}, {service}…); Meta
 // gets them as positional {{1}}, {{2}}… in the order they appear.
 
@@ -98,6 +100,61 @@ export function defaultWording(message: BookingMessage, language: TemplateLangua
   return DEFAULT_WORDING[language][message]
 }
 
+// The buttons a message may carry: the customer answers a reminder or a moved
+// booking, may say they can't come after booking, and a cancellation only
+// takes an "OK". The owner's alerts have none.
+export function messageButtonActions(message: BookingMessage): ButtonAction[] {
+  if (message === "ownerNewBooking") return []
+  if (message === "cancelled") return ["ok"]
+  return ["confirm", "cantCome", "ok"]
+}
+
+const BUTTON_LABELS: Record<TemplateLanguage, Record<ButtonAction, string>> = {
+  en: { confirm: "I'll be there", cantCome: "Can't make it", ok: "OK" },
+  es: { confirm: "Ahí estaré", cantCome: "No podré ir", ok: "De acuerdo" },
+}
+
+// Book's buttons for a message (decision D7 in docs/plans/whatsapp-notifications.md).
+const DEFAULT_BUTTONS: Record<BookingMessage, ButtonAction[]> = {
+  confirmed: [],
+  reminder: ["confirm", "cantCome"],
+  changed: ["confirm", "cantCome"],
+  cancelled: [],
+  ownerNewBooking: [],
+}
+
+export function defaultButtons(message: BookingMessage, language: TemplateLanguage): MessageButton[] {
+  return DEFAULT_BUTTONS[message].map((action) => ({ action, label: BUTTON_LABELS[language][action] }))
+}
+
+// What is wrong with an owner's buttons, or null. WhatsApp quick replies: at
+// most NOTIFICATION_RULES.maxButtons, each a different action and label, one
+// line of plain text without fields, formatting or emoji (Meta refuses the
+// whole template otherwise: developers.facebook.com/docs/whatsapp/
+// business-management-api/message-templates/components#quick-reply-buttons).
+export type ButtonsProblem = "tooManyButtons" | "badButton" | "sameButton"
+
+export function buttonsProblem(message: BookingMessage, buttons: MessageButton[]): ButtonsProblem | null {
+  if (buttons.length > NOTIFICATION_RULES.maxButtons) return "tooManyButtons"
+  const allowed = messageButtonActions(message)
+  for (const { action, label } of buttons) {
+    if (
+      !allowed.includes(action) ||
+      typeof label !== "string" ||
+      !label.trim() ||
+      label.length > NOTIFICATION_RULES.maxButtonLabel ||
+      /[\r\n\t{}*_~`]/.test(label) ||
+      /\p{Extended_Pictographic}/u.test(label)
+    ) {
+      return "badButton"
+    }
+  }
+  const labels = new Set(buttons.map(({ label }) => label.trim().toLowerCase()))
+  const actions = new Set(buttons.map(({ action }) => action))
+  if (labels.size < buttons.length || actions.size < buttons.length) return "sameButton"
+  return null
+}
+
 // Meta reviews each template with sample values for its fields.
 const EXAMPLES: Record<TemplateLanguage, Record<BookingField, string>> = {
   en: {
@@ -167,6 +224,7 @@ export type BookingTemplate = Wording & {
   message: BookingMessage
   language: TemplateLanguage
   name: string
+  buttons: MessageButton[]
   // The body in Meta's form ({{1}}…) and which field each number stands for.
   metaBody: string
   fields: BookingField[]
@@ -183,11 +241,12 @@ const NAMES: Record<BookingMessage, string> = {
   ownerNewBooking: "koblip_book_owner_new_booking",
 }
 
-// One message as Chat gets it, from the owner's wording or Book's default.
+// One message as Chat gets it, from the owner's wording and buttons or Book's.
 export function bookingTemplate(
   message: BookingMessage,
   language: TemplateLanguage,
-  wording: Wording = defaultWording(message, language)
+  wording: Wording = defaultWording(message, language),
+  buttons: MessageButton[] = defaultButtons(message, language)
 ): BookingTemplate {
   const fields: BookingField[] = []
   const metaBody = wording.body.replace(FIELD, (_, key: BookingField) => {
@@ -198,7 +257,10 @@ export function bookingTemplate(
     message,
     language,
     name: NAMES[message],
-    ...wording,
+    header: wording.header,
+    body: wording.body,
+    footer: wording.footer,
+    buttons,
     metaBody,
     fields,
     examples: fields.map((field) => EXAMPLES[language][field]),

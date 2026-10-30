@@ -1,7 +1,11 @@
 import { expect, test } from "vitest"
 
 import {
+  BOOKING_MESSAGES,
+  TEMPLATE_LANGUAGES,
   bookingTemplate,
+  buttonsProblem,
+  defaultButtons,
   defaultWording,
   fieldsForOwner,
   fieldsFromOwner,
@@ -54,4 +58,33 @@ test("the owner reads fields in their own language", () => {
   expect(fieldsFromOwner(shown, labels)).toBe("Hola {name}, tu {service} el {date}.")
   expect(fieldsFromOwner("Hola {Nombre} {otro}", labels)).toBe("Hola {name} {otro}")
   expect(withExamples("Hola {name}", "es")).toBe("Hola Ana")
+})
+
+test("Book's own buttons pass WhatsApp's rules, and reminders can be answered", () => {
+  for (const language of TEMPLATE_LANGUAGES) {
+    for (const message of BOOKING_MESSAGES) {
+      expect(buttonsProblem(message, defaultButtons(message, language))).toBeNull()
+    }
+  }
+  expect(defaultButtons("reminder", "en").map(({ action }) => action)).toEqual(["confirm", "cantCome"])
+  expect(bookingTemplate("reminder", "es").buttons).toEqual(defaultButtons("reminder", "es"))
+})
+
+test("buttons that WhatsApp would refuse are caught first", () => {
+  const button = (action: "confirm" | "cantCome" | "ok", label: string) => ({ action, label })
+  expect(
+    buttonsProblem("reminder", [
+      button("confirm", "Yes"),
+      button("cantCome", "No"),
+      button("ok", "OK"),
+      button("ok", "Fine"),
+    ])
+  ).toBe("tooManyButtons")
+  expect(buttonsProblem("reminder", [button("confirm", "Yes ✅")])).toBe("badButton")
+  expect(buttonsProblem("reminder", [button("confirm", "*Yes*")])).toBe("badButton")
+  expect(buttonsProblem("reminder", [button("confirm", "x".repeat(26))])).toBe("badButton")
+  expect(buttonsProblem("cancelled", [button("confirm", "Yes")])).toBe("badButton")
+  expect(buttonsProblem("ownerNewBooking", [button("ok", "OK")])).toBe("badButton")
+  expect(buttonsProblem("reminder", [button("confirm", "Yes"), button("cantCome", "yes")])).toBe("sameButton")
+  expect(buttonsProblem("reminder", [button("confirm", "Yes"), button("confirm", "Sure")])).toBe("sameButton")
 })

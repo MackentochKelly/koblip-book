@@ -21,6 +21,7 @@ import type {
 import {
   BOOKING_MESSAGES,
   TEMPLATE_LANGUAGES,
+  defaultButtons,
   defaultWording,
   type TemplateLanguage,
 } from "../utils/booking-templates"
@@ -45,8 +46,24 @@ export async function notificationSettingsFor(businessId: string): Promise<Notif
   }
 }
 
-function review(status: string | undefined): TemplateReview {
-  if (!status) return "missing"
+type Submitted = (typeof chatTemplates.$inferSelect)["submitted"]
+
+// Meta's review as the owner sees it: a message never submitted, or changed
+// since it was, is a draft until they submit it.
+function review(
+  status: string | undefined,
+  submitted: Submitted | undefined,
+  text: Pick<NotificationText, "wording" | "buttons">
+): TemplateReview {
+  if (!status || status === "draft") return "draft"
+  const { header, body, footer } = text.wording
+  if (
+    submitted &&
+    JSON.stringify([submitted.header, submitted.body, submitted.footer, submitted.buttons]) !==
+      JSON.stringify([header, body, footer, text.buttons])
+  ) {
+    return "draft"
+  }
   if (status === "approved") return "approved"
   if (status === "rejected") return "rejected"
   return "waiting"
@@ -69,17 +86,20 @@ export async function notificationMessagesFor(businessId: string): Promise<Notif
       TEMPLATE_LANGUAGES.map((language): [TemplateLanguage, NotificationText] => {
         const mine = own.find((row) => row.message === message && row.language === language)
         const template = made.find((row) => row.message === message && row.language === language)
+        const text = {
+          wording: mine
+            ? { header: mine.header, body: mine.body, footer: mine.footer }
+            : defaultWording(message, language),
+          buttons: mine?.buttons ?? defaultButtons(message, language),
+        }
+        const state = review(template?.status, template?.submitted, text)
         return [
           language,
           {
-            wording: mine
-              ? { header: mine.header, body: mine.body, footer: mine.footer }
-              : defaultWording(message, language),
-            // Buttons come with S1.
-            buttons: [],
+            ...text,
             isDefault: !mine,
-            review: review(template?.status),
-            reason: null,
+            review: state,
+            reason: state === "rejected" ? template?.reason ?? null : null,
           },
         ]
       })

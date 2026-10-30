@@ -1,7 +1,13 @@
 // Where the business's WhatsApp booking messages stand: no WhatsApp number in
-// the Chat workspace, templates being made, waiting for Meta's review,
-// approved, or one was rejected.
-export type ChatMessagesState = "noNumber" | "settingUp" | "waiting" | "ready" | "rejected"
+// the Chat workspace, not known yet, some not submitted to Meta by the owner,
+// waiting for Meta's review, approved, or one was rejected.
+export type ChatMessagesState =
+  | "noNumber"
+  | "settingUp"
+  | "notSubmitted"
+  | "waiting"
+  | "ready"
+  | "rejected"
 
 // The business's Koblip Chat connection, as the Integrations screen sees it:
 // the workspace's name, whether to connect again and where its messages
