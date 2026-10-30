@@ -164,7 +164,7 @@ task is in Lanes above.
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
 | S1 | Templates with buttons; nothing created or submitted automatically; "Submit to Meta" action per message and language; Meta's reason kept and shown; buttons, review and reason filled in `notificationMessagesFor` | `features/dashboard/utils/booking-templates.ts`, `features/dashboard/api/chat-templates.ts`, `notification-actions.ts`, `notifications.ts` (+ `drizzle/0019`) | W0 | `Done` 2026-10-30, see git log |
-| S2 | Remove the 10 waiting templates (D1) and move to the `_v2` names | `features/dashboard/api/chat-templates.ts`, a one-off script in `scripts/` | S1 | `To do` |
+| S2 | Remove the 10 waiting templates (D1) and move to the `_v2` names | `features/dashboard/api/chat-templates.ts`, a one-off script in `scripts/` | S1 | `Working on` Dev 2, 2026-10-30 |
 | S3 | Replies: a button tap finds the message by Chat's record id (works for both numbers), saves the reply, confirms or cancels the booking per the owner's setting (D2), queues the owner's alert, sends the thank-you | `features/dashboard/api/chat-events.ts`, new `features/dashboard/api/notification-replies.ts` | W0, C1 | `To do` |
 | S4 | The 24-hour setting in the sender; inside the window send a normal message with buttons; `saveNotificationSettings` takes the three new settings (24-hour, "Can't make it", thank-you) | `notification-sender.ts`, `notification-actions.ts` | W0, C2 | `To do` |
 | S5 | Owner alerts: Customer can't come, Customer cancelled, Message failed | `features/dashboard/api/notification-sender.ts`, `booking-templates.ts` | S1, S3 | `To do` |
