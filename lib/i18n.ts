@@ -250,6 +250,7 @@ const en = {
     },
     features: {
       title: "What you get",
+      subtitle: "Everything to take bookings, ready from day one.",
       previous: "Previous",
       next: "Next",
       page: "Your page in 1 minute",
@@ -528,6 +529,7 @@ const es: Messages = {
     },
     features: {
       title: "Lo que obtienes",
+      subtitle: "Todo para recibir reservas, listo desde el primer día.",
       previous: "Anterior",
       next: "Siguiente",
       page: "Tu página en 1 minuto",
