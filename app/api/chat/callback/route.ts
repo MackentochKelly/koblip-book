@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
   }
   const response = NextResponse.redirect(
-    chatDoneUrl(request.nextUrl, attempt?.businessId ?? "", result)
+    chatDoneUrl(attempt?.businessId ?? "", result)
   )
   response.cookies.delete({ name: CHAT_ATTEMPT_COOKIE, path: CHAT_ATTEMPT_COOKIE_PATH })
   return response

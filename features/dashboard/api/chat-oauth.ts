@@ -40,8 +40,12 @@ function config() {
   return values as { [K in keyof typeof values]: string }
 }
 
-// The page the Chat window ends on (app/(owner)/connect/chat), on this site.
-export function chatDoneUrl(site: URL, businessId: string, result: ChatConnectResult) {
+// The page the Chat window ends on (app/(owner)/connect/chat), at this site's
+// public address. Not the request's own URL: behind the server's proxy that is
+// the internal one (localhost).
+export function chatDoneUrl(businessId: string, result: ChatConnectResult) {
+  const site = process.env.BETTER_AUTH_URL
+  if (!site) throw new Error("Koblip Chat connection: BETTER_AUTH_URL is not set. See .env.example.")
   const url = new URL("/connect/chat", site)
   url.search = new URLSearchParams({ businessId, result }).toString()
   return url

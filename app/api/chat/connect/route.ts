@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     started = startChatConnect(businessId, session.userId)
   } catch (error) {
     console.error(error)
-    return NextResponse.redirect(chatDoneUrl(request.nextUrl, businessId, "failed"))
+    return NextResponse.redirect(chatDoneUrl(businessId, "failed"))
   }
   const response = NextResponse.redirect(started.url)
   response.cookies.set(CHAT_ATTEMPT_COOKIE, started.cookie, {
