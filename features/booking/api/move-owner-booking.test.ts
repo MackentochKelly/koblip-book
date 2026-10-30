@@ -167,6 +167,15 @@ test("moves the booking, counts the move and stops its waiting reminders", async
   expect((await row("bk")).moves).toBe(2)
 })
 
+test("a confirmation still waiting is about the new time", async () => {
+  await booking("bk", "2026-06-01T19:00:00.000Z")
+  await send("bk", "confirmed", "pending")
+  expect(await move("bk", "2026-06-08", "10:30")).toEqual({ status: "moved" })
+  const { db } = await import("@/lib/db")
+  const [confirmed] = await db.select().from(notificationSends)
+  expect(confirmed).toMatchObject({ message: "confirmed", state: "pending", moves: 1 })
+})
+
 test("the same time changes nothing", async () => {
   await booking("bk", "2026-06-01T19:00:00.000Z")
   expect(await move("bk", "2026-06-01", "15:00")).toEqual({ status: "moved" })
