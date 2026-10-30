@@ -209,7 +209,7 @@ task is in Lanes above.
 
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
-| B1 | "Move booking" for the owner, which sends Booking changed | `features/dashboard/components/booking-*`, `features/dashboard/api/booking-actions.ts` | — | `To do` |
+| B1 | "Move booking" for the owner, which sends Booking changed | `features/dashboard/components/booking-*`, `features/dashboard/api/booking-actions.ts` | — | `Working on` Dev 3, 2026-10-30 |
 | F1 | Docs updated, live end-to-end test on a real number (book, reminder, tap each button, 24-hour normal message) | `docs/koblip-chat-integration.md` | all | `To do` |
 
 ## Done before this plan
