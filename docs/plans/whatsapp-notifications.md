@@ -134,6 +134,7 @@ bottom: what, why, who, date.
 | D1 | Delete the 10 templates waiting at Meta in the "Koblip Chat Agency" workspace (S2). New names end in `_v2`: Meta blocks a deleted name for about 4 weeks. Koblip's ready-made set is named `koblip_<message>_v2`, a business's own copies `koblip_book_<message>_v2`, so both can live in one account. | They have no buttons, were sent without the owner's OK, and cannot be edited while waiting. | Lane 0, 2026-10-30 |
 | D2 | "Can't make it" only alerts the owner by default; the owner can switch it to "cancel and free the time" on Replies. | A wrong tap must never cancel a booking on its own; the owner stays in control. | Lane 0, 2026-10-30 |
 | D3 | Koblip's number: 300 template messages per business per month by default (normal messages inside 24 hours do not count). At the limit, template messages stop for that business, the owner sees why, and the admin sees it in Usage. The admin changes the limit for everyone or one business. | Koblip pays Meta for these; a limit keeps the cost known, and the admin can raise it. | Lane 0, 2026-10-30 |
+| D4 | Activity search (S9) matches the customer's name in any case (SQLite's LIKE: accented letters must be typed as stored), or the phone by its digits however it is typed (through the booking's `customer_key`). `%` and `_` are taken literally. Results stay newest first, capped at `historySize`. `notificationHistoryFor(businessId, filter)` keeps its name; the filter is optional, so today's page works unchanged. | One search box covers names and numbers; `customer_key` already holds the phone's digits, so no new column or migration. | Dev 3, 2026-10-30 |
 
 ## Tasks
 
@@ -165,7 +166,7 @@ task is in Lanes above.
 | S6 | More fields: team member, price, address, duration (and a manage-booking link once a manage page exists) | `booking-templates.ts`, `notification-sender.ts` | W0 | `To do` |
 | S7 | Opt-out: a customer who writes STOP (or BAJA) gets no more messages; the sender asks `notification-replies.ts` whether a number opted out | `chat-events.ts`, `notification-replies.ts` (one call added in the sender by lane 2) | S3 | `To do` |
 | S8 | Test send to the owner's phone; "Send again" for a failed message | `notification-actions.ts`, `notification-sender.ts` | S1 | `To do` |
-| S9 | Activity query with filters and search | `features/dashboard/api/notifications.ts` | W0 | `Working on` Dev 3, 2026-10-30 |
+| S9 | Activity query with filters and search | `features/dashboard/api/notifications.ts` | W0 | `Done` 2026-10-30, see git log (D4) |
 
 ### Koblip number (default sender)
 
