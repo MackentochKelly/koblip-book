@@ -21,6 +21,9 @@ export function HowItWorks({ words }: { words: Messages["home"] }) {
       title={steps.title}
       previous={features.previous}
       next={features.next}
+      // Extra room above: the page moves from its intro to the real
+      // content here (a band's own padding replaces it in the bands look).
+      className="pt-12 sm:pt-24"
       items={names.map((name, index) => ({
         key: name,
         step: index + 1,
