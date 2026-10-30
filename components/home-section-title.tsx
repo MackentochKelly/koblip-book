@@ -4,6 +4,9 @@ import { Separator } from "@/components/ui/separator"
 export const homeSectionTitleClassName =
   "font-display text-2xl font-medium tracking-tight"
 
+// The room under every home section, so each one stands on its own.
+export const homeSectionSpaceClassName = "pb-24 md:pb-36"
+
 // The home page's search box, which the last call to action takes you
 // back to: the one search on the page, no copy of it. Here, not in the
 // client HomeCta, so the server page reads the real value.

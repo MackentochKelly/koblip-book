@@ -1,5 +1,9 @@
-import { HomeRowLabel } from "@/components/home-section-title"
+import {
+  HomeRowLabel,
+  homeSectionSpaceClassName,
+} from "@/components/home-section-title"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import {
   CarFrontIcon,
   DumbbellIcon,
@@ -52,7 +56,10 @@ export function MadeFor({ language }: { language: PageLanguage }) {
     </Badge>
   ))
   return (
-    <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6 pb-12">
+    <section className={cn(
+        "mx-auto flex w-full max-w-page flex-col items-center gap-6",
+        homeSectionSpaceClassName
+      )}>
       <HomeRowLabel>{t.title}</HomeRowLabel>
       <ul className="sr-only">
         {KINDS.map(([kind]) => (

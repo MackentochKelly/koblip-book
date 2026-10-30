@@ -3,7 +3,10 @@
 import { useState } from "react"
 import { WheelGesturesPlugin } from "embla-carousel-wheel-gestures"
 
-import { homeSectionTitleClassName } from "@/components/home-section-title"
+import {
+  homeSectionSpaceClassName,
+  homeSectionTitleClassName,
+} from "@/components/home-section-title"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -49,7 +52,10 @@ export function ShowcaseRow({
   // Two-finger trackpad swipes move the cards too (Embla only drags).
   const [wheel] = useState(() => WheelGesturesPlugin())
   return (
-    <section id={id} className="mx-auto w-full max-w-page px-2 pb-12 sm:px-4">
+    <section id={id} className={cn(
+        "mx-auto w-full max-w-page px-2 sm:px-4",
+        homeSectionSpaceClassName
+      )}>
       {/* The cards slide on to the screen's edge instead of being cut at
           the row's edge: the carousel doesn't clip, the page does (its
           overflow-x-clip). */}
@@ -58,7 +64,7 @@ export function ShowcaseRow({
         plugins={[wheel]}
         className="*:data-[slot=carousel-content]:overflow-visible"
       >
-        <div className="mb-4 flex items-center justify-between gap-4 px-2">
+        <div className="mb-8 flex items-center justify-between gap-4 px-2">
           <h2 className={homeSectionTitleClassName}>{title}</h2>
           {/* Computers show three cards: the arrows only when there are
               more. */}
@@ -98,8 +104,11 @@ export function ShowcaseGrid({
   items: ShowcaseItem[]
 }) {
   return (
-    <section id={id} className="mx-auto w-full max-w-page px-2 pb-12 sm:px-4">
-      <div className="mb-6 flex flex-col gap-1 px-2 md:flex-row md:items-end md:justify-between md:gap-8">
+    <section id={id} className={cn(
+        "mx-auto w-full max-w-page px-2 sm:px-4",
+        homeSectionSpaceClassName
+      )}>
+      <div className="mb-10 flex flex-col gap-1 px-2 md:flex-row md:items-end md:justify-between md:gap-8">
         <h2 className={homeSectionTitleClassName}>{title}</h2>
         <p className="text-balance text-muted-foreground md:max-w-sm md:text-right">
           {subtitle}
