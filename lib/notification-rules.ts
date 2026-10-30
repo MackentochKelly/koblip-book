@@ -42,4 +42,64 @@ export const NOTIFICATION_RULES = {
   // refuses it ("Params Words Ratio Exceeds Limit"). Meta publishes no number:
   // on 2026-10-30 it refused bodies with 2 words per field and took 2.2.
   minWordsPerField: 2,
+  // Template messages one business may send from Koblip's number each
+  // calendar month (Koblip pays Meta for them; D3). Normal messages inside
+  // 24 hours do not count.
+  koblipMonthlyTemplates: 300,
 } as const
+
+// These are the defaults: an admin's values in the database override them
+// (lib/platform-settings.ts, A0). Code that sends reads the rules from there.
+export type NotificationRules = {
+  -readonly [K in keyof typeof NOTIFICATION_RULES]: (typeof NOTIFICATION_RULES)[K] extends readonly number[]
+    ? number[]
+    : (typeof NOTIFICATION_RULES)[K] extends number
+      ? number
+      : (typeof NOTIFICATION_RULES)[K] extends boolean
+        ? boolean
+        : string
+}
+
+export type NotificationRuleKey = keyof NotificationRules
+
+// The rules an admin may also set for one business (D3).
+export const BUSINESS_RULE_KEYS: readonly NotificationRuleKey[] = ["koblipMonthlyTemplates"]
+
+const wholeAtLeast = (min: number) => (value: unknown) =>
+  typeof value === "number" && Number.isInteger(value) && value >= min
+const minutes = (value: unknown) =>
+  Array.isArray(value) &&
+  value.length >= 1 &&
+  value.length <= 10 &&
+  value.every(wholeAtLeast(1))
+const clockTime = (value: unknown) =>
+  typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
+
+// What each rule may be set to. A value outside it is never saved.
+export const NOTIFICATION_RULE_CHECKS: Record<NotificationRuleKey, (value: unknown) => boolean> = {
+  defaultReminders: minutes,
+  reminderChoices: minutes,
+  maxReminders: wholeAtLeast(1),
+  longReminderMinutes: wholeAtLeast(1),
+  sendEverySeconds: wholeAtLeast(10),
+  sendBatch: wholeAtLeast(1),
+  // Never past Meta's own 24 hours.
+  freeTextMinutes: (value) => wholeAtLeast(0)(value) && (value as number) <= 24 * 60,
+  stuckSendingMinutes: wholeAtLeast(1),
+  historySize: wholeAtLeast(1),
+  defaultFreeTextInWindow: (value) => typeof value === "boolean",
+  // CantComeAction in features/dashboard/types/notifications.ts.
+  defaultCantCome: (value) => value === "alertOnly" || value === "cancel",
+  defaultThankYouReply: (value) => typeof value === "boolean",
+  // Never past Meta's own limits: 3 quick replies, 25 characters each, and
+  // 60 / 1024 / 60 characters for a template's header, body and footer.
+  maxButtons: (value) => wholeAtLeast(1)(value) && (value as number) <= 3,
+  maxButtonLabel: (value) => wholeAtLeast(1)(value) && (value as number) <= 25,
+  defaultQuietStart: clockTime,
+  defaultQuietEnd: clockTime,
+  maxHeader: (value) => wholeAtLeast(1)(value) && (value as number) <= 60,
+  maxBody: (value) => wholeAtLeast(1)(value) && (value as number) <= 1024,
+  maxFooter: (value) => wholeAtLeast(1)(value) && (value as number) <= 60,
+  minWordsPerField: (value) => typeof value === "number" && Number.isFinite(value) && value >= 0,
+  koblipMonthlyTemplates: wholeAtLeast(0),
+}
