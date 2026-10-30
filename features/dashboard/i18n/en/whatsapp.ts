@@ -47,6 +47,7 @@ const whatsapp = {
     ownerNewBooking: "New booking alert",
     ownerCantCome: "Customer can't come alert",
     ownerCancelled: "Customer cancelled alert",
+    ownerFailed: "Message failed alert",
     thankYou: "Thank-you reply",
   },
   about: {
@@ -55,6 +56,9 @@ const whatsapp = {
     changed: "Sent to the customer when the time changes.",
     cancelled: "Sent to the customer when a booking is cancelled.",
     ownerNewBooking: "Sent to your own WhatsApp when someone books.",
+    ownerCantCome: "Sent to your own WhatsApp when a customer can't come.",
+    ownerCancelled: "Sent to your own WhatsApp when a customer cancels.",
+    ownerFailed: "Sent to your own WhatsApp when a message to a customer fails.",
   },
   review: {
     missing: "Not set up",
@@ -193,6 +197,7 @@ const whatsapp = {
     interrupted: "Stopped midway",
     moved: "Booking moved",
     notTold: "Customer not told yet",
+    windowClosed: "Customer's 24 hours ended",
     other: "Koblip Chat error",
   } as Record<string, string>,
 }
