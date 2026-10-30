@@ -5,8 +5,6 @@ import Link from "next/link"
 import { useRouter, useSelectedLayoutSegment } from "next/navigation"
 import {
   CalendarDaysIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   ClockIcon,
   CornerLeftUpIcon,
   LayoutDashboardIcon,
@@ -14,7 +12,7 @@ import {
   PhoneIcon,
 } from "@/components/ui/icons"
 
-import { ViewTabs } from "@/components/view-tabs"
+import { SectionParts } from "@/components/section-parts"
 import { Button } from "@/components/ui/button"
 import {
   Empty,
@@ -23,14 +21,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
 import { refreshChatMessages } from "../api/chat-connection"
 import { useOwnerMessages } from "../i18n/provider"
 import type { ChatConnection } from "../types/chat-connection"
@@ -49,10 +39,9 @@ const PARTS = [
 
 type Part = (typeof PARTS)[number]["id"]
 
-// The WhatsApp page's frame around its parts. On a computer: the title and
-// a row of tabs. On a phone: the Overview with a list of the other parts
-// under it; each part opens as its own screen with a way back. A business
-// without its own Koblip Chat workspace sends from Koblip's number (K4).
+// The WhatsApp page's frame around its parts: the shared SectionParts, as in
+// the admin (D19). A business without its own Koblip Chat workspace sends
+// from Koblip's number (K4), so the page opens for it too.
 export function WhatsappFrame({
   businessId,
   connection,
@@ -118,68 +107,28 @@ export function WhatsappFrame({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        {!atOverview && (
-          <Button
-            variant="ghost"
-            className="-ml-2.5 w-fit md:hidden"
-            nativeButton={false}
-            render={<Link href={base} />}
-          >
-            <ChevronLeftIcon data-icon="inline-start" />
-            {m.shell.nav.whatsapp}
-          </Button>
-        )}
-        {/* A phone shows the open part's name; a computer, the page's. */}
-        <h1 className="text-2xl font-semibold tracking-tight">
-          <span className={atOverview ? undefined : "max-md:hidden"}>
-            {m.shell.nav.whatsapp}
-          </span>
-          {!atOverview && <span className="md:hidden">{t.parts[part]}</span>}
-        </h1>
-        {/* Overview shows where the messages stand itself. */}
-        {state && state !== "ready" && !atOverview && (
+    <SectionParts
+      title={m.shell.nav.whatsapp}
+      parts={PARTS.map((item) => ({
+        id: item.id,
+        label: t.parts[item.id],
+        href: hrefOf(item.id),
+        icon: item.icon,
+      }))}
+      current={part}
+      ariaLabel={t.partsLabel}
+      notice={
+        // Overview shows where the messages stand itself.
+        state &&
+        state !== "ready" &&
+        !atOverview && (
           <p className="text-sm text-muted-foreground">
             {m.integrations.koblipChat.messages[state]}
           </p>
-        )}
-      </div>
-
-      <ViewTabs
-        variant="line"
-        className="max-md:hidden"
-        ariaLabel={t.partsLabel}
-        views={PARTS.map((item) => ({ id: item.id, label: t.parts[item.id] }))}
-        value={part}
-        onChange={(next) => router.push(hrefOf(next))}
-      />
-
+        )
+      }
+    >
       {children}
-
-      {atOverview && (
-        <nav aria-label={t.partsLabel} className="md:hidden">
-          <ItemGroup className="gap-3">
-            {PARTS.filter((item) => item.id !== "overview").map((item) => (
-              <Item
-                key={item.id}
-                variant="outline"
-                render={<Link href={hrefOf(item.id)} />}
-              >
-                <ItemMedia variant="icon">
-                  <item.icon />
-                </ItemMedia>
-                <ItemContent>
-                  <ItemTitle>{t.parts[item.id]}</ItemTitle>
-                </ItemContent>
-                <ItemActions>
-                  <ChevronRightIcon className="size-4 text-muted-foreground" />
-                </ItemActions>
-              </Item>
-            ))}
-          </ItemGroup>
-        </nav>
-      )}
-    </div>
+    </SectionParts>
   )
 }
