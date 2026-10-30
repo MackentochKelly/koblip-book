@@ -87,6 +87,17 @@ const whatsapp: typeof en = {
   failed: "No se pudo guardar. Inténtalo de nuevo.",
   history: "Historial",
   noHistory: "Aún no hay mensajes",
+  // Los filtros y la búsqueda de Actividad.
+  search: "Nombre o teléfono",
+  searchLabel: "Buscar por nombre o teléfono del cliente",
+  messageFilter: "Mensaje",
+  stateFilter: "Estado",
+  allMessages: "Todos los mensajes",
+  allStates: "Cualquier estado",
+  noneFound: "Ningún mensaje coincide",
+  clearFilters: "Quitar filtros",
+  via: { text: "Mensaje normal", template: "Plantilla" },
+  replies: { confirm: "Ahí estaré", cantCome: "No podré ir", ok: "De acuerdo" },
   states: {
     pending: "Programado",
     sending: "Enviando",
@@ -107,6 +118,8 @@ const whatsapp: typeof en = {
     templateNotApproved: "Esperando a Meta",
     badPhone: "Número incorrecto",
     interrupted: "Se detuvo",
+    moved: "Reserva movida",
+    notTold: "Cliente aún sin avisar",
     other: "Error de Koblip Chat",
   } as Record<string, string>,
 }

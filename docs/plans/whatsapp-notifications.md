@@ -144,6 +144,7 @@ bottom: what, why, who, date.
 | D11 | K1: Koblip's own Chat connection is its own one-row table, `koblip_chat_connection` (id `koblip`), never a business's `chat_connections` row. It uses the same OAuth flow and callback (the sealed attempt says which account), started at `/api/chat/connect/koblip` by an admin only. Code calls `koblipChatApi(path)` next to `chatApi(businessId, path)`. Until A3 builds the Koblip number screen, Connect / Disconnect sits on the admin Overview as a card that A3 can move. The Chat window's shared types moved to `types/chat-connect.ts`, so the admin feature uses them without importing the dashboard feature. | No business can reach Koblip's tokens, one flow to keep secure, and the import rules hold. | Dev 1, 2026-10-30 |
 | D12 | After a move (D5), `plan()` makes one "changed" row at the booking's current `moves`; it is also the mark that the move was planned. It goes when a confirmation was sent before this move (`confirmed.moves < bookings.moves`); else it is skipped as `notTold`, since the confirmation, if still waiting, carries the new time. Reminders are planned again for the new time from the moment of the move, when the customer agreed and has a phone. Skipped rows show the reasons `moved` and `notTold` on Activity. | One row per move keeps "once" true for A→B→A; telling a customer of a change to a booking they never heard of would confuse them. | Dev 2, 2026-10-30 |
 | D13 | A0: `NOTIFICATION_RULES` stays the code defaults; `notificationRules(businessId?)` in `lib/platform-settings.ts` returns them with the admin's values (`platform_settings`) and, for rules in `BUSINESS_RULE_KEYS`, the business's own (`business_settings`) on top. `setNotificationRule` saves a value or resets it (null), checked against `NOTIFICATION_RULE_CHECKS` (never past Meta's limits), and logs before and after in `platform_setting_changes`; the caller (A7) checks the admin. A stored value a rule no longer allows falls back to the default. D3's limit is the rule `koblipMonthlyTemplates` (300), the only per-business rule for now. Each lane switches its own reads from `NOTIFICATION_RULES` to `notificationRules()` in its files; client components get the values from their page. | Rules change without a release, no admin value can break a send, and every change says who and when. Lanes keep their own files. | Dev 1, 2026-10-30 |
+| D14 | Activity (P7): the filters live in the address (`?message=&state=&q=`), read and written by `features/dashboard/utils/activity-filter.ts` (shared by the page and the screen); search runs on Enter, not on every key. | A filtered list can be shared and Back brings it back; one server query per search, and no new shared debounce hook. | Dev 4, 2026-10-30 |
 
 ## Tasks
 
@@ -212,7 +213,7 @@ task is in Lanes above.
 | P4 | Your alerts screen | `whatsapp-alerts.tsx` | P1, S5 | `To do` |
 | P5 | Timing screen with the 24-hour setting | `whatsapp-timing.tsx` | P1, S4 | `To do` |
 | P6 | Replies screen | `whatsapp-replies.tsx` | P1, S3 | `To do` |
-| P7 | Activity screen: filters, search, send again | `whatsapp-activity.tsx` | P1, S9 | `Working on` Dev 4, 2026-10-30 |
+| P7 | Activity screen: filters, search, send again | `whatsapp-activity.tsx` | P1, S9 | `Blocked` Dev 4: filters and search done (D14); "Send again" waits on S8 (Dev 2) |
 
 ### Booking changes and finish
 
