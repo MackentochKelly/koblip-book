@@ -1,5 +1,8 @@
 import type { Metadata } from "next"
-import { chatConnectionFor } from "@/features/dashboard/api/chat-templates"
+import {
+  chatConnectionFor,
+  ownTemplatesNotApproved,
+} from "@/features/dashboard/api/chat-templates"
 import { senderFor } from "@/features/dashboard/api/notification-sender"
 import {
   notificationMessagesFor,
@@ -25,12 +28,22 @@ export default async function WhatsappOverviewPage({
     notificationMessagesFor(businessId),
     notificationSettingsFor(businessId),
   ])
+  // Its own number is connected but Koblip's sends: these still wait for
+  // Meta (K3, D34).
+  const waiting =
+    sender === "koblip" && connection && !connection.needsReconnect
+      ? await ownTemplatesNotApproved(
+          businessId,
+          messages.filter((item) => item.on).map((item) => item.message)
+        )
+      : []
   return (
     <WhatsappOverview
       businessId={businessId}
       connection={connection}
       sender={sender}
       messages={messages}
+      waiting={waiting}
       ownerPhone={settings.ownerPhone}
     />
   )
