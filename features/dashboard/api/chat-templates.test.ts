@@ -157,7 +157,7 @@ test("submitting makes the template with its buttons, and only that one", async 
     {
       waba_id: "waba1",
       platform: "whatsapp",
-      template_name: "koblip_book_booking_reminder",
+      template_name: "koblip_book_booking_reminder_v2",
       language: "en",
       category: "UTILITY",
       header_text: "Appointment reminder",
@@ -198,7 +198,7 @@ test("submitting again changes Chat's template instead of making another", async
 test("a template Meta has but Chat lost is copied back, then changed, not made again", async () => {
   numbers = [{ id: "waba1", phone_numbers: [{ id: "p1" }] }]
   atMeta = [
-    { id: "m1", name: "koblip_book_booking_reminder", language: "es" },
+    { id: "m1", name: "koblip_book_booking_reminder_v2", language: "es" },
     { id: "m2", name: "someone_else", language: "es" },
   ]
   await submitChatTemplate("biz", "reminder", "es")
@@ -221,17 +221,28 @@ test("refreshing reads Meta's review and reason, and the approved template is se
   expect((await chatConnectionFor("biz"))?.messages).toBe("rejected")
 
   const { approved } = await sendableTemplate("biz", "reminder", "en")
-  expect(approved).toMatchObject({ chatTemplateId: "t1", template: { name: "koblip_book_booking_reminder" } })
+  expect(approved).toMatchObject({ chatTemplateId: "t1", template: { name: "koblip_book_booking_reminder_v2" } })
   expect((await sendableTemplate("biz", "reminder", "es")).approved).toBeNull()
 })
 
 test("a template Chat already has under Book's name is used as it is", async () => {
   numbers = [{ id: "waba1", phone_numbers: [{ id: "p1" }] }]
-  stored = [{ _id: "x1", template_name: "koblip_book_booking_confirmed", language: "en", status: "APPROVED" }]
+  stored = [{ _id: "x1", template_name: "koblip_book_booking_confirmed_v2", language: "en", status: "APPROVED" }]
   await refreshChatTemplates("biz")
   expect(created).toHaveLength(0)
   const { approved } = await sendableTemplate("biz", "confirmed", "en")
   expect(approved?.chatTemplateId).toBe("x1")
+})
+
+test("a template Chat no longer has, or under an earlier name, is forgotten", async () => {
+  numbers = [{ id: "waba1", phone_numbers: [{ id: "p1" }] }]
+  stored = [{ _id: "old1", template_name: "koblip_book_booking_confirmed", language: "en", status: "PENDING" }]
+  await db
+    .insert(chatTemplates)
+    .values({ businessId: "biz", message: "confirmed", language: "en", chatTemplateId: "old1", status: "pending" })
+  await refreshChatTemplates("biz")
+  expect(await db.select().from(chatTemplates)).toEqual([])
+  expect(created).toHaveLength(0)
 })
 
 test("a connection made before templates were asked for must reconnect", async () => {

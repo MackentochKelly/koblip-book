@@ -255,7 +255,7 @@ function reasonOf(json: { message?: unknown; error?: unknown } | null) {
 export async function chatApi<T>(
   businessId: string,
   path: string,
-  init: { method?: "GET" | "POST" | "PUT"; body?: unknown } = {}
+  init: { method?: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown } = {}
 ): Promise<T> {
   const token = await chatAccessToken(businessId)
   if (!token) throw new ChatApiError(null, "not_connected")
