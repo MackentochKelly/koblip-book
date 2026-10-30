@@ -2,6 +2,7 @@ import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
+import type { BookingMessage } from "@/types/whatsapp"
 import type { ButtonAction, MessageButton, OwnerAlert } from "../types/notifications"
 
 // Book's WhatsApp booking messages, as Meta templates (Utility) in English and
@@ -11,15 +12,8 @@ import type { ButtonAction, MessageButton, OwnerAlert } from "../types/notificat
 // plain text. Owners edit them with named fields ({name}, {service}…); Meta
 // gets them as positional {{1}}, {{2}}… in the order they appear.
 
-export type BookingMessage =
-  | "confirmed"
-  | "reminder"
-  | "changed"
-  | "cancelled"
-  | "ownerNewBooking"
-  | "ownerCantCome"
-  | "ownerCancelled"
-  | "ownerFailed"
+// The kinds of message are shared with the admin (types/whatsapp.ts, D33).
+export type { BookingMessage } from "@/types/whatsapp"
 
 export type TemplateLanguage = "en" | "es"
 
@@ -35,16 +29,8 @@ export type BookingField =
   | "address"
   | "phone"
 
-export const BOOKING_MESSAGES: readonly BookingMessage[] = [
-  "confirmed",
-  "reminder",
-  "changed",
-  "cancelled",
-  "ownerNewBooking",
-  "ownerCantCome",
-  "ownerCancelled",
-  "ownerFailed",
-]
+// Listed in lib/whatsapp-messages.ts, shared with the admin (D33).
+export { BOOKING_MESSAGES } from "@/lib/whatsapp-messages"
 
 // The alerts that go to the owner's own WhatsApp, in the owner's language.
 export const OWNER_ALERTS: readonly OwnerAlert[] = [

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest"
 
-import { activityFilterFrom, activityQuery } from "./activity-filter"
+import { activityFilterFrom, activityQuery } from "./whatsapp-activity-filter"
 
 test("reads known filters from the address", () => {
   expect(activityFilterFrom({ message: "reminder", state: "failed", q: " ana " })).toEqual({

@@ -203,6 +203,7 @@ const whatsapp = {
     interrupted: "Stopped midway",
     moved: "Booking moved",
     notTold: "Customer not told yet",
+    adminCancelled: "Cancelled by Koblip",
     windowClosed: "Customer's 24 hours ended",
     monthlyLimit: "Koblip's monthly limit reached",
     other: "Koblip Chat error",

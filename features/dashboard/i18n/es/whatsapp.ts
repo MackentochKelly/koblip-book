@@ -202,6 +202,7 @@ const whatsapp: typeof en = {
     badPhone: "Número incorrecto",
     interrupted: "Se detuvo",
     moved: "Reserva movida",
+    adminCancelled: "Cancelado por Koblip",
     notTold: "Cliente aún sin avisar",
     windowClosed: "Pasaron las 24 horas del cliente",
     monthlyLimit: "Se alcanzó el límite mensual de Koblip",
