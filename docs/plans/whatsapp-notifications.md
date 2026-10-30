@@ -217,8 +217,8 @@ task is in Lanes above.
 | P2 | Overview: status, setup checklist, test send | `whatsapp-overview.tsx` | P1, S8 | `To do` |
 | P3 | Message editor v2: buttons, preview with buttons, Meta status and reason, "Submit to Meta" | `message-editor.tsx` | P1, S1 | `Done` 2026-10-30, see git log (P3) |
 | P4 | Your alerts screen | `whatsapp-alerts.tsx` | P1, S5 | `To do` |
-| P5 | Timing screen with the 24-hour setting | `whatsapp-timing.tsx` | P1, S4 | `Working on` Dev 4, 2026-10-30 |
-| P6 | Replies screen | `whatsapp-replies.tsx` | P1, S3 | `To do` |
+| P5 | Timing screen with the 24-hour setting | `whatsapp-timing.tsx` | P1, S4 | `Done` 2026-10-30, see git log (P5) |
+| P6 | Replies screen | `whatsapp-replies.tsx` | P1, S3 | `Working on` Dev 4, 2026-10-30 |
 | P7 | Activity screen: filters, search, send again | `whatsapp-activity.tsx` | P1, S9 | `Done` 2026-10-30, see git log (P7, D14) |
 
 ### Booking changes and finish

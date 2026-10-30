@@ -101,6 +101,10 @@ const whatsapp = {
   noReminders: "No reminders",
   quietHours: "Quiet hours",
   quietHint: "No messages at night. Long reminders go the evening before.",
+  // The 24-hour setting on Timing.
+  window: "24-hour window",
+  freeText: "Normal message inside 24 hours",
+  freeTextHint: "Free when the customer wrote in the last 24 hours. Else the approved template goes.",
   from: "From",
   to: "To",
   yourNumber: "Your WhatsApp",

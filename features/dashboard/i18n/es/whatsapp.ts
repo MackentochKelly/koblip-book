@@ -102,6 +102,10 @@ const whatsapp: typeof en = {
   noReminders: "Sin recordatorios",
   quietHours: "Horas sin mensajes",
   quietHint: "Sin mensajes de noche. Los recordatorios largos van la tarde antes.",
+  // El ajuste de 24 horas en Horarios.
+  window: "Ventana de 24 horas",
+  freeText: "Mensaje normal dentro de 24 horas",
+  freeTextHint: "Gratis si el cliente escribió en las últimas 24 horas. Si no, va la plantilla aprobada.",
   from: "Desde",
   to: "Hasta",
   yourNumber: "Tu WhatsApp",
