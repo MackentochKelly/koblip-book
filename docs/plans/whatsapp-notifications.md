@@ -37,6 +37,35 @@ Book connects to Koblip's own Chat workspace once, as the platform (like any
 app, through Chat's public API). Each business's page shows which number it
 sends from.
 
+## Nothing hidden (agreed with the owner, 2026-10-30)
+
+Every record Book keeps for WhatsApp and every rule it follows has a screen
+in the admin dashboard (`/admin`), where Koblip's admin can see it, change it
+or remove it. Secrets are the one exception: the admin sees whether each is
+set, never its value. Every admin change is logged (who, what, when).
+
+| Kept by Book | Admin screen |
+| --- | --- |
+| Koblip's own Chat connection and number | WhatsApp → Koblip number |
+| Koblip's ready-made templates and Meta's review | WhatsApp → Koblip messages |
+| Each business's connection, number, sender | WhatsApp → Businesses → one business |
+| Each business's settings, wording, templates, on/off | WhatsApp → Businesses → one business |
+| Every message sent, waiting, failed or skipped, and each reply | WhatsApp → Activity |
+| Who wrote in the last 24 hours (`chat_replies`) | WhatsApp → 24-hour window |
+| Rules (reminder choices, quiet hours defaults, limits, 24-hour margin, words per field, button limits, batch size, timer) | WhatsApp → Rules |
+| Messages sent from Koblip's number per business, and the limit | WhatsApp → Usage |
+| Timer health, waiting and failed counts, Chat reachable, secrets set or not | WhatsApp → Overview |
+| Every admin change | WhatsApp → Change log |
+
+## Consistency for every screen
+
+- Business page and admin use the same shared parts (`components/`), the same
+  names for the same things, English and Spanish.
+- Phone first: a list of parts that each open their own screen; computer:
+  tabs. No sideways scroll at 320 px, 44 px touch targets, light and dark.
+- Each screen passes [the UI checklist](../ui-rules/checklist.md) before it
+  is marked `Done`.
+
 ## The page
 
 | Part | What the owner does there |
@@ -101,6 +130,20 @@ track (Dev B) run side by side without touching the same files.
 | K4 | Business page: "Sending from Koblip" or "Sending from your number"; on Koblip's number the messages are read-only with on/off, plus "Use your own number" | `whatsapp-*.tsx`, `message-editor.tsx` | P1, K3 | `To do` |
 | K5 | Booking forms ask for WhatsApp consent whenever either number can send | `lib/whatsapp-offer.ts` | K3 | `To do` |
 | K6 | Limit and count of Koblip-number messages per business (after D3), shown in Activity and the admin area | `lib/notification-rules.ts`, `notification-sender.ts`, `features/admin/` | K3, D3 | `To do` |
+
+### Admin dashboard: WhatsApp
+
+| ID | Task | Files | Needs | Status |
+| --- | --- | --- | --- | --- |
+| A0 | Rules move from code to the database: `NOTIFICATION_RULES` becomes the code defaults, the admin's values override them; plus the admin change log | `lib/notification-rules.ts`, new `lib/platform-settings.ts`, `lib/db/schema.ts` (+ migration) | W0 | `To do` |
+| A1 | Admin section frame: "WhatsApp" in the admin menu with its parts (list on phone, tabs on computer), English and Spanish | `app/(admin)/admin/whatsapp/`, `features/admin/components/whatsapp-*.tsx`, `features/admin/components/admin-shell.tsx`, `features/admin/i18n/` | W0 | `To do` |
+| A2 | Overview: timer last run, waiting and failed counts, Chat reachable, each secret set or not | `features/admin/api/whatsapp-*.ts`, `whatsapp-overview.tsx`; timer heartbeat in `notification-timer.ts` | A1 | `To do` |
+| A3 | Koblip number and Koblip messages screens (the admin side of K1 and K2) | `whatsapp-koblip-*.tsx` | A1, K1, K2 | `To do` |
+| A4 | Businesses: every business's sender, connection, number, settings, wording, templates; open one to change, reset, turn off or disconnect | `whatsapp-businesses.tsx`, `whatsapp-business.tsx`, admin actions | A1 | `To do` |
+| A5 | Activity for all businesses: filters, search, send again, cancel a waiting message | `whatsapp-activity.tsx`, admin queries and actions | A1, S9 | `To do` |
+| A6 | 24-hour window: who wrote to which number and when; remove an entry | `whatsapp-window.tsx`, admin queries and actions | A1 | `To do` |
+| A7 | Rules editor (A0's values, each with its default and a reset) and the change log | `whatsapp-rules.tsx`, `whatsapp-changes.tsx` | A0, A1 | `To do` |
+| A8 | Usage: messages from Koblip's number per business per month, and the limit (D3) | `whatsapp-usage.tsx` | A1, K6 | `To do` |
 
 ### Book page
 
