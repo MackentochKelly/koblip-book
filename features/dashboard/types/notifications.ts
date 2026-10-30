@@ -75,10 +75,14 @@ export type NotificationOverview = {
 // A customer's tap on a message's button.
 export type NotificationReply = { action: ButtonAction; at: string }
 
+// Every kind of message Activity lists: the booking messages, and what a
+// customer's tap queues (S3, D16): the owner's alert and the thank-you.
+export type SendKind = BookingMessage | "ownerCantCome" | "ownerCancelled" | "thankYou"
+
 // One message Book sent, will send or did not send, for Activity.
 export type NotificationSend = {
   id: string
-  message: BookingMessage
+  message: SendKind
   customerName: string
   // When it went, or is or was due (ISO).
   at: string
@@ -93,7 +97,7 @@ export type NotificationSend = {
 }
 
 export type ActivityFilter = {
-  message?: BookingMessage
+  message?: SendKind
   state?: NotificationSend["state"]
   // Customer name or phone.
   search?: string

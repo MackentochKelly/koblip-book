@@ -3,13 +3,25 @@ import { createHmac, timingSafeEqual } from "node:crypto"
 import { and, eq, sql } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { chatConnections, chatReplies, notificationSends } from "@/lib/db/schema"
+import {
+  chatConnections,
+  chatReplies,
+  koblipChatConnection,
+  notificationSends,
+} from "@/lib/db/schema"
+import {
+  applyButtonReply,
+  buttonAction,
+  rememberMessageId,
+  sentFromWorkspace,
+} from "./notification-replies"
 
 // Koblip Chat's signed app events: customer replies, sent messages and
 // delivery status for each connected workspace (wapi-api docs/api/oauth.md,
 // "App events"). Book keeps when each customer last wrote, for Meta's
 // 24-hour window (docs/koblip-chat-integration.md, step 2), and WhatsApp's
-// delivery status of the messages Book sent (step 3).
+// delivery status of the messages Book sent (step 3), and the customer's tap
+// on a message's button (S3), for the business's own number and Koblip's.
 
 // Chat's freshness window for the signed timestamp.
 const MAX_SKEW_SECONDS = 300
@@ -45,6 +57,9 @@ type InboundEvent = {
   senderId: string
   fromPhone: string
   occurredAt: string
+  // WhatsApp's id of the message answered, and the tapped button (D6).
+  replyToMessageId?: string | null
+  button?: { payload?: unknown; title?: unknown } | null
 }
 
 function inbound(event: unknown): InboundEvent | null {
@@ -57,7 +72,14 @@ function inbound(event: unknown): InboundEvent | null {
   return value as InboundEvent
 }
 
-type StatusEvent = { type: "status"; workspaceId: string; recordId: string; status: string }
+type StatusEvent = {
+  type: "status"
+  workspaceId: string
+  recordId: string
+  status: string
+  // WhatsApp's id of the message.
+  messageId?: string | null
+}
 
 function status(event: unknown): StatusEvent | null {
   if (!event || typeof event !== "object") return null
@@ -72,22 +94,26 @@ function status(event: unknown): StatusEvent | null {
 // WhatsApp's statuses in the order they happen; failed is final.
 const DELIVERY_ORDER = ["sent", "delivered", "read", "failed"]
 
-// A message Book sent moves to its newer delivery status, never back.
+// A message Book sent moves to its newer delivery status, never back, and
+// keeps WhatsApp's id of it for the customer's tap.
 async function applyStatus(event: StatusEvent) {
   const rank = DELIVERY_ORDER.indexOf(event.status)
   if (rank < 0) return
   const [send] = await db
     .select({ id: notificationSends.id, delivery: notificationSends.delivery })
     .from(notificationSends)
-    .innerJoin(chatConnections, eq(chatConnections.businessId, notificationSends.businessId))
     .where(
       and(
         eq(notificationSends.chatRecordId, event.recordId),
-        eq(chatConnections.workspaceId, event.workspaceId)
+        sentFromWorkspace(event.workspaceId)
       )
     )
     .limit(1)
-  if (!send || DELIVERY_ORDER.indexOf(send.delivery ?? "") >= rank) return
+  if (!send) return
+  if (typeof event.messageId === "string" && event.messageId) {
+    await rememberMessageId(send.id, event.messageId)
+  }
+  if (DELIVERY_ORDER.indexOf(send.delivery ?? "") >= rank) return
   await db
     .update(notificationSends)
     .set({ delivery: event.status })
@@ -108,18 +134,30 @@ export async function applyChatEvent(event: unknown) {
   const customerPhone = reply.fromPhone.replace(/\D/g, "")
   if (Number.isNaN(at.getTime()) || !customerPhone) return
 
-  // Only for a workspace a business here is connected to.
-  const [connected] = await db
-    .select({ businessId: chatConnections.businessId })
-    .from(chatConnections)
-    .where(
-      and(
-        eq(chatConnections.workspaceId, reply.workspaceId),
-        eq(chatConnections.needsReconnect, false)
+  // Only for a workspace connected here: a business's or Koblip's own.
+  const [[business], [koblip]] = await Promise.all([
+    db
+      .select({ businessId: chatConnections.businessId })
+      .from(chatConnections)
+      .where(
+        and(
+          eq(chatConnections.workspaceId, reply.workspaceId),
+          eq(chatConnections.needsReconnect, false)
+        )
       )
-    )
-    .limit(1)
-  if (!connected) return
+      .limit(1),
+    db
+      .select({ id: koblipChatConnection.id })
+      .from(koblipChatConnection)
+      .where(
+        and(
+          eq(koblipChatConnection.workspaceId, reply.workspaceId),
+          eq(koblipChatConnection.needsReconnect, false)
+        )
+      )
+      .limit(1),
+  ])
+  if (!business && !koblip) return
 
   const lastReplyAt = at.toISOString()
   await db
@@ -134,4 +172,14 @@ export async function applyChatEvent(event: unknown) {
       target: [chatReplies.workspaceId, chatReplies.phoneNumberId, chatReplies.customerPhone],
       set: { lastReplyAt: sql`max(${chatReplies.lastReplyAt}, excluded.last_reply_at)` },
     })
+
+  const action = buttonAction(reply.button?.payload)
+  if (action && typeof reply.replyToMessageId === "string" && reply.replyToMessageId) {
+    await applyButtonReply({
+      workspaceId: reply.workspaceId,
+      replyToMessageId: reply.replyToMessageId,
+      action,
+      at: lastReplyAt,
+    })
+  }
 }
