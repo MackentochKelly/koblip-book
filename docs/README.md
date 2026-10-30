@@ -18,6 +18,7 @@ These documents include plans and research. Check the implementation before trea
 
 | Document                            | Purpose                                                   |
 | ----------------------------------- | --------------------------------------------------------- |
+| [Plans and progress](plans/README.md) | Current plans with each task's status: to do, working on, done |
 | [Assistant plan](assistant-plan.md) | Assistant tools, streaming, confirmation and voice design |
 | [Model integration notes](muse.md)  | Workshop research and integration background              |
 | [Demo outline](demo-script.md)      | Draft three-minute product demonstration                  |
