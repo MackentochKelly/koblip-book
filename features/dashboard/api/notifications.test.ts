@@ -45,6 +45,7 @@ async function send(row: Send) {
     businessId,
     bookingId: `bk-${count}`,
     message: row.message,
+    visitAt: row.dueAt,
     dueAt: row.dueAt,
     state: row.state,
   })
