@@ -133,3 +133,23 @@ export async function notificationRuleChanges(limit = 100) {
     .orderBy(desc(platformSettingChanges.id))
     .limit(limit)
 }
+
+// The log entry for an admin's change that is not a rule (a business's
+// WhatsApp settings, wording or connection, A4), in the same change log.
+// Saved with the change itself through saveAll. `key` says what changed,
+// such as `whatsapp.message.reminder`.
+export function adminChangeEntry(change: {
+  key: string
+  businessId: string | null
+  before: unknown
+  after: unknown
+  userId: string
+}) {
+  return db.insert(platformSettingChanges).values({
+    key: change.key,
+    businessId: change.businessId,
+    before: change.before ?? null,
+    after: change.after ?? null,
+    changedBy: change.userId,
+  })
+}

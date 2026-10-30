@@ -403,3 +403,23 @@ export async function koblipChatConnectionStatus() {
   if (!row) return null
   return { workspaceName: row.workspaceName, needsReconnect: !chatConnectionUsable(row) }
 }
+
+// Every business's own connection as the admin's Businesses list sees it
+// (A4), never a token.
+export async function businessChatConnections() {
+  const rows = await db
+    .select({
+      businessId: chatConnections.businessId,
+      workspaceName: chatConnections.workspaceName,
+      needsReconnect: chatConnections.needsReconnect,
+      scopes: chatConnections.scopes,
+      phoneNumberId: chatConnections.phoneNumberId,
+    })
+    .from(chatConnections)
+  return rows.map((row) => ({
+    businessId: row.businessId,
+    workspaceName: row.workspaceName,
+    phoneNumberId: row.phoneNumberId,
+    needsReconnect: !chatConnectionUsable(row),
+  }))
+}

@@ -1,17 +1,18 @@
 "use client"
 
-import { useSelectedLayoutSegment } from "next/navigation"
+import { useSelectedLayoutSegments } from "next/navigation"
 
 import { SectionParts } from "@/components/section-parts"
 import { useAdminMessages } from "../i18n/provider"
-import { WHATSAPP_BASE, WHATSAPP_PARTS } from "../utils/whatsapp-parts"
+import { WHATSAPP_BASE, WHATSAPP_PARTS, type WhatsappPart } from "../utils/whatsapp-parts"
 
 // Tabs on a computer, a list on a phone: the same shared part as the
 // business's WhatsApp page.
 export function WhatsappFrame({ children }: { children: React.ReactNode }) {
   const m = useAdminMessages()
-  const segment = useSelectedLayoutSegment()
+  const [segment, ...inside] = useSelectedLayoutSegments()
   const current = WHATSAPP_PARTS.find((part) => part.id === segment)?.id ?? "overview"
+  const hrefOf = (id: WhatsappPart) => (id === "overview" ? WHATSAPP_BASE : `${WHATSAPP_BASE}/${id}`)
   return (
     <SectionParts
       title={m.nav.whatsapp}
@@ -21,8 +22,14 @@ export function WhatsappFrame({ children }: { children: React.ReactNode }) {
         id: part.id,
         icon: part.icon,
         label: m.whatsapp.parts[part.id],
-        href: part.id === "overview" ? WHATSAPP_BASE : `${WHATSAPP_BASE}/${part.id}`,
+        href: hrefOf(part.id),
       }))}
+      // A screen inside a part (one business) leads back to that part.
+      back={
+        inside.length && current !== "overview"
+          ? { href: hrefOf(current), label: m.whatsapp.parts[current] }
+          : undefined
+      }
     >
       {children}
     </SectionParts>
