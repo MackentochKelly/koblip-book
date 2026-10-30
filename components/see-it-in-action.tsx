@@ -179,8 +179,13 @@ export function SeeItInAction({
                     "text-left",
                     calm
                       ? view === tab
-                        ? "border-border bg-background"
-                        : "hover:bg-background/60"
+                        ? cn(
+                            "border-border",
+                            look === "bands" ? "bg-muted" : "bg-background"
+                          )
+                        : look === "bands"
+                          ? "hover:bg-muted/60"
+                          : "hover:bg-background/60"
                       : cn(
                           "text-hero-foreground",
                           view === tab
@@ -207,7 +212,15 @@ export function SeeItInAction({
                 </Item>
               ))}
             </div>
-            <div className={cn(glassFrameClassName, "max-w-sm")}>
+            <div className={cn(glassFrameClassName, "relative max-w-sm")}>
+              {/* On the dark band, a soft glow of the brand colour behind
+                  the screen. */}
+              {look === "bands" && (
+                <div
+                  aria-hidden
+                  className="absolute -inset-12 -z-10 rounded-full bg-primary/35 blur-3xl"
+                />
+              )}
               {DEMO_VIEWS.map((view) =>
                 demo.state === "ready" && opened.includes(view) ? (
                   <iframe

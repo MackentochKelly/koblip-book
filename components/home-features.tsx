@@ -1,6 +1,7 @@
 "use client"
 
 import { FeaturePreview } from "@/components/feature-preview"
+import { useHomeLook } from "@/components/home-look"
 import { HOME_SECTION_IDS } from "@/components/home-section-title"
 import { ShowcaseRow } from "@/components/showcase-row"
 import type { Messages } from "@/lib/i18n"
@@ -13,9 +14,11 @@ export function HomeFeatures({
 }: {
   words: Messages["home"]["features"]
 }) {
+  const look = useHomeLook()
   return (
     <ShowcaseRow
       id={HOME_SECTION_IDS.features}
+      bento={look === "bands"}
       title={words.title}
       previous={words.previous}
       next={words.next}

@@ -1,3 +1,6 @@
+"use client"
+
+import { useHomeLook } from "@/components/home-look"
 import {
   HOME_SECTION_IDS,
   homeSectionTitleClassName,
@@ -13,11 +16,16 @@ import { cn } from "@/lib/utils"
 
 // The home page's short questions, one open at a time (shadcn Accordion),
 // each in its own soft card.
+// The "bands" look: the title on the left, the questions on the right.
 export function HomeFaq({ words }: { words: Messages["home"]["faq"] }) {
+  const sideBySide = useHomeLook() === "bands"
   return (
     <section
       id={HOME_SECTION_IDS.faq}
-      className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 pb-12 sm:px-4"
+      className={cn(
+        "mx-auto flex w-full max-w-page flex-col gap-4 px-2 pb-12 sm:px-4",
+        sideBySide && "md:grid md:grid-cols-[1fr_2fr] md:gap-12"
+      )}
     >
       <h2 className={cn(homeSectionTitleClassName, "px-2")}>{words.title}</h2>
       {/* The first question starts open. */}

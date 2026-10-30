@@ -5,6 +5,7 @@ import Link from "next/link"
 import { heroEdgeClassName } from "@/components/glass-frame"
 import { StickyHeader } from "@/components/sticky-header"
 import { HeroGradient } from "@/components/hero-gradient"
+import { HomeBand } from "@/components/home-band"
 import { HeroSideCards } from "@/components/hero-side-cards"
 import { HomeCta } from "@/components/home-cta"
 import { HomeFaq } from "@/components/home-faq"
@@ -130,12 +131,22 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
             </div>
           </main>
         </section>
-        <WorksWith language={language} />
-        <MadeFor language={language} />
-        <HowItWorks words={t} />
-        <HomeFeatures words={t.features} />
-        <SeeItInAction words={t.action} language={language} />
-        <HomeFaq words={t.faq} />
+        <HomeBand tone="plain">
+          <WorksWith language={language} />
+          <MadeFor language={language} />
+        </HomeBand>
+        <HomeBand tone="muted">
+          <HowItWorks words={t} />
+        </HomeBand>
+        <HomeBand tone="plain">
+          <HomeFeatures words={t.features} />
+        </HomeBand>
+        <HomeBand tone="dark">
+          <SeeItInAction words={t.action} language={language} />
+        </HomeBand>
+        <HomeBand tone="plain">
+          <HomeFaq words={t.faq} />
+        </HomeBand>
         <HomeCta
           title={t.cta.title}
           button={t.cta.button}

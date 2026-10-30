@@ -47,10 +47,13 @@ export function Box({ children }: { children: React.ReactNode }) {
 export function Scene({
   colors: tokens,
   seed,
+  featured = false,
   children,
 }: {
   colors: readonly string[]
   seed: number
+  // The one picture that keeps its colour wash in the "bands" look.
+  featured?: boolean
   children: React.ReactNode
 }) {
   const colors = useThemeColors(tokens)
@@ -63,7 +66,7 @@ export function Scene({
         look === "glow" && "bg-soft-glow"
       )}
     >
-      {colors && look === "colour" && (
+      {colors && (look === "colour" || (look === "bands" && featured)) && (
         <MeshGradient
           aria-hidden
           colors={colors}
@@ -87,7 +90,7 @@ export function FeaturePreview({
   sample: Sample
 }) {
   return (
-    <Scene {...PREVIEWS[name]}>
+    <Scene {...PREVIEWS[name]} featured={name === "page"}>
       {name === "page" && <PagePreview sample={sample} />}
       {name === "book" && <BookPreview sample={sample} />}
       {name === "assistant" && <AssistantPreview sample={sample} />}

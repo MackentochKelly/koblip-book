@@ -2,6 +2,7 @@
 
 import { heroEdgeClassName } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
+import { useHomeLook } from "@/components/home-look"
 import { GET_STARTED_ID } from "@/components/home-section-title"
 import { Button } from "@/components/ui/button"
 import { SearchIcon } from "@/components/ui/icons"
@@ -21,6 +22,9 @@ export function HomeCta({
   hint: string
 }) {
   const still = useReducedMotion()
+  // The "bands" look: full width, a band's gap below the one above, like
+  // the hero.
+  const bands = useHomeLook() === "bands"
   function findBusiness() {
     const target = document.getElementById(GET_STARTED_ID)
     if (!target) return
@@ -31,10 +35,16 @@ export function HomeCta({
     target.querySelector("input")?.focus({ preventScroll: true })
   }
   return (
-    <section className="mx-auto w-full max-w-page px-2 pb-12 sm:px-4">
+    <section
+      className={cn(
+        "mx-auto w-full",
+        bands ? "mt-2 mb-12 sm:mt-3" : "max-w-page px-2 pb-12 sm:px-4"
+      )}
+    >
       <div
         className={cn(
           "relative isolate flex flex-col items-center gap-6 overflow-hidden rounded-4xl px-6 py-16 text-center",
+          bands && "sm:py-24",
           heroEdgeClassName
         )}
       >

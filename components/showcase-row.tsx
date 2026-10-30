@@ -18,6 +18,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import { cn } from "@/lib/utils"
 
 export type ShowcaseItem = {
   key: string
@@ -37,6 +38,7 @@ export function ShowcaseRow({
   previous,
   next,
   items,
+  bento = false,
 }: {
   // For links to this row (the footer's).
   id: string
@@ -44,6 +46,9 @@ export function ShowcaseRow({
   previous: string
   next: string
   items: ShowcaseItem[]
+  // Computers: the first card wide and the other two narrow beside it
+  // (a bento row), each picture filling its card's height.
+  bento?: boolean
 }) {
   // Two-finger trackpad swipes move the cards too (Embla only drags).
   const [wheel] = useState(() => WheelGesturesPlugin())
@@ -69,10 +74,22 @@ export function ShowcaseRow({
         </div>
         {/* p-px: room for the card edge, which the carousel would clip. */}
         <CarouselContent className="p-px">
-          {items.map((item) => (
-            <CarouselItem key={item.key} className="basis-[85%] md:basis-1/3">
+          {items.map((item, index) => (
+            <CarouselItem
+              key={item.key}
+              className={cn(
+                "basis-[85%]",
+                !bento && "md:basis-1/3",
+                bento && (index === 0 ? "md:basis-1/2" : "md:basis-1/4")
+              )}
+            >
               <Card className="h-full pt-2 shadow-none ring-border dark:ring-border">
-                <div className="relative mx-2 aspect-video overflow-hidden rounded-t-[calc(var(--radius-4xl)-(--spacing(2)))] rounded-b-lg bg-muted after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/5 dark:after:inset-ring-foreground/10">
+                <div
+                  className={cn(
+                    "relative mx-2 aspect-video overflow-hidden rounded-t-[calc(var(--radius-4xl)-(--spacing(2)))] rounded-b-lg bg-muted after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/5 dark:after:inset-ring-foreground/10",
+                    bento && "md:aspect-auto md:min-h-72 md:flex-1"
+                  )}
+                >
                   {item.picture}
                 </div>
                 <CardHeader>
