@@ -45,8 +45,8 @@ tasks top to bottom; when a task waits on another lane, take your next one.
 | 1. Chat API and platform | Dev 1 | `Wapi/wapi-api`, `chat-oauth.ts`, `lib/platform-settings.ts`, `lib/notification-rules.ts` | C1, C2, K1, A0 |
 | 2. Templates and sending | Dev 2 | `booking-templates.ts`, `chat-templates.ts`, `notification-sender.ts`, `lib/whatsapp-offer.ts` | S1, S2, S4, S6, S8, K2, K3, S5, K5 |
 | 3. Replies, activity, bookings | Dev 3 | `chat-events.ts`, `notification-replies.ts`, `booking-actions.ts`, booking components | S3, S9, S7, B1, A6, S5, K6 |
-| 4. Business page | Dev 4 | `app/(owner)/dashboard/[businessId]/whatsapp/`, `features/dashboard/components/whatsapp-*.tsx`, `message-editor.tsx`, `features/dashboard/i18n/*/whatsapp.ts` | P1, P5, P6, P7, P3, P2, P4, K4, A5 |
-| 5. Admin dashboard | Dev 1 | `app/(admin)/admin/whatsapp/`, `features/admin/` | A1, A2, A4, A7, A3, A8 |
+| 4. Business page | Dev 4 | `app/(owner)/dashboard/[businessId]/whatsapp/`, `features/dashboard/components/whatsapp-*.tsx`, `message-editor.tsx`, `features/dashboard/i18n/*/whatsapp.ts` | P1, P5, P6, P7, P3, P2, P4, K4, A5, A3 |
+| 5. Admin dashboard | Dev 1 | `app/(admin)/admin/whatsapp/`, `features/admin/` | A1, A2, A4, A7, A8 |
 | Everyone, last | | | F1 |
 
 Every lane can start today: lanes 4 and 5 begin with their frames (P1, A1)
@@ -210,12 +210,12 @@ task is in Lanes above.
 | A0 | Rules move from code to the database: `NOTIFICATION_RULES` becomes the code defaults, the admin's values override them; plus the admin change log | `lib/notification-rules.ts`, new `lib/platform-settings.ts`, `lib/db/schema.ts` (+ migration) | W0 | `Done` 2026-10-30, see git log (A0) |
 | A1 | Admin section frame: "WhatsApp" in the admin menu with its parts (list on phone, tabs on computer), English and Spanish | `app/(admin)/admin/whatsapp/`, `features/admin/components/whatsapp-*.tsx`, `features/admin/components/admin-shell.tsx`, `features/admin/i18n/` | W0 | `Done` 2026-10-30, see git log (A1, D19) |
 | A2 | Overview: timer last run, waiting and failed counts, Chat reachable, each secret set or not | `features/admin/api/whatsapp-*.ts`, `whatsapp-overview.tsx`; timer heartbeat in `notification-timer.ts` | A1 | `Done` 2026-10-30, see git log (A2, D21) |
-| A3 | Koblip number and Koblip messages screens (the admin side of K1 and K2) | `whatsapp-koblip-*.tsx` | A1, K1, K2 | `Working on` Dev 1, 2026-10-30 |
+| A3 | Koblip number and Koblip messages screens (the admin side of K1 and K2) | `whatsapp-koblip-*.tsx` | A1, K1, K2 | `To do` (moved to Dev 4) |
 | A4 | Businesses: every business's sender, connection, number, settings, wording, templates; open one to change, reset, turn off or disconnect | `whatsapp-businesses.tsx`, `whatsapp-business.tsx`, admin actions | A1 | `Done` 2026-10-30, see git log (A4, D25) |
 | A5 | Activity for all businesses: filters, search, send again, cancel a waiting message | `whatsapp-activity.tsx`, admin queries and actions | A1, S9 | `Working on` Dev 4, 2026-10-30 |
 | A6 | 24-hour window: who wrote to which number and when; remove an entry | `whatsapp-window.tsx`, admin queries and actions | A1 | `Done` 2026-10-30, see git log (D27) |
 | A7 | Rules editor (A0's values, each with its default and a reset) and the change log | `whatsapp-rules.tsx`, `whatsapp-changes.tsx`Done` 2026-10-30, see git log (A7, D28) |
-| A8 | Usage: messages from Koblip's number per business per month, and the limit (D3), changeable for everyone or one business | `whatsapp-usage.tsx` | A1, K6 | `To do` |
+| A8 | Usage: messages from Koblip's number per business per month, and the limit (D3), changeable for everyone or one business | `whatsapp-usage.tsx` | A1, K6 | `Blocked` Dev 1: waits on K6 (Dev 3, working on it); head developer told |
 
 ### Book page
 
