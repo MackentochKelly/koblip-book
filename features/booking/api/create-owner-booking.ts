@@ -28,32 +28,13 @@ import {
   allowedServiceMemberIds,
   firstFreeMember,
 } from "../utils/service-members"
+import {
+  DATE_PATTERN,
+  TIME_PATTERN,
+  isRealDate,
+  toMinutes,
+} from "../utils/owner-time"
 import { addDays, zonedInstant, zonedToday } from "../utils/zoned-time"
-
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
-const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
-
-function toMinutes(time: string): number {
-  const [hour, minute] = time.split(":").map(Number)
-  return hour * 60 + minute
-}
-
-function isRealDate(date: string): boolean {
-  const [year, month, day] = date.split("-").map(Number)
-  if (
-    !Number.isInteger(year) ||
-    !Number.isInteger(month) ||
-    !Number.isInteger(day)
-  ) {
-    return false
-  }
-  const utc = new Date(Date.UTC(year, month - 1, day))
-  return (
-    utc.getUTCFullYear() === year &&
-    utc.getUTCMonth() === month - 1 &&
-    utc.getUTCDate() === day
-  )
-}
 
 // Walk-in / phone bookings by the owner. Same opening-hours and busy logic
 // as online booking, but no minimum notice, past dates allowed, and the

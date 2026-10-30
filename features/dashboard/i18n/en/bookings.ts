@@ -20,6 +20,16 @@ const bookings = {
     confirm: "Cancel booking",
     done: "Booking cancelled",
   },
+  move: {
+    open: "Move",
+    title: "Move booking",
+    submit: "Move booking",
+    moved: "Booking moved",
+    failed: "Could not move it. Please try again.",
+    moveAnyway: "Move it anyway?",
+    confirmAnyway: "Move anyway",
+    later: "Pick a later time",
+  },
   actions: {
     undo: "Undo",
     undone: "Marked as booked",

@@ -10,6 +10,7 @@ import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { BookingsView } from "@/features/dashboard/components/bookings-view"
 import { ConfirmDetailsCard } from "@/features/dashboard/components/confirm-details-card"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
+import { moveOwnerBooking } from "@/features/booking/api/move-owner-booking"
 import { LiveRefresh } from "@/components/live-refresh"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { addDaysTo, todayIn } from "@/lib/format-booking-time"
@@ -70,6 +71,7 @@ export default async function BookingsPage({ params }: Props) {
           whatsapp,
         }}
         createBooking={createOwnerBooking}
+        moveBooking={moveOwnerBooking}
       />
     </>
   )

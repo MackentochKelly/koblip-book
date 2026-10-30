@@ -41,6 +41,8 @@ import { formatClock, formatDay } from "@/lib/format-booking-time"
 import type {
   OwnerBookingInput,
   OwnerBookingResult,
+  OwnerMoveInput,
+  OwnerMoveResult,
 } from "@/types/owner-booking"
 import { cancelBooking } from "../api/actions"
 import { setBookingStatus } from "../api/booking-actions"
@@ -50,11 +52,13 @@ import { AddBookingPanel, type AddBookingOptions } from "./add-booking-panel"
 import { BookingDetails } from "./booking-details"
 import { BookingStatusBadge } from "./booking-status-badge"
 import { BookingsChart } from "./bookings-chart"
+import { MoveBookingPanel } from "./move-booking-panel"
 
 type View = "upcoming" | "past"
 
 // The business's bookings, by day: upcoming first, past one tab away. Each
-// opens its details; once it has started it can be marked done or no-show.
+// opens its details; before it starts it can be moved or cancelled, once it
+// has started it can be marked done or no-show.
 export function BookingsView({
   businessId,
   upcoming,
@@ -63,6 +67,7 @@ export function BookingsView({
   nextDays,
   addOptions,
   createBooking,
+  moveBooking,
 }: {
   businessId: string
   upcoming: OwnerBooking[]
@@ -71,6 +76,7 @@ export function BookingsView({
   nextDays: Array<{ date: string; bookings: number }>
   addOptions: AddBookingOptions
   createBooking: (input: OwnerBookingInput) => Promise<OwnerBookingResult>
+  moveBooking: (input: OwnerMoveInput) => Promise<OwnerMoveResult>
 }) {
   const [view, setView] = useState<View>("upcoming")
   const [opened, setOpened] = useState<OwnerBooking | null>(null)
@@ -79,6 +85,7 @@ export function BookingsView({
   // marked done or no-show.
   const [openedAt, setOpenedAt] = useState(0)
   const [adding, setAdding] = useState(false)
+  const [moving, setMoving] = useState(false)
   const [cancelling, setCancelling] = useState<OwnerBooking | null>(null)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
@@ -110,6 +117,10 @@ export function BookingsView({
       booking={opened}
       started={started}
       pending={pending}
+      onMove={() => {
+        setDetailsOpen(false)
+        setMoving(true)
+      }}
       onCancel={() => setCancelling(opened)}
       onStatus={(status, done) =>
         run(() => setBookingStatus(businessId, opened.id, status), done)
@@ -225,6 +236,16 @@ export function BookingsView({
         createBooking={createBooking}
       />
 
+      <MoveBookingPanel
+        booking={opened}
+        open={moving}
+        onClose={() => setMoving(false)}
+        onMoved={() => setMoving(false)}
+        businessId={businessId}
+        today={addOptions.today}
+        moveBooking={moveBooking}
+      />
+
       <AlertDialog
         open={cancelling !== null}
         onOpenChange={(open) => {
@@ -267,18 +288,20 @@ export function BookingsView({
   )
 }
 
-// What can be done with a booking: before it starts, cancel it; once it
-// has started, mark it done or no-show; after that, undo.
+// What can be done with a booking: before it starts, move or cancel it;
+// once it has started, mark it done or no-show; after that, undo.
 function BookingActions({
   booking,
   started,
   pending,
+  onMove,
   onCancel,
   onStatus,
 }: {
   booking: OwnerBooking
   started: boolean
   pending: boolean
+  onMove: () => void
   onCancel: () => void
   onStatus: (
     status: "confirmed" | "completed" | "no_show",
@@ -301,9 +324,14 @@ function BookingActions({
   }
   if (!started) {
     return (
-      <Button variant="outline" disabled={pending} onClick={onCancel}>
-        {t.cancel.confirm}
-      </Button>
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="outline" disabled={pending} onClick={onCancel}>
+          {t.cancel.confirm}
+        </Button>
+        <Button disabled={pending} onClick={onMove}>
+          {t.move.open}
+        </Button>
+      </div>
     )
   }
   return (
