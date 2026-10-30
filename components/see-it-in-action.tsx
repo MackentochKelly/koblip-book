@@ -8,6 +8,7 @@ import {
   heroEdgeClassName,
 } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
+import { useCalmHome } from "@/components/home-look"
 import { homeSectionTitleClassName } from "@/components/home-section-title"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
@@ -57,6 +58,7 @@ export function SeeItInAction({
   language: PageLanguage
 }) {
   const box = useRef<HTMLElement>(null)
+  const calm = useCalmHome()
   const [demo, setDemo] = useState<Demo>({ state: "waiting" })
   const [tab, setTab] = useState<DemoView>("page")
   const [opened, setOpened] = useState<DemoView[]>(["page"])
@@ -135,10 +137,10 @@ export function SeeItInAction({
       <div
         className={cn(
           "relative isolate overflow-hidden rounded-4xl p-3 sm:p-6 lg:p-10",
-          heroEdgeClassName
+          calm ? "bg-muted" : heroEdgeClassName
         )}
       >
-        <HeroGradient />
+        {!calm && <HeroGradient />}
         {problem ?? (
           <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 lg:flex-row lg:items-center lg:justify-center lg:gap-12">
             <ViewTabs
@@ -151,7 +153,12 @@ export function SeeItInAction({
               ariaLabel={words.tabsLabel}
               className="lg:hidden"
             />
-            <p className="text-center text-sm text-balance text-hero-foreground lg:hidden">
+            <p
+              className={cn(
+                "text-center text-sm text-balance lg:hidden",
+                calm ? "text-muted-foreground" : "text-hero-foreground"
+              )}
+            >
               {words.hints[tab]}
             </p>
             <div
@@ -166,10 +173,17 @@ export function SeeItInAction({
                   aria-pressed={view === tab}
                   onClick={() => choose(view)}
                   className={cn(
-                    "text-left text-hero-foreground",
-                    view === tab
-                      ? glassButtonClassName
-                      : "hover:bg-glass dark:hover:bg-glass"
+                    "text-left",
+                    calm
+                      ? view === tab
+                        ? "bg-background"
+                        : "hover:bg-background/60"
+                      : cn(
+                          "text-hero-foreground",
+                          view === tab
+                            ? glassButtonClassName
+                            : "hover:bg-glass dark:hover:bg-glass"
+                        )
                   )}
                 >
                   <ItemMedia>
@@ -181,7 +195,9 @@ export function SeeItInAction({
                     <ItemTitle className="text-base">
                       {words.steps[view]}
                     </ItemTitle>
-                    <ItemDescription className="text-hero-foreground/80">
+                    <ItemDescription
+                      className={cn(!calm && "text-hero-foreground/80")}
+                    >
                       {words.hints[view]}
                     </ItemDescription>
                   </ItemContent>

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react"
 
 import { celebrate } from "@/components/celebration"
 import { glassFrameClassName } from "@/components/glass-frame"
+import { useCalmHome } from "@/components/home-look"
 import { Rating } from "@/components/rating"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
@@ -53,9 +54,15 @@ export function Scene({
   children: React.ReactNode
 }) {
   const colors = useThemeColors(tokens)
+  const calm = useCalmHome()
   return (
-    <div className="relative isolate flex size-full items-center justify-center p-4">
-      {colors && (
+    <div
+      className={cn(
+        "relative isolate flex size-full items-center justify-center p-4",
+        calm && "bg-muted"
+      )}
+    >
+      {colors && !calm && (
         <MeshGradient
           aria-hidden
           colors={colors}
@@ -117,7 +124,7 @@ export function burstFrom(element: HTMLElement) {
 
 // A business page: name, rating, Book. Tap Book: it turns "Booked" with
 // confetti; tap again to start over.
-function PagePreview({ sample }: { sample: Sample }) {
+export function PagePreview({ sample }: { sample: Sample }) {
   const [booked, setBooked] = useState(false)
   return (
     <Box>
@@ -161,7 +168,7 @@ function PagePreview({ sample }: { sample: Sample }) {
 
 // Free times for a day. Tap one: it is picked and "Confirmed" shows; tap it
 // again to start over.
-function BookPreview({ sample }: { sample: Sample }) {
+export function BookPreview({ sample }: { sample: Sample }) {
   const [picked, setPicked] = useState<string | null>(null)
   return (
     <Box>
@@ -203,7 +210,7 @@ function BookPreview({ sample }: { sample: Sample }) {
 // (thinking, then the answer).
 const THINKING_MS = 900
 
-function AssistantPreview({ sample }: { sample: Sample }) {
+export function AssistantPreview({ sample }: { sample: Sample }) {
   const [step, setStep] = useState<"thinking" | "done">("done")
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(timer.current), [])
