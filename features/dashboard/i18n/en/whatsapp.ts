@@ -120,6 +120,16 @@ const whatsapp = {
   allStates: "Any status",
   noneFound: "No messages match",
   clearFilters: "Clear filters",
+  // "Send again" on a failed message.
+  sendAgain: "Send again",
+  sendAgainLabel: (name: string) => `Send again: ${name}`,
+  sentAgain: "It goes out in a moment.",
+  sendAgainFailed: "Couldn't send it again. Try again.",
+  sendAgainProblems: {
+    notFailed: "It's already on its way.",
+    cancelled: "The booking was cancelled.",
+    late: "Too late: the visit has started.",
+  } as Record<string, string>,
   via: { text: "Normal message", template: "Template" },
   replies: { confirm: "I'll be there", cantCome: "Can't make it", ok: "OK" },
   states: {
