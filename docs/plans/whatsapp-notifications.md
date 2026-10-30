@@ -139,6 +139,7 @@ bottom: what, why, who, date.
 | D6 | C1: Chat's inbound app event gets `button: { payload, title }` (null when no button was tapped). The payload is the one set when the message was sent; `replyToMessageId` is the provider ID of the message that carried the button, so Book can match a tap to the send it answers. Template quick replies and normal-message buttons arrive the same way. Sales gets the same field and ignores it. | A general API field any app can use; Chat already stored the tap, it just did not forward it. | Dev 1, 2026-10-30 |
 | D7 | Book's buttons: Reminder and Booking changed carry "I'll be there" / "Can't make it" (`confirm`, `cantCome`); Booking confirmed, Booking cancelled and the owner's alerts carry none. An owner may use `confirm`, `cantCome` or `ok` on Confirmed, Reminder and Changed, only `ok` on Cancelled, none on alerts. Each button is a quick reply whose payload is its action. | The goals ask for answers on reminders; a moved time needs the same answer; a confirmation the customer just made and a cancellation need none, and fewer buttons keep Meta's review simple. | Dev 2, 2026-10-30 |
 | D8 | Drafts stay in Book: saving wording or buttons changes only Book. "Submit to Meta" creates the template in Chat (`save_as_draft: false`) or edits Chat's copy (`PUT`), after copying back one Meta has but Chat lost. Book keeps what was submitted (`chat_templates.submitted`), sends the approved template with exactly that copy's fields, and shows a newer wording as `draft`. Opening Integrations or the sender only reads status and reason (`refreshChatTemplates`), never creates. | Chat's `POST /api/template/:id/publish` is not open to apps, so a Chat draft could not be submitted through the public API; this needs nothing new from Chat. Sending the submitted copy keeps `{{1}}…` in the order Meta approved even after the owner edits. | Dev 2, 2026-10-30 |
+| D9 | C2: Chat's send API takes `buttonHeader` and `buttonFooter` (text, up to 60 characters each) next to `buttonParams` on an `interactive` / `button` message. An image header replaces the text title (WhatsApp allows one header). Both are saved on the message's `interactive_data`. | Named like `buttonParams`, so the request stays flat and any app can use it; the same limits Meta documents. | Dev 1, 2026-10-30 |
 
 ## Tasks
 
@@ -156,7 +157,7 @@ task is in Lanes above.
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
 | C1 | Inbound app events carry the tapped button's payload and title | `services/koblip-sales-status-webhook.service.js`, `tests/oauth-events.test.js`, `docs/api/oauth.md` | — | `Done` 2026-10-30, Chat 3bf10c2 |
-| C2 | Send API: a normal message with reply buttons can have a text title and footer | `controllers/unified-whatsapp.controller.js`, its service, tests, docs | — | `Working on` Dev 1, 2026-10-30 |
+| C2 | Send API: a normal message with reply buttons can have a text title and footer | `controllers/unified-whatsapp.controller.js`, its service, tests, docs | — | `Done` 2026-10-30, Chat 8694007 |
 
 ### Book server
 
@@ -176,7 +177,7 @@ task is in Lanes above.
 
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
-| K1 | Platform connection: Koblip's admin connects Koblip's own Chat workspace once in the admin area; Book keeps it apart from business connections | `app/(admin)/`, `features/admin/`, `lib/db/schema.ts` (+ migration), `features/dashboard/api/chat-oauth.ts` | W0 | `To do` |
+| K1 | Platform connection: Koblip's admin connects Koblip's own Chat workspace once in the admin area; Book keeps it apart from business connections | `app/(admin)/`, `features/admin/`, `lib/db/schema.ts` (+ migration), `features/dashboard/api/chat-oauth.ts` | W0 | `Working on` Dev 1, 2026-10-30 |
 | K2 | Koblip's ready-made templates: the admin reviews them, then submits them to Meta in Koblip's workspace; status shown in the admin area | `features/admin/`, `features/dashboard/api/chat-templates.ts` | K1, S1 | `To do` |
 | K3 | Sender picks the number: the business's own when connected and approved, else Koblip's; each row records its sender | `notification-sender.ts` | K1 | `To do` |
 | K4 | Business page: "Sending from Koblip" or "Sending from your number"; on Koblip's number the messages are read-only with on/off, plus "Use your own number" | `whatsapp-*.tsx`, `message-editor.tsx` | P1, K3 | `To do` |
