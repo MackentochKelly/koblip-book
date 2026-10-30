@@ -46,7 +46,7 @@ tasks top to bottom; when a task waits on another lane, take your next one.
 | 2. Templates and sending | Dev 2 | `booking-templates.ts`, `chat-templates.ts`, `notification-sender.ts`, `lib/whatsapp-offer.ts` | S1, S2, S4, S6, S8, K2, K3, S5, K5, K6 |
 | 3. Replies, activity, bookings | Dev 3 | `chat-events.ts`, `notification-replies.ts`, `booking-actions.ts`, booking components | S3, S9, S7, B1 |
 | 4. Business page | Dev 4 | `app/(owner)/dashboard/[businessId]/whatsapp/`, `features/dashboard/components/whatsapp-*.tsx`, `message-editor.tsx`, `features/dashboard/i18n/*/whatsapp.ts` | P1, P5, P6, P7, P3, P2, P4, K4 |
-| 5. Admin dashboard | | `app/(admin)/admin/whatsapp/`, `features/admin/` | A1, A2, A4, A6, A5, A7, A3, A8 |
+| 5. Admin dashboard | Dev 1 | `app/(admin)/admin/whatsapp/`, `features/admin/` | A1, A2, A4, A6, A5, A7, A3, A8 |
 | Everyone, last | | | F1 |
 
 Every lane can start today: lanes 4 and 5 begin with their frames (P1, A1)
@@ -194,7 +194,7 @@ task is in Lanes above.
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
 | A0 | Rules move from code to the database: `NOTIFICATION_RULES` becomes the code defaults, the admin's values override them; plus the admin change log | `lib/notification-rules.ts`, new `lib/platform-settings.ts`, `lib/db/schema.ts` (+ migration) | W0 | `Done` 2026-10-30, see git log (A0) |
-| A1 | Admin section frame: "WhatsApp" in the admin menu with its parts (list on phone, tabs on computer), English and Spanish | `app/(admin)/admin/whatsapp/`, `features/admin/components/whatsapp-*.tsx`, `features/admin/components/admin-shell.tsx`, `features/admin/i18n/` | W0 | `To do` |
+| A1 | Admin section frame: "WhatsApp" in the admin menu with its parts (list on phone, tabs on computer), English and Spanish | `app/(admin)/admin/whatsapp/`, `features/admin/components/whatsapp-*.tsx`, `features/admin/components/admin-shell.tsx`, `features/admin/i18n/` | W0 | `Working on` Dev 1, 2026-10-30 |
 | A2 | Overview: timer last run, waiting and failed counts, Chat reachable, each secret set or not | `features/admin/api/whatsapp-*.ts`, `whatsapp-overview.tsx`; timer heartbeat in `notification-timer.ts` | A1 | `To do` |
 | A3 | Koblip number and Koblip messages screens (the admin side of K1 and K2) | `whatsapp-koblip-*.tsx` | A1, K1, K2 | `To do` |
 | A4 | Businesses: every business's sender, connection, number, settings, wording, templates; open one to change, reset, turn off or disconnect | `whatsapp-businesses.tsx`, `whatsapp-business.tsx`, admin actions | A1 | `To do` |
