@@ -19,6 +19,7 @@ const whatsapp = {
   },
   review: {
     missing: "Not set up",
+    draft: "Not submitted",
     waiting: "Waiting for Meta",
     approved: "Approved",
     rejected: "Rejected by Meta",

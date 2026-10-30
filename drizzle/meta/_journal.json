@@ -120,6 +120,13 @@
       "when": 1793373963123,
       "tag": "0016_whatsapp_sending",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1793377704729,
+      "tag": "0017_whatsapp_v2_contract",
+      "breakpoints": true
     }
   ]
 }

@@ -21,6 +21,7 @@ const whatsapp: typeof en = {
   },
   review: {
     missing: "Sin preparar",
+    draft: "Sin enviar",
     waiting: "Esperando a Meta",
     approved: "Aprobado",
     rejected: "Rechazado por Meta",

@@ -31,6 +31,9 @@ async function saveSettings(businessId: string, next: NotificationSettings) {
     quietStart: next.quietStart,
     quietEnd: next.quietEnd,
     turnedOff: next.turnedOff,
+    freeTextInWindow: next.freeTextInWindow,
+    cantCome: next.cantCome,
+    thankYouReply: next.thankYouReply,
   }
   await db
     .insert(notificationSettings)

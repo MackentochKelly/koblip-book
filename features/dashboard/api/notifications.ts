@@ -14,12 +14,14 @@ import type {
   NotificationMessage,
   NotificationSend,
   NotificationSettings,
+  NotificationText,
   TemplateReview,
 } from "../types/notifications"
 import {
   BOOKING_MESSAGES,
   TEMPLATE_LANGUAGES,
   defaultWording,
+  type TemplateLanguage,
 } from "../utils/booking-templates"
 
 // The business's WhatsApp notification settings, or the defaults.
@@ -36,6 +38,9 @@ export async function notificationSettingsFor(businessId: string): Promise<Notif
     quietStart: row?.quietStart ?? NOTIFICATION_RULES.defaultQuietStart,
     quietEnd: row?.quietEnd ?? NOTIFICATION_RULES.defaultQuietEnd,
     turnedOff: row?.turnedOff ?? [],
+    freeTextInWindow: row?.freeTextInWindow ?? NOTIFICATION_RULES.defaultFreeTextInWindow,
+    cantCome: row?.cantCome ?? NOTIFICATION_RULES.defaultCantCome,
+    thankYouReply: row?.thankYouReply ?? NOTIFICATION_RULES.defaultThankYouReply,
   }
 }
 
@@ -57,8 +62,10 @@ export async function notificationMessagesFor(businessId: string): Promise<Notif
   return BOOKING_MESSAGES.map((message) => ({
     message,
     on: !settings.turnedOff.includes(message),
+    // Every business sends from its own number today; Koblip's number is K3.
+    editable: true,
     texts: Object.fromEntries(
-      TEMPLATE_LANGUAGES.map((language) => {
+      TEMPLATE_LANGUAGES.map((language): [TemplateLanguage, NotificationText] => {
         const mine = own.find((row) => row.message === message && row.language === language)
         const template = made.find((row) => row.message === message && row.language === language)
         return [
@@ -67,8 +74,11 @@ export async function notificationMessagesFor(businessId: string): Promise<Notif
             wording: mine
               ? { header: mine.header, body: mine.body, footer: mine.footer }
               : defaultWording(message, language),
+            // Buttons come with S1.
+            buttons: [],
             isDefault: !mine,
             review: review(template?.status),
+            reason: null,
           },
         ]
       })
@@ -89,11 +99,19 @@ export async function notificationHistoryFor(businessId: string): Promise<Notifi
       state: notificationSends.state,
       reason: notificationSends.reason,
       delivery: notificationSends.delivery,
+      via: notificationSends.via,
+      sender: notificationSends.sender,
+      replyAction: notificationSends.replyAction,
+      repliedAt: notificationSends.repliedAt,
     })
     .from(notificationSends)
     .innerJoin(bookings, eq(bookings.id, notificationSends.bookingId))
     .where(eq(notificationSends.businessId, businessId))
     .orderBy(desc(notificationSends.dueAt))
     .limit(NOTIFICATION_RULES.historySize)
-  return rows.map(({ dueAt, sentAt, ...row }) => ({ ...row, at: sentAt ?? dueAt }))
+  return rows.map(({ dueAt, sentAt, replyAction, repliedAt, ...row }) => ({
+    ...row,
+    at: sentAt ?? dueAt,
+    reply: replyAction && repliedAt ? { action: replyAction, at: repliedAt } : null,
+  }))
 }

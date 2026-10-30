@@ -411,6 +411,11 @@ export const notificationSettings = sqliteTable("notification_settings", {
   turnedOff: text({ mode: "json" })
     .$type<("confirmed" | "reminder" | "changed" | "cancelled" | "ownerNewBooking")[]>()
     .notNull(),
+  // Inside the 24-hour window, a normal message instead of the template.
+  freeTextInWindow: integer({ mode: "boolean" }).notNull().default(true),
+  // What a customer's "Can't make it" does.
+  cantCome: text({ enum: ["cancel", "alertOnly"] }).notNull().default("alertOnly"),
+  thankYouReply: integer({ mode: "boolean" }).notNull().default(true),
   ...timestamps(),
 })
 
@@ -463,6 +468,11 @@ export const notificationSends = sqliteTable(
     chatRecordId: text(),
     delivery: text(),
     sentAt: text(),
+    // Koblip's number (the default) or the business's own.
+    sender: text({ enum: ["koblip", "own"] }).notNull().default("own"),
+    // The customer's tap on one of the message's buttons.
+    replyAction: text({ enum: ["confirm", "cantCome", "ok"] }),
+    repliedAt: text(),
     ...timestamps(),
   },
   (table) => [

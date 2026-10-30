@@ -68,7 +68,7 @@ track (Dev B) run side by side without touching the same files.
 
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
-| W0 | Types and settings shape for everything below: message buttons, reply actions, the 24-hour setting, alerts, activity rows, fields. UI and server both build against it. | `features/dashboard/types/notifications.ts`, `lib/notification-rules.ts` | — | `Working on` Dev A, 2026-10-30 |
+| W0 | Types and settings shape for everything below: sender (Koblip or own), message buttons, reply actions, the 24-hour setting, "Can't make it" action, alerts, activity rows and filters, setup steps. Settings and send columns in the database with defaults. UI and server both build against it. | `features/dashboard/types/notifications.ts`, `lib/notification-rules.ts`, `lib/db/schema.ts` (+ `drizzle/0017`) | — | `Done` 2026-10-30, see git log |
 
 ### Chat API (`Wapi/wapi-api`, general features only)
 

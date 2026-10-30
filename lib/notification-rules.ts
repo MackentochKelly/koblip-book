@@ -21,6 +21,16 @@ export const NOTIFICATION_RULES = {
   stuckSendingMinutes: 10,
   // How many of the latest messages the WhatsApp page's history shows.
   historySize: 30,
+  // Inside 24 hours of the person's last message a normal message goes
+  // instead of the template, unless the owner turns it off.
+  defaultFreeTextInWindow: true,
+  // "Can't make it" only alerts the owner until they choose to cancel
+  // (decision D2 in docs/plans/whatsapp-notifications.md).
+  defaultCantCome: "alertOnly",
+  defaultThankYouReply: true,
+  // WhatsApp quick-reply buttons: at most this many, each this many characters.
+  maxButtons: 3,
+  maxButtonLabel: 25,
   // No messages at night, in the business's time zone.
   defaultQuietStart: "21:00",
   defaultQuietEnd: "08:00",
