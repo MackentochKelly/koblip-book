@@ -64,12 +64,14 @@ export function SiteFooter({ language }: { language: PageLanguage }) {
           <ArrowUpIcon className="size-4" />
         </a>
       </div>
-      {/* The name, huge and faint, fading out towards the bottom. Faded as
-          a whole (opacity), not by a see-through colour, so the drawing's
-          overlapping edges don't show darker. */}
+      {/* The name, huge and faint, cut by the page's bottom edge (only its
+          top three quarters show, past the page's own padding) and fading
+          softly towards it. Faded as a whole (opacity), not by a
+          see-through colour, so the drawing's overlapping edges don't show
+          darker. */}
       <div
         aria-hidden
-        className="mt-12 mask-b-from-20% mask-b-to-90% text-foreground opacity-15"
+        className="mt-12 -mb-2 aspect-[502/110] overflow-hidden mask-b-from-40% text-foreground opacity-15 sm:-mb-3"
       >
         <KoblipMark className="h-auto w-full" />
       </div>
