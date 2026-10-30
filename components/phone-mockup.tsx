@@ -15,9 +15,12 @@ const SCREEN = { left: 24, top: 23, width: 402, height: 874, radius: 60 }
 const STATUS_BAR = 54
 
 // A real phone with a page running in it: the screen is drawn at the
-// phone's own size, then the whole phone is scaled down to fit its box,
-// so the page's words keep the phone's proportions instead of being drawn
-// large. `className` sizes the box (give it a height); the phone keeps
+// phone's own size, then the whole phone is shrunk to fit its box, so the
+// page's words keep the phone's proportions instead of being drawn large.
+// Shrunk with CSS zoom, not a scale transform: zoom lays the page out and
+// draws it at the smaller size, while a transform shrinks a drawn copy,
+// which made the page's pinned tabs shake by a pixel while scrolling and
+// let a slice of the text under them show. `className` sizes the box (give it a height); the phone keeps
 // its shape inside it.
 export function PhoneMockup({
   className,
@@ -46,11 +49,11 @@ export function PhoneMockup({
     >
       {scale !== null && (
         <div
-          className="absolute top-0 left-0 origin-top-left"
+          className="absolute top-0 left-0"
           style={{
             width: FRAME.width,
             height: FRAME.height,
-            transform: `scale(${scale})`,
+            zoom: scale,
           }}
         >
           <div
