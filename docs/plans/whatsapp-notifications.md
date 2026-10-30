@@ -210,7 +210,7 @@ task is in Lanes above.
 | A3 | Koblip number and Koblip messages screens (the admin side of K1 and K2) | `whatsapp-koblip-*.tsx` | A1, K1, K2 | `To do` |
 | A4 | Businesses: every business's sender, connection, number, settings, wording, templates; open one to change, reset, turn off or disconnect | `whatsapp-businesses.tsx`, `whatsapp-business.tsx`, admin actions | A1 | `Done` 2026-10-30, see git log (A4, D25) |
 | A5 | Activity for all businesses: filters, search, send again, cancel a waiting message | `whatsapp-activity.tsx`, admin queries and actions | A1, S9 | `To do` |
-| A6 | 24-hour window: who wrote to which number and when; remove an entry | `whatsapp-window.tsx`, admin queries and actions | A1 | `To do` |
+| A6 | 24-hour window: who wrote to which number and when; remove an entry | `whatsapp-window.tsx`, admin queries and actions | A1 | `Working on` Dev 3, 2026-10-30 |
 | A7 | Rules editor (A0's values, each with its default and a reset) and the change log | `whatsapp-rules.tsx`, `whatsapp-changes.tsx` | A0, A1 | `Working on` Dev 1, 2026-10-30 |
 | A8 | Usage: messages from Koblip's number per business per month, and the limit (D3), changeable for everyone or one business | `whatsapp-usage.tsx` | A1, K6 | `To do` |
 
