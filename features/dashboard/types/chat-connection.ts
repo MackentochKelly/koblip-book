@@ -17,16 +17,3 @@ export type ChatConnection = {
   needsReconnect: boolean
   messages: ChatMessagesState
 }
-
-// How the Chat window ended: the owner allowed, cancelled, or it failed.
-export type ChatConnectResult = "connected" | "denied" | "failed"
-
-export const CHAT_CONNECT_RESULTS: readonly ChatConnectResult[] = [
-  "connected",
-  "denied",
-  "failed",
-]
-
-// The Chat window tells the Integrations page how it ended on this channel
-// (same site only), then closes.
-export const CHAT_CONNECT_CHANNEL = "koblip-chat-connect"

@@ -148,6 +148,13 @@
       "when": 1793380901176,
       "tag": "0020_booking_moves",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1793381244867,
+      "tag": "0021_koblip_chat_connection",
+      "breakpoints": true
     }
   ]
 }

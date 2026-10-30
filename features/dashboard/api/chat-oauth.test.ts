@@ -5,14 +5,19 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterAll, afterEach, beforeAll, expect, test, vi } from "vitest"
 import { db } from "@/lib/db"
-import { businesses, chatConnections, user } from "@/lib/db/schema"
+import { businesses, chatConnections, koblipChatConnection, user } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
 
 const {
+  attemptAccount,
   chatAccessToken,
+  chatDoneUrl,
   endChatConnection,
+  endKoblipChatConnection,
   finishChatConnect,
+  koblipChatApi,
+  koblipChatConnectionStatus,
   readChatAttempt,
   startChatConnect,
 } = await import("./chat-oauth")
@@ -52,6 +57,7 @@ beforeAll(async () => {
   vi.stubEnv("CHAT_OAUTH_REDIRECT_URI", "http://localhost:3100/api/chat/callback")
   vi.stubEnv("CHAT_CONNECT_URL", "https://chat.example.test/connect/koblip-book")
   vi.stubEnv("CHAT_API_URL", "https://api.example.test")
+  vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3100")
   vi.stubGlobal("fetch", chat)
   const { migrate } = await import("drizzle-orm/libsql/migrator")
   await migrate(db, { migrationsFolder: "drizzle" })
@@ -76,7 +82,7 @@ afterAll(() => {
 })
 
 test("the consent link carries a PKCE challenge of the sealed verifier", () => {
-  const { url, cookie } = startChatConnect("biz", "u1")
+  const { url, cookie } = startChatConnect({ businessId: "biz" }, "u1")
   const link = new URL(url)
   expect(link.origin + link.pathname).toBe("https://chat.example.test/connect/koblip-book")
   expect(link.searchParams.get("code_challenge_method")).toBe("S256")
@@ -91,7 +97,7 @@ test("the consent link carries a PKCE challenge of the sealed verifier", () => {
 })
 
 test("an answer with another state, or a changed cookie, is refused", () => {
-  const { url, cookie } = startChatConnect("biz", "u1")
+  const { url, cookie } = startChatConnect({ businessId: "biz" }, "u1")
   const state = new URL(url).searchParams.get("state")!
   expect(readChatAttempt(cookie, state + "x")).toBeNull()
   expect(readChatAttempt(cookie, null)).toBeNull()
@@ -100,7 +106,7 @@ test("an answer with another state, or a changed cookie, is refused", () => {
 })
 
 test("connecting saves sealed tokens; the screen sees only the workspace", async () => {
-  expect(await finishChatConnect("biz", "koc_code", "v".repeat(43))).toBe(true)
+  expect(await finishChatConnect({ businessId: "biz" }, "koc_code", "v".repeat(43))).toBe(true)
   const sent = JSON.parse(String(chat.mock.calls[0][1].body))
   expect(sent).toMatchObject({ grant_type: "authorization_code", code: "koc_code", redirect_uri: "http://localhost:3100/api/chat/callback" })
   const [row] = await db.select().from(chatConnections)
@@ -132,7 +138,7 @@ test("a refused refresh drops the tokens and asks to reconnect", async () => {
 })
 
 test("disconnect revokes at Chat and forgets the connection", async () => {
-  expect(await finishChatConnect("biz", "koc_again", "v".repeat(43))).toBe(true)
+  expect(await finishChatConnect({ businessId: "biz" }, "koc_again", "v".repeat(43))).toBe(true)
   chat.mockClear()
   await endChatConnection("biz")
   expect(chat.mock.calls[0][0]).toBe("https://api.example.test/api/oauth/revoke")
@@ -142,6 +148,32 @@ test("disconnect revokes at Chat and forgets the connection", async () => {
 
 test("a code Chat refuses saves nothing", async () => {
   chat.mockImplementationOnce(async () => new Response(JSON.stringify({ code: "invalid_grant" }), { status: 400 }))
-  expect(await finishChatConnect("biz", "koc_bad", "v".repeat(43))).toBe(false)
+  expect(await finishChatConnect({ businessId: "biz" }, "koc_bad", "v".repeat(43))).toBe(false)
   expect(await chatConnectionFor("biz")).toBeNull()
+})
+
+test("Koblip's own connection is kept apart from every business", async () => {
+  const { url, cookie } = startChatConnect("koblip", "u1")
+  const attempt = readChatAttempt(cookie, new URL(url).searchParams.get("state"))
+  expect(attemptAccount(attempt!)).toBe("koblip")
+  expect(chatDoneUrl("koblip", "connected").search).toBe("?for=koblip&result=connected")
+
+  expect(await finishChatConnect("koblip", "koc_koblip", "v".repeat(43), "u1")).toBe(true)
+  const [row] = await db.select().from(koblipChatConnection)
+  expect(row).toMatchObject({ id: "koblip", workspaceName: "Lumen Studio", connectedBy: "u1" })
+  expect(row.accessToken).not.toContain("koa_")
+  expect(await db.select().from(chatConnections)).toEqual([])
+  expect(await chatAccessToken("biz")).toBeNull()
+  expect(await koblipChatConnectionStatus()).toEqual({ workspaceName: "Lumen Studio", needsReconnect: false })
+
+  chat.mockClear()
+  chat.mockImplementationOnce(async () => new Response(JSON.stringify({ success: true }), { status: 200 }))
+  await koblipChatApi("/api/whatsapp/connections")
+  expect(chat.mock.calls[0][0]).toBe("https://api.example.test/api/whatsapp/connections")
+  expect((chat.mock.calls[0][1].headers as Record<string, string>).authorization).toBe(`Bearer koa_${issued}`)
+
+  chat.mockClear()
+  await endKoblipChatConnection()
+  expect(chat.mock.calls[0][0]).toBe("https://api.example.test/api/oauth/revoke")
+  expect(await koblipChatConnectionStatus()).toBeNull()
 })

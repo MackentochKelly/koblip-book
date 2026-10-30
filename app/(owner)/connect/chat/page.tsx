@@ -5,23 +5,24 @@ import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import {
   CHAT_CONNECT_RESULTS,
   type ChatConnectResult,
-} from "@/features/dashboard/types/chat-connection"
+} from "@/types/chat-connect"
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getOwnerMessages()).integrations.koblipChat.name }
 }
 
 type Props = {
-  searchParams: Promise<{ businessId?: string; result?: string }>
+  searchParams: Promise<{ businessId?: string; for?: string; result?: string }>
 }
 
 // Where the Koblip Chat window ends (app/api/chat/callback sends it here).
 export default async function ChatConnectDonePage({ searchParams }: Props) {
-  const { businessId, result } = await searchParams
+  const { businessId, for: account, result } = await searchParams
   const known = CHAT_CONNECT_RESULTS.find((value) => value === result)
   return (
     <ChatConnectDone
       businessId={businessId ?? ""}
+      koblip={account === "koblip"}
       result={known ?? ("failed" satisfies ChatConnectResult)}
     />
   )

@@ -27,11 +27,12 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { disconnectChat, refreshChatMessages } from "../api/chat-connection"
 import { useOwnerMessages } from "../i18n/provider"
+import type { ChatConnection } from "../types/chat-connection"
 import {
   CHAT_CONNECT_CHANNEL,
-  type ChatConnection,
+  type ChatConnectMessage,
   type ChatConnectResult,
-} from "../types/chat-connection"
+} from "@/types/chat-connect"
 import { ConfirmRemove } from "./confirm-remove"
 
 // The apps a business connects, as a settings list: each row is the app,
@@ -70,8 +71,8 @@ export function IntegrationsView({
       router.replace(`/dashboard/${encodeURIComponent(businessId)}/integrations`)
     }
     const channel = new BroadcastChannel(CHAT_CONNECT_CHANNEL)
-    channel.onmessage = (event: MessageEvent<{ businessId: string; result: ChatConnectResult }>) => {
-      if (event.data?.businessId === businessId) ended(event.data.result)
+    channel.onmessage = (event: MessageEvent<ChatConnectMessage>) => {
+      if (!event.data?.koblip && event.data?.businessId === businessId) ended(event.data.result)
     }
     return () => channel.close()
   }, [businessId, result, router, t])

@@ -141,6 +141,7 @@ bottom: what, why, who, date.
 | D8 | Drafts stay in Book: saving wording or buttons changes only Book. "Submit to Meta" creates the template in Chat (`save_as_draft: false`) or edits Chat's copy (`PUT`), after copying back one Meta has but Chat lost. Book keeps what was submitted (`chat_templates.submitted`), sends the approved template with exactly that copy's fields, and shows a newer wording as `draft`. Opening Integrations or the sender only reads status and reason (`refreshChatTemplates`), never creates. | Chat's `POST /api/template/:id/publish` is not open to apps, so a Chat draft could not be submitted through the public API; this needs nothing new from Chat. Sending the submitted copy keeps `{{1}}…` in the order Meta approved even after the owner edits. | Dev 2, 2026-10-30 |
 | D9 | C2: Chat's send API takes `buttonHeader` and `buttonFooter` (text, up to 60 characters each) next to `buttonParams` on an `interactive` / `button` message. An image header replaces the text title (WhatsApp allows one header). Both are saved on the message's `interactive_data`. | Named like `buttonParams`, so the request stays flat and any app can use it; the same limits Meta documents. | Dev 1, 2026-10-30 |
 | D10 | Each part of the business page is its own route under `whatsapp/` (`messages`, `alerts`, `timing`, `replies`, `activity`); Overview is `whatsapp/` itself. On a phone `whatsapp/` shows Overview with the list of the other parts under it; on a computer, tabs. One shared frame (`whatsapp-frame.tsx`, from the route's `layout.tsx`). | Every part gets its own link, Back works on a phone, and each P task owns one route and one component file. | Dev 4, 2026-10-30 |
+| D11 | K1: Koblip's own Chat connection is its own one-row table, `koblip_chat_connection` (id `koblip`), never a business's `chat_connections` row. It uses the same OAuth flow and callback (the sealed attempt says which account), started at `/api/chat/connect/koblip` by an admin only. Code calls `koblipChatApi(path)` next to `chatApi(businessId, path)`. Until A3 builds the Koblip number screen, Connect / Disconnect sits on the admin Overview as a card that A3 can move. The Chat window's shared types moved to `types/chat-connect.ts`, so the admin feature uses them without importing the dashboard feature. | No business can reach Koblip's tokens, one flow to keep secure, and the import rules hold. | Dev 1, 2026-10-30 |
 
 ## Tasks
 
@@ -178,7 +179,7 @@ task is in Lanes above.
 
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
-| K1 | Platform connection: Koblip's admin connects Koblip's own Chat workspace once in the admin area; Book keeps it apart from business connections | `app/(admin)/`, `features/admin/`, `lib/db/schema.ts` (+ migration), `features/dashboard/api/chat-oauth.ts` | W0 | `Working on` Dev 1, 2026-10-30 |
+| K1 | Platform connection: Koblip's admin connects Koblip's own Chat workspace once in the admin area; Book keeps it apart from business connections | `app/(admin)/`, `features/admin/`, `lib/db/schema.ts` (+ migration), `features/dashboard/api/chat-oauth.ts` | W0 | `Done` 2026-10-30, see git log (K1) |
 | K2 | Koblip's ready-made templates: the admin reviews them, then submits them to Meta in Koblip's workspace; status shown in the admin area | `features/admin/`, `features/dashboard/api/chat-templates.ts` | K1, S1 | `To do` |
 | K3 | Sender picks the number: the business's own when connected and approved, else Koblip's; each row records its sender | `notification-sender.ts` | K1 | `To do` |
 | K4 | Business page: "Sending from Koblip" or "Sending from your number"; on Koblip's number the messages are read-only with on/off, plus "Use your own number" | `whatsapp-*.tsx`, `message-editor.tsx` | P1, K3 | `To do` |
@@ -189,7 +190,7 @@ task is in Lanes above.
 
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
-| A0 | Rules move from code to the database: `NOTIFICATION_RULES` becomes the code defaults, the admin's values override them; plus the admin change log | `lib/notification-rules.ts`, new `lib/platform-settings.ts`, `lib/db/schema.ts` (+ migration) | W0 | `To do` |
+| A0 | Rules move from code to the database: `NOTIFICATION_RULES` becomes the code defaults, the admin's values override them; plus the admin change log | `lib/notification-rules.ts`, new `lib/platform-settings.ts`, `lib/db/schema.ts` (+ migration) | W0 | `Working on` Dev 1, 2026-10-30 |
 | A1 | Admin section frame: "WhatsApp" in the admin menu with its parts (list on phone, tabs on computer), English and Spanish | `app/(admin)/admin/whatsapp/`, `features/admin/components/whatsapp-*.tsx`, `features/admin/components/admin-shell.tsx`, `features/admin/i18n/` | W0 | `To do` |
 | A2 | Overview: timer last run, waiting and failed counts, Chat reachable, each secret set or not | `features/admin/api/whatsapp-*.ts`, `whatsapp-overview.tsx`; timer heartbeat in `notification-timer.ts` | A1 | `To do` |
 | A3 | Koblip number and Koblip messages screens (the admin side of K1 and K2) | `whatsapp-koblip-*.tsx` | A1, K1, K2 | `To do` |
