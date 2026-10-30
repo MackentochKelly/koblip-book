@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react"
 
 import { celebrate } from "@/components/celebration"
 import { glassFrameClassName } from "@/components/glass-frame"
-import { useCalmHome } from "@/components/home-look"
+import { useHomeLook } from "@/components/home-look"
 import { Rating } from "@/components/rating"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
@@ -54,15 +54,16 @@ export function Scene({
   children: React.ReactNode
 }) {
   const colors = useThemeColors(tokens)
-  const calm = useCalmHome()
+  const look = useHomeLook()
   return (
     <div
       className={cn(
         "relative isolate flex size-full items-center justify-center p-4",
-        calm && "bg-muted"
+        look === "calm" && "bg-muted",
+        look === "glow" && "bg-soft-glow"
       )}
     >
-      {colors && !calm && (
+      {colors && look === "colour" && (
         <MeshGradient
           aria-hidden
           colors={colors}

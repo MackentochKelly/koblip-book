@@ -8,7 +8,7 @@ import {
   heroEdgeClassName,
 } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
-import { useCalmHome } from "@/components/home-look"
+import { useHomeLook } from "@/components/home-look"
 import { homeSectionTitleClassName } from "@/components/home-section-title"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
@@ -58,7 +58,8 @@ export function SeeItInAction({
   language: PageLanguage
 }) {
   const box = useRef<HTMLElement>(null)
-  const calm = useCalmHome()
+  const look = useHomeLook()
+  const calm = look !== "colour"
   const [demo, setDemo] = useState<Demo>({ state: "waiting" })
   const [tab, setTab] = useState<DemoView>("page")
   const [opened, setOpened] = useState<DemoView[]>(["page"])
@@ -137,7 +138,9 @@ export function SeeItInAction({
       <div
         className={cn(
           "relative isolate overflow-hidden rounded-4xl p-3 sm:p-6 lg:p-10",
-          calm ? "bg-muted" : heroEdgeClassName
+          look === "colour" && heroEdgeClassName,
+          look === "calm" && "bg-muted",
+          look === "glow" && "bg-soft-glow ring-1 ring-border"
         )}
       >
         {!calm && <HeroGradient />}
@@ -176,7 +179,7 @@ export function SeeItInAction({
                     "text-left",
                     calm
                       ? view === tab
-                        ? "bg-background"
+                        ? "border-border bg-background"
                         : "hover:bg-background/60"
                       : cn(
                           "text-hero-foreground",

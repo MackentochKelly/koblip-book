@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { CalmHomeProvider } from "@/components/home-look"
+import { HomeLookProvider } from "@/components/home-look"
 import HomePage from "../page"
 
 // A test of the home page with less colour (components/home-look.tsx), to
@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 
 export default function CalmHomePage(props: PageProps<"/calm">) {
   return (
-    <CalmHomeProvider>
+    <HomeLookProvider look="calm">
       <HomePage {...props} />
-    </CalmHomeProvider>
+    </HomeLookProvider>
   )
 }

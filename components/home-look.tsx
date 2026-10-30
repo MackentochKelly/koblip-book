@@ -2,15 +2,26 @@
 
 import { createContext, useContext } from "react"
 
-// A test of the home page with less colour (/calm): only the hero and the
-// last call to action keep the colour wash; the pictures and the demo sit
-// on the plain muted surface. Remove once one look is picked.
-const CalmHome = createContext(false)
+// Tests of the home page with less colour, to compare with "/" (which is
+// "colour": a colour wash on every picture and panel). Only the hero and
+// the last call to action keep the wash in both tests.
+// "calm" (/calm): the pictures and the demo on the plain muted surface.
+// "glow" (/glow): on the page colour with one soft brand glow.
+// Remove once one look is picked.
+export type HomeLook = "colour" | "calm" | "glow"
 
-export function CalmHomeProvider({ children }: { children: React.ReactNode }) {
-  return <CalmHome value>{children}</CalmHome>
+const Look = createContext<HomeLook>("colour")
+
+export function HomeLookProvider({
+  look,
+  children,
+}: {
+  look: HomeLook
+  children: React.ReactNode
+}) {
+  return <Look value={look}>{children}</Look>
 }
 
-export function useCalmHome(): boolean {
-  return useContext(CalmHome)
+export function useHomeLook(): HomeLook {
+  return useContext(Look)
 }

@@ -16,6 +16,23 @@
   );
 }
 
+/* A test look (components/home-look.tsx, /glow): the page colour with one
+   soft glow of the brand colours from the top, instead of a full wash. */
+@utility bg-soft-glow {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(
+      90% 90% at 15% 0%,
+      color-mix(in oklch, var(--chart-1) 65%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      80% 80% at 100% 100%,
+      color-mix(in oklch, var(--hero-accent) 45%, transparent),
+      transparent
+    );
+}
+
 @theme inline {
     /* Motion curves (Material 3, docs/ui-rules/motion.md): ease-standard
        for most moves, ease-enter for things coming in, ease-exit for
