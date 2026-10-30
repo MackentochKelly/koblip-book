@@ -176,7 +176,7 @@ task is in Lanes above.
 | S5 | Owner alerts: Customer can't come, Customer cancelled, Message failed | `features/dashboard/api/notification-sender.ts`, `booking-templates.ts` | S1, S3 | `To do` |
 | S6 | More fields: team member, price, address, duration (and a manage-booking link once a manage page exists) | `booking-templates.ts`, `notification-sender.ts` | W0 | `To do` |
 | S7 | Opt-out: a customer who writes STOP (or BAJA) gets no more messages; the sender asks `notification-replies.ts` whether a number opted out | `chat-events.ts`, `notification-replies.ts` (one call added in the sender by lane 2) | S3 | `To do` |
-| S8 | Test send to the owner's phone; "Send again" for a failed message | `notification-actions.ts`, `notification-sender.ts` | S1 | `To do` |
+| S8 | Test send to the owner's phone; "Send again" for a failed message | `notification-actions.ts`, `notification-sender.ts` | S1 | `Working on` Dev 2, 2026-10-30 |
 | S9 | Activity query with filters and search | `features/dashboard/api/notifications.ts` | W0 | `Done` 2026-10-30, see git log (D4) |
 
 ### Koblip number (default sender)
