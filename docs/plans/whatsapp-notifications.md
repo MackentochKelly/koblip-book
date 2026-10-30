@@ -19,6 +19,7 @@ Developers: **Dev A**, **Dev B**. Write your name in the task when you claim it.
   last message a normal message goes (free); outside it, the approved
   template.
 - Every message, reply and failure is visible in Activity.
+- One wording for every kind of business (salon, clinic, gym…): no words that fit only one trade. Meta needs a copy in each business's own WhatsApp account, so each business gets its own copy of the same wording, which its owner may edit.
 
 ## The page
 
