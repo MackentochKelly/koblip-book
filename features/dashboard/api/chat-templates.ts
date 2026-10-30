@@ -173,7 +173,12 @@ async function refresh(businessId: string) {
   await Promise.all(
     (await businessTemplates(businessId)).map(async (template) => {
       const found = findTemplate(list, template)
-      if (!found) return
+      // One Chat no longer has (deleted, or under an earlier name) is
+      // forgotten: the message is back to not submitted.
+      if (!found) {
+        await db.delete(chatTemplates).where(rowKey(businessId, template.message, template.language))
+        return
+      }
       const row = {
         chatTemplateId: found._id,
         status: found.status?.toLowerCase() ?? "pending",

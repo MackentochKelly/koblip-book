@@ -231,14 +231,16 @@ export type BookingTemplate = Wording & {
   examples: string[]
 }
 
-// Meta's name for a message (lowercase and underscores); the same name in
-// each language.
+// Meta's name for a business's own copy of a message (lowercase and
+// underscores); the same name in each language. `_v2`: Meta blocks a deleted
+// name for weeks, and the first set was deleted (decision D1 in
+// docs/plans/whatsapp-notifications.md).
 const NAMES: Record<BookingMessage, string> = {
-  confirmed: "koblip_book_booking_confirmed",
-  reminder: "koblip_book_booking_reminder",
-  changed: "koblip_book_booking_changed",
-  cancelled: "koblip_book_booking_cancelled",
-  ownerNewBooking: "koblip_book_owner_new_booking",
+  confirmed: "koblip_book_booking_confirmed_v2",
+  reminder: "koblip_book_booking_reminder_v2",
+  changed: "koblip_book_booking_changed_v2",
+  cancelled: "koblip_book_booking_cancelled_v2",
+  ownerNewBooking: "koblip_book_owner_new_booking_v2",
 }
 
 // One message as Chat gets it, from the owner's wording and buttons or Book's.

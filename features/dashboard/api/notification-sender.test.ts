@@ -156,7 +156,7 @@ test("a new booking: the confirmation goes now as the template, reminders wait",
       whatsapp_phone_number_id: "p1",
       messageType: "template",
       template_id: "t-confirmed-es",
-      templateName: "koblip_book_booking_confirmed",
+      templateName: "koblip_book_booking_confirmed_v2",
       languageCode: "es",
       templateVariables: {
         "1": "Ana",
