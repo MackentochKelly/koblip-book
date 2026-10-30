@@ -14,9 +14,10 @@ const SCREEN = { left: 24, top: 23, width: 402, height: 874, radius: 60 }
 // sits in it), as on the real phone.
 const STATUS_BAR = 54
 // The space kept clear at the bottom for the home indicator (the bar you
-// swipe up), as on every Face ID iPhone held upright: 34 points (UIKit's
-// safeAreaInsets.bottom). The indicator itself: 134 x 5, 8 from the edge.
-const HOME_AREA = 34
+// swipe up): enough for the bar and a little room above it (iOS keeps 34
+// points, which looked too much in the small frame). The indicator itself:
+// 134 x 5, 8 from the edge, in the theme's soft grey.
+const HOME_AREA = 22
 const HOME_INDICATOR = { width: 134, height: 5, bottom: 8 }
 
 // A real phone with a page running in it: the screen is drawn at the
@@ -76,7 +77,7 @@ export function PhoneMockup({
             {children}
             <div
               aria-hidden
-              className="absolute left-1/2 -translate-x-1/2 rounded-full bg-foreground"
+              className="absolute left-1/2 -translate-x-1/2 rounded-full bg-muted-foreground/60"
               style={{
                 width: HOME_INDICATOR.width,
                 height: HOME_INDICATOR.height,
