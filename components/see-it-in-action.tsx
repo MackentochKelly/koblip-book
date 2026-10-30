@@ -156,14 +156,6 @@ export function SeeItInAction({
               ariaLabel={words.tabsLabel}
               className="lg:hidden"
             />
-            <p
-              className={cn(
-                "text-center text-sm text-balance lg:hidden",
-                calm ? "text-muted-foreground" : "text-hero-foreground"
-              )}
-            >
-              {words.hints[tab]}
-            </p>
             <div
               role="group"
               aria-label={words.tabsLabel}
