@@ -5,20 +5,26 @@ import { db } from "@/lib/db"
 import {
   chatConnections,
   chatTemplates,
+  koblipChatConnection,
   koblipChatTemplates,
   notificationTexts,
+  platformSettingChanges,
 } from "@/lib/db/schema"
+import type { KoblipMessage, KoblipReview } from "@/types/koblip-messages"
 import type { ChatConnection, ChatMessagesState } from "../types/chat-connection"
 import {
   BOOKING_MESSAGES,
   TEMPLATE_LANGUAGES,
   bookingTemplate,
+  defaultButtons,
+  defaultWording,
   koblipTemplate,
+  withExamples,
   type BookingMessage,
   type BookingTemplate,
   type TemplateLanguage,
 } from "../utils/booking-templates"
-import { ChatApiError, chatApi, chatConnectionUsable } from "./chat-oauth"
+import { ChatApiError, chatApi, chatConnectionUsable, koblipChatApi } from "./chat-oauth"
 
 // Book's booking templates in the business's Koblip Chat
 // (docs/koblip-chat-integration.md, step 2), through Chat's public API the
@@ -31,7 +37,9 @@ import { ChatApiError, chatApi, chatConnectionUsable } from "./chat-oauth"
 // (POST /api/template/sync). See wapi-api docs/api/oauth.md.
 //
 // Nothing goes to Meta on its own: a message is created or changed in Chat
-// only when the owner presses "Submit to Meta" (submitChatTemplate).
+// only when the owner presses "Submit to Meta" (submitChatTemplate), or, for
+// Koblip's ready-made set in Koblip's own workspace, the admin
+// (submitKoblipTemplate, K2).
 
 const TEMPLATE_COUNT = BOOKING_MESSAGES.length * TEMPLATE_LANGUAGES.length
 
@@ -101,6 +109,16 @@ type Templates = {
 
 type MetaTemplates = { data?: { id: string; name: string; language: string }[] }
 
+// One Chat workspace to call: the business's own, or Koblip's.
+type ApiInit = Parameters<typeof chatApi>[2]
+type Call = <T>(path: string, init?: ApiInit) => Promise<T>
+
+const businessCall =
+  (businessId: string): Call =>
+  (path, init) =>
+    chatApi(businessId, path, init)
+const koblipCall: Call = (path, init) => koblipChatApi(path, init)
+
 // The number Chat itself sends from when none is named: the oldest active
 // number in an active WhatsApp account of the workspace (wapi-api
 // docs/api/start-automation.md).
@@ -134,11 +152,8 @@ async function chatNumber(businessId: string) {
   return number
 }
 
-function listTemplates(businessId: string, wabaId: string) {
-  return chatApi<Templates>(
-    businessId,
-    `/api/template?platform=whatsapp&waba_id=${encodeURIComponent(wabaId)}`
-  )
+function listTemplates(call: Call, wabaId: string) {
+  return call<Templates>(`/api/template?platform=whatsapp&waba_id=${encodeURIComponent(wabaId)}`)
 }
 
 function findTemplate(list: Templates, template: BookingTemplate) {
@@ -175,7 +190,7 @@ async function refresh(businessId: string) {
   // Chat's copy wins: a template it has under Book's name (submitted
   // earlier, or made by hand) is kept with Meta's status and reason. Nothing
   // is made here.
-  const list = await listTemplates(businessId, number.wabaId)
+  const list = await listTemplates(businessCall(businessId), number.wabaId)
   await Promise.all(
     (await businessTemplates(businessId)).map(async (template) => {
       const found = findTemplate(list, template)
@@ -223,10 +238,54 @@ export function refreshChatTemplates(businessId: string): Promise<void> {
 
 export type SubmitProblem = "notConnected" | "noNumber"
 
+// Sends one template to Meta through a workspace and returns Chat's id for
+// it. A template Chat already has is changed; one Meta has but Chat lost is
+// copied back first (Meta refuses the same name and language again); else
+// it is made.
+async function submitTo(call: Call, wabaId: string, template: BookingTemplate) {
+  let list = await listTemplates(call, wabaId)
+  if (!findTemplate(list, template)) {
+    const meta = await call<MetaTemplates>(
+      `/api/template/meta-list?waba_id=${encodeURIComponent(wabaId)}`
+    )
+    const lost = (meta.data ?? []).find(
+      (row) => row.name === template.name && row.language === template.language
+    )
+    if (lost) {
+      await call("/api/template/sync", {
+        method: "POST",
+        body: { waba_id: wabaId, meta_template_ids: [lost.id] },
+      })
+      list = await listTemplates(call, wabaId)
+    }
+  }
+
+  const known = findTemplate(list, template)?._id
+  if (known) {
+    await call(`/api/template/${encodeURIComponent(known)}`, {
+      method: "PUT",
+      body: templateBody(template),
+    })
+    return known
+  }
+  const answer = await call<{ template_id?: string }>("/api/template/create", {
+    method: "POST",
+    body: {
+      waba_id: wabaId,
+      platform: "whatsapp",
+      template_name: template.name,
+      language: template.language,
+      category: "UTILITY",
+      ...templateBody(template),
+      save_as_draft: false,
+    },
+  })
+  if (!answer.template_id) throw new ChatApiError(502, "no_template_id")
+  return answer.template_id
+}
+
 // "Submit to Meta" for one message in one language: the owner's wording and
-// buttons go to Chat, which sends them to Meta for review. A template Chat
-// already has is changed; one Meta has but Chat lost is copied back first
-// (Meta refuses the same name and language again); else it is made. Throws
+// buttons go to Chat, which sends them to Meta for review (submitTo). Throws
 // ChatApiError when Chat or Meta refuses.
 export async function submitChatTemplate(
   businessId: string,
@@ -243,47 +302,7 @@ export async function submitChatTemplate(
   if (!number) return "noNumber"
 
   const template = await businessTemplate(businessId, message, language)
-  let list = await listTemplates(businessId, number.wabaId)
-  if (!findTemplate(list, template)) {
-    const meta = await chatApi<MetaTemplates>(
-      businessId,
-      `/api/template/meta-list?waba_id=${encodeURIComponent(number.wabaId)}`
-    )
-    const lost = (meta.data ?? []).find(
-      (row) => row.name === template.name && row.language === template.language
-    )
-    if (lost) {
-      await chatApi(businessId, "/api/template/sync", {
-        method: "POST",
-        body: { waba_id: number.wabaId, meta_template_ids: [lost.id] },
-      })
-      list = await listTemplates(businessId, number.wabaId)
-    }
-  }
-
-  let chatTemplateId = findTemplate(list, template)?._id ?? null
-  if (chatTemplateId) {
-    await chatApi(businessId, `/api/template/${encodeURIComponent(chatTemplateId)}`, {
-      method: "PUT",
-      body: templateBody(template),
-    })
-  } else {
-    const answer = await chatApi<{ template_id?: string }>(businessId, "/api/template/create", {
-      method: "POST",
-      body: {
-        waba_id: number.wabaId,
-        platform: "whatsapp",
-        template_name: template.name,
-        language: template.language,
-        category: "UTILITY",
-        ...templateBody(template),
-        save_as_draft: false,
-      },
-    })
-    chatTemplateId = answer.template_id ?? null
-    if (!chatTemplateId) throw new ChatApiError(502, "no_template_id")
-  }
-
+  const chatTemplateId = await submitTo(businessCall(businessId), number.wabaId, template)
   const row = { chatTemplateId, status: "pending", reason: null, submitted: snapshot(template) }
   await db
     .insert(chatTemplates)
@@ -390,4 +409,157 @@ export async function koblipSendableTemplate(message: BookingMessage, language: 
         : template,
     },
   }
+}
+
+// Koblip's ready-made set (K2): Book's wording and buttons, the same for
+// every business, in Koblip's own workspace.
+function koblipTemplates(): BookingTemplate[] {
+  return TEMPLATE_LANGUAGES.flatMap((language) =>
+    BOOKING_MESSAGES.map((message) => koblipTemplate(message, language))
+  )
+}
+
+function koblipRowKey(message: BookingMessage, language: TemplateLanguage) {
+  return and(eq(koblipChatTemplates.message, message), eq(koblipChatTemplates.language, language))
+}
+
+const koblipWhere = eq(koblipChatConnection.id, "koblip")
+
+// Koblip's usable connection and the number it sends from, saved for the
+// sender; null when not connected or there is no number.
+async function koblipNumber() {
+  const [connection] = await db.select().from(koblipChatConnection).where(koblipWhere).limit(1)
+  if (!connection || !chatConnectionUsable(connection)) return null
+  const number = pickNumber(await koblipChatApi<Connections>("/api/whatsapp/connections"))
+  await db
+    .update(koblipChatConnection)
+    .set({ wabaId: number?.wabaId ?? null, phoneNumberId: number?.phoneNumberId ?? null })
+    .where(koblipWhere)
+  return number
+}
+
+async function refreshKoblip() {
+  const number = await koblipNumber()
+  if (!number) return
+
+  const known = await db.select().from(koblipChatTemplates)
+  const reviewing = known.filter((row) => row.status !== "approved").map((row) => row.chatTemplateId)
+  if (reviewing.length) {
+    await koblipChatApi("/api/template/sync-status", {
+      method: "POST",
+      body: { waba_id: number.wabaId, template_ids: reviewing },
+    })
+  }
+
+  // As for a business: Chat's copy wins, one Chat no longer has is forgotten.
+  const list = await listTemplates(koblipCall, number.wabaId)
+  await Promise.all(
+    koblipTemplates().map(async (template) => {
+      const found = findTemplate(list, template)
+      if (!found) {
+        await db.delete(koblipChatTemplates).where(koblipRowKey(template.message, template.language))
+        return
+      }
+      const row = {
+        chatTemplateId: found._id,
+        status: found.status?.toLowerCase() ?? "pending",
+        reason: found.rejection_reason ?? null,
+      }
+      await db
+        .insert(koblipChatTemplates)
+        .values({ message: template.message, language: template.language, ...row })
+        .onConflictDoUpdate({
+          target: [koblipChatTemplates.message, koblipChatTemplates.language],
+          set: row,
+        })
+    })
+  )
+}
+
+let refreshingKoblip: Promise<void> | null = null
+
+// Reads Koblip's number and Meta's review of Koblip's set from Chat. Never
+// creates or submits anything.
+export function refreshKoblipTemplates(): Promise<void> {
+  refreshingKoblip ??= refreshKoblip()
+    .catch((error) => {
+      if (!(error instanceof ChatApiError)) throw error
+      console.error(error)
+    })
+    .finally(() => {
+      refreshingKoblip = null
+    })
+  return refreshingKoblip
+}
+
+// "Submit to Meta" for one of Koblip's messages in one language, in Koblip's
+// own workspace, logged in the admin change log as
+// `whatsapp.koblipSubmit.<message>.<language>` with what was submitted before
+// and now. Throws ChatApiError when Chat or Meta refuses.
+export async function submitKoblipTemplate(
+  message: BookingMessage,
+  language: TemplateLanguage,
+  userId: string
+): Promise<SubmitProblem | null> {
+  const [connection] = await db.select().from(koblipChatConnection).where(koblipWhere).limit(1)
+  if (!connection || !chatConnectionUsable(connection)) return "notConnected"
+  const number = await koblipNumber()
+  if (!number) return "noNumber"
+
+  const template = koblipTemplate(message, language)
+  const [before] = await db.select().from(koblipChatTemplates).where(koblipRowKey(message, language))
+  const chatTemplateId = await submitTo(koblipCall, number.wabaId, template)
+  const row = { chatTemplateId, status: "pending", reason: null, submitted: snapshot(template) }
+  await db
+    .insert(koblipChatTemplates)
+    .values({ message, language, ...row })
+    .onConflictDoUpdate({
+      target: [koblipChatTemplates.message, koblipChatTemplates.language],
+      set: row,
+    })
+  await db.insert(platformSettingChanges).values({
+    key: `whatsapp.koblipSubmit.${message}.${language}`,
+    before: before?.submitted ?? null,
+    after: row.submitted,
+    changedBy: userId,
+  })
+  return null
+}
+
+// Koblip's messages as the admin reviews them: the wording and buttons each
+// business gets on Koblip's number, and Meta's review, from what Book last
+// saved. A message whose wording changed since it was submitted is a draft.
+export async function koblipMessages(): Promise<KoblipMessage[]> {
+  const rows = await db.select().from(koblipChatTemplates)
+  return BOOKING_MESSAGES.map((message) => ({
+    message,
+    texts: Object.fromEntries(
+      TEMPLATE_LANGUAGES.map((language) => {
+        const wording = defaultWording(message, language)
+        const buttons = defaultButtons(message, language)
+        const row = rows.find((item) => item.message === message && item.language === language)
+        const changed =
+          !!row?.submitted &&
+          JSON.stringify(row.submitted) !== JSON.stringify(snapshot(koblipTemplate(message, language)))
+        const review: KoblipReview =
+          !row || changed
+            ? "draft"
+            : row.status === "approved"
+              ? "approved"
+              : row.status === "rejected"
+                ? "rejected"
+                : "waiting"
+        return [
+          language,
+          {
+            wording,
+            buttons,
+            preview: withExamples(wording.body, language),
+            review,
+            reason: review === "rejected" ? row?.reason ?? null : null,
+          },
+        ]
+      })
+    ) as KoblipMessage["texts"],
+  }))
 }

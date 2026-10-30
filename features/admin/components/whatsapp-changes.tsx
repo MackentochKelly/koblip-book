@@ -66,6 +66,14 @@ function describe(change: WhatsappChange, m: AdminMessages) {
       detail: null,
     }
   }
+  if (change.key.startsWith("whatsapp.koblipSubmit.")) {
+    const [message, language] = change.key.slice("whatsapp.koblipSubmit.".length).split(".")
+    const k = m.whatsapp.koblipMessages
+    return {
+      title: t.koblipSubmit(messageName(message)),
+      detail: language === "es" ? k.spanish : language === "en" ? k.english : null,
+    }
+  }
   return { title: change.key, detail: null }
 }
 
