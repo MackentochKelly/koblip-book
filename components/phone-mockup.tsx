@@ -16,7 +16,7 @@ const STATUS_BAR = 54
 // A little room kept clear at the bottom, where the phone's home
 // indicator sits (iOS keeps 34 points, too much in the small frame), so
 // the page's bottom bar clears the rounded corners.
-const HOME_AREA = 22
+const HOME_AREA = 10
 
 // A real phone with a page running in it: the screen is drawn at the
 // phone's own size, then the whole phone is shrunk to fit its box, so the
