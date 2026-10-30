@@ -18,6 +18,7 @@ import { PHONE_PATTERN } from "@/lib/booking-rules"
 import { saveNotificationSettings } from "../api/notification-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { NotificationMessage, NotificationSettings } from "../types/notifications"
+import type { EditorLimits } from "./message-editor"
 import { isCustomerMessage, WhatsappMessageList } from "./whatsapp-message-list"
 
 // Your alerts: the messages to the owner's own WhatsApp, and that number.
@@ -25,10 +26,12 @@ export function WhatsappAlerts({
   businessId,
   messages,
   settings,
+  limits,
 }: {
   businessId: string
   messages: NotificationMessage[]
   settings: NotificationSettings
+  limits: EditorLimits
 }) {
   const m = useOwnerMessages()
   const t = m.whatsapp
@@ -65,6 +68,7 @@ export function WhatsappAlerts({
     <div className="flex flex-col gap-10">
       <WhatsappMessageList
         businessId={businessId}
+        limits={limits}
         messages={messages.filter((item) => !isCustomerMessage(item.message))}
       />
 

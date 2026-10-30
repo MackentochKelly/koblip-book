@@ -22,7 +22,7 @@ import type {
   TemplateReview,
 } from "../types/notifications"
 import type { BookingMessage } from "../utils/booking-templates"
-import { MessageEditor } from "./message-editor"
+import { MessageEditor, type EditorLimits } from "./message-editor"
 
 const CUSTOMER_MESSAGES: readonly CustomerMessage[] = [
   "confirmed",
@@ -41,11 +41,15 @@ export function isCustomerMessage(message: BookingMessage): message is CustomerM
 export function WhatsappMessageList({
   businessId,
   messages,
+  limits,
 }: {
   businessId: string
   messages: NotificationMessage[]
+  limits: EditorLimits
 }) {
-  const [editing, setEditing] = useState<NotificationMessage | null>(null)
+  // The open message is read from `messages`, so after a save or submit the
+  // page's refresh shows Meta's new review in the editor too.
+  const [editing, setEditing] = useState<BookingMessage | null>(null)
   const [editorKey, setEditorKey] = useState(0)
   return (
     <>
@@ -57,7 +61,7 @@ export function WhatsappMessageList({
             item={item}
             onEdit={() => {
               setEditorKey((value) => value + 1)
-              setEditing(item)
+              setEditing(item.message)
             }}
           />
         ))}
@@ -65,7 +69,8 @@ export function WhatsappMessageList({
       <MessageEditor
         key={editorKey}
         businessId={businessId}
-        item={editing}
+        item={messages.find((item) => item.message === editing) ?? null}
+        limits={limits}
         onClose={() => setEditing(null)}
       />
     </>
@@ -75,7 +80,7 @@ export function WhatsappMessageList({
 // The review a message shows: the worse of its two languages.
 function reviewOf(item: NotificationMessage): TemplateReview {
   const both = [item.texts.en.review, item.texts.es.review]
-  for (const review of ["rejected", "missing", "waiting"] as const) {
+  for (const review of ["rejected", "missing", "draft", "waiting"] as const) {
     if (both.includes(review)) return review
   }
   return "approved"
