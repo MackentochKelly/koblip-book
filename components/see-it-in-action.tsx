@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { glassFrameClassName } from "@/components/glass-frame"
+import {
+  glassButtonClassName,
+  glassFrameClassName,
+  heroEdgeClassName,
+} from "@/components/glass-frame"
+import { HeroGradient } from "@/components/hero-gradient"
 import { homeSectionTitleClassName } from "@/components/home-section-title"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
@@ -13,6 +18,13 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty"
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DEMO_VIEWS, type DemoPaths, type DemoView } from "@/lib/demo-rules"
 import type { Messages } from "@/lib/i18n"
@@ -25,20 +37,18 @@ type Demo =
   | { state: "waiting" | "opening" | "failed" | "tooMany" }
   | { state: "ready"; paths: DemoPaths }
 
-// One screen's frame: phone-sized on computers, the width of the page on
-// phones.
-const SCREEN = "block h-[min(50rem,80dvh)] w-full rounded-4xl"
-
-// Computers show all three screens side by side (Tailwind's lg).
-const WIDE = "(min-width: 64rem)"
+// The one screen's frame: phone-sized, and short enough that the whole
+// panel fits on the screen.
+const SCREEN = "block h-[min(44rem,72dvh)] w-full rounded-4xl"
 
 // "See it in action": the real app on the visitor's own demo copy
 // (features/demo, opened once by POST /api/demo when the section comes
 // near, so all three screens are the same guest's). 1, the booking page;
 // 2, the dashboard, where that booking arrives; 3, the AI assistant.
-// Computers: the three side by side. Phones: one screen at a time with the
-// shared tab row, each opened on first use and kept, so a booking started
-// there survives switching tabs.
+// Like the feature demos of big apps: one panel on the hero's colour wash,
+// one screen at a time. Computers pick the step from the list beside it;
+// phones from the shared tab row above it. Each screen opens on first use
+// and is kept, so a booking started there survives switching steps.
 export function SeeItInAction({
   words,
   language,
@@ -64,10 +74,6 @@ export function SeeItInAction({
         return
       }
       const { paths } = (await response.json()) as { paths: DemoPaths }
-      // Computers load every screen; phones the ones opened so far.
-      if (window.matchMedia(WIDE).matches) {
-        setOpened([...DEMO_VIEWS])
-      }
       setDemo({ state: "ready", paths })
     } catch {
       setDemo({ state: "failed" })
@@ -126,52 +132,88 @@ export function SeeItInAction({
         <h2 className={homeSectionTitleClassName}>{words.title}</h2>
         <p className="text-balance text-muted-foreground">{words.subtitle}</p>
       </div>
-      {problem ?? (
-        <>
-          <ViewTabs
-            views={DEMO_VIEWS.map((view) => ({
-              id: view,
-              label: words.tabs[view],
-            }))}
-            value={tab}
-            onChange={choose}
-            ariaLabel={words.tabsLabel}
-            className="self-center lg:hidden"
-          />
-          <div className="grid gap-4 lg:grid-cols-3">
-            {DEMO_VIEWS.map((view, index) => (
-              <div
-                key={view}
-                className={cn(
-                  "flex flex-col gap-3",
-                  view !== tab && "max-lg:hidden"
-                )}
-              >
-                <p className="hidden items-center gap-2 px-2 font-medium lg:flex">
-                  <Badge variant="secondary">{index + 1}</Badge>
-                  {words.steps[view]}
-                </p>
-                <div className={glassFrameClassName}>
-                  {demo.state === "ready" && opened.includes(view) ? (
-                    <iframe
-                      // The booking page in the home page's language.
-                      src={
-                        view === "page"
-                          ? `${demo.paths.page}?lang=${language}`
-                          : demo.paths[view]
-                      }
-                      title={words.frames[view]}
-                      className={cn(SCREEN, "bg-background")}
-                    />
-                  ) : (
-                    <Skeleton className={SCREEN} />
+      <div
+        className={cn(
+          "relative isolate overflow-hidden rounded-4xl p-3 sm:p-6 lg:p-10",
+          heroEdgeClassName
+        )}
+      >
+        <HeroGradient />
+        {problem ?? (
+          <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 lg:flex-row lg:items-center lg:justify-center lg:gap-12">
+            <ViewTabs
+              views={DEMO_VIEWS.map((view) => ({
+                id: view,
+                label: words.tabs[view],
+              }))}
+              value={tab}
+              onChange={choose}
+              ariaLabel={words.tabsLabel}
+              className="lg:hidden"
+            />
+            <p className="text-center text-sm text-balance text-hero-foreground lg:hidden">
+              {words.hints[tab]}
+            </p>
+            <div
+              role="group"
+              aria-label={words.tabsLabel}
+              className="hidden w-80 flex-col gap-2 lg:flex"
+            >
+              {DEMO_VIEWS.map((view, index) => (
+                <Item
+                  key={view}
+                  render={<button type="button" />}
+                  aria-pressed={view === tab}
+                  onClick={() => choose(view)}
+                  className={cn(
+                    "text-left text-hero-foreground",
+                    view === tab
+                      ? glassButtonClassName
+                      : "hover:bg-glass dark:hover:bg-glass"
                   )}
-                </div>
-              </div>
-            ))}
+                >
+                  <ItemMedia>
+                    <Badge variant={view === tab ? "default" : "secondary"}>
+                      {index + 1}
+                    </Badge>
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle className="text-base">
+                      {words.steps[view]}
+                    </ItemTitle>
+                    <ItemDescription className="text-hero-foreground/80">
+                      {words.hints[view]}
+                    </ItemDescription>
+                  </ItemContent>
+                </Item>
+              ))}
+            </div>
+            <div className={cn(glassFrameClassName, "max-w-sm")}>
+              {DEMO_VIEWS.map((view) =>
+                demo.state === "ready" && opened.includes(view) ? (
+                  <iframe
+                    key={view}
+                    // The booking page in the home page's language.
+                    src={
+                      view === "page"
+                        ? `${demo.paths.page}?lang=${language}`
+                        : demo.paths[view]
+                    }
+                    title={words.frames[view]}
+                    className={cn(
+                      SCREEN,
+                      "bg-background",
+                      view !== tab && "hidden"
+                    )}
+                  />
+                ) : (
+                  view === tab && <Skeleton key={view} className={SCREEN} />
+                )
+              )}
+            </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </section>
   )
 }

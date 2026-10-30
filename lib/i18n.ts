@@ -185,6 +185,11 @@ const en = {
         dashboard: "See it arrive",
         assistant: "Ask your AI",
       },
+      hints: {
+        page: "Pick a time on the real booking page.",
+        dashboard: "Your booking lands here in seconds.",
+        assistant: "Ask what's on today, or move a booking.",
+      },
       tabsLabel: "Demo screens",
       tabs: { page: "Page", dashboard: "Dashboard", assistant: "Assistant" },
       frames: {
@@ -450,6 +455,11 @@ const es: Messages = {
         page: "Reserva",
         dashboard: "Mira cómo llega",
         assistant: "Pregunta a tu IA",
+      },
+      hints: {
+        page: "Elige una hora en la página de reservas real.",
+        dashboard: "Tu reserva llega aquí en segundos.",
+        assistant: "Pregunta qué hay hoy o mueve una reserva.",
       },
       tabsLabel: "Pantallas de la demo",
       tabs: { page: "Página", dashboard: "Panel", assistant: "Asistente" },
