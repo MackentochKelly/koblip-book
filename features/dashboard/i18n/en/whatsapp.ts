@@ -13,7 +13,6 @@ const whatsapp = {
   },
   partsLabel: "WhatsApp parts",
   ready: "Ready to send",
-  repliesSoon: "Reply buttons are coming soon",
   messages: "Messages",
   names: {
     confirmed: "Booking confirmed",
@@ -101,6 +100,16 @@ const whatsapp = {
   noReminders: "No reminders",
   quietHours: "Quiet hours",
   quietHint: "No messages at night. Long reminders go the evening before.",
+  // Replies: what "Can't make it" does, and the thank-you.
+  cantComeActions: {
+    alertOnly: "Only alert me",
+    cancel: "Cancel and free the time",
+  },
+  cantComeHints: {
+    alertOnly: "The booking stays. You decide.",
+    cancel: "The time opens for others to book.",
+  },
+  thankYouLabel: "Thank the customer for answering",
   // The 24-hour setting on Timing.
   window: "24-hour window",
   freeText: "Normal message inside 24 hours",
