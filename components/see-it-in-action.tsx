@@ -4,12 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react"
 
 import {
   glassButtonClassName,
-  glassFrameClassName,
   heroEdgeClassName,
 } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
 import { useHomeLook } from "@/components/home-look"
 import { homeSectionTitleClassName } from "@/components/home-section-title"
+import { PhoneMockup } from "@/components/phone-mockup"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -38,9 +38,9 @@ type Demo =
   | { state: "waiting" | "opening" | "failed" | "tooMany" }
   | { state: "ready"; paths: DemoPaths }
 
-// The one screen's frame: phone-sized, and short enough that the whole
-// panel fits on the screen.
-const SCREEN = "block h-[min(44rem,72dvh)] w-full rounded-4xl"
+// The phone's height: short enough that the whole panel fits on the
+// screen.
+const SCREEN = "h-[min(44rem,72dvh)]"
 
 // "See it in action": the real app on the visitor's own demo copy
 // (features/demo, opened once by POST /api/demo when the section comes
@@ -211,36 +211,39 @@ export function SeeItInAction({
                 </Item>
               ))}
             </div>
-            <div className={cn(glassFrameClassName, "relative max-w-sm")}>
+            <div className="relative isolate max-w-full">
               {/* On the indigo band, a soft glow of the brand colour behind
-                  the screen. */}
+                  the phone. */}
               {look === "bands" && (
                 <div
                   aria-hidden
                   className="absolute -inset-12 -z-10 rounded-full bg-primary/35 blur-3xl"
                 />
               )}
-              {DEMO_VIEWS.map((view) =>
-                demo.state === "ready" && opened.includes(view) ? (
-                  <iframe
-                    key={view}
-                    // The booking page in the home page's language.
-                    src={
-                      view === "page"
-                        ? `${demo.paths.page}?lang=${language}`
-                        : demo.paths[view]
-                    }
-                    title={words.frames[view]}
-                    className={cn(
-                      SCREEN,
-                      "bg-background",
-                      view !== tab && "hidden"
-                    )}
-                  />
-                ) : (
-                  view === tab && <Skeleton key={view} className={SCREEN} />
-                )
-              )}
+              <PhoneMockup className={SCREEN}>
+                {DEMO_VIEWS.map((view) =>
+                  demo.state === "ready" && opened.includes(view) ? (
+                    <iframe
+                      key={view}
+                      // The booking page in the home page's language.
+                      src={
+                        view === "page"
+                          ? `${demo.paths.page}?lang=${language}`
+                          : demo.paths[view]
+                      }
+                      title={words.frames[view]}
+                      className={cn(
+                        "w-full flex-1 bg-background",
+                        view !== tab && "hidden"
+                      )}
+                    />
+                  ) : (
+                    view === tab && (
+                      <Skeleton key={view} className="flex-1 rounded-none" />
+                    )
+                  )
+                )}
+              </PhoneMockup>
             </div>
           </div>
         )}
