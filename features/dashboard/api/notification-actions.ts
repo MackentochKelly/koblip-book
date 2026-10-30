@@ -5,9 +5,9 @@ import { and, eq } from "drizzle-orm"
 import { PHONE_PATTERN } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
 import { notificationSettings, notificationTexts } from "@/lib/db/schema"
-import { NOTIFICATION_RULES } from "@/lib/notification-rules"
+import { notificationRules } from "@/lib/platform-settings"
 import type { ActionResult } from "../types"
-import type { MessageButton, NotificationSettings } from "../types/notifications"
+import type { CantComeAction, MessageButton, NotificationSettings } from "../types/notifications"
 import {
   BOOKING_MESSAGES,
   TEMPLATE_LANGUAGES,
@@ -62,25 +62,35 @@ export async function setMessageOn(
   return { ok: true }
 }
 
-// Reminders, quiet hours and the owner's number, saved together.
+const CANT_COME_ACTIONS: readonly CantComeAction[] = ["cancel", "alertOnly"]
+
+// Reminders, quiet hours and the owner's number, saved together; the 24-hour
+// setting, what "Can't make it" does and the thank-you reply when given
+// (left as they are when not).
 export async function saveNotificationSettings(
   businessId: string,
   input: Pick<
     NotificationSettings,
     "ownerPhone" | "ownerLanguage" | "reminders" | "quietStart" | "quietEnd"
-  >
+  > &
+    Partial<Pick<NotificationSettings, "freeTextInWindow" | "cantCome" | "thankYouReply">>
 ): Promise<ActionResult> {
   const owned = await ownedBusiness(businessId)
   if (!owned) return { ok: false, error: "not_found" }
+  const rules = await notificationRules(owned.business.id)
   const phone = typeof input.ownerPhone === "string" ? input.ownerPhone.trim() : ""
   const reminders = Array.isArray(input.reminders) ? [...new Set(input.reminders)] : null
+  const flag = (value: unknown) => value === undefined || typeof value === "boolean"
   if (
     (phone && !PHONE_PATTERN.test(phone)) ||
     !reminders ||
-    reminders.length > NOTIFICATION_RULES.maxReminders ||
-    reminders.some((minutes) => !(NOTIFICATION_RULES.reminderChoices as readonly number[]).includes(minutes)) ||
+    reminders.length > rules.maxReminders ||
+    reminders.some((minutes) => !rules.reminderChoices.includes(minutes)) ||
     !TIME_PATTERN.test(input.quietStart) ||
-    !TIME_PATTERN.test(input.quietEnd)
+    !TIME_PATTERN.test(input.quietEnd) ||
+    !flag(input.freeTextInWindow) ||
+    !flag(input.thankYouReply) ||
+    (input.cantCome !== undefined && !CANT_COME_ACTIONS.includes(input.cantCome))
   ) {
     return { ok: false, error: "invalid" }
   }
@@ -92,6 +102,9 @@ export async function saveNotificationSettings(
     reminders: reminders.sort((a, b) => b - a),
     quietStart: input.quietStart,
     quietEnd: input.quietEnd,
+    freeTextInWindow: input.freeTextInWindow ?? current.freeTextInWindow,
+    cantCome: input.cantCome ?? current.cantCome,
+    thankYouReply: input.thankYouReply ?? current.thankYouReply,
   })
   return { ok: true }
 }

@@ -11,9 +11,12 @@ import {
   notificationSends,
 } from "@/lib/db/schema"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
-import { NOTIFICATION_RULES } from "@/lib/notification-rules"
+import type { NotificationRules } from "@/lib/notification-rules"
+import { notificationRules } from "@/lib/platform-settings"
 import {
+  BOOKING_MESSAGES,
   plainMessage,
+  withValues,
   type BookingField,
   type BookingMessage,
   type TemplateLanguage,
@@ -264,7 +267,13 @@ async function plan(now: Date) {
 }
 
 // The person's last message to the business's number, for Meta's window.
-async function windowOpen(workspaceId: string, phoneNumberId: string, phone: string, now: Date) {
+async function windowOpen(
+  workspaceId: string,
+  phoneNumberId: string,
+  phone: string,
+  now: Date,
+  rules: NotificationRules
+) {
   const [row] = await db
     .select({ lastReplyAt: chatReplies.lastReplyAt })
     .from(chatReplies)
@@ -276,8 +285,12 @@ async function windowOpen(workspaceId: string, phoneNumberId: string, phone: str
       )
     )
     .limit(1)
-  return !!row && Date.parse(row.lastReplyAt) > now.getTime() - NOTIFICATION_RULES.freeTextMinutes * MINUTE
+  return !!row && Date.parse(row.lastReplyAt) > now.getTime() - rules.freeTextMinutes * MINUTE
 }
+
+// WhatsApp's limit for a reply button's title on a normal message (Chat's
+// send API, wapi-api docs/api/oauth.md); a template's buttons allow more.
+const INTERACTIVE_BUTTON_TITLE = 20
 
 type Contact = { data?: { _id?: string; is_unsubscribed?: boolean } }
 type Sent = { data?: { id?: string; _id?: string } }
@@ -294,7 +307,8 @@ const LOCALES: Record<TemplateLanguage, string> = { en: "en-US", es: "es-US" }
 async function deliver(
   send: typeof notificationSends.$inferSelect,
   now: Date,
-  refreshed: Set<string>
+  refreshed: Set<string>,
+  rules: NotificationRules
 ): Promise<Outcome> {
   const [row] = await db
     .select({ booking: bookings, business: businesses, connection: chatConnections })
@@ -333,14 +347,21 @@ async function deliver(
 
   let { template, approved } = await sendableTemplate(business.id, message, language)
   const digits = phone.replace(/\D/g, "")
-  const text = await windowOpen(connection.workspaceId, connection.phoneNumberId, digits, now)
-  if (!text && !approved && !refreshed.has(business.id)) {
+  // Inside the 24-hour window a normal message goes (free), unless the owner
+  // turned that off. Its buttons go too when WhatsApp takes their titles;
+  // else the approved template carries them, or the words go alone.
+  const inWindow =
+    settings.freeTextInWindow &&
+    (await windowOpen(connection.workspaceId, connection.phoneNumberId, digits, now, rules))
+  if (!inWindow && !approved && !refreshed.has(business.id)) {
     // Book's copy of Meta's review may be behind: ask Chat once per check.
     refreshed.add(business.id)
     await refreshChatTemplates(business.id)
     ;({ template, approved } = await sendableTemplate(business.id, message, language))
   }
-  if (!text && !approved) return { state: "failed", reason: "templateNotApproved" }
+  if (!inWindow && !approved) return { state: "failed", reason: "templateNotApproved" }
+  const buttonsFit = template.buttons.every(({ label }) => label.length <= INTERACTIVE_BUTTON_TITLE)
+  const text = inWindow && (buttonsFit || !approved)
 
   let contact: Contact
   try {
@@ -361,7 +382,17 @@ async function deliver(
 
   const base = { contact_id: contactId, whatsapp_phone_number_id: connection.phoneNumberId }
   // The template goes exactly as Meta approved it, with its own fields.
-  const body = text || !approved
+  const body = text && template.buttons.length && buttonsFit
+    ? {
+        ...base,
+        messageType: "interactive",
+        interactiveType: "button",
+        messageText: withValues(template.body, values),
+        buttonParams: template.buttons.map(({ action, label }) => ({ id: action, title: label })),
+        buttonHeader: withValues(template.header, values),
+        ...(template.footer ? { buttonFooter: template.footer } : {}),
+      }
+    : text || !approved
     ? { ...base, messageType: "text", messageText: plainMessage(template, values) }
     : {
         ...base,
@@ -388,14 +419,21 @@ async function deliver(
   }
 }
 
-// Sends what is due, each row once.
-async function sendDue(now: Date) {
+// Sends what is due, each row once. Only the messages Book can send yet are
+// taken; any other kind waits as pending until the sender knows it.
+async function sendDue(now: Date, rules: NotificationRules) {
   const due = await db
     .select()
     .from(notificationSends)
-    .where(and(eq(notificationSends.state, "pending"), lte(notificationSends.dueAt, now.toISOString())))
+    .where(
+      and(
+        eq(notificationSends.state, "pending"),
+        lte(notificationSends.dueAt, now.toISOString()),
+        inArray(notificationSends.message, [...BOOKING_MESSAGES])
+      )
+    )
     .orderBy(asc(notificationSends.dueAt))
-    .limit(NOTIFICATION_RULES.sendBatch)
+    .limit(rules.sendBatch)
   const refreshed = new Set<string>()
 
   for (const send of due) {
@@ -408,7 +446,7 @@ async function sendDue(now: Date) {
 
     let outcome: Outcome
     try {
-      outcome = await deliver(send, now, refreshed)
+      outcome = await deliver(send, now, refreshed, rules)
     } catch (error) {
       console.error(error)
       outcome = { state: "failed", reason: "error" }
@@ -428,7 +466,7 @@ async function sendDue(now: Date) {
 
 // Rows left "sending" when the server stopped mid-send: they may have gone,
 // so they are closed, never sent again.
-async function closeStuck(now: Date) {
+async function closeStuck(now: Date, rules: NotificationRules) {
   await db
     .update(notificationSends)
     .set({ state: "failed", reason: "interrupted" })
@@ -437,16 +475,18 @@ async function closeStuck(now: Date) {
         eq(notificationSends.state, "sending"),
         lt(
           notificationSends.updatedAt,
-          new Date(now.getTime() - NOTIFICATION_RULES.stuckSendingMinutes * MINUTE).toISOString()
+          new Date(now.getTime() - rules.stuckSendingMinutes * MINUTE).toISOString()
         )
       )
     )
 }
 
-// One check: plan new messages, then send the due ones. Run by the server's
-// timer (instrumentation.ts) every NOTIFICATION_RULES.sendEverySeconds.
+// One check: plan new messages, then send the due ones, under the rules as
+// they stand (the admin's values over the defaults). Run by the server's
+// timer (notification-timer.ts) every `sendEverySeconds`.
 export async function runNotifications(now = new Date()) {
-  await closeStuck(now)
+  const rules = await notificationRules()
+  await closeStuck(now, rules)
   await plan(now)
-  await sendDue(now)
+  await sendDue(now, rules)
 }
