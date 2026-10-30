@@ -7,17 +7,18 @@ import { db } from "@/lib/db"
 import { notificationSettings, notificationTexts } from "@/lib/db/schema"
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
 import type { ActionResult } from "../types"
-import type { NotificationSettings } from "../types/notifications"
+import type { MessageButton, NotificationSettings } from "../types/notifications"
 import {
   BOOKING_MESSAGES,
   TEMPLATE_LANGUAGES,
+  buttonsProblem,
   wordingProblem,
   type BookingMessage,
   type TemplateLanguage,
   type Wording,
 } from "../utils/booking-templates"
 import { ChatApiError } from "./chat-oauth"
-import { pushChatWording } from "./chat-templates"
+import { submitChatTemplate } from "./chat-templates"
 import { notificationSettingsFor } from "./notifications"
 import { ownedBusiness } from "./owned-business"
 
@@ -103,14 +104,15 @@ function where(businessId: string, message: BookingMessage, language: TemplateLa
   )
 }
 
-// Saves a message's wording, or Book's default when `wording` is null, and
-// sends it to Chat for Meta to review again. If Chat refuses (Meta limits how
-// often an approved template may change), the wording before stays.
+// Saves a message's wording and buttons in Book, or Book's own when `wording`
+// is null; `buttons` null keeps Book's default buttons. Nothing goes to Meta
+// until the owner submits it (submitMessageToMeta).
 export async function saveMessageWording(
   businessId: string,
   message: BookingMessage,
   language: TemplateLanguage,
-  wording: Wording | null
+  wording: Wording | null,
+  buttons: MessageButton[] | null = null
 ): Promise<ActionResult> {
   const owned = await ownedBusiness(businessId)
   if (!owned) return { ok: false, error: "not_found" }
@@ -118,36 +120,50 @@ export async function saveMessageWording(
     return { ok: false, error: "invalid" }
   }
   const id = owned.business.id
-  let next: Wording | null = null
-  if (wording) {
-    next = {
-      header: String(wording.header ?? "").trim(),
-      body: String(wording.body ?? "").trim(),
-      footer: String(wording.footer ?? "").trim(),
-    }
-    const problem = wordingProblem(message, next)
-    if (problem) return { ok: false, error: problem }
+  if (!wording) {
+    await db.delete(notificationTexts).where(where(id, message, language))
+    return { ok: true }
   }
+  const next = {
+    header: String(wording.header ?? "").trim(),
+    body: String(wording.body ?? "").trim(),
+    footer: String(wording.footer ?? "").trim(),
+    buttons: Array.isArray(buttons)
+      ? buttons.map((button) => ({ action: button?.action, label: String(button?.label ?? "").trim() }))
+      : null,
+  }
+  const problem =
+    wordingProblem(message, next) ?? (next.buttons && buttonsProblem(message, next.buttons))
+  if (problem) return { ok: false, error: problem }
+  await db
+    .insert(notificationTexts)
+    .values({ businessId: id, message, language, ...next })
+    .onConflictDoUpdate({
+      target: [notificationTexts.businessId, notificationTexts.message, notificationTexts.language],
+      set: next,
+    })
+  return { ok: true }
+}
 
-  const [before] = await db.select().from(notificationTexts).where(where(id, message, language)).limit(1)
-  const write = async (value: Wording | null) => {
-    if (!value) return db.delete(notificationTexts).where(where(id, message, language))
-    return db
-      .insert(notificationTexts)
-      .values({ businessId: id, message, language, ...value })
-      .onConflictDoUpdate({
-        target: [notificationTexts.businessId, notificationTexts.message, notificationTexts.language],
-        set: value,
-      })
+// "Submit to Meta" for one message in one language: its saved wording and
+// buttons go to Meta for review through Chat. When Chat or Meta refuses at
+// once, `reason` carries their words for the owner.
+export async function submitMessageToMeta(
+  businessId: string,
+  message: BookingMessage,
+  language: TemplateLanguage
+): Promise<ActionResult | { ok: false; error: "refused"; reason: string }> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) return { ok: false, error: "not_found" }
+  if (!BOOKING_MESSAGES.includes(message) || !TEMPLATE_LANGUAGES.includes(language)) {
+    return { ok: false, error: "invalid" }
   }
-  await write(next)
   try {
-    await pushChatWording(id, message, language)
+    const problem = await submitChatTemplate(owned.business.id, message, language)
+    return problem ? { ok: false, error: problem } : { ok: true }
   } catch (error) {
     if (!(error instanceof ChatApiError)) throw error
     console.error(error)
-    await write(before ? { header: before.header, body: before.body, footer: before.footer } : null)
-    return { ok: false, error: "chat" }
+    return error.reason ? { ok: false, error: "refused", reason: error.reason } : { ok: false, error: "chat" }
   }
-  return { ok: true }
 }

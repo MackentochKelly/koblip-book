@@ -375,7 +375,8 @@ export const chatConnections = sqliteTable("chat_connections", {
 
 // Book's booking templates in the business's Koblip Chat, one per message and
 // language (docs/koblip-chat-integration.md, step 2): Chat's template id and
-// Meta's review status, as Chat last reported it.
+// Meta's review status and reason, as Chat last reported them. A row exists
+// once the owner submitted the message to Meta, or Chat already had it.
 export const chatTemplates = sqliteTable(
   "chat_templates",
   {
@@ -388,6 +389,17 @@ export const chatTemplates = sqliteTable(
     language: text({ enum: ["en", "es"] }).notNull(),
     chatTemplateId: text().notNull(),
     status: text().notNull(),
+    // Meta's words when it refused the template.
+    reason: text(),
+    // What the owner submitted: the approved template is sent with its own
+    // fields, and a newer wording shows as not submitted. None for a
+    // template Chat already had.
+    submitted: text({ mode: "json" }).$type<{
+      header: string
+      body: string
+      footer: string
+      buttons: { action: "confirm" | "cantCome" | "ok"; label: string }[]
+    }>(),
     ...timestamps(),
   },
   (table) => [primaryKey({ columns: [table.businessId, table.message, table.language] })]
@@ -435,6 +447,8 @@ export const notificationTexts = sqliteTable(
     header: text().notNull(),
     body: text().notNull(),
     footer: text().notNull(),
+    // The owner's buttons; none means Book's default buttons.
+    buttons: text({ mode: "json" }).$type<{ action: "confirm" | "cantCome" | "ok"; label: string }[]>(),
     ...timestamps(),
   },
   (table) => [primaryKey({ columns: [table.businessId, table.message, table.language] })]

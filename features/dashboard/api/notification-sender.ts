@@ -20,7 +20,7 @@ import {
 } from "../utils/booking-templates"
 import { localDateTime, planReminders } from "../utils/reminder-schedule"
 import { ChatApiError, chatApi, chatConnectionUsable } from "./chat-oauth"
-import { sendableTemplate, setUpChatTemplates } from "./chat-templates"
+import { refreshChatTemplates, sendableTemplate } from "./chat-templates"
 import { notificationSettingsFor } from "./notifications"
 
 // Book's WhatsApp booking messages (docs/koblip-chat-integration.md, step 3),
@@ -256,16 +256,16 @@ async function deliver(
     phone: booking.customerPhone || "-",
   }
 
-  let { template, chatTemplateId } = await sendableTemplate(business.id, message, language)
+  let { template, approved } = await sendableTemplate(business.id, message, language)
   const digits = phone.replace(/\D/g, "")
   const text = await windowOpen(connection.workspaceId, connection.phoneNumberId, digits, now)
-  if (!text && !chatTemplateId && !refreshed.has(business.id)) {
+  if (!text && !approved && !refreshed.has(business.id)) {
     // Book's copy of Meta's review may be behind: ask Chat once per check.
     refreshed.add(business.id)
-    await setUpChatTemplates(business.id)
-    ;({ template, chatTemplateId } = await sendableTemplate(business.id, message, language))
+    await refreshChatTemplates(business.id)
+    ;({ template, approved } = await sendableTemplate(business.id, message, language))
   }
-  if (!text && !chatTemplateId) return { state: "failed", reason: "templateNotApproved" }
+  if (!text && !approved) return { state: "failed", reason: "templateNotApproved" }
 
   let contact: Contact
   try {
@@ -285,16 +285,17 @@ async function deliver(
   if (contact.data?.is_unsubscribed) return { state: "skipped", reason: "unsubscribed" }
 
   const base = { contact_id: contactId, whatsapp_phone_number_id: connection.phoneNumberId }
-  const body = text
+  // The template goes exactly as Meta approved it, with its own fields.
+  const body = text || !approved
     ? { ...base, messageType: "text", messageText: plainMessage(template, values) }
     : {
         ...base,
         messageType: "template",
-        template_id: chatTemplateId,
-        templateName: template.name,
-        languageCode: template.language,
+        template_id: approved.chatTemplateId,
+        templateName: approved.template.name,
+        languageCode: approved.template.language,
         templateVariables: Object.fromEntries(
-          template.fields.map((field, index) => [String(index + 1), values[field]])
+          approved.template.fields.map((field, index) => [String(index + 1), values[field]])
         ),
       }
   try {

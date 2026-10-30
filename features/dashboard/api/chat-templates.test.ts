@@ -10,24 +10,36 @@ import { seal } from "@/lib/secret-box"
 
 vi.mock("server-only", () => ({}))
 
-const { chatConnectionFor, setUpChatTemplates } = await import("./chat-templates")
+const { chatConnectionFor, refreshChatTemplates, sendableTemplate, submitChatTemplate } =
+  await import("./chat-templates")
 
 let dir: string
 let closeDb: () => void
 
 // A stand-in for Chat's API: one workspace, its numbers and templates.
 let numbers: unknown[] = []
-let stored: { _id: string; template_name: string; language: string; status: string }[] = []
+let stored: {
+  _id: string
+  template_name: string
+  language: string
+  status: string
+  rejection_reason?: string
+}[] = []
 // Templates Meta has but Chat lost, and Chat's copies of them.
 let atMeta: { id: string; name: string; language: string }[] = []
 const copied: unknown[] = []
 const created: Record<string, unknown>[] = []
+const edited: { id: string; body: Record<string, unknown> }[] = []
 const synced: unknown[] = []
 const chat = vi.fn(async (url: string, init: RequestInit = {}) => {
   const answer = (json: unknown, status = 200) => new Response(JSON.stringify(json), { status })
   const path = new URL(url).pathname
   if (path === "/api/whatsapp/connections") return answer({ success: true, data: numbers })
   if (path === "/api/template") return answer({ success: true, data: stored })
+  if (init.method === "PUT" && path.startsWith("/api/template/")) {
+    edited.push({ id: path.split("/").pop()!, body: JSON.parse(String(init.body)) })
+    return answer({ success: true })
+  }
   if (path === "/api/template/sync-status") {
     synced.push(JSON.parse(String(init.body)))
     return answer({ success: true })
@@ -97,6 +109,7 @@ beforeEach(async () => {
   atMeta = []
   copied.length = 0
   created.length = 0
+  edited.length = 0
   synced.length = 0
   chat.mockClear()
   await db.delete(chatTemplates)
@@ -110,12 +123,13 @@ afterAll(() => {
 })
 
 test("with no WhatsApp number nothing is made and the owner is told", async () => {
-  await setUpChatTemplates("biz")
+  await refreshChatTemplates("biz")
+  expect(await submitChatTemplate("biz", "reminder", "en")).toBe("noNumber")
   expect(created).toHaveLength(0)
   expect((await chatConnectionFor("biz"))?.messages).toBe("noNumber")
 })
 
-test("the oldest active number is used and every message is made in both languages", async () => {
+test("the oldest active number is used and nothing is made until the owner submits", async () => {
   numbers = [
     { id: "wabaOff", is_active: false, phone_numbers: [{ id: "pOff", is_active: true, created_at: "2025-01-01" }] },
     {
@@ -128,69 +142,103 @@ test("the oldest active number is used and every message is made in both languag
       ],
     },
   ]
-  await setUpChatTemplates("biz")
+  await refreshChatTemplates("biz")
   const [row] = await db.select().from(chatConnections)
   expect(row).toMatchObject({ wabaId: "waba1", phoneNumberId: "pOld" })
-  expect(created).toHaveLength(10)
-  expect(created).toContainEqual({
-    waba_id: "waba1",
-    platform: "whatsapp",
-    template_name: "koblip_book_booking_confirmed",
-    language: "en",
-    category: "UTILITY",
-    header_text: "Booking confirmed",
-    message_body: "Hi {{1}}, your {{2}} at {{3}} is booked for {{4}} at {{5}}. We look forward to seeing you then!",
-    footer_text: "Reply here to talk to us",
-    variable_examples: { 1: "Alex", 2: "Haircut", 3: "Lumen Studio", 4: "Friday, May 8", 5: "3:30 PM" },
-    save_as_draft: false,
-  })
-  expect((await chatConnectionFor("biz"))?.messages).toBe("waiting")
+  expect(created).toHaveLength(0)
+  expect(edited).toHaveLength(0)
+  expect((await chatConnectionFor("biz"))?.messages).toBe("notSubmitted")
 })
 
-test("templates already in Chat are reused, and Meta's review is read again", async () => {
+test("submitting makes the template with its buttons, and only that one", async () => {
   numbers = [{ id: "waba1", phone_numbers: [{ id: "p1" }] }]
-  await setUpChatTemplates("biz")
-  expect(created).toHaveLength(10)
-
-  for (const template of stored) template.status = "APPROVED"
-  await setUpChatTemplates("biz")
-  expect(created).toHaveLength(10)
-  expect(synced).toEqual([
-    { waba_id: "waba1", template_ids: expect.arrayContaining(stored.map((t) => t._id)) },
+  expect(await submitChatTemplate("biz", "reminder", "en")).toBeNull()
+  expect(created).toEqual([
+    {
+      waba_id: "waba1",
+      platform: "whatsapp",
+      template_name: "koblip_book_booking_reminder",
+      language: "en",
+      category: "UTILITY",
+      header_text: "Appointment reminder",
+      message_body:
+        "Hi {{1}}, a reminder of your {{2}} at {{3}} on {{4}} at {{5}}. See you soon!",
+      footer_text: "Reply here to talk to us",
+      variable_examples: { 1: "Alex", 2: "Haircut", 3: "Lumen Studio", 4: "Friday, May 8", 5: "3:30 PM" },
+      buttons: [
+        { type: "quick_reply", text: "I'll be there", payload: "confirm" },
+        { type: "quick_reply", text: "Can't make it", payload: "cantCome" },
+      ],
+      save_as_draft: false,
+    },
   ])
-  expect((await chatConnectionFor("biz"))?.messages).toBe("ready")
-
-  stored[0].status = "rejected"
-  await db.delete(chatTemplates)
-  await setUpChatTemplates("biz")
-  expect((await chatConnectionFor("biz"))?.messages).toBe("rejected")
+  const rows = await db.select().from(chatTemplates)
+  expect(rows).toEqual([
+    expect.objectContaining({
+      message: "reminder",
+      language: "en",
+      chatTemplateId: "t1",
+      status: "pending",
+      reason: null,
+      submitted: expect.objectContaining({ header: "Appointment reminder" }),
+    }),
+  ])
 })
 
-test("a template Meta has but Chat lost is copied back, not made again", async () => {
+test("submitting again changes Chat's template instead of making another", async () => {
+  numbers = [{ id: "waba1", phone_numbers: [{ id: "p1" }] }]
+  await submitChatTemplate("biz", "confirmed", "es")
+  await submitChatTemplate("biz", "confirmed", "es")
+  expect(created).toHaveLength(1)
+  expect(edited).toEqual([
+    { id: "t1", body: expect.objectContaining({ header_text: "Reserva confirmada", buttons: [] }) },
+  ])
+})
+
+test("a template Meta has but Chat lost is copied back, then changed, not made again", async () => {
   numbers = [{ id: "waba1", phone_numbers: [{ id: "p1" }] }]
   atMeta = [
     { id: "m1", name: "koblip_book_booking_reminder", language: "es" },
     { id: "m2", name: "someone_else", language: "es" },
   ]
-  await setUpChatTemplates("biz")
+  await submitChatTemplate("biz", "reminder", "es")
   expect(copied).toEqual([{ waba_id: "waba1", meta_template_ids: ["m1"] }])
-  expect(created).toHaveLength(9)
-  expect(created).not.toContainEqual(
-    expect.objectContaining({ template_name: "koblip_book_booking_reminder", language: "es" })
-  )
-  const rows = await db.select().from(chatTemplates)
-  expect(rows).toContainEqual(expect.objectContaining({ message: "reminder", language: "es", chatTemplateId: "c-m1" }))
+  expect(created).toHaveLength(0)
+  expect(edited.map(({ id }) => id)).toEqual(["c-m1"])
+})
 
-  // Nothing missing: Meta's list is not asked for again.
-  chat.mockClear()
-  await setUpChatTemplates("biz")
-  expect(chat.mock.calls.map(([url]) => new URL(String(url)).pathname)).not.toContain("/api/template/meta-list")
+test("refreshing reads Meta's review and reason, and the approved template is sent as submitted", async () => {
+  numbers = [{ id: "waba1", phone_numbers: [{ id: "p1" }] }]
+  await submitChatTemplate("biz", "reminder", "en")
+  await submitChatTemplate("biz", "reminder", "es")
+  stored[0].status = "APPROVED"
+  stored[1].status = "REJECTED"
+  stored[1].rejection_reason = "INVALID_FORMAT"
+  await refreshChatTemplates("biz")
+  expect(synced).toEqual([{ waba_id: "waba1", template_ids: ["t1", "t2"] }])
+  const rows = await db.select().from(chatTemplates)
+  expect(rows).toContainEqual(expect.objectContaining({ language: "es", status: "rejected", reason: "INVALID_FORMAT" }))
+  expect((await chatConnectionFor("biz"))?.messages).toBe("rejected")
+
+  const { approved } = await sendableTemplate("biz", "reminder", "en")
+  expect(approved).toMatchObject({ chatTemplateId: "t1", template: { name: "koblip_book_booking_reminder" } })
+  expect((await sendableTemplate("biz", "reminder", "es")).approved).toBeNull()
+})
+
+test("a template Chat already has under Book's name is used as it is", async () => {
+  numbers = [{ id: "waba1", phone_numbers: [{ id: "p1" }] }]
+  stored = [{ _id: "x1", template_name: "koblip_book_booking_confirmed", language: "en", status: "APPROVED" }]
+  await refreshChatTemplates("biz")
+  expect(created).toHaveLength(0)
+  const { approved } = await sendableTemplate("biz", "confirmed", "en")
+  expect(approved?.chatTemplateId).toBe("x1")
 })
 
 test("a connection made before templates were asked for must reconnect", async () => {
   await connect("contacts automations conversations")
   numbers = [{ id: "waba1", phone_numbers: [{ id: "p1" }] }]
-  await setUpChatTemplates("biz")
+  await refreshChatTemplates("biz")
+  expect(await submitChatTemplate("biz", "reminder", "en")).toBe("notConnected")
   expect(chat).not.toHaveBeenCalled()
   expect((await chatConnectionFor("biz"))?.needsReconnect).toBe(true)
 })
