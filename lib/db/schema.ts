@@ -406,7 +406,16 @@ export const chatTemplates = sqliteTable(
       .notNull()
       .references(() => businesses.id, { onDelete: "cascade" }),
     message: text({
-      enum: ["confirmed", "reminder", "changed", "cancelled", "ownerNewBooking"],
+      enum: [
+        "confirmed",
+        "reminder",
+        "changed",
+        "cancelled",
+        "ownerNewBooking",
+        "ownerCantCome",
+        "ownerCancelled",
+        "ownerFailed",
+      ],
     }).notNull(),
     language: text({ enum: ["en", "es"] }).notNull(),
     chatTemplateId: text().notNull(),
@@ -435,7 +444,16 @@ export const koblipChatTemplates = sqliteTable(
   "koblip_chat_templates",
   {
     message: text({
-      enum: ["confirmed", "reminder", "changed", "cancelled", "ownerNewBooking"],
+      enum: [
+        "confirmed",
+        "reminder",
+        "changed",
+        "cancelled",
+        "ownerNewBooking",
+        "ownerCantCome",
+        "ownerCancelled",
+        "ownerFailed",
+      ],
     }).notNull(),
     language: text({ enum: ["en", "es"] }).notNull(),
     chatTemplateId: text().notNull(),
@@ -470,7 +488,18 @@ export const notificationSettings = sqliteTable("notification_settings", {
   quietEnd: text().notNull(),
   // The messages the owner turned off.
   turnedOff: text({ mode: "json" })
-    .$type<("confirmed" | "reminder" | "changed" | "cancelled" | "ownerNewBooking")[]>()
+    .$type<
+      (
+        | "confirmed"
+        | "reminder"
+        | "changed"
+        | "cancelled"
+        | "ownerNewBooking"
+        | "ownerCantCome"
+        | "ownerCancelled"
+        | "ownerFailed"
+      )[]
+    >()
     .notNull(),
   // Inside the 24-hour window, a normal message instead of the template.
   freeTextInWindow: integer({ mode: "boolean" }).notNull().default(true),
@@ -490,7 +519,16 @@ export const notificationTexts = sqliteTable(
       .notNull()
       .references(() => businesses.id, { onDelete: "cascade" }),
     message: text({
-      enum: ["confirmed", "reminder", "changed", "cancelled", "ownerNewBooking"],
+      enum: [
+        "confirmed",
+        "reminder",
+        "changed",
+        "cancelled",
+        "ownerNewBooking",
+        "ownerCantCome",
+        "ownerCancelled",
+        "ownerFailed",
+      ],
     }).notNull(),
     language: text({ enum: ["en", "es"] }).notNull(),
     header: text().notNull(),
@@ -515,8 +553,8 @@ export const notificationSends = sqliteTable(
     bookingId: text()
       .notNull()
       .references(() => bookings.id, { onDelete: "cascade" }),
-    // The booking messages, plus what a customer's tap queues (S3): the
-    // owner's alert and the thank-you, a plain text inside the 24-hour window.
+    // The booking messages and the owner's alerts, plus the thank-you a
+    // customer's tap queues (S3), a plain text inside the 24-hour window.
     message: text({
       enum: [
         "confirmed",
@@ -526,6 +564,7 @@ export const notificationSends = sqliteTable(
         "ownerNewBooking",
         "ownerCantCome",
         "ownerCancelled",
+        "ownerFailed",
         "thankYou",
       ],
     }).notNull(),

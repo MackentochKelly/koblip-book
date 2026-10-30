@@ -1,5 +1,5 @@
 import "server-only"
-import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne } from "drizzle-orm"
+import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, notInArray } from "drizzle-orm"
 import { alias } from "drizzle-orm/sqlite-core"
 
 import { db } from "@/lib/db"
@@ -17,13 +17,15 @@ import {
   BOOKING_MESSAGES,
   bookingValues,
   exampleValues,
+  isOwnerAlert,
   plainMessage,
+  thankYouMessage,
   withValues,
   type BookingField,
   type BookingMessage,
   type TemplateLanguage,
 } from "../utils/booking-templates"
-import type { Sender } from "../types/notifications"
+import type { SendKind, Sender } from "../types/notifications"
 import { localDateTime, planReminders } from "../utils/reminder-schedule"
 import { ChatApiError, chatApi, chatConnectionUsable, koblipChatApi } from "./chat-oauth"
 import {
@@ -148,14 +150,27 @@ async function sendingBusinesses() {
   return since
 }
 
+// The messages that go to the customer and can fail unseen: the owner hears
+// of each failure (S5). The thank-you is a courtesy, never worth an alert.
+const ALERT_ON_FAILURE = BOOKING_MESSAGES.filter((message) => !isOwnerAlert(message))
+
+// What still goes once the booking is cancelled: the cancellation note, the
+// owner's alert that the customer cancelled, and the thank-you for the tap.
+const AFTER_CANCEL: readonly SendKind[] = ["cancelled", "ownerCancelled", "thankYou"]
+
+// Every kind the sender sends: the booking messages, the owner's alerts and
+// the thank-you.
+const SEND_KINDS: readonly SendKind[] = [...BOOKING_MESSAGES, "thankYou"]
+
 // New rows for bookings made since the business could send: the confirmation,
 // the owner's alert and the reminders; "Booking changed" and new reminders
-// for bookings moved; and the cancellation note for bookings cancelled after
-// their confirmation went.
+// for bookings moved; the cancellation note for bookings cancelled after
+// their confirmation went; and the owner's alert for a message that failed.
 async function plan(now: Date) {
   const confirmed = alias(notificationSends, "confirmed")
   const cancelled = alias(notificationSends, "cancelled")
   const changed = alias(notificationSends, "changed")
+  const alerted = alias(notificationSends, "alerted")
 
   for (const [businessId, since] of await sendingBusinesses()) {
     const [settings, [business]] = await Promise.all([
@@ -342,6 +357,46 @@ async function plan(now: Date) {
         .onConflictDoNothing()
     }
 
+    // A message to the customer failed: the owner hears of it once per
+    // booking and move, while the visit is still ahead.
+    const failed = await db
+      .selectDistinct({ id: bookings.id, moves: notificationSends.moves })
+      .from(notificationSends)
+      .innerJoin(bookings, eq(bookings.id, notificationSends.bookingId))
+      .leftJoin(
+        alerted,
+        and(
+          eq(alerted.bookingId, notificationSends.bookingId),
+          eq(alerted.message, "ownerFailed"),
+          eq(alerted.moves, notificationSends.moves)
+        )
+      )
+      .where(
+        and(
+          eq(notificationSends.businessId, businessId),
+          eq(notificationSends.state, "failed"),
+          inArray(notificationSends.message, ALERT_ON_FAILURE),
+          gt(bookings.startAt, now.toISOString()),
+          isNull(alerted.id)
+        )
+      )
+    if (failed.length) {
+      await db
+        .insert(notificationSends)
+        .values(
+          failed.map(({ id, moves }) => ({
+            businessId,
+            bookingId: id,
+            moves,
+            message: "ownerFailed" as const,
+            dueAt: now.toISOString(),
+            state: settings.ownerPhone ? ("pending" as const) : ("skipped" as const),
+            reason: settings.ownerPhone ? null : "noOwnerPhone",
+          }))
+        )
+        .onConflictDoNothing()
+    }
+
     // A cancelled booking's other waiting messages never go.
     await db
       .update(notificationSends)
@@ -349,7 +404,7 @@ async function plan(now: Date) {
       .where(
         and(
           eq(notificationSends.state, "pending"),
-          ne(notificationSends.message, "cancelled"),
+          notInArray(notificationSends.message, [...AFTER_CANCEL]),
           inArray(
             notificationSends.bookingId,
             db
@@ -414,17 +469,18 @@ async function deliver(
   const { booking, business } = row
 
   const settings = await notificationSettingsFor(business.id)
-  const message = send.message as BookingMessage
-  if (settings.turnedOff.includes(message)) return { state: "skipped", reason: "turnedOff" }
+  const kind = send.message
+  const off = kind === "thankYou" ? !settings.thankYouReply : settings.turnedOff.includes(kind)
+  if (off) return { state: "skipped", reason: "turnedOff" }
   const line = await lineFor(business.id, settings.turnedOff)
   if (line === "wait") return { state: "pending" }
   if (!line) return { state: "skipped", reason: "notConnected" }
-  if (booking.status === "cancelled" && message !== "cancelled") {
+  if (booking.status === "cancelled" && !AFTER_CANCEL.includes(kind)) {
     return { state: "skipped", reason: "cancelled" }
   }
   if (Date.parse(booking.startAt) <= now.getTime()) return { state: "skipped", reason: "late" }
 
-  const toOwner = message === "ownerNewBooking"
+  const toOwner = isOwnerAlert(kind)
   const phone = toOwner ? settings.ownerPhone : booking.customerPhone
   if (!phone) return { state: "skipped", reason: toOwner ? "noOwnerPhone" : "noPhone" }
   const language: TemplateLanguage = toOwner ? settings.ownerLanguage : booking.language ?? "en"
@@ -446,12 +502,23 @@ async function deliver(
     language
   )
 
+  if (kind === "thankYou") {
+    return sendThankYou({
+      line,
+      phone,
+      contactName: booking.customerName,
+      text: thankYouMessage(language, values),
+      now,
+      rules,
+    })
+  }
+
   return sendMessage({
     businessId: business.id,
     line,
     phone,
     contactName: toOwner ? business.name : booking.customerName,
-    message,
+    message: kind,
     language,
     values,
     freeTextInWindow: settings.freeTextInWindow,
@@ -489,7 +556,7 @@ async function sendMessage({
   rules,
   refreshed,
 }: Target): Promise<Outcome> {
-  const { sender, workspaceId, phoneNumberId, call } = line
+  const { sender, workspaceId, phoneNumberId } = line
   // Koblip's number sends Koblip's ready-made set; the business's own, its
   // own copies in its wording.
   const sendable = () =>
@@ -513,6 +580,68 @@ async function sendMessage({
   const buttonsFit = template.buttons.every(({ label }) => label.length <= INTERACTIVE_BUTTON_TITLE)
   const text = inWindow && (buttonsFit || !approved)
 
+  // The template goes exactly as Meta approved it, with its own fields.
+  return post(line, digits, contactName, text ? "text" : "template", (recipient) =>
+    text && template.buttons.length && buttonsFit
+      ? {
+          ...recipient,
+          messageType: "interactive",
+          interactiveType: "button",
+          messageText: withValues(template.body, values),
+          buttonParams: template.buttons.map(({ action, label }) => ({ id: action, title: label })),
+          buttonHeader: withValues(template.header, values),
+          ...(template.footer ? { buttonFooter: template.footer } : {}),
+        }
+      : text || !approved
+        ? { ...recipient, messageType: "text", messageText: plainMessage(template, values) }
+        : {
+            ...recipient,
+            messageType: "template",
+            template_id: approved.chatTemplateId,
+            templateName: approved.template.name,
+            languageCode: approved.template.language,
+            templateVariables: Object.fromEntries(
+              approved.template.fields.map((field, index) => [String(index + 1), values[field]])
+            ),
+          }
+  )
+}
+
+// The thank-you after a tap (D24): a normal message, only while the
+// customer's 24-hour window with the line's number is open; it has no
+// template to fall back on.
+async function sendThankYou({
+  line,
+  phone,
+  contactName,
+  text,
+  now,
+  rules,
+}: Pick<Target, "line" | "phone" | "contactName" | "now" | "rules"> & {
+  text: string
+}): Promise<Outcome> {
+  const digits = phone.replace(/\D/g, "")
+  if (!(await windowOpen(line.workspaceId, line.phoneNumberId, digits, now, rules))) {
+    return { state: "skipped", reason: "windowClosed", sender: line.sender }
+  }
+  return post(line, digits, contactName, "text", (recipient) => ({
+    ...recipient,
+    messageType: "text",
+    messageText: text,
+  }))
+}
+
+type Recipient = { contact_id: string; whatsapp_phone_number_id: string }
+
+// The person as a contact in the line's Koblip Chat, then the message.
+// Chat keeps who opted out (D18): an opted-out contact gets nothing.
+async function post(
+  { sender, phoneNumberId, call }: Line,
+  digits: string,
+  contactName: string,
+  via: "text" | "template",
+  body: (recipient: Recipient) => Record<string, unknown>
+): Promise<Outcome> {
   let contact: Contact
   try {
     contact = await call<Contact>("/api/contacts/find-or-create", {
@@ -530,38 +659,12 @@ async function sendMessage({
   if (!contactId) return { state: "failed", reason: "chat", sender }
   if (contact.data?.is_unsubscribed) return { state: "skipped", reason: "unsubscribed", sender }
 
-  const base = { contact_id: contactId, whatsapp_phone_number_id: phoneNumberId }
-  // The template goes exactly as Meta approved it, with its own fields.
-  const body = text && template.buttons.length && buttonsFit
-    ? {
-        ...base,
-        messageType: "interactive",
-        interactiveType: "button",
-        messageText: withValues(template.body, values),
-        buttonParams: template.buttons.map(({ action, label }) => ({ id: action, title: label })),
-        buttonHeader: withValues(template.header, values),
-        ...(template.footer ? { buttonFooter: template.footer } : {}),
-      }
-    : text || !approved
-    ? { ...base, messageType: "text", messageText: plainMessage(template, values) }
-    : {
-        ...base,
-        messageType: "template",
-        template_id: approved.chatTemplateId,
-        templateName: approved.template.name,
-        languageCode: approved.template.language,
-        templateVariables: Object.fromEntries(
-          approved.template.fields.map((field, index) => [String(index + 1), values[field]])
-        ),
-      }
   try {
-    const sent = await call<Sent>("/api/whatsapp/send", { method: "POST", body })
-    return {
-      state: "sent",
-      via: text ? "text" : "template",
-      chatRecordId: sent.data?.id ?? sent.data?._id ?? null,
-      sender,
-    }
+    const sent = await call<Sent>("/api/whatsapp/send", {
+      method: "POST",
+      body: body({ contact_id: contactId, whatsapp_phone_number_id: phoneNumberId }),
+    })
+    return { state: "sent", via, chatRecordId: sent.data?.id ?? sent.data?._id ?? null, sender }
   } catch (error) {
     if (!(error instanceof ChatApiError)) throw error
     console.error(error)
@@ -604,8 +707,8 @@ export async function sendTestMessage(
   })
 }
 
-// Sends what is due, each row once. Only the messages Book can send yet are
-// taken; any other kind waits as pending until the sender knows it.
+// Sends what is due, each row once. Only the kinds the sender knows are
+// taken; any other waits as pending until it does.
 async function sendDue(now: Date, rules: NotificationRules) {
   const due = await db
     .select()
@@ -614,7 +717,7 @@ async function sendDue(now: Date, rules: NotificationRules) {
       and(
         eq(notificationSends.state, "pending"),
         lte(notificationSends.dueAt, now.toISOString()),
-        inArray(notificationSends.message, [...BOOKING_MESSAGES])
+        inArray(notificationSends.message, [...SEND_KINDS])
       )
     )
     .orderBy(asc(notificationSends.dueAt))

@@ -20,7 +20,7 @@ import {
   user,
 } from "@/lib/db/schema"
 import { seal } from "@/lib/secret-box"
-import { defaultWording } from "../utils/booking-templates"
+import { BOOKING_MESSAGES, defaultWording } from "../utils/booking-templates"
 
 vi.mock("server-only", () => ({}))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
@@ -138,7 +138,7 @@ beforeEach(async () => {
     createdAt: "2026-01-01T00:00:00.000Z",
   })
   await db.insert(chatTemplates).values(
-    (["confirmed", "reminder", "changed", "cancelled", "ownerNewBooking"] as const).flatMap((message) =>
+    BOOKING_MESSAGES.flatMap((message) =>
       (["en", "es"] as const).map((language) => ({
         businessId: "biz",
         message,
@@ -241,21 +241,119 @@ test("inside the 24-hour window a reminder goes as a normal message with its but
   })
 })
 
-test("a kind of message the sender does not know yet waits as pending", async () => {
-  await book("b1")
-  await db.insert(notificationSends).values({
-    businessId: "biz",
-    bookingId: "b1",
-    message: "thankYou" as never,
-    dueAt: NOW.toISOString(),
-    state: "pending",
+test("the thank-you goes as a normal message while the window is open, never as a template", async () => {
+  await db.insert(chatReplies).values({
+    workspaceId: "w1",
+    phoneNumberId: "p1",
+    customerPhone: "18095550101",
+    lastReplyAt: later(-5).toISOString(),
   })
+  await book("b1")
+  await book("b2", { customerPhone: "+1 809 555 0102" })
+  await db.insert(notificationSends).values(
+    ["b1", "b2"].map((bookingId) => ({
+      businessId: "biz",
+      bookingId,
+      message: "thankYou" as const,
+      dueAt: NOW.toISOString(),
+      state: "pending" as const,
+    }))
+  )
   await runNotifications(NOW)
-  const [row] = await db
-    .select()
-    .from(notificationSends)
-    .where(eq(notificationSends.message, "thankYou" as never))
-  expect(row.state).toBe("pending")
+
+  expect((await sends("b1")).find(([message]) => message === "thankYou")).toEqual([
+    "thankYou",
+    0,
+    "sent",
+    "text",
+  ])
+  expect(sent).toContainEqual({
+    contact_id: "c-18095550101",
+    whatsapp_phone_number_id: "p1",
+    messageType: "text",
+    messageText: "¡Gracias, Ana! Shop recibió tu respuesta.",
+  })
+  expect((await sends("b2")).find(([message]) => message === "thankYou")).toEqual([
+    "thankYou",
+    0,
+    "skipped",
+    "windowClosed",
+  ])
+})
+
+test("the owner hears that a customer can't come or cancelled, even once it is cancelled", async () => {
+  await db.insert(notificationSettings).values({
+    businessId: "biz",
+    ownerPhone: "+18095550199",
+    ownerLanguage: "en",
+    reminders: [],
+    quietStart: "21:00",
+    quietEnd: "08:00",
+    turnedOff: [],
+  })
+  await book("b1", { source: "owner" })
+  await book("b2", { source: "owner", status: "cancelled" })
+  await db.insert(notificationSends).values([
+    { businessId: "biz", bookingId: "b1", message: "ownerCantCome", dueAt: NOW.toISOString(), state: "pending" },
+    { businessId: "biz", bookingId: "b2", message: "ownerCancelled", dueAt: NOW.toISOString(), state: "pending" },
+    { businessId: "biz", bookingId: "b2", message: "thankYou", dueAt: NOW.toISOString(), state: "pending" },
+  ])
+  await runNotifications(NOW)
+
+  const toOwner = sent.filter(({ contact_id }) => contact_id === "c-18095550199")
+  expect(toOwner.map((body) => body.template_id).sort()).toEqual([
+    "t-ownerCancelled-en",
+    "t-ownerCantCome-en",
+  ])
+  expect(toOwner[0]).toMatchObject({
+    templateName: expect.stringMatching(/^koblip_book_owner_/),
+    templateVariables: { "1": "Ana", "2": "Haircut", "5": "+1 809 555 0101" },
+  })
+  // The cancellation does not stop the thank-you; only the closed window does.
+  expect((await sends("b2")).find(([message]) => message === "thankYou")).toEqual([
+    "thankYou",
+    0,
+    "skipped",
+    "windowClosed",
+  ])
+})
+
+test("a message to the customer that fails tells the owner, once per booking", async () => {
+  await db.insert(notificationSettings).values({
+    businessId: "biz",
+    ownerPhone: "+18095550199",
+    ownerLanguage: "es",
+    reminders: [1440],
+    quietStart: "21:00",
+    quietEnd: "08:00",
+    turnedOff: [],
+  })
+  sendFails = true
+  await book("b1")
+  await runNotifications(NOW)
+  sendFails = false
+  await runNotifications(later(1))
+
+  // The failed owner's alert tells nobody; the customer's confirmation does.
+  expect(sent.map((body) => body.template_id)).toEqual(["t-ownerFailed-es"])
+  expect(sent[0]).toMatchObject({
+    contact_id: "c-18095550199",
+    templateVariables: { "1": "Ana", "2": "Haircut", "5": "+1 809 555 0101" },
+  })
+
+  // The reminder fails too: the owner already knows of this booking.
+  sendFails = true
+  await runNotifications(later(29 * 60))
+  sendFails = false
+  await runNotifications(later(29 * 60 + 1))
+  expect((await sends("b1")).find(([message]) => message === "reminder")).toEqual([
+    "reminder",
+    1440,
+    "failed",
+    "send_failed",
+  ])
+  const alerts = (await sends("b1")).filter(([message]) => message === "ownerFailed")
+  expect(alerts).toEqual([["ownerFailed", 0, "sent", "template"]])
 })
 
 test("with the 24-hour setting off, the template goes even inside the window", async () => {
@@ -431,7 +529,12 @@ test("a failed send is never tried again; turned-off and opted-out messages do n
     turnedOff: ["reminder"],
   })
   await runNotifications(later(29 * 60))
-  expect((await sends("b1"))[2]).toEqual(["reminder", 1440, "skipped", "turnedOff"])
+  expect((await sends("b1")).find(([message]) => message === "reminder")).toEqual([
+    "reminder",
+    1440,
+    "skipped",
+    "turnedOff",
+  ])
 
   unsubscribed = true
   await book("b2")

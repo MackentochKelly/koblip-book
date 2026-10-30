@@ -2,7 +2,7 @@ import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
-import type { ButtonAction, MessageButton } from "../types/notifications"
+import type { ButtonAction, MessageButton, OwnerAlert } from "../types/notifications"
 
 // Book's WhatsApp booking messages, as Meta templates (Utility) in English and
 // Spanish (docs/koblip-chat-integration.md, step 2). Book creates them in each
@@ -17,6 +17,9 @@ export type BookingMessage =
   | "changed"
   | "cancelled"
   | "ownerNewBooking"
+  | "ownerCantCome"
+  | "ownerCancelled"
+  | "ownerFailed"
 
 export type TemplateLanguage = "en" | "es"
 
@@ -38,14 +41,29 @@ export const BOOKING_MESSAGES: readonly BookingMessage[] = [
   "changed",
   "cancelled",
   "ownerNewBooking",
+  "ownerCantCome",
+  "ownerCancelled",
+  "ownerFailed",
 ]
+
+// The alerts that go to the owner's own WhatsApp, in the owner's language.
+export const OWNER_ALERTS: readonly OwnerAlert[] = [
+  "ownerNewBooking",
+  "ownerCantCome",
+  "ownerCancelled",
+  "ownerFailed",
+]
+
+export function isOwnerAlert(message: string): message is OwnerAlert {
+  return (OWNER_ALERTS as readonly string[]).includes(message)
+}
 
 export const TEMPLATE_LANGUAGES: readonly TemplateLanguage[] = ["en", "es"]
 
 // The fields each message may use: the customer's messages name the business
-// and where it is, the owner's alert gives the customer's phone.
+// and where it is, the owner's alerts give the customer's phone.
 export function messageFields(message: BookingMessage): BookingField[] {
-  return message === "ownerNewBooking"
+  return isOwnerAlert(message)
     ? ["name", "service", "date", "time", "teamMember", "duration", "price", "phone"]
     : ["name", "service", "business", "date", "time", "teamMember", "duration", "price", "address"]
 }
@@ -79,6 +97,21 @@ const DEFAULT_WORDING: Record<TemplateLanguage, Record<BookingMessage, Wording>>
       body: "New booking from {name}: {service} on {date} at {time}. Phone: {phone}. Open Koblip Book for details.",
       footer: "Reply here to talk to us",
     },
+    ownerCantCome: {
+      header: "Customer can't come",
+      body: "Your customer {name} can't make it to {service} on {date} at {time}. The booking is still on. Phone: {phone}. Open Koblip Book for details.",
+      footer: "Reply here to talk to us",
+    },
+    ownerCancelled: {
+      header: "Customer cancelled",
+      body: "Your customer {name} cancelled {service} on {date} at {time}, and the time is free again. Phone: {phone}. Open Koblip Book for details.",
+      footer: "Reply here to talk to us",
+    },
+    ownerFailed: {
+      header: "Message not sent",
+      body: "A WhatsApp message to {name} about {service} on {date} at {time} was not sent. Phone: {phone}. Open Koblip Book to see why.",
+      footer: "Reply here to talk to us",
+    },
   },
   es: {
     confirmed: {
@@ -106,6 +139,21 @@ const DEFAULT_WORDING: Record<TemplateLanguage, Record<BookingMessage, Wording>>
       body: "Nueva reserva de {name}: {service} el {date} a las {time}. Teléfono: {phone}. Abre Koblip Book para ver más.",
       footer: "Responde aquí para hablar con nosotros",
     },
+    ownerCantCome: {
+      header: "El cliente no puede venir",
+      body: "Tu cliente {name} no podrá ir a {service} el {date} a las {time}. La reserva sigue en pie. Teléfono: {phone}. Abre Koblip Book para ver más.",
+      footer: "Responde aquí para hablar con nosotros",
+    },
+    ownerCancelled: {
+      header: "El cliente canceló",
+      body: "Tu cliente {name} canceló {service} el {date} a las {time}, y la hora queda libre. Teléfono: {phone}. Abre Koblip Book para ver más.",
+      footer: "Responde aquí para hablar con nosotros",
+    },
+    ownerFailed: {
+      header: "Mensaje no enviado",
+      body: "Un mensaje de WhatsApp para {name} sobre {service} el {date} a las {time} no se envió. Teléfono: {phone}. Abre Koblip Book para ver por qué.",
+      footer: "Responde aquí para hablar con nosotros",
+    },
   },
 }
 
@@ -117,7 +165,7 @@ export function defaultWording(message: BookingMessage, language: TemplateLangua
 // booking, may say they can't come after booking, and a cancellation only
 // takes an "OK". The owner's alerts have none.
 export function messageButtonActions(message: BookingMessage): ButtonAction[] {
-  if (message === "ownerNewBooking") return []
+  if (isOwnerAlert(message)) return []
   if (message === "cancelled") return ["ok"]
   return ["confirm", "cantCome", "ok"]
 }
@@ -134,6 +182,9 @@ const DEFAULT_BUTTONS: Record<BookingMessage, ButtonAction[]> = {
   changed: ["confirm", "cantCome"],
   cancelled: [],
   ownerNewBooking: [],
+  ownerCantCome: [],
+  ownerCancelled: [],
+  ownerFailed: [],
 }
 
 export function defaultButtons(message: BookingMessage, language: TemplateLanguage): MessageButton[] {
@@ -262,6 +313,9 @@ const NAMES: Record<BookingMessage, string> = {
   changed: "koblip_book_booking_changed_v2",
   cancelled: "koblip_book_booking_cancelled_v2",
   ownerNewBooking: "koblip_book_owner_new_booking_v2",
+  ownerCantCome: "koblip_book_owner_cant_come_v2",
+  ownerCancelled: "koblip_book_owner_cancelled_v2",
+  ownerFailed: "koblip_book_owner_message_failed_v2",
 }
 
 // Koblip's ready-made set, in Koblip's own workspace (D1): Book's wording and
@@ -272,6 +326,9 @@ const KOBLIP_NAMES: Record<BookingMessage, string> = {
   changed: "koblip_booking_changed_v2",
   cancelled: "koblip_booking_cancelled_v2",
   ownerNewBooking: "koblip_owner_new_booking_v2",
+  ownerCantCome: "koblip_owner_cant_come_v2",
+  ownerCancelled: "koblip_owner_cancelled_v2",
+  ownerFailed: "koblip_owner_message_failed_v2",
 }
 
 export function koblipTemplate(
@@ -409,4 +466,15 @@ export function plainMessage(template: BookingTemplate, values: Record<BookingFi
   ]
     .filter(Boolean)
     .join("\n\n")
+}
+
+// The short thank-you after a customer taps a button (S3, D24): a normal
+// message only, since the tap opened the 24-hour window; never a template.
+const THANK_YOU: Record<TemplateLanguage, string> = {
+  en: "Thanks, {name}! {business} got your answer.",
+  es: "¡Gracias, {name}! {business} recibió tu respuesta.",
+}
+
+export function thankYouMessage(language: TemplateLanguage, values: Record<BookingField, string>) {
+  return withValues(THANK_YOU[language], values)
 }

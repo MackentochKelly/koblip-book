@@ -49,6 +49,7 @@ const whatsapp: typeof en = {
     ownerNewBooking: "Aviso de nueva reserva",
     ownerCantCome: "Aviso de cliente que no puede venir",
     ownerCancelled: "Aviso de cliente que canceló",
+    ownerFailed: "Aviso de mensaje no enviado",
     thankYou: "Respuesta de agradecimiento",
   },
   about: {
@@ -57,6 +58,9 @@ const whatsapp: typeof en = {
     changed: "Se envía al cliente cuando cambia la hora.",
     cancelled: "Se envía al cliente cuando se cancela una reserva.",
     ownerNewBooking: "Se envía a tu propio WhatsApp cuando alguien reserva.",
+    ownerCantCome: "Se envía a tu propio WhatsApp cuando un cliente no puede venir.",
+    ownerCancelled: "Se envía a tu propio WhatsApp cuando un cliente cancela.",
+    ownerFailed: "Se envía a tu propio WhatsApp cuando falla un mensaje a un cliente.",
   },
   review: {
     missing: "Sin preparar",
@@ -193,6 +197,7 @@ const whatsapp: typeof en = {
     interrupted: "Se detuvo",
     moved: "Reserva movida",
     notTold: "Cliente aún sin avisar",
+    windowClosed: "Pasaron las 24 horas del cliente",
     other: "Error de Koblip Chat",
   } as Record<string, string>,
 }

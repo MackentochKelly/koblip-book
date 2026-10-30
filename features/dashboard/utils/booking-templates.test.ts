@@ -8,8 +8,11 @@ import {
   buttonsProblem,
   defaultButtons,
   defaultWording,
+  exampleValues,
   fieldsForOwner,
   fieldsFromOwner,
+  messageButtonActions,
+  thankYouMessage,
   withExamples,
   wordingProblem,
 } from "./booking-templates"
@@ -18,7 +21,7 @@ const ok = { header: "Booking confirmed", footer: "Reply here" }
 
 test("Book's own wording passes Meta's rules in both languages", () => {
   for (const language of ["en", "es"] as const) {
-    for (const message of ["confirmed", "reminder", "changed", "cancelled", "ownerNewBooking"] as const) {
+    for (const message of BOOKING_MESSAGES) {
       expect(wordingProblem(message, defaultWording(message, language))).toBeNull()
     }
   }
@@ -97,6 +100,7 @@ test("buttons that WhatsApp would refuse are caught first", () => {
   expect(buttonsProblem("reminder", [button("confirm", "x".repeat(26))])).toBe("badButton")
   expect(buttonsProblem("cancelled", [button("confirm", "Yes")])).toBe("badButton")
   expect(buttonsProblem("ownerNewBooking", [button("ok", "OK")])).toBe("badButton")
+  expect(messageButtonActions("ownerFailed")).toEqual([])
   expect(buttonsProblem("reminder", [button("confirm", "Yes"), button("cantCome", "yes")])).toBe("sameButton")
   expect(buttonsProblem("reminder", [button("confirm", "Yes"), button("confirm", "Sure")])).toBe("sameButton")
 })
@@ -139,4 +143,10 @@ test("the new fields fit the customer's messages and the owner's alert", () => {
   expect(wordingProblem("ownerNewBooking", { ...ok, body: "New booking with {teamMember} for {duration} at the shop today." })).toBeNull()
   expect(wordingProblem("ownerNewBooking", { ...ok, body: "New booking near {address} for the shop today." })).toBe("unknownField")
   expect(withExamples("With {teamMember} for {duration}", "en")).toBe("With Sam for 45 min")
+})
+
+test("the thank-you names the customer and the business", () => {
+  const values = { ...exampleValues("es"), name: "Ana", business: "Lumen" }
+  expect(thankYouMessage("es", values)).toBe("¡Gracias, Ana! Lumen recibió tu respuesta.")
+  expect(thankYouMessage("en", values)).toBe("Thanks, Ana! Lumen got your answer.")
 })
