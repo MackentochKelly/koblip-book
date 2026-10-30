@@ -44,7 +44,7 @@ tasks top to bottom; when a task waits on another lane, take your next one.
 | --- | --- | --- | --- |
 | 1. Chat API and platform | | `Wapi/wapi-api`, `chat-oauth.ts`, `lib/platform-settings.ts`, `lib/notification-rules.ts` | C1, C2, K1, A0 |
 | 2. Templates and sending | Dev 2 | `booking-templates.ts`, `chat-templates.ts`, `notification-sender.ts`, `lib/whatsapp-offer.ts` | S1, S2, S4, S6, S8, K2, K3, S5, K5, K6 |
-| 3. Replies, activity, bookings | | `chat-events.ts`, `notification-replies.ts`, `booking-actions.ts`, booking components | S3, S9, S7, B1 |
+| 3. Replies, activity, bookings | Dev 3 | `chat-events.ts`, `notification-replies.ts`, `booking-actions.ts`, booking components | S3, S9, S7, B1 |
 | 4. Business page | Dev 4 | `app/(owner)/dashboard/[businessId]/whatsapp/`, `features/dashboard/components/whatsapp-*.tsx`, `message-editor.tsx`, `features/dashboard/i18n/*/whatsapp.ts` | P1, P5, P6, P7, P3, P2, P4, K4 |
 | 5. Admin dashboard | | `app/(admin)/admin/whatsapp/`, `features/admin/` | A1, A2, A4, A6, A5, A7, A3, A8 |
 | Everyone, last | | | F1 |
@@ -165,7 +165,7 @@ task is in Lanes above.
 | S6 | More fields: team member, price, address, duration (and a manage-booking link once a manage page exists) | `booking-templates.ts`, `notification-sender.ts` | W0 | `To do` |
 | S7 | Opt-out: a customer who writes STOP (or BAJA) gets no more messages; the sender asks `notification-replies.ts` whether a number opted out | `chat-events.ts`, `notification-replies.ts` (one call added in the sender by lane 2) | S3 | `To do` |
 | S8 | Test send to the owner's phone; "Send again" for a failed message | `notification-actions.ts`, `notification-sender.ts` | S1 | `To do` |
-| S9 | Activity query with filters and search | `features/dashboard/api/notifications.ts` | W0 | `To do` |
+| S9 | Activity query with filters and search | `features/dashboard/api/notifications.ts` | W0 | `Working on` Dev 3, 2026-10-30 |
 
 ### Koblip number (default sender)
 
