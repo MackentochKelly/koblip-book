@@ -26,6 +26,9 @@ export const BOOKING_RULES = {
   maxAddonDescription: 200,
   maxAddonPrompt: 120,
   addonMinutes: [0, 5, 10, 15, 20, 30, 45, 60, 90],
+  // The open bookings screen looks for new bookings this often (seconds),
+  // so one made on the booking page shows up without reloading.
+  ownerRefreshSeconds: 5,
 } as const
 
 export const PHONE_PATTERN = /^\+?[\d\s().-]{7,25}$/

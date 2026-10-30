@@ -1,24 +1,21 @@
 import "server-only"
 
 import { auth } from "@/lib/auth"
-import type { DemoView } from "@/lib/demo-rules"
+import type { DemoPaths } from "@/lib/demo-rules"
 import { createDemoCopy, findDemoCopy, type DemoCopy } from "./demo-copy"
 import { mayOpenNewDemo } from "./new-demo-limit"
 import { purgeOldDemos } from "./purge-demos"
 
 export type OpenDemoResult =
-  | { ok: true; path: string; setCookies: string[] }
+  | { ok: true; paths: DemoPaths; setCookies: string[] }
   | { ok: false; error: "too_many" }
 
 // Where each demo screen lives in the real app.
-function pathOf(view: DemoView, copy: DemoCopy): string {
-  switch (view) {
-    case "page":
-      return `/b/${copy.slug}`
-    case "dashboard":
-      return `/dashboard/${copy.id}`
-    case "assistant":
-      return `/dashboard/${copy.id}/assistant`
+function pathsOf(copy: DemoCopy): DemoPaths {
+  return {
+    page: `/b/${copy.slug}`,
+    dashboard: `/dashboard/${copy.id}`,
+    assistant: `/dashboard/${copy.id}/assistant`,
   }
 }
 
@@ -32,19 +29,16 @@ function addressOf(headers: Headers): string {
 
 // Opens the visitor's demo: signs them in as a guest when they are not
 // signed in (Better Auth's anonymous plugin), finds their copy or makes a
-// new one from the sample, and says where `view` is. The guest's session
-// cookies come back to set on the response.
-export async function openDemo(
-  view: DemoView,
-  headers: Headers
-): Promise<OpenDemoResult> {
+// new one from the sample, and says where each screen is. The guest's
+// session cookies come back to set on the response.
+export async function openDemo(headers: Headers): Promise<OpenDemoResult> {
   let setCookies: string[] = []
   const current = await auth.api.getSession({ headers })
   let userId = current?.user.id
   if (userId) {
     const copy = await findDemoCopy(userId)
     if (copy) {
-      return { ok: true, path: pathOf(view, copy), setCookies }
+      return { ok: true, paths: pathsOf(copy), setCookies }
     }
   }
   if (!mayOpenNewDemo(addressOf(headers))) {
@@ -63,5 +57,5 @@ export async function openDemo(
   }
   await purgeOldDemos()
   const copy = await createDemoCopy(userId)
-  return { ok: true, path: pathOf(view, copy), setCookies }
+  return { ok: true, paths: pathsOf(copy), setCookies }
 }

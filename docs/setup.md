@@ -28,7 +28,6 @@ The table describes the variables consumed by this repository. Provider accounts
 | `ELEVENLABS_API_KEY`                                                    | Spoken replies. The server creates a short-lived token for the browser.                          |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`        | Email delivery, including verification messages. When absent, sending is skipped with a warning. |
 | `UPLOADS_DIR`                                                           | Optional photo storage path; defaults to `./data/uploads`.                                       |
-| `SHOWCASE_BUSINESS_SLUG`                                                | Optional business page featured on the home page; the showcase is hidden when empty.             |
 
 Authentication and database access need their settings to work. Configure each provider before testing the feature that uses it. Missing SMTP settings let local development continue, but verification messages will not be delivered.
 

@@ -11,8 +11,8 @@ import { HomeFaq } from "@/components/home-faq"
 import { HomeFeatures } from "@/components/home-features"
 import { GET_STARTED_ID } from "@/components/home-section-title"
 import { HowItWorks } from "@/components/how-it-works"
-import { LiveExample } from "@/components/live-example"
 import { MadeFor } from "@/components/made-for"
+import { SeeItInAction } from "@/components/see-it-in-action"
 import { LanguageMenu } from "@/components/language-menu"
 import { LanguageProvider } from "@/components/language-provider"
 import { MetaProviderBadge } from "@/components/meta-provider-badge"
@@ -22,25 +22,16 @@ import { WorksWith } from "@/components/works-with"
 import { Button } from "@/components/ui/button"
 import { Highlighter } from "@/components/ui/highlighter"
 import { claimBusiness } from "@/features/dashboard/api/actions"
-import { getBusinessPage } from "@/features/business-page/api/get-business-page"
 import { GetStarted } from "@/features/onboarding/components/get-started"
 import { onboardingWordsFor } from "@/features/onboarding/i18n"
 import { getSession } from "@/lib/dal"
 import { fontDisplay, fontSerif } from "@/lib/fonts"
 import { messagesFor } from "@/lib/i18n"
-import { pickLanguage, type PageLanguage } from "@/lib/page-language"
+import { pickLanguage } from "@/lib/page-language"
 import { cn } from "@/lib/utils"
 
 // ?lang= wins, then the visitor's browser language, else English (as on a
 // business page).
-// The business shown live on the home page: a setting
-// (SHOWCASE_BUSINESS_SLUG). Not set, or not found: no live example.
-async function showcaseHref(language: PageLanguage) {
-  const slug = process.env.SHOWCASE_BUSINESS_SLUG
-  if (!slug || !(await getBusinessPage(slug, language))) return null
-  return `/b/${encodeURIComponent(slug)}?lang=${language}`
-}
-
 async function pageLanguage(searchParams: PageProps<"/">["searchParams"]) {
   const { lang } = await searchParams
   return pickLanguage(lang, (await headers()).get("accept-language"))
@@ -60,7 +51,6 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   const { claim } = await searchParams
   const language = await pageLanguage(searchParams)
   const t = messagesFor(language).home
-  const liveHref = await showcaseHref(language)
   return (
     <LanguageProvider language={language}>
       <div
@@ -144,7 +134,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         <MadeFor language={language} />
         <HowItWorks words={t} />
         <HomeFeatures words={t.features} />
-        {liveHref && <LiveExample href={liveHref} words={t.live} />}
+        <SeeItInAction words={t.action} language={language} />
         <HomeFaq words={t.faq} />
         <HomeCta
           title={t.cta.title}

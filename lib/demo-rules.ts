@@ -12,3 +12,6 @@ export const DEMO_RULES = {
 export const DEMO_VIEWS = ["page", "dashboard", "assistant"] as const
 
 export type DemoView = (typeof DEMO_VIEWS)[number]
+
+// Each screen's address in the real app, for the visitor's own copy.
+export type DemoPaths = Record<DemoView, string>

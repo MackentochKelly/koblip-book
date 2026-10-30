@@ -176,10 +176,24 @@ const en = {
       title: "Get your booking page today",
       button: "Find your business",
     },
-    live: {
-      title: "See a live page",
-      frameTitle: "A live booking page",
-      open: "Open a live page",
+    // "See it in action": the real app on the visitor's own demo copy.
+    action: {
+      title: "See it in action",
+      steps: {
+        page: "Book",
+        dashboard: "See it arrive",
+        assistant: "Ask your AI",
+      },
+      tabsLabel: "Demo screens",
+      tabs: { page: "Page", dashboard: "Dashboard", assistant: "Assistant" },
+      frames: {
+        page: "Demo booking page",
+        dashboard: "Demo dashboard",
+        assistant: "Demo AI assistant",
+      },
+      tooMany: "Too many demos opened from here. Try again in an hour.",
+      failed: "The demo didn't open.",
+      retry: "Try again",
     },
     steps: {
       title: "How it works",
@@ -428,10 +442,23 @@ const es: Messages = {
       title: "Consigue hoy tu página de reservas",
       button: "Busca tu negocio",
     },
-    live: {
-      title: "Mira una página real",
-      frameTitle: "Una página de reservas real",
-      open: "Abrir una página real",
+    action: {
+      title: "Míralo en acción",
+      steps: {
+        page: "Reserva",
+        dashboard: "Mira cómo llega",
+        assistant: "Pregunta a tu IA",
+      },
+      tabsLabel: "Pantallas de la demo",
+      tabs: { page: "Página", dashboard: "Panel", assistant: "Asistente" },
+      frames: {
+        page: "Página de reservas de la demo",
+        dashboard: "Panel de la demo",
+        assistant: "Asistente de IA de la demo",
+      },
+      tooMany: "Se abrieron demasiadas demos desde aquí. Prueba en una hora.",
+      failed: "La demo no se abrió.",
+      retry: "Reintentar",
     },
     steps: {
       title: "Cómo funciona",

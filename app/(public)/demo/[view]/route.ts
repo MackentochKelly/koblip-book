@@ -18,14 +18,14 @@ export async function GET(request: NextRequest, { params }: Props) {
   if (!isDemoView(view)) {
     return new Response(null, { status: 404 })
   }
-  const result = await openDemo(view, request.headers)
+  const result = await openDemo(request.headers)
   if (!result.ok) {
     return new Response(null, { status: 429 })
   }
   // A relative Location (RFC 9110), so it stays on whatever host the
   // visitor used, behind the proxy too.
   const headers = new Headers({
-    location: result.path,
+    location: result.paths[view],
     "cache-control": "no-store",
   })
   for (const cookie of result.setCookies) {

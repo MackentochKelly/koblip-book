@@ -10,6 +10,8 @@ import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { BookingsView } from "@/features/dashboard/components/bookings-view"
 import { ConfirmDetailsCard } from "@/features/dashboard/components/confirm-details-card"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
+import { LiveRefresh } from "@/components/live-refresh"
+import { BOOKING_RULES } from "@/lib/booking-rules"
 import { addDaysTo, todayIn } from "@/lib/format-booking-time"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -44,25 +46,29 @@ export default async function BookingsPage({ params }: Props) {
     }
   })
   const bookings = (
-    <BookingsView
-      businessId={businessId}
-      upcoming={upcoming}
-      past={past}
-      counts={counts}
-      nextDays={nextDays}
-      addOptions={{
-        services: owner.services.map(({ id, name, durationMinutes }) => ({
-          id,
-          name,
-          durationMinutes,
-        })),
-        team: owner.team.map(({ id, name }) => ({ id, name })),
-        serviceTeams,
-        addonGroups,
-        today,
-      }}
-      createBooking={createOwnerBooking}
-    />
+    <>
+      {/* New bookings (from the booking page) show up by themselves. */}
+      <LiveRefresh seconds={BOOKING_RULES.ownerRefreshSeconds} />
+      <BookingsView
+        businessId={businessId}
+        upcoming={upcoming}
+        past={past}
+        counts={counts}
+        nextDays={nextDays}
+        addOptions={{
+          services: owner.services.map(({ id, name, durationMinutes }) => ({
+            id,
+            name,
+            durationMinutes,
+          })),
+          team: owner.team.map(({ id, name }) => ({ id, name })),
+          serviceTeams,
+          addonGroups,
+          today,
+        }}
+        createBooking={createOwnerBooking}
+      />
+    </>
   )
   if (business.detailsConfirmedAt !== null) return bookings
   // Until the owner confirms what came from Google Maps, that comes first.
