@@ -8,6 +8,7 @@ import {
   businesses,
   chatConnections,
   chatReplies,
+  koblipChatConnection,
   notificationSends,
 } from "@/lib/db/schema"
 import type { NotificationRules } from "@/lib/notification-rules"
@@ -22,16 +23,26 @@ import {
   type BookingMessage,
   type TemplateLanguage,
 } from "../utils/booking-templates"
+import type { Sender } from "../types/notifications"
 import { localDateTime, planReminders } from "../utils/reminder-schedule"
-import { ChatApiError, chatApi, chatConnectionUsable } from "./chat-oauth"
-import { refreshChatTemplates, sendableTemplate } from "./chat-templates"
+import { ChatApiError, chatApi, chatConnectionUsable, koblipChatApi } from "./chat-oauth"
+import {
+  koblipSendableTemplate,
+  ownTemplatesApproved,
+  refreshChatTemplates,
+  sendableTemplate,
+} from "./chat-templates"
 import { notificationSettingsFor } from "./notifications"
 
 // Book's WhatsApp booking messages (docs/koblip-chat-integration.md, step 3),
-// sent through the business's Koblip Chat with its public API: the person as
-// a contact (POST /api/contacts/find-or-create), then the message
+// sent through Koblip Chat with its public API: the person as a contact
+// (POST /api/contacts/find-or-create), then the message
 // (POST /api/whatsapp/send). Plain text inside Meta's 24-hour window, the
 // approved template outside it.
+//
+// Each message goes from one number (K3): the business's own once it is
+// connected and Meta approved its messages, else Koblip's, with Koblip's
+// ready-made templates; the row records which.
 //
 // Every message is a row in notification_sends, made once per booking,
 // message and reminder time (a unique index), so it can never go twice:
@@ -52,7 +63,92 @@ async function sendingConnections() {
   return rows.filter(chatConnectionUsable)
 }
 
-// New rows for bookings made since the business connected: the confirmation,
+// Koblip's own connection (K1) when it can send: working, allowed to use
+// templates, and with a WhatsApp number.
+async function koblipConnection() {
+  const [row] = await db.select().from(koblipChatConnection).limit(1)
+  return row && chatConnectionUsable(row) && row.phoneNumberId ? row : null
+}
+
+type ApiInit = Parameters<typeof chatApi>[2]
+
+// The number one business's messages go from, and how to reach Chat for it.
+type Line = {
+  sender: Sender
+  workspaceId: string
+  phoneNumberId: string
+  call: <T>(path: string, init?: ApiInit) => Promise<T>
+}
+
+// Koblip's number is for businesses with an owner who can see and control
+// what goes in their name; never for a demo.
+async function koblipMayServe(businessId: string) {
+  const [row] = await db
+    .select({ id: businesses.id })
+    .from(businesses)
+    .where(and(eq(businesses.id, businessId), isNotNull(businesses.ownerId), eq(businesses.isDemo, false)))
+    .limit(1)
+  return !!row
+}
+
+// Which number a business sends from now: its own when connected and Meta
+// approved every message it has on, in each language; else Koblip's; else
+// its own as it stands (normal messages in the window, approved templates).
+// "wait" when a connection must be renewed first; null when none can send.
+async function lineFor(businessId: string, turnedOff: BookingMessage[]): Promise<Line | "wait" | null> {
+  const [[own], koblip] = await Promise.all([
+    db.select().from(chatConnections).where(eq(chatConnections.businessId, businessId)).limit(1),
+    db
+      .select()
+      .from(koblipChatConnection)
+      .limit(1)
+      .then(async ([row]) => (row && (await koblipMayServe(businessId)) ? row : null)),
+  ])
+  const ownLine: Line | null =
+    own && chatConnectionUsable(own) && own.phoneNumberId
+      ? {
+          sender: "own",
+          workspaceId: own.workspaceId,
+          phoneNumberId: own.phoneNumberId,
+          call: (path, init) => chatApi(businessId, path, init),
+        }
+      : null
+  const on = BOOKING_MESSAGES.filter((message) => !turnedOff.includes(message))
+  if (ownLine && (await ownTemplatesApproved(businessId, on))) return ownLine
+  if (koblip && chatConnectionUsable(koblip) && koblip.phoneNumberId) {
+    return {
+      sender: "koblip",
+      workspaceId: koblip.workspaceId,
+      phoneNumberId: koblip.phoneNumberId,
+      call: (path, init) => koblipChatApi(path, init),
+    }
+  }
+  if (ownLine) return ownLine
+  return own || koblip ? "wait" : null
+}
+
+// The businesses Book plans messages for, each with the moment it could
+// first send: bookings made before then get none.
+async function sendingBusinesses() {
+  const since = new Map<string, string>()
+  for (const connection of await sendingConnections()) {
+    since.set(connection.businessId, connection.createdAt)
+  }
+  const koblip = await koblipConnection()
+  if (koblip) {
+    const served = await db
+      .select({ id: businesses.id })
+      .from(businesses)
+      .where(and(isNotNull(businesses.ownerId), eq(businesses.isDemo, false)))
+    for (const { id } of served) {
+      const own = since.get(id)
+      if (!own || koblip.createdAt < own) since.set(id, koblip.createdAt)
+    }
+  }
+  return since
+}
+
+// New rows for bookings made since the business could send: the confirmation,
 // the owner's alert and the reminders; "Booking changed" and new reminders
 // for bookings moved; and the cancellation note for bookings cancelled after
 // their confirmation went.
@@ -61,8 +157,7 @@ async function plan(now: Date) {
   const cancelled = alias(notificationSends, "cancelled")
   const changed = alias(notificationSends, "changed")
 
-  for (const connection of await sendingConnections()) {
-    const businessId = connection.businessId
+  for (const [businessId, since] of await sendingBusinesses()) {
     const [settings, [business]] = await Promise.all([
       notificationSettingsFor(businessId),
       db.select({ timezone: businesses.timezone }).from(businesses).where(eq(businesses.id, businessId)),
@@ -81,7 +176,7 @@ async function plan(now: Date) {
           eq(bookings.businessId, businessId),
           ne(bookings.status, "cancelled"),
           gt(bookings.startAt, now.toISOString()),
-          gte(bookings.createdAt, connection.createdAt),
+          gte(bookings.createdAt, since),
           isNull(confirmed.id)
         )
       )
@@ -167,7 +262,7 @@ async function plan(now: Date) {
           ne(bookings.status, "cancelled"),
           gt(bookings.moves, 0),
           gt(bookings.startAt, now.toISOString()),
-          gte(bookings.createdAt, connection.createdAt),
+          gte(bookings.createdAt, since),
           isNull(changed.id)
         )
       )
@@ -267,7 +362,7 @@ async function plan(now: Date) {
   }
 }
 
-// The person's last message to the business's number, for Meta's window.
+// The person's last message to the number Book sends from, for Meta's window.
 async function windowOpen(
   workspaceId: string,
   phoneNumberId: string,
@@ -297,8 +392,9 @@ type Contact = { data?: { _id?: string; is_unsubscribed?: boolean } }
 type Sent = { data?: { id?: string; _id?: string } }
 
 type Outcome =
-  | { state: "sent"; via: "text" | "template"; chatRecordId: string | null }
-  | { state: "failed" | "skipped"; reason: string }
+  | { state: "sent"; via: "text" | "template"; chatRecordId: string | null; sender: Sender }
+  // `sender`: the number it was tried from, once one was picked.
+  | { state: "failed" | "skipped"; reason: string; sender?: Sender }
   // Nothing reached WhatsApp (Chat could not be asked): tried again next time.
   | { state: "pending" }
 
@@ -309,19 +405,20 @@ async function deliver(
   rules: NotificationRules
 ): Promise<Outcome> {
   const [row] = await db
-    .select({ booking: bookings, business: businesses, connection: chatConnections })
+    .select({ booking: bookings, business: businesses })
     .from(bookings)
     .innerJoin(businesses, eq(businesses.id, bookings.businessId))
-    .innerJoin(chatConnections, eq(chatConnections.businessId, bookings.businessId))
     .where(eq(bookings.id, send.bookingId))
     .limit(1)
   if (!row) return { state: "skipped", reason: "notConnected" }
-  const { booking, business, connection } = row
-  if (!chatConnectionUsable(connection) || !connection.phoneNumberId) return { state: "pending" }
+  const { booking, business } = row
 
   const settings = await notificationSettingsFor(business.id)
   const message = send.message as BookingMessage
   if (settings.turnedOff.includes(message)) return { state: "skipped", reason: "turnedOff" }
+  const line = await lineFor(business.id, settings.turnedOff)
+  if (line === "wait") return { state: "pending" }
+  if (!line) return { state: "skipped", reason: "notConnected" }
   if (booking.status === "cancelled" && message !== "cancelled") {
     return { state: "skipped", reason: "cancelled" }
   }
@@ -351,8 +448,7 @@ async function deliver(
 
   return sendMessage({
     businessId: business.id,
-    workspaceId: connection.workspaceId,
-    phoneNumberId: connection.phoneNumberId,
+    line,
     phone,
     contactName: toOwner ? business.name : booking.customerName,
     message,
@@ -367,8 +463,7 @@ async function deliver(
 
 type Target = {
   businessId: string
-  workspaceId: string
-  phoneNumberId: string
+  line: Line
   phone: string
   contactName: string
   message: BookingMessage
@@ -380,11 +475,10 @@ type Target = {
   refreshed: Set<string>
 }
 
-// One message to one person through the business's Koblip Chat.
+// One message to one person from the line's number.
 async function sendMessage({
   businessId,
-  workspaceId,
-  phoneNumberId,
+  line,
   phone,
   contactName,
   message,
@@ -395,39 +489,46 @@ async function sendMessage({
   rules,
   refreshed,
 }: Target): Promise<Outcome> {
-  let { template, approved } = await sendableTemplate(businessId, message, language)
+  const { sender, workspaceId, phoneNumberId, call } = line
+  // Koblip's number sends Koblip's ready-made set; the business's own, its
+  // own copies in its wording.
+  const sendable = () =>
+    sender === "koblip"
+      ? koblipSendableTemplate(message, language)
+      : sendableTemplate(businessId, message, language)
+  let { template, approved } = await sendable()
   const digits = phone.replace(/\D/g, "")
   // Inside the 24-hour window a normal message goes (free), unless the owner
   // turned that off. Its buttons go too when WhatsApp takes their titles;
   // else the approved template carries them, or the words go alone.
   const inWindow =
     freeTextInWindow && (await windowOpen(workspaceId, phoneNumberId, digits, now, rules))
-  if (!inWindow && !approved && !refreshed.has(businessId)) {
+  if (sender === "own" && !inWindow && !approved && !refreshed.has(businessId)) {
     // Book's copy of Meta's review may be behind: ask Chat once per check.
     refreshed.add(businessId)
     await refreshChatTemplates(businessId)
-    ;({ template, approved } = await sendableTemplate(businessId, message, language))
+    ;({ template, approved } = await sendable())
   }
-  if (!inWindow && !approved) return { state: "failed", reason: "templateNotApproved" }
+  if (!inWindow && !approved) return { state: "failed", reason: "templateNotApproved", sender }
   const buttonsFit = template.buttons.every(({ label }) => label.length <= INTERACTIVE_BUTTON_TITLE)
   const text = inWindow && (buttonsFit || !approved)
 
   let contact: Contact
   try {
-    contact = await chatApi<Contact>(businessId, "/api/contacts/find-or-create", {
+    contact = await call<Contact>("/api/contacts/find-or-create", {
       method: "POST",
       body: { phone_number: digits, name: contactName },
     })
   } catch (error) {
     if (!(error instanceof ChatApiError)) throw error
     // A refused number will be refused again; anything else may pass later.
-    if (error.status === 400) return { state: "failed", reason: "badPhone" }
+    if (error.status === 400) return { state: "failed", reason: "badPhone", sender }
     console.error(error)
     return { state: "pending" }
   }
   const contactId = contact.data?._id
-  if (!contactId) return { state: "failed", reason: "chat" }
-  if (contact.data?.is_unsubscribed) return { state: "skipped", reason: "unsubscribed" }
+  if (!contactId) return { state: "failed", reason: "chat", sender }
+  if (contact.data?.is_unsubscribed) return { state: "skipped", reason: "unsubscribed", sender }
 
   const base = { contact_id: contactId, whatsapp_phone_number_id: phoneNumberId }
   // The template goes exactly as Meta approved it, with its own fields.
@@ -454,17 +555,18 @@ async function sendMessage({
         ),
       }
   try {
-    const sent = await chatApi<Sent>(businessId, "/api/whatsapp/send", { method: "POST", body })
+    const sent = await call<Sent>("/api/whatsapp/send", { method: "POST", body })
     return {
       state: "sent",
       via: text ? "text" : "template",
       chatRecordId: sent.data?.id ?? sent.data?._id ?? null,
+      sender,
     }
   } catch (error) {
     if (!(error instanceof ChatApiError)) throw error
     console.error(error)
     // It may have gone: never sent again.
-    return { state: "failed", reason: error.code ?? "chat" }
+    return { state: "failed", reason: error.code ?? "chat", sender }
   }
 }
 
@@ -476,16 +578,9 @@ export async function sendTestMessage(
   message: BookingMessage,
   now = new Date()
 ): Promise<Outcome> {
-  const [connection] = await db
-    .select()
-    .from(chatConnections)
-    .where(eq(chatConnections.businessId, businessId))
-    .limit(1)
-  if (!connection) return { state: "skipped", reason: "notConnected" }
-  if (!chatConnectionUsable(connection) || !connection.phoneNumberId) {
-    return { state: "skipped", reason: "notConnected" }
-  }
   const settings = await notificationSettingsFor(businessId)
+  const line = await lineFor(businessId, settings.turnedOff)
+  if (!line || line === "wait") return { state: "skipped", reason: "notConnected" }
   if (!settings.ownerPhone) return { state: "skipped", reason: "noOwnerPhone" }
   const [business] = await db
     .select({ name: businesses.name, address: businesses.address })
@@ -496,8 +591,7 @@ export async function sendTestMessage(
   if (business?.address) values.address = business.address
   return sendMessage({
     businessId,
-    workspaceId: connection.workspaceId,
-    phoneNumberId: connection.phoneNumberId,
+    line,
     phone: settings.ownerPhone,
     contactName: business?.name ?? values.business,
     message,
@@ -549,7 +643,7 @@ async function sendDue(now: Date, rules: NotificationRules) {
           ? { ...outcome, reason: null, sentAt: new Date().toISOString() }
           : outcome.state === "pending"
             ? { state: "pending" }
-            : { state: outcome.state, reason: outcome.reason }
+            : { state: outcome.state, reason: outcome.reason, sender: outcome.sender }
       )
       .where(eq(notificationSends.id, send.id))
   }

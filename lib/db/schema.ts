@@ -427,6 +427,33 @@ export const chatTemplates = sqliteTable(
   (table) => [primaryKey({ columns: [table.businessId, table.message, table.language] })]
 )
 
+// Koblip's ready-made templates in Koblip's own Chat workspace, one per
+// message and language, sent for every business on Koblip's number (K2, K3):
+// Chat's template id and Meta's review, as Chat last reported them. A row
+// exists once the admin submitted the message to Meta, or Chat already had it.
+export const koblipChatTemplates = sqliteTable(
+  "koblip_chat_templates",
+  {
+    message: text({
+      enum: ["confirmed", "reminder", "changed", "cancelled", "ownerNewBooking"],
+    }).notNull(),
+    language: text({ enum: ["en", "es"] }).notNull(),
+    chatTemplateId: text().notNull(),
+    status: text().notNull(),
+    // Meta's words when it refused the template.
+    reason: text(),
+    // What the admin submitted, sent exactly so once approved.
+    submitted: text({ mode: "json" }).$type<{
+      header: string
+      body: string
+      footer: string
+      buttons: { action: "confirm" | "cantCome" | "ok"; label: string }[]
+    }>(),
+    ...timestamps(),
+  },
+  (table) => [primaryKey({ columns: [table.message, table.language] })]
+)
+
 // A business's WhatsApp notification settings, as its owner set them on the
 // WhatsApp page; no row means the defaults in lib/notification-rules.ts.
 export const notificationSettings = sqliteTable("notification_settings", {

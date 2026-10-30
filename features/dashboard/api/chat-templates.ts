@@ -1,13 +1,19 @@
 import "server-only"
-import { and, eq } from "drizzle-orm"
+import { and, eq, inArray } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { chatConnections, chatTemplates, notificationTexts } from "@/lib/db/schema"
+import {
+  chatConnections,
+  chatTemplates,
+  koblipChatTemplates,
+  notificationTexts,
+} from "@/lib/db/schema"
 import type { ChatConnection, ChatMessagesState } from "../types/chat-connection"
 import {
   BOOKING_MESSAGES,
   TEMPLATE_LANGUAGES,
   bookingTemplate,
+  koblipTemplate,
   type BookingMessage,
   type BookingTemplate,
   type TemplateLanguage,
@@ -343,6 +349,44 @@ export async function sendableTemplate(
       chatTemplateId: row.chatTemplateId,
       template: row.submitted
         ? bookingTemplate(message, language, row.submitted, row.submitted.buttons)
+        : template,
+    },
+  }
+}
+
+// Whether Meta approved the business's own copy of each of these messages in
+// every language: then its own number can send them all (K3).
+export async function ownTemplatesApproved(businessId: string, messages: BookingMessage[]) {
+  if (!messages.length) return true
+  const rows = await db
+    .select({ message: chatTemplates.message })
+    .from(chatTemplates)
+    .where(
+      and(
+        eq(chatTemplates.businessId, businessId),
+        eq(chatTemplates.status, "approved"),
+        inArray(chatTemplates.message, messages)
+      )
+    )
+  return rows.length === messages.length * TEMPLATE_LANGUAGES.length
+}
+
+// The same as sendableTemplate, from Koblip's ready-made set in Koblip's own
+// workspace, for a business sending from Koblip's number.
+export async function koblipSendableTemplate(message: BookingMessage, language: TemplateLanguage) {
+  const template = koblipTemplate(message, language)
+  const [row] = await db
+    .select()
+    .from(koblipChatTemplates)
+    .where(and(eq(koblipChatTemplates.message, message), eq(koblipChatTemplates.language, language)))
+    .limit(1)
+  if (row?.status !== "approved") return { template, approved: null }
+  return {
+    template,
+    approved: {
+      chatTemplateId: row.chatTemplateId,
+      template: row.submitted
+        ? koblipTemplate(message, language, row.submitted, row.submitted.buttons)
         : template,
     },
   }

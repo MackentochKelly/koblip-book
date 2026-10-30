@@ -264,6 +264,25 @@ const NAMES: Record<BookingMessage, string> = {
   ownerNewBooking: "koblip_book_owner_new_booking_v2",
 }
 
+// Koblip's ready-made set, in Koblip's own workspace (D1): Book's wording and
+// buttons for every business, which names itself through {business}.
+const KOBLIP_NAMES: Record<BookingMessage, string> = {
+  confirmed: "koblip_booking_confirmed_v2",
+  reminder: "koblip_booking_reminder_v2",
+  changed: "koblip_booking_changed_v2",
+  cancelled: "koblip_booking_cancelled_v2",
+  ownerNewBooking: "koblip_owner_new_booking_v2",
+}
+
+export function koblipTemplate(
+  message: BookingMessage,
+  language: TemplateLanguage,
+  wording?: Wording,
+  buttons?: MessageButton[]
+): BookingTemplate {
+  return { ...bookingTemplate(message, language, wording, buttons), name: KOBLIP_NAMES[message] }
+}
+
 // One message as Chat gets it, from the owner's wording and buttons or Book's.
 export function bookingTemplate(
   message: BookingMessage,
