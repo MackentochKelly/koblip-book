@@ -15,7 +15,6 @@ const whatsapp: typeof en = {
   },
   partsLabel: "Partes de WhatsApp",
   ready: "Listo para enviar",
-  repliesSoon: "Los botones de respuesta llegan pronto",
   messages: "Mensajes",
   names: {
     confirmed: "Reserva confirmada",
@@ -102,6 +101,16 @@ const whatsapp: typeof en = {
   noReminders: "Sin recordatorios",
   quietHours: "Horas sin mensajes",
   quietHint: "Sin mensajes de noche. Los recordatorios largos van la tarde antes.",
+  // Respuestas: qué hace "No podré ir", y el agradecimiento.
+  cantComeActions: {
+    alertOnly: "Solo avisarme",
+    cancel: "Cancelar y liberar la hora",
+  },
+  cantComeHints: {
+    alertOnly: "La reserva sigue. Tú decides.",
+    cancel: "La hora queda libre para otros.",
+  },
+  thankYouLabel: "Agradecer al cliente su respuesta",
   // El ajuste de 24 horas en Horarios.
   window: "Ventana de 24 horas",
   freeText: "Mensaje normal dentro de 24 horas",
