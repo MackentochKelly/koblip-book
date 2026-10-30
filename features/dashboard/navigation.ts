@@ -2,9 +2,9 @@ import {
   ClockIcon,
   ContactIcon,
   LayoutDashboardIcon,
-  MessageCircleIcon,
   PuzzleIcon,
   SettingsIcon,
+  SparklesIcon,
   TagIcon,
   UsersIcon,
 } from "@/components/ui/icons"
@@ -21,7 +21,7 @@ export const NAV_GROUPS = [
       { path: "/services", key: "services", icon: TagIcon },
       { path: "/team", key: "team", icon: UsersIcon },
       { path: "/hours", key: "hours", icon: ClockIcon },
-      { path: "/assistant", key: "assistant", icon: MessageCircleIcon },
+      { path: "/assistant", key: "assistant", icon: SparklesIcon },
     ],
   },
   {
