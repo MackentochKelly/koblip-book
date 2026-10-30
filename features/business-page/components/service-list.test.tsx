@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 import type { Service } from "../types"
 import { ServiceList } from "./service-list"
@@ -25,7 +25,7 @@ describe("ServiceList", () => {
     expect(container.innerHTML).toBe("")
   })
 
-  it("shows three, then all after See all", () => {
+  it("shows three, and See all opens booking", () => {
     render(
       <ServiceList
         services={[1, 2, 3, 4].map((n) => service(n))}
@@ -35,9 +35,11 @@ describe("ServiceList", () => {
       />
     )
     expect(screen.queryByText("Service 4")).toBeNull()
-    fireEvent.click(screen.getByRole("button", { name: "See all" }))
-    expect(screen.getByText("Service 4")).toBeTruthy()
-    expect(screen.queryByRole("button", { name: "See all" })).toBeNull()
+    const links = screen
+      .getAllByText("See all")
+      .map((text) => text.closest("a")?.getAttribute("href"))
+    expect(links).toContain("/b/test?book=1")
+    expect(links).toContain("/b/test/book")
   })
 
   it("hides a missing price, says Free for zero, drops a description that repeats the name", () => {

@@ -1,10 +1,8 @@
 "use client"
 
-import { useState } from "react"
 import Image from "next/image"
 
 import { useMessages } from "@/components/language-provider"
-import { Button } from "@/components/ui/button"
 import { PageSection } from "@/components/page-section"
 import {
   Item,
@@ -19,7 +17,7 @@ import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { BookButton } from "./book-button"
 
-// How many services the page shows before See all.
+// How many services the page shows before See all, which opens booking.
 const SERVICES_PREVIEW = 3
 
 const plain = (text: string) =>
@@ -70,9 +68,8 @@ export function ServiceList({
   bookable: boolean
 }) {
   const m = useMessages()
-  const [all, setAll] = useState(false)
   if (services.length === 0) return null
-  const shown = all ? services : services.slice(0, SERVICES_PREVIEW)
+  const shown = services.slice(0, SERVICES_PREVIEW)
   const more = services.length > shown.length
   return (
     // A gray band like Fresha's: edge to edge on a phone, a rounded box on a
@@ -118,15 +115,15 @@ export function ServiceList({
           </Item>
         ))}
       </ItemGroup>
+      {/* See all opens the same booking sheet (page on a computer) as Book
+          now, which starts on the choice of service. */}
       {more && (
-        <Button
-          type="button"
+        <BookButton
+          slug={slug}
+          label={m.page.seeAll}
           variant="outline"
           size="lg"
-          onClick={() => setAll(true)}
-        >
-          {m.page.seeAll}
-        </Button>
+        />
       )}
     </PageSection>
   )
