@@ -239,7 +239,7 @@ task is in Lanes above.
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
 | B1 | "Move booking" for the owner, which sends Booking changed | `features/dashboard/components/booking-*`, `features/dashboard/api/booking-actions.ts` | — | `Done` 2026-10-30, see git log (move by Dev 3, sending by Dev 2, D5 and D12) |
-| F1 | Docs updated, live end-to-end test on a real number (book, reminder, tap each button, 24-hour normal message) | `docs/koblip-chat-integration.md` | all | `Working on` Dev 1, 2026-10-30: full-tree checks and the live test steps ("Live end-to-end test" below); checks run again once A5 lands. Docs part done by Dev 2, 2026-10-30, see git log (A5's admin Activity marked as being built there) |
+| F1 | Docs updated, live end-to-end test on a real number (book, reminder, tap each button, 24-hour normal message) | `docs/koblip-chat-integration.md` | all | `Blocked`: docs done (Dev 2); full-tree checks pass with every task in and the live test steps are below (Dev 1), 2026-10-30. The live run itself needs Meta's test numbers and a tester phone; the head developer picks who runs it |
 
 ## Live end-to-end test (F1)
 
@@ -288,7 +288,11 @@ Steps:
 9. **Own number.** Connect the business's own test workspace (Integrations),
    submit its messages and wait for Approved; repeat steps 3 and 4: Activity
    says sender Own.
-10. **Clean up.** Cancel the test bookings. Admin → Change log lists every
+10. **Admin view.** Admin → Activity lists every row above with its
+    business; cancel one waiting message there and the owner's Activity says
+    "Cancelled by Koblip". Usage counts the templates sent from Koblip's
+    number this month.
+11. **Clean up.** Cancel the test bookings. Admin → Change log lists every
     admin change made above.
 
 ## Done before this plan

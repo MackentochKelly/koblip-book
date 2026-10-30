@@ -114,7 +114,7 @@ Admin: `/admin/whatsapp` (admins only; nothing hidden, every change in the Chang
 | Koblip number | Connect or disconnect Koblip's workspace; its numbers, quality and review, and which one sends (D31) |
 | Koblip messages | Review Koblip's ready-made set in both languages and submit each to Meta (D30) |
 | Businesses | Each business's number, connection, messages and settings; turn on or off, reset, turn off, disconnect (D25) |
-| Activity | Every business's messages: filters, search, send again, cancel a waiting one (being built, A5) |
+| Activity | Every business's messages, each with its business, in that business's time zone: filters, search, send again for a failed one, cancel a waiting one (kept as skipped, "Cancelled by Koblip"); the same list and query as the owner's Activity (D33) |
 | 24-hour window | Who wrote to which number and when; remove an entry (D27) |
 | Rules | Every rule (reminder choices, quiet hours defaults, limits, 24-hour margin, words per field, button limits, batch size, timer) with its default; change or go back (D13, D28) |
 | Usage | Template messages from Koblip's number per business this month (UTC), "At limit" once reached, and the limit for everyone or one business (D32) |
