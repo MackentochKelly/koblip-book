@@ -84,7 +84,7 @@ async function plan(now: Date) {
       const base = {
         businessId,
         bookingId: booking.id,
-        visitAt: booking.startAt,
+        moves: booking.moves,
         dueAt: now.toISOString(),
       }
       const reachable = booking.whatsappOptIn && booking.customerPhone
@@ -130,7 +130,7 @@ async function plan(now: Date) {
 
     // Cancelled since the customer was told of the booking.
     const gone = await db
-      .select({ id: bookings.id, startAt: bookings.startAt })
+      .select({ id: bookings.id, moves: bookings.moves })
       .from(bookings)
       .innerJoin(
         confirmed,
@@ -156,10 +156,10 @@ async function plan(now: Date) {
       await db
         .insert(notificationSends)
         .values(
-          gone.map(({ id, startAt }) => ({
+          gone.map(({ id, moves }) => ({
             businessId,
             bookingId: id,
-            visitAt: startAt,
+            moves,
             message: "cancelled" as const,
             dueAt: now.toISOString(),
             state: "pending" as const,

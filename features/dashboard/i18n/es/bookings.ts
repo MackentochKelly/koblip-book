@@ -21,6 +21,16 @@ const bookings: typeof en = {
     confirm: "Cancelar reserva",
     done: "Reserva cancelada",
   },
+  move: {
+    open: "Mover",
+    title: "Mover reserva",
+    submit: "Mover reserva",
+    moved: "Reserva movida",
+    failed: "No se pudo mover. Inténtalo de nuevo.",
+    moveAnyway: "¿Moverla de todos modos?",
+    confirmAnyway: "Mover igual",
+    later: "Elige una hora más tarde",
+  },
   actions: {
     undo: "Deshacer",
     undone: "Marcada como reservada",

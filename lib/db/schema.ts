@@ -249,6 +249,9 @@ export const bookings = sqliteTable(
     // opt-in), and the language they booked in.
     whatsappOptIn: integer({ mode: "boolean" }).notNull().default(false),
     language: text({ enum: ["en", "es"] }),
+    // How many times the owner moved it: each move gets its own "Booking
+    // changed" message and reminders (D5).
+    moves: integer().notNull().default(0),
     ...timestamps(),
   },
   (table) => [
@@ -471,9 +474,9 @@ export const notificationSends = sqliteTable(
     }).notNull(),
     // Minutes before the visit for a reminder; 0 for the other messages.
     reminderMinutes: integer().notNull().default(0),
-    // The visit time the message is about (the booking's startAt then): a
-    // moved booking gets its own "changed" message and reminders (D5).
-    visitAt: text().notNull(),
+    // The booking's moves when this row was made: a moved booking gets its
+    // own "changed" message and reminders (D5).
+    moves: integer().notNull().default(0),
     dueAt: text().notNull(),
     // pending → sending → sent | failed; skipped when it must not go.
     state: text({ enum: ["pending", "sending", "sent", "failed", "skipped"] }).notNull(),
@@ -497,7 +500,7 @@ export const notificationSends = sqliteTable(
       table.bookingId,
       table.message,
       table.reminderMinutes,
-      table.visitAt
+      table.moves
     ),
     index("notification_sends_due").on(table.state, table.dueAt),
     index("notification_sends_business").on(table.businessId, table.createdAt),
