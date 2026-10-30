@@ -2,28 +2,64 @@ import "server-only"
 import { and, eq, isNotNull } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { chatConnections, notificationSettings } from "@/lib/db/schema"
+import {
+  businesses,
+  chatConnections,
+  koblipChatConnection,
+  notificationSettings,
+} from "@/lib/db/schema"
 
-// Whether a business sends customers WhatsApp booking messages: connected to
-// Koblip Chat with a WhatsApp number, and not every customer message turned
-// off on its WhatsApp page. The booking forms ask for consent only then.
+// A Chat connection that can send: working, with a WhatsApp number, and
+// allowed to use templates.
+function canSend(row: {
+  scopes: string
+  needsReconnect: boolean
+  phoneNumberId: string | null
+}) {
+  return (
+    !row.needsReconnect &&
+    !!row.phoneNumberId &&
+    row.scopes.split(" ").includes("templates")
+  )
+}
+
+// Whether a business sends customers WhatsApp booking messages: from its own
+// number, or from Koblip's (K3: for a business with an owner, never a demo),
+// and not every customer message turned off on its WhatsApp page. The
+// booking forms ask for consent only then.
 export async function offersWhatsapp(businessId: string): Promise<boolean> {
-  const [row] = await db
-    .select({
-      scopes: chatConnections.scopes,
-      turnedOff: notificationSettings.turnedOff,
-    })
-    .from(chatConnections)
-    .leftJoin(notificationSettings, eq(notificationSettings.businessId, chatConnections.businessId))
-    .where(
-      and(
-        eq(chatConnections.businessId, businessId),
-        eq(chatConnections.needsReconnect, false),
-        isNotNull(chatConnections.phoneNumberId)
+  const [[business], [own], [koblip]] = await Promise.all([
+    db
+      .select({
+        ownerId: businesses.ownerId,
+        isDemo: businesses.isDemo,
+        turnedOff: notificationSettings.turnedOff,
+      })
+      .from(businesses)
+      .leftJoin(
+        notificationSettings,
+        eq(notificationSettings.businessId, businesses.id)
       )
-    )
-    .limit(1)
-  if (!row || !row.scopes.split(" ").includes("templates")) return false
-  const off = row.turnedOff ?? []
-  return (["confirmed", "reminder", "changed", "cancelled"] as const).some((message) => !off.includes(message))
+      .where(eq(businesses.id, businessId))
+      .limit(1),
+    db
+      .select()
+      .from(chatConnections)
+      .where(
+        and(
+          eq(chatConnections.businessId, businessId),
+          isNotNull(chatConnections.phoneNumberId)
+        )
+      )
+      .limit(1),
+    db.select().from(koblipChatConnection).limit(1),
+  ])
+  if (!business) return false
+  const koblipServes =
+    !!koblip && canSend(koblip) && !!business.ownerId && !business.isDemo
+  if (!(own && canSend(own)) && !koblipServes) return false
+  const off = business.turnedOff ?? []
+  return (["confirmed", "reminder", "changed", "cancelled"] as const).some(
+    (message) => !off.includes(message)
+  )
 }

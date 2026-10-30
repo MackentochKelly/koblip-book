@@ -202,7 +202,7 @@ task is in Lanes above.
 | K2 | Koblip's ready-made templates: the admin reviews them, then submits them to Meta in Koblip's workspace; status shown in the admin area | `features/admin/`, `features/dashboard/api/chat-templates.ts` | K1, S1 | `Done` 2026-10-30, see git log (D30) |
 | K3 | Sender picks the number: the business's own when connected and approved, else Koblip's; each row records its sender | `notification-sender.ts` | K1 | `Done` 2026-10-30, see git log (D22; `drizzle/0025`) |
 | K4 | Business page: "Sending from Koblip" or "Sending from your number"; on Koblip's number the messages are read-only with on/off, plus "Use your own number" | `whatsapp-*.tsx`, `message-editor.tsx` | P1, K3 | `Done` 2026-10-30, see git log (K4, D26) |
-| K5 | Booking forms ask for WhatsApp consent whenever either number can send | `lib/whatsapp-offer.ts` | K3 | `Working on` Dev 2, 2026-10-30 |
+| K5 | Booking forms ask for WhatsApp consent whenever either number can send | `lib/whatsapp-offer.ts` | K3 | `Done` 2026-10-30, see git log (same rule as K3, D22: Koblip's number only for a business with an owner, never a demo) |
 | K6 | Limit and count of Koblip-number messages per business (D3); the limit is an A0 rule with a per-business override | `notification-sender.ts` | K3, A0 | `Done` 2026-10-30, see git log (D29) |
 
 ### Admin dashboard: WhatsApp
