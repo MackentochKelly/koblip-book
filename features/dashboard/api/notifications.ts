@@ -1,5 +1,5 @@
 import "server-only"
-import { desc, eq } from "drizzle-orm"
+import { and, desc, eq, or, sql, type SQL } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/schema"
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
 import type {
+  ActivityFilter,
   NotificationMessage,
   NotificationSend,
   NotificationSettings,
@@ -86,9 +87,29 @@ export async function notificationMessagesFor(businessId: string): Promise<Notif
   }))
 }
 
+// A LIKE pattern that finds `text` anywhere, with LIKE's own wildcards
+// taken literally.
+function contains(text: string): string {
+  return `%${text.replace(/[\\%_]/g, (char) => `\\${char}`)}%`
+}
+
+// Search by customer name (any case) or phone (its digits, so "+1 555" finds
+// 15550100000; each booking keeps the digits in customer_key as "p:<digits>").
+function searchCondition(search: string): SQL | undefined {
+  const text = search.trim()
+  if (!text) return undefined
+  const byName = sql`${bookings.customerName} like ${contains(text)} escape '\\'`
+  const digits = text.replace(/\D/g, "")
+  if (!digits) return byName
+  return or(byName, sql`${bookings.customerKey} like ${`p:${contains(digits)}`} escape '\\'`)
+}
+
 // The latest messages, newest first: what is waiting, sent, or was not sent
-// and why.
-export async function notificationHistoryFor(businessId: string): Promise<NotificationSend[]> {
+// and why; narrowed by message, state and a search.
+export async function notificationHistoryFor(
+  businessId: string,
+  filter: ActivityFilter = {}
+): Promise<NotificationSend[]> {
   const rows = await db
     .select({
       id: notificationSends.id,
@@ -106,7 +127,14 @@ export async function notificationHistoryFor(businessId: string): Promise<Notifi
     })
     .from(notificationSends)
     .innerJoin(bookings, eq(bookings.id, notificationSends.bookingId))
-    .where(eq(notificationSends.businessId, businessId))
+    .where(
+      and(
+        eq(notificationSends.businessId, businessId),
+        filter.message ? eq(notificationSends.message, filter.message) : undefined,
+        filter.state ? eq(notificationSends.state, filter.state) : undefined,
+        filter.search ? searchCondition(filter.search) : undefined
+      )
+    )
     .orderBy(desc(notificationSends.dueAt))
     .limit(NOTIFICATION_RULES.historySize)
   return rows.map(({ dueAt, sentAt, replyAction, repliedAt, ...row }) => ({
