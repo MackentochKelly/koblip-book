@@ -388,3 +388,23 @@ export const chatTemplates = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.businessId, table.message, table.language] })]
 )
+
+// When each customer last wrote to a WhatsApp number of a connected Chat
+// workspace, from Chat's signed events (docs/koblip-chat-integration.md,
+// step 2). Meta's 24-hour window runs from this, per business number and
+// customer: inside it Book may send plain text, outside it only a template.
+export const chatReplies = sqliteTable(
+  "chat_replies",
+  {
+    workspaceId: text().notNull(),
+    // Chat's id for the business's WhatsApp number (the event's senderId).
+    phoneNumberId: text().notNull(),
+    // The customer's number, digits only, as WhatsApp sends it.
+    customerPhone: text().notNull(),
+    lastReplyAt: text().notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.workspaceId, table.phoneNumberId, table.customerPhone] }),
+  ]
+)

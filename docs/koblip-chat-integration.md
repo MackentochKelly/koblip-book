@@ -116,7 +116,7 @@ Book uses Chat's public API like any other company. Koblip Sales already creates
 ### Book (`features/booking`, `features/dashboard`): everything else
 
 1. Built: the template set (wording in English and Spanish) lives in Book (`features/dashboard/utils/booking-templates.ts`). Opening Integrations while connected creates any missing ones in the business's Chat through the API, on the workspace's oldest active number (`GET /api/whatsapp/connections`, the same default Chat uses), and shows "Waiting for Meta approval" until approved (`features/dashboard/api/chat-templates.ts`). Older connections without the `templates` scope are asked to reconnect.
-2. Book records each customer's last reply from Chat's events. Under 24 hours it sends plain text with the template's words (title, text, footer), otherwise the approved template, the same way Koblip Sales does.
+2. Book records each customer's last reply from Chat's events (built: `app/api/chat/events`, signed with `CHAT_EVENTS_SECRET`, kept per business number and customer in `chat_replies`). Under 24 hours it sends plain text with the template's words (title, text, footer), otherwise the approved template, the same way Koblip Sales does.
 3. Booking form: a WhatsApp checkbox; the answer is saved on the booking.
 4. Settings: the owner's own WhatsApp number (must differ from the business number).
 5. Integrations, under Koblip Chat: one switch per message.
