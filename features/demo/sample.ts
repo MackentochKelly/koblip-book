@@ -16,7 +16,7 @@ export const DEMO_SAMPLE = {
   // The studio's photos, in order (the first is the cover): free Unsplash
   // photos (unsplash.com/license, no credit needed), saved in
   // public/demo/lumen. Their pages: a-hair-salon-with-chairs-and-mirrors-
-  // vSZbEjCSDRw, salon-chairs-at-white-vanity-PtOfbGkU3uI, woman-in-white-
+  // pb1Ajy_QUeE, salon-chairs-at-white-vanity-PtOfbGkU3uI, woman-in-white-
   // shirt-standing-near-black-leather-chairs-OKXwmdbdXkk, woman-holding-
   // hair-dryer-WXmHwPcFamo, hairstylist-curling-hair-in-salon-wSpkThmoZQc,
   // hairstylist-blow-drying-client-hair-FkAZqQJTbXM, black-and-silver-
