@@ -13,12 +13,10 @@ const SCREEN = { left: 24, top: 23, width: 402, height: 874, radius: 60 }
 // The phone's status bar, kept clear above the page (the Dynamic Island
 // sits in it), as on the real phone.
 const STATUS_BAR = 54
-// The space kept clear at the bottom for the home indicator (the bar you
-// swipe up): enough for the bar and a little room above it (iOS keeps 34
-// points, which looked too much in the small frame). The indicator itself:
-// 134 x 5, 8 from the edge, in the theme's soft grey.
+// A little room kept clear at the bottom, where the phone's home
+// indicator sits (iOS keeps 34 points, too much in the small frame), so
+// the page's bottom bar clears the rounded corners.
 const HOME_AREA = 22
-const HOME_INDICATOR = { width: 134, height: 5, bottom: 8 }
 
 // A real phone with a page running in it: the screen is drawn at the
 // phone's own size, then the whole phone is shrunk to fit its box, so the
@@ -75,15 +73,6 @@ export function PhoneMockup({
             }}
           >
             {children}
-            <div
-              aria-hidden
-              className="absolute left-1/2 -translate-x-1/2 rounded-full bg-muted-foreground/60"
-              style={{
-                width: HOME_INDICATOR.width,
-                height: HOME_INDICATOR.height,
-                bottom: HOME_INDICATOR.bottom,
-              }}
-            />
           </div>
           {/* The frame on top, so its edge covers the screen's. */}
           {/* eslint-disable-next-line @next/next/no-img-element -- a fixed-size frame drawn at its own pixels and scaled with the phone */}
