@@ -239,7 +239,57 @@ task is in Lanes above.
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
 | B1 | "Move booking" for the owner, which sends Booking changed | `features/dashboard/components/booking-*`, `features/dashboard/api/booking-actions.ts` | — | `Done` 2026-10-30, see git log (move by Dev 3, sending by Dev 2, D5 and D12) |
-| F1 | Docs updated, live end-to-end test on a real number (book, reminder, tap each button, 24-hour normal message) | `docs/koblip-chat-integration.md` | all | `Working on` Dev 1, 2026-10-30: full-tree checks and the live test steps. Docs part done by Dev 2, 2026-10-30, see git log (A5's admin Activity marked as being built there) |
+| F1 | Docs updated, live end-to-end test on a real number (book, reminder, tap each button, 24-hour normal message) | `docs/koblip-chat-integration.md` | all | `Working on` Dev 1, 2026-10-30: full-tree checks and the live test steps ("Live end-to-end test" below); checks run again once A5 lands. Docs part done by Dev 2, 2026-10-30, see git log (A5's admin Activity marked as being built there) |
+
+## Live end-to-end test (F1)
+
+Run on a local Book and a local Koblip Chat, never on production. Each step
+passes when the phone gets the message and WhatsApp → Activity (the
+business's and the admin's) shows the row as described.
+
+Before you start:
+
+- Book on `localhost:3100`, Chat's `wapi-api` on 5000 and `Wapi-frontend` on
+  3000 ([Local setup](../setup.md)); Book's `CHAT_*` settings point at the
+  local Chat. Chat's Meta webhook needs a public tunnel to the local Chat, so
+  statuses and replies come back.
+- Chat workspaces with Meta's test WhatsApp numbers (never Koblip's live
+  number), one for Koblip and one for the test business, and a tester phone.
+- Admin → WhatsApp → Overview: timer Running, Koblip Chat Reachable, every
+  server setting Set.
+
+Steps:
+
+1. **Koblip's number.** Admin → Koblip number: Connect the Koblip test
+   workspace; its number shows "Sends". Koblip messages: submit each message
+   in both languages and wait until all are Approved.
+2. **Business on Koblip's number.** As its owner, no workspace of its own:
+   Overview shows "Sending from Koblip's number"; set "Your WhatsApp" to the owner's
+   phone; Timing: one reminder, 15 minutes. "Send a test to my phone" arrives.
+3. **Book.** On the public page, book 20 minutes ahead with the tester phone
+   and WhatsApp consent. Booking confirmed reaches the tester (template, no
+   buttons) and New booking alert reaches the owner. Activity: sent, then
+   delivered or read, sender Koblip, Template.
+4. **Reminder, "I'll be there".** At 15 minutes before, the Reminder arrives
+   with "I'll be there" and "Can't make it". Tap "I'll be there": Activity
+   shows the answer, the booking stays confirmed, the thank-you arrives.
+5. **"Can't make it", alert only (default).** Book again and tap "Can't make
+   it": the owner gets Customer can't come alert; the booking stays.
+6. **"Can't make it", cancel.** Replies: "Cancel and free the time". Book
+   again and tap it: the booking is cancelled, the time is free on the public
+   page, Customer cancelled alert reaches the owner.
+7. **24-hour normal message.** The tester writes "hi" to the number; Admin →
+   24-hour window shows them Open. Move a booking (Bookings → Move booking):
+   Booking changed arrives with its buttons; Activity says Normal message.
+   Remove the window entry in the admin and move it again: it goes as
+   Template.
+8. **Opt-out.** The tester writes STOP; the next message is skipped as
+   "Customer opted out".
+9. **Own number.** Connect the business's own test workspace (Integrations),
+   submit its messages and wait for Approved; repeat steps 3 and 4: Activity
+   says sender Own.
+10. **Clean up.** Cancel the test bookings. Admin → Change log lists every
+    admin change made above.
 
 ## Done before this plan
 
