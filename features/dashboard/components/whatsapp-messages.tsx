@@ -2,7 +2,8 @@
 
 import type { NotificationMessage } from "../types/notifications"
 import type { EditorLimits } from "./message-editor"
-import { isCustomerMessage, WhatsappMessageList } from "./whatsapp-message-list"
+import { isCustomerMessage } from "../utils/customer-messages"
+import { WhatsappMessageList } from "./whatsapp-message-list"
 
 // Customer messages: what the customer gets, each on or off and editable.
 export function WhatsappMessages({

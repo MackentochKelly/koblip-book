@@ -19,7 +19,8 @@ import { saveNotificationSettings } from "../api/notification-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { NotificationMessage, NotificationSettings } from "../types/notifications"
 import type { EditorLimits } from "./message-editor"
-import { isCustomerMessage, WhatsappMessageList } from "./whatsapp-message-list"
+import { isCustomerMessage } from "../utils/customer-messages"
+import { WhatsappMessageList } from "./whatsapp-message-list"
 
 // Your alerts: the messages to the owner's own WhatsApp, and that number.
 export function WhatsappAlerts({

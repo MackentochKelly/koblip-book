@@ -16,25 +16,9 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { setMessageOn } from "../api/notification-actions"
 import { useOwnerMessages } from "../i18n/provider"
-import type {
-  CustomerMessage,
-  NotificationMessage,
-  TemplateReview,
-} from "../types/notifications"
+import type { NotificationMessage, TemplateReview } from "../types/notifications"
 import type { BookingMessage } from "../utils/booking-templates"
 import { MessageEditor, type EditorLimits } from "./message-editor"
-
-const CUSTOMER_MESSAGES: readonly CustomerMessage[] = [
-  "confirmed",
-  "reminder",
-  "changed",
-  "cancelled",
-]
-
-// Customer messages go to the customer; the rest are the owner's alerts.
-export function isCustomerMessage(message: BookingMessage): message is CustomerMessage {
-  return (CUSTOMER_MESSAGES as readonly string[]).includes(message)
-}
 
 // A list of messages, each with a switch, that opens to edit its wording.
 // Customer messages and Your alerts both show their messages with it.
