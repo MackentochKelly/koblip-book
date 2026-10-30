@@ -127,15 +127,11 @@ function PhotoViewer({
         className="inset-0 flex h-svh max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none bg-background p-0 text-foreground ring-0 sm:max-w-none"
       >
         <DialogTitle className="sr-only">{m.photos.photos}</DialogTitle>
-        <div className="flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-2">
+        <div className="flex items-center justify-between px-4 pt-[max(1rem,var(--safe-top))] pb-2">
           <span className="text-sm text-muted-foreground tabular-nums">
             {current + 1}/{total}
           </span>
-          <DialogClose
-            render={
-              <Button variant="ghost" size="icon" />
-            }
-          >
+          <DialogClose render={<Button variant="ghost" size="icon" />}>
             <XIcon />
             <span className="sr-only">{m.photos.close}</span>
           </DialogClose>

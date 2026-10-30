@@ -12,7 +12,7 @@ import {
   HOME_SECTION_IDS,
   homeSectionTitleClassName,
 } from "@/components/home-section-title"
-import { PhoneMockup } from "@/components/phone-mockup"
+import { PHONE_STATUS_BAR, PhoneMockup } from "@/components/phone-mockup"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -106,6 +106,18 @@ export function SeeItInAction({
     watcher.observe(element)
     return () => watcher.disconnect()
   }, [open])
+
+  // The booking page runs up under the phone's status bar (clearTop), so
+  // it is told the bar's height, as a real iPhone tells a page (the
+  // --safe-top its pinned bars keep clear of). Full screen has no bar.
+  const pageFrame = useRef<HTMLIFrameElement>(null)
+  const fitPage = useCallback(() => {
+    const root = pageFrame.current?.contentDocument?.documentElement
+    if (!root) return
+    if (expanded) root.style.removeProperty("--safe-top")
+    else root.style.setProperty("--safe-top", `${PHONE_STATUS_BAR}px`)
+  }, [expanded])
+  useEffect(fitPage, [fitPage])
 
   // Escape leaves full screen.
   useEffect(() => {
@@ -277,6 +289,8 @@ export function SeeItInAction({
                   demo.state === "ready" && opened.includes(view) ? (
                     <iframe
                       key={view}
+                      ref={view === "page" ? pageFrame : undefined}
+                      onLoad={view === "page" ? fitPage : undefined}
                       // The booking page in the home page's language.
                       src={
                         view === "page"

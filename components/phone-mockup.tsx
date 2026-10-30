@@ -12,7 +12,7 @@ const FRAME = { width: 450, height: 920 }
 const SCREEN = { left: 24, top: 23, width: 402, height: 874, radius: 60 }
 // The phone's status bar, kept clear above the page (the Dynamic Island
 // sits in it), as on the real phone.
-const STATUS_BAR = 54
+export const PHONE_STATUS_BAR = 54
 // A little room kept clear at the bottom, where the phone's home
 // indicator sits (iOS keeps 34 points, too much in the small frame), so
 // the page's bottom bar clears the rounded corners.
@@ -132,7 +132,7 @@ export function PhoneMockup({
                     width: SCREEN.width,
                     height: SCREEN.height,
                     borderRadius: SCREEN.radius,
-                    paddingTop: clearTop ? 0 : STATUS_BAR,
+                    paddingTop: clearTop ? 0 : PHONE_STATUS_BAR,
                     paddingBottom: HOME_AREA,
                   }
             }

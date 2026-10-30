@@ -283,6 +283,13 @@
 }
 
 @layer base {
+  /* The phone's status bar height, which the booking page's pinned bars
+     keep clear of: the phone's own (viewport-fit=cover in app/layout.tsx),
+     or the demo phone's when the page runs in it (the home page sets it on
+     the frame's page, components/see-it-in-action.tsx). */
+  :root {
+    --safe-top: env(safe-area-inset-top);
+    }
   * {
     @apply border-border outline-ring/50;
     }
