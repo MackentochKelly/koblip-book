@@ -151,7 +151,13 @@ const en = {
       more: "And more",
     },
     soon: "Soon",
-    footer: { legal: "Legal", privacy: "Privacy", terms: "Terms" },
+    footer: {
+      legal: "Legal",
+      privacy: "Privacy",
+      terms: "Terms",
+      pages: "Pages",
+      backToTop: "Back to top",
+    },
     faq: {
       title: "Questions",
       subtitle: "Everything you need to know.",
@@ -432,7 +438,13 @@ const es: Messages = {
       more: "Y más",
     },
     soon: "Pronto",
-    footer: { legal: "Legal", privacy: "Privacidad", terms: "Términos" },
+    footer: {
+      legal: "Legal",
+      privacy: "Privacidad",
+      terms: "Términos",
+      pages: "Páginas",
+      backToTop: "Volver arriba",
+    },
     faq: {
       title: "Preguntas",
       subtitle: "Todo lo que necesitas saber.",

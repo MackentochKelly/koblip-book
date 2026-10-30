@@ -16,7 +16,9 @@ export function Logo({ className }: { className?: string }) {
   )
 }
 
-function KoblipMark({ className }: { className?: string }) {
+// The drawing alone, for when it is sized by its box (the footer's big
+// faded name).
+export function KoblipMark({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 502 153"

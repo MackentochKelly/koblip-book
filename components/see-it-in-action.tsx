@@ -8,7 +8,10 @@ import {
 } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
 import { useHomeLook } from "@/components/home-look"
-import { homeSectionTitleClassName } from "@/components/home-section-title"
+import {
+  HOME_SECTION_IDS,
+  homeSectionTitleClassName,
+} from "@/components/home-section-title"
 import { PhoneMockup } from "@/components/phone-mockup"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
@@ -127,6 +130,7 @@ export function SeeItInAction({
   return (
     <section
       ref={box}
+      id={HOME_SECTION_IDS.action}
       // Extra room above: the page's second big moment gets space to
       // breathe (a band's own padding replaces it in the bands look).
       className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 pt-12 pb-12 sm:px-4 sm:pt-24"

@@ -13,6 +13,7 @@ export const GET_STARTED_ID = "get-started"
 export const HOME_SECTION_IDS = {
   howItWorks: "how-it-works",
   features: "features",
+  action: "see-it-in-action",
   faq: "faq",
 } as const
 
