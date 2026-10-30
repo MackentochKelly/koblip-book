@@ -45,7 +45,7 @@ tasks top to bottom; when a task waits on another lane, take your next one.
 | 1. Chat API and platform | | `Wapi/wapi-api`, `chat-oauth.ts`, `lib/platform-settings.ts`, `lib/notification-rules.ts` | C1, C2, K1, A0 |
 | 2. Templates and sending | Dev 2 | `booking-templates.ts`, `chat-templates.ts`, `notification-sender.ts`, `lib/whatsapp-offer.ts` | S1, S2, S4, S6, S8, K2, K3, S5, K5, K6 |
 | 3. Replies, activity, bookings | | `chat-events.ts`, `notification-replies.ts`, `booking-actions.ts`, booking components | S3, S9, S7, B1 |
-| 4. Business page | | `app/(owner)/dashboard/[businessId]/whatsapp/`, `features/dashboard/components/whatsapp-*.tsx`, `message-editor.tsx`, `features/dashboard/i18n/*/whatsapp.ts` | P1, P5, P6, P7, P3, P2, P4, K4 |
+| 4. Business page | Dev 4 | `app/(owner)/dashboard/[businessId]/whatsapp/`, `features/dashboard/components/whatsapp-*.tsx`, `message-editor.tsx`, `features/dashboard/i18n/*/whatsapp.ts` | P1, P5, P6, P7, P3, P2, P4, K4 |
 | 5. Admin dashboard | | `app/(admin)/admin/whatsapp/`, `features/admin/` | A1, A2, A4, A6, A5, A7, A3, A8 |
 | Everyone, last | | | F1 |
 
@@ -196,7 +196,7 @@ task is in Lanes above.
 
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
-| P1 | Page frame: the six parts (tabs on computer, list on phone), professional names, English and Spanish, built on today's data | `app/(owner)/dashboard/[businessId]/whatsapp/`, `features/dashboard/components/whatsapp-*.tsx`, `features/dashboard/i18n/{en,es}/whatsapp.ts` | W0 | `To do` |
+| P1 | Page frame: the six parts (tabs on computer, list on phone), professional names, English and Spanish, built on today's data | `app/(owner)/dashboard/[businessId]/whatsapp/`, `features/dashboard/components/whatsapp-*.tsx`, `features/dashboard/i18n/{en,es}/whatsapp.ts` | W0 | `Working on` Dev 4, 2026-10-30 |
 | P2 | Overview: status, setup checklist, test send | `whatsapp-overview.tsx` | P1, S8 | `To do` |
 | P3 | Message editor v2: buttons, preview with buttons, Meta status and reason, "Submit to Meta" | `message-editor.tsx` | P1, S1 | `To do` |
 | P4 | Your alerts screen | `whatsapp-alerts.tsx` | P1, S5 | `To do` |
