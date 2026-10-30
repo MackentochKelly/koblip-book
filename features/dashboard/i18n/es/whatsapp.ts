@@ -23,6 +23,9 @@ const whatsapp: typeof en = {
     changed: "Reserva cambiada",
     cancelled: "Reserva cancelada",
     ownerNewBooking: "Aviso de nueva reserva",
+    ownerCantCome: "Aviso de cliente que no puede venir",
+    ownerCancelled: "Aviso de cliente que canceló",
+    thankYou: "Respuesta de agradecimiento",
   },
   about: {
     confirmed: "Se envía al cliente cuando reserva.",

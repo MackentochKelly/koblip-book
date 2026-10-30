@@ -21,6 +21,9 @@ const whatsapp = {
     changed: "Booking changed",
     cancelled: "Booking cancelled",
     ownerNewBooking: "New booking alert",
+    ownerCantCome: "Customer can't come alert",
+    ownerCancelled: "Customer cancelled alert",
+    thankYou: "Thank-you reply",
   },
   about: {
     confirmed: "Sent to the customer when they book.",
