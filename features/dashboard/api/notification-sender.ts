@@ -10,11 +10,11 @@ import {
   chatReplies,
   notificationSends,
 } from "@/lib/db/schema"
-import { formatClock, formatDay } from "@/lib/format-booking-time"
 import type { NotificationRules } from "@/lib/notification-rules"
 import { notificationRules } from "@/lib/platform-settings"
 import {
   BOOKING_MESSAGES,
+  bookingValues,
   exampleValues,
   plainMessage,
   withValues,
@@ -302,9 +302,6 @@ type Outcome =
   // Nothing reached WhatsApp (Chat could not be asked): tried again next time.
   | { state: "pending" }
 
-// Dates and times as the customer saw them on the booking page (lib/i18n.ts).
-const LOCALES: Record<TemplateLanguage, string> = { en: "en-US", es: "es-US" }
-
 async function deliver(
   send: typeof notificationSends.$inferSelect,
   now: Date,
@@ -334,17 +331,23 @@ async function deliver(
   const phone = toOwner ? settings.ownerPhone : booking.customerPhone
   if (!phone) return { state: "skipped", reason: toOwner ? "noOwnerPhone" : "noPhone" }
   const language: TemplateLanguage = toOwner ? settings.ownerLanguage : booking.language ?? "en"
-  const locale = LOCALES[language]
   const at = localDateTime(new Date(booking.startAt), business.timezone)
-  const values: Record<BookingField, string> = {
-    name: booking.customerName,
-    service: booking.serviceName,
-    business: business.name,
-    date: formatDay(at.date, locale),
-    time: formatClock(at.time, locale),
-    // Meta refuses an empty template value.
-    phone: booking.customerPhone || "-",
-  }
+  const values = bookingValues(
+    {
+      customerName: booking.customerName,
+      customerPhone: booking.customerPhone,
+      serviceName: booking.serviceName,
+      teamMemberName: booking.teamMemberName,
+      durationMinutes: booking.durationMinutes,
+      priceMinor: booking.priceMinor,
+      currency: booking.currency,
+      businessName: business.name,
+      businessAddress: business.address,
+      date: at.date,
+      time: at.time,
+    },
+    language
+  )
 
   return sendMessage({
     businessId: business.id,
@@ -485,11 +488,12 @@ export async function sendTestMessage(
   const settings = await notificationSettingsFor(businessId)
   if (!settings.ownerPhone) return { state: "skipped", reason: "noOwnerPhone" }
   const [business] = await db
-    .select({ name: businesses.name })
+    .select({ name: businesses.name, address: businesses.address })
     .from(businesses)
     .where(eq(businesses.id, businessId))
   const values = exampleValues(settings.ownerLanguage)
   if (business) values.business = business.name
+  if (business?.address) values.address = business.address
   return sendMessage({
     businessId,
     workspaceId: connection.workspaceId,

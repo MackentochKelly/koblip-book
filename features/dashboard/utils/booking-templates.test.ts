@@ -4,6 +4,7 @@ import {
   BOOKING_MESSAGES,
   TEMPLATE_LANGUAGES,
   bookingTemplate,
+  bookingValues,
   buttonsProblem,
   defaultButtons,
   defaultWording,
@@ -52,7 +53,18 @@ test("wording that Meta would refuse is caught first", () => {
 })
 
 test("the owner reads fields in their own language", () => {
-  const labels = { name: "nombre", service: "servicio", business: "negocio", date: "fecha", time: "hora", phone: "telefono" }
+  const labels = {
+    name: "nombre",
+    service: "servicio",
+    business: "negocio",
+    date: "fecha",
+    time: "hora",
+    teamMember: "profesional",
+    duration: "duracion",
+    price: "precio",
+    address: "direccion",
+    phone: "telefono",
+  }
   const shown = fieldsForOwner("Hola {name}, tu {service} el {date}.", labels)
   expect(shown).toBe("Hola {nombre}, tu {servicio} el {fecha}.")
   expect(fieldsFromOwner(shown, labels)).toBe("Hola {name}, tu {service} el {date}.")
@@ -87,4 +99,44 @@ test("buttons that WhatsApp would refuse are caught first", () => {
   expect(buttonsProblem("ownerNewBooking", [button("ok", "OK")])).toBe("badButton")
   expect(buttonsProblem("reminder", [button("confirm", "Yes"), button("cantCome", "yes")])).toBe("sameButton")
   expect(buttonsProblem("reminder", [button("confirm", "Yes"), button("confirm", "Sure")])).toBe("sameButton")
+})
+
+test("every field has a value the customer can read, even when the booking lacks it", () => {
+  const facts = {
+    customerName: "Ana",
+    customerPhone: null,
+    serviceName: "Corte",
+    teamMemberName: "Lucía",
+    durationMinutes: 90,
+    priceMinor: 3500,
+    currency: "USD",
+    businessName: "Lumen Studio",
+    businessAddress: "Calle Mayor 12",
+    date: "2026-05-08",
+    time: "15:30",
+  }
+  const values = bookingValues(facts, "en")
+  expect(values.teamMember).toBe("Lucía")
+  expect(values.duration).toBe("1 h 30 min")
+  expect(values.price).toBe("$35.00")
+  expect(values.address).toBe("Calle Mayor 12")
+  expect(values.phone).toBe("-")
+  const bare = bookingValues(
+    { ...facts, teamMemberName: null, priceMinor: null, businessAddress: " " },
+    "es"
+  )
+  expect(bare.teamMember).toBe("nuestro equipo")
+  expect(bare.price).toBe("por confirmar")
+  expect(bare.address).toBe("Lumen Studio")
+  expect(bookingValues({ ...facts, priceMinor: 0 }, "en").price).toBe("free")
+})
+
+test("the new fields fit the customer's messages and the owner's alert", () => {
+  const ok = { header: "Booked", footer: "" }
+  expect(
+    wordingProblem("confirmed", { ...ok, body: "Hi {name}, your visit with {teamMember} takes about {duration} and costs {price}. Please come to {address} a few minutes early, thank you." })
+  ).toBeNull()
+  expect(wordingProblem("ownerNewBooking", { ...ok, body: "New booking with {teamMember} for {duration} at the shop today." })).toBeNull()
+  expect(wordingProblem("ownerNewBooking", { ...ok, body: "New booking near {address} for the shop today." })).toBe("unknownField")
+  expect(withExamples("With {teamMember} for {duration}", "en")).toBe("With Sam for 45 min")
 })

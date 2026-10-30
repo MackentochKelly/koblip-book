@@ -1,3 +1,6 @@
+import { formatClock, formatDay } from "@/lib/format-booking-time"
+import { formatDuration } from "@/lib/format-duration"
+import { formatPrice } from "@/lib/format-price"
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
 import type { ButtonAction, MessageButton } from "../types/notifications"
 
@@ -17,7 +20,17 @@ export type BookingMessage =
 
 export type TemplateLanguage = "en" | "es"
 
-export type BookingField = "name" | "service" | "business" | "date" | "time" | "phone"
+export type BookingField =
+  | "name"
+  | "service"
+  | "business"
+  | "date"
+  | "time"
+  | "teamMember"
+  | "duration"
+  | "price"
+  | "address"
+  | "phone"
 
 export const BOOKING_MESSAGES: readonly BookingMessage[] = [
   "confirmed",
@@ -29,12 +42,12 @@ export const BOOKING_MESSAGES: readonly BookingMessage[] = [
 
 export const TEMPLATE_LANGUAGES: readonly TemplateLanguage[] = ["en", "es"]
 
-// The fields each message may use: the customer's messages name the business,
-// the owner's alert gives the customer's phone.
+// The fields each message may use: the customer's messages name the business
+// and where it is, the owner's alert gives the customer's phone.
 export function messageFields(message: BookingMessage): BookingField[] {
   return message === "ownerNewBooking"
-    ? ["name", "service", "date", "time", "phone"]
-    : ["name", "service", "business", "date", "time"]
+    ? ["name", "service", "date", "time", "teamMember", "duration", "price", "phone"]
+    : ["name", "service", "business", "date", "time", "teamMember", "duration", "price", "address"]
 }
 
 export type Wording = { header: string; body: string; footer: string }
@@ -163,6 +176,10 @@ const EXAMPLES: Record<TemplateLanguage, Record<BookingField, string>> = {
     business: "Lumen Studio",
     date: "Friday, May 8",
     time: "3:30 PM",
+    teamMember: "Sam",
+    duration: "45 min",
+    price: "$35.00",
+    address: "123 Main Street",
     phone: "+1 555 123 4567",
   },
   es: {
@@ -171,6 +188,10 @@ const EXAMPLES: Record<TemplateLanguage, Record<BookingField, string>> = {
     business: "Lumen Studio",
     date: "viernes 8 de mayo",
     time: "15:30",
+    teamMember: "Lucía",
+    duration: "45 min",
+    price: "35,00 €",
+    address: "Calle Mayor 12",
     phone: "+34 600 123 456",
   },
 }
@@ -297,6 +318,59 @@ export function withExamples(text: string, language: TemplateLanguage) {
   return text.replace(FIELD, (whole, key: string) =>
     key in EXAMPLES[language] ? EXAMPLES[language][key as BookingField] : whole
   )
+}
+
+// Dates, times and prices as the customer saw them on the booking page
+// (lib/i18n.ts).
+const LOCALES: Record<TemplateLanguage, string> = { en: "en-US", es: "es-US" }
+
+// The words for a value the booking does not have: Meta refuses an empty
+// template value, and the customer reads a sentence, not a dash.
+const MISSING: Record<TemplateLanguage, { teamMember: string; free: string; price: string }> = {
+  en: { teamMember: "our team", free: "free", price: "to be confirmed" },
+  es: { teamMember: "nuestro equipo", free: "gratis", price: "por confirmar" },
+}
+
+export type BookingFacts = {
+  customerName: string
+  customerPhone: string | null
+  serviceName: string
+  teamMemberName: string | null
+  durationMinutes: number
+  priceMinor: number | null
+  currency: string
+  businessName: string
+  businessAddress: string | null
+  // The local day (YYYY-MM-DD) and time (HH:MM) at the business.
+  date: string
+  time: string
+}
+
+// Every field's value for one booking, in the reader's language.
+export function bookingValues(
+  facts: BookingFacts,
+  language: TemplateLanguage
+): Record<BookingField, string> {
+  const locale = LOCALES[language]
+  const missing = MISSING[language]
+  return {
+    name: facts.customerName,
+    service: facts.serviceName,
+    business: facts.businessName,
+    date: formatDay(facts.date, locale),
+    time: formatClock(facts.time, locale),
+    teamMember: facts.teamMemberName?.trim() || missing.teamMember,
+    duration: formatDuration(facts.durationMinutes),
+    price:
+      facts.priceMinor === null
+        ? missing.price
+        : facts.priceMinor === 0
+          ? missing.free
+          : formatPrice(facts.priceMinor, facts.currency, locale),
+    // Without an address the customer still knows the place by its name.
+    address: facts.businessAddress?.trim() || facts.businessName,
+    phone: facts.customerPhone || "-",
+  }
 }
 
 // A message's text with the booking's own values.
