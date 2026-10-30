@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google"
 
 import "./globals.css"
 import { MotionProvider } from "@/components/motion-provider"
+import { SmoothScroll } from "@/components/smooth-scroll"
 import { ScrollTopOnReload } from "@/components/scroll-top-on-reload"
 import { ThemeProvider } from "@/components/theme-provider"
 import {
@@ -52,7 +53,9 @@ export default async function RootLayout({
       <body>
         <ScrollTopOnReload />
         <ThemeProvider>
-          <MotionProvider>{children}</MotionProvider>
+          <MotionProvider>
+            <SmoothScroll>{children}</SmoothScroll>
+          </MotionProvider>
         </ThemeProvider>
       </body>
     </html>
