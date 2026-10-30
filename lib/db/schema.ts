@@ -546,3 +546,47 @@ export const chatReplies = sqliteTable(
     primaryKey({ columns: [table.workspaceId, table.phoneNumberId, table.customerPhone] }),
   ]
 )
+
+// The admin's values for the app's rules, over the defaults in code
+// (lib/notification-rules.ts, A0). A rule with no row uses its default.
+// Values are JSON; lib/platform-settings.ts checks each against its rule.
+export const platformSettings = sqliteTable("platform_settings", {
+  key: text().primaryKey(),
+  value: text({ mode: "json" }).$type<unknown>().notNull(),
+  updatedBy: text().references(() => user.id, { onDelete: "set null" }),
+  ...timestamps(),
+})
+
+// One business's own value for a rule the admin may set per business, such
+// as its monthly limit on Koblip's number (D3). Over platformSettings.
+export const businessSettings = sqliteTable(
+  "business_settings",
+  {
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    key: text().notNull(),
+    value: text({ mode: "json" }).$type<unknown>().notNull(),
+    updatedBy: text().references(() => user.id, { onDelete: "set null" }),
+    ...timestamps(),
+  },
+  (table) => [primaryKey({ columns: [table.businessId, table.key] })]
+)
+
+// Every change to a rule: who, when, which rule, for everyone or one
+// business, and the value before and after (null = the default).
+export const platformSettingChanges = sqliteTable(
+  "platform_setting_changes",
+  {
+    id: integer().primaryKey({ autoIncrement: true }),
+    key: text().notNull(),
+    businessId: text().references(() => businesses.id, { onDelete: "cascade" }),
+    before: text({ mode: "json" }).$type<unknown>(),
+    after: text({ mode: "json" }).$type<unknown>(),
+    changedBy: text().references(() => user.id, { onDelete: "set null" }),
+    changedAt: text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (table) => [index("platform_setting_changes_changed_at_idx").on(table.changedAt)]
+)
