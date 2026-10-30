@@ -17,7 +17,7 @@ export const DEMO_SAMPLE = {
   // photos (unsplash.com/license, no credit needed), all from one salon
   // shoot by unsplash.com/@unsplashbydan so they read as one business,
   // cropped to 4:3 and saved in public/demo/lumen. Their ids (each at
-  // unsplash.com/photos/<id>): KMvUcGanzPc, PnDr2j28gXA, iTliv_qGUgc,
+  // unsplash.com/photos/<id>): PnDr2j28gXA, KMvUcGanzPc, iTliv_qGUgc,
   // Ui6DZ9A1eXU, 7b6TE7yBDyc, iOQ0VZN-apo, Ql0hvzr4wVM, 1pnLnKoO1Y0,
   // W2IZ8ZA4w7I, 0MrQ5RvqI6I, ENXUyhgWGlU.
   photos: Array.from(
