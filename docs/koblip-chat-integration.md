@@ -106,19 +106,17 @@ Counted from when the customer booked to when the visit starts:
 - Ready-made templates exist (`is_admin_template`, `GET /api/templates/admin-templates/list`), but a business copies one by hand in Chat. OAuth apps cannot touch templates.
 - Book can find or create a contact (`contacts` scope) and send (`conversations` scope).
 
-### Chat API (backend developer, `wapi-api`): general features, nothing Book-specific
+### Chat API (backend developer, `wapi-api`): same access as Koblip Sales
 
-Book uses Chat's public API like any other company would. Chat only adds what any app needs:
+Book uses Chat's public API like any other company. Koblip Sales already creates templates, sends them, and receives customer replies through Chat's API key and signed callbacks. The popup connection only gets the same:
 
-1. A `templates` OAuth scope: list, create and check templates through the existing template routes.
-2. `last_inbound_at` on contacts: when the contact last wrote, without marking anything read.
-3. Text header and footer on reply-buttons messages.
-4. An `Idempotency-Key` on `POST /api/whatsapp/send`, so a retry never sends twice.
+1. A `templates` scope: the existing `/api/template` routes (list, get, create, sync status).
+2. Signed events (customer replies, sent messages, delivery status) for each workspace that connected the app, reusing what Chat sends Koblip Sales.
 
 ### Book (`features/booking`, `features/dashboard`): everything else
 
 1. The template set (wording in English and Spanish) lives in Book. After connecting, Book creates the templates in the business's Chat through the API and shows "Waiting for Meta approval" until approved.
-2. For each message Book reads `last_inbound_at`: under 24 hours it sends a reply-buttons message that looks like the template, otherwise the approved template.
+2. Book records each customer's last reply from Chat's events. Under 24 hours it sends plain text with the template's words (title, text, footer), otherwise the approved template, the same way Koblip Sales does.
 3. Booking form: a WhatsApp checkbox; the answer is saved on the booking.
 4. Settings: the owner's own WhatsApp number (must differ from the business number).
 5. Integrations, under Koblip Chat: one switch per message.
@@ -127,7 +125,7 @@ Book uses Chat's public API like any other company would. Chat only adds what an
 
 ### Order
 
-1. Chat API 1 to 4, with tests.
+1. Chat API 1 and 2, with tests.
 2. Book 1 to 7, built against it.
 3. One end-to-end test on this Mac, like step 1.
 
