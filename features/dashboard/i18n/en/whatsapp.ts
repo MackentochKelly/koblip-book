@@ -86,6 +86,17 @@ const whatsapp = {
   failed: "Couldn't save. Try again.",
   history: "History",
   noHistory: "No messages yet",
+  // Activity's filters and search.
+  search: "Name or phone",
+  searchLabel: "Search by customer name or phone",
+  messageFilter: "Message",
+  stateFilter: "Status",
+  allMessages: "All messages",
+  allStates: "Any status",
+  noneFound: "No messages match",
+  clearFilters: "Clear filters",
+  via: { text: "Normal message", template: "Template" },
+  replies: { confirm: "I'll be there", cantCome: "Can't make it", ok: "OK" },
   states: {
     pending: "Scheduled",
     sending: "Sending",
@@ -107,6 +118,8 @@ const whatsapp = {
     templateNotApproved: "Waiting for Meta",
     badPhone: "Wrong number",
     interrupted: "Stopped midway",
+    moved: "Booking moved",
+    notTold: "Customer not told yet",
     other: "Koblip Chat error",
   } as Record<string, string>,
 }
