@@ -25,18 +25,21 @@ import {
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { formatDuration } from "@/lib/format-duration"
-import { NOTIFICATION_RULES } from "@/lib/notification-rules"
+import type { NotificationRules } from "@/lib/notification-rules"
 import { saveNotificationSettings } from "../api/notification-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { NotificationSettings } from "../types/notifications"
 
-// Timing: when reminders go and the quiet hours, saved together.
+// Timing: when reminders go and the quiet hours, saved together. The
+// reminder choices are the business's rules, which the admin may change.
 export function WhatsappTiming({
   businessId,
   settings,
+  rules,
 }: {
   businessId: string
   settings: NotificationSettings
+  rules: Pick<NotificationRules, "reminderChoices" | "maxReminders">
 }) {
   const t = useOwnerMessages().whatsapp
   const router = useRouter()
@@ -46,10 +49,10 @@ export function WhatsappTiming({
   const [quietEnd, setQuietEnd] = useState(settings.quietEnd)
   const [pending, startTransition] = useTransition()
 
-  const choices = NOTIFICATION_RULES.reminderChoices.filter(
+  const choices = rules.reminderChoices.filter(
     (minutes) => !reminders.includes(minutes)
   )
-  const full = reminders.length >= NOTIFICATION_RULES.maxReminders
+  const full = reminders.length >= rules.maxReminders
   const items = choices.map((minutes) => ({
     value: String(minutes),
     label: t.before(formatDuration(minutes)),
