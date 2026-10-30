@@ -1,6 +1,7 @@
-import { WhatsappSoon } from "@/features/admin/components/whatsapp-soon"
-import { getAdminMessages } from "@/features/admin/i18n/server"
+import { getWhatsappUsage } from "@/features/admin/api/whatsapp-usage"
+import { WhatsappUsage } from "@/features/admin/components/whatsapp-usage"
 
+// WhatsApp → Usage (A8).
 export default async function WhatsappUsagePage() {
-  return <WhatsappSoon part="usage" m={await getAdminMessages()} />
+  return <WhatsappUsage usage={await getWhatsappUsage()} />
 }
