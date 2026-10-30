@@ -605,3 +605,13 @@ export const platformSettingChanges = sqliteTable(
   },
   (table) => [index("platform_setting_changes_changed_at_idx").on(table.changedAt)]
 )
+
+// The WhatsApp timer's last check (features/dashboard/api/notification-timer.ts):
+// one row, written after every check, so the admin's Overview shows whether
+// it runs (A2).
+export const notificationTimer = sqliteTable("notification_timer", {
+  id: text({ enum: ["timer"] }).primaryKey(),
+  lastRunAt: text().notNull(),
+  // The last check's error, kept short; null when it went through.
+  lastError: text(),
+})
