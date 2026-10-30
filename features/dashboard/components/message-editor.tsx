@@ -8,7 +8,6 @@ import { toast } from "sonner"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -36,6 +35,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { WhatsappPreview } from "@/components/whatsapp-preview"
 import type { NotificationRules } from "@/lib/notification-rules"
 import { saveMessageWording, submitMessageToMeta } from "../api/notification-actions"
 import { useOwnerMessages } from "../i18n/provider"
@@ -357,25 +357,15 @@ export function MessageEditor({
 
             <Field>
               <FieldLabel>{t.preview}</FieldLabel>
-              {/* Looks like WhatsApp: the bubble, its buttons under it. */}
-              <div inert className="flex flex-col gap-1 rounded-xl bg-muted p-3">
-                <Bubble variant="outline">
-                  <BubbleContent className="flex flex-col gap-1 whitespace-pre-wrap">
-                    <span className="font-semibold">{draft.wording.header}</span>
-                    <span>{preview}</span>
-                    {draft.wording.footer && (
-                      <span className="text-xs text-muted-foreground">
-                        {draft.wording.footer}
-                      </span>
-                    )}
-                  </BubbleContent>
-                </Bubble>
-                {draft.buttons.map((button) => (
-                  <Button key={button.action} type="button" variant="outline" tabIndex={-1}>
-                    {button.label || t.buttonKinds[button.action]}
-                  </Button>
-                ))}
-              </div>
+              <WhatsappPreview
+                header={draft.wording.header}
+                body={preview}
+                footer={draft.wording.footer}
+                buttons={draft.buttons.map((button) => ({
+                  key: button.action,
+                  label: button.label || t.buttonKinds[button.action],
+                }))}
+              />
               {editable && <FieldDescription>{t.reviewHint}</FieldDescription>}
             </Field>
           </FieldGroup>

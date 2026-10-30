@@ -5,13 +5,29 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from "vitest"
 import { db } from "@/lib/db"
-import { businesses, chatConnections, chatTemplates, user } from "@/lib/db/schema"
+import {
+  businesses,
+  chatConnections,
+  chatTemplates,
+  koblipChatConnection,
+  koblipChatTemplates,
+  platformSettingChanges,
+  user,
+} from "@/lib/db/schema"
 import { seal } from "@/lib/secret-box"
 
 vi.mock("server-only", () => ({}))
 
-const { chatConnectionFor, refreshChatTemplates, sendableTemplate, submitChatTemplate } =
-  await import("./chat-templates")
+const {
+  chatConnectionFor,
+  koblipMessages,
+  koblipSendableTemplate,
+  refreshChatTemplates,
+  refreshKoblipTemplates,
+  sendableTemplate,
+  submitChatTemplate,
+  submitKoblipTemplate,
+} = await import("./chat-templates")
 
 let dir: string
 let closeDb: () => void
@@ -113,6 +129,8 @@ beforeEach(async () => {
   synced.length = 0
   chat.mockClear()
   await db.delete(chatTemplates)
+  await db.delete(koblipChatTemplates)
+  await db.delete(koblipChatConnection)
   await connect()
 })
 
@@ -252,4 +270,81 @@ test("a connection made before templates were asked for must reconnect", async (
   expect(await submitChatTemplate("biz", "reminder", "en")).toBe("notConnected")
   expect(chat).not.toHaveBeenCalled()
   expect((await chatConnectionFor("biz"))?.needsReconnect).toBe(true)
+})
+
+async function connectKoblip() {
+  await db.insert(koblipChatConnection).values({
+    id: "koblip",
+    workspaceId: "wk",
+    workspaceName: "Koblip",
+    scopes: "contacts templates automations conversations",
+    accessToken: seal("koa_k"),
+    refreshToken: seal("kor_k"),
+    accessExpiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+  })
+}
+
+test("Koblip's set: nothing is made until the admin submits, and the number is saved", async () => {
+  expect(await submitKoblipTemplate("reminder", "en", "u1")).toBe("notConnected")
+  await connectKoblip()
+  expect(await submitKoblipTemplate("reminder", "en", "u1")).toBe("noNumber")
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  await refreshKoblipTemplates()
+  const [row] = await db.select().from(koblipChatConnection)
+  expect(row).toMatchObject({ wabaId: "wabak", phoneNumberId: "pk" })
+  expect(created).toHaveLength(0)
+  expect((await koblipMessages()).every((item) => item.texts.en.review === "draft")).toBe(true)
+})
+
+test("submitting one of Koblip's messages makes it in Koblip's workspace and logs who did", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  expect(await submitKoblipTemplate("reminder", "es", "u1")).toBeNull()
+  expect(created).toEqual([
+    expect.objectContaining({
+      waba_id: "wabak",
+      template_name: "koblip_booking_reminder_v2",
+      language: "es",
+      category: "UTILITY",
+      save_as_draft: false,
+      buttons: [
+        { type: "quick_reply", text: "Ahí estaré", payload: "confirm" },
+        { type: "quick_reply", text: "No podré ir", payload: "cantCome" },
+      ],
+    }),
+  ])
+  expect(chat.mock.calls.every(([, init]) => new Headers(init?.headers).get("authorization") === "Bearer koa_k")).toBe(true)
+  const [change] = await db.select().from(platformSettingChanges)
+  expect(change).toMatchObject({ key: "whatsapp.koblipSubmit.reminder.es", before: null, changedBy: "u1" })
+
+  const reminder = (await koblipMessages()).find((item) => item.message === "reminder")!
+  expect(reminder.texts.es.review).toBe("waiting")
+  expect(reminder.texts.en.review).toBe("draft")
+  expect(reminder.texts.es.preview).toContain("Ana")
+
+  // Submitting again changes Chat's copy instead of making another.
+  expect(await submitKoblipTemplate("reminder", "es", "u1")).toBeNull()
+  expect(created).toHaveLength(1)
+  expect(edited).toEqual([expect.objectContaining({ id: "t1" })])
+})
+
+test("Meta's review of Koblip's set is read back, and the approved one is sent", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  await submitKoblipTemplate("confirmed", "en", "u1")
+  await submitKoblipTemplate("cancelled", "en", "u1")
+  stored[0].status = "APPROVED"
+  stored[1].status = "REJECTED"
+  stored[1].rejection_reason = "Too promotional"
+  await refreshKoblipTemplates()
+  expect(synced).toEqual([{ waba_id: "wabak", template_ids: ["t1", "t2"] }])
+
+  const messages = await koblipMessages()
+  expect(messages.find((item) => item.message === "confirmed")!.texts.en.review).toBe("approved")
+  expect(messages.find((item) => item.message === "cancelled")!.texts.en).toMatchObject({
+    review: "rejected",
+    reason: "Too promotional",
+  })
+  expect((await koblipSendableTemplate("confirmed", "en")).approved?.chatTemplateId).toBe("t1")
+  expect((await koblipSendableTemplate("cancelled", "en")).approved).toBeNull()
 })
