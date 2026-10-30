@@ -20,7 +20,10 @@ current.
 4. **Finish**: run typecheck, lint, test and build, then set the task to
    `Done` with the date and the commit, in the same commit as the work.
 5. **Stuck or blocked**: set `Blocked`, say why in one line, and tell the
-   owner.
+   developer who owns what you wait on.
+6. **A decision is needed**: make the best one yourself, following the
+   official docs and the plan's goals, and add it to the plan's Decisions log
+   (what, why, who, date) in the same commit. Nobody waits for the owner.
 
 One task at a time per developer. Never start a task whose "Needs" are not
 done; work against the written contract instead when a task allows it.
@@ -33,4 +36,4 @@ done; work against the written contract instead when a task allows it.
 | `Working on` | Claimed: name and date |
 | `Blocked` | Waiting on something, with the reason |
 | `Done` | Merged, checks passed: date and commit |
-| `Decision` | Waiting on the owner to choose |
+| `Decision` | A choice still open; whoever needs it decides and logs it |
