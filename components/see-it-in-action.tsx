@@ -29,6 +29,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
+import { MaximizeIcon, MinimizeIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DEMO_VIEWS, type DemoPaths, type DemoView } from "@/lib/demo-rules"
 import type { Messages } from "@/lib/i18n"
@@ -66,6 +67,8 @@ export function SeeItInAction({
   const [demo, setDemo] = useState<Demo>({ state: "waiting" })
   const [tab, setTab] = useState<DemoView>("page")
   const [opened, setOpened] = useState<DemoView[]>(["page"])
+  // Phones: the screen out of the phone, filling the window.
+  const [expanded, setExpanded] = useState(false)
 
   const open = useCallback(async () => {
     setDemo({ state: "opening" })
@@ -104,10 +107,33 @@ export function SeeItInAction({
     return () => watcher.disconnect()
   }, [open])
 
+  // Escape leaves full screen.
+  useEffect(() => {
+    if (!expanded) return
+    const leave = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExpanded(false)
+    }
+    window.addEventListener("keydown", leave)
+    return () => window.removeEventListener("keydown", leave)
+  }, [expanded])
+
   function choose(view: DemoView) {
     setTab(view)
     setOpened((list) => (list.includes(view) ? list : [...list, view]))
   }
+
+  const tabs = (
+    <ViewTabs
+      views={DEMO_VIEWS.map((view) => ({
+        id: view,
+        label: words.tabs[view],
+      }))}
+      value={tab}
+      onChange={choose}
+      ariaLabel={words.tabsLabel}
+      className="min-w-0"
+    />
+  )
 
   const problem =
     demo.state === "failed" || demo.state === "tooMany" ? (
@@ -143,25 +169,34 @@ export function SeeItInAction({
       </div>
       <div
         className={cn(
-          "relative isolate overflow-hidden rounded-4xl p-3 sm:p-6 lg:p-10",
-          look === "colour" && heroEdgeClassName,
+          "relative isolate rounded-4xl p-3 sm:p-6 lg:p-10",
+          // Safari clips a fixed child to a rounded box that hides its
+          // overflow, so the full screen lifts that.
+          !expanded && "overflow-hidden",
+          // The glass edge would draw over the full screen.
+          look === "colour" && !expanded && heroEdgeClassName,
           look === "calm" && "bg-muted",
-          look === "glow" && "bg-soft-glow ring-1 ring-border"
+          look === "glow" && "bg-soft-glow ring-1 ring-border",
+          // Full screen: above the page's pinned header.
+          expanded && "z-50"
         )}
       >
         {!calm && <HeroGradient />}
         {problem ?? (
           <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 lg:flex-row lg:items-center lg:justify-center lg:gap-12">
-            <ViewTabs
-              views={DEMO_VIEWS.map((view) => ({
-                id: view,
-                label: words.tabs[view],
-              }))}
-              value={tab}
-              onChange={choose}
-              ariaLabel={words.tabsLabel}
-              className="lg:hidden"
-            />
+            {/* Phones: the steps, and a button that takes the screen full
+                screen. */}
+            <div className="flex max-w-full items-center gap-2 lg:hidden">
+              {tabs}
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label={words.expand}
+                onClick={() => setExpanded(true)}
+              >
+                <MaximizeIcon />
+              </Button>
+            </div>
             <div
               role="group"
               aria-label={words.tabsLabel}
@@ -209,7 +244,7 @@ export function SeeItInAction({
                 </Item>
               ))}
             </div>
-            <div className="relative isolate max-w-full">
+            <div className="relative isolate">
               {/* On the indigo band, a soft glow of the brand colour behind
                   the phone. */}
               {look === "bands" && (
@@ -218,7 +253,23 @@ export function SeeItInAction({
                   className="absolute -inset-12 -z-10 rounded-full bg-primary/35 blur-3xl"
                 />
               )}
-              <PhoneMockup className={SCREEN}>
+              <PhoneMockup
+                className={SCREEN}
+                expanded={expanded}
+                topBar={
+                  <div className="flex shrink-0 items-center justify-between gap-2 border-b px-3 pt-[max(env(safe-area-inset-top),--spacing(2))] pb-2">
+                    {tabs}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label={words.shrink}
+                      onClick={() => setExpanded(false)}
+                    >
+                      <MinimizeIcon />
+                    </Button>
+                  </div>
+                }
+              >
                 {DEMO_VIEWS.map((view) =>
                   demo.state === "ready" && opened.includes(view) ? (
                     <iframe
