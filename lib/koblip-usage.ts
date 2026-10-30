@@ -14,21 +14,33 @@ export function usageMonth(now: Date) {
   return { start: start.toISOString(), end: end.toISOString() }
 }
 
+// A template sent from Koblip's number in `now`'s month.
+function countedIn(now: Date) {
+  const { start, end } = usageMonth(now)
+  return and(
+    eq(notificationSends.sender, "koblip"),
+    eq(notificationSends.via, "template"),
+    eq(notificationSends.state, "sent"),
+    gte(notificationSends.sentAt, start),
+    lt(notificationSends.sentAt, end)
+  )
+}
+
 // Templates sent from Koblip's number for one business in `now`'s month.
 export async function koblipTemplatesSent(businessId: string, now = new Date()) {
-  const { start, end } = usageMonth(now)
   const [row] = await db
     .select({ n: count() })
     .from(notificationSends)
-    .where(
-      and(
-        eq(notificationSends.businessId, businessId),
-        eq(notificationSends.sender, "koblip"),
-        eq(notificationSends.via, "template"),
-        eq(notificationSends.state, "sent"),
-        gte(notificationSends.sentAt, start),
-        lt(notificationSends.sentAt, end)
-      )
-    )
+    .where(and(eq(notificationSends.businessId, businessId), countedIn(now)))
   return row.n
+}
+
+// The same count for every business that sent any this month (A8's Usage).
+export async function koblipTemplatesSentByBusiness(now = new Date()) {
+  const rows = await db
+    .select({ businessId: notificationSends.businessId, n: count() })
+    .from(notificationSends)
+    .where(countedIn(now))
+    .groupBy(notificationSends.businessId)
+  return new Map(rows.map(({ businessId, n }) => [businessId, n]))
 }
