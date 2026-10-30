@@ -14,20 +14,14 @@ export const DEMO_SAMPLE = {
   currency: "EUR",
   seats: 3,
   // The studio's photos, in order (the first is the cover): free Unsplash
-  // photos (unsplash.com/license, no credit needed), saved in
-  // public/demo/lumen. Their pages: a-hair-salon-with-chairs-and-mirrors-
-  // pb1Ajy_QUeE, salon-chairs-at-white-vanity-PtOfbGkU3uI, woman-in-white-
-  // shirt-standing-near-black-leather-chairs-OKXwmdbdXkk, woman-holding-
-  // hair-dryer-WXmHwPcFamo, hairstylist-curling-hair-in-salon-wSpkThmoZQc,
-  // hairstylist-blow-drying-client-hair-FkAZqQJTbXM, black-and-silver-
-  // office-rolling-chair-beside-mirror-gI9rvJK61L8, a-woman-getting-her-
-  // nails-done-at-a-nail-salon-gb6gtiTZKB8, a-close-up-of-a-babys-hand-
-  // holding-a-babys-foot-RY-z4lHeN1M, a-woman-getting-a-facial-peel-from-a-
-  // doctor-HtXyytr9304, woman-lying-on-blue-towel-with-white-cream-on-face-
-  // g-m8EDc4X6Q, pink-cosmetic-containers-and-makeup-brush-dMjkQJs58uo
-  // (each at unsplash.com/photos/<page>).
+  // photos (unsplash.com/license, no credit needed), all from one salon
+  // shoot by unsplash.com/@unsplashbydan so they read as one business,
+  // cropped to 4:3 and saved in public/demo/lumen. Their ids (each at
+  // unsplash.com/photos/<id>): KMvUcGanzPc, PnDr2j28gXA, iTliv_qGUgc,
+  // Ui6DZ9A1eXU, 7b6TE7yBDyc, iOQ0VZN-apo, Ql0hvzr4wVM, 1pnLnKoO1Y0,
+  // W2IZ8ZA4w7I, 0MrQ5RvqI6I, ENXUyhgWGlU.
   photos: Array.from(
-    { length: 12 },
+    { length: 11 },
     (_, index) => `/demo/lumen/${String(index + 1).padStart(2, "0")}.jpg`
   ),
   // weekday: 0 = Sunday, as on business_hours. Closed on Sundays.
