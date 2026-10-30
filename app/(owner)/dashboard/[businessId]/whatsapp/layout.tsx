@@ -1,4 +1,5 @@
 import { chatConnectionFor } from "@/features/dashboard/api/chat-templates"
+import { senderFor } from "@/features/dashboard/api/notification-sender"
 import { WhatsappFrame } from "@/features/dashboard/components/whatsapp-frame"
 
 // The WhatsApp page's frame: tabs on a computer, a list on a phone. Each
@@ -8,9 +9,12 @@ export default async function WhatsappLayout({
   children,
 }: LayoutProps<"/dashboard/[businessId]/whatsapp">) {
   const { businessId } = await params
-  const connection = await chatConnectionFor(businessId)
+  const [connection, sender] = await Promise.all([
+    chatConnectionFor(businessId),
+    senderFor(businessId),
+  ])
   return (
-    <WhatsappFrame businessId={businessId} connection={connection}>
+    <WhatsappFrame businessId={businessId} connection={connection} sender={sender}>
       {children}
     </WhatsappFrame>
   )

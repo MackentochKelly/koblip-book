@@ -34,6 +34,7 @@ import {
 import { refreshChatMessages } from "../api/chat-connection"
 import { useOwnerMessages } from "../i18n/provider"
 import type { ChatConnection } from "../types/chat-connection"
+import type { Sender } from "../types/notifications"
 
 // The page's parts, in order. Overview is the page itself; each other part
 // is its own route below it (app/(owner)/dashboard/[businessId]/whatsapp/).
@@ -50,14 +51,17 @@ type Part = (typeof PARTS)[number]["id"]
 
 // The WhatsApp page's frame around its parts. On a computer: the title and
 // a row of tabs. On a phone: the Overview with a list of the other parts
-// under it; each part opens as its own screen with a way back.
+// under it; each part opens as its own screen with a way back. A business
+// without its own Koblip Chat workspace sends from Koblip's number (K4).
 export function WhatsappFrame({
   businessId,
   connection,
+  sender,
   children,
 }: {
   businessId: string
   connection: ChatConnection | null
+  sender: Sender | null
   children: React.ReactNode
 }) {
   const m = useOwnerMessages()
@@ -68,13 +72,15 @@ export function WhatsappFrame({
   const hrefOf = (part: Part) => (part === "overview" ? base : `${base}/${part}`)
   const part = PARTS.find((item) => item.id === segment)?.id ?? "overview"
   const atOverview = part === "overview"
-  const usable = !!connection && !connection.needsReconnect
-  const state = connection?.messages ?? null
+  // The business's own workspace works; Koblip's number needs none.
+  const ownUsable = !!connection && !connection.needsReconnect
+  const usable = ownUsable || sender === "koblip"
+  const state = ownUsable ? connection.messages : null
 
   // While not every template is approved, opening the page makes any that
   // are missing in Chat and reads Meta's review; a new answer reloads.
   useEffect(() => {
-    if (!usable || state === "ready") return
+    if (!ownUsable || state === "ready") return
     let current = true
     refreshChatMessages(businessId)
       .then((next) => {
@@ -85,7 +91,7 @@ export function WhatsappFrame({
     return () => {
       current = false
     }
-  }, [businessId, usable, state, router])
+  }, [businessId, ownUsable, state, router])
 
   if (!usable) {
     return (
@@ -133,9 +139,9 @@ export function WhatsappFrame({
           {!atOverview && <span className="md:hidden">{t.parts[part]}</span>}
         </h1>
         {/* Overview shows where the messages stand itself. */}
-        {state !== "ready" && !atOverview && (
+        {state && state !== "ready" && !atOverview && (
           <p className="text-sm text-muted-foreground">
-            {m.integrations.koblipChat.messages[state ?? "settingUp"]}
+            {m.integrations.koblipChat.messages[state]}
           </p>
         )}
       </div>

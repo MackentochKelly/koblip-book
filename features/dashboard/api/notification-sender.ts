@@ -129,6 +129,14 @@ async function lineFor(businessId: string, turnedOff: BookingMessage[]): Promise
   return own || koblip ? "wait" : null
 }
 
+// Which number the business's messages go from now (the WhatsApp page
+// shows it, K4): null when none can send, or a connection must be renewed.
+export async function senderFor(businessId: string): Promise<Sender | null> {
+  const settings = await notificationSettingsFor(businessId)
+  const line = await lineFor(businessId, settings.turnedOff)
+  return line && line !== "wait" ? line.sender : null
+}
+
 // The businesses Book plans messages for, each with the moment it could
 // first send: bookings made before then get none.
 async function sendingBusinesses() {

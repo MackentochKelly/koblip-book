@@ -112,7 +112,8 @@ function MessageRow({
           <ItemTitle>{name}</ItemTitle>
           <ItemDescription>{t.about[item.message]}</ItemDescription>
         </button>
-        {review !== "approved" && (
+        {/* Koblip's ready-made set is Koblip's to get approved. */}
+        {item.editable && review !== "approved" && (
           <Badge
             variant={review === "rejected" ? "destructive" : "secondary"}
             className="mt-1"
