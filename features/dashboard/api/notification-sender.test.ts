@@ -8,6 +8,7 @@ import { afterAll, beforeAll, beforeEach, expect, test, vi } from "vitest"
 import { db } from "@/lib/db"
 import {
   bookings,
+  businessSettings,
   businesses,
   chatConnections,
   chatReplies,
@@ -124,6 +125,7 @@ beforeEach(async () => {
   await db.delete(notificationTexts)
   await db.delete(chatConnections)
   await db.delete(koblipChatConnection)
+  await db.delete(businessSettings)
   await db.delete(koblipChatTemplates)
   await db.insert(chatConnections).values({
     businessId: "biz",
@@ -696,6 +698,50 @@ test("with no connection of its own, a business sends from Koblip's number", asy
   await book("b0", { createdAt: "2026-01-15T00:00:00.000Z" })
   await runNotifications(NOW)
   expect(await sends("b0")).toEqual([])
+})
+
+test("Koblip's number stops a business's templates at its monthly limit; normal messages still go", async () => {
+  const { koblipTemplatesSent } = await import("@/lib/koblip-usage")
+  await db.delete(chatConnections)
+  await connectKoblip()
+  await db.insert(businessSettings).values({ businessId: "biz", key: "koblipMonthlyTemplates", value: 1 })
+  // One template already went this month; one last month does not count.
+  await book("b0", { createdAt: "2025-12-01T00:00:00.000Z" })
+  const went = (sentAt: string, reminderMinutes: number) => ({
+    businessId: "biz",
+    bookingId: "b0",
+    message: "reminder" as const,
+    reminderMinutes,
+    dueAt: sentAt,
+    state: "sent" as const,
+    via: "template" as const,
+    sender: "koblip" as const,
+    sentAt,
+  })
+  await db.insert(notificationSends).values([went(later(-60).toISOString(), 1440), went("2026-10-31T23:00:00.000Z", 30)])
+  expect(await koblipTemplatesSent("biz", NOW)).toBe(1)
+
+  await book("b1")
+  await runNotifications(NOW)
+  expect((await sends("b1"))[0]).toEqual(["confirmed", 0, "skipped", "monthlyLimit"])
+  expect(sent).toEqual([])
+
+  // Inside the customer's window the words go as a normal message, free.
+  await db.insert(chatReplies).values({
+    workspaceId: "wk",
+    phoneNumberId: "pk",
+    customerPhone: "18095550102",
+    lastReplyAt: later(-5).toISOString(),
+  })
+  await book("b2", { customerPhone: "+1 809 555 0102" })
+  await runNotifications(NOW)
+  expect(sent).toEqual([expect.objectContaining({ whatsapp_phone_number_id: "pk", messageType: "text" })])
+
+  // The admin raises this business's limit: templates go again.
+  await db.update(businessSettings).set({ value: 5 })
+  await book("b3")
+  await runNotifications(NOW)
+  expect(sent.at(-1)).toEqual(expect.objectContaining({ messageType: "template", template_id: "k-confirmed-es" }))
 })
 
 test("inside the window of Koblip's number, a normal message goes from it", async () => {

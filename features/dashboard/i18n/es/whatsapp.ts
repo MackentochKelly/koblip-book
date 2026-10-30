@@ -204,6 +204,7 @@ const whatsapp: typeof en = {
     moved: "Reserva movida",
     notTold: "Cliente aún sin avisar",
     windowClosed: "Pasaron las 24 horas del cliente",
+    monthlyLimit: "Se alcanzó el límite mensual de Koblip",
     other: "Error de Koblip Chat",
   } as Record<string, string>,
 }
