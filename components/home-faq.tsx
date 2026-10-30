@@ -3,7 +3,6 @@
 import { useHomeLook } from "@/components/home-look"
 import {
   HOME_SECTION_IDS,
-  homeSectionSpaceClassName,
   homeSectionTitleClassName,
 } from "@/components/home-section-title"
 import {
@@ -25,8 +24,7 @@ export function HomeFaq({ words }: { words: Messages["home"]["faq"] }) {
     <section
       id={HOME_SECTION_IDS.faq}
       className={cn(
-        "mx-auto flex w-full max-w-page flex-col gap-8 px-2 sm:px-4",
-        homeSectionSpaceClassName,
+        "mx-auto flex w-full max-w-page flex-col gap-4 px-2 pb-12 sm:px-4",
         sideBySide && "md:grid md:grid-cols-[1fr_2fr] md:gap-12"
       )}
     >
