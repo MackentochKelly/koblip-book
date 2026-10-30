@@ -12,6 +12,8 @@ import {
   chatConnections,
   chatReplies,
   chatTemplates,
+  koblipChatConnection,
+  koblipChatTemplates,
   notificationSends,
   notificationSettings,
   notificationTexts,
@@ -37,8 +39,10 @@ let closeDb: () => void
 const NOW = new Date("2026-11-02T14:00:00.000Z")
 const later = (minutes: number) => new Date(NOW.getTime() + minutes * 60_000)
 
-// A stand-in for Chat's API: contacts and sends.
+// A stand-in for Chat's API: contacts and sends, and whose token each send
+// used (koa_1: the business's workspace, koa_k: Koblip's).
 const sent: Record<string, unknown>[] = []
+const sentWith: string[] = []
 let sendFails = false
 let unsubscribed = false
 const chat = vi.fn(async (url: string, init: RequestInit = {}) => {
@@ -51,6 +55,7 @@ const chat = vi.fn(async (url: string, init: RequestInit = {}) => {
   if (path === "/api/whatsapp/send") {
     if (sendFails) return answer({ success: false, code: "send_failed" }, 500)
     sent.push(JSON.parse(String(init.body)))
+    sentWith.push(String(new Headers(init.headers).get("authorization")))
     return answer({ success: true, data: { id: `m${sent.length}` } })
   }
   return answer({ code: "not_found" }, 404)
@@ -108,6 +113,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   sent.length = 0
+  sentWith.length = 0
   sendFails = false
   unsubscribed = false
   chat.mockClear()
@@ -117,6 +123,8 @@ beforeEach(async () => {
   await db.delete(notificationSettings)
   await db.delete(notificationTexts)
   await db.delete(chatConnections)
+  await db.delete(koblipChatConnection)
+  await db.delete(koblipChatTemplates)
   await db.insert(chatConnections).values({
     businessId: "biz",
     workspaceId: "w1",
@@ -498,4 +506,118 @@ test("send again: a failed message goes once more, and only a failed one", async
   ])
   expect(await sendAgain("biz", failed.id)).toEqual({ ok: false, error: "notFailed" })
   expect(await sendAgain("other", failed.id)).toEqual({ ok: false, error: "not_found" })
+})
+
+async function connectKoblip() {
+  await db.insert(koblipChatConnection).values({
+    id: "koblip",
+    workspaceId: "wk",
+    workspaceName: "Koblip",
+    scopes: "contacts templates automations conversations",
+    accessToken: seal("koa_k"),
+    refreshToken: seal("kor_k"),
+    accessExpiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+    wabaId: "wabak",
+    phoneNumberId: "pk",
+    createdAt: "2026-02-01T00:00:00.000Z",
+  })
+  await db.insert(koblipChatTemplates).values(
+    (["confirmed", "reminder", "changed", "cancelled", "ownerNewBooking"] as const).flatMap((message) =>
+      (["en", "es"] as const).map((language) => ({
+        message,
+        language,
+        chatTemplateId: `k-${message}-${language}`,
+        status: "approved",
+      }))
+    )
+  )
+}
+
+async function senders(bookingId: string) {
+  const rows = await db.select().from(notificationSends).where(eq(notificationSends.bookingId, bookingId))
+  return rows.filter((row) => row.state === "sent").map((row) => row.sender)
+}
+
+test("the business's own number sends once Meta approved all its messages", async () => {
+  await connectKoblip()
+  await book("b1")
+  await runNotifications(NOW)
+  expect(sentWith).toEqual(["Bearer koa_1"])
+  expect(sent[0]).toEqual(expect.objectContaining({ whatsapp_phone_number_id: "p1", template_id: "t-confirmed-es" }))
+  expect(await senders("b1")).toEqual(["own"])
+})
+
+test("not all approved yet: Koblip's number sends Koblip's own template", async () => {
+  await connectKoblip()
+  await db
+    .update(chatTemplates)
+    .set({ status: "pending" })
+    .where(and(eq(chatTemplates.message, "reminder"), eq(chatTemplates.language, "en")))
+  await book("b1")
+  await runNotifications(NOW)
+  expect(sentWith).toEqual(["Bearer koa_k"])
+  expect(sent[0]).toEqual(
+    expect.objectContaining({
+      whatsapp_phone_number_id: "pk",
+      template_id: "k-confirmed-es",
+      templateName: "koblip_booking_confirmed_v2",
+      templateVariables: expect.objectContaining({ 3: "Shop" }),
+    })
+  )
+  expect(await senders("b1")).toEqual(["koblip"])
+
+  // A message the owner turned off does not need approving.
+  await db.insert(notificationSettings).values({
+    businessId: "biz",
+    reminders: [1440, 30],
+    quietStart: "21:00",
+    quietEnd: "08:00",
+    turnedOff: ["reminder"],
+  })
+  await book("b2")
+  await runNotifications(NOW)
+  expect(sentWith.at(-1)).toBe("Bearer koa_1")
+})
+
+test("with no connection of its own, a business sends from Koblip's number", async () => {
+  await db.delete(chatConnections)
+  await book("b1")
+  await runNotifications(NOW)
+  expect(await sends("b1")).toEqual([])
+
+  await connectKoblip()
+  await runNotifications(NOW)
+  expect(sentWith).toEqual(["Bearer koa_k"])
+  expect(await senders("b1")).toEqual(["koblip"])
+  // Bookings made before Koblip's number could send get nothing.
+  await book("b0", { createdAt: "2026-01-15T00:00:00.000Z" })
+  await runNotifications(NOW)
+  expect(await sends("b0")).toEqual([])
+})
+
+test("inside the window of Koblip's number, a normal message goes from it", async () => {
+  await db.delete(chatConnections)
+  await connectKoblip()
+  await db.insert(chatReplies).values({
+    workspaceId: "wk",
+    phoneNumberId: "pk",
+    customerPhone: "18095550101",
+    lastReplyAt: later(-60).toISOString(),
+  })
+  await book("b1")
+  await runNotifications(NOW)
+  expect(sent[0]).toEqual(expect.objectContaining({ whatsapp_phone_number_id: "pk", messageType: "text" }))
+})
+
+test("Koblip's number never sends for a business without an owner or a demo", async () => {
+  await db.delete(chatConnections)
+  await connectKoblip()
+  await db.update(businesses).set({ ownerId: null }).where(eq(businesses.id, "biz"))
+  await book("b1")
+  await runNotifications(NOW)
+  await db.update(businesses).set({ ownerId: "u1", isDemo: true }).where(eq(businesses.id, "biz"))
+  await runNotifications(NOW)
+  await db.update(businesses).set({ isDemo: false }).where(eq(businesses.id, "biz"))
+  expect(await sends("b1")).toEqual([])
+  expect(sent).toEqual([])
 })
