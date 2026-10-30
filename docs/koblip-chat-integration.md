@@ -77,6 +77,22 @@ The owner taps Connect in Koblip Book. A Koblip Chat window opens, they log in, 
 | Booking changed or cancelled | Customer | When it changes |
 | New booking | Owner's own WhatsApp | Right after booking |
 
+### When reminders go (agreed with the owner)
+
+Counted from when the customer booked to when the visit starts:
+
+| Booked ahead | Customer gets |
+| --- | --- |
+| More than 24 hours | Confirmation now, reminder 24 hours before, reminder 30 minutes before |
+| 3 to 24 hours | Confirmation now, reminder 2 hours before, reminder 30 minutes before |
+| 1 to 3 hours | Confirmation now, reminder 30 minutes before |
+| Less than 1 hour | Confirmation only |
+
+- No messages from 9 pm to 8 am in the business's time zone: a 24-hour or 2-hour reminder that would land then goes at 8 pm the evening before; a 30-minute one is skipped.
+- A changed booking works its reminders out again; a cancelled one stops them. Each reminder goes once.
+- The owner's "New booking" goes right away.
+- Why: a 24-hour reminder has the best evidence ([study](https://acofp.org/news-and-publications/journal/article-detail/vol-12-no-5-(2020)-september-october-2020/evaluation-clinical-no-show-rates-setting-outpatient-internal-medicine-residency-clinic)); earlier bookings need earlier reminders ([paper](https://ideas.repec.org/a/taf/tjorxx/v69y2018i11p1863-1875.html)); Fresha and Square work the same way ([Fresha](https://www.fresha.com/blog/making-the-most-of-freshas-notifications), [Square](https://square.com/gb/en/appointments/features/reminders)). The night rule and the 30-minute reminder are the owner's choices.
+
 ### The 24-hour rule (Meta, verified)
 
 - A customer's message opens a 24-hour window; another message resets it. Inside it any message may be sent; outside it only an approved template ([Meta: send messages](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages)).
