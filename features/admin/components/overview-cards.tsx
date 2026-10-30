@@ -1,8 +1,8 @@
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { AdminOverview } from "../api/queries"
 import type { AdminMessages } from "../i18n"
+import { StatCards } from "./stat-cards"
 
-// The four app-wide counts, two across on a phone, four on a computer.
+// The four app-wide counts.
 export function OverviewCards({
   overview,
   m,
@@ -10,25 +10,15 @@ export function OverviewCards({
   overview: AdminOverview
   m: AdminMessages
 }) {
-  const number = new Intl.NumberFormat(m.locale)
-  const stats = [
-    { label: m.overview.businesses, value: overview.businesses },
-    { label: m.overview.owners, value: overview.owners },
-    { label: m.overview.bookings, value: overview.bookings },
-    { label: m.overview.newOwners, value: overview.newOwners },
-  ]
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {stats.map((stat) => (
-        <Card key={stat.label}>
-          <CardHeader>
-            <CardDescription>{stat.label}</CardDescription>
-            <CardTitle className="text-3xl font-semibold tabular-nums">
-              {number.format(stat.value)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      ))}
-    </div>
+    <StatCards
+      locale={m.locale}
+      stats={[
+        { label: m.overview.businesses, value: overview.businesses },
+        { label: m.overview.owners, value: overview.owners },
+        { label: m.overview.bookings, value: overview.bookings },
+        { label: m.overview.newOwners, value: overview.newOwners },
+      ]}
+    />
   )
 }
