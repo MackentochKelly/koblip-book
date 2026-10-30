@@ -255,6 +255,9 @@ export function SeeItInAction({
               )}
               <PhoneMockup
                 className={SCREEN}
+                // The booking page opens on its photos: they run up under
+                // the Dynamic Island, as on a real iPhone.
+                clearTop={tab === "page"}
                 expanded={expanded}
                 topBar={
                   <div className="flex shrink-0 items-center justify-between gap-2 border-b px-3 pt-[max(env(safe-area-inset-top),--spacing(2))] pb-2">

@@ -35,16 +35,20 @@ type Shrink = "zoom" | "transform"
 // phone's own size, then the whole phone is shrunk to fit its box, so the
 // page's words keep the phone's proportions instead of being drawn large.
 // `className` sizes the box (give it a height); the phone keeps its shape
-// inside it. `expanded`: the screen leaves the phone and fills the whole
+// inside it. `clearTop`: the page runs up under the status bar (a page
+// that opens on a photo), instead of starting below it. `expanded`: the
+// screen leaves the phone and fills the whole
 // window (the frame's page stays as it is, no reload), with `topBar`
 // pinned above it.
 export function PhoneMockup({
   className,
+  clearTop = false,
   expanded = false,
   topBar,
   children,
 }: {
   className?: string
+  clearTop?: boolean
   expanded?: boolean
   topBar?: React.ReactNode
   children: React.ReactNode
@@ -128,7 +132,7 @@ export function PhoneMockup({
                     width: SCREEN.width,
                     height: SCREEN.height,
                     borderRadius: SCREEN.radius,
-                    paddingTop: STATUS_BAR,
+                    paddingTop: clearTop ? 0 : STATUS_BAR,
                     paddingBottom: HOME_AREA,
                   }
             }
