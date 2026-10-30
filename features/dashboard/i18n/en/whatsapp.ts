@@ -2,6 +2,18 @@
 const whatsapp = {
   connectTitle: "Connect Koblip Chat to send WhatsApp messages",
   connect: "Connect",
+  // The page's parts: tabs on a computer, a list on a phone.
+  parts: {
+    overview: "Overview",
+    messages: "Customer messages",
+    alerts: "Your alerts",
+    timing: "Timing",
+    replies: "Replies",
+    activity: "Activity",
+  },
+  partsLabel: "WhatsApp parts",
+  ready: "Ready to send",
+  repliesSoon: "Reply buttons are coming soon",
   messages: "Messages",
   names: {
     confirmed: "Booking confirmed",

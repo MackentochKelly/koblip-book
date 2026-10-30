@@ -4,6 +4,18 @@ import type en from "../en/whatsapp"
 const whatsapp: typeof en = {
   connectTitle: "Conecta Koblip Chat para enviar mensajes de WhatsApp",
   connect: "Conectar",
+  // Las partes de la página: pestañas en computadora, una lista en el móvil.
+  parts: {
+    overview: "Resumen",
+    messages: "Mensajes al cliente",
+    alerts: "Tus avisos",
+    timing: "Horarios",
+    replies: "Respuestas",
+    activity: "Actividad",
+  },
+  partsLabel: "Partes de WhatsApp",
+  ready: "Listo para enviar",
+  repliesSoon: "Los botones de respuesta llegan pronto",
   messages: "Mensajes",
   names: {
     confirmed: "Reserva confirmada",
