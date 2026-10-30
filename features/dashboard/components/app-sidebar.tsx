@@ -92,7 +92,7 @@ export function AppSidebar({
         {NAV_GROUPS.map((group) => (
           <NavMain
             key={group.key}
-            title={m.groups[group.key]}
+            title={group.key === "main" ? undefined : m.groups[group.key]}
             items={group.items.map((item) => {
               const href = base + item.path
               return {

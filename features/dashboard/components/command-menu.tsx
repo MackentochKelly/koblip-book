@@ -3,7 +3,11 @@
 import { createContext, use, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Route } from "next"
-import { ExternalLinkIcon, LanguagesIcon, LogOutIcon } from "@/components/ui/icons"
+import {
+  ExternalLinkIcon,
+  LanguagesIcon,
+  LogOutIcon,
+} from "@/components/ui/icons"
 import { useTheme } from "next-themes"
 
 import {
@@ -88,7 +92,10 @@ function CommandMenu({
         <CommandList className="scroll-fade">
           <CommandEmpty>{m.noResults}</CommandEmpty>
           {NAV_GROUPS.map((group) => (
-            <CommandGroup key={group.key} heading={m.groups[group.key]}>
+            <CommandGroup
+              key={group.key}
+              heading={group.key === "main" ? undefined : m.groups[group.key]}
+            >
               {group.items.map((item) => (
                 <CommandItem
                   key={item.key}

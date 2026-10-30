@@ -14,7 +14,7 @@ const shell = {
     details: "Details",
   },
   groups: {
-    bookings: "Bookings",
+    business: "Your business",
     workspace: "Workspace",
   },
   search: "Search",

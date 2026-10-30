@@ -28,12 +28,18 @@ export interface NavItem {
 export const NAV_ICON_SIZE =
   "[&_svg]:size-5 group-data-[collapsible=icon]:p-1.5!"
 
-export function NavMain({ title, items }: { title: string; items: NavItem[] }) {
+export function NavMain({
+  title,
+  items,
+}: {
+  title?: string
+  items: NavItem[]
+}) {
   const { isMobile, setOpenMobile } = useSidebar()
   return (
     // Folded, the titles hide; a wider gap keeps each group apart.
     <SidebarGroup className="group-data-[collapsible=icon]:py-4">
-      <SidebarGroupLabel>{title}</SidebarGroupLabel>
+      {title && <SidebarGroupLabel>{title}</SidebarGroupLabel>}
       <SidebarMenu className="gap-1">
         {items.map((item) => (
           <SidebarMenuItem key={item.href}>

@@ -15,7 +15,7 @@ const shell: typeof en = {
     details: "Datos",
   },
   groups: {
-    bookings: "Reservas",
+    business: "Tu negocio",
     workspace: "Espacio de trabajo",
   },
   search: "Buscar",
