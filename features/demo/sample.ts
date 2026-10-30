@@ -13,6 +13,23 @@ export const DEMO_SAMPLE = {
   timezone: "Europe/Madrid",
   currency: "EUR",
   seats: 3,
+  // The studio's photos, in order (the first is the cover): free Unsplash
+  // photos (unsplash.com/license, no credit needed), saved in
+  // public/demo/lumen. Their pages: a-hair-salon-with-chairs-and-mirrors-
+  // vSZbEjCSDRw, salon-chairs-at-white-vanity-PtOfbGkU3uI, woman-in-white-
+  // shirt-standing-near-black-leather-chairs-OKXwmdbdXkk, woman-holding-
+  // hair-dryer-WXmHwPcFamo, hairstylist-curling-hair-in-salon-wSpkThmoZQc,
+  // hairstylist-blow-drying-client-hair-FkAZqQJTbXM, black-and-silver-
+  // office-rolling-chair-beside-mirror-gI9rvJK61L8, a-woman-getting-her-
+  // nails-done-at-a-nail-salon-gb6gtiTZKB8, a-close-up-of-a-babys-hand-
+  // holding-a-babys-foot-RY-z4lHeN1M, a-woman-getting-a-facial-peel-from-a-
+  // doctor-HtXyytr9304, woman-lying-on-blue-towel-with-white-cream-on-face-
+  // g-m8EDc4X6Q, pink-cosmetic-containers-and-makeup-brush-dMjkQJs58uo
+  // (each at unsplash.com/photos/<page>).
+  photos: Array.from(
+    { length: 12 },
+    (_, index) => `/demo/lumen/${String(index + 1).padStart(2, "0")}.jpg`
+  ),
   // weekday: 0 = Sunday, as on business_hours. Closed on Sundays.
   hours: [
     { weekday: 1, opensAt: "09:00", closesAt: "19:00" },

@@ -14,6 +14,7 @@ import {
   bookings,
   businesses,
   businessHours,
+  businessPhotos,
   services,
   teamMemberServices,
   teamMembers,
@@ -115,6 +116,11 @@ export async function createDemoCopy(
     db
       .insert(businessHours)
       .values(sample.hours.map((day) => ({ businessId, ...day }))),
+    db
+      .insert(businessPhotos)
+      .values(
+        sample.photos.map((url, position) => ({ businessId, url, position }))
+      ),
     db.insert(services).values(
       sample.services.map((service, index) => ({
         id: serviceIds[index],

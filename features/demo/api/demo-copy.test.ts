@@ -8,6 +8,7 @@ import {
   bookings,
   businesses,
   businessHours,
+  businessPhotos,
   services,
   session,
   teamMemberServices,
@@ -81,6 +82,14 @@ test("a copy is the full sample, owned by the guest and marked demo", async () =
   const count = async (table: typeof services | typeof teamMembers) =>
     (await db.select().from(table).where(eq(table.businessId, copy.id))).length
   expect(await count(services)).toBe(DEMO_SAMPLE.services.length)
+  expect(
+    (
+      await db
+        .select()
+        .from(businessPhotos)
+        .where(eq(businessPhotos.businessId, copy.id))
+    ).length
+  ).toBe(DEMO_SAMPLE.photos.length)
   expect(await count(teamMembers)).toBe(DEMO_SAMPLE.team.length)
   expect(
     (
