@@ -127,7 +127,9 @@ export function SeeItInAction({
   return (
     <section
       ref={box}
-      className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 pb-12 sm:px-4"
+      // Extra room above: the page's second big moment gets space to
+      // breathe (a band's own padding replaces it in the bands look).
+      className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 pt-12 pb-12 sm:px-4 sm:pt-24"
     >
       {/* Centred with a line under it, unlike the other sections: the real
           app running here is the page's second big moment. */}

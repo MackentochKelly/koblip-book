@@ -40,7 +40,8 @@ export function HomeCta({
         "mx-auto w-full",
         bands
           ? "max-w-3xl px-2 py-16 sm:px-4 sm:py-24"
-          : "max-w-page px-2 pb-12 sm:px-4"
+          : // Room above and below: the last call to action stands alone.
+            "max-w-page px-2 pt-12 pb-16 sm:px-4 sm:pt-24 sm:pb-24"
       )}
     >
       <div
