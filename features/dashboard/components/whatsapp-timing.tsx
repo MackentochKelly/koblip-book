@@ -8,7 +8,14 @@ import { toast } from "sonner"
 import { PageSection } from "@/components/page-section"
 import { TimeInput } from "@/components/time-input"
 import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldGroup } from "@/components/ui/field"
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldTitle,
+} from "@/components/ui/field"
 import {
   Item,
   ItemActions,
@@ -24,13 +31,15 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
+import { Switch } from "@/components/ui/switch"
 import { formatDuration } from "@/lib/format-duration"
 import type { NotificationRules } from "@/lib/notification-rules"
 import { saveNotificationSettings } from "../api/notification-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { NotificationSettings } from "../types/notifications"
 
-// Timing: when reminders go and the quiet hours, saved together. The
+// Timing: when reminders go, the quiet hours and the 24-hour setting (a
+// normal message inside the customer's 24-hour window), saved together. The
 // reminder choices are the business's rules, which the admin may change.
 export function WhatsappTiming({
   businessId,
@@ -47,6 +56,7 @@ export function WhatsappTiming({
   const [adding, setAdding] = useState<string | null>(null)
   const [quietStart, setQuietStart] = useState(settings.quietStart)
   const [quietEnd, setQuietEnd] = useState(settings.quietEnd)
+  const [freeText, setFreeText] = useState(settings.freeTextInWindow)
   const [pending, startTransition] = useTransition()
 
   const choices = rules.reminderChoices.filter(
@@ -66,6 +76,7 @@ export function WhatsappTiming({
         reminders,
         quietStart,
         quietEnd,
+        freeTextInWindow: freeText,
       }).catch(() => null)
       if (result?.ok) {
         toast.success(t.settingsSaved)
@@ -161,6 +172,23 @@ export function WhatsappTiming({
             </div>
           </Field>
         </FieldGroup>
+      </PageSection>
+
+      <PageSection id="window" title={t.window}>
+        {/* The whole row is the switch's tap area. */}
+        <FieldLabel htmlFor="free-text-in-window">
+          <Field orientation="horizontal">
+            <FieldContent>
+              <FieldTitle>{t.freeText}</FieldTitle>
+              <FieldDescription>{t.freeTextHint}</FieldDescription>
+            </FieldContent>
+            <Switch
+              id="free-text-in-window"
+              checked={freeText}
+              onCheckedChange={setFreeText}
+            />
+          </Field>
+        </FieldLabel>
       </PageSection>
 
       <Button size="lg" onClick={save} disabled={pending}>
