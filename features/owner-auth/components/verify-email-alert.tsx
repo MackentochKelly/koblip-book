@@ -48,7 +48,11 @@ export function VerifyEmailAlert({
     <Alert className="mb-6">
       <MailIcon />
       <AlertTitle>{labels.title}</AlertTitle>
-      <AlertDescription>{labels.sentTo}</AlertDescription>
+      {/* A long address breaks onto the next line instead of pushing the
+          page wider than a phone. */}
+      <AlertDescription className="wrap-anywhere">
+        {labels.sentTo}
+      </AlertDescription>
       <AlertAction>
         <Button variant="outline" size="sm" onClick={resend} disabled={sending}>
           {sending && <Spinner data-icon="inline-start" />}

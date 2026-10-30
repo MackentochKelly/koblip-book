@@ -21,7 +21,8 @@ export default async function BusinessDashboardLayout({
       business={{ id: business.id, slug: business.slug, name: business.name }}
       owner={{ name: owner.name, email: owner.email, image: owner.image }}
     >
-      {!owner.emailVerified && (
+      {/* A demo guest has no email of its own to confirm. */}
+      {!owner.emailVerified && !owner.isGuest && (
         <VerifyEmailAlert
           email={owner.email}
           labels={{ ...verify, sentTo: verify.sentTo(owner.email) }}
