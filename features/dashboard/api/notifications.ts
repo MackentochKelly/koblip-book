@@ -161,7 +161,7 @@ export async function notificationHistoryFor(
       )
     )
     .orderBy(desc(notificationSends.dueAt))
-    .limit(NOTIFICATION_RULES.historySize)
+    .limit((await notificationRules(businessId)).historySize)
   return rows.map(({ dueAt, sentAt, replyAction, repliedAt, ...row }) => ({
     ...row,
     at: sentAt ?? dueAt,

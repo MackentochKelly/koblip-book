@@ -488,8 +488,19 @@ export const notificationSends = sqliteTable(
     bookingId: text()
       .notNull()
       .references(() => bookings.id, { onDelete: "cascade" }),
+    // The booking messages, plus what a customer's tap queues (S3): the
+    // owner's alert and the thank-you, a plain text inside the 24-hour window.
     message: text({
-      enum: ["confirmed", "reminder", "changed", "cancelled", "ownerNewBooking"],
+      enum: [
+        "confirmed",
+        "reminder",
+        "changed",
+        "cancelled",
+        "ownerNewBooking",
+        "ownerCantCome",
+        "ownerCancelled",
+        "thankYou",
+      ],
     }).notNull(),
     // Minutes before the visit for a reminder; 0 for the other messages.
     reminderMinutes: integer().notNull().default(0),
@@ -505,6 +516,9 @@ export const notificationSends = sqliteTable(
     via: text({ enum: ["text", "template"] }),
     // Chat's record id, and WhatsApp's delivery status from Chat's events.
     chatRecordId: text(),
+    // WhatsApp's own message id, from Chat's status events: a button tap
+    // names the message it answers by this id (D6).
+    chatMessageId: text(),
     delivery: text(),
     sentAt: text(),
     // Koblip's number (the default) or the business's own.
@@ -524,6 +538,7 @@ export const notificationSends = sqliteTable(
     index("notification_sends_due").on(table.state, table.dueAt),
     index("notification_sends_business").on(table.businessId, table.createdAt),
     index("notification_sends_record").on(table.chatRecordId),
+    index("notification_sends_message").on(table.chatMessageId),
   ]
 )
 
