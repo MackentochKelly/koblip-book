@@ -26,12 +26,15 @@ export interface SectionPart<T extends string> {
 // area. On a computer: the title and a row of tabs. On a phone: the first
 // part (the overview) with a list of the others under it; each part opens as
 // its own screen with a way back. `notice` is one short line under the title.
+// `back` is for a screen opened from inside a part (one business in a list):
+// it then leads back to that part, on a phone and a computer.
 export function SectionParts<T extends string>({
   title,
   parts,
   current,
   ariaLabel,
   notice,
+  back,
   children,
 }: {
   title: string
@@ -40,6 +43,7 @@ export function SectionParts<T extends string>({
   current: T
   ariaLabel: string
   notice?: React.ReactNode
+  back?: { href: string; label: string }
   children: React.ReactNode
 }) {
   const router = useRouter()
@@ -50,16 +54,28 @@ export function SectionParts<T extends string>({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        {!atOverview && (
+        {back ? (
           <Button
             variant="ghost"
-            className="-ml-2.5 w-fit md:hidden"
+            className="-ml-2.5 w-fit"
             nativeButton={false}
-            render={<Link href={overview.href} />}
+            render={<Link href={back.href} />}
           >
             <ChevronLeftIcon data-icon="inline-start" />
-            {title}
+            {back.label}
           </Button>
+        ) : (
+          !atOverview && (
+            <Button
+              variant="ghost"
+              className="-ml-2.5 w-fit md:hidden"
+              nativeButton={false}
+              render={<Link href={overview.href} />}
+            >
+              <ChevronLeftIcon data-icon="inline-start" />
+              {title}
+            </Button>
+          )
         )}
         {/* A phone shows the open part's name; a computer, the page's. */}
         <h1 className="text-2xl font-semibold tracking-tight">
