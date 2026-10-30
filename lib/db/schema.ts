@@ -389,6 +389,46 @@ export const chatTemplates = sqliteTable(
   (table) => [primaryKey({ columns: [table.businessId, table.message, table.language] })]
 )
 
+// A business's WhatsApp notification settings, as its owner set them on the
+// WhatsApp page; no row means the defaults in lib/notification-rules.ts.
+export const notificationSettings = sqliteTable("notification_settings", {
+  businessId: text()
+    .primaryKey()
+    .references(() => businesses.id, { onDelete: "cascade" }),
+  // Where the owner's "New booking" alert goes (E.164), or none.
+  ownerPhone: text(),
+  // Minutes before the visit, longest first.
+  reminders: text({ mode: "json" }).$type<number[]>().notNull(),
+  quietStart: text().notNull(),
+  quietEnd: text().notNull(),
+  // The messages the owner turned off.
+  turnedOff: text({ mode: "json" })
+    .$type<("confirmed" | "reminder" | "changed" | "cancelled" | "ownerNewBooking")[]>()
+    .notNull(),
+  ...timestamps(),
+})
+
+// The owner's own wording for one message in one language; no row means
+// Book's default (features/dashboard/utils/booking-templates.ts). Fields are
+// written as {name}, {service}… and become Meta's {{1}}… when sent to Chat.
+export const notificationTexts = sqliteTable(
+  "notification_texts",
+  {
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    message: text({
+      enum: ["confirmed", "reminder", "changed", "cancelled", "ownerNewBooking"],
+    }).notNull(),
+    language: text({ enum: ["en", "es"] }).notNull(),
+    header: text().notNull(),
+    body: text().notNull(),
+    footer: text().notNull(),
+    ...timestamps(),
+  },
+  (table) => [primaryKey({ columns: [table.businessId, table.message, table.language] })]
+)
+
 // When each customer last wrote to a WhatsApp number of a connected Chat
 // workspace, from Chat's signed events (docs/koblip-chat-integration.md,
 // step 2). Meta's 24-hour window runs from this, per business number and

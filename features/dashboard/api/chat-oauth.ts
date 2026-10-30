@@ -243,7 +243,7 @@ export class ChatApiError extends Error {
 export async function chatApi<T>(
   businessId: string,
   path: string,
-  init: { method?: "GET" | "POST"; body?: unknown } = {}
+  init: { method?: "GET" | "POST" | "PUT"; body?: unknown } = {}
 ): Promise<T> {
   const token = await chatAccessToken(businessId)
   if (!token) throw new ChatApiError(null, "not_connected")

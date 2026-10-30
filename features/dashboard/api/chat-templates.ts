@@ -1,18 +1,55 @@
 import "server-only"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { chatConnections, chatTemplates } from "@/lib/db/schema"
+import { chatConnections, chatTemplates, notificationTexts } from "@/lib/db/schema"
 import type { ChatConnection, ChatMessagesState } from "../types/chat-connection"
-import { bookingTemplates, type BookingTemplate } from "../utils/booking-templates"
+import {
+  BOOKING_MESSAGES,
+  TEMPLATE_LANGUAGES,
+  bookingTemplate,
+  type BookingMessage,
+  type BookingTemplate,
+  type TemplateLanguage,
+} from "../utils/booking-templates"
 import { ChatApiError, chatApi, chatConnectionUsable } from "./chat-oauth"
 
 // Book's booking templates in the business's Koblip Chat
 // (docs/koblip-chat-integration.md, step 2), through Chat's public API the
 // way any app uses it: the workspace's WhatsApp numbers
 // (GET /api/whatsapp/connections), its templates (GET /api/template), new
-// ones (POST /api/template/create) and Meta's review status
+// ones (POST /api/template/create), the owner's edits (PUT /api/template/:id,
+// which Chat sends back to Meta) and Meta's review status
 // (POST /api/template/sync-status). See wapi-api docs/api/oauth.md.
+
+const TEMPLATE_COUNT = BOOKING_MESSAGES.length * TEMPLATE_LANGUAGES.length
+
+// Every template the business needs, in the owner's wording where they
+// changed it.
+async function businessTemplates(businessId: string): Promise<BookingTemplate[]> {
+  const own = await db
+    .select()
+    .from(notificationTexts)
+    .where(eq(notificationTexts.businessId, businessId))
+  return TEMPLATE_LANGUAGES.flatMap((language) =>
+    BOOKING_MESSAGES.map((message) => {
+      const wording = own.find((row) => row.message === message && row.language === language)
+      return bookingTemplate(message, language, wording)
+    })
+  )
+}
+
+// The parts of a template Chat and Meta take, with a sample for each field.
+function templateBody(template: BookingTemplate) {
+  return {
+    header_text: template.header,
+    message_body: template.metaBody,
+    footer_text: template.footer,
+    variable_examples: Object.fromEntries(
+      template.examples.map((example, index) => [String(index + 1), example])
+    ),
+  }
+}
 
 type Connections = {
   data?: {
@@ -50,12 +87,7 @@ async function create(businessId: string, wabaId: string, template: BookingTempl
       template_name: template.name,
       language: template.language,
       category: "UTILITY",
-      header_text: template.header,
-      message_body: template.body,
-      footer_text: template.footer,
-      variable_examples: Object.fromEntries(
-        template.examples.map((example, index) => [String(index + 1), example])
-      ),
+      ...templateBody(template),
       save_as_draft: false,
     },
   })
@@ -98,7 +130,7 @@ async function setUp(businessId: string) {
     `/api/template?platform=whatsapp&waba_id=${waba}`
   )
   await Promise.all(
-    bookingTemplates().map(async (template) => {
+    (await businessTemplates(businessId)).map(async (template) => {
       const found = existing.data?.find(
         (row) => row.template_name === template.name && row.language === template.language
       )
@@ -155,7 +187,7 @@ async function messagesState(businessId: string, phoneNumberId: string | null): 
     .from(chatTemplates)
     .where(eq(chatTemplates.businessId, businessId))
   if (rows.some((row) => row.status === "rejected")) return "rejected"
-  if (rows.length < bookingTemplates().length) return "settingUp"
+  if (rows.length < TEMPLATE_COUNT) return "settingUp"
   return rows.every((row) => row.status === "approved") ? "ready" : "waiting"
 }
 
@@ -177,4 +209,43 @@ export async function chatConnectionFor(businessId: string): Promise<ChatConnect
     needsReconnect: !chatConnectionUsable(row),
     messages: await messagesState(businessId, row.phoneNumberId),
   }
+}
+
+// After the owner changes or resets a message's wording: sends it to Chat,
+// which sends it to Meta for review again. A template Chat does not have yet
+// is made by the next set-up instead.
+export async function pushChatWording(
+  businessId: string,
+  message: BookingMessage,
+  language: TemplateLanguage
+) {
+  const [row] = await db
+    .select({ chatTemplateId: chatTemplates.chatTemplateId })
+    .from(chatTemplates)
+    .where(
+      and(
+        eq(chatTemplates.businessId, businessId),
+        eq(chatTemplates.message, message),
+        eq(chatTemplates.language, language)
+      )
+    )
+    .limit(1)
+  if (!row) return setUpChatTemplates(businessId)
+  const template = (await businessTemplates(businessId)).find(
+    (item) => item.message === message && item.language === language
+  )!
+  await chatApi(businessId, `/api/template/${encodeURIComponent(row.chatTemplateId)}`, {
+    method: "PUT",
+    body: templateBody(template),
+  })
+  await db
+    .update(chatTemplates)
+    .set({ status: "pending" })
+    .where(
+      and(
+        eq(chatTemplates.businessId, businessId),
+        eq(chatTemplates.message, message),
+        eq(chatTemplates.language, language)
+      )
+    )
 }

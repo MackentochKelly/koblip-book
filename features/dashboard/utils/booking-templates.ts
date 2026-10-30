@@ -1,7 +1,10 @@
+import { NOTIFICATION_RULES } from "@/lib/notification-rules"
+
 // Book's WhatsApp booking messages, as Meta templates (Utility) in English and
 // Spanish (docs/koblip-chat-integration.md, step 2). Book creates them in each
 // business's Koblip Chat; inside the 24-hour window the same words go as
-// plain text. Variables are Meta's positional {{1}}…{{5}}.
+// plain text. Owners edit them with named fields ({name}, {service}…); Meta
+// gets them as positional {{1}}, {{2}}… in the order they appear.
 
 export type BookingMessage =
   | "confirmed"
@@ -11,6 +14,8 @@ export type BookingMessage =
   | "ownerNewBooking"
 
 export type TemplateLanguage = "en" | "es"
+
+export type BookingField = "name" | "service" | "business" | "date" | "time" | "phone"
 
 export const BOOKING_MESSAGES: readonly BookingMessage[] = [
   "confirmed",
@@ -22,78 +27,144 @@ export const BOOKING_MESSAGES: readonly BookingMessage[] = [
 
 export const TEMPLATE_LANGUAGES: readonly TemplateLanguage[] = ["en", "es"]
 
-type Words = { header: string; body: string; footer: string }
+// The fields each message may use: the customer's messages name the business,
+// the owner's alert gives the customer's phone.
+export function messageFields(message: BookingMessage): BookingField[] {
+  return message === "ownerNewBooking"
+    ? ["name", "service", "date", "time", "phone"]
+    : ["name", "service", "business", "date", "time"]
+}
 
-// The customer messages: {{1}} name, {{2}} service, {{3}} business, {{4}}
-// date, {{5}} time. The owner's: {{1}} name, {{2}} service, {{3}} date,
-// {{4}} time, {{5}} phone.
-const WORDS: Record<TemplateLanguage, Record<BookingMessage, Words>> = {
+export type Wording = { header: string; body: string; footer: string }
+
+const DEFAULT_WORDING: Record<TemplateLanguage, Record<BookingMessage, Wording>> = {
   en: {
     confirmed: {
       header: "Booking confirmed",
-      body: "Hi {{1}}, your {{2}} at {{3}} is booked for {{4}} at {{5}}. See you then!",
+      body: "Hi {name}, your {service} at {business} is booked for {date} at {time}. See you then!",
       footer: "Reply here to talk to us",
     },
     reminder: {
       header: "Appointment reminder",
-      body: "Hi {{1}}, a reminder of your {{2}} at {{3}} on {{4}} at {{5}}. See you soon!",
+      body: "Hi {name}, a reminder of your {service} at {business} on {date} at {time}. See you soon!",
       footer: "Reply here to talk to us",
     },
     changed: {
       header: "Booking changed",
-      body: "Hi {{1}}, your {{2}} at {{3}} is now on {{4}} at {{5}}. See you then!",
+      body: "Hi {name}, your {service} at {business} is now on {date} at {time}. See you then!",
       footer: "Reply here to talk to us",
     },
     cancelled: {
       header: "Booking cancelled",
-      body: "Hi {{1}}, your {{2}} at {{3}} on {{4}} at {{5}} has been cancelled. We hope to see you soon.",
+      body: "Hi {name}, your {service} at {business} on {date} at {time} has been cancelled. We hope to see you soon.",
       footer: "Reply here to talk to us",
     },
     ownerNewBooking: {
       header: "New booking",
-      body: "New booking from {{1}}: {{2}} on {{3}} at {{4}}. Phone: {{5}}. Open Koblip Book for details.",
+      body: "New booking from {name}: {service} on {date} at {time}. Phone: {phone}. Open Koblip Book for details.",
       footer: "Reply here to talk to us",
     },
   },
   es: {
     confirmed: {
       header: "Reserva confirmada",
-      body: "Hola {{1}}, tu {{2}} en {{3}} está reservado para el {{4}} a las {{5}}. ¡Te esperamos!",
+      body: "Hola {name}, tu {service} en {business} está reservado para el {date} a las {time}. ¡Te esperamos!",
       footer: "Responde aquí para hablar con nosotros",
     },
     reminder: {
       header: "Recordatorio de cita",
-      body: "Hola {{1}}, te recordamos tu {{2}} en {{3}} el {{4}} a las {{5}}. ¡Hasta pronto!",
+      body: "Hola {name}, te recordamos tu {service} en {business} el {date} a las {time}. ¡Hasta pronto!",
       footer: "Responde aquí para hablar con nosotros",
     },
     changed: {
       header: "Reserva cambiada",
-      body: "Hola {{1}}, tu {{2}} en {{3}} ahora es el {{4}} a las {{5}}. ¡Te esperamos!",
+      body: "Hola {name}, tu {service} en {business} ahora es el {date} a las {time}. ¡Te esperamos!",
       footer: "Responde aquí para hablar con nosotros",
     },
     cancelled: {
       header: "Reserva cancelada",
-      body: "Hola {{1}}, tu {{2}} en {{3}} el {{4}} a las {{5}} fue cancelado. Esperamos verte pronto.",
+      body: "Hola {name}, tu {service} en {business} el {date} a las {time} fue cancelado. Esperamos verte pronto.",
       footer: "Responde aquí para hablar con nosotros",
     },
     ownerNewBooking: {
       header: "Nueva reserva",
-      body: "Nueva reserva de {{1}}: {{2}} el {{3}} a las {{4}}. Teléfono: {{5}}. Abre Koblip Book para ver más.",
+      body: "Nueva reserva de {name}: {service} el {date} a las {time}. Teléfono: {phone}. Abre Koblip Book para ver más.",
       footer: "Responde aquí para hablar con nosotros",
     },
   },
 }
 
-// Meta reviews each template with sample values for its variables.
-const EXAMPLES: Record<TemplateLanguage, Record<"customer" | "owner", string[]>> = {
+export function defaultWording(message: BookingMessage, language: TemplateLanguage): Wording {
+  return DEFAULT_WORDING[language][message]
+}
+
+// Meta reviews each template with sample values for its fields.
+const EXAMPLES: Record<TemplateLanguage, Record<BookingField, string>> = {
   en: {
-    customer: ["Alex", "Haircut", "Lumen Studio", "Friday, May 8", "3:30 PM"],
-    owner: ["Alex", "Haircut", "Friday, May 8", "3:30 PM", "+1 555 123 4567"],
+    name: "Alex",
+    service: "Haircut",
+    business: "Lumen Studio",
+    date: "Friday, May 8",
+    time: "3:30 PM",
+    phone: "+1 555 123 4567",
   },
   es: {
-    customer: ["Ana", "Corte de pelo", "Lumen Studio", "viernes 8 de mayo", "15:30"],
-    owner: ["Ana", "Corte de pelo", "viernes 8 de mayo", "15:30", "+34 600 123 456"],
+    name: "Ana",
+    service: "Corte de pelo",
+    business: "Lumen Studio",
+    date: "viernes 8 de mayo",
+    time: "15:30",
+    phone: "+34 600 123 456",
   },
+}
+
+const FIELD = /\{(\w+)\}/g
+
+// What is wrong with an owner's wording, or null. Meta's rules: a body may
+// not start or end with a field, nor have two fields side by side; the title
+// and footer are one line without fields (developers.facebook.com/docs/
+// whatsapp/business-management-api/message-templates).
+export type WordingProblem =
+  | "empty"
+  | "tooLong"
+  | "unknownField"
+  | "fieldAtEdge"
+  | "fieldsTogether"
+  | "fieldInLine"
+  | "lineBreak"
+
+export function wordingProblem(message: BookingMessage, wording: Wording): WordingProblem | null {
+  const { header, body, footer } = wording
+  if (!header.trim() || !body.trim()) return "empty"
+  if (
+    header.length > NOTIFICATION_RULES.maxHeader ||
+    body.length > NOTIFICATION_RULES.maxBody ||
+    footer.length > NOTIFICATION_RULES.maxFooter
+  ) {
+    return "tooLong"
+  }
+  if (/[\r\n]/.test(header) || /[\r\n]/.test(footer)) return "lineBreak"
+  if (/[{}]/.test(header) || /[{}]/.test(footer)) return "fieldInLine"
+  const allowed = messageFields(message)
+  for (const [, key] of body.matchAll(FIELD)) {
+    if (!allowed.includes(key as BookingField)) return "unknownField"
+  }
+  // A brace that is not a whole field is a typo.
+  if (/[{}]/.test(body.replace(FIELD, ""))) return "unknownField"
+  const trimmed = body.trim()
+  if (/^\{\w+\}/.test(trimmed) || /\{\w+\}[.!?]*$/.test(trimmed)) return "fieldAtEdge"
+  if (/\}\s*\{/.test(body)) return "fieldsTogether"
+  return null
+}
+
+export type BookingTemplate = Wording & {
+  message: BookingMessage
+  language: TemplateLanguage
+  name: string
+  // The body in Meta's form ({{1}}…) and which field each number stands for.
+  metaBody: string
+  fields: BookingField[]
+  examples: string[]
 }
 
 // Meta's name for a message (lowercase and underscores); the same name in
@@ -106,29 +177,49 @@ const NAMES: Record<BookingMessage, string> = {
   ownerNewBooking: "koblip_book_owner_new_booking",
 }
 
-export type BookingTemplate = Words & {
-  message: BookingMessage
-  language: TemplateLanguage
-  name: string
-  examples: string[]
-}
-
+// One message as Chat gets it, from the owner's wording or Book's default.
 export function bookingTemplate(
   message: BookingMessage,
-  language: TemplateLanguage
+  language: TemplateLanguage,
+  wording: Wording = defaultWording(message, language)
 ): BookingTemplate {
+  const fields: BookingField[] = []
+  const metaBody = wording.body.replace(FIELD, (_, key: BookingField) => {
+    if (!fields.includes(key)) fields.push(key)
+    return `{{${fields.indexOf(key) + 1}}}`
+  })
   return {
     message,
     language,
     name: NAMES[message],
-    ...WORDS[language][message],
-    examples: EXAMPLES[language][message === "ownerNewBooking" ? "owner" : "customer"],
+    ...wording,
+    metaBody,
+    fields,
+    examples: fields.map((field) => EXAMPLES[language][field]),
   }
 }
 
-// Every template a business needs: each message in each language.
-export function bookingTemplates(): BookingTemplate[] {
-  return TEMPLATE_LANGUAGES.flatMap((language) =>
-    BOOKING_MESSAGES.map((message) => bookingTemplate(message, language))
+// The owner sees fields in their own language ({nombre}); Book keeps them as
+// {name}. Both directions leave anything else as it is.
+export function fieldsForOwner(text: string, labels: Record<BookingField, string>) {
+  return text.replace(FIELD, (whole, key: string) =>
+    key in labels ? `{${labels[key as BookingField]}}` : whole
+  )
+}
+
+export function fieldsFromOwner(text: string, labels: Record<BookingField, string>) {
+  const byLabel = new Map(
+    Object.entries(labels).map(([key, label]) => [label.toLowerCase(), key])
+  )
+  return text.replace(FIELD, (whole, label: string) => {
+    const key = byLabel.get(label.toLowerCase())
+    return key ? `{${key}}` : whole
+  })
+}
+
+// A message's text with sample values, as the customer would read it.
+export function withExamples(text: string, language: TemplateLanguage) {
+  return text.replace(FIELD, (whole, key: string) =>
+    key in EXAMPLES[language] ? EXAMPLES[language][key as BookingField] : whole
   )
 }

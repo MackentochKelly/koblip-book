@@ -59,6 +59,10 @@ The owner taps Connect in Koblip Book. A Koblip Chat window opens, they log in, 
 - Book: the Koblip Chat row's Connect button opens the popup; states are Not connected, Connecting, Connected (workspace name, Disconnect with a question first), Reconnect, and a short error line. English and Spanish. The key panel built earlier is removed.
 - Chat: the consent page and a "Connected apps" list with Revoke.
 
+### WhatsApp page (built)
+
+`/dashboard/[businessId]/whatsapp`: each message with an on/off switch and an editor (English and Spanish, field buttons, preview; saving sends it to Meta again through `PUT /api/template/:id`, Reset brings back Book's wording); reminder times (up to 3), quiet hours and the owner's WhatsApp number. Defaults live in `lib/notification-rules.ts`. History of sent messages comes with sending.
+
 ### Order
 
 1. Backend developer: Chat OAuth API and its tests.
