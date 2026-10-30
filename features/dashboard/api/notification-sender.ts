@@ -15,6 +15,7 @@ import type { NotificationRules } from "@/lib/notification-rules"
 import { notificationRules } from "@/lib/platform-settings"
 import {
   BOOKING_MESSAGES,
+  exampleValues,
   plainMessage,
   withValues,
   type BookingField,
@@ -345,19 +346,64 @@ async function deliver(
     phone: booking.customerPhone || "-",
   }
 
-  let { template, approved } = await sendableTemplate(business.id, message, language)
+  return sendMessage({
+    businessId: business.id,
+    workspaceId: connection.workspaceId,
+    phoneNumberId: connection.phoneNumberId,
+    phone,
+    contactName: toOwner ? business.name : booking.customerName,
+    message,
+    language,
+    values,
+    freeTextInWindow: settings.freeTextInWindow,
+    now,
+    rules,
+    refreshed,
+  })
+}
+
+type Target = {
+  businessId: string
+  workspaceId: string
+  phoneNumberId: string
+  phone: string
+  contactName: string
+  message: BookingMessage
+  language: TemplateLanguage
+  values: Record<BookingField, string>
+  freeTextInWindow: boolean
+  now: Date
+  rules: NotificationRules
+  refreshed: Set<string>
+}
+
+// One message to one person through the business's Koblip Chat.
+async function sendMessage({
+  businessId,
+  workspaceId,
+  phoneNumberId,
+  phone,
+  contactName,
+  message,
+  language,
+  values,
+  freeTextInWindow,
+  now,
+  rules,
+  refreshed,
+}: Target): Promise<Outcome> {
+  let { template, approved } = await sendableTemplate(businessId, message, language)
   const digits = phone.replace(/\D/g, "")
   // Inside the 24-hour window a normal message goes (free), unless the owner
   // turned that off. Its buttons go too when WhatsApp takes their titles;
   // else the approved template carries them, or the words go alone.
   const inWindow =
-    settings.freeTextInWindow &&
-    (await windowOpen(connection.workspaceId, connection.phoneNumberId, digits, now, rules))
-  if (!inWindow && !approved && !refreshed.has(business.id)) {
+    freeTextInWindow && (await windowOpen(workspaceId, phoneNumberId, digits, now, rules))
+  if (!inWindow && !approved && !refreshed.has(businessId)) {
     // Book's copy of Meta's review may be behind: ask Chat once per check.
-    refreshed.add(business.id)
-    await refreshChatTemplates(business.id)
-    ;({ template, approved } = await sendableTemplate(business.id, message, language))
+    refreshed.add(businessId)
+    await refreshChatTemplates(businessId)
+    ;({ template, approved } = await sendableTemplate(businessId, message, language))
   }
   if (!inWindow && !approved) return { state: "failed", reason: "templateNotApproved" }
   const buttonsFit = template.buttons.every(({ label }) => label.length <= INTERACTIVE_BUTTON_TITLE)
@@ -365,9 +411,9 @@ async function deliver(
 
   let contact: Contact
   try {
-    contact = await chatApi<Contact>(business.id, "/api/contacts/find-or-create", {
+    contact = await chatApi<Contact>(businessId, "/api/contacts/find-or-create", {
       method: "POST",
-      body: { phone_number: digits, name: toOwner ? business.name : booking.customerName },
+      body: { phone_number: digits, name: contactName },
     })
   } catch (error) {
     if (!(error instanceof ChatApiError)) throw error
@@ -380,7 +426,7 @@ async function deliver(
   if (!contactId) return { state: "failed", reason: "chat" }
   if (contact.data?.is_unsubscribed) return { state: "skipped", reason: "unsubscribed" }
 
-  const base = { contact_id: contactId, whatsapp_phone_number_id: connection.phoneNumberId }
+  const base = { contact_id: contactId, whatsapp_phone_number_id: phoneNumberId }
   // The template goes exactly as Meta approved it, with its own fields.
   const body = text && template.buttons.length && buttonsFit
     ? {
@@ -405,7 +451,7 @@ async function deliver(
         ),
       }
   try {
-    const sent = await chatApi<Sent>(business.id, "/api/whatsapp/send", { method: "POST", body })
+    const sent = await chatApi<Sent>(businessId, "/api/whatsapp/send", { method: "POST", body })
     return {
       state: "sent",
       via: text ? "text" : "template",
@@ -417,6 +463,47 @@ async function deliver(
     // It may have gone: never sent again.
     return { state: "failed", reason: error.code ?? "chat" }
   }
+}
+
+// "Send a test to my phone": one message with sample values to the owner's
+// WhatsApp, in the owner's language, now. Not a booking's message, so it has
+// no row and no Activity entry; the result says how it went.
+export async function sendTestMessage(
+  businessId: string,
+  message: BookingMessage,
+  now = new Date()
+): Promise<Outcome> {
+  const [connection] = await db
+    .select()
+    .from(chatConnections)
+    .where(eq(chatConnections.businessId, businessId))
+    .limit(1)
+  if (!connection) return { state: "skipped", reason: "notConnected" }
+  if (!chatConnectionUsable(connection) || !connection.phoneNumberId) {
+    return { state: "skipped", reason: "notConnected" }
+  }
+  const settings = await notificationSettingsFor(businessId)
+  if (!settings.ownerPhone) return { state: "skipped", reason: "noOwnerPhone" }
+  const [business] = await db
+    .select({ name: businesses.name })
+    .from(businesses)
+    .where(eq(businesses.id, businessId))
+  const values = exampleValues(settings.ownerLanguage)
+  if (business) values.business = business.name
+  return sendMessage({
+    businessId,
+    workspaceId: connection.workspaceId,
+    phoneNumberId: connection.phoneNumberId,
+    phone: settings.ownerPhone,
+    contactName: business?.name ?? values.business,
+    message,
+    language: settings.ownerLanguage,
+    values,
+    freeTextInWindow: settings.freeTextInWindow,
+    now,
+    rules: await notificationRules(businessId),
+    refreshed: new Set(),
+  })
 }
 
 // Sends what is due, each row once. Only the messages Book can send yet are

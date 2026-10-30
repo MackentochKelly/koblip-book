@@ -21,9 +21,14 @@ import { seal } from "@/lib/secret-box"
 import { defaultWording } from "../utils/booking-templates"
 
 vi.mock("server-only", () => ({}))
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
+vi.mock("@/lib/dal", () => ({
+  requireOwner: vi.fn(async () => ({ userId: "u1", name: "Owner", email: "owner@example.com" })),
+}))
 
 const { runNotifications } = await import("./notification-sender")
 const { applyChatEvent } = await import("./chat-events")
+const { sendAgain, sendTestToMyPhone } = await import("./notification-actions")
 
 let dir: string
 let closeDb: () => void
@@ -447,4 +452,50 @@ test("Chat's delivery status moves a sent message forward only", async () => {
   await event("read")
   await event("delivered")
   expect(await delivery()).toBe("read")
+})
+
+test("a test message goes to the owner's phone with sample values, and says why not", async () => {
+  expect(await sendTestToMyPhone("biz", "confirmed")).toEqual({ ok: false, error: "noOwnerPhone" })
+  await db.insert(notificationSettings).values({
+    businessId: "biz",
+    ownerPhone: "+1 809 555 0199",
+    ownerLanguage: "es",
+    reminders: [1440, 30],
+    quietStart: "21:00",
+    quietEnd: "08:00",
+    turnedOff: [],
+  })
+  expect(await sendTestToMyPhone("biz", "confirmed")).toEqual({ ok: true })
+  expect(sent).toEqual([
+    expect.objectContaining({
+      contact_id: "c-18095550199",
+      messageType: "template",
+      template_id: "t-confirmed-es",
+      templateVariables: expect.objectContaining({ 1: "Ana", 3: "Shop" }),
+    }),
+  ])
+  expect(await db.select().from(notificationSends)).toEqual([])
+})
+
+test("send again: a failed message goes once more, and only a failed one", async () => {
+  sendFails = true
+  await book("b1")
+  await runNotifications(NOW)
+  sendFails = false
+  const [failed] = await db
+    .select()
+    .from(notificationSends)
+    .where(and(eq(notificationSends.bookingId, "b1"), eq(notificationSends.message, "confirmed")))
+  expect(failed.state).toBe("failed")
+
+  expect(await sendAgain("biz", failed.id)).toEqual({ ok: true })
+  await runNotifications(later(1))
+  expect((await sends("b1")).find(([message]) => message === "confirmed")).toEqual([
+    "confirmed",
+    0,
+    "sent",
+    "template",
+  ])
+  expect(await sendAgain("biz", failed.id)).toEqual({ ok: false, error: "notFailed" })
+  expect(await sendAgain("other", failed.id)).toEqual({ ok: false, error: "not_found" })
 })

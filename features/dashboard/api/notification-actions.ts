@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm"
 
 import { PHONE_PATTERN } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
-import { notificationSettings, notificationTexts } from "@/lib/db/schema"
+import { bookings, notificationSends, notificationSettings, notificationTexts } from "@/lib/db/schema"
 import { notificationRules } from "@/lib/platform-settings"
 import type { ActionResult } from "../types"
 import type { CantComeAction, MessageButton, NotificationSettings } from "../types/notifications"
@@ -19,6 +19,7 @@ import {
 } from "../utils/booking-templates"
 import { ChatApiError } from "./chat-oauth"
 import { submitChatTemplate } from "./chat-templates"
+import { sendTestMessage } from "./notification-sender"
 import { notificationSettingsFor } from "./notifications"
 import { ownedBusiness } from "./owned-business"
 
@@ -179,4 +180,49 @@ export async function submitMessageToMeta(
     console.error(error)
     return error.reason ? { ok: false, error: "refused", reason: error.reason } : { ok: false, error: "chat" }
   }
+}
+
+// "Send a test to my phone": one message with sample values to the owner's
+// WhatsApp now. `error` says why it did not go (the same reasons as Activity).
+export async function sendTestToMyPhone(
+  businessId: string,
+  message: BookingMessage
+): Promise<ActionResult> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) return { ok: false, error: "not_found" }
+  if (!BOOKING_MESSAGES.includes(message)) return { ok: false, error: "invalid" }
+  const outcome = await sendTestMessage(owned.business.id, message)
+  if (outcome.state === "sent") return { ok: true }
+  return { ok: false, error: outcome.state === "pending" ? "chat" : outcome.reason }
+}
+
+// "Send again" on a failed message: the same message goes back to waiting
+// and the next check sends it, once more. Not for a message whose booking is
+// cancelled or already started.
+export async function sendAgain(businessId: string, sendId: string): Promise<ActionResult> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) return { ok: false, error: "not_found" }
+  const [row] = await db
+    .select({ send: notificationSends, booking: bookings })
+    .from(notificationSends)
+    .innerJoin(bookings, eq(bookings.id, notificationSends.bookingId))
+    .where(
+      and(
+        eq(notificationSends.id, String(sendId)),
+        eq(notificationSends.businessId, owned.business.id)
+      )
+    )
+    .limit(1)
+  if (!row) return { ok: false, error: "not_found" }
+  if (row.send.state !== "failed") return { ok: false, error: "notFailed" }
+  if (row.booking.status === "cancelled" && row.send.message !== "cancelled") {
+    return { ok: false, error: "cancelled" }
+  }
+  if (Date.parse(row.booking.startAt) <= Date.now()) return { ok: false, error: "late" }
+  const again = await db
+    .update(notificationSends)
+    .set({ state: "pending", reason: null, dueAt: new Date().toISOString() })
+    .where(and(eq(notificationSends.id, row.send.id), eq(notificationSends.state, "failed")))
+    .returning({ id: notificationSends.id })
+  return again.length ? { ok: true } : { ok: false, error: "notFailed" }
 }
