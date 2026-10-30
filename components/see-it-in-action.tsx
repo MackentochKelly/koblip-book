@@ -120,7 +120,12 @@ export function SeeItInAction({
       ref={box}
       className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 pb-12 sm:px-4"
     >
-      <h2 className={cn(homeSectionTitleClassName, "px-2")}>{words.title}</h2>
+      {/* Centred with a line under it, unlike the other sections: the real
+          app running here is the page's second big moment. */}
+      <div className="mb-4 flex flex-col items-center gap-1 px-2 text-center">
+        <h2 className={homeSectionTitleClassName}>{words.title}</h2>
+        <p className="text-balance text-muted-foreground">{words.subtitle}</p>
+      </div>
       {problem ?? (
         <>
           <ViewTabs
