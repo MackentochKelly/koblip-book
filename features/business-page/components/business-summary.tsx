@@ -1,4 +1,4 @@
-import { VerifiedBadge } from "@/components/verified-badge"
+import { VerifiedName } from "@/components/verified-badge"
 import { messagesFor } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
 import type { Business } from "../types"
@@ -18,8 +18,8 @@ export function BusinessSummary({
   return (
     <header className="flex min-w-0 flex-col gap-2">
       <h1 className="text-2xl font-semibold tracking-tight text-balance md:text-3xl">
-        {business.name}
-        <VerifiedBadge
+        <VerifiedName
+          name={business.name}
           label={messagesFor(language).page.verified}
           className="ml-1 align-[-0.2em]"
         />
