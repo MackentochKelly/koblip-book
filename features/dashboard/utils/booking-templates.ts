@@ -287,6 +287,11 @@ export function fieldsFromOwner(text: string, labels: Record<BookingField, strin
   })
 }
 
+// The sample values Meta reviews with, also used for a test message.
+export function exampleValues(language: TemplateLanguage): Record<BookingField, string> {
+  return { ...EXAMPLES[language] }
+}
+
 // A message's text with sample values, as the customer would read it.
 export function withExamples(text: string, language: TemplateLanguage) {
   return text.replace(FIELD, (whole, key: string) =>
