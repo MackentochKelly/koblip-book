@@ -50,15 +50,16 @@ export function KoblipChatCard({
   const [asking, setAsking] = useState(false)
   const [pending, startTransition] = useTransition()
 
-  // The Chat window says how it ended on a same-site channel. Cancel says nothing.
+  // The Chat window says how it ended on a same-site channel. Cancel says
+  // nothing. One toast id, so hearing the same ending twice shows it once.
   useEffect(() => {
     function ended(next: ChatConnectResult) {
       setWaiting(false)
       if (next === "connected") {
         router.refresh()
-        toast.success(t.connectedToast)
+        toast.success(t.connectedToast, { id: CHAT_CONNECT_CHANNEL })
       } else if (next === "failed") {
-        toast.error(t.failed)
+        toast.error(t.failed, { id: CHAT_CONNECT_CHANNEL })
       }
     }
     if (result) {
