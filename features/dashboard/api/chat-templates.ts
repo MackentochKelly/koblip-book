@@ -19,8 +19,10 @@ import { ChatApiError, chatApi, chatConnectionUsable } from "./chat-oauth"
 // way any app uses it: the workspace's WhatsApp numbers
 // (GET /api/whatsapp/connections), its templates (GET /api/template), new
 // ones (POST /api/template/create), the owner's edits (PUT /api/template/:id,
-// which Chat sends back to Meta) and Meta's review status
-// (POST /api/template/sync-status). See wapi-api docs/api/oauth.md.
+// which Chat sends back to Meta), Meta's review status
+// (POST /api/template/sync-status), and Meta's own list
+// (GET /api/template/meta-list) to copy back any Chat lost
+// (POST /api/template/sync). See wapi-api docs/api/oauth.md.
 
 const TEMPLATE_COUNT = BOOKING_MESSAGES.length * TEMPLATE_LANGUAGES.length
 
@@ -62,6 +64,8 @@ type Connections = {
 type Templates = {
   data?: { _id: string; template_name: string; language: string; status?: string }[]
 }
+
+type MetaTemplates = { data?: { id: string; name: string; language: string }[] }
 
 // The number Chat itself sends from when none is named: the oldest active
 // number in an active WhatsApp account of the workspace (wapi-api
@@ -125,15 +129,33 @@ async function setUp(businessId: string) {
 
   // Chat's copy wins: a template already there (made earlier, or by hand) is
   // used as it is; only missing ones are made.
-  const existing = await chatApi<Templates>(
-    businessId,
-    `/api/template?platform=whatsapp&waba_id=${waba}`
-  )
-  await Promise.all(
-    (await businessTemplates(businessId)).map(async (template) => {
-      const found = existing.data?.find(
-        (row) => row.template_name === template.name && row.language === template.language
+  const list = () => chatApi<Templates>(businessId, `/api/template?platform=whatsapp&waba_id=${waba}`)
+  const has = (found: Templates, template: BookingTemplate) =>
+    found.data?.find((row) => row.template_name === template.name && row.language === template.language)
+  const templates = await businessTemplates(businessId)
+  let existing = await list()
+
+  // One Meta has but Chat lost (Meta refuses the same name and language
+  // again): copied back into Chat from Meta instead of made.
+  if (templates.some((template) => !has(existing, template))) {
+    const meta = await chatApi<MetaTemplates>(businessId, `/api/template/meta-list?waba_id=${waba}`)
+    const lost = (meta.data ?? []).filter((row) =>
+      templates.some(
+        (template) => !has(existing, template) && row.name === template.name && row.language === template.language
       )
+    )
+    if (lost.length) {
+      await chatApi(businessId, "/api/template/sync", {
+        method: "POST",
+        body: { waba_id: number.wabaId, meta_template_ids: lost.map((row) => row.id) },
+      })
+      existing = await list()
+    }
+  }
+
+  await Promise.all(
+    templates.map(async (template) => {
+      const found = has(existing, template)
       let chatTemplateId = found?._id ?? null
       let status = found?.status?.toLowerCase() ?? "pending"
       if (!chatTemplateId) {

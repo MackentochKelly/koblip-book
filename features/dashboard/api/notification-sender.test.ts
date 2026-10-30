@@ -190,7 +190,7 @@ test("inside the 24-hour window the same words go as plain text", async () => {
     whatsapp_phone_number_id: "p1",
     messageType: "text",
     messageText:
-      "*Booking confirmed*\n\nHi Ana, your Haircut at Shop is booked for Wednesday, November 4 at 3:00 PM. See you then!\n\n_Reply here to talk to us_",
+      "*Booking confirmed*\n\nHi Ana, your Haircut at Shop is booked for Wednesday, November 4 at 3:00 PM. We look forward to seeing you then!\n\n_Reply here to talk to us_",
   })
 })
 

@@ -41,7 +41,7 @@ const DEFAULT_WORDING: Record<TemplateLanguage, Record<BookingMessage, Wording>>
   en: {
     confirmed: {
       header: "Booking confirmed",
-      body: "Hi {name}, your {service} at {business} is booked for {date} at {time}. See you then!",
+      body: "Hi {name}, your {service} at {business} is booked for {date} at {time}. We look forward to seeing you then!",
       footer: "Reply here to talk to us",
     },
     reminder: {
@@ -51,7 +51,7 @@ const DEFAULT_WORDING: Record<TemplateLanguage, Record<BookingMessage, Wording>>
     },
     changed: {
       header: "Booking changed",
-      body: "Hi {name}, your {service} at {business} is now on {date} at {time}. See you then!",
+      body: "Hi {name}, your {service} at {business} has been moved to {date} at {time}. We look forward to seeing you then!",
       footer: "Reply here to talk to us",
     },
     cancelled: {
@@ -73,12 +73,12 @@ const DEFAULT_WORDING: Record<TemplateLanguage, Record<BookingMessage, Wording>>
     },
     reminder: {
       header: "Recordatorio de cita",
-      body: "Hola {name}, te recordamos tu {service} en {business} el {date} a las {time}. ¡Hasta pronto!",
+      body: "Hola {name}, te recordamos tu cita de {service} en {business} el {date} a las {time}. ¡Te esperamos, hasta pronto!",
       footer: "Responde aquí para hablar con nosotros",
     },
     changed: {
       header: "Reserva cambiada",
-      body: "Hola {name}, tu {service} en {business} ahora es el {date} a las {time}. ¡Te esperamos!",
+      body: "Hola {name}, tu cita de {service} en {business} se ha movido al {date} a las {time}. ¡Te esperamos con gusto!",
       footer: "Responde aquí para hablar con nosotros",
     },
     cancelled: {
@@ -123,7 +123,9 @@ const FIELD = /\{(\w+)\}/g
 // What is wrong with an owner's wording, or null. Meta's rules: a body may
 // not start or end with a field, nor have two fields side by side; the title
 // and footer are one line without fields (developers.facebook.com/docs/
-// whatsapp/business-management-api/message-templates).
+// whatsapp/business-management-api/message-templates); and enough words
+// around the fields (Meta's "Params Words Ratio Exceeds Limit", see
+// NOTIFICATION_RULES.minWordsPerField).
 export type WordingProblem =
   | "empty"
   | "tooLong"
@@ -132,6 +134,7 @@ export type WordingProblem =
   | "fieldsTogether"
   | "fieldInLine"
   | "lineBreak"
+  | "fewWords"
 
 export function wordingProblem(message: BookingMessage, wording: Wording): WordingProblem | null {
   const { header, body, footer } = wording
@@ -154,6 +157,9 @@ export function wordingProblem(message: BookingMessage, wording: Wording): Wordi
   const trimmed = body.trim()
   if (/^\{\w+\}/.test(trimmed) || /\{\w+\}[.!?]*$/.test(trimmed)) return "fieldAtEdge"
   if (/\}\s*\{/.test(body)) return "fieldsTogether"
+  const fields = new Set([...body.matchAll(FIELD)].map(([, key]) => key)).size
+  const words = body.replace(FIELD, " ").split(/\s+/).filter((word) => /\p{L}/u.test(word)).length
+  if (fields && words <= fields * NOTIFICATION_RULES.minWordsPerField) return "fewWords"
   return null
 }
 

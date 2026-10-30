@@ -236,10 +236,18 @@ export function chatConnectionUsable(row: { needsReconnect: boolean; scopes: str
 export class ChatApiError extends Error {
   constructor(
     readonly status: number | null,
-    readonly code: string | null
+    readonly code: string | null,
+    // Chat's own words, such as Meta's reason for refusing a template.
+    readonly reason: string | null = null
   ) {
-    super(`Koblip Chat API: ${status ?? "no answer"} ${code ?? ""}`.trim())
+    super(`Koblip Chat API: ${status ?? "no answer"} ${code ?? ""} ${reason ?? ""}`.trim())
   }
+}
+
+// Chat answers a refusal with `message` or `error`; kept short for the log.
+function reasonOf(json: { message?: unknown; error?: unknown } | null) {
+  const text = [json?.message, json?.error].find((value) => typeof value === "string")
+  return typeof text === "string" ? text.slice(0, 200) : null
 }
 
 // One call to Chat's API as this business, in its connected workspace (the
@@ -268,7 +276,7 @@ export async function chatApi<T>(
   }
   const json = await res.json().catch(() => null)
   if (!res.ok) {
-    throw new ChatApiError(res.status, typeof json?.code === "string" ? json.code : null)
+    throw new ChatApiError(res.status, typeof json?.code === "string" ? json.code : null, reasonOf(json))
   }
   return json as T
 }

@@ -41,7 +41,10 @@ test("wording that Meta would refuse is caught first", () => {
   expect(wordingProblem("confirmed", { ...ok, header: "Hi {name}", body: "Booked." })).toBe("fieldInLine")
   expect(wordingProblem("confirmed", { ...ok, footer: "Two\nlines", body: "Booked." })).toBe("lineBreak")
   // The owner's alert may use the phone; the customer's messages may not.
-  expect(wordingProblem("ownerNewBooking", { ...ok, body: "Call {phone} now." })).toBeNull()
+  expect(wordingProblem("ownerNewBooking", { ...ok, body: "Please call {phone} now." })).toBeNull()
+  // Meta refuses a text that is mostly fields.
+  expect(body("Hi {name}, your {service} at {business} is booked for {date} at {time}. See you then!")).toBe("fewWords")
+  expect(body("Hi {name}, your {service} is booked. See you then!")).toBeNull()
 })
 
 test("the owner reads fields in their own language", () => {

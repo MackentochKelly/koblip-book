@@ -54,6 +54,7 @@ const whatsapp: typeof en = {
     fieldsTogether: "Pon una palabra entre dos campos.",
     fieldInLine: "Los campos van solo en el texto.",
     lineBreak: "El título y el pie son una sola línea.",
+    fewWords: "Añade más palabras entre los campos.",
     chat: "Meta no aceptó el cambio. Inténtalo más tarde.",
   },
   reminders: "Recordatorios",

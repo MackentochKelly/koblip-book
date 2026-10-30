@@ -53,6 +53,7 @@ const whatsapp = {
     fieldsTogether: "Put a word between two fields.",
     fieldInLine: "Fields go only in the text.",
     lineBreak: "Title and footer are one line.",
+    fewWords: "Add more words around the fields.",
     chat: "Meta didn't take the change. Try again later.",
   } as Record<string, string>,
   reminders: "Reminders",

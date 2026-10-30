@@ -18,6 +18,9 @@ let closeDb: () => void
 // A stand-in for Chat's API: one workspace, its numbers and templates.
 let numbers: unknown[] = []
 let stored: { _id: string; template_name: string; language: string; status: string }[] = []
+// Templates Meta has but Chat lost, and Chat's copies of them.
+let atMeta: { id: string; name: string; language: string }[] = []
+const copied: unknown[] = []
 const created: Record<string, unknown>[] = []
 const synced: unknown[] = []
 const chat = vi.fn(async (url: string, init: RequestInit = {}) => {
@@ -27,6 +30,15 @@ const chat = vi.fn(async (url: string, init: RequestInit = {}) => {
   if (path === "/api/template") return answer({ success: true, data: stored })
   if (path === "/api/template/sync-status") {
     synced.push(JSON.parse(String(init.body)))
+    return answer({ success: true })
+  }
+  if (path === "/api/template/meta-list") return answer({ success: true, data: atMeta })
+  if (path === "/api/template/sync") {
+    const body = JSON.parse(String(init.body))
+    copied.push(body)
+    for (const row of atMeta.filter((item) => body.meta_template_ids.includes(item.id))) {
+      stored.push({ _id: `c-${row.id}`, template_name: row.name, language: row.language, status: "PENDING" })
+    }
     return answer({ success: true })
   }
   if (path === "/api/template/create") {
@@ -82,6 +94,8 @@ beforeAll(async () => {
 beforeEach(async () => {
   numbers = []
   stored = []
+  atMeta = []
+  copied.length = 0
   created.length = 0
   synced.length = 0
   chat.mockClear()
@@ -125,7 +139,7 @@ test("the oldest active number is used and every message is made in both languag
     language: "en",
     category: "UTILITY",
     header_text: "Booking confirmed",
-    message_body: "Hi {{1}}, your {{2}} at {{3}} is booked for {{4}} at {{5}}. See you then!",
+    message_body: "Hi {{1}}, your {{2}} at {{3}} is booked for {{4}} at {{5}}. We look forward to seeing you then!",
     footer_text: "Reply here to talk to us",
     variable_examples: { 1: "Alex", 2: "Haircut", 3: "Lumen Studio", 4: "Friday, May 8", 5: "3:30 PM" },
     save_as_draft: false,
@@ -150,6 +164,27 @@ test("templates already in Chat are reused, and Meta's review is read again", as
   await db.delete(chatTemplates)
   await setUpChatTemplates("biz")
   expect((await chatConnectionFor("biz"))?.messages).toBe("rejected")
+})
+
+test("a template Meta has but Chat lost is copied back, not made again", async () => {
+  numbers = [{ id: "waba1", phone_numbers: [{ id: "p1" }] }]
+  atMeta = [
+    { id: "m1", name: "koblip_book_booking_reminder", language: "es" },
+    { id: "m2", name: "someone_else", language: "es" },
+  ]
+  await setUpChatTemplates("biz")
+  expect(copied).toEqual([{ waba_id: "waba1", meta_template_ids: ["m1"] }])
+  expect(created).toHaveLength(9)
+  expect(created).not.toContainEqual(
+    expect.objectContaining({ template_name: "koblip_book_booking_reminder", language: "es" })
+  )
+  const rows = await db.select().from(chatTemplates)
+  expect(rows).toContainEqual(expect.objectContaining({ message: "reminder", language: "es", chatTemplateId: "c-m1" }))
+
+  // Nothing missing: Meta's list is not asked for again.
+  chat.mockClear()
+  await setUpChatTemplates("biz")
+  expect(chat.mock.calls.map(([url]) => new URL(String(url)).pathname)).not.toContain("/api/template/meta-list")
 })
 
 test("a connection made before templates were asked for must reconnect", async () => {

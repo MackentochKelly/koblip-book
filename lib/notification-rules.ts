@@ -28,4 +28,8 @@ export const NOTIFICATION_RULES = {
   maxHeader: 60,
   maxBody: 1024,
   maxFooter: 60,
+  // A message's text needs more words than this for each field, or Meta
+  // refuses it ("Params Words Ratio Exceeds Limit"). Meta publishes no number:
+  // on 2026-10-30 it refused bodies with 2 words per field and took 2.2.
+  minWordsPerField: 2,
 } as const
