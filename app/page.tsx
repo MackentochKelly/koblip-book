@@ -90,7 +90,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         >
           <HeroGradient />
           <HeroSideCards words={t.steps.sample} shared={t.features.sample} />
-          <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-10 px-4 pt-28 pb-24 text-center">
+          <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-10 px-4 pt-28 pb-12 text-center sm:pb-24">
             {/* A little more room round the title than between its lines. */}
             <div className="flex flex-col gap-6">
               <MetaProviderBadge language={language} />
