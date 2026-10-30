@@ -22,7 +22,8 @@ import type { EditorLimits } from "./message-editor"
 import { isCustomerMessage } from "../utils/customer-messages"
 import { WhatsappMessageList } from "./whatsapp-message-list"
 
-// Your alerts: the messages to the owner's own WhatsApp, and that number.
+// Your alerts: the owner's own WhatsApp number first, since every alert
+// needs it, then the alerts (S5, D24), each on or off and editable.
 export function WhatsappAlerts({
   businessId,
   messages,
@@ -67,12 +68,6 @@ export function WhatsappAlerts({
 
   return (
     <div className="flex flex-col gap-10">
-      <WhatsappMessageList
-        businessId={businessId}
-        limits={limits}
-        messages={messages.filter((item) => !isCustomerMessage(item.message))}
-      />
-
       <PageSection id="your-number" title={t.yourNumber}>
         <Field data-invalid={badPhone || undefined}>
           <FieldLabel htmlFor="owner-whatsapp" className="sr-only">
@@ -91,7 +86,9 @@ export function WhatsappAlerts({
           {badPhone ? (
             <FieldError>{t.badPhone}</FieldError>
           ) : (
-            <FieldDescription>{t.yourNumberHint}</FieldDescription>
+            <FieldDescription>
+              {settings.ownerPhone ? t.yourNumberHint : t.yourNumberNeeded}
+            </FieldDescription>
           )}
         </Field>
         <Button size="lg" onClick={save} disabled={pending}>
@@ -99,6 +96,12 @@ export function WhatsappAlerts({
           {t.saveSettings}
         </Button>
       </PageSection>
+
+      <WhatsappMessageList
+        businessId={businessId}
+        limits={limits}
+        messages={messages.filter((item) => !isCustomerMessage(item.message))}
+      />
     </div>
   )
 }
