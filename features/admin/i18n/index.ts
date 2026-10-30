@@ -53,6 +53,9 @@ const en = {
       changed: "Booking changed",
       cancelled: "Booking cancelled",
       ownerNewBooking: "New booking alert",
+      ownerCantCome: "Customer can't come alert",
+      ownerCancelled: "Customer cancelled alert",
+      ownerFailed: "Message failed alert",
     },
     review: {
       missing: "Not set up",
@@ -217,6 +220,9 @@ const es: AdminMessages = {
       changed: "Reserva cambiada",
       cancelled: "Reserva cancelada",
       ownerNewBooking: "Aviso de nueva reserva",
+      ownerCantCome: "Aviso de cliente que no puede venir",
+      ownerCancelled: "Aviso de cliente que canceló",
+      ownerFailed: "Aviso de mensaje no enviado",
     },
     review: {
       missing: "Sin configurar",
