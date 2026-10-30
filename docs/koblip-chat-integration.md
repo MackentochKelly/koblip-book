@@ -106,27 +106,29 @@ Counted from when the customer booked to when the visit starts:
 - Ready-made templates exist (`is_admin_template`, `GET /api/templates/admin-templates/list`), but a business copies one by hand in Chat. OAuth apps cannot touch templates.
 - Book can find or create a contact (`contacts` scope) and send (`conversations` scope).
 
-### Chat API (backend developer, `wapi-api`)
+### Chat API (backend developer, `wapi-api`): general features, nothing Book-specific
 
-1. Reply-buttons and text messages: add a text header and a footer.
-2. A Koblip Book template set in the library: the 4 messages above, Utility, English and Spanish.
-3. `POST /api/notifications/setup` (OAuth): copies the set into the token's workspace's WhatsApp account and sends it to Meta. `GET /api/notifications/status`: each template's approval.
-4. `POST /api/notifications/send` (OAuth) with `{ message, phone, name, language, values }`: finds or creates the contact, refuses an opted-out one, then sends the free look-alike message inside the window and the approved template outside it. Answers which was used, or `template_not_ready`, `unsubscribed`, `no_number`.
+Book uses Chat's public API like any other company would. Chat only adds what any app needs:
 
-Chat decides template or free message, because only Chat sees the customer's last message.
+1. A `templates` OAuth scope: list, create and check templates through the existing template routes.
+2. `last_inbound_at` on contacts: when the contact last wrote, without marking anything read.
+3. Text header and footer on reply-buttons messages.
+4. An `Idempotency-Key` on `POST /api/whatsapp/send`, so a retry never sends twice.
 
-### Book (`features/booking`, `features/dashboard`)
+### Book (`features/booking`, `features/dashboard`): everything else
 
-1. Booking form: a WhatsApp checkbox; the answer is saved on the booking.
-2. Settings: the owner's own WhatsApp number (must differ from the business number).
-3. Integrations, under Koblip Chat: one switch per message, and "Waiting for Meta approval" until approved. Setup runs right after connecting.
-4. Send on booking made, changed or cancelled. Book has no timer yet: reminders need one, and each reminder is sent once.
-5. A record per booking of what was sent or why not.
+1. The template set (wording in English and Spanish) lives in Book. After connecting, Book creates the templates in the business's Chat through the API and shows "Waiting for Meta approval" until approved.
+2. For each message Book reads `last_inbound_at`: under 24 hours it sends a reply-buttons message that looks like the template, otherwise the approved template.
+3. Booking form: a WhatsApp checkbox; the answer is saved on the booking.
+4. Settings: the owner's own WhatsApp number (must differ from the business number).
+5. Integrations, under Koblip Chat: one switch per message.
+6. Sends on booking made, changed or cancelled, and the reminders above (Book needs a timer; each reminder goes once).
+7. A record per booking of what was sent or why not.
 
 ### Order
 
 1. Chat API 1 to 4, with tests.
-2. Book 1 to 5, built against it.
+2. Book 1 to 7, built against it.
 3. One end-to-end test on this Mac, like step 1.
 
 ## Later steps (not started)
