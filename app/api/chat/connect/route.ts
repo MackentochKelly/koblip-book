@@ -19,10 +19,10 @@ export async function GET(request: NextRequest) {
   await getOwnerBusiness(businessId)
   let started: ReturnType<typeof startChatConnect>
   try {
-    started = startChatConnect(businessId, session.userId)
+    started = startChatConnect({ businessId }, session.userId)
   } catch (error) {
     console.error(error)
-    return NextResponse.redirect(chatDoneUrl(businessId, "failed"))
+    return NextResponse.redirect(chatDoneUrl({ businessId }, "failed"))
   }
   const response = NextResponse.redirect(started.url)
   response.cookies.set(CHAT_ATTEMPT_COOKIE, started.cookie, {

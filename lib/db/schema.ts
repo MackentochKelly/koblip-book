@@ -376,6 +376,25 @@ export const chatConnections = sqliteTable("chat_connections", {
   ...timestamps(),
 })
 
+// Koblip's own Koblip Chat workspace, which sends for every business that has
+// not connected its own (K1). One row, connected once by an admin; kept apart
+// from chatConnections so no business can reach it. Same token handling.
+export const koblipChatConnection = sqliteTable("koblip_chat_connection", {
+  id: text({ enum: ["koblip"] }).primaryKey(),
+  workspaceId: text().notNull(),
+  workspaceName: text().notNull(),
+  scopes: text().notNull(),
+  accessToken: text(),
+  refreshToken: text(),
+  accessExpiresAt: text(),
+  needsReconnect: integer({ mode: "boolean" }).notNull().default(false),
+  wabaId: text(),
+  phoneNumberId: text(),
+  // The admin who connected it.
+  connectedBy: text().references(() => user.id, { onDelete: "set null" }),
+  ...timestamps(),
+})
+
 // Book's booking templates in the business's Koblip Chat, one per message and
 // language (docs/koblip-chat-integration.md, step 2): Chat's template id and
 // Meta's review status and reason, as Chat last reported them. A row exists

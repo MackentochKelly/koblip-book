@@ -3,9 +3,9 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto"
 import { eq } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { chatConnections, chatTemplates } from "@/lib/db/schema"
+import { chatConnections, chatTemplates, koblipChatConnection } from "@/lib/db/schema"
 import { open, seal } from "@/lib/secret-box"
-import type { ChatConnectResult } from "../types/chat-connection"
+import type { ChatConnectResult } from "@/types/chat-connect"
 
 // "Connect with Koblip Chat": OAuth 2.0 authorization code with PKCE, Book as
 // a server app (docs/koblip-chat-integration.md, step 1; Chat's side in
@@ -40,32 +40,46 @@ function config() {
   return values as { [K in keyof typeof values]: string }
 }
 
-// The page the Chat window ends on (app/(owner)/connect/chat), at this site's
+// Whose connection: a business's own workspace, or Koblip's, which an admin
+// connects once and which sends for every business without its own (K1).
+export type ChatAccount = { businessId: string } | "koblip"
+
+// Where the Chat window ends (app/(owner)/connect/chat), at this site's
 // public address. Not the request's own URL: behind the server's proxy that is
 // the internal one (localhost).
-export function chatDoneUrl(businessId: string, result: ChatConnectResult) {
+export function chatDoneUrl(account: ChatAccount, result: ChatConnectResult) {
   const site = process.env.BETTER_AUTH_URL
   if (!site) throw new Error("Koblip Chat connection: BETTER_AUTH_URL is not set. See .env.example.")
   const url = new URL("/connect/chat", site)
-  url.search = new URLSearchParams({ businessId, result }).toString()
+  url.search = new URLSearchParams(
+    account === "koblip" ? { for: "koblip", result } : { businessId: account.businessId, result }
+  ).toString()
   return url
 }
 
 type Attempt = {
   state: string
   verifier: string
+  // Empty for Koblip's own connection.
   businessId: string
+  koblip?: boolean
   userId: string
   startedAt: number
 }
 
+// The account an attempt connects.
+export function attemptAccount(attempt: Attempt): ChatAccount {
+  return attempt.koblip ? "koblip" : { businessId: attempt.businessId }
+}
+
 // The Chat consent URL to open, and the sealed attempt to keep in a cookie.
-export function startChatConnect(businessId: string, userId: string) {
+export function startChatConnect(account: ChatAccount, userId: string) {
   const { clientId, redirectUri, connectUrl } = config()
   const attempt: Attempt = {
     state: randomBytes(32).toString("base64url"),
     verifier: randomBytes(32).toString("base64url"),
-    businessId,
+    businessId: account === "koblip" ? "" : account.businessId,
+    ...(account === "koblip" ? { koblip: true } : {}),
     userId,
     startedAt: Date.now(),
   }
@@ -131,21 +145,25 @@ async function tokenCall(body: Record<string, string>): Promise<TokenAnswer> {
   }
 }
 
-// Templates and the number belong to one workspace: connecting another one
-// starts them over.
-async function forgetWorkspace(businessId: string) {
-  await db.delete(chatTemplates).where(eq(chatTemplates.businessId, businessId))
+type Saved = {
+  workspaceId: string
+  accessToken: string | null
+  refreshToken: string | null
+  accessExpiresAt: string | null
+  needsReconnect: boolean
 }
 
-async function save(businessId: string, tokens: Tokens) {
-  const [before] = await db
-    .select({ workspaceId: chatConnections.workspaceId })
-    .from(chatConnections)
-    .where(eq(chatConnections.businessId, businessId))
-    .limit(1)
-  const moved = !!before && before.workspaceId !== tokens.workspace_id
-  if (moved) await forgetWorkspace(businessId)
-  const row = {
+// Where an account's connection is kept: a business's row, or Koblip's one row.
+type Store = {
+  key: string
+  read(): Promise<Saved | undefined>
+  save(tokens: Tokens, connectedBy?: string): Promise<void>
+  dropTokens(): Promise<void>
+  remove(): Promise<void>
+}
+
+function tokenColumns(tokens: Tokens) {
+  return {
     workspaceId: tokens.workspace_id,
     workspaceName: tokens.workspace_name,
     scopes: tokens.scope,
@@ -153,19 +171,78 @@ async function save(businessId: string, tokens: Tokens) {
     refreshToken: seal(tokens.refresh_token),
     accessExpiresAt: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
     needsReconnect: false,
-    ...(moved ? { wabaId: null, phoneNumberId: null } : {}),
   }
-  await db
-    .insert(chatConnections)
-    .values({ businessId, ...row })
-    .onConflictDoUpdate({ target: chatConnections.businessId, set: row })
+}
+
+const NO_TOKENS = { accessToken: null, refreshToken: null, accessExpiresAt: null, needsReconnect: true }
+
+// Templates and the number belong to one workspace: connecting another one
+// starts them over.
+async function forgetWorkspace(businessId: string) {
+  await db.delete(chatTemplates).where(eq(chatTemplates.businessId, businessId))
+}
+
+function businessStore(businessId: string): Store {
+  const where = eq(chatConnections.businessId, businessId)
+  return {
+    key: `business:${businessId}`,
+    read: async () => (await db.select().from(chatConnections).where(where).limit(1))[0],
+    async save(tokens) {
+      const before = await this.read()
+      const moved = !!before && before.workspaceId !== tokens.workspace_id
+      if (moved) await forgetWorkspace(businessId)
+      const row = { ...tokenColumns(tokens), ...(moved ? { wabaId: null, phoneNumberId: null } : {}) }
+      await db
+        .insert(chatConnections)
+        .values({ businessId, ...row })
+        .onConflictDoUpdate({ target: chatConnections.businessId, set: row })
+    },
+    async dropTokens() {
+      await db.update(chatConnections).set(NO_TOKENS).where(where)
+    },
+    async remove() {
+      await forgetWorkspace(businessId)
+      await db.delete(chatConnections).where(where)
+    },
+  }
+}
+
+const koblipWhere = eq(koblipChatConnection.id, "koblip")
+const koblipStore: Store = {
+  key: "koblip",
+  read: async () => (await db.select().from(koblipChatConnection).where(koblipWhere).limit(1))[0],
+  async save(tokens, connectedBy) {
+    const before = await this.read()
+    const moved = !!before && before.workspaceId !== tokens.workspace_id
+    const row = {
+      ...tokenColumns(tokens),
+      ...(moved ? { wabaId: null, phoneNumberId: null } : {}),
+      ...(connectedBy ? { connectedBy } : {}),
+    }
+    await db
+      .insert(koblipChatConnection)
+      .values({ id: "koblip", ...row })
+      .onConflictDoUpdate({ target: koblipChatConnection.id, set: row })
+  },
+  async dropTokens() {
+    await db.update(koblipChatConnection).set(NO_TOKENS).where(koblipWhere)
+  },
+  async remove() {
+    await db.delete(koblipChatConnection).where(koblipWhere)
+  },
+}
+
+function storeFor(account: ChatAccount) {
+  return account === "koblip" ? koblipStore : businessStore(account.businessId)
 }
 
 // Swaps Chat's one-time code for tokens and saves them. False if Chat said no.
+// userId is who connected it, kept for Koblip's own connection.
 export async function finishChatConnect(
-  businessId: string,
+  account: ChatAccount,
   code: string,
-  verifier: string
+  verifier: string,
+  userId?: string
 ): Promise<boolean> {
   const { redirectUri } = config()
   const answer = await tokenCall({
@@ -175,23 +252,12 @@ export async function finishChatConnect(
     redirect_uri: redirectUri,
   })
   if (!answer.ok) return false
-  await save(businessId, answer.tokens)
+  await storeFor(account).save(answer.tokens, userId)
   return true
 }
 
-async function needsReconnect(businessId: string) {
-  await db
-    .update(chatConnections)
-    .set({ accessToken: null, refreshToken: null, accessExpiresAt: null, needsReconnect: true })
-    .where(eq(chatConnections.businessId, businessId))
-}
-
-async function freshAccessToken(businessId: string): Promise<string | null> {
-  const [row] = await db
-    .select()
-    .from(chatConnections)
-    .where(eq(chatConnections.businessId, businessId))
-    .limit(1)
+async function freshAccessToken(store: Store): Promise<string | null> {
+  const row = await store.read()
   if (!row?.accessToken || !row.refreshToken || row.needsReconnect) return null
   if (row.accessExpiresAt && Date.parse(row.accessExpiresAt) - REFRESH_EARLY_MS > Date.now()) {
     return open(row.accessToken)
@@ -201,31 +267,36 @@ async function freshAccessToken(businessId: string): Promise<string | null> {
     refresh_token: open(row.refreshToken),
   })
   if (answer.ok) {
-    await save(businessId, answer.tokens)
+    await store.save(answer.tokens)
     return answer.tokens.access_token
   }
   // Too many tries: nothing changed at Chat, so the same token works later.
   if (answer.code === "rate_limited") return null
   // Any other failure, a lost answer included, may have used the refresh
   // token up; Chat cuts the connection if it is ever sent again.
-  await needsReconnect(businessId)
+  await store.dropTokens()
   return null
 }
 
-// One refresh at a time per business: Chat treats a second use of a refresh
-// token as theft and ends the connection. (One server process; several
-// would need a shared lock.)
+// One refresh at a time per connection: Chat treats a second use of a
+// refresh token as theft and ends the connection. (One server process;
+// several would need a shared lock.)
 const refreshing = new Map<string, Promise<string | null>>()
+
+function accessTokenFor(account: ChatAccount): Promise<string | null> {
+  const store = storeFor(account)
+  let pending = refreshing.get(store.key)
+  if (!pending) {
+    pending = freshAccessToken(store).finally(() => refreshing.delete(store.key))
+    refreshing.set(store.key, pending)
+  }
+  return pending
+}
 
 // A working access token for Chat's API, refreshed when it is about to run
 // out, or null when the business is not connected or must reconnect.
 export function chatAccessToken(businessId: string): Promise<string | null> {
-  let pending = refreshing.get(businessId)
-  if (!pending) {
-    pending = freshAccessToken(businessId).finally(() => refreshing.delete(businessId))
-    refreshing.set(businessId, pending)
-  }
-  return pending
+  return accessTokenFor({ businessId })
 }
 
 // Whether the connection still works and allows everything Book asks for.
@@ -250,14 +321,21 @@ function reasonOf(json: { message?: unknown; error?: unknown } | null) {
   return typeof text === "string" ? text.slice(0, 200) : null
 }
 
+type ApiInit = { method?: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown }
+
 // One call to Chat's API as this business, in its connected workspace (the
 // token holds it). Throws ChatApiError when not connected or Chat says no.
-export async function chatApi<T>(
-  businessId: string,
-  path: string,
-  init: { method?: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown } = {}
-): Promise<T> {
-  const token = await chatAccessToken(businessId)
+export function chatApi<T>(businessId: string, path: string, init: ApiInit = {}): Promise<T> {
+  return callChat<T>({ businessId }, path, init)
+}
+
+// The same, in Koblip's own workspace (K1).
+export function koblipChatApi<T>(path: string, init: ApiInit = {}): Promise<T> {
+  return callChat<T>("koblip", path, init)
+}
+
+async function callChat<T>(account: ChatAccount, path: string, init: ApiInit): Promise<T> {
+  const token = await accessTokenFor(account)
   if (!token) throw new ChatApiError(null, "not_connected")
   const { apiUrl } = config()
   let res: Response
@@ -283,12 +361,18 @@ export async function chatApi<T>(
 
 // Ends the connection at Chat, then forgets it here. Forgetting happens even
 // if Chat cannot be reached; the owner can also revoke it in Chat.
-export async function endChatConnection(businessId: string) {
-  const [row] = await db
-    .select({ refreshToken: chatConnections.refreshToken })
-    .from(chatConnections)
-    .where(eq(chatConnections.businessId, businessId))
-    .limit(1)
+export function endChatConnection(businessId: string) {
+  return endConnection({ businessId })
+}
+
+// The same for Koblip's own connection.
+export function endKoblipChatConnection() {
+  return endConnection("koblip")
+}
+
+async function endConnection(account: ChatAccount) {
+  const store = storeFor(account)
+  const row = await store.read()
   if (row?.refreshToken) {
     const { clientId, clientSecret, apiUrl } = config()
     await fetch(`${apiUrl}/api/oauth/revoke`, {
@@ -302,6 +386,20 @@ export async function endChatConnection(businessId: string) {
       cache: "no-store",
     }).catch(() => null)
   }
-  await forgetWorkspace(businessId)
-  await db.delete(chatConnections).where(eq(chatConnections.businessId, businessId))
+  await store.remove()
+}
+
+// Koblip's own connection as the admin sees it, never a token.
+export async function koblipChatConnectionStatus() {
+  const [row] = await db
+    .select({
+      workspaceName: koblipChatConnection.workspaceName,
+      needsReconnect: koblipChatConnection.needsReconnect,
+      scopes: koblipChatConnection.scopes,
+    })
+    .from(koblipChatConnection)
+    .where(koblipWhere)
+    .limit(1)
+  if (!row) return null
+  return { workspaceName: row.workspaceName, needsReconnect: !chatConnectionUsable(row) }
 }
