@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { chatConnectionFor } from "@/features/dashboard/api/chat-oauth"
+import { chatConnectionFor } from "@/features/dashboard/api/chat-templates"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { IntegrationsView } from "@/features/dashboard/components/integrations-view"
 import { getOwnerMessages } from "@/features/dashboard/i18n/server"

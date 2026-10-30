@@ -3,9 +3,9 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto"
 import { eq } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { chatConnections } from "@/lib/db/schema"
+import { chatConnections, chatTemplates } from "@/lib/db/schema"
 import { open, seal } from "@/lib/secret-box"
-import type { ChatConnection, ChatConnectResult } from "../types/chat-connection"
+import type { ChatConnectResult } from "../types/chat-connection"
 
 // "Connect with Koblip Chat": OAuth 2.0 authorization code with PKCE, Book as
 // a server app (docs/koblip-chat-integration.md, step 1; Chat's side in
@@ -13,7 +13,9 @@ import type { ChatConnection, ChatConnectResult } from "../types/chat-connection
 // server.
 
 // Everything Book may ask for; Chat's consent page lists them.
-const SCOPES = "contacts automations conversations"
+const SCOPES = "contacts templates automations conversations"
+// A connection made before Book asked for this must be made again.
+const NEEDED_SCOPE = "templates"
 // How long the owner has to answer in the Chat window.
 const ATTEMPT_MINUTES = 10
 // Refresh this long before the access token runs out.
@@ -125,7 +127,20 @@ async function tokenCall(body: Record<string, string>): Promise<TokenAnswer> {
   }
 }
 
+// Templates and the number belong to one workspace: connecting another one
+// starts them over.
+async function forgetWorkspace(businessId: string) {
+  await db.delete(chatTemplates).where(eq(chatTemplates.businessId, businessId))
+}
+
 async function save(businessId: string, tokens: Tokens) {
+  const [before] = await db
+    .select({ workspaceId: chatConnections.workspaceId })
+    .from(chatConnections)
+    .where(eq(chatConnections.businessId, businessId))
+    .limit(1)
+  const moved = !!before && before.workspaceId !== tokens.workspace_id
+  if (moved) await forgetWorkspace(businessId)
   const row = {
     workspaceId: tokens.workspace_id,
     workspaceName: tokens.workspace_name,
@@ -134,6 +149,7 @@ async function save(businessId: string, tokens: Tokens) {
     refreshToken: seal(tokens.refresh_token),
     accessExpiresAt: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
     needsReconnect: false,
+    ...(moved ? { wabaId: null, phoneNumberId: null } : {}),
   }
   await db
     .insert(chatConnections)
@@ -208,17 +224,49 @@ export function chatAccessToken(businessId: string): Promise<string | null> {
   return pending
 }
 
-// What the Integrations screen may know: never a token.
-export async function chatConnectionFor(businessId: string): Promise<ChatConnection | null> {
-  const [row] = await db
-    .select({
-      workspaceName: chatConnections.workspaceName,
-      needsReconnect: chatConnections.needsReconnect,
+// Whether the connection still works and allows everything Book asks for.
+export function chatConnectionUsable(row: { needsReconnect: boolean; scopes: string }) {
+  return !row.needsReconnect && row.scopes.split(" ").includes(NEEDED_SCOPE)
+}
+
+export class ChatApiError extends Error {
+  constructor(
+    readonly status: number | null,
+    readonly code: string | null
+  ) {
+    super(`Koblip Chat API: ${status ?? "no answer"} ${code ?? ""}`.trim())
+  }
+}
+
+// One call to Chat's API as this business, in its connected workspace (the
+// token holds it). Throws ChatApiError when not connected or Chat says no.
+export async function chatApi<T>(
+  businessId: string,
+  path: string,
+  init: { method?: "GET" | "POST"; body?: unknown } = {}
+): Promise<T> {
+  const token = await chatAccessToken(businessId)
+  if (!token) throw new ChatApiError(null, "not_connected")
+  const { apiUrl } = config()
+  let res: Response
+  try {
+    res = await fetch(`${apiUrl}${path}`, {
+      method: init.method ?? "GET",
+      headers: {
+        authorization: `Bearer ${token}`,
+        ...(init.body === undefined ? {} : { "content-type": "application/json" }),
+      },
+      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      cache: "no-store",
     })
-    .from(chatConnections)
-    .where(eq(chatConnections.businessId, businessId))
-    .limit(1)
-  return row ?? null
+  } catch {
+    throw new ChatApiError(null, null)
+  }
+  const json = await res.json().catch(() => null)
+  if (!res.ok) {
+    throw new ChatApiError(res.status, typeof json?.code === "string" ? json.code : null)
+  }
+  return json as T
 }
 
 // Ends the connection at Chat, then forgets it here. Forgetting happens even
@@ -242,5 +290,6 @@ export async function endChatConnection(businessId: string) {
       cache: "no-store",
     }).catch(() => null)
   }
+  await forgetWorkspace(businessId)
   await db.delete(chatConnections).where(eq(chatConnections.businessId, businessId))
 }

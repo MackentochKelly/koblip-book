@@ -25,7 +25,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { disconnectChat } from "../api/chat-connection"
+import { disconnectChat, refreshChatMessages } from "../api/chat-connection"
 import { useOwnerMessages } from "../i18n/provider"
 import {
   CHAT_CONNECT_CHANNEL,
@@ -76,6 +76,21 @@ export function IntegrationsView({
     return () => channel.close()
   }, [businessId, result, router, t])
 
+  // While connected and not yet ready, opening this page makes any missing
+  // booking templates in Chat and reads Meta's review; a new answer reloads.
+  const usable = !!connection && !connection.needsReconnect
+  const messages = connection?.messages ?? null
+  useEffect(() => {
+    if (!usable || messages === "ready") return
+    let current = true
+    refreshChatMessages(businessId).then((next) => {
+      if (current && next !== messages) router.refresh()
+    })
+    return () => {
+      current = false
+    }
+  }, [businessId, usable, messages, router])
+
   // Koblip Chat's consent page in its own small window (OAuth popup); a
   // blocked window opens it in this tab instead.
   function connect() {
@@ -120,7 +135,9 @@ export function IntegrationsView({
                 ? t.koblipChat.description
                 : connection.needsReconnect
                   ? t.koblipChat.reconnectHint
-                  : t.koblipChat.workspace(connection.workspaceName)
+                  : connection.messages === "ready"
+                    ? t.koblipChat.workspace(connection.workspaceName)
+                    : t.koblipChat.messages[connection.messages]
             }
             action={
               connection && !connection.needsReconnect ? (

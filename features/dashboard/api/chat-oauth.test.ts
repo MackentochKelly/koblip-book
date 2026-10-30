@@ -11,12 +11,12 @@ vi.mock("server-only", () => ({}))
 
 const {
   chatAccessToken,
-  chatConnectionFor,
   endChatConnection,
   finishChatConnect,
   readChatAttempt,
   startChatConnect,
 } = await import("./chat-oauth")
+const { chatConnectionFor } = await import("./chat-templates")
 
 let dir: string
 let closeDb: () => void
@@ -36,7 +36,7 @@ const chat = vi.fn(async (url: string, init: RequestInit) => {
       access_token: `koa_${issued}`,
       refresh_token: `kor_${issued}`,
       expires_in: 3600,
-      scope: "contacts automations conversations",
+      scope: "contacts templates automations conversations",
       workspace_id: "w1",
       workspace_name: "Lumen Studio",
     },
@@ -80,7 +80,7 @@ test("the consent link carries a PKCE challenge of the sealed verifier", () => {
   const link = new URL(url)
   expect(link.origin + link.pathname).toBe("https://chat.example.test/connect/koblip-book")
   expect(link.searchParams.get("code_challenge_method")).toBe("S256")
-  expect(link.searchParams.get("scope")).toBe("contacts automations conversations")
+  expect(link.searchParams.get("scope")).toBe("contacts templates automations conversations")
   const state = link.searchParams.get("state")
   const attempt = readChatAttempt(cookie, state)
   expect(attempt).toMatchObject({ businessId: "biz", userId: "u1" })
@@ -106,7 +106,7 @@ test("connecting saves sealed tokens; the screen sees only the workspace", async
   const [row] = await db.select().from(chatConnections)
   expect(row.accessToken).not.toContain("koa_")
   expect(row.refreshToken).not.toContain("kor_")
-  expect(await chatConnectionFor("biz")).toEqual({ workspaceName: "Lumen Studio", needsReconnect: false })
+  expect(await chatConnectionFor("biz")).toEqual({ workspaceName: "Lumen Studio", needsReconnect: false, messages: "noNumber" })
   expect(await chatAccessToken("biz")).toBe(`koa_${issued}`)
   expect(chat).toHaveBeenCalledTimes(1)
 })
@@ -125,7 +125,7 @@ test("a refused refresh drops the tokens and asks to reconnect", async () => {
   await db.update(chatConnections).set({ accessExpiresAt: new Date().toISOString() })
   chat.mockImplementationOnce(async () => new Response(JSON.stringify({ code: "invalid_grant" }), { status: 400 }))
   expect(await chatAccessToken("biz")).toBeNull()
-  expect(await chatConnectionFor("biz")).toEqual({ workspaceName: "Lumen Studio", needsReconnect: true })
+  expect(await chatConnectionFor("biz")).toEqual({ workspaceName: "Lumen Studio", needsReconnect: true, messages: "noNumber" })
   const [row] = await db.select().from(chatConnections)
   expect(row.accessToken).toBeNull()
   expect(row.refreshToken).toBeNull()

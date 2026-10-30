@@ -362,5 +362,29 @@ export const chatConnections = sqliteTable("chat_connections", {
   refreshToken: text(),
   accessExpiresAt: text(),
   needsReconnect: integer({ mode: "boolean" }).notNull().default(false),
+  // The WhatsApp account and number Book's messages use, Chat's own ids
+  // (step 2); empty until the workspace has an active number.
+  wabaId: text(),
+  phoneNumberId: text(),
   ...timestamps(),
 })
+
+// Book's booking templates in the business's Koblip Chat, one per message and
+// language (docs/koblip-chat-integration.md, step 2): Chat's template id and
+// Meta's review status, as Chat last reported it.
+export const chatTemplates = sqliteTable(
+  "chat_templates",
+  {
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    message: text({
+      enum: ["confirmed", "reminder", "changed", "cancelled", "ownerNewBooking"],
+    }).notNull(),
+    language: text({ enum: ["en", "es"] }).notNull(),
+    chatTemplateId: text().notNull(),
+    status: text().notNull(),
+    ...timestamps(),
+  },
+  (table) => [primaryKey({ columns: [table.businessId, table.message, table.language] })]
+)

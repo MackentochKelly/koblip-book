@@ -110,12 +110,12 @@ Counted from when the customer booked to when the visit starts:
 
 Book uses Chat's public API like any other company. Koblip Sales already creates templates, sends them, and receives customer replies through Chat's API key and signed callbacks. The popup connection only gets the same:
 
-1. A `templates` scope: the existing `/api/template` routes (list, get, create, sync status).
+1. A `templates` scope: the existing `/api/template` routes (list, get, create, sync status); `conversations` also lists the workspace's WhatsApp numbers (`GET /api/whatsapp/connections`).
 2. Signed events (customer replies, sent messages, delivery status) for each workspace that connected the app, reusing what Chat sends Koblip Sales.
 
 ### Book (`features/booking`, `features/dashboard`): everything else
 
-1. The template set (wording in English and Spanish) lives in Book. After connecting, Book creates the templates in the business's Chat through the API and shows "Waiting for Meta approval" until approved.
+1. Built: the template set (wording in English and Spanish) lives in Book (`features/dashboard/utils/booking-templates.ts`). Opening Integrations while connected creates any missing ones in the business's Chat through the API, on the workspace's oldest active number (`GET /api/whatsapp/connections`, the same default Chat uses), and shows "Waiting for Meta approval" until approved (`features/dashboard/api/chat-templates.ts`). Older connections without the `templates` scope are asked to reconnect.
 2. Book records each customer's last reply from Chat's events. Under 24 hours it sends plain text with the template's words (title, text, footer), otherwise the approved template, the same way Koblip Sales does.
 3. Booking form: a WhatsApp checkbox; the answer is saved on the booking.
 4. Settings: the owner's own WhatsApp number (must differ from the business number).

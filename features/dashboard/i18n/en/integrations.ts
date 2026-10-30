@@ -86,6 +86,12 @@ const integrations = {
     reconnectHint: "The connection stopped. Connect again.",
     connectedToast: "Koblip Chat connected.",
     failed: "Couldn't connect Koblip Chat. Try again.",
+    messages: {
+      noNumber: "Add a WhatsApp number in Koblip Chat to send messages.",
+      settingUp: "Setting up your WhatsApp messages…",
+      waiting: "Your WhatsApp messages are waiting for Meta's approval.",
+      rejected: "Meta didn't approve a WhatsApp message. Check it in Koblip Chat.",
+    },
   },
 }
 

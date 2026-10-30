@@ -87,6 +87,12 @@ const integrations: typeof en = {
     reconnectHint: "La conexión se detuvo. Vuelve a conectar.",
     connectedToast: "Koblip Chat conectado.",
     failed: "No se pudo conectar Koblip Chat. Inténtalo de nuevo.",
+    messages: {
+      noNumber: "Añade un número de WhatsApp en Koblip Chat para enviar mensajes.",
+      settingUp: "Preparando tus mensajes de WhatsApp…",
+      waiting: "Tus mensajes de WhatsApp esperan la aprobación de Meta.",
+      rejected: "Meta no aprobó un mensaje de WhatsApp. Revísalo en Koblip Chat.",
+    },
   },
 }
 
