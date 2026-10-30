@@ -8,6 +8,9 @@ export const WHATSAPP_ADMIN_RULES = {
   failedDays: 7,
   // How long to wait for Koblip Chat to answer before calling it out of reach.
   chatCheckSeconds: 5,
+  // The most rows a WhatsApp list shows (24-hour window, Activity), newest
+  // first.
+  listRows: 200,
   // The server settings WhatsApp needs (.env.local); only whether each is set
   // is ever shown, never its value.
   secrets: [
