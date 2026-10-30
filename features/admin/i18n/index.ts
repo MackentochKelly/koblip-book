@@ -259,6 +259,21 @@ const en = {
     connectedToast: "Connected",
     disconnectedToast: "Disconnected",
     failed: "That did not work. Please try again.",
+    numbers: "Numbers",
+    noNumbers: "No WhatsApp number in Koblip's workspace",
+    unreachable: "Koblip Chat did not answer. Try again in a few minutes.",
+    sending: "Sends",
+    inactive: "Not active",
+    // Meta's quality rating and account review, as Chat passes them on.
+    quality: { GREEN: "Quality high", YELLOW: "Quality medium", RED: "Quality low" } as Record<
+      string,
+      string
+    >,
+    review: {
+      APPROVED: "Account approved",
+      PENDING: "Account in review",
+      REJECTED: "Account rejected",
+    } as Record<string, string>,
   },
   error: {
     title: "Something went wrong",
@@ -526,6 +541,17 @@ const es: AdminMessages = {
     connectedToast: "Conectado",
     disconnectedToast: "Desconectado",
     failed: "No funcionó. Inténtalo de nuevo.",
+    numbers: "Números",
+    noNumbers: "No hay número de WhatsApp en el espacio de Koblip",
+    unreachable: "Koblip Chat no respondió. Inténtalo de nuevo en unos minutos.",
+    sending: "Envía",
+    inactive: "Inactivo",
+    quality: { GREEN: "Calidad alta", YELLOW: "Calidad media", RED: "Calidad baja" },
+    review: {
+      APPROVED: "Cuenta aprobada",
+      PENDING: "Cuenta en revisión",
+      REJECTED: "Cuenta rechazada",
+    },
   },
   error: {
     title: "Algo salió mal",
