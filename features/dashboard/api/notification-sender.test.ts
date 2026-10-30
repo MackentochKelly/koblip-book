@@ -14,9 +14,11 @@ import {
   chatTemplates,
   notificationSends,
   notificationSettings,
+  notificationTexts,
   user,
 } from "@/lib/db/schema"
 import { seal } from "@/lib/secret-box"
+import { defaultWording } from "../utils/booking-templates"
 
 vi.mock("server-only", () => ({}))
 
@@ -108,6 +110,7 @@ beforeEach(async () => {
   await db.delete(chatReplies)
   await db.delete(chatTemplates)
   await db.delete(notificationSettings)
+  await db.delete(notificationTexts)
   await db.delete(chatConnections)
   await db.insert(chatConnections).values({
     businessId: "biz",
@@ -192,6 +195,77 @@ test("inside the 24-hour window the same words go as plain text", async () => {
     messageText:
       "*Booking confirmed*\n\nHi Ana, your Haircut at Shop is booked for Wednesday, November 4 at 3:00 PM. We look forward to seeing you then!\n\n_Reply here to talk to us_",
   })
+})
+
+// A booking in an hour, so its 30-minute reminder is due soon, from a
+// customer who wrote an hour ago.
+async function soonInWindow() {
+  await db.insert(chatReplies).values({
+    workspaceId: "w1",
+    phoneNumberId: "p1",
+    customerPhone: "18095550101",
+    lastReplyAt: later(-60).toISOString(),
+  })
+  await book("b1", { language: "en", startAt: later(60).toISOString(), endAt: later(90).toISOString() })
+  await runNotifications(NOW)
+  await runNotifications(later(31))
+  return sent.find((body) => body !== sent[0])
+}
+
+test("inside the 24-hour window a reminder goes as a normal message with its buttons", async () => {
+  expect(await soonInWindow()).toEqual({
+    contact_id: "c-18095550101",
+    whatsapp_phone_number_id: "p1",
+    messageType: "interactive",
+    interactiveType: "button",
+    messageText: "Hi Ana, a reminder of your Haircut at Shop on Monday, November 2 at 11:00 AM. See you soon!",
+    buttonParams: [
+      { id: "confirm", title: "I'll be there" },
+      { id: "cantCome", title: "Can't make it" },
+    ],
+    buttonHeader: "Appointment reminder",
+    buttonFooter: "Reply here to talk to us",
+  })
+})
+
+test("a kind of message the sender does not know yet waits as pending", async () => {
+  await book("b1")
+  await db.insert(notificationSends).values({
+    businessId: "biz",
+    bookingId: "b1",
+    message: "thankYou" as never,
+    dueAt: NOW.toISOString(),
+    state: "pending",
+  })
+  await runNotifications(NOW)
+  const [row] = await db
+    .select()
+    .from(notificationSends)
+    .where(eq(notificationSends.message, "thankYou" as never))
+  expect(row.state).toBe("pending")
+})
+
+test("with the 24-hour setting off, the template goes even inside the window", async () => {
+  await db.insert(notificationSettings).values({
+    businessId: "biz",
+    reminders: [1440, 30],
+    quietStart: "21:00",
+    quietEnd: "08:00",
+    turnedOff: [],
+    freeTextInWindow: false,
+  })
+  expect(await soonInWindow()).toMatchObject({ messageType: "template", template_id: "t-reminder-en" })
+})
+
+test("buttons too long for a normal message: the approved template carries them", async () => {
+  await db.insert(notificationTexts).values({
+    businessId: "biz",
+    message: "reminder",
+    language: "en",
+    ...defaultWording("reminder", "en"),
+    buttons: [{ action: "confirm", label: "Yes, I will be there!" }],
+  })
+  expect(await soonInWindow()).toMatchObject({ messageType: "template", template_id: "t-reminder-en" })
 })
 
 test("the owner's alert, and nothing for customers who did not agree", async () => {

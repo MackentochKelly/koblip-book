@@ -10,6 +10,7 @@ import {
   notificationTexts,
 } from "@/lib/db/schema"
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
+import { notificationRules } from "@/lib/platform-settings"
 import type {
   ActivityFilter,
   NotificationMessage,
@@ -26,23 +27,27 @@ import {
   type TemplateLanguage,
 } from "../utils/booking-templates"
 
-// The business's WhatsApp notification settings, or the defaults.
+// The business's WhatsApp notification settings, or the defaults as the
+// admin set them (lib/platform-settings.ts).
 export async function notificationSettingsFor(businessId: string): Promise<NotificationSettings> {
-  const [row] = await db
-    .select()
-    .from(notificationSettings)
-    .where(eq(notificationSettings.businessId, businessId))
-    .limit(1)
+  const [[row], rules] = await Promise.all([
+    db
+      .select()
+      .from(notificationSettings)
+      .where(eq(notificationSettings.businessId, businessId))
+      .limit(1),
+    notificationRules(businessId),
+  ])
   return {
     ownerPhone: row?.ownerPhone ?? null,
     ownerLanguage: row?.ownerLanguage ?? "en",
-    reminders: row?.reminders ?? [...NOTIFICATION_RULES.defaultReminders],
-    quietStart: row?.quietStart ?? NOTIFICATION_RULES.defaultQuietStart,
-    quietEnd: row?.quietEnd ?? NOTIFICATION_RULES.defaultQuietEnd,
+    reminders: row?.reminders ?? [...rules.defaultReminders],
+    quietStart: row?.quietStart ?? rules.defaultQuietStart,
+    quietEnd: row?.quietEnd ?? rules.defaultQuietEnd,
     turnedOff: row?.turnedOff ?? [],
-    freeTextInWindow: row?.freeTextInWindow ?? NOTIFICATION_RULES.defaultFreeTextInWindow,
-    cantCome: row?.cantCome ?? NOTIFICATION_RULES.defaultCantCome,
-    thankYouReply: row?.thankYouReply ?? NOTIFICATION_RULES.defaultThankYouReply,
+    freeTextInWindow: row?.freeTextInWindow ?? rules.defaultFreeTextInWindow,
+    cantCome: row?.cantCome ?? rules.defaultCantCome,
+    thankYouReply: row?.thankYouReply ?? rules.defaultThankYouReply,
   }
 }
 
