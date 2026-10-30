@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq, gte, inArray, lte, ne, sql } from "drizzle-orm"
+import { and, eq, gte, inArray, lte, ne } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { requireOwner } from "@/lib/dal"
@@ -140,7 +140,7 @@ export async function moveOwnerBooking(
           .set({
             startAt: new Date(startInstant).toISOString(),
             endAt: new Date(endInstant).toISOString(),
-            moves: sql`${bookings.moves} + 1`,
+            moves: booking.moves + 1,
           })
           .where(eq(bookings.id, booking.id)),
         db
@@ -151,6 +151,18 @@ export async function moveOwnerBooking(
               eq(notificationSends.bookingId, booking.id),
               eq(notificationSends.state, "pending"),
               inArray(notificationSends.message, ["reminder", "changed"])
+            )
+          ),
+        // A confirmation still waiting goes with the new time, so it counts
+        // as telling the customer of this move.
+        db
+          .update(notificationSends)
+          .set({ moves: booking.moves + 1 })
+          .where(
+            and(
+              eq(notificationSends.bookingId, booking.id),
+              eq(notificationSends.state, "pending"),
+              eq(notificationSends.message, "confirmed")
             )
           ),
       ])
