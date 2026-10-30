@@ -49,11 +49,13 @@ async function sendingConnections() {
 }
 
 // New rows for bookings made since the business connected: the confirmation,
-// the owner's alert and the reminders; and the cancellation note for
-// bookings cancelled after their confirmation went.
+// the owner's alert and the reminders; "Booking changed" and new reminders
+// for bookings moved; and the cancellation note for bookings cancelled after
+// their confirmation went.
 async function plan(now: Date) {
   const confirmed = alias(notificationSends, "confirmed")
   const cancelled = alias(notificationSends, "cancelled")
+  const changed = alias(notificationSends, "changed")
 
   for (const connection of await sendingConnections()) {
     const businessId = connection.businessId
@@ -127,6 +129,79 @@ async function plan(now: Date) {
       return out
     })
     if (rows.length) await db.insert(notificationSends).values(rows).onConflictDoNothing()
+
+    // Moved since the last plan (decision D5): one "changed" row at the
+    // booking's current moves, which also marks the move as planned. It goes
+    // only if the customer was told of the booking; else a confirmation still
+    // waiting goes with the new time. Reminders are planned again for the new
+    // time (the move skipped the old ones).
+    const moved = await db
+      .select({ booking: bookings, told: confirmed.id })
+      .from(bookings)
+      .leftJoin(
+        changed,
+        and(
+          eq(changed.bookingId, bookings.id),
+          eq(changed.message, "changed"),
+          eq(changed.moves, bookings.moves)
+        )
+      )
+      .leftJoin(
+        confirmed,
+        and(
+          eq(confirmed.bookingId, bookings.id),
+          eq(confirmed.message, "confirmed"),
+          eq(confirmed.state, "sent"),
+          // Sent before this move: a confirmation still waiting at the move
+          // went with the new time already.
+          lt(confirmed.moves, bookings.moves)
+        )
+      )
+      .where(
+        and(
+          eq(bookings.businessId, businessId),
+          ne(bookings.status, "cancelled"),
+          gt(bookings.moves, 0),
+          gt(bookings.startAt, now.toISOString()),
+          gte(bookings.createdAt, connection.createdAt),
+          isNull(changed.id)
+        )
+      )
+    const moves: Send[] = moved.flatMap(({ booking, told }) => {
+      const base = { businessId, bookingId: booking.id, moves: booking.moves }
+      const reachable = booking.whatsappOptIn && booking.customerPhone
+      const notReached = booking.customerPhone ? "noOptIn" : "noPhone"
+      const out: Send[] = [
+        {
+          ...base,
+          message: "changed",
+          dueAt: now.toISOString(),
+          state: told && reachable ? "pending" : "skipped",
+          reason: !told ? "notTold" : reachable ? null : notReached,
+        },
+      ]
+      if (reachable) {
+        const reminders = planReminders({
+          bookedAt: now,
+          startAt: new Date(booking.startAt),
+          reminders: settings.reminders,
+          quietStart: settings.quietStart,
+          quietEnd: settings.quietEnd,
+          timeZone: business.timezone,
+        })
+        for (const { minutes, dueAt } of reminders) {
+          out.push({
+            ...base,
+            message: "reminder",
+            reminderMinutes: minutes,
+            dueAt: dueAt.toISOString(),
+            state: "pending",
+          })
+        }
+      }
+      return out
+    })
+    if (moves.length) await db.insert(notificationSends).values(moves).onConflictDoNothing()
 
     // Cancelled since the customer was told of the booking.
     const gone = await db
