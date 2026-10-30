@@ -204,6 +204,7 @@ const whatsapp = {
     moved: "Booking moved",
     notTold: "Customer not told yet",
     windowClosed: "Customer's 24 hours ended",
+    monthlyLimit: "Koblip's monthly limit reached",
     other: "Koblip Chat error",
   } as Record<string, string>,
 }

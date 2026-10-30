@@ -3,6 +3,7 @@ import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, notInAr
 import { alias } from "drizzle-orm/sqlite-core"
 
 import { db } from "@/lib/db"
+import { koblipTemplatesSent } from "@/lib/koblip-usage"
 import {
   bookings,
   businesses,
@@ -586,7 +587,17 @@ async function sendMessage({
   }
   if (!inWindow && !approved) return { state: "failed", reason: "templateNotApproved", sender }
   const buttonsFit = template.buttons.every(({ label }) => label.length <= INTERACTIVE_BUTTON_TITLE)
-  const text = inWindow && (buttonsFit || !approved)
+  let text = inWindow && (buttonsFit || !approved)
+
+  // Koblip's number sends a business at most its monthly templates (D3,
+  // K6); past that, inside the window the words still go alone (free).
+  if (sender === "koblip" && !text) {
+    const { koblipMonthlyTemplates } = await notificationRules(businessId)
+    if ((await koblipTemplatesSent(businessId, now)) >= koblipMonthlyTemplates) {
+      if (!inWindow) return { state: "skipped", reason: "monthlyLimit", sender }
+      text = true
+    }
+  }
 
   // The template goes exactly as Meta approved it, with its own fields.
   return post(line, digits, contactName, text ? "text" : "template", (recipient) =>
