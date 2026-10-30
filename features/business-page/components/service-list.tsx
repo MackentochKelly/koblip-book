@@ -6,7 +6,6 @@ import Image from "next/image"
 import { useMessages } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { PageSection } from "@/components/page-section"
-import { ResponsivePanel } from "@/components/responsive-panel"
 import {
   Item,
   ItemActions,
@@ -20,7 +19,7 @@ import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { BookButton } from "./book-button"
 
-// How many services the page shows before See all, which opens them all.
+// How many services the page shows before See all.
 const SERVICES_PREVIEW = 3
 
 const plain = (text: string) =>
@@ -73,15 +72,8 @@ export function ServiceList({
   const m = useMessages()
   const [all, setAll] = useState(false)
   if (services.length === 0) return null
-  const more = services.length > SERVICES_PREVIEW
-  const items = (list: Service[]) => (
-    <ServiceItems
-      services={list}
-      currency={currency}
-      slug={slug}
-      bookable={bookable}
-    />
-  )
+  const shown = all ? services : services.slice(0, SERVICES_PREVIEW)
+  const more = services.length > shown.length
   return (
     // A gray band like Fresha's: edge to edge on a phone, a rounded box on a
     // computer, with the white service cards on it.
@@ -90,7 +82,42 @@ export function ServiceList({
       title={m.sections.services}
       className="-mx-4 bg-muted px-4 py-6 dark:bg-card md:mx-0 md:rounded-2xl md:p-6"
     >
-      {items(services.slice(0, SERVICES_PREVIEW))}
+      <ItemGroup className="gap-3">
+        {shown.map((service) => (
+          <Item key={service.id} variant="outline" className="bg-background">
+            {service.photoUrl && (
+              <ItemMedia variant="image" className="size-16">
+                <Image
+                  src={service.photoUrl}
+                  alt=""
+                  width={64}
+                  height={64}
+                  unoptimized
+                />
+              </ItemMedia>
+            )}
+            <ItemContent>
+              <ItemTitle>
+                <span className="truncate text-base font-semibold">
+                  {service.name}
+                </span>
+              </ItemTitle>
+              <ServiceFacts service={service} currency={currency} />
+            </ItemContent>
+            {bookable && (
+              <ItemActions>
+                <BookButton
+                  slug={slug}
+                  serviceId={service.id}
+                  label={m.actions.book}
+                  variant="outline"
+                  size="sm"
+                />
+              </ItemActions>
+            )}
+          </Item>
+        ))}
+      </ItemGroup>
       {more && (
         <Button
           type="button"
@@ -101,67 +128,6 @@ export function ServiceList({
           {m.page.seeAll}
         </Button>
       )}
-      {/* See all: every service in the shared panel (a bottom sheet on a
-          phone, a dialog on a computer). */}
-      <ResponsivePanel
-        open={all}
-        onClose={() => setAll(false)}
-        title={m.sections.services}
-      >
-        {items(services)}
-      </ResponsivePanel>
     </PageSection>
-  )
-}
-
-function ServiceItems({
-  services,
-  currency,
-  slug,
-  bookable,
-}: {
-  services: Service[]
-  currency: string
-  slug: string
-  bookable: boolean
-}) {
-  const m = useMessages()
-  return (
-    <ItemGroup className="gap-3">
-      {services.map((service) => (
-        <Item key={service.id} variant="outline" className="bg-background">
-          {service.photoUrl && (
-            <ItemMedia variant="image" className="size-16">
-              <Image
-                src={service.photoUrl}
-                alt=""
-                width={64}
-                height={64}
-                unoptimized
-              />
-            </ItemMedia>
-          )}
-          <ItemContent>
-            <ItemTitle>
-              <span className="truncate text-base font-semibold">
-                {service.name}
-              </span>
-            </ItemTitle>
-            <ServiceFacts service={service} currency={currency} />
-          </ItemContent>
-          {bookable && (
-            <ItemActions>
-              <BookButton
-                slug={slug}
-                serviceId={service.id}
-                label={m.actions.book}
-                variant="outline"
-                size="sm"
-              />
-            </ItemActions>
-          )}
-        </Item>
-      ))}
-    </ItemGroup>
   )
 }
