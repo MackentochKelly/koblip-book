@@ -1,26 +1,23 @@
-import type {
-  BookingMessage,
-  TemplateLanguage,
-  Wording,
-} from "../utils/booking-templates"
+import type { BookingMessage, ButtonAction, Sender } from "@/types/whatsapp"
+import type { TemplateLanguage, Wording } from "../utils/booking-templates"
 
 // The contract for WhatsApp notifications v2 (docs/plans/whatsapp-notifications.md,
 // W0): what the WhatsApp page shows and edits, and what the server keeps.
 // The page and the server both build against these types; change them only
-// with a note in the plan.
+// with a note in the plan. The words the admin shares live in
+// types/whatsapp.ts (D33) and are named here too, so this stays the one
+// contract the feature reads.
+export type {
+  ActivityFilter,
+  ButtonAction,
+  CustomerMessage,
+  NotificationReply,
+  NotificationSend,
+  OwnerAlert,
+  Sender,
+  SendKind,
+} from "@/types/whatsapp"
 
-// Which number a business's messages go from: Koblip's own, by default, or
-// the business's own once it connects its Koblip Chat workspace.
-export type Sender = "koblip" | "own"
-
-// The messages to the customer, and the alerts to the owner's own WhatsApp.
-export type CustomerMessage = "confirmed" | "reminder" | "changed" | "cancelled"
-export type OwnerAlert = "ownerNewBooking" | "ownerCantCome" | "ownerCancelled" | "ownerFailed"
-
-// What a button does when the customer taps it. Buttons are WhatsApp quick
-// replies: a short label (NOTIFICATION_RULES.maxButtonLabel) with this action
-// as the payload Book reads back.
-export type ButtonAction = "confirm" | "cantCome" | "ok"
 export type MessageButton = { action: ButtonAction; label: string }
 
 // What "Can't make it" does (decision D2 in the plan).
@@ -72,33 +69,3 @@ export type NotificationOverview = {
   steps: Record<SetupStep, boolean>
 }
 
-// A customer's tap on a message's button.
-export type NotificationReply = { action: ButtonAction; at: string }
-
-// Every kind of message Activity lists: the booking messages and the owner's
-// alerts (S5), and the thank-you a customer's tap queues (S3, D16, D19).
-export type SendKind = BookingMessage | "thankYou"
-
-// One message Book sent, will send or did not send, for Activity.
-export type NotificationSend = {
-  id: string
-  message: SendKind
-  customerName: string
-  // When it went, or is or was due (ISO).
-  at: string
-  state: "pending" | "sending" | "sent" | "failed" | "skipped"
-  reason: string | null
-  // A normal message inside the 24-hour window, or the template.
-  via: "text" | "template" | null
-  sender: Sender
-  // WhatsApp's delivery status, once Chat reports it.
-  delivery: string | null
-  reply: NotificationReply | null
-}
-
-export type ActivityFilter = {
-  message?: SendKind
-  state?: NotificationSend["state"]
-  // Customer name or phone.
-  search?: string
-}

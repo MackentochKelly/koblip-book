@@ -1,5 +1,5 @@
-import type { ActivityFilter, NotificationSend } from "../types/notifications"
-import { BOOKING_MESSAGES } from "./booking-templates"
+import { BOOKING_MESSAGES } from "@/lib/whatsapp-messages"
+import type { ActivityFilter, NotificationSend } from "@/types/whatsapp"
 
 export const ACTIVITY_STATES: readonly NotificationSend["state"][] = [
   "pending",
@@ -11,9 +11,9 @@ export const ACTIVITY_STATES: readonly NotificationSend["state"][] = [
 
 type Query = Record<string, string | string[] | undefined>
 
-// Activity's filters live in the address (?message=&state=&q=), so a
-// filtered list can be shared and Back brings it back. Unknown values are
-// ignored.
+// Activity's filters, on the business page and in the admin, live in the
+// address (?message=&state=&q=), so a filtered list can be shared and Back
+// brings it back. Unknown values are ignored.
 export function activityFilterFrom(query: Query): ActivityFilter {
   const one = (value: string | string[] | undefined) =>
     typeof value === "string" ? value : undefined

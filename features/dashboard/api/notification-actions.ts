@@ -4,8 +4,9 @@ import { and, eq } from "drizzle-orm"
 
 import { PHONE_PATTERN } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
-import { bookings, notificationSends, notificationSettings, notificationTexts } from "@/lib/db/schema"
+import { notificationSends, notificationSettings, notificationTexts } from "@/lib/db/schema"
 import { notificationRules } from "@/lib/platform-settings"
+import { sendAgainWrite } from "@/lib/whatsapp-sends"
 import type { ActionResult } from "../types"
 import type { CantComeAction, MessageButton, NotificationSettings } from "../types/notifications"
 import {
@@ -202,27 +203,8 @@ export async function sendTestToMyPhone(
 export async function sendAgain(businessId: string, sendId: string): Promise<ActionResult> {
   const owned = await ownedBusiness(businessId)
   if (!owned) return { ok: false, error: "not_found" }
-  const [row] = await db
-    .select({ send: notificationSends, booking: bookings })
-    .from(notificationSends)
-    .innerJoin(bookings, eq(bookings.id, notificationSends.bookingId))
-    .where(
-      and(
-        eq(notificationSends.id, String(sendId)),
-        eq(notificationSends.businessId, owned.business.id)
-      )
-    )
-    .limit(1)
-  if (!row) return { ok: false, error: "not_found" }
-  if (row.send.state !== "failed") return { ok: false, error: "notFailed" }
-  if (row.booking.status === "cancelled" && row.send.message !== "cancelled") {
-    return { ok: false, error: "cancelled" }
-  }
-  if (Date.parse(row.booking.startAt) <= Date.now()) return { ok: false, error: "late" }
-  const again = await db
-    .update(notificationSends)
-    .set({ state: "pending", reason: null, dueAt: new Date().toISOString() })
-    .where(and(eq(notificationSends.id, row.send.id), eq(notificationSends.state, "failed")))
-    .returning({ id: notificationSends.id })
-  return again.length ? { ok: true } : { ok: false, error: "notFailed" }
+  const again = await sendAgainWrite(sendId, owned.business.id)
+  if (!again.ok) return again
+  const done = await again.write.returning({ id: notificationSends.id })
+  return done.length ? { ok: true } : { ok: false, error: "notFailed" }
 }
