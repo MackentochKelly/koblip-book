@@ -80,13 +80,25 @@ const integrations: typeof en = {
       "Recordatorios y difusiones por WhatsApp con Koblip Chat, que tiene tu conexión oficial con Meta. Las respuestas llegan a tu bandeja de Koblip Chat.",
     connect: "Conectar",
     connected: "Conectado",
+    disconnect: "Desconectar",
+    disconnected: "Koblip Chat desconectado.",
+    key: (last4: string) => `Clave que termina en ${last4}`,
   },
   connect: {
     title: "Conectar Koblip Chat",
     apiKey: "Clave API de Koblip Chat",
     apiKeyHint: "La encuentras en Koblip Chat.",
     apiKeyMissing: "Escribe tu clave API.",
+    workspaceId: "ID del espacio de trabajo",
+    workspaceIdHint: "Lo encuentras en Koblip Chat.",
+    workspaceIdMissing: "Escribe el ID de tu espacio de trabajo.",
     submit: "Conectar",
+    errors: {
+      invalid_key: "Esa clave no funciona. Revísala e inténtalo de nuevo.",
+      wrong_workspace: "Ese ID de espacio de trabajo no corresponde a la clave.",
+      no_permission: "Esta clave no puede iniciar mensajes. Usa una con acceso completo.",
+      unreachable: "No se pudo contactar a Koblip Chat. Inténtalo de nuevo.",
+    },
   },
 }
 

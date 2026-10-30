@@ -79,13 +79,25 @@ const integrations = {
       "WhatsApp reminders and broadcasts through Koblip Chat, which holds your official Meta connection. Replies arrive in your Koblip Chat inbox.",
     connect: "Connect",
     connected: "Connected",
+    disconnect: "Disconnect",
+    disconnected: "Koblip Chat disconnected.",
+    key: (last4: string) => `Key ending ${last4}`,
   },
   connect: {
     title: "Connect Koblip Chat",
     apiKey: "Koblip Chat API key",
     apiKeyHint: "Find it in Koblip Chat.",
     apiKeyMissing: "Enter your API key.",
+    workspaceId: "Workspace ID",
+    workspaceIdHint: "Find it in Koblip Chat.",
+    workspaceIdMissing: "Enter your workspace ID.",
     submit: "Connect",
+    errors: {
+      invalid_key: "That key doesn't work. Check it and try again.",
+      wrong_workspace: "That workspace ID doesn't match this key.",
+      no_permission: "This key can't start messages. Use a full-access key.",
+      unreachable: "Couldn't reach Koblip Chat. Try again.",
+    },
   },
 }
 

@@ -15,5 +15,5 @@ export default async function IntegrationsPage({ params }: Props) {
   const { businessId } = await params
   // Only the business's owner gets here.
   await getOwnerBusiness(businessId)
-  return <IntegrationsView connected={false} />
+  return <IntegrationsView businessId={businessId} connection={null} />
 }

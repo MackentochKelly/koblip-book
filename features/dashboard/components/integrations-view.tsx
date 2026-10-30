@@ -30,19 +30,32 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
+import { Spinner } from "@/components/ui/spinner"
 import { noAutofill } from "@/lib/no-autofill"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
+import { connectChat, disconnectChat } from "../api/chat-connection"
 import { useOwnerMessages } from "../i18n/provider"
+import type { ChatConnection, ConnectChatFailure } from "../types/chat-connection"
+import { ConfirmRemove } from "./confirm-remove"
 
 const CONNECT_FORM = "connect-whatsapp-form"
 
 // The apps a business connects, as a settings list: each row is the app,
 // what it does and its state. WhatsApp straight from Meta is coming; until
 // then WhatsApp goes through Koblip Chat, which holds the Meta connection.
-export function IntegrationsView({ connected }: { connected: boolean }) {
+export function IntegrationsView({
+  businessId,
+  connection: saved,
+}: {
+  businessId: string
+  connection: ChatConnection | null
+}) {
   const m = useOwnerMessages()
   const t = m.integrations
+  const [connection, setConnection] = useState(saved)
   const [connecting, setConnecting] = useState(false)
+  const [disconnecting, setDisconnecting] = useState(false)
 
   return (
     <div className="flex flex-col gap-6">
@@ -63,10 +76,23 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
           <IntegrationRow
             logo="/brands/koblip-chat.png"
             name={t.koblipChat.name}
-            description={t.koblipChat.description}
+            description={
+              connection
+                ? t.koblipChat.key(connection.last4)
+                : t.koblipChat.description
+            }
             action={
-              connected ? (
-                <Badge variant="secondary">{t.koblipChat.connected}</Badge>
+              connection ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">{t.koblipChat.connected}</Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDisconnecting(true)}
+                  >
+                    {t.koblipChat.disconnect}
+                  </Button>
+                </div>
               ) : (
                 <Button
                   variant="outline"
@@ -193,18 +219,24 @@ export function IntegrationsView({ connected }: { connected: boolean }) {
         </ItemGroup>
       </PageSection>
 
-      <ResponsivePanel
+      <ConnectPanel
         open={connecting}
+        businessId={businessId}
         onClose={() => setConnecting(false)}
-        title={t.connect.title}
-        footer={
-          <Button type="submit" size="lg" form={CONNECT_FORM}>
-            {t.connect.submit}
-          </Button>
-        }
-      >
-        {connecting && <ConnectForm />}
-      </ResponsivePanel>
+        onConnected={(next) => {
+          setConnection(next)
+          setConnecting(false)
+        }}
+      />
+      <ConfirmRemove
+        name={disconnecting ? t.koblipChat.name : null}
+        onClose={() => setDisconnecting(false)}
+        onConfirm={async () => {
+          await disconnectChat(businessId)
+          setConnection(null)
+          toast(t.koblipChat.disconnected)
+        }}
+      />
     </div>
   )
 }
@@ -293,38 +325,136 @@ function IntegrationRow({
   )
 }
 
-function ConnectForm() {
+function ConnectPanel({
+  open,
+  businessId,
+  onClose,
+  onConnected,
+}: {
+  open: boolean
+  businessId: string
+  onClose: () => void
+  onConnected: (connection: ChatConnection) => void
+}) {
   const t = useOwnerMessages().integrations.connect
   const [apiKey, setApiKey] = useState("")
-  const [invalid, setInvalid] = useState(false)
+  const [workspaceId, setWorkspaceId] = useState("")
+  const [missing, setMissing] = useState({ apiKey: false, workspaceId: false })
+  const [failure, setFailure] = useState<ConnectChatFailure | null>(null)
+  const [pending, setPending] = useState(false)
+
+  function close() {
+    setApiKey("")
+    setWorkspaceId("")
+    setMissing({ apiKey: false, workspaceId: false })
+    setFailure(null)
+    onClose()
+  }
+
+  async function submit() {
+    const next = {
+      apiKey: !apiKey.trim(),
+      workspaceId: !workspaceId.trim(),
+    }
+    setMissing(next)
+    setFailure(null)
+    if (next.apiKey || next.workspaceId) return
+    setPending(true)
+    try {
+      const result = await connectChat(businessId, {
+        apiKey: apiKey.trim(),
+        workspaceId: workspaceId.trim(),
+      })
+      if (result.ok) {
+        onConnected(result.connection)
+        close()
+      } else {
+        setFailure(result.reason)
+      }
+    } catch {
+      setFailure("unreachable")
+    } finally {
+      setPending(false)
+    }
+  }
+
   return (
-    <form
-      id={CONNECT_FORM}
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault()
-        if (!apiKey.trim()) setInvalid(true)
-      }}
+    <ResponsivePanel
+      open={open}
+      onClose={close}
+      title={t.title}
+      footer={
+        <Button type="submit" size="lg" form={CONNECT_FORM} disabled={pending}>
+          {pending && <Spinner data-icon="inline-start" />}
+          {t.submit}
+        </Button>
+      }
     >
-      <FieldGroup>
-        <Field data-invalid={invalid || undefined}>
-          <FieldLabel htmlFor="koblip-chat-key">{t.apiKey}</FieldLabel>
-          <Input
-            {...noAutofill("koblip_chat_key")}
-            id="koblip-chat-key"
-            type="password"
-            value={apiKey}
-            onChange={(event) => setApiKey(event.target.value)}
-            enterKeyHint="done"
-            aria-invalid={invalid || undefined}
-          />
-          {invalid ? (
-            <FieldError>{t.apiKeyMissing}</FieldError>
-          ) : (
-            <FieldDescription>{t.apiKeyHint}</FieldDescription>
+      <form
+        id={CONNECT_FORM}
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault()
+          void submit()
+        }}
+      >
+        <FieldGroup>
+          <Field
+            data-invalid={
+              missing.apiKey || failure === "invalid_key" || undefined
+            }
+          >
+            <FieldLabel htmlFor="koblip-chat-key">{t.apiKey}</FieldLabel>
+            <Input
+              {...noAutofill("koblip_chat_key")}
+              id="koblip-chat-key"
+              type="password"
+              value={apiKey}
+              onChange={(event) => setApiKey(event.target.value)}
+              enterKeyHint="next"
+              aria-invalid={
+                missing.apiKey || failure === "invalid_key" || undefined
+              }
+            />
+            {missing.apiKey ? (
+              <FieldError>{t.apiKeyMissing}</FieldError>
+            ) : failure === "invalid_key" ? (
+              <FieldError>{t.errors.invalid_key}</FieldError>
+            ) : (
+              <FieldDescription>{t.apiKeyHint}</FieldDescription>
+            )}
+          </Field>
+          <Field
+            data-invalid={
+              missing.workspaceId || failure === "wrong_workspace" || undefined
+            }
+          >
+            <FieldLabel htmlFor="koblip-chat-workspace">
+              {t.workspaceId}
+            </FieldLabel>
+            <Input
+              {...noAutofill("koblip_chat_workspace")}
+              id="koblip-chat-workspace"
+              value={workspaceId}
+              onChange={(event) => setWorkspaceId(event.target.value)}
+              enterKeyHint="done"
+              aria-invalid={
+                missing.workspaceId || failure === "wrong_workspace" || undefined
+              }
+            />
+            {missing.workspaceId ? (
+              <FieldError>{t.workspaceIdMissing}</FieldError>
+            ) : failure === "wrong_workspace" ? (
+              <FieldError>{t.errors.wrong_workspace}</FieldError>
+            ) : (
+              <FieldDescription>{t.workspaceIdHint}</FieldDescription>
+            )}
+          </Field>
+          {(failure === "no_permission" || failure === "unreachable") && (
+            <FieldError>{t.errors[failure]}</FieldError>
           )}
-        </Field>
-      </FieldGroup>
-    </form>
+        </FieldGroup>
+      </form>
+    </ResponsivePanel>
   )
 }
