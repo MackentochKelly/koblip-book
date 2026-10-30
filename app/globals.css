@@ -33,6 +33,12 @@
     );
 }
 
+/* A test look (components/home-band.tsx, /new): the brand's deepest
+   indigo, for the live demo's band. */
+@utility bg-brand-deep {
+  background-color: color-mix(in oklch, var(--chart-5) 55%, black);
+}
+
 @theme inline {
     /* Motion curves (Material 3, docs/ui-rules/motion.md): ease-standard
        for most moves, ease-enter for things coming in, ease-exit for

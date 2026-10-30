@@ -2,6 +2,12 @@ import type { PageLanguage } from "./page-language"
 
 // The public page's and booking's own words, in each page language. The
 // business's texts (About, services) are translated by Meta AI elsewhere.
+// The "In your clients' language" picture: the page in each language.
+const LANGUAGE_SAMPLE = [
+  { label: "English", open: "Open today", book: "Book now" },
+  { label: "Español", open: "Abierto hoy", book: "Reservar" },
+]
+
 const en = {
   locale: "en-US",
   sections: {
@@ -148,6 +154,7 @@ const en = {
     footer: { legal: "Legal", privacy: "Privacy", terms: "Terms" },
     faq: {
       title: "Questions",
+      subtitle: "Everything you need to know.",
       items: [
         { q: "Is it free?", a: "Yes, it's free for now. No card needed." },
         {
@@ -209,6 +216,8 @@ const en = {
       checkText: "Your services, hours and photos are ready.",
       share: "Share your link",
       shareText: "Clients book from it, day or night.",
+      booked: "Get booked",
+      bookedText: "Bookings show up in your dashboard.",
       // The sample shown in the step pictures.
       sample: {
         search: "Search",
@@ -236,6 +245,7 @@ const en = {
         bookingService: "Haircut",
         bookingTime: "15:00",
         hours: { opens: "09:00", closes: "19:00" },
+        today: "Today",
       },
     },
     features: {
@@ -248,6 +258,8 @@ const en = {
       bookText: "Your services, team and free times on one page.",
       assistant: "Just ask your AI assistant",
       assistantText: "Bookings, services and hours, by typing or voice.",
+      language: "In your clients' language",
+      languageText: "Your page shows in English or Spanish.",
       // The sample app shown in the card pictures.
       sample: {
         locale: "en-US",
@@ -257,6 +269,8 @@ const en = {
         times: ["10:00 am", "11:30 am", "3:00 pm"],
         ask: "Book Ana at 3 pm",
         done: "Done. Ana is booked for 3 pm.",
+        // The page in each language, the same in every page language.
+        languages: LANGUAGE_SAMPLE,
         booked: "Booked",
         confirmed: "Confirmed",
       },
@@ -420,6 +434,7 @@ const es: Messages = {
     footer: { legal: "Legal", privacy: "Privacidad", terms: "Términos" },
     faq: {
       title: "Preguntas",
+      subtitle: "Todo lo que necesitas saber.",
       items: [
         { q: "¿Es gratis?", a: "Sí, por ahora es gratis. Sin tarjeta." },
         {
@@ -480,6 +495,8 @@ const es: Messages = {
       checkText: "Tus servicios, horarios y fotos ya están listos.",
       share: "Comparte tu enlace",
       shareText: "Tus clientes reservan desde ahí, a cualquier hora.",
+      booked: "Recibe reservas",
+      bookedText: "Las reservas llegan a tu panel.",
       sample: {
         search: "Buscar",
         address: "Calle Mayor 12, Madrid",
@@ -506,6 +523,7 @@ const es: Messages = {
         bookingService: "Corte",
         bookingTime: "15:00",
         hours: { opens: "09:00", closes: "19:00" },
+        today: "Hoy",
       },
     },
     features: {
@@ -518,6 +536,8 @@ const es: Messages = {
       bookText: "Tus servicios, equipo y horas libres en una página.",
       assistant: "Pídeselo a tu asistente de IA",
       assistantText: "Reservas, servicios y horarios, escribiendo o por voz.",
+      language: "En el idioma de tus clientes",
+      languageText: "Tu página se ve en inglés o en español.",
       sample: {
         locale: "es-ES",
         business: "Lumen Studio",
@@ -526,6 +546,7 @@ const es: Messages = {
         times: ["10:00", "11:30", "15:00"],
         ask: "Reserva a Ana a las 15:00",
         done: "Listo. Ana tiene cita a las 15:00.",
+        languages: LANGUAGE_SAMPLE,
         booked: "Reservado",
         confirmed: "Confirmada",
       },

@@ -3,7 +3,15 @@
 import { AnimatePresence, motion } from "motion/react"
 import { useRef, useState } from "react"
 
-import { Box, burstFrom, POP, RISE, Scene } from "@/components/feature-preview"
+import {
+  BookingRow,
+  Box,
+  burstFrom,
+  firstName,
+  POP,
+  RISE,
+  Scene,
+} from "@/components/feature-preview"
 import { Rating } from "@/components/rating"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -39,6 +47,7 @@ const STEPS = {
   find: { colors: ["--background", "--chart-2", "--hero-accent"], seed: 20 },
   check: { colors: ["--background", "--chart-1", "--verified"], seed: 60 },
   share: { colors: ["--background", "--hero-accent", "--chart-3"], seed: 100 },
+  booked: { colors: ["--background", "--chart-1", "--hero-accent"], seed: 140 },
 } as const
 
 export type StepPreviewName = keyof typeof STEPS
@@ -57,6 +66,7 @@ export function StepPreview({
       {name === "find" && <FindPreview words={words} shared={shared} />}
       {name === "check" && <CheckPreview words={words} shared={shared} />}
       {name === "share" && <SharePreview words={words} shared={shared} />}
+      {name === "booked" && <BookedPreview words={words} shared={shared} />}
     </Scene>
   )
 }
@@ -477,5 +487,71 @@ function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
         </div>
       </Box>
     </div>
+  )
+}
+
+// The booking already there: Marta, for the second service (as beside the
+// hero).
+const EARLIER = { person: 1, service: 1, time: "11:30" }
+
+// Today's bookings in the dashboard (useStoryLoop): the list, then the new
+// booking slides in on top. Rests on the full list; tap to play it again.
+function BookedPreview({ words, shared }: { words: Words; shared: Shared }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [arrived, setArrived] = useState(true)
+  const time = SHOWCASE_LOOP.booked
+  const replay = useStoryLoop(
+    box,
+    async (wait) => {
+      setArrived(false)
+      await wait(time.before)
+      setArrived(true)
+      await wait(time.shown)
+    },
+    () => setArrived(true)
+  )
+  return (
+    <>
+      <Button
+        variant="ghost"
+        aria-label={words.replay}
+        onClick={replay}
+        className="absolute inset-0 z-10 h-auto rounded-none hover:bg-transparent dark:hover:bg-transparent"
+      />
+      <div ref={box} className="w-full max-w-60">
+        <Box>
+          <div className="flex flex-col gap-3 px-(--card-spacing)">
+            <span className="text-xs font-medium text-muted-foreground">
+              {words.today}
+            </span>
+            <div className="flex flex-col">
+              <AnimatePresence initial={false}>
+                {arrived && (
+                  <motion.div
+                    key="new"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.35 }}
+                    className="overflow-hidden"
+                  >
+                    <BookingRow
+                      title={words.newBooking}
+                      detail={`${firstName(words.people[PICKED])} · ${words.bookingService} · ${formatClock(words.bookingTime, shared.locale)}`}
+                      icon
+                    />
+                    <div className="h-3" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <BookingRow
+                title={words.people[EARLIER.person]}
+                detail={`${words.services[EARLIER.service].name} · ${formatClock(EARLIER.time, shared.locale)}`}
+              />
+            </div>
+          </div>
+        </Box>
+      </div>
+    </>
   )
 }

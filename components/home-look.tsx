@@ -8,8 +8,9 @@ import { createContext, useContext } from "react"
 // "calm" (/calm): the pictures and the demo on the plain muted surface.
 // "glow" (/glow): on the page colour with one soft brand glow.
 // "bands" (/new): each section on its own rounded band (HomeBand): white,
-// grey with dots, and a dark one for the live demo; colour only on the
-// hero, the first feature and the last call to action.
+// grey with dots, and the deep brand indigo for the live demo; four cards
+// a row that slide; colour only on the hero, the first feature and the
+// last call to action.
 // Remove once one look is picked.
 export type HomeLook = "colour" | "calm" | "glow" | "bands"
 

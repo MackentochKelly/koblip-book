@@ -18,7 +18,6 @@ export function HomeFeatures({
   return (
     <ShowcaseRow
       id={HOME_SECTION_IDS.features}
-      bento={look === "bands"}
       title={words.title}
       previous={words.previous}
       next={words.next}
@@ -41,6 +40,19 @@ export function HomeFeatures({
           text: words.assistantText,
           picture: <FeaturePreview name="assistant" sample={words.sample} />,
         },
+        // The "bands" look adds a fourth, and the row slides.
+        ...(look === "bands"
+          ? [
+              {
+                key: "language",
+                title: words.language,
+                text: words.languageText,
+                picture: (
+                  <FeaturePreview name="language" sample={words.sample} />
+                ),
+              },
+            ]
+          : []),
       ]}
     />
   )

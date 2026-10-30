@@ -22,8 +22,8 @@ export function HomeCta({
   hint: string
 }) {
   const still = useReducedMotion()
-  // The "bands" look: full width, a band's gap below the one above, like
-  // the hero.
+  // The "bands" look: a smaller card in the middle, with room round it, so
+  // the page ends on an invitation, not a second hero.
   const bands = useHomeLook() === "bands"
   function findBusiness() {
     const target = document.getElementById(GET_STARTED_ID)
@@ -38,13 +38,14 @@ export function HomeCta({
     <section
       className={cn(
         "mx-auto w-full",
-        bands ? "mt-2 mb-12 sm:mt-3" : "max-w-page px-2 pb-12 sm:px-4"
+        bands
+          ? "max-w-3xl px-2 py-16 sm:px-4 sm:py-24"
+          : "max-w-page px-2 pb-12 sm:px-4"
       )}
     >
       <div
         className={cn(
           "relative isolate flex flex-col items-center gap-6 overflow-hidden rounded-4xl px-6 py-16 text-center",
-          bands && "sm:py-24",
           heroEdgeClassName
         )}
       >

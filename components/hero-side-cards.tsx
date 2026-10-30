@@ -3,17 +3,21 @@
 import { AnimatePresence, motion } from "motion/react"
 import { useRef, useState } from "react"
 
-import { Box, POP, RISE } from "@/components/feature-preview"
+import {
+  BookingRow,
+  Box,
+  firstName,
+  POP,
+  RISE,
+} from "@/components/feature-preview"
 import { glassFrameClassName } from "@/components/glass-frame"
 import { Rating } from "@/components/rating"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
-import { CalendarDaysIcon, CheckIcon, MapPinIcon } from "@/components/ui/icons"
+import { CheckIcon, MapPinIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { useStoryLoop } from "@/hooks/use-story-loop"
 import { formatClock } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
-import { initials } from "@/lib/initials"
 import type { Messages } from "@/lib/i18n"
 import { SHOWCASE_LOOP } from "@/lib/showcase-rules"
 import { cn } from "@/lib/utils"
@@ -269,36 +273,4 @@ function SideCard({
       </motion.div>
     </motion.div>
   )
-}
-
-// A booking in the list: the new one gets the green calendar, as on the
-// "Share your link" picture; the earlier one the client's initials.
-function BookingRow({
-  title,
-  detail,
-  icon = false,
-}: {
-  title: string
-  detail: string
-  icon?: boolean
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <Avatar>
-        <AvatarFallback
-          className={cn(icon && "bg-success text-success-foreground")}
-        >
-          {icon ? <CalendarDaysIcon /> : initials(title)}
-        </AvatarFallback>
-      </Avatar>
-      <div className="flex min-w-0 flex-col">
-        <span className="truncate font-medium">{title}</span>
-        <span className="truncate text-xs text-muted-foreground">{detail}</span>
-      </div>
-    </div>
-  )
-}
-
-function firstName(name: string) {
-  return name.split(" ")[0]
 }

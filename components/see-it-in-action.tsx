@@ -179,12 +179,11 @@ export function SeeItInAction({
                     "text-left",
                     calm
                       ? view === tab
-                        ? cn(
-                            "border-border",
-                            look === "bands" ? "bg-muted" : "bg-background"
-                          )
+                        ? look === "bands"
+                          ? "border-foreground/15 bg-foreground/10"
+                          : "border-border bg-background"
                         : look === "bands"
-                          ? "hover:bg-muted/60"
+                          ? "hover:bg-foreground/5"
                           : "hover:bg-background/60"
                       : cn(
                           "text-hero-foreground",
@@ -213,7 +212,7 @@ export function SeeItInAction({
               ))}
             </div>
             <div className={cn(glassFrameClassName, "relative max-w-sm")}>
-              {/* On the dark band, a soft glow of the brand colour behind
+              {/* On the indigo band, a soft glow of the brand colour behind
                   the screen. */}
               {look === "bands" && (
                 <div

@@ -10,10 +10,13 @@ import { useHomeLook } from "@/components/home-look"
 import { Rating } from "@/components/rating"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Card } from "@/components/ui/card"
-import { CheckIcon, MapPinIcon } from "@/components/ui/icons"
+import { CalendarDaysIcon, CheckIcon, MapPinIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useThemeColors } from "@/hooks/use-theme-colors"
+import { initials } from "@/lib/initials"
 import type { Messages } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
@@ -27,6 +30,10 @@ const PREVIEWS = {
   page: { colors: ["--background", "--chart-1", "--chart-3"], seed: 0 },
   book: { colors: ["--background", "--hero-accent", "--chart-1"], seed: 40 },
   assistant: { colors: ["--background", "--verified", "--chart-2"], seed: 80 },
+  language: {
+    colors: ["--background", "--chart-2", "--hero-accent"],
+    seed: 120,
+  },
 } as const
 
 export type FeaturePreviewName = keyof typeof PREVIEWS
@@ -94,6 +101,7 @@ export function FeaturePreview({
       {name === "page" && <PagePreview sample={sample} />}
       {name === "book" && <BookPreview sample={sample} />}
       {name === "assistant" && <AssistantPreview sample={sample} />}
+      {name === "language" && <LanguagePreview sample={sample} />}
     </Scene>
   )
 }
@@ -261,4 +269,77 @@ export function AssistantPreview({ sample }: { sample: Sample }) {
       </Bubble>
     </div>
   )
+}
+
+// The page in each language: tap one and the page's words switch to it.
+export function LanguagePreview({ sample }: { sample: Sample }) {
+  const [shown, setShown] = useState(sample.languages[0].label)
+  const page =
+    sample.languages.find((language) => language.label === shown) ??
+    sample.languages[0]
+  return (
+    <Box>
+      <div className="flex flex-col gap-3 px-(--card-spacing)">
+        <ToggleGroup
+          variant="outline"
+          size="sm"
+          value={[shown]}
+          onValueChange={(value) => {
+            if (value[0]) setShown(value[0])
+          }}
+        >
+          {sample.languages.map((language) => (
+            <ToggleGroupItem key={language.label} value={language.label}>
+              {language.label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={shown} {...RISE} className="flex flex-col gap-3">
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate font-medium">{sample.business}</span>
+              <span className="truncate text-xs text-muted-foreground">
+                {page.open}
+              </span>
+            </div>
+            <Button size="sm" tabIndex={-1} className="w-full">
+              {page.book}
+            </Button>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </Box>
+  )
+}
+
+// A booking in the list: the new one gets the green calendar, as on the
+// "Share your link" picture; the earlier one the client's initials.
+export function BookingRow({
+  title,
+  detail,
+  icon = false,
+}: {
+  title: string
+  detail: string
+  icon?: boolean
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <Avatar>
+        <AvatarFallback
+          className={cn(icon && "bg-success text-success-foreground")}
+        >
+          {icon ? <CalendarDaysIcon /> : initials(title)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex min-w-0 flex-col">
+        <span className="truncate font-medium">{title}</span>
+        <span className="truncate text-xs text-muted-foreground">{detail}</span>
+      </div>
+    </div>
+  )
+}
+
+export function firstName(name: string) {
+  return name.split(" ")[0]
 }

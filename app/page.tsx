@@ -135,16 +135,16 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           <WorksWith language={language} />
           <MadeFor language={language} />
         </HomeBand>
-        <HomeBand tone="muted">
+        <HomeBand tone="muted" dots>
           <HowItWorks words={t} />
         </HomeBand>
         <HomeBand tone="plain">
           <HomeFeatures words={t.features} />
         </HomeBand>
-        <HomeBand tone="dark">
+        <HomeBand tone="brand">
           <SeeItInAction words={t.action} language={language} />
         </HomeBand>
-        <HomeBand tone="plain">
+        <HomeBand tone="muted">
           <HomeFaq words={t.faq} />
         </HomeBand>
         <HomeCta

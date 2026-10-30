@@ -38,7 +38,6 @@ export function ShowcaseRow({
   previous,
   next,
   items,
-  bento = false,
 }: {
   // For links to this row (the footer's).
   id: string
@@ -46,9 +45,6 @@ export function ShowcaseRow({
   previous: string
   next: string
   items: ShowcaseItem[]
-  // Computers: the first card wide and the other two narrow beside it
-  // (a bento row), each picture filling its card's height.
-  bento?: boolean
 }) {
   // Two-finger trackpad swipes move the cards too (Embla only drags).
   const [wheel] = useState(() => WheelGesturesPlugin())
@@ -64,7 +60,9 @@ export function ShowcaseRow({
       >
         <div className="mb-4 flex items-center justify-between gap-4 px-2">
           <h2 className={homeSectionTitleClassName}>{title}</h2>
-          <div className="flex gap-2 md:hidden">
+          {/* Computers show three cards: the arrows only when there are
+              more. */}
+          <div className={cn("flex gap-2", items.length <= 3 && "md:hidden")}>
             <CarouselPrevious
               className="static translate-none"
               aria-label={previous}
@@ -74,22 +72,10 @@ export function ShowcaseRow({
         </div>
         {/* p-px: room for the card edge, which the carousel would clip. */}
         <CarouselContent className="p-px">
-          {items.map((item, index) => (
-            <CarouselItem
-              key={item.key}
-              className={cn(
-                "basis-[85%]",
-                !bento && "md:basis-1/3",
-                bento && (index === 0 ? "md:basis-1/2" : "md:basis-1/4")
-              )}
-            >
+          {items.map((item) => (
+            <CarouselItem key={item.key} className="basis-[85%] md:basis-1/3">
               <Card className="h-full pt-2 shadow-none ring-border dark:ring-border">
-                <div
-                  className={cn(
-                    "relative mx-2 aspect-video overflow-hidden rounded-t-[calc(var(--radius-4xl)-(--spacing(2)))] rounded-b-lg bg-muted after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/5 dark:after:inset-ring-foreground/10",
-                    bento && "md:aspect-auto md:min-h-72 md:flex-1"
-                  )}
-                >
+                <div className="relative mx-2 aspect-video overflow-hidden rounded-t-[calc(var(--radius-4xl)-(--spacing(2)))] rounded-b-lg bg-muted after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/5 dark:after:inset-ring-foreground/10">
                   {item.picture}
                 </div>
                 <CardHeader>

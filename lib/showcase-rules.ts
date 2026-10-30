@@ -40,4 +40,9 @@ export const SHOWCASE_LOOP = {
     picked: 700,
     booked: 3200,
   },
+  // "Get booked": today's list, and a new booking coming in on top.
+  booked: {
+    before: 1400,
+    shown: 3600,
+  },
 } as const
