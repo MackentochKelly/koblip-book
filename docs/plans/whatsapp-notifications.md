@@ -153,7 +153,7 @@ task is in Lanes above.
 
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
-| C1 | Inbound app events carry the tapped button's payload and title | `services/koblip-sales-status-webhook.service.js`, `tests/oauth-events.test.js`, `docs/api/oauth.md` | — | `Working on` Dev 1, 2026-10-30 |
+| C1 | Inbound app events carry the tapped button's payload and title | `services/koblip-sales-status-webhook.service.js`, `tests/oauth-events.test.js`, `docs/api/oauth.md` | — | `Done` 2026-10-30, Chat 3bf10c2 |
 | C2 | Send API: a normal message with reply buttons can have a text title and footer | `controllers/unified-whatsapp.controller.js`, its service, tests, docs | — | `Working on` Dev 1, 2026-10-30 |
 
 ### Book server
