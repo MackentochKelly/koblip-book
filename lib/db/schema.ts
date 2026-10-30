@@ -346,3 +346,21 @@ export const assistantConversations = sqliteTable(
     ),
   ]
 )
+
+// A business's "Connect with Koblip Chat" connection, one per business
+// (docs/koblip-chat-integration.md, step 1). Both tokens are encrypted with
+// lib/secret-box and never leave the server. When Chat refuses a refresh the
+// tokens are dropped and needsReconnect asks the owner to connect again.
+export const chatConnections = sqliteTable("chat_connections", {
+  businessId: text()
+    .primaryKey()
+    .references(() => businesses.id, { onDelete: "cascade" }),
+  workspaceId: text().notNull(),
+  workspaceName: text().notNull(),
+  scopes: text().notNull(),
+  accessToken: text(),
+  refreshToken: text(),
+  accessExpiresAt: text(),
+  needsReconnect: integer({ mode: "boolean" }).notNull().default(false),
+  ...timestamps(),
+})

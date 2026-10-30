@@ -82,23 +82,11 @@ const integrations: typeof en = {
     connected: "Conectado",
     disconnect: "Desconectar",
     disconnected: "Koblip Chat desconectado.",
-    key: (last4: string) => `Clave que termina en ${last4}`,
-  },
-  connect: {
-    title: "Conectar Koblip Chat",
-    apiKey: "Clave API de Koblip Chat",
-    apiKeyHint: "La encuentras en Koblip Chat.",
-    apiKeyMissing: "Escribe tu clave API.",
-    workspaceId: "ID del espacio de trabajo",
-    workspaceIdHint: "Lo encuentras en Koblip Chat.",
-    workspaceIdMissing: "Escribe el ID de tu espacio de trabajo.",
-    submit: "Conectar",
-    errors: {
-      invalid_key: "Esa clave no funciona. Revísala e inténtalo de nuevo.",
-      wrong_workspace: "Ese ID de espacio de trabajo no corresponde a la clave.",
-      no_permission: "Esta clave no puede iniciar mensajes. Usa una con acceso completo.",
-      unreachable: "No se pudo contactar a Koblip Chat. Inténtalo de nuevo.",
-    },
+    workspace: (name: string) => `Conectado a ${name}`,
+    reconnect: "Reconectar",
+    reconnectHint: "La conexión se detuvo. Vuelve a conectar.",
+    connectedToast: "Koblip Chat conectado.",
+    failed: "No se pudo conectar Koblip Chat. Inténtalo de nuevo.",
   },
 }
 

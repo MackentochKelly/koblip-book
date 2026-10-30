@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import {
   ChevronRightIcon,
   MailIcon,
@@ -10,17 +11,8 @@ import {
 
 import { PageSection } from "@/components/page-section"
 import { DetailsButton } from "@/components/details-button"
-import { ResponsivePanel } from "@/components/responsive-panel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import {
   Item,
   ItemActions,
@@ -31,31 +23,78 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
-import { noAutofill } from "@/lib/no-autofill"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { connectChat, disconnectChat } from "../api/chat-connection"
+import { disconnectChat } from "../api/chat-connection"
 import { useOwnerMessages } from "../i18n/provider"
-import type { ChatConnection, ConnectChatFailure } from "../types/chat-connection"
+import {
+  CHAT_CONNECT_CHANNEL,
+  type ChatConnection,
+  type ChatConnectResult,
+} from "../types/chat-connection"
 import { ConfirmRemove } from "./confirm-remove"
-
-const CONNECT_FORM = "connect-whatsapp-form"
 
 // The apps a business connects, as a settings list: each row is the app,
 // what it does and its state. WhatsApp straight from Meta is coming; until
 // then WhatsApp goes through Koblip Chat, which holds the Meta connection.
 export function IntegrationsView({
   businessId,
-  connection: saved,
+  connection,
+  result,
 }: {
   businessId: string
   connection: ChatConnection | null
+  // How a Chat window opened as a full page ended (?chat=), shown once.
+  result: ChatConnectResult | null
 }) {
   const m = useOwnerMessages()
   const t = m.integrations
-  const [connection, setConnection] = useState(saved)
-  const [connecting, setConnecting] = useState(false)
+  const router = useRouter()
+  const [waiting, setWaiting] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
+
+  // The Chat window says how it ended on a same-site channel: the page
+  // shows the saved connection, or says it failed. Cancel says nothing.
+  useEffect(() => {
+    function ended(next: ChatConnectResult) {
+      setWaiting(false)
+      if (next === "connected") {
+        router.refresh()
+        toast(t.koblipChat.connectedToast)
+      } else if (next === "failed") {
+        toast.error(t.koblipChat.failed)
+      }
+    }
+    if (result) {
+      ended(result)
+      router.replace(`/dashboard/${encodeURIComponent(businessId)}/integrations`)
+    }
+    const channel = new BroadcastChannel(CHAT_CONNECT_CHANNEL)
+    channel.onmessage = (event: MessageEvent<{ businessId: string; result: ChatConnectResult }>) => {
+      if (event.data?.businessId === businessId) ended(event.data.result)
+    }
+    return () => channel.close()
+  }, [businessId, result, router, t])
+
+  // Koblip Chat's consent page in its own small window (OAuth popup); a
+  // blocked window opens it in this tab instead.
+  function connect() {
+    const url = `/api/chat/connect?businessId=${encodeURIComponent(businessId)}`
+    const chat = window.open(url, "koblip-chat-connect", "popup,width=480,height=720")
+    if (!chat) {
+      // A route that leaves for Koblip Chat, not a page: a full navigation.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign(url)
+      return
+    }
+    setWaiting(true)
+    const watch = window.setInterval(() => {
+      if (chat.closed) {
+        window.clearInterval(watch)
+        setWaiting(false)
+      }
+    }, 500)
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -77,12 +116,14 @@ export function IntegrationsView({
             logo="/brands/koblip-chat.png"
             name={t.koblipChat.name}
             description={
-              connection
-                ? t.koblipChat.key(connection.last4)
-                : t.koblipChat.description
+              !connection
+                ? t.koblipChat.description
+                : connection.needsReconnect
+                  ? t.koblipChat.reconnectHint
+                  : t.koblipChat.workspace(connection.workspaceName)
             }
             action={
-              connection ? (
+              connection && !connection.needsReconnect ? (
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary">{t.koblipChat.connected}</Badge>
                   <Button
@@ -97,10 +138,12 @@ export function IntegrationsView({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setConnecting(true)}
+                  onClick={connect}
+                  disabled={waiting}
                 >
-                  {t.koblipChat.connect}
-                  <ChevronRightIcon data-icon="inline-end" />
+                  {waiting && <Spinner data-icon="inline-start" />}
+                  {connection ? t.koblipChat.reconnect : t.koblipChat.connect}
+                  {!waiting && <ChevronRightIcon data-icon="inline-end" />}
                 </Button>
               )
             }
@@ -219,21 +262,12 @@ export function IntegrationsView({
         </ItemGroup>
       </PageSection>
 
-      <ConnectPanel
-        open={connecting}
-        businessId={businessId}
-        onClose={() => setConnecting(false)}
-        onConnected={(next) => {
-          setConnection(next)
-          setConnecting(false)
-        }}
-      />
       <ConfirmRemove
         name={disconnecting ? t.koblipChat.name : null}
         onClose={() => setDisconnecting(false)}
         onConfirm={async () => {
           await disconnectChat(businessId)
-          setConnection(null)
+          router.refresh()
           toast(t.koblipChat.disconnected)
         }}
       />
@@ -322,139 +356,5 @@ function IntegrationRow({
       </ItemContent>
       <ItemActions>{action}</ItemActions>
     </Item>
-  )
-}
-
-function ConnectPanel({
-  open,
-  businessId,
-  onClose,
-  onConnected,
-}: {
-  open: boolean
-  businessId: string
-  onClose: () => void
-  onConnected: (connection: ChatConnection) => void
-}) {
-  const t = useOwnerMessages().integrations.connect
-  const [apiKey, setApiKey] = useState("")
-  const [workspaceId, setWorkspaceId] = useState("")
-  const [missing, setMissing] = useState({ apiKey: false, workspaceId: false })
-  const [failure, setFailure] = useState<ConnectChatFailure | null>(null)
-  const [pending, setPending] = useState(false)
-
-  function close() {
-    setApiKey("")
-    setWorkspaceId("")
-    setMissing({ apiKey: false, workspaceId: false })
-    setFailure(null)
-    onClose()
-  }
-
-  async function submit() {
-    const next = {
-      apiKey: !apiKey.trim(),
-      workspaceId: !workspaceId.trim(),
-    }
-    setMissing(next)
-    setFailure(null)
-    if (next.apiKey || next.workspaceId) return
-    setPending(true)
-    try {
-      const result = await connectChat(businessId, {
-        apiKey: apiKey.trim(),
-        workspaceId: workspaceId.trim(),
-      })
-      if (result.ok) {
-        onConnected(result.connection)
-        close()
-      } else {
-        setFailure(result.reason)
-      }
-    } catch {
-      setFailure("unreachable")
-    } finally {
-      setPending(false)
-    }
-  }
-
-  return (
-    <ResponsivePanel
-      open={open}
-      onClose={close}
-      title={t.title}
-      footer={
-        <Button type="submit" size="lg" form={CONNECT_FORM} disabled={pending}>
-          {pending && <Spinner data-icon="inline-start" />}
-          {t.submit}
-        </Button>
-      }
-    >
-      <form
-        id={CONNECT_FORM}
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault()
-          void submit()
-        }}
-      >
-        <FieldGroup>
-          <Field
-            data-invalid={
-              missing.apiKey || failure === "invalid_key" || undefined
-            }
-          >
-            <FieldLabel htmlFor="koblip-chat-key">{t.apiKey}</FieldLabel>
-            <Input
-              {...noAutofill("koblip_chat_key")}
-              id="koblip-chat-key"
-              type="password"
-              value={apiKey}
-              onChange={(event) => setApiKey(event.target.value)}
-              enterKeyHint="next"
-              aria-invalid={
-                missing.apiKey || failure === "invalid_key" || undefined
-              }
-            />
-            {missing.apiKey ? (
-              <FieldError>{t.apiKeyMissing}</FieldError>
-            ) : failure === "invalid_key" ? (
-              <FieldError>{t.errors.invalid_key}</FieldError>
-            ) : (
-              <FieldDescription>{t.apiKeyHint}</FieldDescription>
-            )}
-          </Field>
-          <Field
-            data-invalid={
-              missing.workspaceId || failure === "wrong_workspace" || undefined
-            }
-          >
-            <FieldLabel htmlFor="koblip-chat-workspace">
-              {t.workspaceId}
-            </FieldLabel>
-            <Input
-              {...noAutofill("koblip_chat_workspace")}
-              id="koblip-chat-workspace"
-              value={workspaceId}
-              onChange={(event) => setWorkspaceId(event.target.value)}
-              enterKeyHint="done"
-              aria-invalid={
-                missing.workspaceId || failure === "wrong_workspace" || undefined
-              }
-            />
-            {missing.workspaceId ? (
-              <FieldError>{t.workspaceIdMissing}</FieldError>
-            ) : failure === "wrong_workspace" ? (
-              <FieldError>{t.errors.wrong_workspace}</FieldError>
-            ) : (
-              <FieldDescription>{t.workspaceIdHint}</FieldDescription>
-            )}
-          </Field>
-          {(failure === "no_permission" || failure === "unreachable") && (
-            <FieldError>{t.errors[failure]}</FieldError>
-          )}
-        </FieldGroup>
-      </form>
-    </ResponsivePanel>
   )
 }

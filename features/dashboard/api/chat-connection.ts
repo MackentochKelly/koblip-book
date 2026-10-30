@@ -1,26 +1,14 @@
 "use server"
 
-import type {
-  ConnectChatInput,
-  ConnectChatResult,
-} from "../types/chat-connection"
+import { endChatConnection } from "./chat-oauth"
 import { getOwnerBusiness } from "./queries"
 
-// Stand-in until the backend is built (docs/koblip-chat-integration.md,
-// "Book server actions"): it accepts any key and saves nothing, so the
-// screen can be built and tried first. The real actions check the key with
-// Koblip Chat and store it encrypted.
-export async function connectChat(
-  businessId: string,
-  input: ConnectChatInput
-): Promise<ConnectChatResult> {
-  await getOwnerBusiness(businessId)
-  return { ok: true, connection: { last4: input.apiKey.trim().slice(-4) } }
-}
-
+// Disconnect on the Integrations page: ends the connection at Koblip Chat and
+// forgets its tokens here.
 export async function disconnectChat(
   businessId: string
 ): Promise<{ ok: true }> {
   await getOwnerBusiness(businessId)
+  await endChatConnection(businessId)
   return { ok: true }
 }

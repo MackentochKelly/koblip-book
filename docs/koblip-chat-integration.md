@@ -1,8 +1,10 @@
 # Koblip Chat integration
 
-Koblip Chat (the Wapi repositories, API at `https://api.koblip.com`) holds a business's official WhatsApp connection. Koblip Book connects to it with the business's own Chat API key and workspace id, the same way Koblip Sales does. Book never holds Meta credentials.
+Koblip Chat (the Wapi repositories, API at `https://api.koblip.com`) holds a business's official WhatsApp connection. Koblip Book connects to it with "Connect with Koblip Chat" (OAuth, step 1 below). Book never holds Meta credentials.
 
-Status: step 1 is being built. Check the code before treating a later step as shipped.
+Status: step 1 is built on both sides, not yet live. Check the code before treating a later step as shipped.
+
+Book's side: `app/api/chat/connect` (opens Chat's consent page), `app/api/chat/callback` (swaps the code), `app/(owner)/connect/chat` (closes the window), `features/dashboard/api/chat-oauth.ts` (tokens, refresh, disconnect), table `chat_connections`. Settings: the `CHAT_*` and `TOKEN_ENCRYPTION_KEY` lines in `.env.example`. Chat's side: `wapi-api` `docs/api/oauth.md`; Book's callback URL must be registered there exactly.
 
 ## Split of work
 

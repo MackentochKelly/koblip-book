@@ -1,15 +1,17 @@
-// The owner's Koblip Chat connection, as the Integrations screen sees it:
-// only the end of the key, never the key (docs/koblip-chat-integration.md).
-export type ChatConnection = { last4: string }
+// The business's Koblip Chat connection, as the Integrations screen sees it:
+// the workspace's name and whether to connect again, never a token
+// (docs/koblip-chat-integration.md).
+export type ChatConnection = { workspaceName: string; needsReconnect: boolean }
 
-export type ConnectChatInput = { apiKey: string; workspaceId: string }
+// How the Chat window ended: the owner allowed, cancelled, or it failed.
+export type ChatConnectResult = "connected" | "denied" | "failed"
 
-export type ConnectChatFailure =
-  | "invalid_key"
-  | "wrong_workspace"
-  | "no_permission"
-  | "unreachable"
+export const CHAT_CONNECT_RESULTS: readonly ChatConnectResult[] = [
+  "connected",
+  "denied",
+  "failed",
+]
 
-export type ConnectChatResult =
-  | { ok: true; connection: ChatConnection }
-  | { ok: false; reason: ConnectChatFailure }
+// The Chat window tells the Integrations page how it ended on this channel
+// (same site only), then closes.
+export const CHAT_CONNECT_CHANNEL = "koblip-chat-connect"
