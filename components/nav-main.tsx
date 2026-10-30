@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 
 export interface NavItem {
   href: string
@@ -22,6 +23,11 @@ export interface NavItem {
 // One group of the menu, as in Koblip Sales' NavMain (shadcn sidebar-07):
 // a title, then its pages. `tooltip` names each one once the menu folds to
 // icons; on a phone the menu closes once a page is picked.
+// The sidebar's icons at 20px (shadcn's stock 16px read light beside the
+// thin icons), with the folded button's padding cut so they still fit it.
+export const NAV_ICON_SIZE =
+  "[&_svg]:size-5 group-data-[collapsible=icon]:p-1.5!"
+
 export function NavMain({ title, items }: { title: string; items: NavItem[] }) {
   const { isMobile, setOpenMobile } = useSidebar()
   return (
@@ -35,7 +41,10 @@ export function NavMain({ title, items }: { title: string; items: NavItem[] }) {
               tooltip={item.label}
               isActive={item.active}
               aria-current={item.active ? "page" : undefined}
-              className="text-sidebar-foreground/65 data-active:text-sidebar-accent-foreground"
+              className={cn(
+                NAV_ICON_SIZE,
+                "text-sidebar-foreground/65 data-active:text-sidebar-accent-foreground"
+              )}
               render={
                 <Link
                   href={item.href}

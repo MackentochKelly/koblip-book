@@ -24,7 +24,7 @@ import { useOwnerMessages } from "../i18n/provider"
 import { NAV_GROUPS } from "../navigation"
 import type { Owner } from "./account-menu"
 import { useCommandMenu } from "./command-menu"
-import { NavMain } from "@/components/nav-main"
+import { NAV_ICON_SIZE, NavMain } from "@/components/nav-main"
 import { NavUser } from "./nav-user"
 
 // The owner area's menu, built like Koblip Sales' AppSidebar (shadcn
@@ -78,6 +78,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton
               variant="outline"
+              className={NAV_ICON_SIZE}
               tooltip={m.search}
               onClick={openSearch}
             >
