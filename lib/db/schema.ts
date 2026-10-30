@@ -457,6 +457,9 @@ export const notificationSends = sqliteTable(
     }).notNull(),
     // Minutes before the visit for a reminder; 0 for the other messages.
     reminderMinutes: integer().notNull().default(0),
+    // The visit time the message is about (the booking's startAt then): a
+    // moved booking gets its own "changed" message and reminders (D5).
+    visitAt: text().notNull(),
     dueAt: text().notNull(),
     // pending → sending → sent | failed; skipped when it must not go.
     state: text({ enum: ["pending", "sending", "sent", "failed", "skipped"] }).notNull(),
@@ -479,7 +482,8 @@ export const notificationSends = sqliteTable(
     uniqueIndex("notification_sends_once").on(
       table.bookingId,
       table.message,
-      table.reminderMinutes
+      table.reminderMinutes,
+      table.visitAt
     ),
     index("notification_sends_due").on(table.state, table.dueAt),
     index("notification_sends_business").on(table.businessId, table.createdAt),

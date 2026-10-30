@@ -81,7 +81,12 @@ async function plan(now: Date) {
       )
 
     const rows: Send[] = fresh.flatMap(({ booking }) => {
-      const base = { businessId, bookingId: booking.id, dueAt: now.toISOString() }
+      const base = {
+        businessId,
+        bookingId: booking.id,
+        visitAt: booking.startAt,
+        dueAt: now.toISOString(),
+      }
       const reachable = booking.whatsappOptIn && booking.customerPhone
       const out: Send[] = [
         {
@@ -125,7 +130,7 @@ async function plan(now: Date) {
 
     // Cancelled since the customer was told of the booking.
     const gone = await db
-      .select({ id: bookings.id })
+      .select({ id: bookings.id, startAt: bookings.startAt })
       .from(bookings)
       .innerJoin(
         confirmed,
@@ -151,9 +156,10 @@ async function plan(now: Date) {
       await db
         .insert(notificationSends)
         .values(
-          gone.map(({ id }) => ({
+          gone.map(({ id, startAt }) => ({
             businessId,
             bookingId: id,
+            visitAt: startAt,
             message: "cancelled" as const,
             dueAt: now.toISOString(),
             state: "pending" as const,
