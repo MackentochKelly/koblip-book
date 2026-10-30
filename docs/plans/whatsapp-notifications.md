@@ -19,7 +19,23 @@ Developers: **Dev A**, **Dev B**. Write your name in the task when you claim it.
   last message a normal message goes (free); outside it, the approved
   template.
 - Every message, reply and failure is visible in Activity.
-- One wording for every kind of business (salon, clinic, gym…): no words that fit only one trade. Meta needs a copy in each business's own WhatsApp account, so each business gets its own copy of the same wording, which its owner may edit.
+- One wording for every kind of business (salon, clinic, gym…): no words that
+  fit only one trade, and the business's name in every message.
+
+## Two ways to send (agreed with the owner, 2026-10-30)
+
+| | Koblip number (default) | The business's own number |
+| --- | --- | --- |
+| When | Every business, from the start, with no setup | After the business connects its own Koblip Chat workspace |
+| Sender | Koblip's own WhatsApp number | The business's number |
+| Templates | Koblip's ready-made set, made and approved once in Koblip's workspace | The business's own copies in its workspace |
+| The business can | See every message, turn each on or off | Also edit wording and buttons, submit to Meta |
+| 24-hour normal messages | Only if the customer wrote to Koblip's number | If the customer wrote to the business's number |
+| Who pays Meta | Koblip | The business's Chat account |
+
+Book connects to Koblip's own Chat workspace once, as the platform (like any
+app, through Chat's public API). Each business's page shows which number it
+sends from.
 
 ## The page
 
@@ -41,6 +57,7 @@ Every screen passes [the UI checklist](../ui-rules/checklist.md).
 | --- | --- | --- |
 | D1 | Delete the 10 templates now waiting at Meta (no buttons, cannot be edited while waiting) and submit new ones after review? Meta blocks a deleted name for about 4 weeks, so the new ones get new names. | `Decision` |
 | D2 | Default for "Can't make it": cancel the booking and free the time, or only alert the owner? | `Decision` |
+| D3 | Koblip number: a monthly message limit per business (Koblip pays Meta), or none? | `Decision` |
 
 ## Tasks
 
@@ -73,6 +90,17 @@ track (Dev B) run side by side without touching the same files.
 | S7 | Opt-out: a customer who writes STOP gets no more messages | `chat-events.ts`, `notification-sender.ts` | S3 | `To do` |
 | S8 | Test send to the owner's phone; "Send again" for a failed message | `notification-actions.ts`, `notification-sender.ts` | S1 | `To do` |
 | S9 | Activity query with filters and search | `features/dashboard/api/notifications.ts` | W0 | `To do` |
+
+### Koblip number (default sender)
+
+| ID | Task | Files | Needs | Status |
+| --- | --- | --- | --- | --- |
+| K1 | Platform connection: Koblip's admin connects Koblip's own Chat workspace once in the admin area; Book keeps it apart from business connections | `app/(admin)/`, `features/admin/`, `lib/db/schema.ts` (+ migration), `features/dashboard/api/chat-oauth.ts` | W0 | `To do` |
+| K2 | Koblip's ready-made templates: the admin reviews them, then submits them to Meta in Koblip's workspace; status shown in the admin area | `features/admin/`, `features/dashboard/api/chat-templates.ts` | K1, S1 | `To do` |
+| K3 | Sender picks the number: the business's own when connected and approved, else Koblip's; replies from Koblip's number are matched to the right business by the message they answer | `notification-sender.ts`, `chat-events.ts` | K1, S3 | `To do` |
+| K4 | Business page: "Sending from Koblip" or "Sending from your number"; on Koblip's number the messages are read-only with on/off, plus "Use your own number" | `whatsapp-*.tsx`, `message-editor.tsx` | P1, K3 | `To do` |
+| K5 | Booking forms ask for WhatsApp consent whenever either number can send | `lib/whatsapp-offer.ts` | K3 | `To do` |
+| K6 | Limit and count of Koblip-number messages per business (after D3), shown in Activity and the admin area | `lib/notification-rules.ts`, `notification-sender.ts`, `features/admin/` | K3, D3 | `To do` |
 
 ### Book page
 
