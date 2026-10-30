@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { eq } from "drizzle-orm"
+import { and, eq, inArray } from "drizzle-orm"
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from "vitest"
 import { db } from "@/lib/db"
 import {
@@ -122,7 +122,7 @@ beforeEach(async () => {
     createdAt: "2026-01-01T00:00:00.000Z",
   })
   await db.insert(chatTemplates).values(
-    (["confirmed", "reminder", "cancelled", "ownerNewBooking"] as const).flatMap((message) =>
+    (["confirmed", "reminder", "changed", "cancelled", "ownerNewBooking"] as const).flatMap((message) =>
       (["en", "es"] as const).map((language) => ({
         businessId: "biz",
         message,
@@ -235,6 +235,96 @@ test("a cancelled booking: its reminders stop and the customer is told", async (
     ["reminder", 30, "skipped", "cancelled"],
   ])
   expect(sent.map((body) => body.template_id)).toEqual(["t-confirmed-es", "t-cancelled-es"])
+})
+
+// What the owner's "Move booking" does (features/booking/api/move-owner-booking.ts).
+async function move(id: string, startAt: string) {
+  const [row] = await db.select().from(bookings).where(eq(bookings.id, id))
+  await db
+    .update(bookings)
+    .set({ startAt, endAt: new Date(Date.parse(startAt) + 30 * 60_000).toISOString(), moves: row.moves + 1 })
+    .where(eq(bookings.id, id))
+  const waiting = and(eq(notificationSends.bookingId, id), eq(notificationSends.state, "pending"))
+  await db
+    .update(notificationSends)
+    .set({ state: "skipped", reason: "moved" })
+    .where(and(waiting, inArray(notificationSends.message, ["reminder", "changed"])))
+  // A confirmation still waiting goes with the new time.
+  await db
+    .update(notificationSends)
+    .set({ moves: row.moves + 1 })
+    .where(and(waiting, eq(notificationSends.message, "confirmed")))
+}
+
+async function sendsByMove(bookingId: string) {
+  const rows = await db.select().from(notificationSends).where(eq(notificationSends.bookingId, bookingId))
+  return rows
+    .filter((row) => row.message === "changed" || row.message === "reminder")
+    .map((row) => [row.moves, row.message, row.reminderMinutes, row.state, row.reason ?? row.via])
+    .sort((a, b) => String(a).localeCompare(String(b)))
+}
+
+test("a moved booking: the customer is told the new time and reminders follow it", async () => {
+  await book("b1")
+  await runNotifications(NOW)
+  // Thursday 15:00 in Santo Domingo.
+  await move("b1", "2026-11-05T19:00:00.000Z")
+  await runNotifications(later(5))
+  await runNotifications(later(6))
+
+  expect(await sendsByMove("b1")).toEqual([
+    [0, "reminder", 1440, "skipped", "moved"],
+    [0, "reminder", 30, "skipped", "moved"],
+    [1, "changed", 0, "sent", "template"],
+    [1, "reminder", 1440, "pending", null],
+    [1, "reminder", 30, "pending", null],
+  ])
+  expect(sent.map((body) => body.template_id)).toEqual(["t-confirmed-es", "t-changed-es"])
+  const reminder = (await db.select().from(notificationSends)).find(
+    (row) => row.moves === 1 && row.reminderMinutes === 1440
+  )
+  expect(reminder?.dueAt).toBe("2026-11-04T19:00:00.000Z")
+})
+
+test("moved there and back again: each move tells the customer once", async () => {
+  await book("b1")
+  await runNotifications(NOW)
+  await move("b1", "2026-11-05T19:00:00.000Z")
+  await runNotifications(later(5))
+  await move("b1", "2026-11-04T19:00:00.000Z")
+  await runNotifications(later(10))
+  await runNotifications(later(11))
+
+  expect(sent.map((body) => body.template_id)).toEqual(["t-confirmed-es", "t-changed-es", "t-changed-es"])
+  const changed = (await sendsByMove("b1")).filter(([, message]) => message === "changed")
+  expect(changed).toEqual([
+    [1, "changed", 0, "sent", "template"],
+    [2, "changed", 0, "sent", "template"],
+  ])
+})
+
+test("moved before the customer heard of it: no change message, the reminders still follow", async () => {
+  sendFails = true
+  await book("b1")
+  await runNotifications(NOW)
+  sendFails = false
+  await move("b1", "2026-11-05T19:00:00.000Z")
+  await runNotifications(later(5))
+
+  const rows = await sendsByMove("b1")
+  expect(rows).toContainEqual([1, "changed", 0, "skipped", "notTold"])
+  expect(rows.filter(([moves, message, , state]) => moves === 1 && message === "reminder" && state === "pending")).not.toHaveLength(0)
+  expect(sent.filter((body) => body.template_id === "t-changed-es")).toHaveLength(0)
+})
+
+test("moved while the confirmation was still waiting: it goes with the new time, no change message", async () => {
+  await book("b1")
+  await move("b1", "2026-11-05T19:00:00.000Z")
+  await runNotifications(NOW)
+  await runNotifications(later(1))
+
+  expect(sent.map((body) => body.template_id)).toEqual(["t-confirmed-es"])
+  expect(await sendsByMove("b1")).toContainEqual([1, "changed", 0, "skipped", "notTold"])
 })
 
 test("a failed send is never tried again; turned-off and opted-out messages do not go", async () => {

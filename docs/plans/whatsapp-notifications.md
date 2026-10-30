@@ -142,6 +142,7 @@ bottom: what, why, who, date.
 | D9 | C2: Chat's send API takes `buttonHeader` and `buttonFooter` (text, up to 60 characters each) next to `buttonParams` on an `interactive` / `button` message. An image header replaces the text title (WhatsApp allows one header). Both are saved on the message's `interactive_data`. | Named like `buttonParams`, so the request stays flat and any app can use it; the same limits Meta documents. | Dev 1, 2026-10-30 |
 | D10 | Each part of the business page is its own route under `whatsapp/` (`messages`, `alerts`, `timing`, `replies`, `activity`); Overview is `whatsapp/` itself. On a phone `whatsapp/` shows Overview with the list of the other parts under it; on a computer, tabs. One shared frame (`whatsapp-frame.tsx`, from the route's `layout.tsx`). | Every part gets its own link, Back works on a phone, and each P task owns one route and one component file. | Dev 4, 2026-10-30 |
 | D11 | K1: Koblip's own Chat connection is its own one-row table, `koblip_chat_connection` (id `koblip`), never a business's `chat_connections` row. It uses the same OAuth flow and callback (the sealed attempt says which account), started at `/api/chat/connect/koblip` by an admin only. Code calls `koblipChatApi(path)` next to `chatApi(businessId, path)`. Until A3 builds the Koblip number screen, Connect / Disconnect sits on the admin Overview as a card that A3 can move. The Chat window's shared types moved to `types/chat-connect.ts`, so the admin feature uses them without importing the dashboard feature. | No business can reach Koblip's tokens, one flow to keep secure, and the import rules hold. | Dev 1, 2026-10-30 |
+| D12 | After a move (D5), `plan()` makes one "changed" row at the booking's current `moves`; it is also the mark that the move was planned. It goes when a confirmation was sent before this move (`confirmed.moves < bookings.moves`); else it is skipped as `notTold`, since the confirmation, if still waiting, carries the new time. Reminders are planned again for the new time from the moment of the move, when the customer agreed and has a phone. Skipped rows show the reasons `moved` and `notTold` on Activity. | One row per move keeps "once" true for A→B→A; telling a customer of a change to a booking they never heard of would confuse them. | Dev 2, 2026-10-30 |
 
 ## Tasks
 
@@ -216,7 +217,7 @@ task is in Lanes above.
 
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
-| B1 | "Move booking" for the owner, which sends Booking changed | `features/dashboard/components/booking-*`, `features/dashboard/api/booking-actions.ts` | — | `Blocked`: the owner's move is done (Dev 3, 2026-10-30, see git log); sending "Booking changed" waits on Dev 2's `plan()` step (D5) |
+| B1 | "Move booking" for the owner, which sends Booking changed | `features/dashboard/components/booking-*`, `features/dashboard/api/booking-actions.ts` | — | `Done` 2026-10-30, see git log (move by Dev 3, sending by Dev 2, D5 and D12) |
 | F1 | Docs updated, live end-to-end test on a real number (book, reminder, tap each button, 24-hour normal message) | `docs/koblip-chat-integration.md` | all | `To do` |
 
 ## Done before this plan
