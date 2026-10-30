@@ -8,7 +8,6 @@ import {
   notificationSettings,
   notificationTexts,
 } from "@/lib/db/schema"
-import { NOTIFICATION_RULES } from "@/lib/notification-rules"
 import { notificationRules } from "@/lib/platform-settings"
 import { whatsappActivity } from "@/lib/whatsapp-activity"
 import type {
