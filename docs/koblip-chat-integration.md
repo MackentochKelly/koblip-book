@@ -96,7 +96,7 @@ Counted from when the customer booked to when the visit starts:
 ### The 24-hour rule (Meta, verified)
 
 - A customer's message opens a 24-hour window; another message resets it. Inside it any message may be sent; outside it only an approved template ([Meta: send messages](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages)).
-- Inside the window we send a reply-buttons message with the same header, body and footer as the template, so both look the same. Text header, body up to 1024, footer up to 60, up to 3 buttons of 20 ([Meta: reply buttons](https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-reply-buttons-messages)).
+- Inside the window we send plain text with the template's words (bold title, text, footer), so both look the same, as Koblip Sales does.
 - Only people who agreed to WhatsApp messages may be messaged (same Meta page).
 
 ### Chat today (verified in `wapi-api`)
