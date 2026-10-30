@@ -249,3 +249,27 @@ export async function pushChatWording(
       )
     )
 }
+
+// The message as Book sends it: the owner's wording or Book's, and Chat's
+// template for it when Meta approved it (else null: only plain text can go).
+export async function sendableTemplate(
+  businessId: string,
+  message: BookingMessage,
+  language: TemplateLanguage
+) {
+  const template = (await businessTemplates(businessId)).find(
+    (item) => item.message === message && item.language === language
+  )!
+  const [row] = await db
+    .select({ chatTemplateId: chatTemplates.chatTemplateId, status: chatTemplates.status })
+    .from(chatTemplates)
+    .where(
+      and(
+        eq(chatTemplates.businessId, businessId),
+        eq(chatTemplates.message, message),
+        eq(chatTemplates.language, language)
+      )
+    )
+    .limit(1)
+  return { template, chatTemplateId: row?.status === "approved" ? row.chatTemplateId : null }
+}

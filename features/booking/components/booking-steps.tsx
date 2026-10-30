@@ -477,23 +477,27 @@ export function DetailsStep({
   formId,
   sending,
   error,
+  whatsapp,
   onSubmit,
 }: {
   formId: string
   sending: boolean
   error: DetailsError
-  onSubmit: (details: { name: string; phone: string }) => void
+  // The business sends WhatsApp booking messages: ask, unticked (Meta opt-in).
+  whatsapp: boolean
+  onSubmit: (details: { name: string; phone: string; whatsappOptIn: boolean }) => void
 }) {
   const m = useMessages()
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false)
   return (
     <form
       id={formId}
       noValidate
       onSubmit={(event) => {
         event.preventDefault()
-        onSubmit({ name: name.trim(), phone: phone.trim() })
+        onSubmit({ name: name.trim(), phone: phone.trim(), whatsappOptIn: whatsapp && whatsappOptIn })
       }}
     >
       <FieldGroup>
@@ -525,6 +529,19 @@ export function DetailsStep({
           />
           {error === "phone" && <FieldError>{m.booking.checkPhone}</FieldError>}
         </Field>
+        {whatsapp && (
+          <Field orientation="horizontal">
+            <Checkbox
+              id="booking-whatsapp"
+              checked={whatsappOptIn}
+              disabled={sending}
+              onCheckedChange={(on) => setWhatsappOptIn(on === true)}
+            />
+            <FieldLabel htmlFor="booking-whatsapp" className="font-normal">
+              {m.booking.whatsappOptIn}
+            </FieldLabel>
+          </Field>
+        )}
       </FieldGroup>
     </form>
   )

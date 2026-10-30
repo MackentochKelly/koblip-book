@@ -245,6 +245,10 @@ export const bookings = sqliteTable(
     source: text().notNull().default("online"),
     note: text(),
     status: text().notNull().default("confirmed"),
+    // The customer agreed to booking messages on WhatsApp (Meta requires
+    // opt-in), and the language they booked in.
+    whatsappOptIn: integer({ mode: "boolean" }).notNull().default(false),
+    language: text({ enum: ["en", "es"] }),
     ...timestamps(),
   },
   (table) => [
@@ -397,6 +401,8 @@ export const notificationSettings = sqliteTable("notification_settings", {
     .references(() => businesses.id, { onDelete: "cascade" }),
   // Where the owner's "New booking" alert goes (E.164), or none.
   ownerPhone: text(),
+  // The language the owner's alert goes in: the one they use Book in.
+  ownerLanguage: text({ enum: ["en", "es"] }).notNull().default("en"),
   // Minutes before the visit, longest first.
   reminders: text({ mode: "json" }).$type<number[]>().notNull(),
   quietStart: text().notNull(),
@@ -427,6 +433,48 @@ export const notificationTexts = sqliteTable(
     ...timestamps(),
   },
   (table) => [primaryKey({ columns: [table.businessId, table.message, table.language] })]
+)
+
+// Every WhatsApp booking message Book plans for a booking, and what became of
+// it: one row per booking, message and reminder time, so nothing goes twice.
+export const notificationSends = sqliteTable(
+  "notification_sends",
+  {
+    id: id(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    bookingId: text()
+      .notNull()
+      .references(() => bookings.id, { onDelete: "cascade" }),
+    message: text({
+      enum: ["confirmed", "reminder", "changed", "cancelled", "ownerNewBooking"],
+    }).notNull(),
+    // Minutes before the visit for a reminder; 0 for the other messages.
+    reminderMinutes: integer().notNull().default(0),
+    dueAt: text().notNull(),
+    // pending → sending → sent | failed; skipped when it must not go.
+    state: text({ enum: ["pending", "sending", "sent", "failed", "skipped"] }).notNull(),
+    // Why it was skipped or failed (a short code).
+    reason: text(),
+    // How it went: plain text inside the 24-hour window, else the template.
+    via: text({ enum: ["text", "template"] }),
+    // Chat's record id, and WhatsApp's delivery status from Chat's events.
+    chatRecordId: text(),
+    delivery: text(),
+    sentAt: text(),
+    ...timestamps(),
+  },
+  (table) => [
+    uniqueIndex("notification_sends_once").on(
+      table.bookingId,
+      table.message,
+      table.reminderMinutes
+    ),
+    index("notification_sends_due").on(table.state, table.dueAt),
+    index("notification_sends_business").on(table.businessId, table.createdAt),
+    index("notification_sends_record").on(table.chatRecordId),
+  ]
 )
 
 // When each customer last wrote to a WhatsApp number of a connected Chat

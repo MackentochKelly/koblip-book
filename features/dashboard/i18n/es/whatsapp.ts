@@ -71,6 +71,30 @@ const whatsapp: typeof en = {
   saveSettings: "Guardar",
   settingsSaved: "Guardado.",
   failed: "No se pudo guardar. Inténtalo de nuevo.",
+  history: "Historial",
+  noHistory: "Aún no hay mensajes",
+  states: {
+    pending: "Programado",
+    sending: "Enviando",
+    sent: "Enviado",
+    delivered: "Entregado",
+    read: "Leído",
+    failed: "Falló",
+    skipped: "No enviado",
+  } as Record<string, string>,
+  reasons: {
+    noOptIn: "El cliente no aceptó",
+    noPhone: "Sin teléfono",
+    noOwnerPhone: "Añade tu WhatsApp",
+    turnedOff: "Mensaje apagado",
+    cancelled: "Reserva cancelada",
+    late: "Demasiado tarde",
+    unsubscribed: "El cliente se dio de baja",
+    templateNotApproved: "Esperando a Meta",
+    badPhone: "Número incorrecto",
+    interrupted: "Se detuvo",
+    other: "Error de Koblip Chat",
+  } as Record<string, string>,
 }
 
 export default whatsapp

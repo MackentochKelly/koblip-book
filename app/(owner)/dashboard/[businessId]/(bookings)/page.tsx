@@ -13,6 +13,7 @@ import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import { LiveRefresh } from "@/components/live-refresh"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { addDaysTo, todayIn } from "@/lib/format-booking-time"
+import { offersWhatsapp } from "@/lib/whatsapp-offer"
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getOwnerMessages()).shell.nav.bookings }
@@ -24,7 +25,7 @@ type Props = {
 
 export default async function BookingsPage({ params }: Props) {
   const { businessId } = await params
-  const [upcoming, past, counts, owner, serviceTeams, addonGroups] =
+  const [upcoming, past, counts, owner, serviceTeams, addonGroups, whatsapp] =
     await Promise.all([
       getBookings(businessId, "upcoming"),
       getBookings(businessId, "past"),
@@ -32,6 +33,7 @@ export default async function BookingsPage({ params }: Props) {
       getOwnerBusiness(businessId),
       getServiceTeams(businessId),
       getAddonGroups(businessId),
+      offersWhatsapp(businessId),
     ])
   const { business } = owner
   // Confirmed bookings per day, today and the 13 days after it.
@@ -65,6 +67,7 @@ export default async function BookingsPage({ params }: Props) {
           serviceTeams,
           addonGroups,
           today,
+          whatsapp,
         }}
         createBooking={createOwnerBooking}
       />

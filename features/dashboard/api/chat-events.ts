@@ -3,12 +3,13 @@ import { createHmac, timingSafeEqual } from "node:crypto"
 import { and, eq, sql } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { chatConnections, chatReplies } from "@/lib/db/schema"
+import { chatConnections, chatReplies, notificationSends } from "@/lib/db/schema"
 
 // Koblip Chat's signed app events: customer replies, sent messages and
 // delivery status for each connected workspace (wapi-api docs/api/oauth.md,
 // "App events"). Book keeps when each customer last wrote, for Meta's
-// 24-hour window (docs/koblip-chat-integration.md, step 2).
+// 24-hour window (docs/koblip-chat-integration.md, step 2), and WhatsApp's
+// delivery status of the messages Book sent (step 3).
 
 // Chat's freshness window for the signed timestamp.
 const MAX_SKEW_SECONDS = 300
@@ -56,11 +57,51 @@ function inbound(event: unknown): InboundEvent | null {
   return value as InboundEvent
 }
 
-// Applies one verified event. Only customer replies are kept; the rest are
-// acknowledged. Delivery is at least once and may arrive out of order: the
-// reply time only ever moves forward, so a repeated or late event changes
-// nothing, which is the deduplication Chat asks receivers for.
+type StatusEvent = { type: "status"; workspaceId: string; recordId: string; status: string }
+
+function status(event: unknown): StatusEvent | null {
+  if (!event || typeof event !== "object") return null
+  const value = event as Record<string, unknown>
+  if (value.type !== "status") return null
+  for (const key of ["workspaceId", "recordId", "status"]) {
+    if (typeof value[key] !== "string" || !value[key]) return null
+  }
+  return value as StatusEvent
+}
+
+// WhatsApp's statuses in the order they happen; failed is final.
+const DELIVERY_ORDER = ["sent", "delivered", "read", "failed"]
+
+// A message Book sent moves to its newer delivery status, never back.
+async function applyStatus(event: StatusEvent) {
+  const rank = DELIVERY_ORDER.indexOf(event.status)
+  if (rank < 0) return
+  const [send] = await db
+    .select({ id: notificationSends.id, delivery: notificationSends.delivery })
+    .from(notificationSends)
+    .innerJoin(chatConnections, eq(chatConnections.businessId, notificationSends.businessId))
+    .where(
+      and(
+        eq(notificationSends.chatRecordId, event.recordId),
+        eq(chatConnections.workspaceId, event.workspaceId)
+      )
+    )
+    .limit(1)
+  if (!send || DELIVERY_ORDER.indexOf(send.delivery ?? "") >= rank) return
+  await db
+    .update(notificationSends)
+    .set({ delivery: event.status })
+    .where(eq(notificationSends.id, send.id))
+}
+
+// Applies one verified event: customer replies and the delivery status of
+// Book's messages; the rest are acknowledged. Delivery is at least once and
+// may arrive out of order: the reply time and the delivery status only ever
+// move forward, so a repeated or late event changes nothing, which is the
+// deduplication Chat asks receivers for.
 export async function applyChatEvent(event: unknown) {
+  const delivery = status(event)
+  if (delivery) return applyStatus(delivery)
   const reply = inbound(event)
   if (!reply) return
   const at = new Date(reply.occurredAt)

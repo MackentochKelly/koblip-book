@@ -9,6 +9,7 @@ import { toBookingPage } from "@/features/booking/components/booking-page"
 import { isBookable } from "@/features/booking/utils/is-bookable"
 import { messagesFor } from "@/lib/i18n"
 import { pickLanguage } from "@/lib/page-language"
+import { offersWhatsapp } from "@/lib/whatsapp-offer"
 
 type Props = PageProps<"/b/[slug]/book">
 
@@ -41,6 +42,7 @@ export default async function BookPage({ params, searchParams }: Props) {
   if (!data) {
     notFound()
   }
+  const whatsapp = await offersWhatsapp(data.business.id)
   const bookable = isBookable({
     status: data.business.status,
     servicesCount: data.services.length,
@@ -52,7 +54,7 @@ export default async function BookPage({ params, searchParams }: Props) {
   return (
     <LanguageProvider language={language}>
       <div lang={language}>
-        <BookingFlow page={toBookingPage(data)} mode="page" />
+        <BookingFlow page={toBookingPage({ ...data, whatsapp })} mode="page" />
       </div>
       <Toaster />
     </LanguageProvider>

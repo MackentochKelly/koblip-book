@@ -9,6 +9,8 @@ export interface OwnerBookingInput {
   phone: string | null
   note: string | null
   allowConflict: boolean // true = the owner said "Book anyway"
+  whatsappOptIn?: boolean // the customer agreed to WhatsApp booking messages
+  language?: "en" | "es" // the language their messages go in
 }
 export type OwnerBookingResult =
   | { status: "booked"; bookingId: string }

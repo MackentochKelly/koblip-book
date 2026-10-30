@@ -223,3 +223,22 @@ export function withExamples(text: string, language: TemplateLanguage) {
     key in EXAMPLES[language] ? EXAMPLES[language][key as BookingField] : whole
   )
 }
+
+// A message's text with the booking's own values.
+export function withValues(text: string, values: Record<BookingField, string>) {
+  return text.replace(FIELD, (whole, key: string) =>
+    key in values ? values[key as BookingField] : whole
+  )
+}
+
+// The message as plain WhatsApp text, for inside the 24-hour window: the
+// title in bold and the footer in italics, as the template shows them.
+export function plainMessage(template: BookingTemplate, values: Record<BookingField, string>) {
+  return [
+    template.header && `*${withValues(template.header, values)}*`,
+    withValues(template.body, values),
+    template.footer && `_${template.footer}_`,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+}

@@ -45,6 +45,8 @@ export interface BookingPage {
   // serviceId → the members who do it; missing = everyone.
   serviceTeams: Record<string, string[]>
   addonGroups: BookingAddonGroup[]
+  // Whether the business sends WhatsApp booking messages (consent asked).
+  whatsapp: boolean
 }
 
 export interface BookingSlot {
@@ -111,6 +113,7 @@ export function toBookingPage(data: {
   team: TeamMemberRow[]
   serviceTeams: Record<string, string[]>
   addonGroups: BookingAddonGroup[]
+  whatsapp: boolean
 }): BookingPage {
   return {
     slug: data.business.slug,
@@ -130,5 +133,6 @@ export function toBookingPage(data: {
     team: data.team.map(({ id, name, photoUrl }) => ({ id, name, photoUrl })),
     serviceTeams: data.serviceTeams,
     addonGroups: data.addonGroups,
+    whatsapp: data.whatsapp,
   }
 }

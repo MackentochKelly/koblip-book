@@ -54,6 +54,7 @@ import { useOwnerMessages } from "../i18n/provider"
 import type { ChatConnection } from "../types/chat-connection"
 import type {
   NotificationMessage,
+  NotificationSend,
   NotificationSettings,
   TemplateReview,
 } from "../types/notifications"
@@ -61,17 +62,22 @@ import { MessageEditor } from "./message-editor"
 
 // The WhatsApp page: the booking notifications a business sends through
 // Koblip Chat. Each message has a switch and opens to edit its wording;
-// below, the reminder times, quiet hours and the owner's own number.
+// below, the reminder times, quiet hours, the owner's own number and the
+// history of what was sent.
 export function WhatsappView({
   businessId,
   connection,
   settings,
   messages,
+  history,
+  timeZone,
 }: {
   businessId: string
   connection: ChatConnection | null
   settings: NotificationSettings
   messages: NotificationMessage[]
+  history: NotificationSend[]
+  timeZone: string
 }) {
   const m = useOwnerMessages()
   const t = m.whatsapp
@@ -149,6 +155,8 @@ export function WhatsappView({
       </PageSection>
 
       <SettingsForm businessId={businessId} settings={settings} />
+
+      <History history={history} timeZone={timeZone} />
 
       <MessageEditor
         key={editorKey}
@@ -269,6 +277,8 @@ function SettingsForm({
     startTransition(async () => {
       const result = await saveNotificationSettings(businessId, {
         ownerPhone: phone.trim() || null,
+        // The owner's alert goes in the language they use Book in.
+        ownerLanguage: m.locale.startsWith("es") ? "es" : "en",
         reminders,
         quietStart,
         quietEnd,
@@ -397,5 +407,54 @@ function SettingsForm({
         {t.saveSettings}
       </Button>
     </>
+  )
+}
+
+// The latest messages: who, when, and whether they went.
+function History({ history, timeZone }: { history: NotificationSend[]; timeZone: string }) {
+  const m = useOwnerMessages()
+  const t = m.whatsapp
+  const when = new Intl.DateTimeFormat(m.locale, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone,
+  })
+
+  return (
+    <PageSection id="history" title={t.history}>
+      {history.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t.noHistory}</p>
+      ) : (
+        <ItemGroup className="gap-2">
+          {history.map((send) => {
+            const shown = send.state === "sent" && send.delivery ? send.delivery : send.state
+            const reason = send.reason && (t.reasons[send.reason] ?? t.reasons.other)
+            return (
+              <Item key={send.id} variant="outline" size="sm">
+                <ItemContent className="min-w-0">
+                  <ItemTitle>{t.names[send.message]}</ItemTitle>
+                  <ItemDescription>
+                    {[send.customerName, when.format(new Date(send.at)), reason]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Badge
+                    variant={
+                      shown === "failed" ? "destructive" : shown === "skipped" || shown === "pending" ? "outline" : "secondary"
+                    }
+                  >
+                    {t.states[shown] ?? shown}
+                  </Badge>
+                </ItemActions>
+              </Item>
+            )
+          })}
+        </ItemGroup>
+      )}
+    </PageSection>
   )
 }

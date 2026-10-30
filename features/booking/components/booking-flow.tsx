@@ -191,7 +191,7 @@ export function BookingFlow({
     if (canContinue && index < steps.length - 1) go(steps[index + 1])
   }
 
-  const submit = async (details: { name: string; phone: string }) => {
+  const submit = async (details: { name: string; phone: string; whatsappOptIn: boolean }) => {
     if (sending || !service || !slot) return
     if (!details.name) {
       setDetailsError("name")
@@ -212,6 +212,8 @@ export function BookingFlow({
       time: slot.time,
       name: details.name,
       phone: details.phone,
+      whatsappOptIn: details.whatsappOptIn,
+      language: m.locale.startsWith("es") ? "es" : "en",
     }).catch(() => ({ status: "failed" as const }))
     setSending(false)
     if (result.status === "booked") {
@@ -327,6 +329,7 @@ export function BookingFlow({
             formId={DETAILS_FORM}
             sending={sending}
             error={detailsError}
+            whatsapp={page.whatsapp}
             onSubmit={(details) => void submit(details)}
           />
         </>

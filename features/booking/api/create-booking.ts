@@ -198,6 +198,8 @@ export async function createBooking(
           customerName: name,
           customerPhone: phone,
           customerKey: customerKey(phone, name),
+          whatsappOptIn: input.whatsappOptIn === true,
+          language: input.language === "es" ? "es" : "en",
         }),
         ...(addonCheck.options.length > 0
           ? [

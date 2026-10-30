@@ -248,6 +248,8 @@ export async function createOwnerBooking(
           source: "owner",
           status: "confirmed",
           note,
+          whatsappOptIn: !!phone && input.whatsappOptIn === true,
+          language: input.language === "es" ? "es" : "en",
         }),
         ...(addonCheck.options.length > 0
           ? [

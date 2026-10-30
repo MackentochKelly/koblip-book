@@ -26,6 +26,7 @@ const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
 async function saveSettings(businessId: string, next: NotificationSettings) {
   const row = {
     ownerPhone: next.ownerPhone,
+    ownerLanguage: next.ownerLanguage,
     reminders: next.reminders,
     quietStart: next.quietStart,
     quietEnd: next.quietEnd,
@@ -60,7 +61,10 @@ export async function setMessageOn(
 // Reminders, quiet hours and the owner's number, saved together.
 export async function saveNotificationSettings(
   businessId: string,
-  input: Pick<NotificationSettings, "ownerPhone" | "reminders" | "quietStart" | "quietEnd">
+  input: Pick<
+    NotificationSettings,
+    "ownerPhone" | "ownerLanguage" | "reminders" | "quietStart" | "quietEnd"
+  >
 ): Promise<ActionResult> {
   const owned = await ownedBusiness(businessId)
   if (!owned) return { ok: false, error: "not_found" }
@@ -80,6 +84,7 @@ export async function saveNotificationSettings(
   await saveSettings(owned.business.id, {
     ...current,
     ownerPhone: phone || null,
+    ownerLanguage: input.ownerLanguage === "es" ? "es" : "en",
     reminders: reminders.sort((a, b) => b - a),
     quietStart: input.quietStart,
     quietEnd: input.quietEnd,

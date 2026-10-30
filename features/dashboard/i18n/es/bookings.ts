@@ -73,6 +73,7 @@ const bookings: typeof en = {
     addName: "Escribe un nombre",
     phone: "Teléfono",
     checkPhone: "Revisa el número de teléfono",
+    whatsappOptIn: "El cliente aceptó mensajes por WhatsApp",
     note: "Nota",
     optional: "Opcional",
   },

@@ -65,6 +65,8 @@ export interface AddBookingOptions {
     options: { id: string; name: string }[]
   }[]
   today: string
+  // The business sends WhatsApp booking messages: ask whether the customer agreed.
+  whatsapp: boolean
 }
 
 // A booking the owner adds: a walk-in or a phone call. Times outside the
@@ -192,6 +194,7 @@ function BookingForm({
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [note, setNote] = useState("")
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false)
   const [addonIds, setAddonIds] = useState<string[]>([])
   const groups = options.addonGroups.filter((group) =>
     group.serviceIds.includes(serviceId)
@@ -235,6 +238,8 @@ function BookingForm({
           phone: phone.trim() || null,
           note: note.trim() || null,
           allowConflict: false,
+          whatsappOptIn: options.whatsapp && !!phone.trim() && whatsappOptIn,
+          language: locale.startsWith("es") ? "es" : "en",
         })
       }}
     >
@@ -391,6 +396,18 @@ function BookingForm({
             <FieldError>{t.checkPhone}</FieldError>
           )}
         </Field>
+        {options.whatsapp && phone.trim() && (
+          <Field orientation="horizontal">
+            <Checkbox
+              id="add-whatsapp"
+              checked={whatsappOptIn}
+              onCheckedChange={(on) => setWhatsappOptIn(on === true)}
+            />
+            <FieldLabel htmlFor="add-whatsapp" className="font-normal">
+              {t.whatsappOptIn}
+            </FieldLabel>
+          </Field>
+        )}
         <Field data-invalid={error("note")}>
           <FieldLabel htmlFor="add-note">{t.note}</FieldLabel>
           <Textarea

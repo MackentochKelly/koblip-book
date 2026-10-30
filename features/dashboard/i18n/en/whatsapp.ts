@@ -70,6 +70,31 @@ const whatsapp = {
   saveSettings: "Save",
   settingsSaved: "Saved.",
   failed: "Couldn't save. Try again.",
+  history: "History",
+  noHistory: "No messages yet",
+  states: {
+    pending: "Scheduled",
+    sending: "Sending",
+    sent: "Sent",
+    delivered: "Delivered",
+    read: "Read",
+    failed: "Failed",
+    skipped: "Not sent",
+  } as Record<string, string>,
+  // Why a message was not sent; anything else reads as `other`.
+  reasons: {
+    noOptIn: "Customer didn't agree",
+    noPhone: "No phone number",
+    noOwnerPhone: "Add your WhatsApp",
+    turnedOff: "Message turned off",
+    cancelled: "Booking cancelled",
+    late: "Too late",
+    unsubscribed: "Customer opted out",
+    templateNotApproved: "Waiting for Meta",
+    badPhone: "Wrong number",
+    interrupted: "Stopped midway",
+    other: "Koblip Chat error",
+  } as Record<string, string>,
 }
 
 export default whatsapp

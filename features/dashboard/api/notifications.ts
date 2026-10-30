@@ -1,11 +1,18 @@
 import "server-only"
-import { eq } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { chatTemplates, notificationSettings, notificationTexts } from "@/lib/db/schema"
+import {
+  bookings,
+  chatTemplates,
+  notificationSends,
+  notificationSettings,
+  notificationTexts,
+} from "@/lib/db/schema"
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
 import type {
   NotificationMessage,
+  NotificationSend,
   NotificationSettings,
   TemplateReview,
 } from "../types/notifications"
@@ -24,6 +31,7 @@ export async function notificationSettingsFor(businessId: string): Promise<Notif
     .limit(1)
   return {
     ownerPhone: row?.ownerPhone ?? null,
+    ownerLanguage: row?.ownerLanguage ?? "en",
     reminders: row?.reminders ?? [...NOTIFICATION_RULES.defaultReminders],
     quietStart: row?.quietStart ?? NOTIFICATION_RULES.defaultQuietStart,
     quietEnd: row?.quietEnd ?? NOTIFICATION_RULES.defaultQuietEnd,
@@ -66,4 +74,26 @@ export async function notificationMessagesFor(businessId: string): Promise<Notif
       })
     ) as NotificationMessage["texts"],
   }))
+}
+
+// The latest messages, newest first: what is waiting, sent, or was not sent
+// and why.
+export async function notificationHistoryFor(businessId: string): Promise<NotificationSend[]> {
+  const rows = await db
+    .select({
+      id: notificationSends.id,
+      message: notificationSends.message,
+      customerName: bookings.customerName,
+      dueAt: notificationSends.dueAt,
+      sentAt: notificationSends.sentAt,
+      state: notificationSends.state,
+      reason: notificationSends.reason,
+      delivery: notificationSends.delivery,
+    })
+    .from(notificationSends)
+    .innerJoin(bookings, eq(bookings.id, notificationSends.bookingId))
+    .where(eq(notificationSends.businessId, businessId))
+    .orderBy(desc(notificationSends.dueAt))
+    .limit(NOTIFICATION_RULES.historySize)
+  return rows.map(({ dueAt, sentAt, ...row }) => ({ ...row, at: sentAt ?? dueAt }))
 }

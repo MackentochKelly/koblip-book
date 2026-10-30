@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { LanguageProvider } from "@/components/language-provider"
 import { messagesFor } from "@/lib/i18n"
 import { pickLanguage } from "@/lib/page-language"
+import { offersWhatsapp } from "@/lib/whatsapp-offer"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { BottomBar } from "@/components/bottom-bar"
 import { Toaster } from "@/components/ui/sonner"
@@ -80,6 +81,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
   const { business, hours, services, team, photos, reviews, amenities } = data
   // No hours saved: say nothing rather than "Closed now".
   const open = hours.length > 0 ? isOpenNow(hours, business.timezone) : null
+  const whatsapp = await offersWhatsapp(data.business.id)
   const bookable = isBookable({
     status: business.status,
     servicesCount: services.length,
@@ -259,7 +261,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
           />
         </BottomBar>
       )}
-      {bookable && <BookingFlow page={toBookingPage(data)} mode="drawer" />}
+      {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp })} mode="drawer" />}
       <Toaster />
     </LanguageProvider>
   )

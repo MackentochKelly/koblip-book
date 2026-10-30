@@ -61,7 +61,7 @@ The owner taps Connect in Koblip Book. A Koblip Chat window opens, they log in, 
 
 ### WhatsApp page (built)
 
-`/dashboard/[businessId]/whatsapp`: each message with an on/off switch and an editor (English and Spanish, field buttons, preview; saving sends it to Meta again through `PUT /api/template/:id`, Reset brings back Book's wording); reminder times (up to 3), quiet hours and the owner's WhatsApp number. Defaults live in `lib/notification-rules.ts`. History of sent messages comes with sending.
+`/dashboard/[businessId]/whatsapp`: each message with an on/off switch and an editor (English and Spanish, field buttons, preview; saving sends it to Meta again through `PUT /api/template/:id`, Reset brings back Book's wording); reminder times (up to 3), quiet hours, the owner's WhatsApp number, and the history of the latest messages (scheduled, sent, delivered, read, failed, or not sent and why). Defaults live in `lib/notification-rules.ts`.
 
 ### Order
 
@@ -70,7 +70,7 @@ The owner taps Connect in Koblip Book. A Koblip Chat window opens, they log in, 
 3. Backend developer: Book callback, storage, refresh, disconnect.
 4. Front end: Book Connect button and states.
 
-## Step 2: Booking notifications on WhatsApp (planned)
+## Step 2: Booking notifications on WhatsApp (built)
 
 ### Messages
 
@@ -93,7 +93,8 @@ Counted from when the customer booked to when the visit starts:
 | Less than 1 hour | Confirmation only |
 
 - No messages from 9 pm to 8 am in the business's time zone: a 24-hour or 2-hour reminder that would land then goes at 8 pm the evening before; a 30-minute one is skipped.
-- A changed booking works its reminders out again; a cancelled one stops them. Each reminder goes once.
+- A cancelled one stops them and the customer gets "Booking cancelled" (only if they got the confirmation). Each message goes once. A reminder needs as much time again as itself, up to an hour, before it (the 24-hour one needs 25 hours of lead).
+- Book has no way to change a booking's time yet, so "Booking changed" is never sent.
 - The owner's "New booking" goes right away.
 - Why: a 24-hour reminder has the best evidence ([study](https://acofp.org/news-and-publications/journal/article-detail/vol-12-no-5-(2020)-september-october-2020/evaluation-clinical-no-show-rates-setting-outpatient-internal-medicine-residency-clinic)); earlier bookings need earlier reminders ([paper](https://ideas.repec.org/a/taf/tjorxx/v69y2018i11p1863-1875.html)); Fresha and Square work the same way ([Fresha](https://www.fresha.com/blog/making-the-most-of-freshas-notifications), [Square](https://square.com/gb/en/appointments/features/reminders)). The night rule and the 30-minute reminder are the owner's choices.
 
@@ -121,11 +122,11 @@ Book uses Chat's public API like any other company. Koblip Sales already creates
 
 1. Built: the template set (wording in English and Spanish) lives in Book (`features/dashboard/utils/booking-templates.ts`). Opening Integrations while connected creates any missing ones in the business's Chat through the API, on the workspace's oldest active number (`GET /api/whatsapp/connections`, the same default Chat uses), and shows "Waiting for Meta approval" until approved (`features/dashboard/api/chat-templates.ts`). Older connections without the `templates` scope are asked to reconnect.
 2. Book records each customer's last reply from Chat's events (built: `app/api/chat/events`, signed with `CHAT_EVENTS_SECRET`, kept per business number and customer in `chat_replies`). Under 24 hours it sends plain text with the template's words (title, text, footer), otherwise the approved template, the same way Koblip Sales does.
-3. Booking form: a WhatsApp checkbox; the answer is saved on the booking.
-4. Settings: the owner's own WhatsApp number (must differ from the business number).
-5. Integrations, under Koblip Chat: one switch per message.
-6. Sends on booking made, changed or cancelled, and the reminders above (Book needs a timer; each reminder goes once).
-7. A record per booking of what was sent or why not.
+3. Built: both booking forms (customer and owner) ask for WhatsApp consent, unticked, only when the business sends WhatsApp messages (`lib/whatsapp-offer.ts`); the answer and the language are saved on the booking.
+4. Built: the owner's own number and the language of their alert (the one they use Book in) on the WhatsApp page.
+5. Built: one switch per message on the WhatsApp page.
+6. Built: `features/dashboard/api/notification-sender.ts`, run every minute by the server's timer (`instrumentation.ts`). Each check plans rows for bookings made since connecting (confirmation, owner alert for online bookings, reminders from `features/dashboard/utils/reminder-schedule.ts`, the cancellation note), then sends what is due: find or create the contact (`POST /api/contacts/find-or-create`, skipped if unsubscribed), then `POST /api/whatsapp/send` as plain text inside the window or as the approved template outside it. Chat's send has no idempotency key, so a failed send is never repeated.
+7. Built: `notification_sends`, one row per booking, message and reminder time (a unique index), with its state, why it was not sent, and WhatsApp's delivery status from Chat's `status` events (only ever moving forward).
 
 ### Order
 
