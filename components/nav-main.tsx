@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import type { Icon } from "@/components/ui/icons"
+import { filledIcon, type Icon } from "@/components/ui/icons"
 
 import {
   SidebarGroup,
@@ -20,14 +20,14 @@ export interface NavItem {
   active: boolean
 }
 
-// One group of the menu, as in Koblip Sales' NavMain (shadcn sidebar-07):
-// a title, then its pages. `tooltip` names each one once the menu folds to
-// icons; on a phone the menu closes once a page is picked.
 // The sidebar's icons at 20px (shadcn's stock 16px read light beside the
 // thin icons), with the folded button's padding cut so they still fit it.
 export const NAV_ICON_SIZE =
   "[&_svg]:size-5 group-data-[collapsible=icon]:p-1.5!"
 
+// One group of the menu, as in Koblip Sales' NavMain (shadcn sidebar-07):
+// a title, then its pages. `tooltip` names each one once the menu folds to
+// icons; on a phone the menu closes once a page is picked.
 export function NavMain({
   title,
   items,
@@ -60,7 +60,7 @@ export function NavMain({
                 />
               }
             >
-              <item.icon />
+              <NavIcon icon={item.active ? filledIcon(item.icon) : item.icon} />
               <span>{item.label}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -68,4 +68,9 @@ export function NavMain({
       </SidebarMenu>
     </SidebarGroup>
   )
+}
+
+// The open page's icon filled, like the phone tab bar's.
+function NavIcon({ icon: Icon }: { icon: Icon }) {
+  return <Icon />
 }

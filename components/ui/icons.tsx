@@ -75,6 +75,7 @@ import {
   StoreSolid as MynaStoreSolid,
   ChatSolid as MynaChatSolid,
   PuzzleSolid as MynaPuzzleSolid,
+  SparklesSolid as MynaSparklesSolid,
   LayoutDashboard as MynaLayoutDashboard,
   LayoutDashboardSolid as MynaLayoutDashboardSolid,
   Flower as MynaFlower,
@@ -259,9 +260,9 @@ export const WrenchIcon = icon(MynaWrench as Icon, "WrenchIcon")
 export const WebsiteIcon = icon(LucideCompass as Icon, "WebsiteIcon")
 export const XIcon = icon(MynaX as Icon, "XIcon")
 
-// Filled twins of outline icons: the open tab of a phone tab bar shows its
-// icon filled, as iPhone and Android apps do. An icon without a twin stays
-// as it is.
+// Filled twins of outline icons: the open page's icon shows filled, in the
+// phone tab bar and the sidebar alike, as iPhone and Android apps do. An
+// icon without a twin stays as it is.
 const FILLED = new Map<Icon, Icon>([
   [
     LayoutDashboardIcon,
@@ -278,6 +279,7 @@ const FILLED = new Map<Icon, Icon>([
   [StoreIcon, icon(MynaStoreSolid as Icon, "StoreFilledIcon")],
   [MessageCircleIcon, icon(MynaChatSolid as Icon, "MessageCircleFilledIcon")],
   [PuzzleIcon, icon(MynaPuzzleSolid as Icon, "PuzzleFilledIcon")],
+  [SparklesIcon, icon(MynaSparklesSolid as Icon, "SparklesFilledIcon")],
 ])
 
 export function filledIcon(outline: Icon): Icon {
