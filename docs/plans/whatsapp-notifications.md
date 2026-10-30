@@ -238,7 +238,7 @@ task is in Lanes above.
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
 | B1 | "Move booking" for the owner, which sends Booking changed | `features/dashboard/components/booking-*`, `features/dashboard/api/booking-actions.ts` | — | `Done` 2026-10-30, see git log (move by Dev 3, sending by Dev 2, D5 and D12) |
-| F1 | Docs updated, live end-to-end test on a real number (book, reminder, tap each button, 24-hour normal message) | `docs/koblip-chat-integration.md` | all | `Working on` Dev 2, 2026-10-30 (started early at the head developer's request; A3, A5, A8 still landing) |
+| F1 | Docs updated, live end-to-end test on a real number (book, reminder, tap each button, 24-hour normal message) | `docs/koblip-chat-integration.md` | all | `Working on` Dev 1, 2026-10-30: full-tree checks and the live test steps. Docs part done by Dev 2, 2026-10-30, see git log (A5's admin Activity marked as being built there) |
 
 ## Done before this plan
 
