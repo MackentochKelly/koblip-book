@@ -136,6 +136,7 @@ bottom: what, why, who, date.
 | D3 | Koblip's number: 300 template messages per business per month by default (normal messages inside 24 hours do not count). At the limit, template messages stop for that business, the owner sees why, and the admin sees it in Usage. The admin changes the limit for everyone or one business. | Koblip pays Meta for these; a limit keeps the cost known, and the admin can raise it. | Lane 0, 2026-10-30 |
 | D4 | Activity search (S9) matches the customer's name in any case (SQLite's LIKE: accented letters must be typed as stored), or the phone by its digits however it is typed (through the booking's `customer_key`). `%` and `_` are taken literally. Results stay newest first, capped at `historySize`. `notificationHistoryFor(businessId, filter)` keeps its name; the filter is optional, so today's page works unchanged. | One search box covers names and numbers; `customer_key` already holds the phone's digits, so no new column or migration. | Dev 3, 2026-10-30 |
 | D5 | Moving a booking (B1): each `notification_sends` row records `visit_at`, the visit time it is about, and "once" means once per booking, message, reminder time and visit time. A move sets the booking's waiting reminders and "changed" message to skipped (`moved`). The sender then queues "Booking changed" and plans reminders for the new time (Dev 2, in `plan()`). The move action lives in `features/booking/api/move-owner-booking.ts`, next to `createOwnerBooking`, and the page passes it in. | Without the visit time, a second move could not send a second "changed" message and a reminder already sent would block the new one. The opening-hours and busy checks live in `features/booking`, which `features/dashboard` may not import. | Dev 3 with Dev 2, 2026-10-30 |
+| D6 | C1: Chat's inbound app event gets `button: { payload, title }` (null when no button was tapped). The payload is the one set when the message was sent; `replyToMessageId` is the provider ID of the message that carried the button, so Book can match a tap to the send it answers. Template quick replies and normal-message buttons arrive the same way. Sales gets the same field and ignores it. | A general API field any app can use; Chat already stored the tap, it just did not forward it. | Dev 1, 2026-10-30 |
 
 ## Tasks
 
@@ -153,7 +154,7 @@ task is in Lanes above.
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
 | C1 | Inbound app events carry the tapped button's payload and title | `services/koblip-sales-status-webhook.service.js`, `tests/oauth-events.test.js`, `docs/api/oauth.md` | — | `Working on` Dev 1, 2026-10-30 |
-| C2 | Send API: a normal message with reply buttons can have a text title and footer | `controllers/unified-whatsapp.controller.js`, its service, tests, docs | — | `To do` |
+| C2 | Send API: a normal message with reply buttons can have a text title and footer | `controllers/unified-whatsapp.controller.js`, its service, tests, docs | — | `Working on` Dev 1, 2026-10-30 |
 
 ### Book server
 
