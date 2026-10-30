@@ -140,6 +140,7 @@ bottom: what, why, who, date.
 | D7 | Book's buttons: Reminder and Booking changed carry "I'll be there" / "Can't make it" (`confirm`, `cantCome`); Booking confirmed, Booking cancelled and the owner's alerts carry none. An owner may use `confirm`, `cantCome` or `ok` on Confirmed, Reminder and Changed, only `ok` on Cancelled, none on alerts. Each button is a quick reply whose payload is its action. | The goals ask for answers on reminders; a moved time needs the same answer; a confirmation the customer just made and a cancellation need none, and fewer buttons keep Meta's review simple. | Dev 2, 2026-10-30 |
 | D8 | Drafts stay in Book: saving wording or buttons changes only Book. "Submit to Meta" creates the template in Chat (`save_as_draft: false`) or edits Chat's copy (`PUT`), after copying back one Meta has but Chat lost. Book keeps what was submitted (`chat_templates.submitted`), sends the approved template with exactly that copy's fields, and shows a newer wording as `draft`. Opening Integrations or the sender only reads status and reason (`refreshChatTemplates`), never creates. | Chat's `POST /api/template/:id/publish` is not open to apps, so a Chat draft could not be submitted through the public API; this needs nothing new from Chat. Sending the submitted copy keeps `{{1}}…` in the order Meta approved even after the owner edits. | Dev 2, 2026-10-30 |
 | D9 | C2: Chat's send API takes `buttonHeader` and `buttonFooter` (text, up to 60 characters each) next to `buttonParams` on an `interactive` / `button` message. An image header replaces the text title (WhatsApp allows one header). Both are saved on the message's `interactive_data`. | Named like `buttonParams`, so the request stays flat and any app can use it; the same limits Meta documents. | Dev 1, 2026-10-30 |
+| D10 | Each part of the business page is its own route under `whatsapp/` (`messages`, `alerts`, `timing`, `replies`, `activity`); Overview is `whatsapp/` itself. On a phone `whatsapp/` shows Overview with the list of the other parts under it; on a computer, tabs. One shared frame (`whatsapp-frame.tsx`, from the route's `layout.tsx`). | Every part gets its own link, Back works on a phone, and each P task owns one route and one component file. | Dev 4, 2026-10-30 |
 
 ## Tasks
 
@@ -202,7 +203,7 @@ task is in Lanes above.
 
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
-| P1 | Page frame: the six parts (tabs on computer, list on phone), professional names, English and Spanish, built on today's data | `app/(owner)/dashboard/[businessId]/whatsapp/`, `features/dashboard/components/whatsapp-*.tsx`, `features/dashboard/i18n/{en,es}/whatsapp.ts` | W0 | `Working on` Dev 4, 2026-10-30 |
+| P1 | Page frame: the six parts (tabs on computer, list on phone), professional names, English and Spanish, built on today's data | `app/(owner)/dashboard/[businessId]/whatsapp/`, `features/dashboard/components/whatsapp-*.tsx`, `features/dashboard/i18n/{en,es}/whatsapp.ts` | W0 | `Done` 2026-10-30, see git log |
 | P2 | Overview: status, setup checklist, test send | `whatsapp-overview.tsx` | P1, S8 | `To do` |
 | P3 | Message editor v2: buttons, preview with buttons, Meta status and reason, "Submit to Meta" | `message-editor.tsx` | P1, S1 | `To do` |
 | P4 | Your alerts screen | `whatsapp-alerts.tsx` | P1, S5 | `To do` |
