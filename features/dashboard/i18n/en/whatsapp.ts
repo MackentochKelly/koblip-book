@@ -33,6 +33,10 @@ const whatsapp = {
     submit: "Submit to Meta",
     turnOn: "Turn on messages",
   },
+  // "Submit to Meta" asks first (D37).
+  submitTitle: (n: number) => (n === 1 ? "Submit 1 message to Meta?" : `Submit ${n} messages to Meta?`),
+  submitConfirm: "Submit",
+  submitCancel: "Cancel",
   setup: "Setup",
   setupProgress: (done: number, total: number) => `${done} of ${total} done`,
   setupDone: "Setup done",
