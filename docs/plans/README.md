@@ -7,6 +7,7 @@ current.
 | Plan | Status |
 | --- | --- |
 | [WhatsApp notifications v2](whatsapp-notifications.md) | In progress |
+| [In-app notifications](in-app-notifications.md) | In progress |
 
 ## How to work with a plan
 
