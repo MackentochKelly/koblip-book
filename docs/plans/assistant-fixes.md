@@ -16,7 +16,7 @@ file: [Plans](README.md).
 
 | Task | What | Size | Needs | Status |
 | --- | --- | --- | --- | --- |
-| A1 | Booking card books exactly what it shows | M | | To do |
+| A1 | Booking card books exactly what it shows | M | | Working on (2026-10-31) |
 | A2 | Time picker shows right away | S | | To do |
 | A3 | Voice answers get checked too | M | A2 | To do |
 | A4 | At most 2 voice sessions open per owner | S | | To do |
