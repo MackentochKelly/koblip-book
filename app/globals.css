@@ -155,9 +155,9 @@
     /* The owner area's page, behind its white cards: a soft gray, like an
        iPhone's grouped lists, so cards stand apart. */
     --app-background: oklch(0.975 0.002 286);
-    /* On that gray page, muted fills (a tabs track, a muted row) go one step
-       darker so they still show. */
-    --app-muted: oklch(0.945 0.003 286);
+    /* On that gray page, muted fills (a tabs track, a muted row) take a
+       field's gray (bg-input/50 on white), so they still show. */
+    --app-muted: color-mix(in oklch, var(--input) 50%, var(--background));
     /* Something went through ("Booked"): as light as it goes with white
        words still passing AA (4.5:1). */
     --success: oklch(0.56 0.14 150);
