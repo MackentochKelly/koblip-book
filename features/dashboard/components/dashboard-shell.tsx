@@ -43,7 +43,7 @@ const PHONE_RIGHT = ["/services", "/team"]
 // The owner area: the ☰ menu (folding on a computer, sliding in on a phone),
 // a bottom tab bar on a phone for the main pages, and a top bar with the
 // business name, its public page and the account menu. `bell` is the
-// notifications bell: in the top bar on a phone, atop the menu on a computer.
+// notifications bell, in the top bar beside the account menu.
 export function DashboardShell({
   business,
   owner,
@@ -97,7 +97,7 @@ export function DashboardShell({
     <TooltipProvider>
       <CommandMenuProvider business={business}>
         <SidebarProvider>
-          <AppSidebar businessId={business.id} owner={owner} bell={bell} />
+          <AppSidebar businessId={business.id} owner={owner} />
           <SidebarInset className={cn("min-w-0", assistantOpen && "md:h-dvh")}>
             <TopBar
               business={business}
