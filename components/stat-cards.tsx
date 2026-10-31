@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card"
 
 // Counts as cards: two across on a phone, up to four on a computer. With an
-// `href` a card opens that list (the Auto messages Overview opens Activity
+// `href` a card opens that list (the Notifications Overview opens Activity
 // filtered, D36); the admin's Overview shows them as plain counts.
 export function StatCards({
   stats,

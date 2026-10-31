@@ -35,7 +35,7 @@ export const NAV_GROUPS = [
   {
     key: "workspace",
     items: [
-      { path: "/auto-messages", key: "autoMessages", icon: MessageCircleIcon },
+      { path: "/notifications", key: "notifications", icon: MessageCircleIcon },
       { path: "/integrations", key: "integrations", icon: PuzzleIcon },
       { path: "/settings", key: "settings", icon: SettingsIcon },
     ],

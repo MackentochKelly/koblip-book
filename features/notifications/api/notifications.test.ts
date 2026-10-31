@@ -69,7 +69,7 @@ test("a notification opens its place; demo copies and turned-off kinds get none"
 
   const rows = await db.select().from(inAppNotifications)
   expect(rows.map(({ businessId, kind, link }) => [businessId, kind, link]).sort()).toEqual([
-    ["a", "messageFailed", "/dashboard/a/auto-messages/activity"],
+    ["a", "messageFailed", "/dashboard/a/notifications/activity"],
     ["a", "newBooking", "/dashboard/a"],
     ["b", "connectionRenew", "/dashboard/b/integrations"],
   ])

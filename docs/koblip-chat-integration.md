@@ -16,7 +16,7 @@ Settings: the `CHAT_*` and `TOKEN_ENCRYPTION_KEY` lines in `.env.example` (serve
 | 24-hour normal messages | If the customer wrote to Koblip's number | If the customer wrote to the business's number |
 | Limit | 300 template messages per business per calendar month (UTC), changeable by the admin (D3, D29) | None |
 
-The sender picks the number at each send (`lineFor` in `features/dashboard/api/notification-sender.ts`, D22, D35): the business's own when its connection works, has a number, and Meta approved every message it has on in both languages, or, before that, when the person's 24-hour window with the own number is open and a normal message may go (the 24-hour setting on; the thank-you always); else Koblip's; else its own as it stands. Each sent row records its `sender`. The Auto messages page and the admin show the choice by approval alone (`senderFor`, D26); the Overview's line says those who wrote to the own number already get messages from it (D34, D35). Booking forms ask for WhatsApp consent, unticked, whenever either number can send (`lib/whatsapp-offer.ts`).
+The sender picks the number at each send (`lineFor` in `features/dashboard/api/notification-sender.ts`, D22, D35): the business's own when its connection works, has a number, and Meta approved every message it has on in both languages, or, before that, when the person's 24-hour window with the own number is open and a normal message may go (the 24-hour setting on; the thank-you always); else Koblip's; else its own as it stands. Each sent row records its `sender`. The Notifications page and the admin show the choice by approval alone (`senderFor`, D26); the Overview's line says those who wrote to the own number already get messages from it (D34, D35). Booking forms ask for WhatsApp consent, unticked, whenever either number can send (`lib/whatsapp-offer.ts`).
 
 ## Step 1: Connect with a popup (built)
 
@@ -95,7 +95,7 @@ A tap arrives as Chat's event; Book finds the message it answers by WhatsApp's i
 
 ## Screens
 
-Business: Auto messages, `/dashboard/[businessId]/auto-messages` (the old `whatsapp/` and `notifications/` addresses redirect there, D36). Phone: Overview with a list of the other parts, each its own screen with Back; computer: tabs (`components/section-parts.tsx`, D10, D19).
+Business: Notifications, `/dashboard/[businessId]/notifications` (the old `whatsapp/` and `auto-messages/` addresses redirect there, D36, D38). Phone: Overview with a list of the other parts, each its own screen with Back; computer: tabs (`components/section-parts.tsx`, D10, D19).
 
 | Part | What the owner does there |
 | --- | --- |
