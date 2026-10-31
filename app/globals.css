@@ -155,6 +155,9 @@
     /* The owner area's page, behind its white cards: a soft gray, like an
        iPhone's grouped lists, so cards stand apart. */
     --app-background: oklch(0.975 0.002 286);
+    /* On that gray page, muted fills (a tabs track, a muted row) go one step
+       darker so they still show. */
+    --app-muted: oklch(0.945 0.003 286);
     /* Something went through ("Booked"): as light as it goes with white
        words still passing AA (4.5:1). */
     --success: oklch(0.56 0.14 150);
@@ -231,6 +234,7 @@
     --info: oklch(0.7 0.15 250);
     /* Dark cards are already lighter than the page. */
     --app-background: var(--background);
+    --app-muted: var(--muted);
     --success: oklch(0.56 0.14 150);
     --success-foreground: oklch(1 0 0);
     --verified: #1d9bf0;
@@ -294,6 +298,16 @@
 }
 
 @layer base {
+  /* The owner area's gray page (data-surface="app" on its frame): muted
+     fills take the page's muted step, and outline rows are filled like
+     cards, so lists read as white cards on the gray, as cards do. Dark mode
+     is unchanged (its app tokens are the plain ones; rows stay clear). */
+  [data-surface="app"] {
+    --muted: var(--app-muted);
+  }
+  :root:not(.dark) [data-surface="app"] [data-slot="item"][data-variant="outline"] {
+    @apply bg-card;
+  }
   /* The phone's status bar height, which the booking page's pinned bars
      keep clear of: the phone's own (viewport-fit=cover in app/layout.tsx),
      or the demo phone's when the page runs in it (the home page sets it on

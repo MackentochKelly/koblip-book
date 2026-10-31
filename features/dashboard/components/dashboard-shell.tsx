@@ -103,6 +103,7 @@ export function DashboardShell({
         <SidebarProvider>
           <AppSidebar businessId={business.id} owner={owner} />
           <SidebarInset
+            data-surface="app"
             className={cn(
               "min-w-0 bg-app-background",
               assistantOpen && "md:h-dvh"
