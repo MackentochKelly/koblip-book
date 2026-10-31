@@ -48,6 +48,14 @@ export const NOTIFICATION_RULES = {
   // calendar month (Koblip pays Meta for them; D3). Normal messages inside
   // 24 hours do not count.
   koblipMonthlyTemplates: 300,
+  // The owner hears the Koblip limit is near at this share of it (percent).
+  koblipLimitNearPercent: 80,
+  // The owner's bell (docs/plans/in-app-notifications.md): notifications are
+  // kept this many days, listed this many at a time, and the bell asks for
+  // new ones this often while the page is shown.
+  inAppKeepDays: 90,
+  inAppPageSize: 20,
+  inAppPollSeconds: 30,
 } as const
 
 // These are the defaults: an admin's values in the database override them
@@ -105,4 +113,8 @@ export const NOTIFICATION_RULE_CHECKS: Record<NotificationRuleKey, (value: unkno
   maxFooter: (value) => wholeAtLeast(1)(value) && (value as number) <= 60,
   minWordsPerField: (value) => typeof value === "number" && Number.isFinite(value) && value >= 0,
   koblipMonthlyTemplates: wholeAtLeast(0),
+  koblipLimitNearPercent: (value) => wholeAtLeast(1)(value) && (value as number) <= 100,
+  inAppKeepDays: wholeAtLeast(1),
+  inAppPageSize: (value) => wholeAtLeast(1)(value) && (value as number) <= 100,
+  inAppPollSeconds: wholeAtLeast(10),
 }

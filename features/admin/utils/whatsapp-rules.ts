@@ -9,6 +9,8 @@ export type RuleUnit =
   | "characters"
   | "count"
   | "words"
+  | "days"
+  | "percent"
   | "switch"
   | "clock"
   | "cantCome"
@@ -36,6 +38,10 @@ export const RULE_UNITS: Record<NotificationRuleKey, RuleUnit> = {
   maxFooter: "characters",
   minWordsPerField: "words",
   koblipMonthlyTemplates: "count",
+  koblipLimitNearPercent: "percent",
+  inAppKeepDays: "days",
+  inAppPageSize: "count",
+  inAppPollSeconds: "seconds",
 }
 
 // The rules in groups, in the order the screen shows them.
@@ -69,7 +75,12 @@ export const RULE_GROUPS = [
       "historySize",
       "statsDays",
       "koblipMonthlyTemplates",
+      "koblipLimitNearPercent",
     ],
+  },
+  {
+    id: "inApp",
+    keys: ["inAppKeepDays", "inAppPageSize", "inAppPollSeconds"],
   },
   {
     id: "wording",
