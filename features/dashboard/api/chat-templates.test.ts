@@ -23,6 +23,7 @@ const {
   koblipMessages,
   koblipSendableTemplate,
   refreshChatTemplates,
+  removeOldChatTemplates,
   refreshKoblipTemplates,
   sendableTemplate,
   submitChatTemplate,
@@ -47,11 +48,22 @@ const copied: unknown[] = []
 const created: Record<string, unknown>[] = []
 const edited: { id: string; body: Record<string, unknown> }[] = []
 const synced: unknown[] = []
+const removed: { id: string; body: Record<string, unknown> }[] = []
 const chat = vi.fn(async (url: string, init: RequestInit = {}) => {
   const answer = (json: unknown, status = 200) => new Response(JSON.stringify(json), { status })
-  const path = new URL(url).pathname
+  const { pathname: path, searchParams } = new URL(url)
   if (path === "/api/whatsapp/connections") return answer({ success: true, data: numbers })
-  if (path === "/api/template") return answer({ success: true, data: stored })
+  // Chat lists templates per WhatsApp account, as in production.
+  if (path === "/api/template") {
+    if (!searchParams.get("waba_id")) return answer({ success: false, message: "WABA ID is required" }, 400)
+    return answer({ success: true, data: stored })
+  }
+  if (init.method === "DELETE" && path.startsWith("/api/template/")) {
+    const id = path.split("/").pop()!
+    removed.push({ id, body: JSON.parse(String(init.body)) })
+    stored = stored.filter((row) => row._id !== id)
+    return answer({ success: true, data: { deleted_from_meta: true } })
+  }
   if (init.method === "PUT" && path.startsWith("/api/template/")) {
     edited.push({ id: path.split("/").pop()!, body: JSON.parse(String(init.body)) })
     return answer({ success: true })
@@ -127,6 +139,7 @@ beforeEach(async () => {
   created.length = 0
   edited.length = 0
   synced.length = 0
+  removed.length = 0
   chat.mockClear()
   await db.delete(chatTemplates)
   await db.delete(koblipChatTemplates)
@@ -347,4 +360,37 @@ test("Meta's review of Koblip's set is read back, and the approved one is sent",
   })
   expect((await koblipSendableTemplate("confirmed", "en")).approved?.chatTemplateId).toBe("t1")
   expect((await koblipSendableTemplate("cancelled", "en")).approved).toBeNull()
+})
+
+test("removing the first templates lists them per WhatsApp account and keeps approved ones", async () => {
+  const names = ["koblip_book_booking_reminder", "koblip_book_booking_confirmed"]
+  const lines: string[] = []
+  const log = (line: string) => lines.push(line)
+
+  // No WhatsApp account saved yet: skipped, Chat is not asked.
+  await db.update(chatConnections).set({ wabaId: null, phoneNumberId: null })
+  expect(await removeOldChatTemplates({ names, remove: true, log })).toEqual({ deleted: 0, failed: 0 })
+  expect(lines).toEqual(["Lumen Studio: no WhatsApp account saved yet, skipped"])
+  expect(chat).not.toHaveBeenCalled()
+
+  await db.update(chatConnections).set({ wabaId: "waba1" })
+  stored = [
+    { _id: "old1", template_name: "koblip_book_booking_reminder", language: "en", status: "PENDING" },
+    { _id: "old2", template_name: "koblip_book_booking_confirmed", language: "es", status: "APPROVED" },
+    { _id: "new1", template_name: "koblip_book_booking_reminder_v2", language: "en", status: "PENDING" },
+  ]
+
+  // A dry run deletes nothing.
+  lines.length = 0
+  expect(await removeOldChatTemplates({ names, remove: false, log })).toEqual({ deleted: 0, failed: 0 })
+  expect(lines).toEqual([
+    "Lumen Studio: koblip_book_booking_reminder (en), PENDING: would delete",
+    "Lumen Studio: koblip_book_booking_confirmed (es), APPROVED: approved, kept",
+  ])
+  expect(removed).toEqual([])
+  expect(new URL(String(chat.mock.calls[0][0])).searchParams.get("waba_id")).toBe("waba1")
+
+  expect(await removeOldChatTemplates({ names, remove: true, log })).toEqual({ deleted: 1, failed: 0 })
+  expect(removed).toEqual([{ id: "old1", body: { delete_from_meta: true } }])
+  expect(stored.map((row) => row._id)).toEqual(["old2", "new1"])
 })
