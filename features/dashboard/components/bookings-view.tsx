@@ -128,8 +128,7 @@ export function BookingsView({
               </EmptyTitle>
             </EmptyHeader>
             {view === "upcoming" && panels.canAdd && (
-              // On a phone the floating Add does this.
-              <EmptyContent className="max-md:hidden">
+              <EmptyContent>
                 <Button onClick={panels.add}>
                   <PlusIcon data-icon="inline-start" />
                   {t.addBooking}
