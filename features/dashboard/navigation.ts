@@ -2,12 +2,12 @@ import {
   ClockIcon,
   ContactIcon,
   LayoutDashboardIcon,
-  MessageCircleIcon,
   PuzzleIcon,
   SettingsIcon,
   SparklesIcon,
   TagIcon,
   UsersIcon,
+  ZapIcon,
 } from "@/components/ui/icons"
 
 // The owner area's pages, in the menu's groups (like Koblip Sales'
@@ -30,12 +30,12 @@ export const NAV_GROUPS = [
       { path: "/services", key: "services", icon: TagIcon },
       { path: "/team", key: "team", icon: UsersIcon },
       { path: "/hours", key: "hours", icon: ClockIcon },
+      { path: "/automations", key: "automations", icon: ZapIcon },
     ],
   },
   {
     key: "workspace",
     items: [
-      { path: "/notifications", key: "notifications", icon: MessageCircleIcon },
       { path: "/integrations", key: "integrations", icon: PuzzleIcon },
       { path: "/settings", key: "settings", icon: SettingsIcon },
     ],

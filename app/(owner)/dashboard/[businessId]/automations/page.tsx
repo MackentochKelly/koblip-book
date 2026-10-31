@@ -15,12 +15,12 @@ import { notificationRules } from "@/lib/platform-settings"
 import { whatsappActivityStats } from "@/lib/whatsapp-activity"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.notifications }
+  return { title: (await getOwnerMessages()).shell.nav.automations }
 }
 
 export default async function AutoMessagesOverviewPage({
   params,
-}: PageProps<"/dashboard/[businessId]/notifications">) {
+}: PageProps<"/dashboard/[businessId]/automations">) {
   const { businessId } = await params
   // Only the business's owner gets here.
   await getOwnerBusiness(businessId)

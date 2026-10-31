@@ -6,21 +6,20 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "5mb",
     },
   },
-  // The WhatsApp page became Notifications (D36, D38): old links and
-  // bookmarks, from its first name and the short-lived "Auto messages", land
-  // on the same part there, with their filters.
+  // The WhatsApp page is Automations (D36, D38, D39): old links and
+  // bookmarks, from its earlier names, land on the same part there, with
+  // their filters.
   async redirects() {
     return [
-      ...["whatsapp", "auto-messages"].map((old) => ({
+      ...["whatsapp", "auto-messages", "notifications"].map((old) => ({
         source: `/dashboard/:businessId/${old}/:path*`,
-        destination: "/dashboard/:businessId/notifications/:path*",
+        destination: "/dashboard/:businessId/automations/:path*",
         permanent: true,
       })),
-      // The bell's choices screen is named Updates, apart from the
-      // Notifications page (N-D12).
+      // The bell's choices screen was briefly named Updates (N-D12, N-D13).
       {
-        source: "/dashboard/:businessId/settings/notifications",
-        destination: "/dashboard/:businessId/settings/updates",
+        source: "/dashboard/:businessId/settings/updates",
+        destination: "/dashboard/:businessId/settings/notifications",
         permanent: true,
       },
     ]

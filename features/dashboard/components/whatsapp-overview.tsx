@@ -127,7 +127,7 @@ export function WhatsappOverview({
       languages: TEMPLATE_LANGUAGES.filter((language) => item.texts[language].review === "draft"),
     }))
     .filter((item) => item.languages.length > 0)
-  const base = `/dashboard/${businessId}/notifications`
+  const base = `/dashboard/${businessId}/automations`
   const activity = (state: "sent" | "read" | "replied" | "failed") =>
     `${base}/activity${activityQuery({ state })}`
 
@@ -248,7 +248,7 @@ function StatusCard({
   const placeOf = (step: Exclude<NextStep, "submit">) =>
     STEP_PLACES[step] === "integrations"
       ? `/dashboard/${businessId}/integrations`
-      : `/dashboard/${businessId}/notifications/messages`
+      : `/dashboard/${businessId}/automations/messages`
 
   return (
     <Card>
