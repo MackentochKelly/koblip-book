@@ -19,6 +19,7 @@ const integrations: typeof en = {
     name: "WhatsApp",
     description:
       "WhatsApp Business oficial, directo de Meta. Envía recordatorios de reservas y difusiones desde el número de tu negocio.",
+    connected: "Conectado",
   },
   sms: {
     name: "SMS de Twilio",

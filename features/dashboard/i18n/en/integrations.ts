@@ -18,6 +18,7 @@ const integrations = {
     name: "WhatsApp",
     description:
       "Official WhatsApp Business, straight from Meta. Send booking reminders and broadcasts from your own business number.",
+    connected: "Connected",
   },
   sms: {
     name: "Twilio SMS",

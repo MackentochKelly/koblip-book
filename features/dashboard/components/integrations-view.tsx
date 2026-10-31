@@ -33,6 +33,7 @@ import { useConnectWindow } from "../hooks/use-connect-window"
 import { useOwnerMessages } from "../i18n/provider"
 import type { ChatConnection } from "../types/chat-connection"
 import type { GoogleCalendarConnection } from "../types/google-calendar"
+import type { Sender } from "@/types/whatsapp"
 import {
   CHAT_CONNECT_CHANNEL,
   type ChatConnectMessage,
@@ -53,6 +54,7 @@ import { RemoveGoogleEvents } from "./remove-google-events"
 export function IntegrationsView({
   businessId,
   connection,
+  sender,
   result,
   googleCalendar,
   googleResult,
@@ -60,6 +62,8 @@ export function IntegrationsView({
 }: {
   businessId: string
   connection: ChatConnection | null
+  // Which number sends WhatsApp messages (senderFor), or none.
+  sender: Sender | null
   // How a Chat window opened as a full page ended (?chat=), shown once.
   result: ChatConnectResult | null
   googleCalendar: GoogleCalendarConnection | null
@@ -236,8 +240,19 @@ export function IntegrationsView({
       }
     />
   )
+  // WhatsApp works as soon as a number sends: Koblip's by default, or the
+  // business's own; the same words as the WhatsApp page.
+  const whatsappRow = sender && (
+    <IntegrationRow
+      logo="/brands/whatsapp-glyph-green.svg"
+      name={t.whatsapp.name}
+      description={m.whatsapp.sendingFrom[sender]}
+      action={<Badge variant="secondary">{t.whatsapp.connected}</Badge>}
+    />
+  )
   // Connected: the apps working for the business now.
   const connectedRows = [
+    whatsappRow && <Fragment key="whatsapp">{whatsappRow}</Fragment>,
     usable && <Fragment key="chat">{chatRow}</Fragment>,
     googleUsable && <Fragment key="google">{googleRow}</Fragment>,
   ].filter(Boolean)
