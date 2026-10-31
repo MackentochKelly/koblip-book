@@ -1,10 +1,12 @@
 import { BOOKING_MESSAGES } from "@/lib/whatsapp-messages"
-import type { ActivityFilter, NotificationSend } from "@/types/whatsapp"
+import type { ActivityFilter, ActivityState } from "@/types/whatsapp"
 
-export const ACTIVITY_STATES: readonly NotificationSend["state"][] = [
+export const ACTIVITY_STATES: readonly ActivityState[] = [
   "pending",
   "sending",
   "sent",
+  "read",
+  "replied",
   "failed",
   "skipped",
 ]

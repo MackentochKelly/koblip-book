@@ -21,6 +21,8 @@ export const NOTIFICATION_RULES = {
   stuckSendingMinutes: 10,
   // How many of the latest messages the WhatsApp page's history shows.
   historySize: 30,
+  // The days the Auto messages Overview counts its numbers over.
+  statsDays: 7,
   // Inside 24 hours of the person's last message a normal message goes
   // instead of the template, unless the owner turns it off.
   defaultFreeTextInWindow: true,
@@ -87,6 +89,7 @@ export const NOTIFICATION_RULE_CHECKS: Record<NotificationRuleKey, (value: unkno
   freeTextMinutes: (value) => wholeAtLeast(0)(value) && (value as number) <= 24 * 60,
   stuckSendingMinutes: wholeAtLeast(1),
   historySize: wholeAtLeast(1),
+  statsDays: (value) => wholeAtLeast(1)(value) && (value as number) <= 90,
   defaultFreeTextInWindow: (value) => typeof value === "boolean",
   // CantComeAction in features/dashboard/types/notifications.ts.
   defaultCantCome: (value) => value === "alertOnly" || value === "cancel",

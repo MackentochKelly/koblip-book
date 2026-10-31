@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function WhatsappActivityPage({
   params,
   searchParams,
-}: PageProps<"/dashboard/[businessId]/whatsapp/activity">) {
+}: PageProps<"/dashboard/[businessId]/auto-messages/activity">) {
   const { businessId } = await params
   // Only the business's owner gets here.
   const { business } = await getOwnerBusiness(businessId)

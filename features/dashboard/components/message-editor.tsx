@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation"
 import { PlusIcon, XIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
+import { MetaStatusBadge } from "@/components/meta-status-badge"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -259,9 +259,7 @@ export function MessageEditor({
             {editable ? (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">{t.metaStatus}</span>
-                <Badge variant={text.review === "rejected" ? "destructive" : "secondary"}>
-                  {t.review[text.review]}
-                </Badge>
+                <MetaStatusBadge review={text.review} labels={t.review} />
               </div>
             ) : (
               <FieldDescription>{t.koblipWording}</FieldDescription>

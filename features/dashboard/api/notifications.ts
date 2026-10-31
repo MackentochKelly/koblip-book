@@ -5,6 +5,7 @@ import { db } from "@/lib/db"
 import {
   chatConnections,
   chatTemplates,
+  koblipChatTemplates,
   notificationSettings,
   notificationTexts,
 } from "@/lib/db/schema"
@@ -77,12 +78,13 @@ function review(
 // Each message: on or off, and per language its wording (the owner's or
 // Book's) and Meta's review. Without a working Koblip Chat workspace of its
 // own the business sends Koblip's ready-made set, Book's wording, which only
-// turns on or off (K4, D26).
+// turns on or off (K4, D26), and Meta's review is that of Koblip's set (D36).
 export async function notificationMessagesFor(businessId: string): Promise<NotificationMessage[]> {
-  const [settings, texts, made, [connection]] = await Promise.all([
+  const [settings, texts, made, koblipMade, [connection]] = await Promise.all([
     notificationSettingsFor(businessId),
     db.select().from(notificationTexts).where(eq(notificationTexts.businessId, businessId)),
     db.select().from(chatTemplates).where(eq(chatTemplates.businessId, businessId)),
+    db.select().from(koblipChatTemplates),
     db
       .select({ needsReconnect: chatConnections.needsReconnect, scopes: chatConnections.scopes })
       .from(chatConnections)
@@ -91,6 +93,7 @@ export async function notificationMessagesFor(businessId: string): Promise<Notif
   ])
   const editable = !!connection && chatConnectionUsable(connection)
   const own = editable ? texts : []
+  const templates = editable ? made : koblipMade
   return BOOKING_MESSAGES.map((message) => ({
     message,
     on: !settings.turnedOff.includes(message),
@@ -98,7 +101,7 @@ export async function notificationMessagesFor(businessId: string): Promise<Notif
     texts: Object.fromEntries(
       TEMPLATE_LANGUAGES.map((language): [TemplateLanguage, NotificationText] => {
         const mine = own.find((row) => row.message === message && row.language === language)
-        const template = made.find((row) => row.message === message && row.language === language)
+        const template = templates.find((row) => row.message === message && row.language === language)
         const text = {
           wording: mine
             ? { header: mine.header, body: mine.body, footer: mine.footer }

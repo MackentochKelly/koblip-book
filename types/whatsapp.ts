@@ -16,6 +16,10 @@ export type BookingMessage = CustomerMessage | OwnerAlert
 // as the payload Book reads back.
 export type ButtonAction = "confirm" | "cantCome" | "ok"
 
+// Meta's review of one message in one language. "draft": Book has the
+// wording but it was not submitted to Meta yet (or changed since).
+export type TemplateReview = "missing" | "draft" | "waiting" | "approved" | "rejected"
+
 // A customer's tap on a message's button.
 export type NotificationReply = { action: ButtonAction; at: string }
 
@@ -48,9 +52,13 @@ export type BusinessNotificationSend = NotificationSend & {
   timeZone: string
 }
 
+// What Activity's status filter can pick: a message's state, or two views
+// the Overview's stats open (D36): read by the customer, or answered.
+export type ActivityState = NotificationSend["state"] | "read" | "replied"
+
 export type ActivityFilter = {
   message?: SendKind
-  state?: NotificationSend["state"]
+  state?: ActivityState
   // Customer name or phone.
   search?: string
 }

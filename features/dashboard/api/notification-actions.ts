@@ -21,7 +21,7 @@ import {
 import { ChatApiError } from "./chat-oauth"
 import { submitChatTemplate } from "./chat-templates"
 import { sendTestMessage } from "./notification-sender"
-import { notificationSettingsFor } from "./notifications"
+import { notificationMessagesFor, notificationSettingsFor } from "./notifications"
 import { ownedBusiness } from "./owned-business"
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -173,14 +173,42 @@ export async function submitMessageToMeta(
   if (!BOOKING_MESSAGES.includes(message) || !TEMPLATE_LANGUAGES.includes(language)) {
     return { ok: false, error: "invalid" }
   }
+  return submitOne(owned.business.id, message, language)
+}
+
+async function submitOne(
+  businessId: string,
+  message: BookingMessage,
+  language: TemplateLanguage
+): Promise<ActionResult | { ok: false; error: "refused"; reason: string }> {
   try {
-    const problem = await submitChatTemplate(owned.business.id, message, language)
+    const problem = await submitChatTemplate(businessId, message, language)
     return problem ? { ok: false, error: problem } : { ok: true }
   } catch (error) {
     if (!(error instanceof ChatApiError)) throw error
     console.error(error)
     return error.reason ? { ok: false, error: "refused", reason: error.reason } : { ok: false, error: "chat" }
   }
+}
+
+// The Overview's "Submit to Meta" (D36): every turned-on message, in each
+// language, whose saved wording Meta has not been sent yet, one by one; it
+// stops at the first refusal, so the owner sees which and why.
+export async function submitDraftsToMeta(
+  businessId: string
+): Promise<ActionResult | { ok: false; error: "refused"; reason: string }> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) return { ok: false, error: "not_found" }
+  const messages = await notificationMessagesFor(owned.business.id)
+  for (const item of messages) {
+    if (!item.on || !item.editable) continue
+    for (const language of TEMPLATE_LANGUAGES) {
+      if (item.texts[language].review !== "draft") continue
+      const result = await submitOne(owned.business.id, item.message, language)
+      if (!result.ok) return result
+    }
+  }
+  return { ok: true }
 }
 
 // "Send a test to my phone": one message with sample values to the owner's

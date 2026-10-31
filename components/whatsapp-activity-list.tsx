@@ -96,6 +96,7 @@ type Result = { ok: true } | { ok: false; error?: string }
 // filters are in the address, D14). A failed message can be sent again; with
 // `onCancel`, a waiting one can be cancelled. With `showBusiness`, each row
 // names its business and shows its time in that business's time zone.
+// `emptyAction` is the one action under "No messages yet".
 export function WhatsappActivityList({
   rows,
   filter,
@@ -104,6 +105,7 @@ export function WhatsappActivityList({
   showBusiness = false,
   onSendAgain,
   onCancel,
+  emptyAction,
 }: {
   rows: Row[]
   filter: ActivityFilter
@@ -112,6 +114,7 @@ export function WhatsappActivityList({
   showBusiness?: boolean
   onSendAgain: (id: string) => Promise<Result>
   onCancel?: (id: string) => Promise<Result>
+  emptyAction: React.ReactNode
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -160,6 +163,7 @@ export function WhatsappActivityList({
           </EmptyMedia>
           <EmptyTitle>{t.noHistory}</EmptyTitle>
         </EmptyHeader>
+        <EmptyContent>{emptyAction}</EmptyContent>
       </Empty>
     )
   }
