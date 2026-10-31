@@ -308,9 +308,10 @@
   :root:not(.dark) [data-surface="app"] [data-slot="item"][data-variant="outline"] {
     @apply bg-card;
   }
-  /* A tabs track there gets the cards' own faint edge. */
+  /* A tabs track there gets the cards' own faint edge, drawn inside: the
+     tabs row scrolls sideways and would clip an edge drawn outside. */
   :root:not(.dark) [data-surface="app"] [data-slot="tabs-list"][data-variant="default"] {
-    @apply ring-1 ring-foreground/5;
+    @apply inset-ring-1 inset-ring-foreground/5;
   }
   /* The phone's status bar height, which the booking page's pinned bars
      keep clear of: the phone's own (viewport-fit=cover in app/layout.tsx),
