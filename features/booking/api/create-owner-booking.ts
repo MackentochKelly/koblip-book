@@ -7,6 +7,7 @@ import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { googleBusyTimes } from "@/lib/google-calendar-busy"
+import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
 import {
   bookingAddons,
@@ -293,6 +294,8 @@ export async function createOwnerBooking(
     }
     revalidatePath("/b/" + business.slug)
     revalidatePath("/dashboard", "layout")
+    // Google Calendar hears of it now, without the booking waiting.
+    requestGoogleSync(business.id)
     return outcome
   } catch {
     console.error("createOwnerBooking failed")

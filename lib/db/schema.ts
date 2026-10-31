@@ -842,3 +842,26 @@ export const googleCalendarBusy = sqliteTable(
   },
   (table) => [index("google_calendar_busy_connection").on(table.connectionId, table.startAt)]
 )
+
+// Google's push channels (G3; developers.google.com/workspace/calendar/api/guides/push):
+// Google calls /api/google-calendar/notify when a watched calendar changes,
+// and Book reads the busy times again. Renewed before they run out; the
+// token's hash proves a call is Google's answer to this channel.
+export const googleCalendarChannels = sqliteTable(
+  "google_calendar_channels",
+  {
+    // The channel id Book chose (a UUID), sent back in X-Goog-Channel-ID.
+    id: text().primaryKey(),
+    connectionId: text()
+      .notNull()
+      .references(() => googleCalendarConnections.id, { onDelete: "cascade" }),
+    // The watched calendar, such as "primary".
+    calendarId: text().notNull(),
+    // Google's id for the watched resource, needed to stop the channel.
+    resourceId: text().notNull(),
+    tokenHash: text().notNull(),
+    expiresAt: text().notNull(),
+    ...timestamps(),
+  },
+  (table) => [index("google_calendar_channels_connection").on(table.connectionId, table.expiresAt)]
+)

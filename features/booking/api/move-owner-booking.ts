@@ -6,6 +6,7 @@ import { BOOKING_RULES } from "@/lib/booking-rules"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { googleBusyTimes } from "@/lib/google-calendar-busy"
+import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
 import {
   bookings,
@@ -205,6 +206,8 @@ export async function moveOwnerBooking(
     if (outcome.status === "moved") {
       revalidatePath("/b/" + business.slug)
       revalidatePath("/dashboard", "layout")
+      // Google Calendar hears of it now, without the booking waiting.
+      requestGoogleSync(business.id)
     }
     return outcome
   } catch {

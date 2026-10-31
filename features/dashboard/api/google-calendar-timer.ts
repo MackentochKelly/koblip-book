@@ -1,7 +1,7 @@
 import "server-only"
 
 import { GOOGLE_CALENDAR_RULES } from "@/lib/google-calendar-rules"
-import { syncGoogleCalendars } from "./google-calendar-sync"
+import { syncGoogleCalendars } from "@/lib/google-calendar-sync"
 
 // The server's timer for Google Calendar (G2), started once when the server
 // starts (instrumentation.ts). One sync at a time: the next is set only when

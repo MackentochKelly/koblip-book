@@ -4,6 +4,7 @@ import { and, eq, gte } from "drizzle-orm"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { requireAccount } from "@/lib/dal"
 import { db } from "@/lib/db"
+import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
 import {
   bookings,
@@ -467,6 +468,8 @@ export async function cancelBooking(
     .set({ status: "cancelled" })
     .where(eq(bookings.id, booking.id))
   revalidateBusiness(owned.business.slug)
+  // Google Calendar hears of it now.
+  requestGoogleSync(owned.business.id)
   return { ok: true }
 }
 

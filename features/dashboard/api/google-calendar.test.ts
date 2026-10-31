@@ -24,12 +24,14 @@ const {
   readGoogleCalendarAttempt,
   startGoogleCalendarConnect,
 } = await import("@/lib/google-calendar")
-const { eventIdOf, syncGoogleCalendar } = await import("./google-calendar-sync")
+const { eventIdOf, syncGoogleCalendar } = await import("@/lib/google-calendar-sync")
 const { googleCalendarFor } = await import("./google-calendar")
 const { googleBusyTimes, refreshGoogleBusy } = await import("@/lib/google-calendar-busy")
+const { ensureGoogleChannels, handleGoogleNotification } = await import("@/lib/google-calendar-channels")
 
 let dir: string
 let closeDb: () => void
+const hour = 3_600_000
 
 // A stand-in for Google: its token and revoke endpoints and one account's
 // calendars and events, kept as Google would.
@@ -42,6 +44,10 @@ const google = {
   calls: [] as string[],
   // The main calendar's busy times freeBusy answers with.
   busy: [] as { start: string; end: string }[],
+  // Push channels Google holds: id → its token and when it ends.
+  channels: new Map<string, { token: string; expiration: number }>(),
+  stopped: [] as string[],
+  channelHours: 24 * 7,
 }
 
 function idToken(email: string) {
@@ -77,6 +83,16 @@ const fetchGoogle = vi.fn(async (input: string, init: RequestInit = {}) => {
   }
   const path = url.pathname.replace("/calendar/v3", "")
   const body = init.body ? JSON.parse(String(init.body)) : null
+  if (method === "POST" && path === "/calendars/primary/events/watch") {
+    const expiration = Date.now() + google.channelHours * hour
+    google.channels.set(body.id, { token: body.token, expiration })
+    return answer(200, { kind: "api#channel", id: body.id, resourceId: "res-primary", expiration: String(expiration) })
+  }
+  if (method === "POST" && path === "/channels/stop") {
+    google.channels.delete(body.id)
+    google.stopped.push(body.id)
+    return answer(204)
+  }
   if (method === "POST" && path === "/freeBusy") {
     return answer(200, {
       calendars: Object.fromEntries(
@@ -144,6 +160,10 @@ beforeEach(async () => {
   await db.delete(bookings)
   await db.delete(teamMembers)
   google.busy = []
+  google.channels.clear()
+  google.stopped = []
+  google.channelHours = 24 * 7
+  vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3100")
   google.scope = ALL_SCOPES
   google.email = "owner@gmail.com"
   google.refreshAnswer = "ok"
@@ -158,7 +178,6 @@ afterAll(() => {
   vi.unstubAllGlobals()
 })
 
-const hour = 3_600_000
 
 function booking(id: string, startsIn: number, more: Partial<typeof bookings.$inferInsert> = {}) {
   const start = Date.now() + startsIn
@@ -359,4 +378,55 @@ test("the sync reads busy times too", async () => {
   const { connectionId } = await connect()
   await syncGoogleCalendar(connectionId!)
   await expect(googleBusyTimes("biz", ...range())).resolves.toHaveLength(1)
+})
+
+const live = () => vi.stubEnv("BETTER_AUTH_URL", "https://book.example.com")
+
+test("without HTTPS there is no push channel", async () => {
+  const { connectionId } = await connect()
+  await expect(ensureGoogleChannels(connectionId!)).resolves.toBe(false)
+  expect(google.channels.size).toBe(0)
+})
+
+test("Google's call for a changed calendar reads the busy times again", async () => {
+  live()
+  const { connectionId } = await connect()
+  await expect(ensureGoogleChannels(connectionId!)).resolves.toBe(true)
+  await expect(ensureGoogleChannels(connectionId!)).resolves.toBe(true)
+  expect(google.channels.size).toBe(1)
+  const [[channelId, { token }]] = [...google.channels]
+  google.busy = [busyNow()]
+  const call = { channelId, token, resourceId: "res-primary", state: "exists" }
+  // A wrong token or a start-up call changes nothing.
+  await handleGoogleNotification({ ...call, token: "wrong" })
+  await handleGoogleNotification({ ...call, state: "sync" })
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  await expect(googleBusyTimes("biz", ...range())).resolves.toEqual([])
+  await handleGoogleNotification(call)
+  await vi.waitFor(async () => {
+    await expect(googleBusyTimes("biz", ...range())).resolves.toHaveLength(1)
+  })
+})
+
+test("a channel about to end is renewed, then the old one stopped", async () => {
+  live()
+  google.channelHours = 2
+  const { connectionId } = await connect()
+  await ensureGoogleChannels(connectionId!)
+  const [first] = [...google.channels.keys()]
+  google.channelHours = 24 * 7
+  await ensureGoogleChannels(connectionId!)
+  expect(google.stopped).toEqual([first])
+  expect(google.channels.size).toBe(1)
+})
+
+test("disconnecting stops the push channels before revoking", async () => {
+  live()
+  const { connectionId } = await connect()
+  await ensureGoogleChannels(connectionId!)
+  await endGoogleCalendarConnection(connectionId!)
+  expect(google.channels.size).toBe(0)
+  expect(google.calls.indexOf("POST /calendar/v3/channels/stop")).toBeLessThan(
+    google.calls.indexOf("POST /revoke")
+  )
 })

@@ -25,6 +25,7 @@ The same project as Google login (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`):
 
 1. Turn on the **Google Calendar API**.
 2. Add the redirect URI `<BETTER_AUTH_URL>/api/google-calendar/callback`.
+   Google's push calls go to `<BETTER_AUTH_URL>/api/google-calendar/notify` (HTTPS only; nothing to set up).
 3. Data Access: add the scopes below. Before launch, Google checks the app (G12).
 
 ## Scopes (the least Google allows)
@@ -68,5 +69,7 @@ the others, busy times are simply off.
 | Disconnect revokes the token at Google | Google's guide; it also resets the Google login consent, which only asks again once | Dev, 2026-10-31 |
 | A calendar removed in Google is noticed at the next booking change, then made again with every event | Checking it every minute would cost one Google call per connection per minute | Dev, 2026-10-31 |
 | A calendar belongs to a person: with no team the owner's busy times block the whole business; with a team they block the member the owner picks, or nobody | How SaaS booking apps (Square, Fresha, Acuity) sync calendars; the owner's dentist visit never closes a whole salon | Dev, 2026-10-31 |
-| Busy times are read every 2 minutes and kept in `google_calendar_busy`; bookings read the kept ones | A booking never waits on Google; a slow Google never blocks one | Dev, 2026-10-31 |
+| Busy times: Google push notifications on each busy calendar, read again with freeBusy when Google calls, plus a safety read every hour (Google says some push messages get lost); every 2 minutes only where Google can't call back (no HTTPS, e.g. localhost). Kept in `google_calendar_busy`; bookings read the kept ones | Google's push guide; a booking never waits on Google | Dev, 2026-10-31 (replaces 2-minute polling) |
 | The owner can still book over a Google busy time, like any other busy time (the "book anyway" choice) | Owner bookings already allow a conflict on purpose | Dev, 2026-10-31 |
+| Booking changes go to Google right after they are saved (`requestGoogleSync`); the 1-minute timer is only the safety net | Changes show at once; nothing is lost if a send fails | Dev, 2026-10-31 |
+| Push channels are renewed 24 hours before Google ends them, the old one stopped after the new one starts | Google never renews a channel itself | Dev, 2026-10-31 |

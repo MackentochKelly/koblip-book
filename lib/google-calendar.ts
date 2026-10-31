@@ -4,7 +4,11 @@ import { and, eq, isNull } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
-import { googleCalendarConnections, googleCalendarEvents } from "@/lib/db/schema"
+import {
+  googleCalendarChannels,
+  googleCalendarConnections,
+  googleCalendarEvents,
+} from "@/lib/db/schema"
 import { runInTurn } from "@/lib/run-in-turn"
 import { open, seal } from "@/lib/secret-box"
 import type { GoogleConnectResult } from "@/types/google-calendar-connect"
@@ -349,10 +353,39 @@ export async function googleCalendarApi<T>(
   return json as T | null
 }
 
+// One connection's work with Google (sync, busy times) runs one at a time
+// under this key (lib/run-in-turn).
+export function googleTurnKey(connectionId: string) {
+  return `google-calendar:${connectionId}`
+}
+
+// Stops one push channel at Google (only the account that made it can) and
+// forgets it. Forgotten even if Google can't be reached: it runs out alone.
+export async function stopGoogleChannel(
+  connectionId: string,
+  channel: { id: string; resourceId: string }
+) {
+  try {
+    await googleCalendarApi(connectionId, "/channels/stop", {
+      method: "POST",
+      body: { id: channel.id, resourceId: channel.resourceId },
+    })
+  } catch (error) {
+    if (!(error instanceof GoogleCalendarError)) throw error
+  }
+  await db.delete(googleCalendarChannels).where(eq(googleCalendarChannels.id, channel.id))
+}
+
 // Ends the connection at Google, then forgets it here. Forgetting happens
 // even if Google cannot be reached; the person can also remove Book at
 // myaccount.google.com/permissions.
 export async function endGoogleCalendarConnection(connectionId: string) {
+  // Push channels first: stopping one needs the account's token.
+  const channels = await db
+    .select()
+    .from(googleCalendarChannels)
+    .where(eq(googleCalendarChannels.connectionId, connectionId))
+  for (const channel of channels) await stopGoogleChannel(connectionId, channel)
   const row = await readConnection(connectionId)
   if (row?.refreshToken) {
     await fetch(REVOKE_URL, {

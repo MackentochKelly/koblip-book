@@ -3,6 +3,7 @@ import { and, eq, exists, isNull, lt, or, type SQL } from "drizzle-orm"
 import type { BatchItem } from "drizzle-orm/batch"
 
 import { db } from "@/lib/db"
+import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
 import { notification } from "@/lib/in-app-notifications"
 import {
@@ -164,6 +165,8 @@ export async function applyButtonReply(reply: ButtonReply) {
   await saveAll(writes)
   if (reply.action === "cantCome" && settings.cantCome === "cancel") {
     revalidateBusiness(found.slug)
+    // Google Calendar hears of it now.
+    requestGoogleSync(booking.businessId)
   }
 }
 

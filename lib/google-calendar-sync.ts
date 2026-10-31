@@ -9,16 +9,18 @@ import {
   googleCalendarConnections,
   googleCalendarEvents,
 } from "@/lib/db/schema"
-import { GoogleCalendarError, googleCalendarApi } from "@/lib/google-calendar"
+import { GoogleCalendarError, googleCalendarApi, googleTurnKey } from "@/lib/google-calendar"
 import { refreshGoogleBusy } from "@/lib/google-calendar-busy"
+import { ensureGoogleChannels } from "@/lib/google-calendar-channels"
 import { GOOGLE_CALENDAR_RULES } from "@/lib/google-calendar-rules"
 import { runInTurn } from "@/lib/run-in-turn"
 
 // Sends bookings to Google Calendar (G2 in docs/plans/google-calendar.md):
 // each booking is one event in the connection's "Koblip Book" calendar. A
 // fingerprint of what was sent finds what is new, moved, changed or
-// cancelled, so each sync sends only that. Runs on the server's timer, never
-// inside a booking.
+// cancelled, so each sync sends only that. Asked for right after a booking
+// changes (requestGoogleSync), never inside the booking itself, and run by
+// the server's timer as a safety net for anything that didn't go through.
 
 // Raised whenever the event's content changes, so every event is sent again.
 const EVENT_VERSION = 1
@@ -171,11 +173,16 @@ async function syncConnection(connectionId: string) {
           set: saved,
         })
     }
-    // Busy times (G3), less often than events.
-    if (
-      !connection.busyCheckedAt ||
-      Date.parse(connection.busyCheckedAt) + GOOGLE_CALENDAR_RULES.busyEverySeconds * 1000 <= Date.now()
-    ) {
+    // Busy times (G3): Google pushes changes; reading them again here is
+    // the safety check, or the only way where Google can't call back.
+    const pushed = await ensureGoogleChannels(connection.id).catch((error) => {
+      console.error(error)
+      return false
+    })
+    const every = pushed
+      ? GOOGLE_CALENDAR_RULES.busySafetyMinutes * 60_000
+      : GOOGLE_CALENDAR_RULES.busyWithoutPushSeconds * 1000
+    if (!connection.busyCheckedAt || Date.parse(connection.busyCheckedAt) + every <= Date.now()) {
       await refreshGoogleBusy(connection.id)
     }
   } catch (error) {
@@ -203,7 +210,35 @@ async function syncConnection(connectionId: string) {
 
 // Syncs one connection, never two syncs of it at once.
 export function syncGoogleCalendar(connectionId: string) {
-  return runInTurn(`google-calendar-sync:${connectionId}`, () => syncConnection(connectionId))
+  return runInTurn(googleTurnKey(connectionId), () => syncConnection(connectionId))
+}
+
+// Connections waiting for a sync: many changes at once make one sync.
+const queued = new Set<string>()
+
+// A business's bookings changed: its connections send the change to Google
+// now, without the booking waiting for it. Not tied to the request, so it
+// works from any page, action or webhook; the timer catches any that fail.
+export function requestGoogleSync(businessId: string) {
+  db.select({ id: googleCalendarConnections.id })
+    .from(googleCalendarConnections)
+    .where(
+      and(
+        eq(googleCalendarConnections.businessId, businessId),
+        eq(googleCalendarConnections.needsReconnect, false)
+      )
+    )
+    .then((rows) => {
+      for (const { id } of rows) {
+        if (queued.has(id)) continue
+        queued.add(id)
+        runInTurn(googleTurnKey(id), () => {
+          queued.delete(id)
+          return syncConnection(id)
+        }).catch((error) => console.error(error))
+      }
+    })
+    .catch((error) => console.error(error))
 }
 
 // Every working connection, one after another.

@@ -1,6 +1,6 @@
 import { NextResponse, after, type NextRequest } from "next/server"
 
-import { syncGoogleCalendar } from "@/features/dashboard/api/google-calendar-sync"
+import { syncGoogleCalendar } from "@/lib/google-calendar-sync"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { getSession } from "@/lib/dal"
 import {

@@ -6,6 +6,7 @@ import { customerKey } from "@/lib/customer-key"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
 import { googleBusyTimes } from "@/lib/google-calendar-busy"
+import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
 import { notification } from "@/lib/in-app-notifications"
 import {
@@ -272,6 +273,8 @@ export async function createBooking(
       return { status: "taken" }
     }
     revalidatePath("/dashboard", "layout")
+    // Google Calendar hears of it now, without the booking waiting.
+    requestGoogleSync(business.id)
     return { status: "booked", booking: confirmation }
   } catch {
     console.error("createBooking failed")

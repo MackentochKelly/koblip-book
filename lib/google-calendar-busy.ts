@@ -5,17 +5,19 @@ import { BOOKING_RULES } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { googleCalendarBusy, googleCalendarConnections, teamMembers } from "@/lib/db/schema"
-import { GOOGLE_SCOPES, googleCalendarApi } from "@/lib/google-calendar"
+import { GOOGLE_SCOPES, googleCalendarApi, googleTurnKey } from "@/lib/google-calendar"
+import { runInTurn } from "@/lib/run-in-turn"
 
-// Busy times from Google Calendar (G3 in docs/plans/google-calendar.md). The
-// server's timer reads them with freeBusy (only start and end, never what
-// the time is for) and keeps them here; the booking page and owner bookings
-// read the kept ones, so Google never slows a booking down.
+// Busy times from Google Calendar (G3 in docs/plans/google-calendar.md). They
+// are read with freeBusy (only start and end, never what the time is for)
+// when Google pushes a change (lib/google-calendar-channels.ts) and on the
+// timer as a safety check, and kept here; the booking page and owner
+// bookings read the kept ones, so Google never slows a booking down.
 
 // The calendars that count as busy. G4 lets the owner pick; until then, the
 // account's main calendar. Never the "Koblip Book" calendar: its events are
 // the bookings themselves.
-const BUSY_CALENDARS = ["primary"]
+export const BUSY_CALENDARS = ["primary"]
 
 type FreeBusy = {
   calendars?: Record<string, { busy?: { start: string; end: string }[]; errors?: unknown[] }>
@@ -70,6 +72,20 @@ export async function refreshGoogleBusy(connectionId: string) {
       : []),
     done,
   ])
+}
+
+// Connections waiting for a read: a burst of Google's calls makes one read.
+const queued = new Set<string>()
+
+// Reads a connection's busy times again soon, after any other work with
+// Google on it (one at a time).
+export function requestGoogleBusyRefresh(connectionId: string) {
+  if (queued.has(connectionId)) return
+  queued.add(connectionId)
+  runInTurn(googleTurnKey(connectionId), () => {
+    queued.delete(connectionId)
+    return refreshGoogleBusy(connectionId)
+  }).catch((error) => console.error(error))
 }
 
 export type GoogleBusyTime = {
