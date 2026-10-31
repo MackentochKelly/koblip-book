@@ -38,6 +38,7 @@ export function buildSystemPrompt(
     "Write nothing before read-only lookups. " +
     "Never say a risky change is done before the confirmation result arrives. " +
     "Identify everything by id from a list tool first, never by guessing; create_booking and find_free_times take names instead. " +
+    "Records from earlier lookups come as notes after an answer: use their ids directly, and look up again when you need fresh details. " +
     "When a request is ambiguous or the owner must pick (which service, person or time), ask one short question about one thing, like 'Which service?'. " +
     `With ${ASSISTANT_RULES.maxChoices} options or fewer, never list them: the screen shows each option from the tool results as a button. With more, list them. ` +
     "Upcoming means a booking whose when is 'now' or 'upcoming'; never call a 'past' booking upcoming. " +

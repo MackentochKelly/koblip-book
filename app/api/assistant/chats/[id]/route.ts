@@ -6,6 +6,7 @@ import {
   saveAssistantChat,
 } from "@/features/assistant/api/chats"
 import type { AssistantMessage } from "@/features/assistant/types"
+import { cleanMemory } from "@/features/assistant/utils/memory"
 import { ownedBusiness } from "@/features/dashboard/api/owned-business"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { getSession } from "@/lib/dal"
@@ -20,7 +21,8 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Cleaned messages, or null when the body is invalid. Empty texts are
-// dropped; what remains must be 1 to maxSavedMessages items.
+// dropped; what remains must be 1 to maxSavedMessages items. A reply's
+// memory rows are kept, checked like the chat route checks them.
 function cleanMessages(value: unknown): AssistantMessage[] | null {
   if (!Array.isArray(value)) {
     return null
@@ -30,11 +32,14 @@ function cleanMessages(value: unknown): AssistantMessage[] | null {
     if (typeof item !== "object" || item === null) {
       return null
     }
-    const { role, text } = item as Record<string, unknown>
+    const { role, text, memory } = item as Record<string, unknown>
+    const rows = cleanMemory(memory)
     if (
       (role !== "owner" && role !== "assistant") ||
       typeof text !== "string" ||
-      text.length > ASSISTANT_RULES.maxSavedMessageChars
+      text.length > ASSISTANT_RULES.maxSavedMessageChars ||
+      rows === null ||
+      (role === "owner" && rows.length > 0)
     ) {
       return null
     }
@@ -42,7 +47,9 @@ function cleanMessages(value: unknown): AssistantMessage[] | null {
     if (trimmed === "") {
       continue
     }
-    messages.push({ role, text: trimmed })
+    messages.push(
+      rows.length > 0 ? { role, text: trimmed, memory: rows } : { role, text: trimmed }
+    )
   }
   if (
     messages.length < 1 ||

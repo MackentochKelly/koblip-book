@@ -118,6 +118,7 @@ Response: a stream of events, one JSON per line:
 | `step` | `id`, `label`, `status: running or done or failed` | a small chip: "Finding bookings…" |
 | `confirm` | `id`, `title`, `summary`, `destructive` | a card with Confirm and Cancel buttons |
 | `check` | `id`, `label` | the answer is done; its check runs next (a "Checking the answer…" chip) |
+| `memory` | `rows: [{ kind, id, label }]` | nothing; kept on the reply and sent back as its `memory`, so the next question can use the ids |
 | `done` | none | input enabled again |
 | `error` | `code` (`rate_limited`, `unavailable`, `too_long`, `not_allowed`) | a short message and Retry |
 

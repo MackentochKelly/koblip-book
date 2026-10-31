@@ -394,6 +394,119 @@ test("a card's resolved args are stored, not the model's words", async () => {
   expect(peekPendingAction(id)?.args).toEqual({ date: "2099-01-01" })
 })
 
+test("a lookup's records come back as memory and spare the next lookup", async () => {
+  resetPendingActionsForTests()
+  scriptedClient(
+    [
+      [toolChunk(0, "call-A", "list_bookings", '{"day":"today"}')],
+      [textChunk("Ana at 10, Leo at 11.")],
+    ],
+    [judgeOk()]
+  )
+  const listed = await collect(
+    runChat(MESSAGES, CONTEXT, [
+      probe(
+        async () => ({
+          bookings: [
+            {
+              id: "k1",
+              customer: "Ana",
+              service: "Cut",
+              date: "2026-10-28",
+              time: "10:00",
+              status: "confirmed",
+            },
+            { id: "k2", customer: "Leo", service: "Fade" },
+          ],
+        }),
+        "list_bookings"
+      ),
+    ])
+  )
+  const memory = listed.find(
+    (e) => (e as { type: string }).type === "memory"
+  ) as { rows: unknown[] }
+  expect(memory.rows).toEqual([
+    {
+      kind: "booking",
+      id: "k1",
+      label: "Ana · Cut · 2026-10-28 10:00 · confirmed",
+    },
+    { kind: "booking", id: "k2", label: "Leo · Fade" },
+  ])
+  // Next question: the ids are in the model's notes, so it calls cancel
+  // straight away, with no second list_bookings.
+  const list = vi.fn(async () => ({ bookings: [] }))
+  const { seen } = scriptedClient([
+    [toolChunk(0, "call-B", "cancel_booking", '{"bookingId":"k1"}')],
+  ])
+  const carded = await collect(
+    runChat(
+      [
+        ...MESSAGES,
+        {
+          role: "assistant",
+          text: "Ana at 10, Leo at 11.",
+          memory: memory.rows as never,
+        },
+        { role: "owner", text: "cancel Ana's" },
+      ],
+      CONTEXT,
+      [
+        probe(list, "list_bookings"),
+        risky(async () => ({
+          title: "Cancel?",
+          summary: "Ana",
+          destructive: true,
+          action: "Cancel booking",
+        })),
+      ]
+    )
+  )
+  expect(list).not.toHaveBeenCalled()
+  expect(carded[0]).toMatchObject({ type: "confirm" })
+  const notes = seen[0].messages.filter(
+    (m) => m.role === "developer" && String((m as { content?: unknown }).content).includes("k1")
+  )
+  expect(notes).toHaveLength(1)
+  // The note sits right after the answer it belongs to.
+  const at = seen[0].messages.indexOf(notes[0])
+  expect(seen[0].messages[at - 1]).toMatchObject({ role: "assistant" })
+})
+
+test("only the newest few answers' records are shown to the model", async () => {
+  const { seen } = scriptedClient([[textChunk("Hi")]])
+  const answer = (id: string) => ({
+    role: "assistant" as const,
+    text: "ok",
+    memory: [{ kind: "service" as const, id, label: id }],
+  })
+  await collect(
+    runChat(
+      [
+        ...MESSAGES,
+        answer("s1"),
+        { role: "owner", text: "a" },
+        answer("s2"),
+        { role: "owner", text: "b" },
+        answer("s3"),
+        { role: "owner", text: "c" },
+        answer("s4"),
+        { role: "owner", text: "d" },
+      ],
+      CONTEXT,
+      []
+    )
+  )
+  const notes = seen[0].messages
+    .filter((m) => m.role === "developer")
+    .map((m) => String((m as { content?: unknown }).content))
+    .filter((c) => c.startsWith("Records"))
+  expect(notes).toHaveLength(ASSISTANT_RULES.maxMemoryReplies)
+  expect(notes.some((c) => c.includes('"s1"'))).toBe(false)
+  expect(notes.at(-1)).toContain('"s4"')
+})
+
 test("an aborted request ends the stream silently", async () => {
   vi.spyOn(meta, "getMetaAiClient").mockReturnValue({
     chat: {
@@ -804,6 +917,7 @@ test("sources follow a passed answer with kinds and counts", async () => {
     "text",
     "check",
     "sources",
+    "memory",
     "done",
   ])
   expect(events).toContainEqual({

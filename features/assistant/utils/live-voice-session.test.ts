@@ -34,6 +34,7 @@ function reply(text: string, pendingConfirm = false): Reply {
     result: null,
     sources: [],
     unverified: false,
+    memory: [],
   }
 }
 

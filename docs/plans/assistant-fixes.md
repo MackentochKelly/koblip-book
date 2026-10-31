@@ -20,7 +20,7 @@ file: [Plans](README.md).
 | A2 | Time picker shows right away | M | | Done (2026-10-31) |
 | A3 | Voice answers get checked too | M | A2 | Done (2026-10-31) |
 | A4 | At most 2 voice sessions open per owner | S | | Done (2026-10-31) |
-| A5 | Assistant remembers what it looked up | L | | To do |
+| A5 | Assistant remembers what it looked up | L | | Done (2026-10-31) |
 | A6 | Saving a new chat never fails on a race | S | | To do |
 | A7 | Cancel finds any booking, and only upcoming ones | S | | To do |
 | A8 | Waiting cards survive a deploy | M | A1 | To do |
@@ -123,7 +123,7 @@ assistant must look everything up again: slower, and more model calls.
   another business.
 - The prompt says: use these ids, and look up again when you need fresh data.
 
-**Files:** `features/assistant/types.ts`, `features/assistant/api/run-chat.ts`, `app/api/assistant/route.ts`, `features/assistant/utils/chat-state.ts` (bump `CHAT_STORAGE_VERSION`), `features/assistant/utils/system-prompt.ts`.
+**Files:** `features/assistant/utils/memory.ts` (rows and checks), `features/assistant/types.ts`, `features/assistant/api/run-chat.ts`, `app/api/assistant/route.ts`, `app/api/assistant/chats/[id]/route.ts`, `features/assistant/utils/chat-state.ts` (bump `CHAT_STORAGE_VERSION`), `features/assistant/utils/system-prompt.ts`, `lib/assistant-rules.ts`.
 
 **Done when:** a test: "list today's bookings", then "cancel Ana's" shows
 the card with no second `list_bookings` call. Bad or too-big memory gives

@@ -19,6 +19,10 @@ export const ASSISTANT_RULES = {
   maxCustomerQuery: 80,
   // Widest free-times window the find_free_times tool answers at once.
   maxFreeTimesDays: 14,
+  // Memory: records one answer keeps for the next question, and how many
+  // of the newest answers' records the model sees.
+  maxMemoryRows: 30,
+  maxMemoryReplies: 3,
   // Saved chats: how many the Recent list shows, and save limits.
   recentChats: 30,
   maxSavedMessages: 200,

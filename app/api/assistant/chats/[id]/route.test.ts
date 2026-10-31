@@ -330,3 +330,28 @@ test("DELETE removes the chat, then it is gone", async () => {
     await DELETE(get(`/api/assistant/chats/${ID}?businessId=b1`), params(ID))
   ).toMatchObject({ status: 404 })
 })
+
+test("PUT keeps a reply's memory, and refuses memory on the owner's words", async () => {
+  const memory = [{ kind: "service", id: "s1", label: "Cut" }]
+  const messages = [
+    { role: "owner", text: "Services?" },
+    { role: "assistant", text: "Cut.", memory },
+  ]
+  expect(
+    await PUT(put(ID, { businessId: "b1", messages }), params(ID))
+  ).toMatchObject({ status: 204 })
+  const saved = await GET(
+    get(`/api/assistant/chats/${ID}?businessId=b1`),
+    params(ID)
+  )
+  expect((await saved.json()).messages).toEqual(messages)
+  expect(
+    await PUT(
+      put(ID, {
+        businessId: "b1",
+        messages: [{ role: "owner", text: "Hi", memory }],
+      }),
+      params(ID)
+    )
+  ).toMatchObject({ status: 400 })
+})

@@ -10,6 +10,7 @@ import type {
 } from "@/features/assistant/types"
 import { ownedBusiness } from "@/features/dashboard/api/owned-business"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
+import { cleanMemory } from "@/features/assistant/utils/memory"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { getSession } from "@/lib/dal"
 import { buildAssistantTools } from "./tools"
@@ -42,7 +43,12 @@ function isValidMessages(value: unknown): value is AssistantMessage[] {
       typeof (m as AssistantMessage).text === "string" &&
       ((m as AssistantMessage).interrupted === undefined ||
         ((m as AssistantMessage).role === "assistant" &&
-          typeof (m as AssistantMessage).interrupted === "boolean"))
+          typeof (m as AssistantMessage).interrupted === "boolean")) &&
+      // Records an earlier answer looked up: assistant only, checked shape
+      // and size.
+      ((m as AssistantMessage).memory === undefined ||
+        ((m as AssistantMessage).role === "assistant" &&
+          cleanMemory((m as AssistantMessage).memory) !== null))
   )
 }
 
@@ -107,7 +113,12 @@ export async function POST(request: Request) {
   // 5. The owner's language, read once from the cookie (never the
   // body), then keep only the newest messages and run the tool loop.
   const language = await getOwnerLanguage()
-  const trimmed = messages.slice(-ASSISTANT_RULES.maxHistoryMessages)
+  // Memory rows keep only their checked fields.
+  const trimmed = messages
+    .slice(-ASSISTANT_RULES.maxHistoryMessages)
+    .map((m) =>
+      m.memory === undefined ? m : { ...m, memory: cleanMemory(m.memory) ?? [] }
+    )
   const budget = requestBudget(request)
   const encoder = new TextEncoder()
   const stream = new ReadableStream<Uint8Array>({

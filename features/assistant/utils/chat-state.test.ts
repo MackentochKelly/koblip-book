@@ -78,6 +78,7 @@ test("toMessages skips empty replies and keeps the newest", () => {
       result: null,
       sources: [],
       unverified: false,
+      memory: [],
     },
     { id: "o2", role: "owner", text: "Again" },
   ]
@@ -267,5 +268,21 @@ test("a check left running when the page closed comes back ended", () => {
   items = applyEvent(items, { type: "check", id: "c1", label: "Checking…" })
   expect(restoreChat(saveChat(items))[1]).toMatchObject({
     steps: [{ id: "c1", status: "failed" }],
+  })
+})
+
+test("an answer's memory lands on it, goes back with it, and is kept", () => {
+  const rows = [{ kind: "booking" as const, id: "k1", label: "Ana · Cut" }]
+  let items: ChatItem[] = [owner]
+  items = applyEvent(items, { type: "text", delta: "Ana at 10." })
+  items = applyEvent(items, { type: "memory", rows })
+  expect(toMessages(items, 20)).toEqual([
+    { role: "owner", text: "Hi" },
+    { role: "assistant", text: "Ana at 10.", memory: rows },
+  ])
+  expect(restoreChat(saveChat(items))).toEqual(items)
+  // A saved chat brings its memory back too.
+  expect(fromMessages(toMessages(items, 20))[1]).toMatchObject({
+    memory: rows,
   })
 })

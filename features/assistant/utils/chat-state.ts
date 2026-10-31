@@ -4,6 +4,7 @@ import type {
   ResultKind,
   SourceKind,
 } from "../types"
+import { cleanMemory, type MemoryRow } from "./memory"
 
 export type ConfirmState = "pending" | "accepted" | "declined"
 
@@ -56,6 +57,9 @@ export type ChatItem =
       sources: ChatSource[]
       // Set when the answer could not be double-checked.
       unverified: boolean
+      // The records it looked up, sent back with it so the next question
+      // can use their ids.
+      memory: MemoryRow[]
       // Set when the owner cut it off: the part they saw or heard.
       cutOff?: string
     }
@@ -120,6 +124,7 @@ export function newReply(): ChatItem {
     result: null,
     sources: [],
     unverified: false,
+    memory: [],
   }
 }
 
@@ -198,6 +203,8 @@ export function applyEvent(
       }))
     case "sources":
       return withReply((reply) => ({ ...reply, sources: event.items }))
+    case "memory":
+      return withReply((reply) => ({ ...reply, memory: event.rows }))
     case "notice":
       return withReply((reply) => ({ ...reply, unverified: true }))
     default:
@@ -228,7 +235,11 @@ export function fromMessages(messages: AssistantMessage[]): ChatItem[] {
   return messages.map((message) =>
     message.role === "owner"
       ? { id: crypto.randomUUID(), role: "owner", text: message.text }
-      : { ...(newReply() as AssistantItem), text: message.text }
+      : {
+          ...(newReply() as AssistantItem),
+          text: message.text,
+          memory: cleanMemory(message.memory) ?? [],
+        }
   )
 }
 
@@ -249,11 +260,15 @@ export function toMessages(
   limit: number
 ): AssistantMessage[] {
   return items
-    .map((item): AssistantMessage =>
-      item.role === "assistant" && item.cutOff !== undefined
-        ? { role: item.role, text: item.cutOff, interrupted: true }
-        : { role: item.role, text: wordsOf(item) }
-    )
+    .map((item): AssistantMessage => {
+      const message: AssistantMessage =
+        item.role === "assistant" && item.cutOff !== undefined
+          ? { role: item.role, text: item.cutOff, interrupted: true }
+          : { role: item.role, text: wordsOf(item) }
+      return item.role === "assistant" && item.memory.length > 0
+        ? { ...message, memory: item.memory }
+        : message
+    })
     .filter((message) => message.text.trim() !== "")
     .slice(-limit)
 }
@@ -261,7 +276,7 @@ export function toMessages(
 // Saved chats carry this number. Raise it whenever ChatItem changes:
 // a chat saved by another version starts fresh instead of breaking the
 // screen.
-export const CHAT_STORAGE_VERSION = 6
+export const CHAT_STORAGE_VERSION = 7
 
 const isText = (value: unknown): value is string => typeof value === "string"
 
@@ -300,6 +315,8 @@ function isChatItem(value: unknown): value is ChatItem {
     (item.cutOff === undefined || isText(item.cutOff)) &&
     Array.isArray(item.sources) &&
     typeof item.unverified === "boolean" &&
+    cleanMemory(item.memory) !== null &&
+    Array.isArray(item.memory) &&
     (item.result === null ||
       (typeof item.result === "object" &&
         isText((item.result as Record<string, unknown>).text) &&

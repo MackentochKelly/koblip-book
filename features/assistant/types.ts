@@ -1,3 +1,5 @@
+import type { MemoryRow } from "./utils/memory"
+
 // Stream contract for POST /api/assistant (section 5 of docs/assistant-plan.md).
 // One JSON object per line.
 // Which owner page a confirmed change belongs to, for the result link.
@@ -24,6 +26,7 @@ export type AssistantStreamEvent =
       action: string // the button's word, e.g. "Book", "Delete"
     } // card with the action button and Cancel
   | { type: "check"; id: string; label: string } // the answer's check runs next: POST /api/assistant/check with this id; label = its step chip
+  | { type: "memory"; rows: MemoryRow[] } // records this answer looked up, sent back with it next time
   | { type: "choices"; options: string[] } // quick answers; a tap sends one
   | {
       type: "times"
@@ -51,6 +54,8 @@ export interface AssistantMessage {
   text: string
   // Assistant only. The owner cut this reply off; `text` is only the part they saw or heard.
   interrupted?: boolean
+  // Assistant only. The records this reply looked up (the `memory` event).
+  memory?: MemoryRow[]
 }
 
 // One row of the Recent list: id, title, and last-write time.
