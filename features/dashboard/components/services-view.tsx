@@ -50,6 +50,7 @@ import {
   ItemActions,
   ItemContent,
   ItemDescription,
+  ItemMedia,
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
@@ -150,26 +151,28 @@ export function ServicesView({
     ids.splice(index + by, 0, id)
     run(() => reorderServices(businessId, ids))
   }
+  // A fresh set of suggestions each time the panel opens.
+  const suggest = () => {
+    setSuggestKey((value) => value + 1)
+    setSuggesting(true)
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* On a phone the top bar names the page, Suggest sits at the foot of
+          the list and Add floats, so this header row is a computer's. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 max-md:contents">
         <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{t.title}</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 max-md:hidden">
           <Button
             variant="outline"
-            onClick={() => {
-              setSuggestKey((value) => value + 1)
-              setSuggesting(true)
-            }}
+            onClick={suggest}
             disabled={view === "extras" && services.length === 0}
           >
             <SparklesIcon data-icon="inline-start" />
             {t.suggest}
           </Button>
-          {/* On a phone Add floats at the foot instead. */}
           <Button
-            className="max-md:hidden"
             onClick={() =>
               view === "services" ? openForm("new") : setAddingExtras(true)
             }
@@ -274,6 +277,25 @@ export function ServicesView({
             </Item>
           ))}
         </ItemGroup>
+      )}
+
+      {/* A phone's Suggest: after the last item, where the owner thinks of
+          what else to add. Extras need a service first. */}
+      {!(view === "extras" && services.length === 0) && (
+        <Item
+          variant="muted"
+          className="md:hidden"
+          render={<button type="button" onClick={suggest} />}
+        >
+          <ItemMedia variant="icon">
+            <SparklesIcon />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>
+              {view === "services" ? t.suggestServices : t.suggestExtras}
+            </ItemTitle>
+          </ItemContent>
+        </Item>
       )}
 
       <ConfirmRemove

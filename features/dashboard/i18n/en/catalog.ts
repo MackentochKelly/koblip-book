@@ -30,6 +30,9 @@ const catalog = {
       label: "Services and extras",
     },
     suggest: "Suggest",
+    // The phone's Suggest row at the foot of the list, by tab.
+    suggestServices: "Suggest services",
+    suggestExtras: "Suggest extras",
     empty: "No services yet",
     addService: "Add a service",
     editService: "Edit service",
