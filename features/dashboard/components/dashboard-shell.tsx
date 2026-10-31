@@ -14,6 +14,7 @@ import {
   UsersIcon,
 } from "@/components/ui/icons"
 
+import { SpinSwap } from "@/components/spin-swap"
 import { Button } from "@/components/ui/button"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -128,30 +129,33 @@ export function DashboardShell({
             )}
           >
             {PHONE_LEFT.map((path) => tab(path))}
-            <div className="flex min-h-14 items-center justify-center">
+            <div className="relative flex min-h-14 items-center justify-center">
               {/* A soft 2 px ring drawn over its own colour, and a 24 px icon:
-                  the assistant, or the open page's +. */}
-              {action ? (
-                <Button
-                  size="icon-lg"
-                  className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
-                  aria-label={action.label}
-                  disabled={action.disabled}
-                  onClick={action.onClick}
-                >
-                  <PlusIcon className="size-6" />
-                </Button>
-              ) : (
-                <Button
-                  size="icon-lg"
-                  className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
-                  aria-label={m.assistant}
-                  nativeButton={false}
-                  render={<Link href={assistantHref} />}
-                >
-                  <SparklesIcon className="size-6" />
-                </Button>
-              )}
+                  the assistant, or the open page's +, spinning from one to
+                  the other. */}
+              <SpinSwap swapKey={action ? "add" : "assistant"}>
+                {action ? (
+                  <Button
+                    size="icon-lg"
+                    className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
+                    aria-label={action.label}
+                    disabled={action.disabled}
+                    onClick={action.onClick}
+                  >
+                    <PlusIcon className="size-6" />
+                  </Button>
+                ) : (
+                  <Button
+                    size="icon-lg"
+                    className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
+                    aria-label={m.assistant}
+                    nativeButton={false}
+                    render={<Link href={assistantHref} />}
+                  >
+                    <SparklesIcon className="size-6" />
+                  </Button>
+                )}
+              </SpinSwap>
             </div>
             {PHONE_RIGHT.map((path) => tab(path))}
           </nav>
