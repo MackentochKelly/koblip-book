@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/icons"
 import { useTheme } from "next-themes"
 
+import { MenuSub } from "@/components/menu-sub"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -63,8 +64,9 @@ export function OwnerAvatar({
 
 // The owner's account menu, like Koblip Sales': their photo with a small ⌄
 // badge on its corner and a ring on hover and while open, so it reads as a
-// menu. Inside: who is logged in, Settings (in a business), light or dark (or as the device is), the
-// language, and Sign out.
+// menu. Inside: who is logged in, Settings (in a business), light or dark
+// (or as the device is) and the language, each one row showing the current
+// choice and opening the others (MenuSub), and Sign out.
 export const THEMES = [
   { value: "light", key: "light", icon: SunIcon },
   { value: "dark", key: "dark", icon: MoonIcon },
@@ -137,6 +139,7 @@ export function AccountMenuContent({
   const m = useOwnerMessages().shell
   const [language, setLanguage] = useOwnerLanguage()
   const signOut = useSignOut()
+  const current = THEMES.find((item) => item.value === theme) ?? THEMES[2]
 
   return (
     <DropdownMenuContent
@@ -159,19 +162,22 @@ export function AccountMenuContent({
       <DropdownMenuSeparator />
       {settingsHref && (
         <>
-          <DropdownMenuItem
-            render={<Link href={settingsHref as Route} />}
-          >
+          <DropdownMenuItem render={<Link href={settingsHref as Route} />}>
             <SettingsIcon />
             {m.nav.settings}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
         </>
       )}
-      <DropdownMenuGroup>
-        <DropdownMenuLabel>{m.appearance}</DropdownMenuLabel>
+      {/* Choosing keeps the menu open, to compare (radio items don't close it). */}
+      <MenuSub
+        icon={<current.icon />}
+        label={m.appearance}
+        value={m[current.key]}
+      >
         <DropdownMenuRadioGroup
-          value={theme ?? "system"}
+          aria-label={m.appearance}
+          value={current.value}
           onValueChange={setTheme}
         >
           {THEMES.map((item) => (
@@ -181,11 +187,14 @@ export function AccountMenuContent({
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
-      </DropdownMenuGroup>
-      <DropdownMenuSeparator />
-      <DropdownMenuGroup>
-        <DropdownMenuLabel>{m.language}</DropdownMenuLabel>
+      </MenuSub>
+      <MenuSub
+        icon={<LanguagesIcon />}
+        label={m.language}
+        value={LANGUAGE_NAMES[language]}
+      >
         <DropdownMenuRadioGroup
+          aria-label={m.language}
           value={language}
           onValueChange={(next) => {
             if (isPageLanguage(next)) setLanguage(next)
@@ -193,12 +202,11 @@ export function AccountMenuContent({
         >
           {PAGE_LANGUAGES.map((code) => (
             <DropdownMenuRadioItem key={code} value={code} lang={code}>
-              <LanguagesIcon />
               {LANGUAGE_NAMES[code]}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
-      </DropdownMenuGroup>
+      </MenuSub>
       <DropdownMenuSeparator />
       <DropdownMenuItem onClick={() => void signOut()}>
         <LogOutIcon />
