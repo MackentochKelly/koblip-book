@@ -35,7 +35,7 @@ export default async function BusinessDashboardLayout({
       language={language}
       initialUnread={unread}
       pollSeconds={rules.inAppPollSeconds}
-      settingsHref={`/dashboard/${businessId}/settings/notifications`}
+      settingsHref={`/dashboard/${businessId}/settings/updates`}
     >
       <DashboardShell
         business={{ id: business.id, slug: business.slug, name: business.name }}
