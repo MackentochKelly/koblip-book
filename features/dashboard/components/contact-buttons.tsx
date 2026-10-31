@@ -1,4 +1,4 @@
-import { MessageCircleIcon, PhoneIcon } from "@/components/ui/icons"
+import { WhatsAppIcon, PhoneIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { phoneLinks } from "@/lib/phone-link"
@@ -23,7 +23,7 @@ export function ContactButtons({ phone }: { phone: string }) {
         nativeButton={false}
         render={<a href={links.whatsapp} target="_blank" rel="noreferrer" />}
       >
-        <MessageCircleIcon data-icon="inline-start" />
+        <WhatsAppIcon data-icon="inline-start" />
         {t.whatsapp}
       </Button>
     </div>

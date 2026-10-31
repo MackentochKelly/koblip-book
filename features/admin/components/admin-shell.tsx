@@ -6,7 +6,7 @@ import {
   CalendarDaysIcon,
   ContactIcon,
   LayoutDashboardIcon,
-  MessageCircleIcon,
+  WhatsAppIcon,
   StoreIcon,
 } from "@/components/ui/icons"
 
@@ -29,7 +29,7 @@ const NAV = [
   { path: "/businesses", key: "businesses", icon: StoreIcon },
   { path: "/owners", key: "owners", icon: ContactIcon },
   { path: "/bookings", key: "bookings", icon: CalendarDaysIcon },
-  { path: "/whatsapp", key: "whatsapp", icon: MessageCircleIcon },
+  { path: "/whatsapp", key: "whatsapp", icon: WhatsAppIcon },
   { path: "/notifications", key: "notifications", icon: BellIcon },
 ] as const
 

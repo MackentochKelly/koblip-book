@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSelectedLayoutSegment } from "next/navigation"
-import { MessageCircleIcon } from "@/components/ui/icons"
+import { WhatsAppIcon } from "@/components/ui/icons"
 
 import { SectionParts } from "@/components/section-parts"
 import { Button } from "@/components/ui/button"
@@ -82,7 +82,7 @@ export function WhatsappFrame({
         <Empty className="border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <MessageCircleIcon />
+              <WhatsAppIcon />
             </EmptyMedia>
             <EmptyTitle>{t.connectTitle}</EmptyTitle>
           </EmptyHeader>

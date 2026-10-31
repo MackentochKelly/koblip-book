@@ -20,7 +20,7 @@ import {
   CircleAlertIcon,
   CircleCheckIcon,
   LinkIcon,
-  MessageCircleIcon,
+  WhatsAppIcon,
   OctagonXIcon,
   TriangleAlertIcon,
 } from "@/components/ui/icons"
@@ -43,7 +43,7 @@ const KIND_ICONS: Record<InAppKind, React.ComponentType> = {
   customerConfirmed: CircleCheckIcon,
   customerCantCome: CircleAlertIcon,
   customerCancelled: CalendarX2Icon,
-  customerReplied: MessageCircleIcon,
+  customerReplied: WhatsAppIcon,
   messageFailed: TriangleAlertIcon,
   templateApproved: BadgeCheckIcon,
   templateRejected: OctagonXIcon,

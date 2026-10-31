@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { MessageCircleIcon } from "@/components/ui/icons"
+import { WhatsAppIcon } from "@/components/ui/icons"
 import {
   Item,
   ItemActions,
@@ -64,7 +64,7 @@ export function WhatsappKoblipMessages({
       <Empty className="border">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <MessageCircleIcon />
+            <WhatsAppIcon />
           </EmptyMedia>
           <EmptyTitle>{t.notConnected}</EmptyTitle>
         </EmptyHeader>
