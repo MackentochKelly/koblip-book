@@ -116,12 +116,11 @@ export function TeamView({
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
         <div className="flex gap-2">
-          {/* The phone's tab bar has no Hours; the computer's menu does. */}
+          {/* Hours lives in Settings; the team's hours start from it. */}
           <Button
             variant="outline"
-            className="md:hidden"
             nativeButton={false}
-            render={<Link href={`/dashboard/${businessId}/hours`} />}
+            render={<Link href={`/dashboard/${businessId}/settings/hours`} />}
           >
             <ClockIcon data-icon="inline-start" />
             {messages.shell.nav.hours}

@@ -1,6 +1,15 @@
 import type en from "../en/settings"
 
 const settings: typeof en = {
+  // The page's parts (tabs on a computer, a list on a phone).
+  parts: {
+    details: "Datos",
+    hours: "Horario",
+    portfolio: "Portafolio",
+    spanish: "Español",
+    notifications: "Notificaciones",
+  },
+  partsLabel: "Partes de ajustes",
   save: "Guardar",
   saved: "Guardado",
   tryAgain: "No funcionó. Inténtalo de nuevo.",
@@ -29,7 +38,7 @@ const settings: typeof en = {
     saveFailed: "No se pudo guardar. Revisa las horas.",
   },
   photos: {
-    title: "Fotos",
+    title: "Portafolio",
     add: "Agregar",
     none: "Aún no hay fotos",
     photo: (n: number) => `Foto ${n}`,

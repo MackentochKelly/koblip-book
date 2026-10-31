@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
         destination: "/dashboard/:businessId/automations/:path*",
         permanent: true,
       })),
+      // Hours is a part of Settings (D40).
+      {
+        source: "/dashboard/:businessId/hours",
+        destination: "/dashboard/:businessId/settings/hours",
+        permanent: true,
+      },
       // The bell's choices screen was briefly named Updates (N-D12, N-D13).
       {
         source: "/dashboard/:businessId/settings/updates",

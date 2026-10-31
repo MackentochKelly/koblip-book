@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  ClockIcon,
   ContactIcon,
   filledIcon,
   LayoutDashboardIcon,
@@ -27,16 +26,15 @@ const NAV = [
   { path: "/customers", key: "customers", icon: ContactIcon },
   { path: "/services", key: "services", icon: TagIcon },
   { path: "/team", key: "team", icon: UsersIcon },
-  { path: "/hours", key: "hours", icon: ClockIcon },
   { path: "/settings", key: "settings", icon: SettingsIcon },
 ] as const
 
 // Form pages stay a narrow column on a computer, like big apps' settings;
 // lists and the home page use the wider frame.
-const FORM_PAGES = ["/hours", "/automations", "/integrations", "/settings"]
+const FORM_PAGES = ["/automations", "/integrations", "/settings"]
 
-// The phone has room for four tabs with the assistant between them; Hours
-// and Settings open from the ☰ menu (Settings also from the account menu).
+// The phone has room for four tabs with the assistant between them;
+// Settings (with Hours) opens from the ☰ menu (Settings also from the account menu).
 const PHONE_LEFT = ["", "/customers"]
 const PHONE_RIGHT = ["/services", "/team"]
 

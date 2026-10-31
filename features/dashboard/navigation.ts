@@ -1,5 +1,4 @@
 import {
-  ClockIcon,
   ContactIcon,
   LayoutDashboardIcon,
   PuzzleIcon,
@@ -29,7 +28,6 @@ export const NAV_GROUPS = [
     items: [
       { path: "/services", key: "services", icon: TagIcon },
       { path: "/team", key: "team", icon: UsersIcon },
-      { path: "/hours", key: "hours", icon: ClockIcon },
       { path: "/automations", key: "automations", icon: ZapIcon },
     ],
   },

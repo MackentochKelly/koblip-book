@@ -80,9 +80,6 @@ export function HoursForm({
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        {m.shell.nav.hours}
-      </h1>
       <FieldGroup>
         {WEEK.map((weekday) => {
           // Spanish weekdays come lowercase; a label starts with a capital.
