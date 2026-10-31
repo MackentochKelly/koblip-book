@@ -1,10 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
-import {
-  getOwnerLanguage,
-  getOwnerMessages,
-} from "@/features/dashboard/i18n/server"
+import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { getNotificationChoices } from "@/features/notifications/api/queries"
 import { NotificationChoices } from "@/features/notifications/components/notification-choices"
 import { notificationMessagesFor } from "@/features/notifications/i18n"
@@ -21,10 +18,9 @@ type Props = {
 
 export default async function NotificationSettingsPage({ params }: Props) {
   const { businessId } = await params
-  const [choices, language, m] = await Promise.all([
+  const [choices, language] = await Promise.all([
     getNotificationChoices(businessId),
     getOwnerLanguage(),
-    getOwnerMessages(),
   ])
   if (!choices) notFound()
   return (
@@ -32,10 +28,6 @@ export default async function NotificationSettingsPage({ params }: Props) {
       businessId={businessId}
       language={language}
       choices={choices}
-      back={{
-        href: `/dashboard/${businessId}/settings`,
-        label: m.shell.nav.settings,
-      }}
     />
   )
 }

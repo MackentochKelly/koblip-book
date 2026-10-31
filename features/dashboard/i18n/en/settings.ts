@@ -1,5 +1,14 @@
 // Settings, Hours, photos, the Spanish page, and the setup and welcome steps.
 const settings = {
+  // The page's parts (tabs on a computer, a list on a phone).
+  parts: {
+    details: "Details",
+    hours: "Hours",
+    portfolio: "Portfolio",
+    spanish: "Spanish",
+    notifications: "Notifications",
+  },
+  partsLabel: "Settings parts",
   save: "Save",
   saved: "Saved",
   tryAgain: "That did not work. Please try again.",
@@ -28,7 +37,7 @@ const settings = {
     saveFailed: "Could not save. Check the times.",
   },
   photos: {
-    title: "Photos",
+    title: "Portfolio",
     add: "Add",
     none: "No photos yet",
     photo: (n: number) => `Photo ${n}`,

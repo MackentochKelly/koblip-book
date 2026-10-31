@@ -58,7 +58,7 @@ export function ConfirmDetailsCard({
       <CardContent>
         <BusinessDetails
           details={details}
-          hoursHref={`${base}/hours`}
+          hoursHref={`${base}/settings/hours`}
           labels={{ noHours: t.noHours, openDays: t.openDays }}
         />
       </CardContent>

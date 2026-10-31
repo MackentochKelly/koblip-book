@@ -36,7 +36,8 @@ export function DetailsForm({
   businessId: string
   details: BusinessDetailsInput
   hasTeam: boolean
-  title?: string
+  // null: no heading (Settings' frame gives it).
+  title?: string | null
   next?: string
 }) {
   const m = useOwnerMessages()
@@ -91,9 +92,11 @@ export function DetailsForm({
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        {title ?? m.shell.nav.settings}
-      </h1>
+      {title !== null && (
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {title ?? m.shell.nav.settings}
+        </h1>
+      )}
       <FieldGroup>
         <Field data-invalid={invalid === "name" || undefined}>
           <FieldLabel htmlFor="details-name">{t.name}</FieldLabel>

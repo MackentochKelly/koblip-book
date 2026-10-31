@@ -1,10 +1,8 @@
 "use client"
 
-import Link from "next/link"
 import { useOptimistic, useTransition } from "react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
 import {
   Field,
   FieldContent,
@@ -14,7 +12,6 @@ import {
   FieldSet,
   FieldTitle,
 } from "@/components/ui/field"
-import { ChevronLeftIcon } from "@/components/ui/icons"
 import { Switch } from "@/components/ui/switch"
 import type { PageLanguage } from "@/lib/page-language"
 import type { InAppKind } from "@/types/in-app-notifications"
@@ -30,12 +27,10 @@ export function NotificationChoices({
   businessId,
   language,
   choices,
-  back,
 }: {
   businessId: string
   language: PageLanguage
   choices: InAppChoice[]
-  back: { href: string; label: string }
 }) {
   const t = notificationMessagesFor(language)
   const [, startTransition] = useTransition()
@@ -56,21 +51,7 @@ export function NotificationChoices({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <Button
-          variant="ghost"
-          className="-ml-2.5 w-fit"
-          nativeButton={false}
-          render={<Link href={back.href} />}
-        >
-          <ChevronLeftIcon data-icon="inline-start" />
-          {back.label}
-        </Button>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {t.choices.title}
-        </h1>
-        <p className="text-muted-foreground">{t.choices.open}</p>
-      </div>
+      <p className="text-muted-foreground">{t.choices.open}</p>
       <FieldGroup>
         {CHOICE_GROUPS.map((group) => (
           <FieldSet key={group.id}>

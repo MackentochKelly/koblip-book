@@ -66,7 +66,7 @@ const RESULT_PAGES: Record<ResultKind, string> = {
   bookings: "",
   services: "/services",
   team: "/team",
-  hours: "/hours",
+  hours: "/settings/hours",
   customers: "/customers",
   settings: "/settings",
 }
