@@ -11,6 +11,7 @@ import {
   ArrowRight as MynaArrowRight,
   ArrowUp as MynaArrowUp,
   Baby as MynaBaby,
+  Bell as MynaBell,
   Calendar as MynaCalendar,
   CalendarX as MynaCalendarX,
   Chat as MynaChat,
@@ -156,6 +157,7 @@ export const BabyIcon = icon(MynaBaby as Icon, "BabyIcon")
 export const AudioLinesIcon = icon(LucideAudioLines as Icon, "AudioLinesIcon")
 export const BadgeCheckIcon = icon(LucideBadgeCheck as Icon, "BadgeCheckIcon")
 export const BanknoteIcon = icon(LucideBanknote as Icon, "BanknoteIcon")
+export const BellIcon = icon(MynaBell as Icon, "BellIcon")
 export const CalendarDaysIcon = icon(MynaCalendar as Icon, "CalendarDaysIcon")
 export const CalendarIcon = icon(MynaCalendar as Icon, "CalendarIcon")
 export const CalendarX2Icon = icon(MynaCalendarX as Icon, "CalendarX2Icon")
