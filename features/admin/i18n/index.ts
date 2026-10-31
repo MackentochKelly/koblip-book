@@ -1,4 +1,5 @@
 import type { PageLanguage } from "@/lib/page-language"
+import type { InAppKind } from "@/types/in-app-notifications"
 
 // The admin area's words. Spanish is typed against English, so a missing
 // word fails the typecheck.
@@ -12,6 +13,7 @@ const en = {
     owners: "Owners",
     bookings: "Bookings",
     whatsapp: "WhatsApp",
+    notifications: "Notifications",
   },
   whatsapp: {
     partsLabel: "WhatsApp parts",
@@ -377,6 +379,33 @@ const en = {
       REJECTED: "Account rejected",
     } as Record<string, string>,
   },
+  notifications: {
+    none: "No notifications yet",
+    noneFound: "No notifications match",
+    clearFilters: "Clear filters",
+    businessFilter: "Business",
+    kindFilter: "Kind",
+    readFilter: "Read",
+    allBusinesses: "All businesses",
+    allKinds: "All kinds",
+    allStates: "Read or not",
+    unread: "Unread",
+    read: "Read",
+    turnedOff: "Turned off by owners",
+    kinds: {
+      newBooking: "New booking",
+      customerCancelled: "Customer cancelled",
+      customerConfirmed: "I'll be there",
+      customerCantCome: "Can't make it",
+      customerReplied: "Customer wrote",
+      messageFailed: "Message failed",
+      templateApproved: "Meta approved a message",
+      templateRejected: "Meta rejected a message",
+      koblipLimitNear: "Koblip limit near",
+      koblipLimitReached: "Koblip limit reached",
+      connectionRenew: "Connection needs renewal",
+    } satisfies Record<InAppKind, string>,
+  },
   error: {
     title: "Something went wrong",
     description: "Try again in a few minutes.",
@@ -396,6 +425,7 @@ const es: AdminMessages = {
     owners: "Dueños",
     bookings: "Reservas",
     whatsapp: "WhatsApp",
+    notifications: "Notificaciones",
   },
   whatsapp: {
     partsLabel: "Partes de WhatsApp",
@@ -755,6 +785,33 @@ const es: AdminMessages = {
       APPROVED: "Cuenta aprobada",
       PENDING: "Cuenta en revisión",
       REJECTED: "Cuenta rechazada",
+    },
+  },
+  notifications: {
+    none: "Aún no hay notificaciones",
+    noneFound: "Ninguna notificación coincide",
+    clearFilters: "Quitar filtros",
+    businessFilter: "Negocio",
+    kindFilter: "Tipo",
+    readFilter: "Leída",
+    allBusinesses: "Todos los negocios",
+    allKinds: "Todos los tipos",
+    allStates: "Leídas o no",
+    unread: "Sin leer",
+    read: "Leída",
+    turnedOff: "Apagadas por los dueños",
+    kinds: {
+      newBooking: "Nueva reserva",
+      customerCancelled: "El cliente canceló",
+      customerConfirmed: "Ahí estaré",
+      customerCantCome: "No podré ir",
+      customerReplied: "El cliente escribió",
+      messageFailed: "Mensaje fallido",
+      templateApproved: "Meta aprobó un mensaje",
+      templateRejected: "Meta rechazó un mensaje",
+      koblipLimitNear: "Límite de Koblip cerca",
+      koblipLimitReached: "Límite de Koblip alcanzado",
+      connectionRenew: "La conexión debe renovarse",
     },
   },
   error: {
