@@ -36,22 +36,21 @@ export interface Stat {
 // on a computer. Each has its icon on a soft coloured circle beside its
 // label (a little smaller on a phone, so the label fits), then the number with how it moved against the period before
 // beside it (green when it went the right way), and a short line saying what
-// it counts. With an `href` the whole card opens that page.
+// it counts. With an `href` each number opens that page, and each box
+// lights up on its own under the mouse.
 export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
-  const card = (
-    <Card
-      className={cn(
-        "gap-0 py-0",
-        href &&
-          "transition-colors hover:bg-muted [&_dl>div]:transition-colors hover:[&_dl>div]:bg-muted"
-      )}
-    >
+  return (
+    <Card className="gap-0 py-0">
       {/* The lines between numbers match the card's own edge. */}
       <dl className="grid grid-cols-2 gap-px bg-foreground/5 lg:grid-cols-4 dark:bg-foreground/10">
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="flex flex-col gap-3 bg-card px-3 py-4 md:p-5"
+            className={cn(
+              "flex flex-col gap-3 bg-card px-3 py-4 md:p-5",
+              href &&
+                "relative transition-colors hover:bg-muted has-[a:focus-visible]:bg-muted has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50 has-[a:focus-visible]:ring-inset"
+            )}
           >
             <dt className="flex items-center gap-2 font-medium md:gap-2.5">
               <span
@@ -63,9 +62,19 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
               >
                 {stat.icon}
               </span>
-              <span className="min-w-0 truncate max-md:text-sm">
-                {stat.label}
-              </span>
+              {href ? (
+                // The label is the box's link; it covers the whole box.
+                <Link
+                  href={href}
+                  className="min-w-0 truncate outline-none after:absolute after:inset-0 max-md:text-sm"
+                >
+                  {stat.label}
+                </Link>
+              ) : (
+                <span className="min-w-0 truncate max-md:text-sm">
+                  {stat.label}
+                </span>
+              )}
             </dt>
             <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <span className="text-3xl font-semibold tracking-tight tabular-nums">
@@ -85,16 +94,6 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
         ))}
       </dl>
     </Card>
-  )
-  return href ? (
-    <Link
-      href={href}
-      className="rounded-4xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-    >
-      {card}
-    </Link>
-  ) : (
-    card
   )
 }
 
