@@ -370,11 +370,30 @@ export async function* runChat(
         rows: [...memory.values()].slice(-ASSISTANT_RULES.maxMemoryRows),
       }
     }
+    // Typed answers hold a turn's first words (typedHoldChars, ending a
+    // sentence) before streaming: a turn that calls a tool instead (a
+    // lookup, a card, the buttons) shows none of them, as the prompt asks
+    // ("write nothing before"). Talking mode says its short line before a
+    // lookup on purpose, so it streams everything.
+    const holds = context.voice !== true
     for (let turn = 0; turn < ASSISTANT_RULES.maxSteps; turn += 1) {
       const stream = await modelCall()
       // Keep the full turn for history while sending each delta immediately.
       let text = ""
+      // This turn's words on screen, and the ones still held back.
+      let shown = ""
+      let held = ""
       const calls: CollectedCall[] = []
+      const show = function* (
+        words: string
+      ): Generator<AssistantStreamEvent> {
+        if (shown === "" && textSent) {
+          yield { type: "text", delta: "\n\n" }
+        }
+        shown += words
+        textSent = true
+        yield { type: "text", delta: words }
+      }
       for await (const chunk of stream) {
         // Usage arrives on the final chunk, which may carry no choices.
         if (opts?.onUsage && chunk.usage) {
@@ -401,12 +420,21 @@ export async function* runChat(
           continue
         }
         if (delta.content) {
-          if (text === "" && textSent) {
-            yield { type: "text", delta: "\n\n" }
-          }
           text += delta.content
-          textSent = true
-          yield { type: "text", delta: delta.content }
+          if (!holds || shown !== "") {
+            yield* show(delta.content)
+          } else if (calls.length === 0) {
+            held += delta.content
+            // Long enough, with a finished sentence and more after it: an
+            // answer.
+            if (
+              held.length >= ASSISTANT_RULES.typedHoldChars &&
+              /[.!?…]["')\]]*\s+\S|\n\s*\S/.test(held)
+            ) {
+              yield* show(held)
+              held = ""
+            }
+          }
         }
         for (const tc of delta.tool_calls ?? []) {
           const slot = (calls[tc.index] ??= { id: "", name: "", argsText: "" })
@@ -420,6 +448,11 @@ export async function* runChat(
             slot.argsText += tc.function.arguments
           }
         }
+      }
+      // Words held to the end of a turn without a tool call are its answer.
+      if (calls.length === 0 && held !== "") {
+        yield* show(held)
+        held = ""
       }
       if (calls.length === 0) {
         if (!toolsRan) {
@@ -509,10 +542,10 @@ export async function* runChat(
             })
             continue
           }
-          // When the words written with the call already ask (they have a
+          // When the words shown with the call already ask (they have a
           // question mark), they are the question; otherwise ask_owner's
           // question is shown. Never asked twice, never buttons unasked.
-          if (!/[?？]/.test(text)) {
+          if (!/[?？]/.test(shown)) {
             if (textSent) {
               yield { type: "text", delta: "\n\n" }
             }

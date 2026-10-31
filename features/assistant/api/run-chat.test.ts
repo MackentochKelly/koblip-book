@@ -155,11 +155,8 @@ test("plain answer sends one text event then done, with tools offered", async ()
   const events = await collect(
     runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
   )
-  expect(events).toEqual([
-    { type: "text", delta: "Hi" },
-    { type: "text", delta: "!" },
-    { type: "done" },
-  ])
+  // Typed: a short answer comes whole once the turn ends with no tool.
+  expect(events).toEqual([{ type: "text", delta: "Hi!" }, { type: "done" }])
   const body = seen[0] as unknown as {
     tools: { function: { name: string } }[]
     stream: boolean
@@ -200,7 +197,7 @@ test("tool call then final answer, ids matched in order", async () => {
   expect(run).toHaveBeenNthCalledWith(2, {})
 })
 
-test("streams pre-tool text and separates later text across empty turns", async () => {
+test("talking streams its line before a lookup and separates later text", async () => {
   scriptedClient(
     [
       [textChunk("Checking."), toolChunk(0, "a", "probe", "{}")],
@@ -210,7 +207,7 @@ test("streams pre-tool text and separates later text across empty turns", async 
     [judgeOk()]
   )
   const events = await collect(
-    runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
+    runChat(MESSAGES, { ...CONTEXT, voice: true }, [probe(async () => ({}))])
   )
   expect(events.filter((e) => (e as { type: string }).type === "text")).toEqual(
     [
@@ -219,6 +216,49 @@ test("streams pre-tool text and separates later text across empty turns", async 
       { type: "text", delta: "Two" },
       { type: "text", delta: " bookings." },
     ]
+  )
+})
+
+test("typed: words written before a tool call never show", async () => {
+  scriptedClient(
+    [
+      [textChunk("Booking flow needs a lookup."), toolChunk(0, "a", "probe", "{}")],
+      [textChunk("Two"), textChunk(" bookings.")],
+    ],
+    [judgeOk()]
+  )
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
+  )
+  expect(events.filter((e) => (e as { type: string }).type === "text")).toEqual(
+    [{ type: "text", delta: "Two bookings." }]
+  )
+})
+
+test("typed: a long answer streams once enough words and a sentence have come", async () => {
+  const first = "x".repeat(ASSISTANT_RULES.typedHoldChars) + ". "
+  scriptedClient([[textChunk(first), textChunk("Ana at 3"), textChunk(" and Leo.")]])
+  const events = await collect(runChat(MESSAGES, CONTEXT, []))
+  expect(events).toEqual([
+    { type: "text", delta: first + "Ana at 3" },
+    { type: "text", delta: " and Leo." },
+    { type: "done" },
+  ])
+})
+
+test("typed: two short sentences before a tool call never show", async () => {
+  scriptedClient(
+    [
+      [textChunk("Which service? "), textChunk("I'll fetch the options."), toolChunk(0, "a", "probe", "{}")],
+      [textChunk("Two bookings.")],
+    ],
+    [judgeOk()]
+  )
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
+  )
+  expect(events.filter((e) => (e as { type: string }).type === "text")).toEqual(
+    [{ type: "text", delta: "Two bookings." }]
   )
 })
 
@@ -727,11 +767,7 @@ test("no tool means one text event and no judge call", async () => {
   const events = await collect(
     runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
   )
-  expect(events).toEqual([
-    { type: "text", delta: "Hi" },
-    { type: "text", delta: "!" },
-    { type: "done" },
-  ])
+  expect(events).toEqual([{ type: "text", delta: "Hi!" }, { type: "done" }])
   expect(judgeBodies(create)).toEqual([])
 })
 
@@ -859,14 +895,23 @@ test("ask_owner sends the question and its buttons at once, with no check", asyn
 })
 
 test("a question the model wrote with the call is not asked twice", async () => {
-  scriptedClient([
+  const turns = [
     [toolChunk(0, "call-A", "probe", "{}")],
     [textChunk("Which service would you like?"), askChunk("Which service?", ["Cut", "Fade"])],
+  ]
+  const tools = [
+    probe(async () => ({ services: [{ name: "Cut" }, { name: "Fade" }] })),
+  ]
+  // Typed: the held words never show; ask_owner's question does, once.
+  scriptedClient(turns)
+  const typed = await collect(runChat(MESSAGES, CONTEXT, tools))
+  expect(typed.filter((e) => (e as { type: string }).type === "text")).toEqual([
+    { type: "text", delta: "Which service?" },
   ])
+  // Talking: its words were already said and ask, so only buttons come.
+  scriptedClient(turns)
   const events = await collect(
-    runChat(MESSAGES, CONTEXT, [
-      probe(async () => ({ services: [{ name: "Cut" }, { name: "Fade" }] })),
-    ])
+    runChat(MESSAGES, { ...CONTEXT, voice: true }, tools)
   )
   expect(events.filter((e) => (e as { type: string }).type === "text")).toEqual([
     { type: "text", delta: "Which service would you like?" },
@@ -896,9 +941,11 @@ test("ask_owner's question shows when the words before it ask nothing", async ()
         probe(async () => ({ services: [{ name: "Cut" }, { name: "Fade" }] })),
       ])
     )
-    expect(events.slice(-4)).toEqual([
-      { type: "text", delta: "\n\n" },
+    // Typed: "Two match." was written with a tool call, so it never shows.
+    expect(events.filter((e) => (e as { type: string }).type === "text")).toEqual([
       { type: "text", delta: "Which one?" },
+    ])
+    expect(events.slice(-2)).toEqual([
       { type: "choices", options: ["Cut", "Fade"] },
       { type: "done" },
     ])
@@ -1207,7 +1254,8 @@ test("text is yielded before the model stream advances", async () => {
   vi.spyOn(meta, "getMetaAiClient").mockReturnValue({
     chat: { completions: { create } },
   } as never)
-  const gen = runChat(MESSAGES, CONTEXT, [])
+  // Talking mode streams every word at once.
+  const gen = runChat(MESSAGES, { ...CONTEXT, voice: true }, [])
   expect(await gen.next()).toEqual({
     value: { type: "text", delta: "First" },
     done: false,
