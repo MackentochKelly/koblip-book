@@ -62,6 +62,17 @@ const bookings = {
     call: "Call",
     whatsapp: "WhatsApp",
   },
+  // The Analytics page's look back over the last 30 days.
+  analytics: {
+    last30: "Last 30 days",
+    bookings: "Bookings",
+    noShows: "No-shows",
+    newCustomers: "New customers",
+    returning: "Returning customers",
+    busiestDays: "Busiest days",
+    topServices: "Top services",
+    noData: "No bookings yet",
+  },
   chart: {
     series: "Bookings",
     range: "Days shown",

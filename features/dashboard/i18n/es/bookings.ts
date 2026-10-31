@@ -63,6 +63,16 @@ const bookings: typeof en = {
     call: "Llamar",
     whatsapp: "WhatsApp",
   },
+  analytics: {
+    last30: "Últimos 30 días",
+    bookings: "Reservas",
+    noShows: "No se presentaron",
+    newCustomers: "Clientes nuevos",
+    returning: "Clientes que vuelven",
+    busiestDays: "Días más ocupados",
+    topServices: "Servicios más pedidos",
+    noData: "Aún no hay reservas",
+  },
   chart: {
     series: "Reservas",
     range: "Días mostrados",

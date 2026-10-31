@@ -150,9 +150,7 @@ export function BookingsView({
   )
 
   return (
-    // Room at the foot on a phone so the floating Add never hides the last
-    // booking.
-    <div className="flex flex-col gap-6 max-md:pb-16">
+    <div className="flex flex-col gap-6">
       {/* On a phone the top bar names the page and Add floats at the foot,
           so this header row only shows on a computer. */}
       <div className="flex items-center justify-between gap-3 max-md:contents">
@@ -170,13 +168,6 @@ export function BookingsView({
           {t.add}
         </Button>
       </div>
-      <FloatingActionButton
-        label={t.addBooking}
-        onClick={() => setAdding(true)}
-        disabled={addOptions.services.length === 0}
-      >
-        <PlusIcon />
-      </FloatingActionButton>
       <StatCards
         stats={[
           { label: t.stats.today, value: counts.today, href: analytics },
@@ -215,7 +206,8 @@ export function BookingsView({
               </EmptyTitle>
             </EmptyHeader>
             {view === "upcoming" && addOptions.services.length > 0 && (
-              <EmptyContent>
+              // On a phone the floating Add does this.
+              <EmptyContent className="max-md:hidden">
                 <Button onClick={() => setAdding(true)}>
                   <PlusIcon data-icon="inline-start" />
                   {t.addBooking}
@@ -331,6 +323,14 @@ export function BookingsView({
           </>
         )}
       </div>
+
+      <FloatingActionButton
+        label={t.addBooking}
+        onClick={() => setAdding(true)}
+        disabled={addOptions.services.length === 0}
+      >
+        <PlusIcon />
+      </FloatingActionButton>
 
       <ResponsivePanel
         open={detailsOpen}
