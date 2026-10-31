@@ -1,9 +1,5 @@
 import Link from "next/link"
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ChevronRightIcon,
-} from "@/components/ui/icons"
+import { ArrowDownIcon, ArrowUpIcon } from "@/components/ui/icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
@@ -22,15 +18,12 @@ export interface Stat {
 // Key numbers in one card, split by thin lines: two across on a phone, four
 // on a computer. Each has an icon and label, then the number with how it
 // moved against the period before beside it (green when it went the right
-// way). `caption` names the period once, at the top; with an `href` the
-// whole card opens that page.
+// way). With an `href` the whole card opens that page.
 export function StatStrip({
   stats,
-  caption,
   href,
 }: {
   stats: Stat[]
-  caption?: string
   href?: string
 }) {
   const card = (
@@ -40,13 +33,8 @@ export function StatStrip({
         href && "transition-colors hover:bg-muted [&_dl>div]:transition-colors hover:[&_dl>div]:bg-muted"
       )}
     >
-      {caption && (
-        <div className="flex items-center justify-between gap-2 border-b px-5 py-4 text-muted-foreground">
-          {caption}
-          {href && <ChevronRightIcon className="size-4" />}
-        </div>
-      )}
-      <dl className="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
+      {/* The lines between numbers match the card's own edge. */}
+      <dl className="grid grid-cols-2 gap-px bg-foreground/5 lg:grid-cols-4 dark:bg-foreground/10">
         {stats.map((stat) => (
           <div key={stat.label} className="flex flex-col gap-2 bg-card p-5">
             <dt className="flex items-center gap-2 text-muted-foreground [&_svg]:size-4.5 [&_svg]:shrink-0 [&_svg]:text-primary">

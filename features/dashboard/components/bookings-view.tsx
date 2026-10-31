@@ -171,7 +171,6 @@ export function BookingsView({
       <PeriodStats
         summary={summary}
         currency={currency}
-        caption={t.analytics.last[7]}
         href={`/dashboard/${businessId}/analytics`}
       />
       <div className="flex min-w-0 flex-col gap-6">
