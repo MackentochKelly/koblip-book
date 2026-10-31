@@ -1,11 +1,13 @@
 "use client"
 
 import Link from "next/link"
+import { useState } from "react"
 import { usePathname } from "next/navigation"
 import {
   ContactIcon,
   filledIcon,
   LayoutDashboardIcon,
+  PlusIcon,
   TagIcon,
   SparklesIcon,
   SettingsIcon,
@@ -19,6 +21,7 @@ import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { cn } from "@/lib/utils"
 import { AppSidebar } from "./app-sidebar"
 import { CommandMenuProvider } from "./command-menu"
+import { type TabBarAction, TabBarActionContext } from "./tab-bar-action"
 import { TopBar } from "./top-bar"
 
 const NAV = [
@@ -33,7 +36,8 @@ const NAV = [
 // lists and the home page use the wider frame.
 const FORM_PAGES = ["/automations", "/integrations", "/settings"]
 
-// The phone has room for four tabs with the assistant between them;
+// The phone has room for four tabs with the assistant between them (a +
+// instead on a page that adds something, see tab-bar-action.tsx);
 // Settings (with Hours) opens from the ☰ menu (Settings also from the account menu).
 const PHONE_LEFT = ["", "/customers"]
 const PHONE_RIGHT = ["/services", "/team"]
@@ -54,6 +58,7 @@ export function DashboardShell({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const [action, setAction] = useState<TabBarAction | null>(null)
   const m = useOwnerMessages().shell.nav
   const base = `/dashboard/${business.id}`
   const assistantHref = `${base}/assistant`
@@ -112,7 +117,7 @@ export function DashboardShell({
                   "flex min-h-0 max-w-none flex-1 flex-col p-0 pb-0 md:p-0"
               )}
             >
-              {children}
+              <TabBarActionContext value={setAction}>{children}</TabBarActionContext>
             </div>
           </SidebarInset>
           <nav
@@ -124,16 +129,29 @@ export function DashboardShell({
           >
             {PHONE_LEFT.map((path) => tab(path))}
             <div className="flex min-h-14 items-center justify-center">
-              <Button
-                size="icon-lg"
-                // A soft 2 px ring drawn over its own colour, and a 24 px icon.
-                className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
-                aria-label={m.assistant}
-                nativeButton={false}
-                render={<Link href={assistantHref} />}
-              >
-                <SparklesIcon className="size-6" />
-              </Button>
+              {/* A soft 2 px ring drawn over its own colour, and a 24 px icon:
+                  the assistant, or the open page's +. */}
+              {action ? (
+                <Button
+                  size="icon-lg"
+                  className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
+                  aria-label={action.label}
+                  disabled={action.disabled}
+                  onClick={action.onClick}
+                >
+                  <PlusIcon className="size-6" />
+                </Button>
+              ) : (
+                <Button
+                  size="icon-lg"
+                  className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
+                  aria-label={m.assistant}
+                  nativeButton={false}
+                  render={<Link href={assistantHref} />}
+                >
+                  <SparklesIcon className="size-6" />
+                </Button>
+              )}
             </div>
             {PHONE_RIGHT.map((path) => tab(path))}
           </nav>

@@ -26,7 +26,8 @@ export function FloatingActionButton({
         aria-label={label}
         onClick={onClick}
         disabled={disabled}
-        className="fixed right-4 bottom-[calc(--spacing(20)+env(safe-area-inset-bottom))] z-30 size-14 rounded-full md:hidden [&_svg:not([class*='size-'])]:size-6"
+        // 48 px, with the same soft 2 px ring as the tab bar's middle button.
+        className="fixed right-4 bottom-[calc(--spacing(20)+env(safe-area-inset-bottom))] z-30 size-12 rounded-full border-2 border-primary-foreground/45 bg-clip-border md:hidden [&_svg:not([class*='size-'])]:size-6"
       >
         {children}
       </Button>
