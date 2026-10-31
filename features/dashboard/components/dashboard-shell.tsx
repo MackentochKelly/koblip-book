@@ -43,6 +43,11 @@ const FORM_PAGES = ["/automations", "/integrations", "/settings"]
 const PHONE_LEFT = ["", "/customers"]
 const PHONE_RIGHT = ["/services", "/team"]
 
+// Pages whose middle button is + rather than the assistant. Known from the
+// address, so it is + from the first moment, while the page still loads;
+// the page then gives what a tap does (useTabBarAction).
+const ADD_PAGES = ["/customers", "/services", "/team"]
+
 // The owner area: the ☰ menu (folding on a computer, sliding in on a phone),
 // a bottom tab bar on a phone for the main pages, and a top bar with the
 // business name, its public page and the account menu. `bell` is the
@@ -60,11 +65,21 @@ export function DashboardShell({
 }) {
   const pathname = usePathname()
   const [action, setAction] = useState<TabBarAction | null>(null)
-  const m = useOwnerMessages().shell.nav
+  const messages = useOwnerMessages()
+  const m = messages.shell.nav
   const base = `/dashboard/${business.id}`
   const assistantHref = `${base}/assistant`
   const assistantOpen = pathname.startsWith(assistantHref)
   const formPage = FORM_PAGES.some((path) => pathname.startsWith(base + path))
+  const addPage = ADD_PAGES.find((path) => pathname.startsWith(base + path))
+  // Until the page gives its own, the + is named for the page and waits.
+  const addLabel =
+    action?.label ??
+    (addPage === "/customers"
+      ? messages.bookings.customers.add
+      : addPage === "/services"
+        ? messages.catalog.services.addService
+        : messages.catalog.team.addPerson)
   const items = NAV.map((item) => ({
     ...item,
     label: m[item.key],
@@ -141,14 +156,14 @@ export function DashboardShell({
               {/* A soft 2 px ring drawn over its own colour, and a 24 px icon:
                   the assistant, or the open page's +, spinning from one to
                   the other. */}
-              <SpinSwap swapKey={action ? "add" : "assistant"}>
-                {action ? (
+              <SpinSwap swapKey={addPage ? "add" : "assistant"}>
+                {addPage ? (
                   <Button
                     size="icon-lg"
                     className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
-                    aria-label={action.label}
-                    disabled={action.disabled}
-                    onClick={action.onClick}
+                    aria-label={addLabel}
+                    disabled={!action || action.disabled}
+                    onClick={action?.onClick}
                   >
                     <PlusIcon className="size-6" />
                   </Button>
