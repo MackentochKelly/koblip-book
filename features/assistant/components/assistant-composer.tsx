@@ -98,6 +98,7 @@ export function AssistantComposer({
     onCutOff,
     onWithdraw,
     confirmLine: labels.live.confirmLine,
+    uncheckedLine: labels.live.uncheckedLine,
     fillers: labels.live.fillers,
     cutIns: labels.live.cutIns,
     greeting: labels.live.greeting,

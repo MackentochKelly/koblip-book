@@ -362,11 +362,8 @@ export async function* runChat(
         const items = [...sources].flatMap(([kind, count]) =>
           count > 0 ? [{ kind, count }] : []
         )
-        if (context.voice === true) {
-          if (items.length > 0) yield { type: "sources", items }
-          yield { type: "done" }
-          return
-        }
+        // Talking mode has no buttons or picker: options are said out loud.
+        const spoken = context.voice === true
         // The reply ends here: the screen runs the check right after
         // (POST /api/assistant/check), so nothing waits for it.
         const stored = storeAnswerCheck({
@@ -384,7 +381,7 @@ export async function* runChat(
           label: t.steps.checking,
           // The picker holds the free times, so they never come as
           // buttons too.
-          withChoices: freeTimes === null,
+          withChoices: freeTimes === null && !spoken,
         })
         if ("error" in stored) {
           yield { type: "notice", kind: "unverified" }
@@ -393,7 +390,7 @@ export async function* runChat(
         }
         if (items.length > 0) yield { type: "sources", items }
         // The picker shows at once, unchecked: it is the tool's own data.
-        if (freeTimes !== null) {
+        if (freeTimes !== null && !spoken) {
           yield { type: "times", today: date, ...freeTimes }
         }
         yield { type: "done" }

@@ -885,30 +885,67 @@ test("sources with an unverified answer, no sources after a confirm card", async
   )
 })
 
-test("voice uses minimal reasoning, skips judge and sends sources then done", async () => {
-  const { create } = scriptedClient([
-    [textChunk("Checking."), toolChunk(0, "a", "list_bookings", "{}")],
-    [textChunk("Two bookings.")],
-  ])
-  const events = await collect(
-    runChat(MESSAGES, { ...CONTEXT, voice: true }, [
-      probe(async () => ({ bookings: [{}, {}] }), "list_bookings"),
-    ])
+test("voice uses minimal reasoning and its answer is checked after, with no buttons", async () => {
+  const { create } = scriptedClient(
+    [
+      [textChunk("Checking."), toolChunk(0, "a", "list_bookings", "{}")],
+      [textChunk("Ana or Leo?")],
+    ],
+    [judgeNo(["Wrong count"])]
   )
-  expect(create).toHaveBeenCalledTimes(2)
-  for (const [body] of create.mock.calls)
+  const voice = { ...CONTEXT, voice: true }
+  const tools = [
+    probe(
+      async () => ({ bookings: [{ name: "Ana" }, { name: "Leo" }] }),
+      "list_bookings"
+    ),
+  ]
+  const { answer, check } = await collectChecked(runChat(MESSAGES, voice, tools))
+  for (const [body] of create.mock.calls.slice(0, 2))
     expect(body).toMatchObject({ reasoning_effort: "minimal" })
-  expect(judgeBodies(create)).toEqual([])
-  expect(events).not.toContainEqual(
-    expect.objectContaining({ id: expect.stringMatching(/^check-/) })
-  )
-  expect(events.some((e) => (e as { type: string }).type === "choices")).toBe(
-    false
-  )
-  expect(events.slice(-2)).toEqual([
+  // The answer ends before the check, which comes after.
+  expect(answer.slice(-3)).toEqual([
+    CHECK,
     { type: "sources", items: [{ kind: "bookings", count: 2 }] },
     { type: "done" },
   ])
+  expect(check).toEqual([
+    { ...CHECKED, status: "failed" },
+    { type: "notice", kind: "unverified" },
+    { type: "done" },
+  ])
+  // Passed: still no buttons in talking mode.
+  scriptedClient(
+    [
+      [toolChunk(0, "a", "list_bookings", "{}")],
+      [textChunk("Ana or Leo?")],
+    ],
+    [judgeOk(["Ana", "Leo"])]
+  )
+  const passed = await collectChecked(runChat(MESSAGES, voice, tools))
+  expect(passed.check).toEqual([CHECKED, { type: "done" }])
+})
+
+test("voice gets no time picker", async () => {
+  scriptedClient(
+    [[toolChunk(0, "a", "find_free_times", "{}")], [textChunk("At nine?")]],
+    [judgeOk()]
+  )
+  const answer = await collect(
+    runChat(MESSAGES, { ...CONTEXT, voice: true }, [
+      probe(
+        async () => ({
+          service: "Cut",
+          teamMember: null,
+          days: [{ date: "2026-10-28", times: ["09:00"] }],
+        }),
+        "find_free_times"
+      ),
+    ])
+  )
+  expect(answer.some((e) => (e as { type: string }).type === "times")).toBe(
+    false
+  )
 })
 
 test("text is yielded before the model stream advances", async () => {

@@ -132,4 +132,6 @@ export interface ConfirmCard {
 export interface AnswerListener {
   onText: (delta: string) => void
   onLookup: () => void
+  // The answer's check, run after it ended, could not back it.
+  onUnchecked?: () => void
 }

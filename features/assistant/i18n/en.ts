@@ -95,6 +95,8 @@ const messages = {
       waveform: "Voice level",
       // Said out loud when an answer waits for a tap on its card.
       confirmLine: "To do it, tap the button on the screen.",
+      // Said out loud when an answer's check could not back it.
+      uncheckedLine: "Heads up, I couldn't double-check that. Have a look on the screen.",
       // Said once when talking starts.
       greeting: "Hey! What's up?",
       // Said once if an answer is slow.

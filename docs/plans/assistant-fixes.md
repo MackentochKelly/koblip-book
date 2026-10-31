@@ -18,7 +18,7 @@ file: [Plans](README.md).
 | --- | --- | --- | --- | --- |
 | A1 | Booking card books exactly what it shows | M | | Done (2026-10-31) |
 | A2 | Time picker shows right away | M | | Done (2026-10-31) |
-| A3 | Voice answers get checked too | M | A2 | To do |
+| A3 | Voice answers get checked too | M | A2 | Done (2026-10-31) |
 | A4 | At most 2 voice sessions open per owner | S | | To do |
 | A5 | Assistant remembers what it looked up | L | | To do |
 | A6 | Saving a new chat never fails on a race | S | | To do |

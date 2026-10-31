@@ -48,6 +48,7 @@ function setup() {
   const answers: {
     write: (delta: string) => void
     lookup: () => void
+    unchecked: () => void
     resolve: (r: Reply | null) => void
   }[] = []
   const voices: {
@@ -65,6 +66,7 @@ function setup() {
           answers.push({
             write: listen.onText,
             lookup: listen.onLookup,
+            unchecked: () => listen.onUnchecked?.(),
             resolve: (r) => {
               busy = false
               resolve(r)
@@ -104,6 +106,7 @@ function setup() {
     withdraw: vi.fn(),
     close: vi.fn(),
     confirmLine: "Tap the button on the screen.",
+    uncheckedLine: "I couldn't double-check that.",
     fillers: ["Hmm, let me see.", "Okay, almost there."],
     cutIns: ["Oh,"],
     greeting: "Hi! What can I do for you?",
@@ -475,4 +478,56 @@ test("nothing is spoken after the end", async () => {
   t.answers[0].resolve(reply("Hello"))
   await flush()
   expect(t.voices[0].said).toEqual([])
+})
+
+// Asks once and plays the whole answer to its end.
+async function answered(t: ReturnType<typeof setup>) {
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Today?" })
+  t.answers[0].write("You have 3 today. ")
+  t.setPlaying(true)
+  t.voices[0].audio()
+  t.answers[0].resolve(reply("You have 3 today."))
+  await flush()
+}
+
+test("a check that fails after the answer is heard says so once", async () => {
+  const t = setup()
+  await answered(t)
+  t.voices[0].done()
+  t.setPlaying(false)
+  t.playerIdle()
+  expect(t.states.at(-1)).toBe("listening")
+  t.answers[0].unchecked()
+  expect(t.voices[1].said).toEqual(["I couldn't double-check that."])
+  expect(t.voices[1].finished).toBe(true)
+  t.voices[1].done()
+  t.playerIdle()
+  expect(t.voices).toHaveLength(2)
+  expect(t.states.at(-1)).toBe("listening")
+})
+
+test("a check that fails while the answer still plays waits for its end", async () => {
+  const t = setup()
+  await answered(t)
+  t.answers[0].unchecked()
+  expect(t.voices).toHaveLength(1)
+  t.voices[0].done()
+  t.setPlaying(false)
+  t.playerIdle()
+  expect(t.voices[1].said).toEqual(["I couldn't double-check that."])
+})
+
+test("no warning once the owner asked again", async () => {
+  const t = setup()
+  await answered(t)
+  t.voices[0].done()
+  t.setPlaying(false)
+  t.playerIdle()
+  t.session.hear({ type: "speechComplete", turnId: 2, transcript: "Tomorrow?" })
+  t.answers[0].unchecked()
+  t.answers[1].resolve(reply(""))
+  await flush()
+  expect(t.voices.flatMap((v) => v.said)).not.toContain(
+    "I couldn't double-check that."
+  )
 })

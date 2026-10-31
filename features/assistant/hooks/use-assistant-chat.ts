@@ -112,10 +112,12 @@ export function useAssistantChat(
 
   // An answer's check, run after its reply ended so nothing waits for it:
   // its outcome goes to that reply, even when the owner already asked
-  // again. A check that fails to answer marks the reply unchecked.
+  // again. A check that fails to answer marks the reply unchecked, and
+  // `listen` hears it (talking mode says so).
   const runCheck = async (
     { id, label }: { id: string; label: string },
-    replyId: string
+    replyId: string,
+    listen?: AnswerListener
   ) => {
     const apply = (event: AssistantStreamEvent) =>
       setItems((current) => applyEvent(current, event, replyId))
@@ -124,6 +126,7 @@ export function useAssistantChat(
       for await (const event of transport.check({ businessId, id })) {
         if (event.type === "error") break
         if (event.type === "step") ended = true
+        if (event.type === "notice") listen?.onUnchecked?.()
         apply(event)
       }
     } catch {
@@ -132,6 +135,7 @@ export function useAssistantChat(
     if (!ended) {
       apply({ type: "step", id, label, status: "failed" })
       apply({ type: "notice", kind: "unverified" })
+      listen?.onUnchecked?.()
     }
   }
 
@@ -168,7 +172,7 @@ export function useAssistantChat(
     }
     const reply = latest.at(-1)
     if (check !== null && reply?.role === "assistant") {
-      void runCheck(check, reply.id)
+      void runCheck(check, reply.id, listen)
     }
     return latest
   }

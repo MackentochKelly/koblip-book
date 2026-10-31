@@ -58,6 +58,7 @@ export function useLiveVoice({
   onCutOff,
   onWithdraw,
   confirmLine,
+  uncheckedLine,
   fillers,
   cutIns,
   greeting,
@@ -79,6 +80,8 @@ export function useLiveVoice({
   onWithdraw: () => void
   // Said after an answer that waits for a tap on the screen.
   confirmLine: string
+  // Said when an answer's check could not back it.
+  uncheckedLine: string
   // Short lines for a slow answer ("Hmm, let me see.").
   fillers: readonly string[]
   // Put in front of the answer when it cuts the first line off ("Oh,").
@@ -106,6 +109,7 @@ export function useLiveVoice({
     onCutOff,
     onWithdraw,
     confirmLine,
+    uncheckedLine,
     fillers,
     cutIns,
     greeting,
@@ -120,6 +124,7 @@ export function useLiveVoice({
       onCutOff,
       onWithdraw,
       confirmLine,
+      uncheckedLine,
       fillers,
       cutIns,
       greeting,
@@ -204,6 +209,7 @@ export function useLiveVoice({
         void context.close()
       },
       confirmLine: latest.current.confirmLine,
+      uncheckedLine: latest.current.uncheckedLine,
       fillers: latest.current.fillers,
       cutIns: latest.current.cutIns,
       greeting: latest.current.greeting,

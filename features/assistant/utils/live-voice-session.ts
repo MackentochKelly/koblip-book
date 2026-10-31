@@ -72,6 +72,8 @@ export interface LiveVoiceParts {
   close: () => void
   // Said after an answer that waits for a tap on its card.
   confirmLine: string
+  // Said once the voice is free when an answer's check could not back it.
+  uncheckedLine: string
   // Short natural lines for a slow answer ("Hmm, lemme see."); one is
   // said per turn, in turn.
   fillers: readonly string[]
@@ -136,6 +138,9 @@ export class LiveVoiceSession {
   private answering = false
   // The words of the question being answered.
   private asked = ""
+  // The turn whose answer failed its check, waiting for the voice to be
+  // free to say so.
+  private unchecked: number | null = null
 
   constructor(private readonly parts: LiveVoiceParts) {
     parts.onState("connecting")
@@ -278,6 +283,7 @@ export class LiveVoiceSession {
         this.lookedUp = true
         this.keepFirstLine(turn)
       },
+      onUnchecked: () => this.warnUnchecked(turn),
     })
     // Talked over: the newer question is already on its way.
     if (this.ended || turn !== this.turn) return
@@ -392,13 +398,29 @@ export class LiveVoiceSession {
     this.next()
   }
 
+  // The answer of `turn` failed its check (it runs after the answer): say
+  // so once the voice is free, unless the owner already asked again.
+  private warnUnchecked(turn: number) {
+    if (this.ended || turn !== this.turn) return
+    this.unchecked = turn
+    if (!this.thinking && !this.speech && !this.parts.playing()) this.next()
+  }
+
   private next() {
     if (this.ended || this.thinking) return
     this.answering = false
     this.parts.onPlayerIdle(() => {})
+    const warn = this.unchecked === this.turn
+    this.unchecked = null
     if (this.queued) {
       this.parts.onState("thinking")
       return void this.ask()
+    }
+    if (warn) {
+      this.openVoice(this.turn, false)
+      this.say(this.parts.uncheckedLine)
+      this.speech?.finish()
+      return
     }
     this.parts.onState("listening")
   }
