@@ -11,7 +11,6 @@ import { toast } from "sonner"
 
 import { FloatingActionButton } from "@/components/floating-action-button"
 import { ResponsivePanel } from "@/components/responsive-panel"
-import { StatCards } from "@/components/stat-cards"
 import { ViewTabs } from "@/components/view-tabs"
 import {
   AlertDialog,
@@ -64,10 +63,11 @@ import { AddBookingPanel, type AddBookingOptions } from "./add-booking-panel"
 import { BookingDetails } from "./booking-details"
 import { BookingStatusBadge } from "./booking-status-badge"
 import { MoveBookingPanel } from "./move-booking-panel"
+import { TodayCard } from "./today-card"
 
 type View = "upcoming" | "past"
 
-// The home page: today's counts (each opens Analytics), then the business's
+// The home page: a ring for today plus the next days (opens Analytics), then the business's
 // bookings by day (upcoming first, past one tab away). Each
 // opens its details; before it starts it can be moved or cancelled, once it
 // has started it can be marked done or no-show.
@@ -84,7 +84,12 @@ export function BookingsView({
   businessId: string
   upcoming: OwnerBooking[]
   past: OwnerBooking[]
-  counts: { today: number; upcoming: number }
+  counts: {
+    today: number
+    upcoming: number
+    todayBooked: number
+    todayDone: number
+  }
   nextDays: Array<{ date: string; bookings: number }>
   addOptions: AddBookingOptions
   createBooking: (input: OwnerBookingInput) => Promise<OwnerBookingResult>
@@ -169,24 +174,20 @@ export function BookingsView({
           {t.add}
         </Button>
       </div>
-      <StatCards
-        stats={[
-          { label: t.stats.today, value: counts.today, href: analytics },
-          {
-            label: t.stats.tomorrow,
-            value: nextDays[1]?.bookings ?? 0,
-            href: analytics,
-          },
+      <TodayCard
+        href={analytics}
+        booked={counts.todayBooked}
+        done={counts.todayDone}
+        others={[
+          { label: t.stats.tomorrow, value: nextDays[1]?.bookings ?? 0 },
           {
             label: t.stats.week,
             value: nextDays
               .slice(0, 7)
               .reduce((sum, day) => sum + day.bookings, 0),
-            href: analytics,
           },
-          { label: t.stats.upcoming, value: counts.upcoming, href: analytics },
+          { label: t.stats.upcoming, value: counts.upcoming },
         ]}
-        locale={m.locale}
       />
       <div className="flex min-w-0 flex-col gap-6">
         <ViewTabs

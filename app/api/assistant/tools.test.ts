@@ -147,7 +147,12 @@ beforeEach(() => {
     services: [],
     team: [],
   } as never)
-  vi.mocked(getBookingCounts).mockResolvedValue({ today: 2, upcoming: 5 })
+  vi.mocked(getBookingCounts).mockResolvedValue({
+    today: 2,
+    upcoming: 5,
+    todayBooked: 2,
+    todayDone: 0,
+  })
   vi.mocked(getBookings).mockResolvedValue([])
   vi.mocked(getBookingsBetween).mockResolvedValue([])
   vi.mocked(getCustomers).mockResolvedValue([])

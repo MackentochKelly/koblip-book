@@ -6,6 +6,7 @@ const bookings = {
     tomorrow: "Tomorrow",
     week: "Next 7 days",
     upcoming: "Upcoming",
+    done: (done: string, booked: string) => `${done} of ${booked} done`,
   },
   add: "Add",
   addBooking: "Add booking",
