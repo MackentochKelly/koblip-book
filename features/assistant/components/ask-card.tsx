@@ -30,8 +30,7 @@ const IDEAS = [
 
 // A way into the assistant from another page (Home): a box to ask in and a
 // few ideas to tap. Either opens the assistant with it as a new chat; no AI
-// runs until then. On a phone only the ideas show, since the tab bar's ✦
-// already opens the assistant.
+// runs until then.
 export function AskCard({
   businessId,
   language,
@@ -52,7 +51,6 @@ export function AskCard({
   return (
     <div className="flex flex-col gap-3">
       <form
-        className="max-md:hidden"
         onSubmit={(event) => {
           event.preventDefault()
           ask(text)
