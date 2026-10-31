@@ -9,6 +9,7 @@ import {
   businesses,
   chatConnections,
   chatTemplates,
+  inAppNotifications,
   koblipChatConnection,
   koblipChatTemplates,
   platformSettingChanges,
@@ -144,6 +145,7 @@ beforeEach(async () => {
   await db.delete(chatTemplates)
   await db.delete(koblipChatTemplates)
   await db.delete(koblipChatConnection)
+  await db.delete(inAppNotifications)
   await connect()
 })
 
@@ -254,6 +256,13 @@ test("refreshing reads Meta's review and reason, and the approved template is se
   const { approved } = await sendableTemplate("biz", "reminder", "en")
   expect(approved).toMatchObject({ chatTemplateId: "t1", template: { name: "koblip_book_booking_reminder_v2" } })
   expect((await sendableTemplate("biz", "reminder", "es")).approved).toBeNull()
+
+  // The owner's bell hears Meta's answers once (N2).
+  await refreshChatTemplates("biz")
+  expect((await db.select().from(inAppNotifications)).map(({ kind, data }) => [kind, data]).sort()).toEqual([
+    ["templateApproved", { message: "reminder", language: "en" }],
+    ["templateRejected", { message: "reminder", language: "es" }],
+  ])
 })
 
 test("a template Chat already has under Book's name is used as it is", async () => {
@@ -263,6 +272,8 @@ test("a template Chat already has under Book's name is used as it is", async () 
   expect(created).toHaveLength(0)
   const { approved } = await sendableTemplate("biz", "confirmed", "en")
   expect(approved?.chatTemplateId).toBe("x1")
+  // Found already answered: not news for the bell.
+  expect(await db.select().from(inAppNotifications)).toEqual([])
 })
 
 test("a template Chat no longer has, or under an earlier name, is forgotten", async () => {

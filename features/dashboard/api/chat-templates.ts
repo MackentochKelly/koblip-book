@@ -2,6 +2,8 @@ import "server-only"
 import { and, eq, inArray } from "drizzle-orm"
 
 import { db } from "@/lib/db"
+import { saveAll } from "@/lib/db/save-all"
+import { notification } from "@/lib/in-app-notifications"
 import {
   chatConnections,
   chatTemplates,
@@ -205,13 +207,31 @@ async function refresh(businessId: string) {
         status: found.status?.toLowerCase() ?? "pending",
         reason: found.rejection_reason ?? null,
       }
-      await db
-        .insert(chatTemplates)
-        .values({ businessId, message: template.message, language: template.language, ...row })
-        .onConflictDoUpdate({
-          target: [chatTemplates.businessId, chatTemplates.message, chatTemplates.language],
-          set: row,
-        })
+      // Meta's answer to a review Book was waiting on just came: the owner's
+      // bell hears it, saved with it. One found already answered is not news.
+      const before = known.find(
+        (item) => item.message === template.message && item.language === template.language
+      )?.status
+      const answer =
+        before !== undefined &&
+        row.status !== before &&
+        (row.status === "approved" || row.status === "rejected")
+          ? await notification(
+              businessId,
+              row.status === "approved" ? "templateApproved" : "templateRejected",
+              { message: template.message, language: template.language }
+            )
+          : []
+      await saveAll([
+        db
+          .insert(chatTemplates)
+          .values({ businessId, message: template.message, language: template.language, ...row })
+          .onConflictDoUpdate({
+            target: [chatTemplates.businessId, chatTemplates.message, chatTemplates.language],
+            set: row,
+          }),
+        ...answer,
+      ])
     })
   )
 }

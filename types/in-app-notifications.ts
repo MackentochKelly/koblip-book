@@ -22,6 +22,8 @@ export type InAppKind = (typeof IN_APP_KINDS)[number]
 // language (N-D1). Each kind fills only what it needs.
 export type InAppData = {
   customerName?: string
+  // Digits only, for a customer Book has no name for.
+  customerPhone?: string
   serviceName?: string
   // The visit (ISO), shown in the business's time zone.
   startAt?: string

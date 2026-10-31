@@ -6,6 +6,7 @@ import { customerKey } from "@/lib/customer-key"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
+import { notification } from "@/lib/in-app-notifications"
 import {
   bookingAddons,
   bookings,
@@ -182,6 +183,14 @@ export async function createBooking(
       }
 
       const bookingId = crypto.randomUUID()
+      const startAt = new Date(startInstant).toISOString()
+      // The owner's bell hears of it, saved with the booking.
+      const notice = await notification(
+        business.id,
+        "newBooking",
+        { customerName: name, serviceName: service.name, startAt },
+        { dedupeKey: `booking:${bookingId}` }
+      )
       await saveAll([
         db.insert(bookings).values({
           id: bookingId,
@@ -193,7 +202,7 @@ export async function createBooking(
           durationMinutes: totalMinutes,
           priceMinor: totalPrice,
           currency: business.currency,
-          startAt: new Date(startInstant).toISOString(),
+          startAt,
           endAt: new Date(endInstant).toISOString(),
           customerName: name,
           customerPhone: phone,
@@ -216,6 +225,7 @@ export async function createBooking(
               ),
             ]
           : []),
+        ...notice,
       ])
       return {
         id: bookingId,

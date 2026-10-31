@@ -13,6 +13,7 @@ import {
   chatConnections,
   chatReplies,
   chatTemplates,
+  inAppNotifications,
   koblipChatConnection,
   koblipChatTemplates,
   notificationSends,
@@ -127,6 +128,7 @@ beforeEach(async () => {
   await db.delete(koblipChatConnection)
   await db.delete(businessSettings)
   await db.delete(koblipChatTemplates)
+  await db.delete(inAppNotifications)
   await db.insert(chatConnections).values({
     businessId: "biz",
     workspaceId: "w1",
@@ -356,6 +358,10 @@ test("a message to the customer that fails tells the owner, once per booking", a
   ])
   const alerts = (await sends("b1")).filter(([message]) => message === "ownerFailed")
   expect(alerts).toEqual([["ownerFailed", 0, "sent", "template"]])
+  // The owner's bell, once per booking too (N2).
+  expect(await bell()).toEqual([
+    ["messageFailed", { customerName: "Ana", serviceName: "Haircut", startAt: expect.any(String) }],
+  ])
 })
 
 test("with the 24-hour setting off, the template goes even inside the window", async () => {
@@ -725,6 +731,9 @@ test("Koblip's number stops a business's templates at its monthly limit; normal 
   await runNotifications(NOW)
   expect((await sends("b1"))[0]).toEqual(["confirmed", 0, "skipped", "monthlyLimit"])
   expect(sent).toEqual([])
+  // The owner's bell hears it once this month (N2).
+  await runNotifications(later(1))
+  expect(await bell()).toEqual([["koblipLimitReached", { sent: 1, limit: 1 }]])
 
   // Inside the customer's window the words go as a normal message, free.
   await db.insert(chatReplies).values({
@@ -841,3 +850,33 @@ test("the window on the own number closed: Koblip's number sends the template", 
   expect(sentWith).toEqual(["Bearer koa_k"])
   expect(sent[0]).toEqual(expect.objectContaining({ messageType: "template" }))
 })
+
+test("the owner's bell hears once a month when Koblip's limit is near (N2)", async () => {
+  await db.delete(chatConnections)
+  await connectKoblip()
+  await db.insert(businessSettings).values({ businessId: "biz", key: "koblipMonthlyTemplates", value: 5 })
+  await book("b0")
+  await db.insert(notificationSends).values(
+    [1440, 60, 30].map((reminderMinutes) => ({
+      businessId: "biz",
+      bookingId: "b0",
+      message: "reminder" as const,
+      reminderMinutes,
+      dueAt: later(-60).toISOString(),
+      state: "sent" as const,
+      via: "template" as const,
+      sender: "koblip" as const,
+      sentAt: later(-60).toISOString(),
+    }))
+  )
+  // The fourth of five is 80%: near.
+  await book("b1")
+  await runNotifications(NOW)
+  await book("b2")
+  await runNotifications(later(1))
+  expect(await bell()).toEqual([["koblipLimitNear", { sent: 4, limit: 5 }]])
+})
+
+async function bell() {
+  return (await db.select().from(inAppNotifications)).map(({ kind, data }) => [kind, data])
+}
