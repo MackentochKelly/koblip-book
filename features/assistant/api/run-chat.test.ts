@@ -705,10 +705,10 @@ function services(n: number) {
   return Array.from({ length: n }, (_, i) => ({ name: `Cut ${i}` }))
 }
 
-test("a barbershop's 8 services all come as buttons, 13 come as none", async () => {
+test("a barbershop's 8 services all come as buttons, 49 come as none", async () => {
   for (const [count, buttons] of [
     [8, true],
-    [13, false],
+    [49, false],
   ] as const) {
     const list = services(count)
     scriptedClient(

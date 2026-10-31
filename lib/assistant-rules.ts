@@ -11,8 +11,9 @@ export const ASSISTANT_RULES = {
   voiceReasoningEffort: "minimal",
   // Timeout for one answer check.
   answerCheckTimeoutMs: 20_000,
-  // Choice buttons: how many options, and how long one option is.
-  maxChoices: 12,
+  // Choice buttons: how many options (a full day of 15-minute times; the
+  // screen shows the first 6 and "N more"), and how long one option is.
+  maxChoices: 48,
   maxChoiceChars: 60,
   // Longest customer search text the find_customer tool accepts.
   maxCustomerQuery: 80,
