@@ -9,6 +9,7 @@ import { createServer } from "node:http"
 import next from "next"
 import { WebSocket, WebSocketServer } from "ws"
 import { relayVoice } from "./server/voice-relay.mjs"
+import { createVoiceSlots } from "./server/voice-slots.mjs"
 
 const port = parseInt(process.env.PORT || "3000", 10)
 const hostname = process.env.HOSTNAME || "localhost"
@@ -20,6 +21,8 @@ const handle = app.getRequestHandler()
 const handleUpgrade = app.getUpgradeHandler()
 
 const wss = new WebSocketServer({ noServer: true })
+// Open live voice sessions per owner (each is a paid upstream session).
+const voiceSlots = createVoiceSlots()
 
 function rejectUpgrade(socket, status, text) {
   socket.write(`HTTP/1.1 ${status} ${text}\r\nConnection: close\r\n\r\n`)
@@ -66,6 +69,14 @@ async function handleVoiceUpgrade(request, socket, head) {
     return
   }
   const settings = await check.json()
+  // At most a few open at once per owner. The slot frees when the socket
+  // closes, however the session ends (or if the upgrade itself fails).
+  const release = voiceSlots.take(settings.ownerId, settings.maxOpenSessions)
+  if (!release) {
+    rejectUpgrade(socket, 429, "Too Many Requests")
+    return
+  }
+  socket.once("close", release)
   wss.handleUpgrade(request, socket, head, (client) => {
     relayVoice({
       client,

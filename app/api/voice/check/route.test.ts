@@ -75,6 +75,8 @@ test("200 with the English handshake and limits, never a key", async () => {
     maxSessionSeconds: 600,
     maxBufferedBytes: 240_000,
     maxFrameBytes: 9_600,
+    ownerId: "u1",
+    maxOpenSessions: 2,
   })
   expect(JSON.stringify(body)).not.toMatch(/Bearer|MODEL_API_KEY/i)
 })

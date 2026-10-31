@@ -9,7 +9,8 @@ export const runtime = "nodejs"
 
 // Internal only: the custom server (server.mjs) calls this with the
 // request's cookie before upgrading /api/voice/listen. It answers with
-// everything the relay needs and never the Meta key.
+// everything the relay needs and never the Meta key; the owner's own id
+// lets the server count their open sessions.
 export async function GET(request: Request) {
   // 1. Logged-in owner.
   const session = await getSession()
@@ -45,5 +46,7 @@ export async function GET(request: Request) {
     maxSessionSeconds: ASSISTANT_RULES.maxVoiceSessionSeconds,
     maxBufferedBytes: ASSISTANT_RULES.voiceMaxBufferedBytes,
     maxFrameBytes: ASSISTANT_RULES.voiceMaxFrameBytes,
+    ownerId: session.userId,
+    maxOpenSessions: ASSISTANT_RULES.maxOpenVoiceSessionsPerOwner,
   })
 }

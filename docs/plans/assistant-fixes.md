@@ -19,7 +19,7 @@ file: [Plans](README.md).
 | A1 | Booking card books exactly what it shows | M | | Done (2026-10-31) |
 | A2 | Time picker shows right away | M | | Done (2026-10-31) |
 | A3 | Voice answers get checked too | M | A2 | Done (2026-10-31) |
-| A4 | At most 2 voice sessions open per owner | S | | To do |
+| A4 | At most 2 voice sessions open per owner | S | | Done (2026-10-31) |
 | A5 | Assistant remembers what it looked up | L | | To do |
 | A6 | Saving a new chat never fails on a race | S | | To do |
 | A7 | Cancel finds any booking, and only upcoming ones | S | | To do |
@@ -99,7 +99,7 @@ so one owner can keep about 60 paid sessions open.
   It counts down when the session closes.
 - New rule `maxOpenVoiceSessionsPerOwner: 2` in `lib/assistant-rules.ts`.
 
-**Files:** `server.mjs`, `server/voice-relay.mjs`, `app/api/voice/check/route.ts`, `lib/assistant-rules.ts` (+ tests).
+**Files:** `server.mjs`, `server/voice-slots.mjs` (the counter), `app/api/voice/check/route.ts`, `lib/assistant-rules.ts` (+ tests).
 
 **Done when:** a test refuses the 3rd open session and allows a new one
 after a close.

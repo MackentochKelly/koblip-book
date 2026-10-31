@@ -29,6 +29,9 @@ export const ASSISTANT_RULES = {
   maxChatRequestsPerMinutePerOwner: 60,
   // Live voice: session starts per owner per minute.
   maxVoiceSessionsPerMinutePerOwner: 6,
+  // Live voice: sessions one owner may keep open at once (each is a paid
+  // upstream session).
+  maxOpenVoiceSessionsPerOwner: 2,
   // Live voice: longest one relay session, well under Meta's 60 minutes.
   maxVoiceSessionSeconds: 600,
   // Live voice: pre-handshake audio buffer, 5 s of 24 kHz 16-bit mono.
