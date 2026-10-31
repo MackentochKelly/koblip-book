@@ -7,6 +7,7 @@ const bookings: typeof en = {
     tomorrow: "Mañana",
     week: "Próximos 7 días",
     upcoming: "Próximas",
+    done: (done: string, booked: string) => `${done} de ${booked} terminadas`,
   },
   add: "Agregar",
   addBooking: "Agregar reserva",

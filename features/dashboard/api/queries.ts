@@ -1,5 +1,5 @@
 import "server-only"
-import { and, asc, desc, eq, gte, lt } from "drizzle-orm"
+import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm"
 import { notFound } from "next/navigation"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { requireOwner } from "@/lib/dal"
@@ -196,7 +196,14 @@ export async function getBookings(
 
 export async function getBookingCounts(
   businessId: string
-): Promise<{ today: number; upcoming: number }> {
+): Promise<{
+  today: number
+  upcoming: number
+  // Today's progress: bookings kept today (confirmed or completed), and
+  // how many of them have already ended.
+  todayBooked: number
+  todayDone: number
+}> {
   const business = await ownedBusiness(businessId)
   const now = new Date().toISOString()
   const todayDate = zonedDateTime(now, business.timezone).date
@@ -205,7 +212,7 @@ export async function getBookingCounts(
     todayDate,
     business.timezone
   )
-  const [todayRows, upcomingRows] = await Promise.all([
+  const [todayRows, upcomingRows, keptRows] = await Promise.all([
     db
       .select({ id: bookings.id })
       .from(bookings)
@@ -227,8 +234,24 @@ export async function getBookingCounts(
           gte(bookings.endAt, now)
         )
       ),
+    db
+      .select({ endAt: bookings.endAt })
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.businessId, business.id),
+          inArray(bookings.status, ["confirmed", "completed"]),
+          gte(bookings.startAt, todayStart),
+          lt(bookings.startAt, tomorrowStart)
+        )
+      ),
   ])
-  return { today: todayRows.length, upcoming: upcomingRows.length }
+  return {
+    today: todayRows.length,
+    upcoming: upcomingRows.length,
+    todayBooked: keptRows.length,
+    todayDone: keptRows.filter((row) => row.endAt <= now).length,
+  }
 }
 
 // Every booking starting on a local day from `from` through `to`
