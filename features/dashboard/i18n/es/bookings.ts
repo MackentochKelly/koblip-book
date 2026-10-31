@@ -65,6 +65,12 @@ const bookings: typeof en = {
     revenue: "Ingresos",
     newCustomers: "Clientes nuevos",
     noShows: "No se presentaron",
+    hints: {
+      bookings: "Sin canceladas",
+      revenue: "Sin ausencias",
+      newCustomers: "Primera visita",
+      noShows: "Citas perdidas",
+    },
     returning: "Que vuelven",
     newAndReturning: "Clientes nuevos y que vuelven",
     showUps: "Asistencia",

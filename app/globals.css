@@ -59,6 +59,7 @@
     --color-google-button-border: var(--google-button-border);
     --color-google-button-foreground: var(--google-button-foreground);
     --color-warning: var(--warning);
+    --color-info: var(--info);
     --color-success: var(--success);
     --color-success-foreground: var(--success-foreground);
     --color-verified: var(--verified);
@@ -147,6 +148,9 @@
 
 :root {
     --warning: oklch(0.666 0.179 58.318);
+    /* Plain news, neither good nor bad (a stat's blue icon): 3:1 or more on
+       the card in light and dark. */
+    --info: oklch(0.55 0.2 255);
     /* Something went through ("Booked"): as light as it goes with white
        words still passing AA (4.5:1). */
     --success: oklch(0.56 0.14 150);
@@ -220,6 +224,7 @@
     --glass-edge: color-mix(in oklab, var(--foreground) 15%, transparent);
     --glass-frame-edge: color-mix(in oklab, var(--foreground) 8%, transparent);
     --warning: oklch(0.828 0.189 84.429);
+    --info: oklch(0.7 0.15 250);
     --success: oklch(0.56 0.14 150);
     --success-foreground: oklch(1 0 0);
     --verified: #1d9bf0;

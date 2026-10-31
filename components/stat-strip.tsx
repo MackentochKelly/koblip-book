@@ -5,10 +5,27 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { cn } from "cn"
 
+// A stat's colour: its icon, on a soft circle of the same colour. In dark
+// mode the brand's own colour is too dark to read on the card, so primary
+// takes the brand's light tint there.
+const TONES = {
+  primary: "bg-primary/10 text-primary dark:bg-chart-1/15 dark:text-chart-1",
+  info: "bg-info/10 text-info dark:bg-info/15",
+  success: "bg-success/10 text-success dark:bg-success/20",
+  warning: "bg-warning/10 text-warning dark:bg-warning/15",
+  destructive: "bg-destructive/10 text-destructive dark:bg-destructive/15",
+} as const
+
+export type StatTone = keyof typeof TONES
+
 export interface Stat {
   icon: React.ReactNode
+  // The icon's colour; primary when left out.
+  tone?: StatTone
   label: string
   value: string
+  // One short line under the number: what it counts.
+  hint?: string
   // Whole percent against the period before; null hides the badge.
   change?: number | null
   // False for numbers that should go down, like no-shows.
@@ -16,30 +33,38 @@ export interface Stat {
 }
 
 // Key numbers in one card, split by thin lines: two across on a phone, four
-// on a computer. Each has an icon and label, then the number with how it
-// moved against the period before beside it (green when it went the right
-// way). With an `href` the whole card opens that page.
-export function StatStrip({
-  stats,
-  href,
-}: {
-  stats: Stat[]
-  href?: string
-}) {
+// on a computer. Each has its icon on a soft coloured circle (above its
+// label on a phone, so the label has the whole width; beside it on a
+// computer), then the number with how it moved against the period before
+// beside it (green when it went the right way), and a short line saying what
+// it counts. With an `href` the whole card opens that page.
+export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
   const card = (
     <Card
       className={cn(
         "gap-0 py-0",
-        href && "transition-colors hover:bg-muted [&_dl>div]:transition-colors hover:[&_dl>div]:bg-muted"
+        href &&
+          "transition-colors hover:bg-muted [&_dl>div]:transition-colors hover:[&_dl>div]:bg-muted"
       )}
     >
       {/* The lines between numbers match the card's own edge. */}
       <dl className="grid grid-cols-2 gap-px bg-foreground/5 lg:grid-cols-4 dark:bg-foreground/10">
         {stats.map((stat) => (
-          <div key={stat.label} className="flex flex-col gap-2 bg-card p-5">
-            <dt className="flex items-center gap-2 text-muted-foreground [&_svg]:size-4.5 [&_svg]:shrink-0 [&_svg]:text-primary">
-              {stat.icon}
-              <span className="truncate">{stat.label}</span>
+          <div
+            key={stat.label}
+            className="flex flex-col gap-3 bg-card p-4 md:p-5"
+          >
+            <dt className="flex flex-col items-start gap-2 font-medium md:flex-row md:items-center md:gap-2.5">
+              <span
+                aria-hidden
+                className={cn(
+                  "flex size-9 shrink-0 items-center justify-center rounded-full [&_svg]:size-5",
+                  TONES[stat.tone ?? "primary"]
+                )}
+              >
+                {stat.icon}
+              </span>
+              <span className="max-w-full truncate">{stat.label}</span>
             </dt>
             <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <span className="text-3xl font-semibold tracking-tight tabular-nums">
@@ -50,6 +75,11 @@ export function StatStrip({
                 upIsGood={stat.upIsGood ?? true}
               />
             </dd>
+            {stat.hint && (
+              <dd className="-mt-2 truncate text-sm text-muted-foreground">
+                {stat.hint}
+              </dd>
+            )}
           </div>
         ))}
       </dl>

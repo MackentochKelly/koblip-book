@@ -65,6 +65,13 @@ const bookings = {
     revenue: "Revenue",
     newCustomers: "New customers",
     noShows: "No-shows",
+    // One short line under each number: what it counts.
+    hints: {
+      bookings: "Not cancelled",
+      revenue: "No-shows left out",
+      newCustomers: "First visit",
+      noShows: "Missed visits",
+    },
     returning: "Returning",
     newAndReturning: "New and returning customers",
     showUps: "Show-ups",

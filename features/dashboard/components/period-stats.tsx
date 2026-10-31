@@ -32,25 +32,33 @@ export function PeriodStats({
       stats={[
         {
           icon: <CalendarIcon />,
+          tone: "primary",
           label: a.bookings,
+          hint: a.hints.bookings,
           value: number.format(summary.bookings.current),
           change: percentChange(summary.bookings),
         },
         {
           icon: <BanknoteIcon />,
+          tone: "success",
           label: a.revenue,
+          hint: a.hints.revenue,
           value: formatMoneyShort(summary.revenue.current, currency, m.locale),
           change: percentChange(summary.revenue),
         },
         {
           icon: <SmileIcon />,
+          tone: "info",
           label: a.newCustomers,
+          hint: a.hints.newCustomers,
           value: number.format(summary.newCustomers.current),
           change: percentChange(summary.newCustomers),
         },
         {
           icon: <OctagonXIcon />,
+          tone: "destructive",
           label: a.noShows,
+          hint: a.hints.noShows,
           value: number.format(summary.noShows.current),
           change: percentChange(summary.noShows),
           upIsGood: false,
