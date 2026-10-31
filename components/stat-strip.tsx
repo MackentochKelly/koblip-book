@@ -33,9 +33,8 @@ export interface Stat {
 }
 
 // Key numbers in one card, split by thin lines: two across on a phone, four
-// on a computer. Each has its icon on a soft coloured circle (above its
-// label on a phone, so the label has the whole width; beside it on a
-// computer), then the number with how it moved against the period before
+// on a computer. Each has its icon on a soft coloured circle beside its
+// label (a little smaller on a phone, so the label fits), then the number with how it moved against the period before
 // beside it (green when it went the right way), and a short line saying what
 // it counts. With an `href` the whole card opens that page.
 export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
@@ -52,19 +51,21 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="flex flex-col gap-3 bg-card p-4 md:p-5"
+            className="flex flex-col gap-3 bg-card px-3 py-4 md:p-5"
           >
-            <dt className="flex flex-col items-start gap-2 font-medium md:flex-row md:items-center md:gap-2.5">
+            <dt className="flex items-center gap-2 font-medium md:gap-2.5">
               <span
                 aria-hidden
                 className={cn(
-                  "flex size-9 shrink-0 items-center justify-center rounded-full [&_svg]:size-5",
+                  "flex size-8 shrink-0 items-center justify-center rounded-full [&_svg]:size-5",
                   TONES[stat.tone ?? "primary"]
                 )}
               >
                 {stat.icon}
               </span>
-              <span className="max-w-full truncate">{stat.label}</span>
+              <span className="min-w-0 truncate max-md:text-sm">
+                {stat.label}
+              </span>
             </dt>
             <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <span className="text-3xl font-semibold tracking-tight tabular-nums">

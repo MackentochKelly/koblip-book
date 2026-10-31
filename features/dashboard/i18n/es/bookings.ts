@@ -64,7 +64,7 @@ const bookings: typeof en = {
     bookings: "Reservas",
     revenue: "Ingresos",
     newCustomers: "Clientes nuevos",
-    noShows: "No se presentaron",
+    noShows: "Ausencias",
     hints: {
       bookings: "Sin canceladas",
       revenue: "Sin ausencias",
