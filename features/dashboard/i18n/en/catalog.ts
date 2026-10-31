@@ -17,6 +17,7 @@ const catalog = {
     name: "Name",
     addName: "Add a name",
     optional: "Optional",
+    noMatch: "No match",
     free: "Free",
     failed: "That did not work. Please try again.",
     saved: "Saved",

@@ -17,6 +17,7 @@ const catalog: typeof en = {
     name: "Nombre",
     addName: "Escribe un nombre",
     optional: "Opcional",
+    noMatch: "Sin resultados",
     free: "Gratis",
     failed: "No funcionó. Inténtalo de nuevo.",
     saved: "Guardado",
