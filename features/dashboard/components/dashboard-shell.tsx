@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
-import { useCoveredBottom } from "@/hooks/use-visual-viewport"
 import { cn } from "@/lib/utils"
 import { AppSidebar } from "./app-sidebar"
 import { CommandMenuProvider } from "./command-menu"
@@ -61,7 +60,6 @@ export function DashboardShell({
 }) {
   const pathname = usePathname()
   const [action, setAction] = useState<TabBarAction | null>(null)
-  const coveredBottom = useCoveredBottom()
   const m = useOwnerMessages().shell.nav
   const base = `/dashboard/${business.id}`
   const assistantHref = `${base}/assistant`
@@ -102,13 +100,7 @@ export function DashboardShell({
   return (
     <TooltipProvider>
       <CommandMenuProvider business={business}>
-        <SidebarProvider
-          // How much of the screen's bottom Safari's floating bar covers,
-          // for the tab bar and the floating + to keep clear of it.
-          style={
-            { "--bottom-cover": `${coveredBottom}px` } as React.CSSProperties
-          }
-        >
+        <SidebarProvider>
           <AppSidebar businessId={business.id} owner={owner} />
           <SidebarInset className={cn("min-w-0", assistantOpen && "md:h-dvh")}>
             <TopBar
@@ -135,13 +127,6 @@ export function DashboardShell({
               "fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden",
               assistantOpen && "hidden"
             )}
-            // Above Safari's floating bar while it covers the bottom (its
-            // bar then also covers the home line, so no padding for it).
-            style={
-              coveredBottom > 0
-                ? { bottom: "var(--bottom-cover)", paddingBottom: 0 }
-                : undefined
-            }
           >
             {PHONE_LEFT.map((path) => tab(path))}
             <div className="relative flex min-h-14 items-center justify-center">
