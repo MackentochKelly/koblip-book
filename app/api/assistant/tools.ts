@@ -256,6 +256,58 @@ interface CheckedBooking {
   timeZone: string
 }
 
+// The booking a create_booking card shows, stored for the tap: names and
+// "today" already turned into ids and a date, so the tap books exactly
+// this even after midnight or a rename.
+interface BookingToRun {
+  serviceId: string
+  serviceName: string
+  teamMemberId: string | null
+  date: string
+  time: string
+  name: string
+  phone: string | null
+  note: string | null
+}
+
+function bookingToRun(checked: CheckedBooking): BookingToRun {
+  return {
+    serviceId: checked.service.id,
+    serviceName: checked.service.name,
+    teamMemberId: checked.memberId,
+    date: checked.date,
+    time: checked.time,
+    name: checked.name,
+    phone: checked.phone,
+    note: checked.note,
+  }
+}
+
+// The stored booking back, or null when it is not one. Only describe
+// stores it, so null means a broken store, never a model mistake.
+function asBookingToRun(args: unknown): BookingToRun | null {
+  const a = asRecord(args)
+  const text = (value: unknown) => typeof value === "string" && value !== ""
+  const textOrNull = (value: unknown) =>
+    value === null || typeof value === "string"
+  if (
+    !a ||
+    !text(a.serviceId) ||
+    !text(a.serviceName) ||
+    !(a.teamMemberId === null || text(a.teamMemberId)) ||
+    typeof a.date !== "string" ||
+    !isRealDate(a.date) ||
+    typeof a.time !== "string" ||
+    !TIME_RE.test(a.time) ||
+    !text(a.name) ||
+    !textOrNull(a.phone) ||
+    !textOrNull(a.note)
+  ) {
+    return null
+  }
+  return a as unknown as BookingToRun
+}
+
 async function checkBookingArgs(
   businessId: string,
   args: unknown,
@@ -263,7 +315,7 @@ async function checkBookingArgs(
   now = Date.now()
 ): Promise<CheckedBooking | { error: string }> {
   const a = asRecord(args)
-  // Names as the owner said them; ids still work (cards stored before).
+  // Names as the owner said them; ids work too.
   const serviceWanted = a?.service ?? a?.serviceId
   if (!a || typeof serviceWanted !== "string" || serviceWanted.trim() === "") {
     return { error: t.errors.serviceRequired }
@@ -2492,39 +2544,40 @@ export function buildAssistantTools(
               `${formatDay(checked.date, t.locale)} · ${formatClock(checked.time, t.locale)} · ` +
               `${checked.memberName} · ${checked.price}`,
             destructive: false,
+            args: bookingToRun(checked),
           }
         },
+        // Books the stored booking as the card showed it, by ids, with no
+        // name or day looked up again. createOwnerBooking still checks the
+        // service, the team member and that the time is free.
         execute: async (args: unknown) => {
-          const checked = await checkBookingArgs(businessId, args, t)
-          if ("error" in checked) {
-            return {
-              ok: false,
-              doneText: t.booking.couldNotBook(checked.error),
-            }
+          const booking = asBookingToRun(args)
+          if (!booking) {
+            return { ok: false, doneText: t.booking.failed }
           }
           // allowConflict is always false: the model can never double-book.
           const result = await createOwnerBooking({
             businessId,
-            serviceId: checked.service.id,
-            teamMemberId: checked.memberId,
+            serviceId: booking.serviceId,
+            teamMemberId: booking.teamMemberId,
             addonIds: [],
-            date: checked.date,
-            time: checked.time,
-            name: checked.name,
-            phone: checked.phone,
-            note: checked.note,
+            date: booking.date,
+            time: booking.time,
+            name: booking.name,
+            phone: booking.phone,
+            note: booking.note,
             allowConflict: false,
           })
           const when = t.booking.at(
-            formatDay(checked.date, t.locale),
-            formatClock(checked.time, t.locale)
+            formatDay(booking.date, t.locale),
+            formatClock(booking.time, t.locale)
           )
           if (result.status === "booked") {
             return {
               ok: true,
               doneText: t.booking.booked(
-                checked.name,
-                checked.service.name,
+                booking.name,
+                booking.serviceName,
                 when
               ),
             }

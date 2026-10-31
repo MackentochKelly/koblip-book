@@ -8,7 +8,7 @@ import type {
   AssistantMessage,
   AssistantStreamEvent,
   AssistantTool,
-  ConfirmCard,
+  DescribedConfirm,
   SourceKind,
 } from "../types"
 import { serverMessagesFor } from "../i18n/server"
@@ -162,7 +162,7 @@ async function* handleConfirmCall(
     fail(t.loop.invalidArgs)
     return false
   }
-  let card: ConfirmCard | { error: string }
+  let card: DescribedConfirm | { error: string }
   try {
     card = await confirm.describe(args)
   } catch {
@@ -177,7 +177,7 @@ async function* handleConfirmCall(
     ownerId: context.ownerId,
     businessId: context.businessId,
     toolName,
-    args,
+    args: card.args === undefined ? args : card.args,
   })
   if ("error" in stored) {
     fail(t.loop.tooMany)

@@ -99,9 +99,16 @@ export interface AssistantTool {
   // run for these: describe builds the card from database data, execute
   // runs the stored args after the owner's tap.
   confirm?: {
-    describe: (args: unknown) => Promise<ConfirmCard | { error: string }>
+    describe: (args: unknown) => Promise<DescribedConfirm | { error: string }>
     execute: (args: unknown) => Promise<{ ok: boolean; doneText: string }>
   }
+}
+
+// describe's answer: the card, and the exact args the tap runs when the
+// model's own words would need looking up again (names, "today"). Stored
+// in place of the model's args, so the tap does what the card shows.
+export interface DescribedConfirm extends ConfirmCard {
+  args?: unknown
 }
 
 // Card text for a pending risky action, built on the server from

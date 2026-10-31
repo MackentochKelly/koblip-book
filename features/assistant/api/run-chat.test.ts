@@ -305,6 +305,7 @@ function risky(describe: (args: unknown) => Promise<unknown>) {
             summary: string
             destructive: boolean
             action: string
+            args?: unknown
           }
         | { error: string }
       >,
@@ -346,6 +347,29 @@ test("risky tool stores a card and ends the turn with no second call", async () 
   expect(create).toHaveBeenCalledTimes(1)
   const id = (events[0] as { id: string }).id
   expect(peekPendingAction(id)?.toolName).toBe("cancel_booking")
+})
+
+test("a card's resolved args are stored, not the model's words", async () => {
+  resetPendingActionsForTests()
+  const { create } = scriptedClient([
+    [toolChunk(0, "call-A", "cancel_booking", '{"day":"today"}')],
+  ])
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [
+      risky(async () => ({
+        title: "Book?",
+        summary: "Ana",
+        destructive: false,
+        action: "Book",
+        args: { date: "2099-01-01" },
+      })),
+    ])
+  )
+  expect(create).toHaveBeenCalledTimes(1)
+  // The resolved args never reach the screen.
+  expect(events[0]).not.toHaveProperty("args")
+  const id = (events[0] as { id: string }).id
+  expect(peekPendingAction(id)?.args).toEqual({ date: "2099-01-01" })
 })
 
 test("an aborted request ends the stream silently", async () => {

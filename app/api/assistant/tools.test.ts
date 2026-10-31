@@ -1753,6 +1753,18 @@ const BOOKING_ARGS = {
   name: "Ana",
 }
 
+// What the BOOKING_ARGS card stores for the tap.
+const STORED_BOOKING = {
+  serviceId: "s1",
+  serviceName: "Cut",
+  teamMemberId: "m1",
+  date: "2099-01-01",
+  time: "10:00",
+  name: "Ana",
+  phone: null,
+  note: null,
+}
+
 test("find_free_times filters to the range with total and truncated", async () => {
   mockBookingShop()
   vi.mocked(getAvailability).mockResolvedValue({
@@ -1800,6 +1812,7 @@ test("create_booking happy path stores a card with a server weekday", async () =
     summary: expect.stringContaining("Thursday, January 1 · 10:00 AM"),
     destructive: false,
     action: "Book",
+    args: STORED_BOOKING,
   })
   expect((card as { summary: string }).summary).toContain("Ana · Cut")
   expect(vi.mocked(createOwnerBooking)).not.toHaveBeenCalled()
@@ -1832,7 +1845,7 @@ test("create_booking allowConflict true is dropped", async () => {
     bookingId: "k9",
   })
   const done = await byName("create_booking").confirm!.execute({
-    ...BOOKING_ARGS,
+    ...STORED_BOOKING,
     allowConflict: true,
   })
   expect(done.ok).toBe(true)
@@ -1840,6 +1853,87 @@ test("create_booking allowConflict true is dropped", async () => {
     expect.objectContaining({ allowConflict: false })
   )
   expect(done.doneText).toContain("Thursday, January 1 at 10:00 AM")
+})
+
+test("create_booking's tap books the card's day after midnight", async () => {
+  mockBookingShop()
+  vi.mocked(getAvailability).mockResolvedValue({
+    days: [{ date: "2099-01-01", times: ["23:30"] }],
+  })
+  vi.mocked(createOwnerBooking).mockResolvedValue({
+    status: "booked",
+    bookingId: "k9",
+  })
+  const tool = byName("create_booking")
+  // 23:59 in Madrid: "today" is January 1.
+  vi.useFakeTimers({ now: new Date("2099-01-01T22:59:00.000Z") })
+  let card: unknown
+  try {
+    card = await tool.confirm!.describe({
+      service: "cut",
+      day: "today",
+      time: "23:30",
+      name: "Ana",
+    })
+    // 00:01: "today" would now be January 2.
+    vi.setSystemTime(new Date("2099-01-01T23:01:00.000Z"))
+    const done = await tool.confirm!.execute((card as { args: unknown }).args)
+    expect(done.ok).toBe(true)
+  } finally {
+    vi.useRealTimers()
+  }
+  expect(createOwnerBooking).toHaveBeenCalledWith(
+    expect.objectContaining({ serviceId: "s1", date: "2099-01-01" })
+  )
+})
+
+test("create_booking's tap books the card's service after a rename", async () => {
+  mockBookingShop()
+  vi.mocked(createOwnerBooking).mockResolvedValue({
+    status: "booked",
+    bookingId: "k9",
+  })
+  const tool = byName("create_booking")
+  const card = (await tool.confirm!.describe({
+    ...BOOKING_ARGS,
+    serviceId: undefined,
+    teamMemberId: undefined,
+    service: "cut",
+    teamMember: "leo",
+  })) as { args: unknown }
+  // The shop renames both, and adds a new "Cut": the tap looks up nothing.
+  vi.mocked(getOwnerBusiness).mockResolvedValue({
+    business: BOOKING_BUSINESS,
+    hours: [],
+    services: [
+      { id: "s1", name: "Long Cut", durationMinutes: 30, priceMinor: 2500 },
+      { id: "s2", name: "Cut", durationMinutes: 30, priceMinor: 900 },
+    ],
+    team: [{ id: "m1", name: "Leonardo" }],
+  } as never)
+  vi.mocked(getAvailability).mockClear()
+  const done = await tool.confirm!.execute(card.args)
+  expect(done.ok).toBe(true)
+  expect(done.doneText).toContain("Cut")
+  expect(createOwnerBooking).toHaveBeenCalledWith(
+    expect.objectContaining({ serviceId: "s1", teamMemberId: "m1" })
+  )
+  expect(getAvailability).not.toHaveBeenCalled()
+})
+
+test("create_booking's tap refuses args that are not a stored booking", async () => {
+  vi.mocked(createOwnerBooking).mockClear()
+  const execute = byName("create_booking").confirm!.execute
+  for (const args of [
+    null,
+    BOOKING_ARGS,
+    { ...STORED_BOOKING, date: "2099-02-30" },
+    { ...STORED_BOOKING, time: "25:00" },
+    { ...STORED_BOOKING, teamMemberId: 7 },
+  ]) {
+    expect((await execute(args)).ok).toBe(false)
+  }
+  expect(createOwnerBooking).not.toHaveBeenCalled()
 })
 
 test("create_booking maps every status to one sentence", async () => {
@@ -1854,7 +1948,7 @@ test("create_booking maps every status to one sentence", async () => {
   ]
   for (const [result, word] of cases) {
     vi.mocked(createOwnerBooking).mockResolvedValue(result as never)
-    const done = await execute(BOOKING_ARGS)
+    const done = await execute(STORED_BOOKING)
     expect(done.ok).toBe(false)
     expect(done.doneText).toContain(word)
   }
