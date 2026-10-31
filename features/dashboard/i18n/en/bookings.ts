@@ -56,6 +56,73 @@ const bookings = {
     call: "Call",
     whatsapp: "WhatsApp",
   },
+  // Home shows the next few; View all opens the Bookings page.
+  viewAll: "View all",
+  // The Bookings page: every booking in a date range, and a calendar.
+  list: {
+    tabs: { bookings: "Bookings", calendar: "Calendar" },
+    search: "Search customer, phone or service",
+    statuses: {
+      all: "All",
+      upcoming: "Upcoming",
+      unmarked: "Not marked",
+      completed: "Completed",
+      no_show: "No-shows",
+      cancelled: "Cancelled",
+    },
+    // The status column's badge for each state.
+    state: {
+      upcoming: "Booked",
+      unmarked: "Not marked",
+      completed: "Completed",
+      no_show: "No-show",
+      cancelled: "Cancelled",
+    },
+    columns: {
+      date: "Date",
+      customer: "Customer",
+      service: "Service",
+      team: "Team",
+      price: "Price",
+      status: "Status",
+    },
+    dates: "Dates",
+    presets: {
+      today: "Today",
+      next7: "Next 7 days",
+      next30: "Next 30 days",
+      last30: "Last 30 days",
+      last90: "Last 3 months",
+      around: "Last 30 days and next 3 months",
+    },
+    services: "Services",
+    team: "Team",
+    clear: "Clear",
+    extras: (count: number) => (count === 1 ? "+1 extra" : `+${count} extras`),
+    noMatch: "No bookings match",
+    noneInRange: "No bookings in these dates",
+    showing: (from: number, to: number, total: number) =>
+      `${from}–${to} of ${total}`,
+    rows: "Rows",
+    first: "First page",
+    previous: "Previous page",
+    next: "Next page",
+    last: "Last page",
+    page: (page: number, pages: number) => `Page ${page} of ${pages}`,
+    showMore: "Show more",
+    actions: "Actions",
+    open: "Open",
+    sortBy: (column: string) => `Sort by ${column}`,
+  },
+  calendar: {
+    today: "Today",
+    previousMonth: "Previous month",
+    nextMonth: "Next month",
+    count: (count: number) =>
+      count === 1 ? "1 booking" : `${count} bookings`,
+    free: "No bookings this day",
+    anyone: "Anyone",
+  },
   // The Analytics page's look back over the last 30 days.
   analytics: {
     period: "Period",

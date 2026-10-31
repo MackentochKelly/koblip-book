@@ -1,27 +1,15 @@
 "use client"
 
-import { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from "react"
+import Link from "next/link"
 import {
   CalendarDaysIcon,
   ChevronRightIcon,
   PlusIcon,
 } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import { FloatingActionButton } from "@/components/floating-action-button"
-import { ResponsivePanel } from "@/components/responsive-panel"
 import { ViewTabs } from "@/components/view-tabs"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -39,7 +27,6 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import { Spinner } from "@/components/ui/spinner"
 import {
   Table,
   TableBody,
@@ -49,105 +36,54 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
-import type {
-  OwnerBookingInput,
-  OwnerBookingResult,
-  OwnerMoveInput,
-  OwnerMoveResult,
-} from "@/types/owner-booking"
-import { cancelBooking } from "../api/actions"
-import { setBookingStatus } from "../api/booking-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import type { PeriodSummary } from "../utils/analytics"
-import { AddBookingPanel, type AddBookingOptions } from "./add-booking-panel"
-import { BookingDetails } from "./booking-details"
+import { presetRange } from "../utils/booking-range"
+import { type BookingPanelsProps, useBookingPanels } from "./booking-panels"
 import { BookingStatusBadge } from "./booking-status-badge"
-import { MoveBookingPanel } from "./move-booking-panel"
 import { PeriodStats } from "./period-stats"
 
 type View = "upcoming" | "past"
 
+// Home shows this many; View all opens the Bookings page for the rest.
+const HOME_LIMIT = 8
+
 // The home page: the last 7 days' numbers (they open Analytics), then the
-// business's bookings by day (upcoming first, past one tab away). Each
-// opens its details; before it starts it can be moved or cancelled, once it
-// has started it can be marked done or no-show.
+// next few bookings by day (the last few one tab away), and View all for
+// the Bookings page. Each opens its details, as on the Bookings page.
 export function BookingsView({
-  businessId,
   upcoming,
   past,
   summary,
   currency,
-  addOptions,
-  createBooking,
-  moveBooking,
-}: {
-  businessId: string
+  ...panelProps
+}: BookingPanelsProps & {
   upcoming: OwnerBooking[]
   past: OwnerBooking[]
   summary: PeriodSummary
   currency: string
-  addOptions: AddBookingOptions
-  createBooking: (input: OwnerBookingInput) => Promise<OwnerBookingResult>
-  moveBooking: (input: OwnerMoveInput) => Promise<OwnerMoveResult>
 }) {
   const [view, setView] = useState<View>("upcoming")
-  const [opened, setOpened] = useState<OwnerBooking | null>(null)
-  const [detailsOpen, setDetailsOpen] = useState(false)
-  // When the details opened: a booking that has started by then can be
-  // marked done or no-show.
-  const [openedAt, setOpenedAt] = useState(0)
-  const [adding, setAdding] = useState(false)
-  const [moving, setMoving] = useState(false)
-  const [cancelling, setCancelling] = useState<OwnerBooking | null>(null)
-  const [pending, startTransition] = useTransition()
-  const router = useRouter()
+  const panels = useBookingPanels(panelProps)
+  const { businessId, addOptions } = panelProps
   const m = useOwnerMessages()
   const t = m.bookings
   const views = [
     { id: "upcoming" as const, label: t.views.upcoming },
     { id: "past" as const, label: t.views.past },
   ]
-  const list = view === "upcoming" ? upcoming : past
+  const list = (view === "upcoming" ? upcoming : past).slice(0, HOME_LIMIT)
   const days = groupByDay(list)
   // The table's Team column, only for a business with a team.
   const hasTeam = addOptions.team.length > 0
-  // `at` is when the owner tapped, read in the tap handler itself.
-  const open = (booking: OwnerBooking, at: number) => {
-    setOpened(booking)
-    setOpenedAt(at)
-    setDetailsOpen(true)
-  }
-
-  const run = (task: () => Promise<{ ok: boolean }>, done: string) =>
-    startTransition(async () => {
-      const result = await task().catch(() => ({ ok: false }))
-      setCancelling(null)
-      if (result.ok) {
-        setDetailsOpen(false)
-        toast.success(done)
-        router.refresh()
-      } else {
-        toast.error(t.failed)
-      }
-    })
-
-  const started = opened ? Date.parse(opened.startAt) <= openedAt : false
-  const footer = opened && (
-    <BookingActions
-      booking={opened}
-      started={started}
-      pending={pending}
-      onMove={() => {
-        setDetailsOpen(false)
-        setMoving(true)
-      }}
-      onCancel={() => setCancelling(opened)}
-      onStatus={(status, done) =>
-        run(() => setBookingStatus(businessId, opened.id, status), done)
-      }
-    />
-  )
+  // Past opens the Bookings page on the last 3 months; upcoming on its
+  // usual dates.
+  const last90 = presetRange("last90", addOptions.today)
+  const viewAll =
+    view === "upcoming"
+      ? `/dashboard/${businessId}/bookings`
+      : `/dashboard/${businessId}/bookings?from=${last90.from}&to=${last90.to}`
 
   return (
     <div className="flex flex-col gap-6">
@@ -161,8 +97,8 @@ export function BookingsView({
         </h1>
         <Button
           className="max-md:hidden"
-          onClick={() => setAdding(true)}
-          disabled={addOptions.services.length === 0}
+          onClick={panels.add}
+          disabled={!panels.canAdd}
         >
           <PlusIcon data-icon="inline-start" />
           {t.add}
@@ -191,10 +127,10 @@ export function BookingsView({
                 {view === "upcoming" ? t.noUpcoming : t.noPast}
               </EmptyTitle>
             </EmptyHeader>
-            {view === "upcoming" && addOptions.services.length > 0 && (
+            {view === "upcoming" && panels.canAdd && (
               // On a phone the floating Add does this.
               <EmptyContent className="max-md:hidden">
-                <Button onClick={() => setAdding(true)}>
+                <Button onClick={panels.add}>
                   <PlusIcon data-icon="inline-start" />
                   {t.addBooking}
                 </Button>
@@ -222,7 +158,7 @@ export function BookingsView({
                         render={
                           <button
                             type="button"
-                            onClick={() => open(booking, Date.now())}
+                            onClick={() => panels.open(booking, Date.now())}
                           />
                         }
                         className="text-left"
@@ -277,7 +213,7 @@ export function BookingsView({
                       <TableRow
                         key={booking.id}
                         className="cursor-pointer"
-                        onClick={() => open(booking, Date.now())}
+                        onClick={() => panels.open(booking, Date.now())}
                       >
                         {/* The status sits by the time, as on a phone. */}
                         <TableCell className="tabular-nums">
@@ -293,7 +229,7 @@ export function BookingsView({
                             className="h-auto p-0 text-foreground"
                             onClick={(event) => {
                               event.stopPropagation()
-                              open(booking, Date.now())
+                              panels.open(booking, Date.now())
                             }}
                           >
                             {booking.customerName}
@@ -309,149 +245,28 @@ export function BookingsView({
                 ))}
               </Table>
             </Card>
+            <Button
+              variant="outline"
+              className="self-center max-md:w-full"
+              render={<Link href={viewAll} />}
+              nativeButton={false}
+            >
+              {t.viewAll}
+              <ChevronRightIcon data-icon="inline-end" />
+            </Button>
           </>
         )}
       </div>
 
       <FloatingActionButton
         label={t.addBooking}
-        onClick={() => setAdding(true)}
-        disabled={addOptions.services.length === 0}
+        onClick={panels.add}
+        disabled={!panels.canAdd}
       >
         <PlusIcon />
       </FloatingActionButton>
 
-      <ResponsivePanel
-        open={detailsOpen}
-        onClose={() => setDetailsOpen(false)}
-        title={opened ? opened.customerName : t.booking}
-        footer={footer}
-      >
-        {opened && <BookingDetails booking={opened} />}
-      </ResponsivePanel>
-
-      <AddBookingPanel
-        open={adding}
-        onClose={() => setAdding(false)}
-        businessId={businessId}
-        options={addOptions}
-        createBooking={createBooking}
-      />
-
-      <MoveBookingPanel
-        booking={opened}
-        open={moving}
-        onClose={() => setMoving(false)}
-        onMoved={() => setMoving(false)}
-        businessId={businessId}
-        today={addOptions.today}
-        moveBooking={moveBooking}
-      />
-
-      <AlertDialog
-        open={cancelling !== null}
-        onOpenChange={(open) => {
-          if (!open && !pending) setCancelling(null)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t.cancel.title}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {cancelling &&
-                t.cancel.description(
-                  cancelling.customerName,
-                  formatDay(cancelling.date, m.locale),
-                  formatClock(cancelling.time, m.locale)
-                )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={pending}>
-              {t.cancel.keep}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={pending}
-              onClick={() =>
-                cancelling &&
-                run(
-                  () => cancelBooking(businessId, cancelling.id),
-                  t.cancel.done
-                )
-              }
-            >
-              {t.cancel.confirm}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  )
-}
-
-// What can be done with a booking: before it starts, move or cancel it;
-// once it has started, mark it done or no-show; after that, undo.
-function BookingActions({
-  booking,
-  started,
-  pending,
-  onMove,
-  onCancel,
-  onStatus,
-}: {
-  booking: OwnerBooking
-  started: boolean
-  pending: boolean
-  onMove: () => void
-  onCancel: () => void
-  onStatus: (
-    status: "confirmed" | "completed" | "no_show",
-    done: string
-  ) => void
-}) {
-  const t = useOwnerMessages().bookings
-  if (booking.status === "cancelled") return null
-  if (booking.status !== "confirmed") {
-    return (
-      <Button
-        variant="outline"
-        disabled={pending}
-        onClick={() => onStatus("confirmed", t.actions.undone)}
-      >
-        {pending && <Spinner data-icon="inline-start" />}
-        {t.actions.undo}
-      </Button>
-    )
-  }
-  if (!started) {
-    return (
-      <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" disabled={pending} onClick={onCancel}>
-          {t.cancel.confirm}
-        </Button>
-        <Button disabled={pending} onClick={onMove}>
-          {t.move.open}
-        </Button>
-      </div>
-    )
-  }
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      <Button
-        variant="outline"
-        disabled={pending}
-        onClick={() => onStatus("no_show", t.actions.markedNoShow)}
-      >
-        {t.actions.noShow}
-      </Button>
-      <Button
-        disabled={pending}
-        onClick={() => onStatus("completed", t.actions.markedDone)}
-      >
-        {pending && <Spinner data-icon="inline-start" />}
-        {t.actions.done}
-      </Button>
+      {panels.panels}
     </div>
   )
 }

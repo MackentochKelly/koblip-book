@@ -16,6 +16,11 @@ const badgeVariants = cva(
         // Good news, like a number going the right way (destructive's twin).
         success:
           "bg-success/10 text-success dark:bg-success/20 [a]:hover:bg-success/20",
+        // Needs a look, like a booking nobody marked (the same soft look).
+        warning:
+          "bg-warning/10 text-warning dark:bg-warning/20 [a]:hover:bg-warning/20",
+        // Plain news, like a booking still to come.
+        info: "bg-info/10 text-info dark:bg-info/20 [a]:hover:bg-info/20",
         outline:
           "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
         ghost:
