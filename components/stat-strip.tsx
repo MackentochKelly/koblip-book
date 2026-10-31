@@ -41,7 +41,7 @@ export function StatStrip({
       )}
     >
       {caption && (
-        <div className="flex items-center justify-between gap-2 px-5 pt-4 text-muted-foreground">
+        <div className="flex items-center justify-between gap-2 border-b px-5 py-4 text-muted-foreground">
           {caption}
           {href && <ChevronRightIcon className="size-4" />}
         </div>
