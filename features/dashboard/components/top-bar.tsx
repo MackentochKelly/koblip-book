@@ -1,15 +1,19 @@
 "use client"
 
+import { usePathname } from "next/navigation"
+
 import { AppTopBar } from "@/components/app-top-bar"
 import { ExternalLinkIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
+import { navKeyFor } from "../navigation"
 import { AccountMenu } from "./account-menu"
 
-// The owner area's top bar: the business name, its public page and the
-// account menu. Pinned, with a line under it. In the dashboard it starts
-// with ☰, which opens the menu (whose top shows the name on a computer).
+// The owner area's top bar: the page's name (the business name before setup
+// is done), its public page and the account menu. Pinned, with a line under
+// it. In the dashboard it starts with ☰, which opens the menu (whose top
+// shows the name on a computer).
 // Before the details are checked the page isn't live yet, so View page can be
 // left out. `bell` sits beside the account menu on every screen (N-D11).
 export function TopBar({
@@ -28,13 +32,19 @@ export function TopBar({
   className?: string
 }) {
   const m = useOwnerMessages().shell
+  const pathname = usePathname()
+  // In the dashboard the bar names the page, like an app's title bar; the
+  // page's own big title then shows only on a computer.
+  const key = menu
+    ? navKeyFor(pathname, `/dashboard/${business.id}`)
+    : undefined
   return (
     <AppTopBar
-      title={business.name}
+      title={key ? m.nav[key] : business.name}
       menuLabel={menu ? m.menu : undefined}
       className={className}
     >
-      {/* Just the icon on a phone, so the business name has room. */}
+      {/* Just the icon on a phone, so the title has room. */}
       {viewPage && (
         <Button
           variant="outline"

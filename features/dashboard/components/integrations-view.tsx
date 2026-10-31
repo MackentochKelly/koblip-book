@@ -114,7 +114,7 @@ export function IntegrationsView({
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">
+      <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">
         {m.shell.nav.integrations}
       </h1>
       <PageSection id="messaging" title={t.messaging}>

@@ -93,7 +93,15 @@ export function DetailsForm({
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6">
       {title !== null && (
-        <h1 className="text-2xl font-semibold tracking-tight">
+        // In the dashboard the top bar names Settings on a phone; setup has
+        // no such bar, so its own title always shows.
+        <h1
+          className={
+            title === undefined
+              ? "text-2xl font-semibold tracking-tight max-md:sr-only"
+              : "text-2xl font-semibold tracking-tight"
+          }
+        >
           {title ?? m.shell.nav.settings}
         </h1>
       )}

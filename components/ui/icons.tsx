@@ -13,6 +13,8 @@ import {
   Baby as MynaBaby,
   Bell as MynaBell,
   Calendar as MynaCalendar,
+  ChartColumnIncreasing as MynaChartColumnIncreasing,
+  ChartColumnIncreasingSolid as MynaChartColumnIncreasingSolid,
   CalendarX as MynaCalendarX,
   Chat as MynaChat,
   Check as MynaCheck,
@@ -195,6 +197,10 @@ export const ExternalLinkIcon = icon(
   MynaExternalLink as Icon,
   "ExternalLinkIcon"
 )
+export const ChartColumnIcon = icon(
+  MynaChartColumnIncreasing as Icon,
+  "ChartColumnIcon"
+)
 export const FlowerIcon = icon(MynaFlower as Icon, "FlowerIcon")
 export const GlobeIcon = icon(MynaGlobe as Icon, "GlobeIcon")
 export const GraduationCapIcon = icon(
@@ -272,6 +278,10 @@ const FILLED = new Map<Icon, Icon>([
   [
     LayoutDashboardIcon,
     icon(MynaLayoutDashboardSolid as Icon, "LayoutDashboardFilledIcon"),
+  ],
+  [
+    ChartColumnIcon,
+    icon(MynaChartColumnIncreasingSolid as Icon, "ChartColumnFilledIcon"),
   ],
   [CalendarDaysIcon, icon(MynaCalendarSolid as Icon, "CalendarDaysFilledIcon")],
   [CalendarIcon, icon(MynaCalendarSolid as Icon, "CalendarFilledIcon")],
