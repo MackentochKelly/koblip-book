@@ -3,9 +3,10 @@ import { and, count, desc, eq, isNull, lt, or, type SQL } from "drizzle-orm"
 
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
-import { businesses, inAppNotifications } from "@/lib/db/schema"
+import { businesses, inAppNotificationSettings, inAppNotifications } from "@/lib/db/schema"
 import { notificationRules } from "@/lib/platform-settings"
-import type { InAppFeed, InAppPage } from "../types/notifications"
+import { IN_APP_KINDS } from "@/types/in-app-notifications"
+import type { InAppChoice, InAppFeed, InAppPage } from "../types/notifications"
 
 // The owner's bell (docs/plans/in-app-notifications.md, N1): every business
 // the owner owns, newest first.
@@ -75,4 +76,18 @@ export async function getUnreadCount() {
 export async function getNotificationPage(cursor?: string) {
   const session = await requireOwner()
   return notificationPageFor(session.userId, cursor)
+}
+
+// The owner's choices for one of their businesses (N3): every kind, all on
+// until turned off. Null when the business is not theirs.
+export async function getNotificationChoices(businessId: string): Promise<InAppChoice[] | null> {
+  const session = await requireOwner()
+  const [row] = await db
+    .select({ turnedOff: inAppNotificationSettings.turnedOff })
+    .from(businesses)
+    .leftJoin(inAppNotificationSettings, eq(inAppNotificationSettings.businessId, businesses.id))
+    .where(and(eq(businesses.id, businessId), ownedBy(session.userId)))
+    .limit(1)
+  if (!row) return null
+  return IN_APP_KINDS.map((kind) => ({ kind, on: !row.turnedOff?.includes(kind) }))
 }

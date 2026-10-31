@@ -18,8 +18,8 @@ vi.mock("@/lib/dal", () => ({
 
 const { notification, notify } = await import("@/lib/in-app-notifications")
 const { saveAll } = await import("@/lib/db/save-all")
-const { getNotificationPage, getUnreadCount } = await import("./queries")
-const { markAllNotificationsRead, markNotificationRead } = await import("./actions")
+const { getNotificationChoices, getNotificationPage, getUnreadCount } = await import("./queries")
+const { markAllNotificationsRead, markNotificationRead, setNotificationChoice } = await import("./actions")
 
 let dir: string
 let closeDb: () => void
@@ -138,6 +138,33 @@ test("marking read: one of the owner's own, or all of them; the page refreshes",
   expect(await getUnreadCount()).toBe(0)
   signedIn = "u2"
   expect(await getUnreadCount()).toBe(1)
+})
+
+test("the owner's choices: all on at first, each kind switched per business, only their own", async () => {
+  const offs = async (businessId: string) =>
+    (await getNotificationChoices(businessId))?.filter(({ on }) => !on).map(({ kind }) => kind)
+  expect(await offs("a")).toEqual([])
+  expect((await getNotificationChoices("a"))?.length).toBe(11)
+
+  expect(await setNotificationChoice("a", "newBooking", false)).toEqual({ ok: true })
+  expect(await setNotificationChoice("a", "newBooking", false)).toEqual({ ok: true })
+  expect(await setNotificationChoice("a", "messageFailed", false)).toEqual({ ok: true })
+  expect(await offs("a")).toEqual(["newBooking", "messageFailed"])
+  expect(await offs("b")).toEqual([])
+  await notify("a", "newBooking", {})
+  expect(await getUnreadCount()).toBe(0)
+
+  expect(await setNotificationChoice("a", "newBooking", true)).toEqual({ ok: true })
+  expect(await offs("a")).toEqual(["messageFailed"])
+  await notify("a", "newBooking", {})
+  expect(await getUnreadCount()).toBe(1)
+  expect(refresh).toHaveBeenCalledTimes(4)
+
+  expect(await getNotificationChoices("c")).toBeNull()
+  expect(await setNotificationChoice("c", "newBooking", false)).toEqual({ ok: false, error: "not_found" })
+  expect(await setNotificationChoice("a", "nope" as never, false)).toEqual({ ok: false, error: "invalid" })
+  expect(await setNotificationChoice("b", "newBooking", true)).toEqual({ ok: true })
+  expect(await offs("b")).toEqual([])
 })
 
 function eqBusiness(businessId: string) {
