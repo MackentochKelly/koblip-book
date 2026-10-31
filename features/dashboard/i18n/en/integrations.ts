@@ -47,6 +47,17 @@ const integrations = {
     name: "Google Calendar",
     description:
       "Your bookings in your Google Calendar, kept up to date as they change.",
+    connect: "Connect",
+    connected: "Connected",
+    disconnect: "Disconnect",
+    disconnected: "Google Calendar disconnected.",
+    account: (email: string) => `Connected to ${email}`,
+    reconnect: "Reconnect",
+    reconnectHint: "The connection stopped. Connect again.",
+    syncFailed: "Couldn't update your calendar. Trying again.",
+    connectedToast: "Google Calendar connected.",
+    denied: "Allow the Koblip Book calendar to connect.",
+    failed: "Couldn't connect Google Calendar. Try again.",
   },
   appleCalendar: {
     name: "Apple Calendar",

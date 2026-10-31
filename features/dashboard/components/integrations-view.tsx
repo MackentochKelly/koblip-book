@@ -26,13 +26,21 @@ import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { disconnectChat, refreshChatMessages } from "../api/chat-connection"
+import { disconnectGoogleCalendar } from "../api/google-calendar-actions"
+import { useConnectWindow } from "../hooks/use-connect-window"
 import { useOwnerMessages } from "../i18n/provider"
 import type { ChatConnection } from "../types/chat-connection"
+import type { GoogleCalendarConnection } from "../types/google-calendar"
 import {
   CHAT_CONNECT_CHANNEL,
   type ChatConnectMessage,
   type ChatConnectResult,
 } from "@/types/chat-connect"
+import {
+  GOOGLE_CONNECT_CHANNEL,
+  type GoogleConnectMessage,
+  type GoogleConnectResult,
+} from "@/types/google-calendar-connect"
 import { ConfirmRemove } from "./confirm-remove"
 
 // The apps a business connects, as a settings list: each row is the app,
@@ -42,23 +50,31 @@ export function IntegrationsView({
   businessId,
   connection,
   result,
+  googleCalendar,
+  googleResult,
 }: {
   businessId: string
   connection: ChatConnection | null
   // How a Chat window opened as a full page ended (?chat=), shown once.
   result: ChatConnectResult | null
+  googleCalendar: GoogleCalendarConnection | null
+  // The same for Google's window (?google=).
+  googleResult: GoogleConnectResult | null
 }) {
   const m = useOwnerMessages()
   const t = m.integrations
   const router = useRouter()
-  const [waiting, setWaiting] = useState(false)
-  const [disconnecting, setDisconnecting] = useState(false)
+  const chatWindow = useConnectWindow()
+  const googleWindow = useConnectWindow()
+  const [disconnecting, setDisconnecting] = useState<"chat" | "google" | null>(null)
+  const setChatWaiting = chatWindow.setWaiting
+  const setGoogleWaiting = googleWindow.setWaiting
 
   // The Chat window says how it ended on a same-site channel: the page
   // shows the saved connection, or says it failed. Cancel says nothing.
   useEffect(() => {
     function ended(next: ChatConnectResult) {
-      setWaiting(false)
+      setChatWaiting(false)
       if (next === "connected") {
         router.refresh()
         toast(t.koblipChat.connectedToast)
@@ -75,7 +91,30 @@ export function IntegrationsView({
       if (!event.data?.koblip && event.data?.businessId === businessId) ended(event.data.result)
     }
     return () => channel.close()
-  }, [businessId, result, router, t])
+  }, [businessId, result, router, t, setChatWaiting])
+
+  // Google's window, the same way; cancelling (or leaving out the calendar)
+  // says how to connect.
+  useEffect(() => {
+    function ended(next: GoogleConnectResult) {
+      setGoogleWaiting(false)
+      if (next === "connected") {
+        router.refresh()
+        toast(t.googleCalendar.connectedToast)
+      } else {
+        toast.error(next === "denied" ? t.googleCalendar.denied : t.googleCalendar.failed)
+      }
+    }
+    if (googleResult) {
+      ended(googleResult)
+      router.replace(`/dashboard/${encodeURIComponent(businessId)}/integrations`)
+    }
+    const channel = new BroadcastChannel(GOOGLE_CONNECT_CHANNEL)
+    channel.onmessage = (event: MessageEvent<GoogleConnectMessage>) => {
+      if (event.data?.businessId === businessId) ended(event.data.result)
+    }
+    return () => channel.close()
+  }, [businessId, googleResult, router, t, setGoogleWaiting])
 
   // While connected and not yet ready, opening this page makes any missing
   // booking templates in Chat and reads Meta's review; a new answer reloads.
@@ -92,25 +131,9 @@ export function IntegrationsView({
     }
   }, [businessId, usable, messages, router])
 
-  // Koblip Chat's consent page in its own small window (OAuth popup); a
-  // blocked window opens it in this tab instead.
-  function connect() {
-    const url = `/api/chat/connect?businessId=${encodeURIComponent(businessId)}`
-    const chat = window.open(url, "koblip-chat-connect", "popup,width=480,height=720")
-    if (!chat) {
-      // A route that leaves for Koblip Chat, not a page: a full navigation.
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-      window.location.assign(url)
-      return
-    }
-    setWaiting(true)
-    const watch = window.setInterval(() => {
-      if (chat.closed) {
-        window.clearInterval(watch)
-        setWaiting(false)
-      }
-    }, 500)
-  }
+  const query = `businessId=${encodeURIComponent(businessId)}`
+  const waiting = chatWindow.waiting
+  const googleUsable = !!googleCalendar && !googleCalendar.needsReconnect
 
   return (
     <div className="flex flex-col gap-6">
@@ -147,7 +170,7 @@ export function IntegrationsView({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setDisconnecting(true)}
+                    onClick={() => setDisconnecting("chat")}
                   >
                     {t.koblipChat.disconnect}
                   </Button>
@@ -156,7 +179,9 @@ export function IntegrationsView({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={connect}
+                  onClick={() =>
+                    chatWindow.openWindow(`/api/chat/connect?${query}`, "koblip-chat-connect")
+                  }
                   disabled={waiting}
                 >
                   {waiting && <Spinner data-icon="inline-start" />}
@@ -215,8 +240,45 @@ export function IntegrationsView({
           <IntegrationRow
             logo="/brands/google-calendar.png"
             name={t.googleCalendar.name}
-            description={t.googleCalendar.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
+            description={
+              !googleCalendar
+                ? t.googleCalendar.description
+                : googleCalendar.needsReconnect
+                  ? t.googleCalendar.reconnectHint
+                  : googleCalendar.syncFailed
+                    ? t.googleCalendar.syncFailed
+                    : t.googleCalendar.account(googleCalendar.googleEmail)
+            }
+            action={
+              googleUsable ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">{t.googleCalendar.connected}</Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDisconnecting("google")}
+                  >
+                    {t.googleCalendar.disconnect}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    googleWindow.openWindow(
+                      `/api/google-calendar/connect?${query}`,
+                      "koblip-google-calendar-connect"
+                    )
+                  }
+                  disabled={googleWindow.waiting}
+                >
+                  {googleWindow.waiting && <Spinner data-icon="inline-start" />}
+                  {googleCalendar ? t.googleCalendar.reconnect : t.googleCalendar.connect}
+                  {!googleWindow.waiting && <ChevronRightIcon data-icon="inline-end" />}
+                </Button>
+              )
+            }
           />
           {/* Apple's own Calendar app icon, unaltered. */}
           <IntegrationRow
@@ -281,12 +343,23 @@ export function IntegrationsView({
       </PageSection>
 
       <ConfirmRemove
-        name={disconnecting ? t.koblipChat.name : null}
-        onClose={() => setDisconnecting(false)}
+        name={
+          disconnecting === "chat"
+            ? t.koblipChat.name
+            : disconnecting === "google"
+              ? t.googleCalendar.name
+              : null
+        }
+        onClose={() => setDisconnecting(null)}
         onConfirm={async () => {
-          await disconnectChat(businessId)
+          if (disconnecting === "google") {
+            await disconnectGoogleCalendar(businessId)
+            toast(t.googleCalendar.disconnected)
+          } else {
+            await disconnectChat(businessId)
+            toast(t.koblipChat.disconnected)
+          }
           router.refresh()
-          toast(t.koblipChat.disconnected)
         }}
       />
     </div>

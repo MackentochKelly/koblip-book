@@ -48,6 +48,17 @@ const integrations: typeof en = {
     name: "Google Calendar",
     description:
       "Tus reservas en tu Google Calendar, al día con cada cambio.",
+    connect: "Conectar",
+    connected: "Conectado",
+    disconnect: "Desconectar",
+    disconnected: "Google Calendar desconectado.",
+    account: (email: string) => `Conectado a ${email}`,
+    reconnect: "Reconectar",
+    reconnectHint: "La conexión se detuvo. Vuelve a conectar.",
+    syncFailed: "No se pudo actualizar tu calendario. Lo intentamos de nuevo.",
+    connectedToast: "Google Calendar conectado.",
+    denied: "Permite el calendario de Koblip Book para conectar.",
+    failed: "No se pudo conectar Google Calendar. Inténtalo de nuevo.",
   },
   appleCalendar: {
     name: "Apple Calendar",
