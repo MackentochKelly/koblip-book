@@ -1,5 +1,11 @@
 // The Integrations page: the apps a business connects to Koblip Book.
 const integrations = {
+  tabs: {
+    connected: "Connected",
+    all: "All apps",
+    label: "Connected and all apps",
+  },
+  noneConnected: "Nothing connected yet",
   messaging: "Messaging",
   calendar: "Calendar",
   payments: "Payments",

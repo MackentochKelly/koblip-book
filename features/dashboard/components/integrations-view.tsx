@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Fragment, useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import {
@@ -11,8 +11,10 @@ import {
 
 import { PageSection } from "@/components/page-section"
 import { DetailsButton } from "@/components/details-button"
+import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import {
   Item,
   ItemActions,
@@ -72,6 +74,7 @@ export function IntegrationsView({
   const chatWindow = useConnectWindow()
   const googleWindow = useConnectWindow()
   const [disconnecting, setDisconnecting] = useState<"chat" | "google" | null>(null)
+  const [view, setView] = useState<"connected" | "all">("connected")
   const [managingGoogle, setManagingGoogle] = useState(false)
   const [removeGoogleEvents, setRemoveGoogleEvents] = useState(false)
   const setChatWaiting = chatWindow.setWaiting
@@ -142,212 +145,250 @@ export function IntegrationsView({
   const waiting = chatWindow.waiting
   const googleUsable = !!googleCalendar && !googleCalendar.needsReconnect
 
+  // The same rows show on both tabs.
+  // Koblip Chat's app icon, from its own app.
+  const chatRow = (
+    <IntegrationRow
+      logo="/brands/koblip-chat.png"
+      name={t.koblipChat.name}
+      description={
+        !connection
+          ? t.koblipChat.description
+          : connection.needsReconnect
+            ? t.koblipChat.reconnectHint
+            : connection.messages === "ready"
+              ? t.koblipChat.workspace(connection.workspaceName)
+              : t.koblipChat.messages[connection.messages]
+      }
+      action={
+        connection && !connection.needsReconnect ? (
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{t.koblipChat.connected}</Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDisconnecting("chat")}
+            >
+              {t.koblipChat.disconnect}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              chatWindow.openWindow(`/api/chat/connect?${query}`, "koblip-chat-connect")
+            }
+            disabled={waiting}
+          >
+            {waiting && <Spinner data-icon="inline-start" />}
+            {connection ? t.koblipChat.reconnect : t.koblipChat.connect}
+            {!waiting && <ChevronRightIcon data-icon="inline-end" />}
+          </Button>
+        )
+      }
+    />
+  )
+  // Google's own Calendar logo (2026), unaltered, from the Google Workspace
+  // branding pack, only to name the app.
+  const googleRow = (
+    <IntegrationRow
+      logo="/brands/google-calendar.png"
+      name={t.googleCalendar.name}
+      description={
+        !googleCalendar
+          ? t.googleCalendar.description
+          : googleCalendar.needsReconnect
+            ? t.googleCalendar.reconnectHint
+            : googleCalendar.syncFailed
+              ? t.googleCalendar.syncFailed
+              : t.googleCalendar.account(googleCalendar.googleEmail)
+      }
+      action={
+        googleUsable ? (
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{t.googleCalendar.connected}</Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setManagingGoogle(true)}
+            >
+              {t.googleCalendar.manage}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              googleWindow.openWindow(
+                `/api/google-calendar/connect?${query}`,
+                "koblip-google-calendar-connect"
+              )
+            }
+            disabled={googleWindow.waiting}
+          >
+            {googleWindow.waiting && <Spinner data-icon="inline-start" />}
+            {googleCalendar ? t.googleCalendar.reconnect : t.googleCalendar.connect}
+            {!googleWindow.waiting && <ChevronRightIcon data-icon="inline-end" />}
+          </Button>
+        )
+      }
+    />
+  )
+  // Connected: the apps working for the business now.
+  const connectedRows = [
+    usable && <Fragment key="chat">{chatRow}</Fragment>,
+    googleUsable && <Fragment key="google">{googleRow}</Fragment>,
+  ].filter(Boolean)
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">
         {m.shell.nav.integrations}
       </h1>
-      <PageSection id="messaging" title={t.messaging}>
-        <ItemGroup className="gap-3">
-          {/* WhatsApp's own file from the official pack, never recoloured
-              (meta.com/brand/resources/whatsapp/whatsapp-brand). */}
-          <IntegrationRow
-            logo="/brands/whatsapp-glyph-green.svg"
-            name={t.whatsapp.name}
-            description={t.whatsapp.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
-          />
-          {/* Koblip Chat's app icon, from its own app. */}
-          <IntegrationRow
-            logo="/brands/koblip-chat.png"
-            name={t.koblipChat.name}
-            description={
-              !connection
-                ? t.koblipChat.description
-                : connection.needsReconnect
-                  ? t.koblipChat.reconnectHint
-                  : connection.messages === "ready"
-                    ? t.koblipChat.workspace(connection.workspaceName)
-                    : t.koblipChat.messages[connection.messages]
-            }
-            action={
-              connection && !connection.needsReconnect ? (
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{t.koblipChat.connected}</Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDisconnecting("chat")}
-                  >
-                    {t.koblipChat.disconnect}
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    chatWindow.openWindow(`/api/chat/connect?${query}`, "koblip-chat-connect")
-                  }
-                  disabled={waiting}
-                >
-                  {waiting && <Spinner data-icon="inline-start" />}
-                  {connection ? t.koblipChat.reconnect : t.koblipChat.connect}
-                  {!waiting && <ChevronRightIcon data-icon="inline-end" />}
-                </Button>
-              )
-            }
-          />
-          {/* Texts go through Twilio: its own app icon, as twilio.com uses
-              it; a square, so its corners are rounded. */}
-          <IntegrationRow
-            logo="/brands/twilio.png"
-            square
-            name={t.sms.name}
-            description={t.sms.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
-          />
-          {/* Email has no brand: an app-style tile. */}
-          <IntegrationRow
-            logo={MailIcon}
-            name={t.email.name}
-            description={t.email.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
-          />
-        </ItemGroup>
-      </PageSection>
-      <PageSection id="social" title={t.social}>
-        <ItemGroup className="gap-3">
-          {/* Instagram's and Facebook's own icons, from their own sites. */}
-          <IntegrationRow
-            logo="/brands/instagram.png"
-            name={t.instagram.name}
-            description={t.instagram.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
-          />
-          <IntegrationRow
-            logo="/brands/facebook.png"
-            name={t.facebook.name}
-            description={t.facebook.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
-          />
-          {/* Google's own Business Profile icon, from Google's servers. */}
-          <IntegrationRow
-            logo="/brands/google-business.png"
-            name={t.googleBusiness.name}
-            description={t.googleBusiness.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
-          />
-        </ItemGroup>
-      </PageSection>
-      <PageSection id="calendar" title={t.calendar}>
-        <ItemGroup className="gap-3">
-          {/* Google's own Calendar logo (2026), unaltered, from the
-              Google Workspace branding pack, only to name the app. */}
-          <IntegrationRow
-            logo="/brands/google-calendar.png"
-            name={t.googleCalendar.name}
-            description={
-              !googleCalendar
-                ? t.googleCalendar.description
-                : googleCalendar.needsReconnect
-                  ? t.googleCalendar.reconnectHint
-                  : googleCalendar.syncFailed
-                    ? t.googleCalendar.syncFailed
-                    : t.googleCalendar.account(googleCalendar.googleEmail)
-            }
-            action={
-              googleUsable ? (
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{t.googleCalendar.connected}</Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setManagingGoogle(true)}
-                  >
-                    {t.googleCalendar.manage}
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    googleWindow.openWindow(
-                      `/api/google-calendar/connect?${query}`,
-                      "koblip-google-calendar-connect"
-                    )
-                  }
-                  disabled={googleWindow.waiting}
-                >
-                  {googleWindow.waiting && <Spinner data-icon="inline-start" />}
-                  {googleCalendar ? t.googleCalendar.reconnect : t.googleCalendar.connect}
-                  {!googleWindow.waiting && <ChevronRightIcon data-icon="inline-end" />}
-                </Button>
-              )
-            }
-          />
-          {/* Apple's own Calendar app icon, unaltered. */}
-          <IntegrationRow
-            logo="/brands/apple-calendar.png"
-            name={t.appleCalendar.name}
-            description={t.appleCalendar.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
-          />
-          {/* Outlook's icon from Microsoft's own Office web server. */}
-          <IntegrationRow
-            logo="/brands/outlook.svg"
-            name={t.outlook.name}
-            description={t.outlook.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
-          />
-        </ItemGroup>
-      </PageSection>
-      <PageSection id="payments" title={t.payments}>
-        <ItemGroup className="gap-3">
-          {/* Stripe's own app icon, as stripe.com uses it; a square, so
-              its corners are rounded like the other app icons. */}
-          <IntegrationRow
-            logo="/brands/stripe.svg"
-            square
-            name={t.stripe.name}
-            description={t.stripe.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
-          />
-        </ItemGroup>
-      </PageSection>
-      <PageSection id="reviews" title={t.reviews}>
-        <ItemGroup className="gap-3">
-          {/* Google's own "G", colour on light and its dark-mode file. */}
-          <IntegrationRow
-            logo="/brands/google-g-light.png"
-            logoDark="/brands/google-g-dark.png"
-            name={t.googleReviews.name}
-            description={t.googleReviews.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
-          />
-        </ItemGroup>
-      </PageSection>
-      <PageSection id="tracking" title={t.tracking}>
-        <ItemGroup className="gap-3">
-          {/* Meta's symbol, from the logo in its brand pack: colour on
-              light, white on dark. */}
-          <IntegrationRow
-            logo="/brands/meta-symbol.png"
-            logoDark="/brands/meta-symbol-white.png"
-            name={t.metaPixel.name}
-            description={t.metaPixel.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
-          />
-          {/* Google's own Analytics icon, from Google's servers. */}
-          <IntegrationRow
-            logo="/brands/google-analytics.svg"
-            name={t.googleAnalytics.name}
-            description={t.googleAnalytics.description}
-            action={<Badge variant="secondary">{t.soon}</Badge>}
-          />
-        </ItemGroup>
-      </PageSection>
+      <ViewTabs
+        views={[
+          { id: "connected" as const, label: t.tabs.connected },
+          { id: "all" as const, label: t.tabs.all },
+        ]}
+        value={view}
+        onChange={setView}
+        ariaLabel={t.tabs.label}
+        listClassName="w-full md:w-fit"
+      />
+
+      {view === "connected" ? (
+        connectedRows.length === 0 ? (
+          <Empty className="border">
+            <EmptyHeader>
+              <EmptyTitle>{t.noneConnected}</EmptyTitle>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <ItemGroup className="gap-3">{connectedRows}</ItemGroup>
+        )
+      ) : (
+        <>
+          <PageSection id="messaging" title={t.messaging}>
+            <ItemGroup className="gap-3">
+              {/* WhatsApp's own file from the official pack, never recoloured
+                  (meta.com/brand/resources/whatsapp/whatsapp-brand). */}
+              <IntegrationRow
+                logo="/brands/whatsapp-glyph-green.svg"
+                name={t.whatsapp.name}
+                description={t.whatsapp.description}
+                action={<Badge variant="secondary">{t.soon}</Badge>}
+              />
+              {chatRow}
+              {/* Texts go through Twilio: its own app icon, as twilio.com uses
+                  it; a square, so its corners are rounded. */}
+              <IntegrationRow
+                logo="/brands/twilio.png"
+                square
+                name={t.sms.name}
+                description={t.sms.description}
+                action={<Badge variant="secondary">{t.soon}</Badge>}
+              />
+              {/* Email has no brand: an app-style tile. */}
+              <IntegrationRow
+                logo={MailIcon}
+                name={t.email.name}
+                description={t.email.description}
+                action={<Badge variant="secondary">{t.soon}</Badge>}
+              />
+            </ItemGroup>
+          </PageSection>
+          <PageSection id="social" title={t.social}>
+            <ItemGroup className="gap-3">
+              {/* Instagram's and Facebook's own icons, from their own sites. */}
+              <IntegrationRow
+                logo="/brands/instagram.png"
+                name={t.instagram.name}
+                description={t.instagram.description}
+                action={<Badge variant="secondary">{t.soon}</Badge>}
+              />
+              <IntegrationRow
+                logo="/brands/facebook.png"
+                name={t.facebook.name}
+                description={t.facebook.description}
+                action={<Badge variant="secondary">{t.soon}</Badge>}
+              />
+              {/* Google's own Business Profile icon, from Google's servers. */}
+              <IntegrationRow
+                logo="/brands/google-business.png"
+                name={t.googleBusiness.name}
+                description={t.googleBusiness.description}
+                action={<Badge variant="secondary">{t.soon}</Badge>}
+              />
+            </ItemGroup>
+          </PageSection>
+          <PageSection id="calendar" title={t.calendar}>
+            <ItemGroup className="gap-3">
+              {googleRow}
+              {/* Apple's own Calendar app icon, unaltered. */}
+              <IntegrationRow
+                logo="/brands/apple-calendar.png"
+                name={t.appleCalendar.name}
+                description={t.appleCalendar.description}
+                action={<Badge variant="secondary">{t.soon}</Badge>}
+              />
+              {/* Outlook's icon from Microsoft's own Office web server. */}
+              <IntegrationRow
+                logo="/brands/outlook.svg"
+                name={t.outlook.name}
+                description={t.outlook.description}
+                action={<Badge variant="secondary">{t.soon}</Badge>}
+              />
+            </ItemGroup>
+          </PageSection>
+          <PageSection id="payments" title={t.payments}>
+            <ItemGroup className="gap-3">
+              {/* Stripe's own app icon, as stripe.com uses it; a square, so
+                  its corners are rounded like the other app icons. */}
+              <IntegrationRow
+                logo="/brands/stripe.svg"
+                square
+                name={t.stripe.name}
+                description={t.stripe.description}
+                action={<Badge variant="secondary">{t.soon}</Badge>}
+              />
+            </ItemGroup>
+          </PageSection>
+          <PageSection id="reviews" title={t.reviews}>
+            <ItemGroup className="gap-3">
+              {/* Google's own "G", colour on light and its dark-mode file. */}
+              <IntegrationRow
+                logo="/brands/google-g-light.png"
+                logoDark="/brands/google-g-dark.png"
+                name={t.googleReviews.name}
+                description={t.googleReviews.description}
+                action={<Badge variant="secondary">{t.soon}</Badge>}
+              />
+            </ItemGroup>
+          </PageSection>
+          <PageSection id="tracking" title={t.tracking}>
+            <ItemGroup className="gap-3">
+              {/* Meta's symbol, from the logo in its brand pack: colour on
+                  light, white on dark. */}
+              <IntegrationRow
+                logo="/brands/meta-symbol.png"
+                logoDark="/brands/meta-symbol-white.png"
+                name={t.metaPixel.name}
+                description={t.metaPixel.description}
+                action={<Badge variant="secondary">{t.soon}</Badge>}
+              />
+              {/* Google's own Analytics icon, from Google's servers. */}
+              <IntegrationRow
+                logo="/brands/google-analytics.svg"
+                name={t.googleAnalytics.name}
+                description={t.googleAnalytics.description}
+                action={<Badge variant="secondary">{t.soon}</Badge>}
+              />
+            </ItemGroup>
+          </PageSection>
+        </>
+      )}
 
       {googleCalendar && (
         <GoogleCalendarPanel

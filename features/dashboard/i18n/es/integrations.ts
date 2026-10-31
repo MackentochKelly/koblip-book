@@ -1,6 +1,12 @@
 import type en from "../en/integrations"
 
 const integrations: typeof en = {
+  tabs: {
+    connected: "Conectadas",
+    all: "Todas las apps",
+    label: "Conectadas y todas las apps",
+  },
+  noneConnected: "Nada conectado todavía",
   messaging: "Mensajes",
   calendar: "Calendario",
   payments: "Pagos",

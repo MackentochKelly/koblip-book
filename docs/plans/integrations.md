@@ -33,7 +33,7 @@ Two tabs on Integrations, like Services (`components/view-tabs.tsx`):
 
 | Task | What | Needs | Files | Status |
 | --- | --- | --- | --- | --- |
-| I1 | Tabs Connected / All apps on Integrations with `ViewTabs`, as `services-view.tsx` does; All apps is today's list unchanged | | `features/dashboard/components/integrations-view.tsx`, `features/dashboard/i18n/{en,es}/integrations.ts` | Working on (Claude, 2026-10-31) |
+| I1 | Tabs Connected / All apps on Integrations with `ViewTabs`, as `services-view.tsx` does; All apps is today's list unchanged | | `features/dashboard/components/integrations-view.tsx`, `features/dashboard/i18n/{en,es}/integrations.ts` | Done (2026-10-31) |
 | I2 | WhatsApp on Connected: "Koblip number", connected by default when Koblip's number sends for the business; their own number when theirs sends (`senderFor`) | I1 | `app/(owner)/dashboard/[businessId]/integrations/page.tsx`, integrations-view, i18n | To do |
 | I3 | WhatsApp Manage panel (`ResponsivePanel`): which number sends; "Use your own number" starts the Koblip Chat connect (`/api/chat/connect`, `useConnectWindow`); with their own number: its workspace and Disconnect (back to Koblip's number) | I2 | new `features/dashboard/components/whatsapp-panel.tsx`, integrations-view, i18n | To do |
 | I4 | Koblip Chat's inline Disconnect moves into its Manage panel, like Google Calendar's (`google-calendar-panel.tsx`), so every connected row is the same: Connected + Manage | I1 | integrations-view, whatsapp-panel | To do |
