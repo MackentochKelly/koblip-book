@@ -46,37 +46,49 @@ export function TopBar({
       menuLabel={menu ? m.menu : undefined}
       className={className}
     >
-      {/* Just the icon on a phone, so the title has room: plain, like the
-          bell beside it. */}
-      {viewPage && (
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={m.viewPage}
-          className="md:hidden"
-          nativeButton={false}
-          render={
-            <a href={`/b/${business.slug}`} target="_blank" rel="noreferrer" />
-          }
-        >
-          <ExternalLinkIcon />
-        </Button>
-      )}
-      {viewPage && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="max-md:hidden"
-          nativeButton={false}
-          render={
-            <a href={`/b/${business.slug}`} target="_blank" rel="noreferrer" />
-          }
-        >
-          {m.viewPage}
-          <ExternalLinkIcon data-icon="inline-end" />
-        </Button>
-      )}
-      {bell}
+      {/* The bar's buttons sit together, their tap areas touching, so the
+          icons keep an even, close spacing on a phone. */}
+      <div className="flex items-center md:gap-2">
+        {/* Just the icon on a phone, so the title has room: plain, a 20 px
+          icon like the bell beside it. */}
+        {viewPage && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={m.viewPage}
+            className="md:hidden [&_svg:not([class*='size-'])]:size-5"
+            nativeButton={false}
+            render={
+              <a
+                href={`/b/${business.slug}`}
+                target="_blank"
+                rel="noreferrer"
+              />
+            }
+          >
+            <ExternalLinkIcon />
+          </Button>
+        )}
+        {viewPage && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="max-md:hidden"
+            nativeButton={false}
+            render={
+              <a
+                href={`/b/${business.slug}`}
+                target="_blank"
+                rel="noreferrer"
+              />
+            }
+          >
+            {m.viewPage}
+            <ExternalLinkIcon data-icon="inline-end" />
+          </Button>
+        )}
+        {bell}
+      </div>
       <Separator
         orientation="vertical"
         className="data-vertical:h-5 data-vertical:self-center"
