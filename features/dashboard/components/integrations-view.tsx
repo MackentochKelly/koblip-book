@@ -154,7 +154,8 @@ export function IntegrationsView({
     chatWindow.openWindow(`/api/chat/connect?${query}`, "koblip-chat-connect")
   const googleUsable = !!googleCalendar && !googleCalendar.needsReconnect
 
-  // The same rows show on both tabs.
+  // The same rows show on both tabs. On a phone a connected row drops its
+  // Connected badge, so the name keeps its room; the line under it says so.
   // Koblip Chat's app icon, from its own app.
   const chatRow = (
     <IntegrationRow
@@ -172,7 +173,7 @@ export function IntegrationsView({
       action={
         connection && !connection.needsReconnect ? (
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{t.koblipChat.connected}</Badge>
+            <Badge variant="secondary" className="max-md:hidden">{t.koblipChat.connected}</Badge>
             <Button
               variant="outline"
               size="sm"
@@ -214,7 +215,7 @@ export function IntegrationsView({
       action={
         googleUsable ? (
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{t.googleCalendar.connected}</Badge>
+            <Badge variant="secondary" className="max-md:hidden">{t.googleCalendar.connected}</Badge>
             <Button
               variant="outline"
               size="sm"
@@ -252,7 +253,7 @@ export function IntegrationsView({
       description={m.whatsapp.sendingFrom[sender]}
       action={
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{t.whatsapp.connected}</Badge>
+          <Badge variant="secondary" className="max-md:hidden">{t.whatsapp.connected}</Badge>
           <Button variant="outline" size="sm" onClick={() => setManagingWhatsapp(true)}>
             {t.whatsapp.manage}
           </Button>
