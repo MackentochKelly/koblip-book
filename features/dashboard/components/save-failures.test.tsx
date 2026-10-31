@@ -46,10 +46,24 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
+// Save waits for a change, so each test opens Monday first.
+const openFirstDay = () => fireEvent.click(screen.getAllByRole("switch")[0])
+
+test("save waits for a change", () => {
+  render(<HoursForm businessId="b1" hours={[]} />)
+  expect(screen.getByRole("button", { name: "Save" })).toHaveProperty("disabled", true)
+  openFirstDay()
+  expect(screen.getByRole("button", { name: "Save" })).toHaveProperty("disabled", false)
+  cleanup()
+  render(<DetailsForm businessId="b1" details={details} hasTeam={false} />)
+  expect(screen.getByRole("button", { name: "Save" })).toHaveProperty("disabled", true)
+})
+
 // A save the server never answers shows a message instead of breaking the
 // screen.
 test("hours: a save with no answer says try again", async () => {
   render(<HoursForm businessId="b1" hours={[]} />)
+  openFirstDay()
   fireEvent.click(screen.getByRole("button", { name: "Save" }))
   await waitFor(() =>
     expect(toast.error).toHaveBeenCalledWith(
@@ -61,6 +75,7 @@ test("hours: a save with no answer says try again", async () => {
 test("hours: a refused save still says check the times", async () => {
   actions.saveHours.mockResolvedValue({ ok: false, error: "invalid" })
   render(<HoursForm businessId="b1" hours={[]} />)
+  openFirstDay()
   fireEvent.click(screen.getByRole("button", { name: "Save" }))
   await waitFor(() =>
     expect(toast.error).toHaveBeenCalledWith("Could not save. Check the times.")
@@ -82,6 +97,9 @@ test("confirm details: a save with no answer says it could not confirm", async (
 
 test("details: a save with no answer says try again", async () => {
   render(<DetailsForm businessId="b1" details={details} hasTeam={false} />)
+  fireEvent.change(screen.getByLabelText("Name"), {
+    target: { value: "Barbarock Two" },
+  })
   fireEvent.click(screen.getByRole("button", { name: "Save" }))
   await waitFor(() =>
     expect(toast.error).toHaveBeenCalledWith(
