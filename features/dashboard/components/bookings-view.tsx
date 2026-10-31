@@ -150,7 +150,7 @@ export function BookingsView({
             )}
           </Empty>
         ) : (
-          <>
+          <div className="flex min-w-0 flex-col gap-3 md:gap-6">
             <BookingList
               // A new list (the other tab) starts sorted afresh.
               key={view}
@@ -170,7 +170,7 @@ export function BookingsView({
               {t.viewAll}
               <ChevronRightIcon data-icon="inline-end" />
             </Button>
-          </>
+          </div>
         )}
       </div>
 
