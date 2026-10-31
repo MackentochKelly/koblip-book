@@ -1,27 +1,48 @@
+import Link from "next/link"
 import { ArrowDownIcon, ArrowUpIcon } from "@/components/ui/icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
+import { cn } from "cn"
 
 export interface Stat {
   icon: React.ReactNode
   label: string
   value: string
   // Under the number, e.g. "Last 7 days".
-  note: string
+  note?: string
   // Whole percent against the period before; null hides the badge.
-  change: number | null
+  change?: number | null
   // False for numbers that should go down, like no-shows.
   upIsGood?: boolean
 }
 
 // Key numbers in one card, split by thin lines: two across on a phone, four
-// on a computer. Each has an icon and label, the number, and how it moved
-// against the period before (green when it went the right way).
-export function StatStrip({ stats }: { stats: Stat[] }) {
-  return (
-    <Card className="gap-0 py-0">
-      <dl className="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
+// on a computer (or always two, beside a chart). Each has an icon and label,
+// the number, and how it moved against the period before (green when it
+// went the right way). With an `href` the whole card opens that page.
+export function StatStrip({
+  stats,
+  columns = 4,
+  href,
+}: {
+  stats: Stat[]
+  columns?: 2 | 4
+  href?: string
+}) {
+  const card = (
+    <Card
+      className={cn(
+        "h-full gap-0 py-0",
+        href && "transition-colors [&_dl>div]:transition-colors hover:[&_dl>div]:bg-muted"
+      )}
+    >
+      <dl
+        className={cn(
+          "grid h-full grid-cols-2 gap-px bg-border",
+          columns === 4 && "lg:grid-cols-4"
+        )}
+      >
         {stats.map((stat) => (
           <div key={stat.label} className="flex flex-col gap-3 bg-card p-5">
             <dt className="flex items-center gap-2 text-muted-foreground [&_svg]:size-4.5 [&_svg]:text-primary">
@@ -31,14 +52,29 @@ export function StatStrip({ stats }: { stats: Stat[] }) {
             <dd className="text-xl font-semibold tracking-tight tabular-nums sm:text-2xl lg:text-3xl">
               {stat.value}
             </dd>
-            <dd className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              {stat.note}
-              <Change change={stat.change} upIsGood={stat.upIsGood ?? true} />
-            </dd>
+            {(stat.note || stat.change != null) && (
+              <dd className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                {stat.note}
+                <Change
+                  change={stat.change ?? null}
+                  upIsGood={stat.upIsGood ?? true}
+                />
+              </dd>
+            )}
           </div>
         ))}
       </dl>
     </Card>
+  )
+  return href ? (
+    <Link
+      href={href}
+      className="rounded-4xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      {card}
+    </Link>
+  ) : (
+    card
   )
 }
 

@@ -3,19 +3,14 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
-  BanknoteIcon,
   CalendarDaysIcon,
-  CalendarIcon,
   ChevronRightIcon,
-  OctagonXIcon,
   PlusIcon,
-  SmileIcon,
 } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { FloatingActionButton } from "@/components/floating-action-button"
 import { ResponsivePanel } from "@/components/responsive-panel"
-import { StatStrip } from "@/components/stat-strip"
 import { ViewTabs } from "@/components/view-tabs"
 import {
   AlertDialog,
@@ -54,7 +49,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
-import { formatMoneyShort } from "@/lib/format-price"
 import type {
   OwnerBookingInput,
   OwnerBookingResult,
@@ -65,19 +59,17 @@ import { cancelBooking } from "../api/actions"
 import { setBookingStatus } from "../api/booking-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
-import { type DashboardSummary, percentChange } from "../utils/analytics"
+import type { DashboardSummary } from "../utils/analytics"
 import { AddBookingPanel, type AddBookingOptions } from "./add-booking-panel"
 import { BookingDetails } from "./booking-details"
 import { BookingStatusBadge } from "./booking-status-badge"
 import { MoveBookingPanel } from "./move-booking-panel"
-import { BookingsChart } from "./bookings-chart"
-import { TopServices } from "./top-services"
+import { WeekStats } from "./week-stats"
 
 type View = "upcoming" | "past"
 
-// The dashboard: the last 7 days' numbers against the week before, the
-// days ahead and the most booked services, then the business's
-// bookings by day (upcoming first, past one tab away). Each
+// The home page: the last 7 days' numbers (they open Analytics), then the
+// business's bookings by day (upcoming first, past one tab away). Each
 // opens its details; before it starts it can be moved or cancelled, once it
 // has started it can be marked done or no-show.
 export function BookingsView({
@@ -86,7 +78,6 @@ export function BookingsView({
   past,
   summary,
   currency,
-  nextDays,
   addOptions,
   createBooking,
   moveBooking,
@@ -96,7 +87,6 @@ export function BookingsView({
   past: OwnerBooking[]
   summary: DashboardSummary
   currency: string
-  nextDays: Array<{ date: string; bookings: number }>
   addOptions: AddBookingOptions
   createBooking: (input: OwnerBookingInput) => Promise<OwnerBookingResult>
   moveBooking: (input: OwnerMoveInput) => Promise<OwnerMoveResult>
@@ -114,8 +104,6 @@ export function BookingsView({
   const router = useRouter()
   const m = useOwnerMessages()
   const t = m.bookings
-  const a = t.analytics
-  const number = new Intl.NumberFormat(m.locale)
   const views = [
     { id: "upcoming" as const, label: t.views.upcoming },
     { id: "past" as const, label: t.views.past },
@@ -180,47 +168,11 @@ export function BookingsView({
           {t.add}
         </Button>
       </div>
-      <StatStrip
-        stats={[
-          {
-            icon: <CalendarIcon />,
-            label: a.bookings,
-            value: number.format(summary.bookings.current),
-            note: a.last7,
-            change: percentChange(summary.bookings),
-          },
-          {
-            icon: <BanknoteIcon />,
-            label: a.revenue,
-            value: formatMoneyShort(summary.revenue.current, currency, m.locale),
-            note: a.last7,
-            change: percentChange(summary.revenue),
-          },
-          {
-            icon: <SmileIcon />,
-            label: a.newCustomers,
-            value: number.format(summary.newCustomers.current),
-            note: a.last7,
-            change: percentChange(summary.newCustomers),
-          },
-          {
-            icon: <OctagonXIcon />,
-            label: a.noShows,
-            value: number.format(summary.noShows.current),
-            note: a.last7,
-            change: percentChange(summary.noShows),
-            upIsGood: false,
-          },
-        ]}
+      <WeekStats
+        summary={summary}
+        currency={currency}
+        href={`/dashboard/${businessId}/analytics`}
       />
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="min-w-0 lg:col-span-3">
-          <BookingsChart days={nextDays} />
-        </div>
-        <div className="flex min-w-0 lg:col-span-2 [&>*]:flex-1">
-          <TopServices services={summary.topServices} />
-        </div>
-      </div>
       <div className="flex min-w-0 flex-col gap-6">
         <ViewTabs
           views={views}

@@ -10,7 +10,6 @@ import { getServiceTeams } from "@/features/dashboard/api/team-service-queries"
 import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { BookingsView } from "@/features/dashboard/components/bookings-view"
 import { dashboardSummary } from "@/features/dashboard/utils/analytics"
-import { bookingsPerDay } from "@/features/dashboard/utils/bookings-per-day"
 import { ConfirmDetailsCard } from "@/features/dashboard/components/confirm-details-card"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import { moveOwnerBooking } from "@/features/booking/api/move-owner-booking"
@@ -46,7 +45,6 @@ export default async function BookingsPage({ params }: Props) {
       getAddonGroups(businessId),
       offersWhatsapp(businessId),
     ])
-  const nextDays = bookingsPerDay(upcoming, today, BOOKING_RULES.chartDays)
   const bookings = (
     <>
       {/* New bookings (from the booking page) show up by themselves. */}
@@ -57,7 +55,6 @@ export default async function BookingsPage({ params }: Props) {
         past={past}
         summary={dashboardSummary(lastDays, customers, today)}
         currency={business.currency}
-        nextDays={nextDays}
         addOptions={{
           services: owner.services.map(({ id, name, durationMinutes }) => ({
             id,

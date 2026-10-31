@@ -1,4 +1,5 @@
 import {
+  ChartColumnIcon,
   ContactIcon,
   LayoutDashboardIcon,
   PuzzleIcon,
@@ -18,6 +19,7 @@ export const NAV_GROUPS = [
     key: "main",
     items: [
       { path: "", key: "home", icon: LayoutDashboardIcon },
+      { path: "/analytics", key: "analytics", icon: ChartColumnIcon },
       { path: "/customers", key: "customers", icon: ContactIcon },
       { path: "/assistant", key: "assistant", icon: SparklesIcon },
     ],
