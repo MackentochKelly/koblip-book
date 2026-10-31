@@ -19,6 +19,10 @@ export const ASSISTANT_RULES = {
   maxCustomerQuery: 80,
   // Widest free-times window the find_free_times tool answers at once.
   maxFreeTimesDays: 14,
+  // Cards waiting for the owner's tap: how long one lives, and how many
+  // one owner may have waiting.
+  pendingActionExpiresMs: 10 * 60_000,
+  maxPendingActionsPerOwner: 10,
   // Memory: records one answer keeps for the next question, and how many
   // of the newest answers' records the model sees.
   maxMemoryRows: 30,

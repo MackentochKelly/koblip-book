@@ -1,5 +1,8 @@
 // @vitest-environment node
-import { beforeEach, expect, test, vi } from "vitest"
+import { mkdtempSync, rmSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { afterAll, beforeAll, beforeEach, expect, test, vi } from "vitest"
 
 vi.mock("server-only", () => ({}))
 vi.mock("@/lib/dal", () => ({ getSession: vi.fn() }))
@@ -21,8 +24,40 @@ const { getSession } = await import("@/lib/dal")
 const { ownedBusiness } =
   await import("@/features/dashboard/api/owned-business")
 const { buildAssistantTools } = await import("../tools")
-const { resetPendingActionsForTests, storePendingAction } =
+const { peekPendingAction, storePendingAction } =
   await import("@/features/assistant/api/pending-actions")
+
+// Waiting cards live in the database: a fresh one per file.
+let dir: string
+
+beforeAll(async () => {
+  dir = mkdtempSync(join(tmpdir(), "koblip-confirm-test-"))
+  process.env.DATABASE_URL = `file:${join(dir, "test.db")}`
+  const { migrate } = await import("drizzle-orm/libsql/migrator")
+  const { db } = await import("@/lib/db")
+  await migrate(db, { migrationsFolder: "drizzle" })
+  const { businesses, user } = await import("@/lib/db/schema")
+  await db.insert(user).values([
+    { id: "u1", name: "Owner", email: "o@x.com", emailVerified: false },
+    { id: "u2", name: "Other", email: "p@x.com", emailVerified: false },
+  ])
+  await db.insert(businesses).values(
+    ["b1", "b9"].map((id) => ({
+      id,
+      slug: id,
+      name: id,
+      timezone: "Europe/Madrid",
+      currency: "EUR",
+      ownerId: "u1",
+    }))
+  )
+})
+
+afterAll(async () => {
+  const { db } = await import("@/lib/db")
+  db.$client.close()
+  rmSync(dir, { recursive: true, force: true })
+})
 const { logAssistantAction } =
   await import("@/features/assistant/api/audit-log")
 const { getOwnerLanguage } = await import("@/features/dashboard/i18n/server")
@@ -75,13 +110,13 @@ async function events(res: Response) {
     .map((line) => JSON.parse(line))
 }
 
-function store(
+async function store(
   ownerId = "u1",
   businessId = "b1",
   now = Date.now(),
   toolName = "cancel_booking"
 ) {
-  const stored = storePendingAction(
+  const stored = await storePendingAction(
     {
       ownerId,
       businessId,
@@ -96,8 +131,10 @@ function store(
   return stored.id
 }
 
-beforeEach(() => {
-  resetPendingActionsForTests()
+beforeEach(async () => {
+  const { db } = await import("@/lib/db")
+  const { assistantPendingActions } = await import("@/lib/db/schema")
+  await db.delete(assistantPendingActions)
   vi.mocked(getSession).mockResolvedValue(OWNER as never)
   vi.mocked(ownedBusiness).mockResolvedValue({
     business: BUSINESS,
@@ -132,22 +169,16 @@ test("unknown id gives expired", async () => {
 })
 
 test("expired card is consumed and gives expired", async () => {
-  vi.useFakeTimers()
-  try {
-    vi.setSystemTime(0)
-    const id = store()
-    vi.setSystemTime(11 * 60_000)
-    const res = await POST(post({ businessId: "b1", id, accept: true }))
-    expect(await events(res)).toEqual([{ type: "error", code: "expired" }])
-    const again = await POST(post({ businessId: "b1", id, accept: true }))
-    expect(await events(again)).toEqual([{ type: "error", code: "expired" }])
-  } finally {
-    vi.useRealTimers()
-  }
+  const id = await store("u1", "b1", Date.now() - 11 * 60_000)
+  const res = await POST(post({ businessId: "b1", id, accept: true }))
+  expect(await events(res)).toEqual([{ type: "error", code: "expired" }])
+  expect(await peekPendingAction(id)).toBeNull()
+  const again = await POST(post({ businessId: "b1", id, accept: true }))
+  expect(await events(again)).toEqual([{ type: "error", code: "expired" }])
 })
 
 test("another owner's card gives not_allowed and stays stored", async () => {
-  const id = store("u2", "b1")
+  const id = await store("u2", "b1")
   const res = await POST(post({ businessId: "b1", id, accept: true }))
   expect(await events(res)).toEqual([{ type: "error", code: "not_allowed" }])
   expect(execute).not.toHaveBeenCalled()
@@ -158,14 +189,14 @@ test("another owner's card gives not_allowed and stays stored", async () => {
 })
 
 test("another business's card gives not_allowed", async () => {
-  const id = store("u1", "b9")
+  const id = await store("u1", "b9")
   const res = await POST(post({ businessId: "b1", id, accept: true }))
   expect(await events(res)).toEqual([{ type: "error", code: "not_allowed" }])
   expect(execute).not.toHaveBeenCalled()
 })
 
 test("accept false runs nothing and ends", async () => {
-  const id = store()
+  const id = await store()
   const res = await POST(post({ businessId: "b1", id, accept: false }))
   expect(await events(res)).toEqual([
     { type: "text", delta: "Okay, nothing was changed." },
@@ -175,7 +206,7 @@ test("accept false runs nothing and ends", async () => {
 })
 
 test("accept true runs stored args only, extra body fields ignored", async () => {
-  const id = store()
+  const id = await store()
   const res = await POST(
     post({ businessId: "b1", id, accept: true, args: { bookingId: "evil" } })
   )
@@ -200,13 +231,13 @@ test("accept true runs stored args only, extra body fields ignored", async () =>
 })
 
 test("declining logs no audit row", async () => {
-  const id = store()
+  const id = await store()
   await POST(post({ businessId: "b1", id, accept: false }))
   expect(logAssistantAction).not.toHaveBeenCalled()
 })
 
 test("an id works once", async () => {
-  const id = store()
+  const id = await store()
   await POST(post({ businessId: "b1", id, accept: true }))
   const again = await POST(post({ businessId: "b1", id, accept: true }))
   expect(await events(again)).toEqual([{ type: "error", code: "expired" }])
@@ -215,7 +246,7 @@ test("an id works once", async () => {
 
 test("execute failure streams a failed step and server text", async () => {
   execute.mockResolvedValue({ ok: false, doneText: "Could not cancel (gone)." })
-  const id = store()
+  const id = await store()
   const res = await POST(post({ businessId: "b1", id, accept: true }))
   const list = await events(res)
   expect(list[1]).toMatchObject({ type: "step", status: "failed" })
@@ -230,7 +261,7 @@ test("execute failure streams a failed step and server text", async () => {
 
 test("accept false answers in the owner's language", async () => {
   vi.mocked(getOwnerLanguage).mockResolvedValue("es")
-  const id = store()
+  const id = await store()
   const res = await POST(post({ businessId: "b1", id, accept: false }))
   expect(await events(res)).toEqual([
     { type: "text", delta: "Vale, no se cambió nada." },
@@ -241,7 +272,7 @@ test("accept false answers in the owner's language", async () => {
 
 test("confirm passes the cookie language to the tools", async () => {
   vi.mocked(getOwnerLanguage).mockResolvedValue("es")
-  const id = store()
+  const id = await store()
   await POST(post({ businessId: "b1", id, accept: true }))
   expect(vi.mocked(buildAssistantTools)).toHaveBeenCalledWith("b1", "u1", "es")
 })
@@ -256,9 +287,8 @@ test("each tool sends its result kind", async () => {
     ["create_booking", "bookings"],
   ]
   for (const [name, kind] of kinds) {
-    resetPendingActionsForTests()
     vi.mocked(buildAssistantTools).mockReturnValue([tool(name, kind)] as never)
-    const id = store("u1", "b1", Date.now(), name)
+    const id = await store("u1", "b1", Date.now(), name)
     const res = await POST(post({ businessId: "b1", id, accept: true }))
     const list = await events(res)
     expect(list[2]).toEqual({

@@ -372,6 +372,32 @@ export const assistantActions = sqliteTable(
   (table) => [index("assistant_actions_business_idx").on(table.businessId)]
 )
 
+// A risky assistant change waiting for the owner's tap (its card). Stored
+// so a deploy or restart never loses it; single use, and it only lives
+// ASSISTANT_RULES.pendingActionExpiresMs. args is JSON of what the tap
+// runs, built on the server.
+export const assistantPendingActions = sqliteTable(
+  "assistant_pending_actions",
+  {
+    id: id(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    ownerId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    toolName: text().notNull(),
+    args: text().notNull(),
+    createdAt: text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (table) => [
+    index("assistant_pending_actions_owner_idx").on(table.ownerId),
+    index("assistant_pending_actions_created_idx").on(table.createdAt),
+  ]
+)
+
 // One saved owner-assistant chat per row. The id is a UUID made by the
 // browser; messages is JSON of AssistantMessage[]. The title is the
 // first owner message, set once on create and never changed after.

@@ -23,7 +23,7 @@ file: [Plans](README.md).
 | A5 | Assistant remembers what it looked up | L | | Done (2026-10-31) |
 | A6 | Saving a new chat never fails on a race | S | | Done (2026-10-31) |
 | A7 | Cancel finds any booking, and only upcoming ones | S | | Done (2026-10-31) |
-| A8 | Waiting cards survive a deploy | M | A1 | To do |
+| A8 | Waiting cards survive a deploy | M | A1 | Done (2026-10-31) |
 | A9 | Chat bookings can include extras | M | A1 | To do |
 
 ---
@@ -176,7 +176,9 @@ refused, a cancelled one is refused.
 - Old rows are cleaned on each store.
 - Admin screen: list of waiting cards (business, tool, age).
 
-**Files:** `lib/db/schema.ts`, new migration, `features/assistant/api/pending-actions.ts`, `app/api/assistant/confirm/route.ts`, `app/(admin)/admin/…` (+ tests).
+**Files:** `lib/db/schema.ts`, `drizzle/0035_assistant_pending_actions.sql`, `features/assistant/api/pending-actions.ts`, `app/api/assistant/confirm/route.ts`, `features/admin/api/assistant.ts`, `features/admin/components/admin-assistant.tsx`, `app/(admin)/admin/assistant/` (+ tests).
+
+**Deploy:** run `npm run db:migrate` (new table).
 
 **Done when:** a test stores a card, "restarts" (new module), and the tap
 still works. A double tap runs once.

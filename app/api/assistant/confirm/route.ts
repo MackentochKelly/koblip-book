@@ -1,10 +1,6 @@
 import { logAssistantAction } from "@/features/assistant/api/audit-log"
 import { checkAssistantRateLimit } from "@/features/assistant/api/rate-limit"
-import {
-  isPendingActionLive,
-  peekPendingAction,
-  takePendingAction,
-} from "@/features/assistant/api/pending-actions"
+import { takePendingAction } from "@/features/assistant/api/pending-actions"
 import {
   isCrossSiteRequest,
   requestBudget,
@@ -86,22 +82,17 @@ export async function POST(request: Request) {
     return errorEvent("not_allowed")
   }
 
-  // 5. The card must belong to this owner and business. A foreign card
-  // stays stored; only unknown or expired ones report expired.
-  const pending = peekPendingAction(body.id)
-  if (!pending || !isPendingActionLive(pending)) {
-    if (pending) {
-      takePendingAction(body.id)
-    }
-    return errorEvent("expired")
+  // 5. The card must belong to this owner and business, and is taken
+  // once. A foreign card stays stored; unknown, expired or already taken
+  // ones report expired.
+  const pending = await takePendingAction(
+    body.id,
+    session.userId,
+    owned.business.id
+  )
+  if (pending === "expired" || pending === "not_allowed") {
+    return errorEvent(pending)
   }
-  if (
-    pending.ownerId !== session.userId ||
-    pending.businessId !== owned.business.id
-  ) {
-    return errorEvent("not_allowed")
-  }
-  takePendingAction(body.id)
 
   // The owner's language, read once from the cookie (never the body).
   const language = await getOwnerLanguage()

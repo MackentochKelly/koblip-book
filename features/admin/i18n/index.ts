@@ -14,6 +14,7 @@ const en = {
     bookings: "Bookings",
     whatsapp: "WhatsApp",
     notifications: "Notifications",
+    assistant: "Assistant",
   },
   whatsapp: {
     partsLabel: "WhatsApp parts",
@@ -408,6 +409,12 @@ const en = {
       connectionRenew: "Connection needs renewal",
     } satisfies Record<InAppKind, string>,
   },
+  assistant: {
+    none: "No cards waiting",
+    waitingCards: "Cards waiting for a tap",
+    waiting: "Waiting",
+    expired: "Expired",
+  },
   error: {
     title: "Something went wrong",
     description: "Try again in a few minutes.",
@@ -428,6 +435,7 @@ const es: AdminMessages = {
     bookings: "Reservas",
     whatsapp: "WhatsApp",
     notifications: "Notificaciones",
+    assistant: "Asistente",
   },
   whatsapp: {
     partsLabel: "Partes de WhatsApp",
@@ -817,6 +825,12 @@ const es: AdminMessages = {
       koblipLimitReached: "Límite de Koblip alcanzado",
       connectionRenew: "La conexión debe renovarse",
     },
+  },
+  assistant: {
+    none: "No hay tarjetas esperando",
+    waitingCards: "Tarjetas esperando un toque",
+    waiting: "Esperando",
+    expired: "Vencida",
   },
   error: {
     title: "Algo salió mal",

@@ -194,7 +194,7 @@ async function* handleConfirmCall(
     fail(card.error)
     return false
   }
-  const stored = storePendingAction({
+  const stored = await storePendingAction({
     ownerId: context.ownerId,
     businessId: context.businessId,
     toolName,

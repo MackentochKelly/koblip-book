@@ -2,6 +2,22 @@
 import { beforeEach, expect, test, vi } from "vitest"
 
 vi.mock("server-only", () => ({}))
+// The loop only stores cards; the store itself (the database) has its own
+// tests in pending-actions.test.ts.
+vi.mock("./pending-actions", () => {
+  const cards = new Map<string, { toolName: string; args: unknown }>()
+  return {
+    storePendingAction: vi.fn(
+      async (input: { toolName: string; args: unknown }) => {
+        const id = crypto.randomUUID()
+        cards.set(id, input)
+        return { id }
+      }
+    ),
+    peekPendingAction: vi.fn(async (id: string) => cards.get(id) ?? null),
+    resetPendingActionsForTests: () => cards.clear(),
+  }
+})
 
 const { runChat } = await import("./run-chat")
 const meta = await import("@/lib/meta-ai")
@@ -307,8 +323,11 @@ test("missing key yields unavailable", async () => {
   expect(events).toEqual([{ type: "error", code: "unavailable" }])
 })
 
-const { peekPendingAction, resetPendingActionsForTests } =
-  await import("./pending-actions")
+const { peekPendingAction } = await import("./pending-actions")
+// The stand-in store's own reset (see the mock above).
+const { resetPendingActionsForTests } = (await import(
+  "./pending-actions"
+)) as unknown as { resetPendingActionsForTests: () => void }
 
 function risky(describe: (args: unknown) => Promise<unknown>) {
   return {
@@ -368,7 +387,7 @@ test("risky tool stores a card and ends the turn with no second call", async () 
   ])
   expect(create).toHaveBeenCalledTimes(1)
   const id = (events[0] as { id: string }).id
-  expect(peekPendingAction(id)?.toolName).toBe("cancel_booking")
+  expect((await peekPendingAction(id))?.toolName).toBe("cancel_booking")
 })
 
 test("a card's resolved args are stored, not the model's words", async () => {
@@ -391,7 +410,7 @@ test("a card's resolved args are stored, not the model's words", async () => {
   // The resolved args never reach the screen.
   expect(events[0]).not.toHaveProperty("args")
   const id = (events[0] as { id: string }).id
-  expect(peekPendingAction(id)?.args).toEqual({ date: "2099-01-01" })
+  expect((await peekPendingAction(id))?.args).toEqual({ date: "2099-01-01" })
 })
 
 test("a lookup's records come back as memory and spare the next lookup", async () => {
