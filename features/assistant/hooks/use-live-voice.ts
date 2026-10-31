@@ -47,6 +47,13 @@ const canTalk = () =>
   typeof AudioWorkletNode !== "undefined" &&
   typeof navigator.mediaDevices?.getUserMedia === "function"
 
+// Whether this browser can talk live; false on the server.
+export function useLiveVoiceSupported(): boolean {
+  return useSyncExternalStore(noop, canTalk, () => false)
+}
+
+export type LiveVoice = ReturnType<typeof useLiveVoice>
+
 // Connects talking mode (utils/live-voice-session.ts) to the browser: the
 // microphone through the capture worklet to our relay, and the speaker.
 export function useLiveVoice({
@@ -90,7 +97,7 @@ export function useLiveVoice({
   greeting: string
   onError: (error: LiveVoiceError) => void
 }) {
-  const supported = useSyncExternalStore(noop, canTalk, () => false)
+  const supported = useLiveVoiceSupported()
   // "off" when no session is running.
   const [state, setState] = useState<LiveVoiceState | "off">("off")
   // What Meta hears so far in this turn; empty between turns.
@@ -275,6 +282,11 @@ export function useLiveVoice({
     session.current?.end()
   }, [])
 
+  // A tap on the screen's buttons while talking: said, like spoken words.
+  const say = useCallback((text: string) => {
+    session.current?.said(text)
+  }, [])
+
   // The screen stays on while talking, like a phone call.
   useWakeLock(state !== "off")
 
@@ -298,6 +310,7 @@ export function useLiveVoice({
     caption,
     start,
     end,
+    say,
     getInputVolume,
     getOutputVolume,
     getVoiceFrequencies,

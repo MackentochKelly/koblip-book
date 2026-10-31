@@ -170,42 +170,54 @@ export class LiveVoiceSession {
           this.parts.onState("listening")
         }
         break
-      case "speechComplete": {
+      case "speechComplete":
         this.parts.onCaption("")
-        const text = event.transcript.trim()
-        if (!text) break
-        this.queued = this.queued ? `${this.queued} ${text}` : text
-        // Like ChatGPT voice (OpenAI Realtime `interrupt_response`): new
-        // words cancel the answer being written, and the assistant answers
-        // again with everything said so far. Nothing waits in line.
-        if (this.thinking) {
-          this.turn += 1
-          this.thinking = false
-          if (this.parts.heard() === "") {
-            // Nothing said back yet: the owner just paused mid-thought
-            // ("Yeah," … "Kelly"). Ask again with all of it, as one
-            // question, like OpenAI Realtime's interrupt_response.
-            this.answering = false
-            this.queued = `${this.asked} ${this.queued}`
-            this.stopSpeaking()
-            this.parts.cancelAnswer()
-            this.parts.withdraw()
-          } else {
-            this.cutOff()
-            this.parts.cancelAnswer()
-          }
-          this.parts.onState("thinking")
-          // Sent from idle() once the chat has let go of the old answer.
-          break
-        }
-        void this.ask()
+        this.said(event.transcript)
         break
-      }
       case "error":
         this.parts.onError(event.code)
         this.end()
         break
     }
+  }
+
+  // Words the owner said, or tapped on the screen (a button's words count
+  // as said, like chat apps' voice mode). A tap while a finished answer is
+  // still being said cuts it off, as talking over it does; an answer still
+  // being written is handled below, for words and taps alike.
+  said(words: string) {
+    if (this.ended) return
+    const text = words.trim()
+    if (!text) return
+    if (!this.thinking && (this.speech || this.parts.playing())) {
+      this.cutOff()
+      this.parts.onState("listening")
+    }
+    this.queued = this.queued ? `${this.queued} ${text}` : text
+    // Like ChatGPT voice (OpenAI Realtime `interrupt_response`): new
+    // words cancel the answer being written, and the assistant answers
+    // again with everything said so far. Nothing waits in line.
+    if (this.thinking) {
+      this.turn += 1
+      this.thinking = false
+      if (this.parts.heard() === "") {
+        // Nothing said back yet: the owner just paused mid-thought
+        // ("Yeah," … "Kelly"). Ask again with all of it, as one
+        // question, like OpenAI Realtime's interrupt_response.
+        this.answering = false
+        this.queued = `${this.asked} ${this.queued}`
+        this.stopSpeaking()
+        this.parts.cancelAnswer()
+        this.parts.withdraw()
+      } else {
+        this.cutOff()
+        this.parts.cancelAnswer()
+      }
+      this.parts.onState("thinking")
+      // Sent from idle() once the chat has let go of the old answer.
+      return
+    }
+    void this.ask()
   }
 
   // The listening socket closed by itself. 1000: the session reached its

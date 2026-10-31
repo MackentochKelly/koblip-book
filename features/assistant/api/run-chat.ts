@@ -241,12 +241,9 @@ export async function* runChat(
   }
   const t = serverMessagesFor(context.language)
   const byName = new Map(tools.map((t) => [t.definition.name, t]))
-  // Talking mode has no buttons, so it never gets ask_owner: options are
-  // said out loud.
-  const offered = [
-    ...tools.map((tool) => tool.definition),
-    ...(context.voice === true ? [] : [ASK_OWNER_TOOL]),
-  ]
+  // ask_owner is the loop's own tool, typed and talking alike: talking
+  // mode shows the same buttons while the question is said.
+  const offered = [...tools.map((tool) => tool.definition), ASK_OWNER_TOOL]
   const { date, time, weekday } = zonedNow(context.now, context.timeZone)
   // The newest few answers that carry records.
   const remembered = new Set(
@@ -441,8 +438,6 @@ export async function* runChat(
         const items = [...sources].flatMap(([kind, count]) =>
           count > 0 ? [{ kind, count }] : []
         )
-        // Talking mode has no buttons or picker: options are said out loud.
-        const spoken = context.voice === true
         // The reply ends here: the screen runs the check right after
         // (POST /api/assistant/check), so nothing waits for it.
         const stored = storeAnswerCheck({
@@ -465,7 +460,8 @@ export async function* runChat(
         }
         if (items.length > 0) yield { type: "sources", items }
         // The picker shows at once, unchecked: it is the tool's own data.
-        if (freeTimes !== null && !spoken) {
+        // Talking mode shows it too while a few times are said.
+        if (freeTimes !== null) {
           yield { type: "times", today: date, ...freeTimes }
         }
         yield* memoryEvent()
@@ -487,10 +483,7 @@ export async function* runChat(
       })
       for (let i = 0; i < toolCalls.length; i += 1) {
         const call = toolCalls[i]
-        if (
-          call.function.name === ASK_OWNER_TOOL.name &&
-          context.voice !== true
-        ) {
+        if (call.function.name === ASK_OWNER_TOOL.name) {
           // The question and its buttons end the reply at once. Options
           // must come word for word from this request's tool results;
           // anything else goes back to the model to ask in plain words.

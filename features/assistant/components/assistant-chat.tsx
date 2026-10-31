@@ -17,8 +17,10 @@ import { ViewTabs } from "@/components/view-tabs"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useVisualViewport } from "@/hooks/use-visual-viewport"
 import type { PageLanguage } from "@/lib/page-language"
+import { VOICE_RULES } from "@/lib/voice-rules"
 import { assistantMessagesFor } from "../i18n"
 import { useAssistantChat } from "../hooks/use-assistant-chat"
+import { useLiveVoice } from "../hooks/use-live-voice"
 import { httpTransport } from "../utils/http-transport"
 import { AssistantComposer } from "./assistant-composer"
 import { MessageList } from "./message-list"
@@ -46,6 +48,33 @@ export function AssistantChat({
   const messages = assistantMessagesFor(language)
   const router = useRouter()
   const chat = useAssistantChat(businessId, httpTransport)
+  // Talking live, owned here so the chat's buttons can speak into it.
+  const live = useLiveVoice({
+    businessId,
+    voiceId: VOICE_RULES.speakVoiceId,
+    busy: chat.busy,
+    send: chat.send,
+    stopAnswer: chat.stop,
+    onCutOff: chat.cutOff,
+    onWithdraw: chat.withdraw,
+    confirmLine: messages.composer.live.confirmLine,
+    uncheckedLine: messages.composer.live.uncheckedLine,
+    fillers: messages.composer.live.fillers,
+    cutIns: messages.composer.live.cutIns,
+    greeting: messages.composer.live.greeting,
+    onError: (error) =>
+      toast.error(
+        error === "mic_denied"
+          ? messages.composer.micDenied
+          : messages.errors[error]
+      ),
+  })
+  // A tap on an answer's buttons: said into the talk while talking live
+  // (the answer is spoken), sent as a typed message otherwise.
+  const pick = (text: string) => {
+    if (live.state !== "off") live.say(text)
+    else void chat.send(text)
+  }
   // Full screen on a phone only; on a computer it sits in the page.
   const phone = useIsMobile()
   const visible = useVisualViewport(phone)
@@ -147,7 +176,7 @@ export function AssistantChat({
               items={chat.items}
               busy={chat.busy}
               error={chat.error}
-              onSend={chat.send}
+              onSend={pick}
               onRetry={chat.retry}
               onAnswer={chat.answer}
             />
@@ -170,16 +199,12 @@ export function AssistantChat({
                 </div>
               )}
               <AssistantComposer
-                businessId={businessId}
                 labels={messages.composer}
-                errors={messages.errors}
                 busy={chat.busy}
                 stoppable={chat.stoppable}
                 onSend={chat.send}
-                onSendSpoken={chat.send}
                 onStop={chat.stop}
-                onCutOff={chat.cutOff}
-                onWithdraw={chat.withdraw}
+                live={live}
                 startLive={chat.liveRequested}
               />
             </div>

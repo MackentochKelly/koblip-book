@@ -59,16 +59,11 @@ export function AskCard({
       {/* Nothing is answered here, so the talking-mode handlers have no
           chat to act on: talking live opens the assistant instead. */}
       <AssistantComposer
-        businessId={businessId}
         labels={messages.composer}
-        errors={messages.errors}
         busy={false}
         stoppable={false}
         onSend={ask}
-        onSendSpoken={async () => null}
         onStop={() => {}}
-        onCutOff={() => {}}
-        onWithdraw={() => {}}
         onTalkLive={() => open({ kind: "live" })}
         inline
       />

@@ -5,8 +5,8 @@ import type { AssistantToolDefinition } from "../types"
 
 // The loop's own tool for a question with options to pick from ("Which
 // service?"). The loop answers it itself: the question as the reply's
-// words and the options as buttons, sent at once, never waiting on the
-// answer check. Not offered in talking mode, which has no buttons.
+// words (said out loud in talking mode) and the options as buttons, sent
+// at once, never waiting on the answer check.
 export const ASK_OWNER_TOOL: AssistantToolDefinition = {
   name: "ask_owner",
   description:

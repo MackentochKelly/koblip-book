@@ -7,7 +7,6 @@ import {
   SquareIcon,
   XIcon,
 } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import {
   InputGroup,
@@ -20,11 +19,8 @@ import { VoiceGlobe } from "@/components/voice-globe"
 import { VoiceWaveform } from "@/components/voice-waveform"
 import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
-import { VOICE_RULES } from "@/lib/voice-rules"
 import type { AssistantMessages } from "../i18n"
-import type { AnswerListener } from "../types"
-import { useLiveVoice, type LiveVoiceError } from "../hooks/use-live-voice"
-import type { Reply } from "../utils/live-voice-session"
+import { type LiveVoice, useLiveVoiceSupported } from "../hooks/use-live-voice"
 import { VoiceIntro } from "./voice-intro"
 
 // Set on this device once the owner picks "Don't show again".
@@ -45,40 +41,29 @@ const MODE_LABELS: Record<
 
 // The message box. Enter sends; Shift+Enter starts a new line. Like
 // ChatGPT: the voice button talks live (the box then shows what it hears,
-// and an end button). On another page (Home's Ask card) `onTalkLive` takes
-// the voice button to the assistant page, which gets `startLive` to offer it.
+// and an end button). The chat owns the live session (`live`), so the
+// screen's buttons can speak into it too. On another page (Home's Ask
+// card) `onTalkLive` takes the voice button to the assistant page, which
+// gets `startLive` to offer it.
 export function AssistantComposer({
-  businessId,
   labels,
-  errors,
   busy,
   stoppable,
   onSend,
-  onSendSpoken,
   onStop,
-  onCutOff,
-  onWithdraw,
+  live,
   onTalkLive,
   startLive: startLiveNow = false,
   inline = false,
 }: {
-  businessId: string
   labels: AssistantMessages["composer"]
-  errors: AssistantMessages["errors"]
   busy: boolean
   // While a question is being answered, the send button stops it.
   stoppable: boolean
   onSend: (text: string) => void
-  // A turn said in talking mode; resolves with the reply to read out.
-  onSendSpoken: (
-    text: string,
-    options: { voice: boolean; listen: AnswerListener }
-  ) => Promise<Reply | null>
   onStop: () => void
-  // Talking mode: the owner cut an answer off; `heard` is all they got.
-  onCutOff: (heard: string) => void
-  // Talking mode: takes the last question and its unfinished answer off.
-  onWithdraw: () => void
+  // The chat's live session; absent where talking live happens elsewhere.
+  live?: LiveVoice
   // Talking live happens somewhere else: the voice button calls this.
   onTalkLive?: () => void
   // Offer talking live as soon as this shows (asked for on another page).
@@ -89,22 +74,7 @@ export function AssistantComposer({
 }) {
   const [text, setText] = useState("")
   const canSend = text.trim() !== "" && !busy
-  const live = useLiveVoice({
-    businessId,
-    voiceId: VOICE_RULES.speakVoiceId,
-    busy,
-    send: onSendSpoken,
-    stopAnswer: onStop,
-    onCutOff,
-    onWithdraw,
-    confirmLine: labels.live.confirmLine,
-    uncheckedLine: labels.live.uncheckedLine,
-    fillers: labels.live.fillers,
-    cutIns: labels.live.cutIns,
-    greeting: labels.live.greeting,
-    onError: (error: LiveVoiceError) =>
-      toast.error(error === "mic_denied" ? labels.micDenied : errors[error]),
-  })
+  const supported = useLiveVoiceSupported()
 
   // The main button: stop an answer, send while there are words, talk
   // live while the box is empty.
@@ -112,7 +82,7 @@ export function AssistantComposer({
     ? "stop"
     : busy
       ? "working"
-      : text.trim() !== "" || !live.supported
+      : text.trim() !== "" || !supported
         ? "send"
         : "live"
 
@@ -123,7 +93,7 @@ export function AssistantComposer({
     if (onTalkLive) {
       onTalkLive()
     } else if (introHidden) {
-      void live.start()
+      void live?.start()
     } else {
       setIntroOpen(true)
     }
@@ -147,7 +117,7 @@ export function AssistantComposer({
     setText("")
   }
 
-  if (live.state !== "off") {
+  if (live && live.state !== "off") {
     return (
       <div className="flex flex-col items-center gap-6">
         <VoiceGlobe
@@ -258,12 +228,12 @@ export function AssistantComposer({
         onClose={() => setIntroOpen(false)}
         onContinue={() => {
           setIntroOpen(false)
-          void live.start()
+          void live?.start()
         }}
         onNeverShow={() => {
           hideIntro()
           setIntroOpen(false)
-          void live.start()
+          void live?.start()
         }}
       />
     </form>

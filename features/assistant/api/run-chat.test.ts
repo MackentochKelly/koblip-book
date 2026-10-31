@@ -977,17 +977,27 @@ test("a barbershop's 8 services all come as buttons, 49 go back to the model", a
   }
 })
 
-test("talking mode never offers ask_owner", async () => {
-  const { seen } = scriptedClient([[textChunk("Hi")]])
-  await collect(
-    runChat(MESSAGES, { ...CONTEXT, voice: true }, [probe(async () => ({}))])
+test("talking mode asks with buttons too, the question said out loud", async () => {
+  const { seen } = scriptedClient([
+    [textChunk("Lemme see."), toolChunk(0, "call-A", "probe", "{}")],
+    [askChunk("Cut, Fade, or something else?", ["Cut", "Fade"])],
+  ])
+  const events = await collect(
+    runChat(MESSAGES, { ...CONTEXT, voice: true }, [
+      probe(async () => ({ services: [{ name: "Cut" }, { name: "Fade" }] })),
+    ])
   )
   const body = seen[0] as unknown as {
     tools: { function: { name: string } }[]
     messages: { content: string }[]
   }
-  expect(body.tools.map((t) => t.function.name)).toEqual(["probe"])
-  expect(body.messages[0].content).not.toContain("ask_owner")
+  expect(body.tools.map((t) => t.function.name)).toEqual(["probe", "ask_owner"])
+  expect(body.messages[0].content).toContain("ask_owner")
+  expect(events.slice(-3)).toEqual([
+    { type: "text", delta: "Cut, Fade, or something else?" },
+    { type: "choices", options: ["Cut", "Fade"] },
+    { type: "done" },
+  ])
 })
 
 test("sources follow a passed answer with kinds and counts", async () => {
@@ -1097,7 +1107,7 @@ test("sources with an unverified answer, no sources after a confirm card", async
   )
 })
 
-test("voice uses minimal reasoning and its answer is checked after, with no buttons", async () => {
+test("voice uses minimal reasoning and its answer is checked after", async () => {
   const { create } = scriptedClient(
     [
       [textChunk("Checking."), toolChunk(0, "a", "list_bookings", "{}")],
@@ -1128,16 +1138,9 @@ test("voice uses minimal reasoning and its answer is checked after, with no butt
     { type: "notice", kind: "unverified" },
     { type: "done" },
   ])
-  // Passed: still no buttons in talking mode.
-  scriptedClient(
-    [[toolChunk(0, "a", "list_bookings", "{}")], [textChunk("Ana or Leo?")]],
-    [judgeOk(["Ana", "Leo"])]
-  )
-  const passed = await collectChecked(runChat(MESSAGES, voice, tools))
-  expect(passed.check).toEqual([CHECKED, { type: "done" }])
 })
 
-test("voice gets no time picker", async () => {
+test("voice gets the time picker too", async () => {
   scriptedClient(
     [[toolChunk(0, "a", "find_free_times", "{}")], [textChunk("At nine?")]],
     [judgeOk()]
@@ -1154,9 +1157,13 @@ test("voice gets no time picker", async () => {
       ),
     ])
   )
-  expect(answer.some((e) => (e as { type: string }).type === "times")).toBe(
-    false
-  )
+  expect(answer).toContainEqual({
+    type: "times",
+    today: "2026-10-28",
+    service: "Cut",
+    teamMember: null,
+    days: [{ date: "2026-10-28", times: ["09:00"] }],
+  })
 })
 
 test("text is yielded before the model stream advances", async () => {

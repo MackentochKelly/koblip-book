@@ -532,3 +532,37 @@ test("no warning once the owner asked again", async () => {
     "I couldn't double-check that."
   )
 })
+
+test("a tapped button is asked like spoken words", async () => {
+  const t = setup()
+  t.session.said("  Skin Fade ")
+  expect(t.parts.send).toHaveBeenCalledWith("Skin Fade", expect.anything())
+  t.answers[0].write("Got it, Skin Fade. ")
+  t.answers[0].resolve(reply("Got it, Skin Fade."))
+  await flush()
+  expect(t.voices.at(-1)?.said).toEqual(["Got it, Skin Fade."])
+  // Empty words ask nothing.
+  t.session.said("   ")
+  expect(t.parts.send).toHaveBeenCalledTimes(1)
+})
+
+test("a tap while the voice talks cuts it off, then asks", async () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Book Ana" })
+  t.answers[0].write("Which service? ")
+  t.answers[0].resolve(reply("Which service?"))
+  await flush()
+  t.setPlaying(true)
+  t.setHeard("Which service?")
+  t.session.said("Cut")
+  expect(t.parts.onCutOff).toHaveBeenCalledWith("Which service?")
+  expect(t.parts.stopPlaying).toHaveBeenCalled()
+  expect(t.parts.send).toHaveBeenLastCalledWith("Cut", expect.anything())
+})
+
+test("a tap after the talk ended does nothing", () => {
+  const t = setup()
+  t.session.end()
+  t.session.said("Cut")
+  expect(t.parts.send).not.toHaveBeenCalled()
+})
