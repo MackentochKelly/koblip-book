@@ -1,7 +1,7 @@
 import type en from "../en/settings"
 
 const settings: typeof en = {
-  // The page's parts (tabs on a computer, a list on a phone).
+  // The page's parts (tabs, pinned under the top bar on a phone).
   parts: {
     details: "Datos",
     hours: "Horario",

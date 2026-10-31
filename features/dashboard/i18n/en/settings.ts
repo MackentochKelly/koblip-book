@@ -1,6 +1,6 @@
 // Settings, Hours, photos, the Spanish page, and the setup and welcome steps.
 const settings = {
-  // The page's parts (tabs on a computer, a list on a phone).
+  // The page's parts (tabs, pinned under the top bar on a phone).
   parts: {
     details: "Details",
     hours: "Hours",

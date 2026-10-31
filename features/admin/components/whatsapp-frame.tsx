@@ -6,8 +6,7 @@ import { SectionParts } from "@/components/section-parts"
 import { useAdminMessages } from "../i18n/provider"
 import { WHATSAPP_BASE, WHATSAPP_PARTS, type WhatsappPart } from "../utils/whatsapp-parts"
 
-// Tabs on a computer, a list on a phone: the same shared part as the
-// business's WhatsApp page.
+// The parts as tabs: the same shared part as the business's WhatsApp page.
 export function WhatsappFrame({ children }: { children: React.ReactNode }) {
   const m = useAdminMessages()
   const [segment, ...inside] = useSelectedLayoutSegments()
@@ -20,7 +19,6 @@ export function WhatsappFrame({ children }: { children: React.ReactNode }) {
       current={current}
       parts={WHATSAPP_PARTS.map((part) => ({
         id: part.id,
-        icon: part.icon,
         label: m.whatsapp.parts[part.id],
         href: hrefOf(part.id),
       }))}

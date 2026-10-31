@@ -3,14 +3,7 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSelectedLayoutSegment } from "next/navigation"
-import {
-  CalendarDaysIcon,
-  ClockIcon,
-  CornerLeftUpIcon,
-  LayoutDashboardIcon,
-  MessageCircleIcon,
-  PhoneIcon,
-} from "@/components/ui/icons"
+import { MessageCircleIcon } from "@/components/ui/icons"
 
 import { SectionParts } from "@/components/section-parts"
 import { Button } from "@/components/ui/button"
@@ -29,15 +22,15 @@ import type { Sender } from "../types/notifications"
 // The page's parts, in order. Overview is the page itself; each other part
 // is its own route below it (app/(owner)/dashboard/[businessId]/whatsapp/).
 const PARTS = [
-  { id: "overview", icon: LayoutDashboardIcon },
-  { id: "messages", icon: MessageCircleIcon },
-  { id: "alerts", icon: PhoneIcon },
-  { id: "timing", icon: ClockIcon },
-  { id: "replies", icon: CornerLeftUpIcon },
-  { id: "activity", icon: CalendarDaysIcon },
+  "overview",
+  "messages",
+  "alerts",
+  "timing",
+  "replies",
+  "activity",
 ] as const
 
-type Part = (typeof PARTS)[number]["id"]
+type Part = (typeof PARTS)[number]
 
 // The WhatsApp page's frame around its parts: the shared SectionParts, as in
 // the admin (D19). A business without its own Koblip Chat workspace sends
@@ -59,7 +52,7 @@ export function WhatsappFrame({
   const segment = useSelectedLayoutSegment()
   const base = `/dashboard/${businessId}/automations`
   const hrefOf = (part: Part) => (part === "overview" ? base : `${base}/${part}`)
-  const part = PARTS.find((item) => item.id === segment)?.id ?? "overview"
+  const part = PARTS.find((item) => item === segment) ?? "overview"
   const atOverview = part === "overview"
   // The business's own workspace works; Koblip's number needs none.
   const ownUsable = !!connection && !connection.needsReconnect
@@ -110,10 +103,9 @@ export function WhatsappFrame({
     <SectionParts
       title={m.shell.nav.automations}
       parts={PARTS.map((item) => ({
-        id: item.id,
-        label: t.parts[item.id],
-        href: hrefOf(item.id),
-        icon: item.icon,
+        id: item,
+        label: t.parts[item],
+        href: hrefOf(item),
       }))}
       current={part}
       ariaLabel={t.partsLabel}
