@@ -21,6 +21,19 @@ const messages: typeof en = {
     done: (count: number) =>
       count === 1 ? "Revisé 1 cosa" : `Revisé ${count} cosas`,
   },
+  locale: "es-US",
+  times: {
+    today: "Hoy",
+    tomorrow: "Mañana",
+    day: "Día",
+    moreDates: "Más fechas",
+    morning: "Mañana",
+    afternoon: "Tarde",
+    evening: "Noche",
+    timesOf: (part: string) => `Horas de la ${part.toLowerCase()}`,
+    pick: (service: string, member: string | null, day: string, time: string) =>
+      `Reserva ${service}${member ? ` con ${member}` : ""} el ${day} a las ${time}`,
+  },
   choices: {
     more: (n: number) => `${n} más`,
   },

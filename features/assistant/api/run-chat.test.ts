@@ -969,3 +969,60 @@ test.each([false, true])(
     }
   }
 )
+
+test("free times come as a picker under the answer, never as buttons too", async () => {
+  const days = [
+    { date: "2026-10-28", times: [] },
+    { date: "2026-10-29", times: ["09:00", "09:15"] },
+  ]
+  scriptedClient(
+    [
+      [toolChunk(0, "call-A", "find_free_times", "{}")],
+      [textChunk("When?")],
+    ],
+    [judgeOk(["09:00", "09:15"])]
+  )
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [
+      probe(
+        async () => ({ service: "Cut", teamMember: null, days }),
+        "find_free_times"
+      ),
+    ])
+  )
+  expect(events).toContainEqual({
+    type: "times",
+    service: "Cut",
+    teamMember: null,
+    today: "2026-10-28",
+    days,
+  })
+  expect(events.some((e) => (e as { type: string }).type === "choices")).toBe(
+    false
+  )
+})
+
+test("no free time at all means no picker", async () => {
+  scriptedClient(
+    [
+      [toolChunk(0, "call-A", "find_free_times", "{}")],
+      [textChunk("Nothing free.")],
+    ],
+    [judgeOk()]
+  )
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [
+      probe(
+        async () => ({
+          service: "Cut",
+          teamMember: null,
+          days: [{ date: "2026-10-28", times: [] }],
+        }),
+        "find_free_times"
+      ),
+    ])
+  )
+  expect(events.some((e) => (e as { type: string }).type === "times")).toBe(
+    false
+  )
+})

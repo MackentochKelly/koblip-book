@@ -2395,13 +2395,13 @@ export function buildAssistantTools(
         if ("choices" in servicePick) {
           return bad(t.errors.serviceWhich(servicePick.choices.join(", ")))
         }
-        let teamMemberId: string | null = null
+        let teamMember: { id: string; name: string } | null = null
         if (memberWanted !== null) {
           const memberPick = pickByName(team, memberWanted)
           if ("choices" in memberPick) {
             return bad(t.errors.memberWhich(memberPick.choices.join(", ")))
           }
-          teamMemberId = memberPick.found.id
+          teamMember = memberPick.found
         }
         const today = zonedToday(Date.now(), business.timezone)
         const from = a.from === undefined ? today : a.from
@@ -2418,7 +2418,7 @@ export function buildAssistantTools(
         const found = await getAvailability(
           business.slug,
           servicePick.found.id,
-          teamMemberId,
+          teamMember?.id ?? null,
           []
         )
         if (!found) {
@@ -2427,6 +2427,8 @@ export function buildAssistantTools(
         const inRange = found.days.filter((d) => d.date >= from && d.date <= to)
         const capped = inRange.slice(0, ASSISTANT_RULES.maxFreeTimesDays)
         return {
+          service: servicePick.found.name,
+          teamMember: teamMember?.name ?? null,
           days: capped,
           total: inRange.length,
           truncated: inRange.length > capped.length,

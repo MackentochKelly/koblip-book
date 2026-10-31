@@ -74,6 +74,7 @@ test("toMessages skips empty replies and keeps the newest", () => {
       steps: [],
       confirms: [],
       choices: [],
+      times: null,
       result: null,
       sources: [],
       unverified: false,
@@ -217,4 +218,20 @@ test("withdrawLast takes the last question and its reply off", () => {
   const replied = applyEvent([first, owner], { type: "text", delta: "Hm" })
   expect(withdrawLast(replied)).toEqual([first])
   expect(withdrawLast([first, owner])).toEqual([first])
+})
+
+test("free times land on the reply and come back from storage", () => {
+  const times = {
+    service: "Cut",
+    teamMember: null,
+    today: "2026-10-28",
+    days: [{ date: "2026-10-28", times: ["09:00"] }],
+  }
+  const items = applyEvent(
+    [{ id: "o", role: "owner", text: "Book" }],
+    { type: "times", ...times }
+  )
+  const reply = items[items.length - 1]
+  expect(reply.role === "assistant" && reply.times).toEqual(times)
+  expect(restoreChat(saveChat(items))).toEqual(items)
 })

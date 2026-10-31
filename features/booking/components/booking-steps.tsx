@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react"
 import { CalendarX2Icon, UsersIcon } from "@/components/ui/icons"
 
-import { DayStrip } from "@/components/day-strip"
 import { useMessages } from "@/components/language-provider"
+import { TimePicker } from "@/components/time-picker"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,7 +37,6 @@ import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
@@ -252,13 +251,6 @@ export function MemberStep({
   )
 }
 
-// Parts of the day the free times are grouped under (until that hour).
-const DAY_PARTS = [
-  { key: "morning", until: 12 },
-  { key: "afternoon", until: 17 },
-  { key: "evening", until: 24 },
-] as const
-
 // A sideways row of days with the month one tap away, then that day's free
 // times grouped into morning, afternoon and evening.
 export function TimeStep({
@@ -341,65 +333,21 @@ export function TimeStep({
 
   const freeDays = new Set(free.map((day) => day.date))
   const date = picked && freeDays.has(picked) ? picked : free[0].date
-  const times = availability.days.find((day) => day.date === date)?.times ?? []
-  const today = todayIn(page.timeZone)
-  const first = availability.days[0].date
-  const last = availability.days[availability.days.length - 1].date
-  const pick = (next: string) => {
-    if (next === date) return
-    setPicked(next)
-    onChange(null)
-  }
-  const groups = DAY_PARTS.map((part, index) => ({
-    label: m.booking[part.key],
-    times: times.filter((time) => {
-      const hour = Number(time.slice(0, 2))
-      return (
-        hour < part.until && (index === 0 || hour >= DAY_PARTS[index - 1].until)
-      )
-    }),
-  })).filter((group) => group.times.length > 0)
 
   return (
-    <div className="flex flex-col gap-5">
-      <DayStrip
-        days={availability.days.map((day) => day.date)}
-        value={date}
-        onChange={pick}
-        today={today}
-        locale={m.locale}
-        labels={m.booking}
-        isDisabled={(day) => !freeDays.has(day)}
-        startMonth={first}
-        endMonth={last}
-      />
-
-      <p className="text-sm font-medium">{formatDay(date, m.locale)}</p>
-      {groups.map((group) => (
-        <section
-          key={group.label}
-          aria-label={group.label}
-          className="flex flex-col gap-2"
-        >
-          <h3 className="text-sm text-muted-foreground">{group.label}</h3>
-          <ToggleGroup
-            variant="outline"
-            aria-label={m.booking.timesOf(group.label)}
-            value={slot?.date === date ? [slot.time] : []}
-            onValueChange={(value) => {
-              if (value[0]) onChange({ date, time: value[0] })
-            }}
-            className="grid w-full grid-cols-3 sm:grid-cols-4"
-          >
-            {group.times.map((time) => (
-              <ToggleGroupItem key={time} value={time}>
-                {formatClock(time, m.locale)}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </section>
-      ))}
-    </div>
+    <TimePicker
+      days={availability.days}
+      date={date}
+      onDateChange={(next) => {
+        setPicked(next)
+        onChange(null)
+      }}
+      time={slot?.date === date ? slot.time : null}
+      onTimeChange={(time) => onChange({ date, time })}
+      today={todayIn(page.timeZone)}
+      locale={m.locale}
+      labels={m.booking}
+    />
   )
 }
 

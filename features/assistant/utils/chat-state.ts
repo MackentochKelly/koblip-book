@@ -35,6 +35,12 @@ export interface ChatSource {
   count: number
 }
 
+// Free times to pick from, under the answer that asks "When?".
+export type ChatTimes = Omit<
+  Extract<AssistantStreamEvent, { type: "times" }>,
+  "type"
+>
+
 export type ChatItem =
   | { id: string; role: "owner"; text: string }
   | {
@@ -45,6 +51,7 @@ export type ChatItem =
       confirms: ChatConfirm[]
       // Quick answers the owner can tap instead of typing.
       choices: string[]
+      times: ChatTimes | null
       result: ChatResult | null
       sources: ChatSource[]
       // Set when the answer could not be double-checked.
@@ -102,6 +109,7 @@ export function newReply(): ChatItem {
     steps: [],
     confirms: [],
     choices: [],
+    times: null,
     result: null,
     sources: [],
     unverified: false,
@@ -152,6 +160,16 @@ export function applyEvent(
       return withReply(items, (reply) => ({
         ...reply,
         choices: event.options,
+      }))
+    case "times":
+      return withReply(items, (reply) => ({
+        ...reply,
+        times: {
+          service: event.service,
+          teamMember: event.teamMember,
+          today: event.today,
+          days: event.days,
+        },
       }))
     case "result":
       return withReply(items, (reply) => ({
@@ -223,9 +241,28 @@ export function toMessages(
 // Saved chats carry this number. Raise it whenever ChatItem changes:
 // a chat saved by another version starts fresh instead of breaking the
 // screen.
-export const CHAT_STORAGE_VERSION = 5
+export const CHAT_STORAGE_VERSION = 6
 
 const isText = (value: unknown): value is string => typeof value === "string"
+
+function isTimes(value: unknown): value is ChatTimes {
+  if (typeof value !== "object" || value === null) return false
+  const times = value as Record<string, unknown>
+  return (
+    isText(times.service) &&
+    (times.teamMember === null || isText(times.teamMember)) &&
+    isText(times.today) &&
+    Array.isArray(times.days) &&
+    times.days.every(
+      (day: unknown) =>
+        typeof day === "object" &&
+        day !== null &&
+        isText((day as Record<string, unknown>).date) &&
+        Array.isArray((day as Record<string, unknown>).times) &&
+        ((day as Record<string, unknown>).times as unknown[]).every(isText)
+    )
+  )
+}
 
 // Only a reply that has every field this version draws.
 function isChatItem(value: unknown): value is ChatItem {
@@ -239,6 +276,7 @@ function isChatItem(value: unknown): value is ChatItem {
     Array.isArray(item.confirms) &&
     Array.isArray(item.choices) &&
     item.choices.every(isText) &&
+    (item.times === null || isTimes(item.times)) &&
     (item.cutOff === undefined || isText(item.cutOff)) &&
     Array.isArray(item.sources) &&
     typeof item.unverified === "boolean" &&

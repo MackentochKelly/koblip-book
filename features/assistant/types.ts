@@ -24,6 +24,13 @@ export type AssistantStreamEvent =
       action: string // the button's word, e.g. "Book", "Delete"
     } // card with the action button and Cancel
   | { type: "choices"; options: string[] } // quick answers; a tap sends one
+  | {
+      type: "times"
+      service: string
+      teamMember: string | null
+      today: string // "YYYY-MM-DD" in the business timezone
+      days: { date: string; times: string[] }[]
+    } // a day and time picker; a tap sends the picked time
   | { type: "done" } // input enabled again
   | {
       type: "error"

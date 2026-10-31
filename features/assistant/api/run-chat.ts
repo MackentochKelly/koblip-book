@@ -48,6 +48,39 @@ const SOURCE_TOOLS: Record<string, { kind: SourceKind; key: string }> = {
   find_customer: { kind: "customers", key: "customers" },
 }
 
+type FreeTimes = Omit<
+  Extract<AssistantStreamEvent, { type: "times" }>,
+  "type" | "today"
+>
+
+// find_free_times' result as the day and time picker shows it, or null
+// for an error or no day with a free time.
+function freeTimesOf(data: unknown): FreeTimes | null {
+  if (typeof data !== "object" || !data) return null
+  const { service, teamMember, days } = data as Record<string, unknown>
+  if (
+    typeof service !== "string" ||
+    (teamMember !== null && typeof teamMember !== "string") ||
+    !Array.isArray(days)
+  ) {
+    return null
+  }
+  const valid = days.filter(
+    (day): day is FreeTimes["days"][number] =>
+      typeof day === "object" &&
+      day !== null &&
+      typeof day.date === "string" &&
+      Array.isArray(day.times) &&
+      day.times.every((time: unknown) => typeof time === "string")
+  )
+  if (!valid.some((day) => day.times.length > 0)) return null
+  return {
+    service,
+    teamMember,
+    days: valid.map((day) => ({ date: day.date, times: day.times })),
+  }
+}
+
 // Buttons from a passed answer check, or null for no buttons: trimmed,
 // de-duplicated, and only options that appear word for word in this
 // request's tool results. A bad choice list never fails the answer.
@@ -285,6 +318,8 @@ export async function* runChat(
     // Records looked up this request, by kind in first-looked-up order.
     // A repeat lookup keeps the highest count; empty kinds stay out.
     const sources = new Map<SourceKind, number>()
+    // The latest free times looked up, shown as a picker under the answer.
+    let freeTimes: FreeTimes | null = null
     for (let turn = 0; turn < ASSISTANT_RULES.maxSteps; turn += 1) {
       const stream = await modelCall()
       // Keep the full turn for history while sending each delta immediately.
@@ -382,11 +417,16 @@ export async function* runChat(
           status: verdict.ok === true ? "done" : "failed",
         }
         if (items.length > 0) yield { type: "sources", items }
-        if (verdict.ok === true) {
+        if (verdict.ok !== true) {
+          yield { type: "notice", kind: "unverified" }
+        }
+        // The picker holds the free times, so they never come as buttons
+        // too; it shows even unchecked, since it is the tool's own data.
+        if (freeTimes !== null) {
+          yield { type: "times", today: date, ...freeTimes }
+        } else if (verdict.ok === true) {
           const options = cleanChoices(verdict.choices, toolResults)
           if (options !== null) yield { type: "choices", options }
-        } else {
-          yield { type: "notice", kind: "unverified" }
         }
         yield { type: "done" }
         return
@@ -437,6 +477,10 @@ export async function* runChat(
           const parsedArgs = JSON.parse(call.function.arguments)
           toolsRan = true
           result = { data: await tool.run(parsedArgs) }
+          // The newest lookup wins, also when it found nothing.
+          if (call.function.name === "find_free_times") {
+            freeTimes = freeTimesOf((result as { data: unknown }).data)
+          }
           // Records for the sources event: the main list's length, or
           // nothing when the tool is not a lookup.
           const source = SOURCE_TOOLS[call.function.name]

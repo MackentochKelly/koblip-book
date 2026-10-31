@@ -22,6 +22,20 @@ const messages = {
     done: (count: number) =>
       count === 1 ? "Checked 1 thing" : `Checked ${count} things`,
   },
+  locale: "en-US",
+  // The day and time picker under "When?"; a tap sends the picked time.
+  times: {
+    today: "Today",
+    tomorrow: "Tomorrow",
+    day: "Day",
+    moreDates: "More dates",
+    morning: "Morning",
+    afternoon: "Afternoon",
+    evening: "Evening",
+    timesOf: (part: string) => `${part} times`,
+    pick: (service: string, member: string | null, day: string, time: string) =>
+      `Book ${service}${member ? ` with ${member}` : ""} on ${day} at ${time}`,
+  },
   // Quick-answer buttons: the first few, then one that shows the rest.
   choices: {
     more: (n: number) => `${n} more`,

@@ -30,6 +30,7 @@ function reply(text: string, pendingConfirm = false): Reply {
         ]
       : [],
     choices: [],
+    times: null,
     result: null,
     sources: [],
     unverified: false,

@@ -56,6 +56,7 @@ import type {
 } from "../utils/chat-state"
 import { ConfirmCard } from "./confirm-card"
 import { QuickChoices } from "./quick-choices"
+import { TimeChoices } from "./time-choices"
 
 type ErrorCode = Extract<AssistantStreamEvent, { type: "error" }>["code"]
 
@@ -361,6 +362,14 @@ export function MessageList({
                           choices={item.choices}
                           onPick={onSend}
                           moreLabel={m.choices.more}
+                        />
+                      )}
+                      {item === last && !busy && item.times && (
+                        <TimeChoices
+                          times={item.times}
+                          onPick={onSend}
+                          locale={m.locale}
+                          labels={m.times}
                         />
                       )}
                       {item.confirms.map((confirm) => (
