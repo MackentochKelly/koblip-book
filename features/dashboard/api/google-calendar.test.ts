@@ -11,6 +11,7 @@ import {
   businesses,
   googleCalendarConnections,
   googleCalendarEvents,
+  teamMembers,
   user,
 } from "@/lib/db/schema"
 
@@ -25,6 +26,7 @@ const {
 } = await import("@/lib/google-calendar")
 const { eventIdOf, syncGoogleCalendar } = await import("./google-calendar-sync")
 const { googleCalendarFor } = await import("./google-calendar")
+const { googleBusyTimes, refreshGoogleBusy } = await import("@/lib/google-calendar-busy")
 
 let dir: string
 let closeDb: () => void
@@ -38,6 +40,8 @@ const google = {
   calendars: new Map<string, Map<string, { status: string; summary: string; start: string }>>(),
   revoked: [] as string[],
   calls: [] as string[],
+  // The main calendar's busy times freeBusy answers with.
+  busy: [] as { start: string; end: string }[],
 }
 
 function idToken(email: string) {
@@ -73,6 +77,13 @@ const fetchGoogle = vi.fn(async (input: string, init: RequestInit = {}) => {
   }
   const path = url.pathname.replace("/calendar/v3", "")
   const body = init.body ? JSON.parse(String(init.body)) : null
+  if (method === "POST" && path === "/freeBusy") {
+    return answer(200, {
+      calendars: Object.fromEntries(
+        body.items.map((item: { id: string }) => [item.id, { busy: item.id === "primary" ? google.busy : [] }])
+      ),
+    })
+  }
   if (method === "POST" && path === "/calendars") {
     const id = `cal${google.calendars.size + 1}@group.calendar.google.com`
     google.calendars.set(id, new Map())
@@ -131,6 +142,8 @@ beforeAll(async () => {
 beforeEach(async () => {
   await db.delete(googleCalendarConnections)
   await db.delete(bookings)
+  await db.delete(teamMembers)
+  google.busy = []
   google.scope = ALL_SCOPES
   google.email = "owner@gmail.com"
   google.refreshAnswer = "ok"
@@ -199,6 +212,7 @@ test("connecting saves the account with sealed tokens", async () => {
     googleEmail: "owner@gmail.com",
     needsReconnect: false,
     syncFailed: false,
+    busyTeamMemberId: null,
   })
 })
 
@@ -290,4 +304,59 @@ test("disconnecting revokes the token at Google and forgets the connection", asy
   await endGoogleCalendarConnection(connectionId!)
   expect(google.revoked).toEqual(["1//refresh"])
   await expect(googleCalendarFor("biz")).resolves.toBeNull()
+})
+
+const busyNow = () => {
+  const start = new Date(Date.now() + 3 * hour)
+  return { start: start.toISOString(), end: new Date(start.getTime() + hour).toISOString() }
+}
+const range = () => [new Date().toISOString(), new Date(Date.now() + 48 * hour).toISOString()] as const
+
+test("busy times from the main calendar block the whole business when it has no team", async () => {
+  const time = busyNow()
+  google.busy = [time]
+  const { connectionId } = await connect()
+  await refreshGoogleBusy(connectionId!)
+  await expect(googleBusyTimes("biz", ...range())).resolves.toEqual([
+    { startAt: time.start, endAt: time.end, teamMemberId: null },
+  ])
+  expect(google.calls.filter((call) => call.includes("freeBusy"))).toHaveLength(1)
+})
+
+test("with a team, busy times block only the member the owner is, or nobody", async () => {
+  await db.insert(teamMembers).values([
+    { id: "m1", businessId: "biz", name: "Ana" },
+    { id: "m2", businessId: "biz", name: "Luis" },
+  ])
+  google.busy = [busyNow()]
+  const { connectionId } = await connect()
+  await refreshGoogleBusy(connectionId!)
+  await expect(googleBusyTimes("biz", ...range())).resolves.toEqual([])
+  await db
+    .update(googleCalendarConnections)
+    .set({ busyTeamMemberId: "m2" })
+    .where(eq(googleCalendarConnections.id, connectionId!))
+  await expect(googleBusyTimes("biz", ...range())).resolves.toMatchObject([{ teamMemberId: "m2" }])
+})
+
+test("a new read replaces the old busy times; without the busy scope there are none", async () => {
+  google.busy = [busyNow()]
+  const { connectionId } = await connect()
+  await refreshGoogleBusy(connectionId!)
+  google.busy = []
+  await refreshGoogleBusy(connectionId!)
+  await expect(googleBusyTimes("biz", ...range())).resolves.toEqual([])
+
+  google.busy = [busyNow()]
+  google.scope = ALL_SCOPES.replace(GOOGLE_SCOPES.freeBusy, "")
+  const again = await connect()
+  await refreshGoogleBusy(again.connectionId!)
+  await expect(googleBusyTimes("biz", ...range())).resolves.toEqual([])
+})
+
+test("the sync reads busy times too", async () => {
+  google.busy = [busyNow()]
+  const { connectionId } = await connect()
+  await syncGoogleCalendar(connectionId!)
+  await expect(googleBusyTimes("biz", ...range())).resolves.toHaveLength(1)
 })

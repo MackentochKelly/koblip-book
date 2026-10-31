@@ -2,6 +2,9 @@
 export const GOOGLE_CALENDAR_RULES = {
   // How often the server's timer sends booking changes to Google.
   syncEverySeconds: 60,
+  // How often busy times are read from Google again; the booking page uses
+  // the last ones read.
+  busyEverySeconds: 120,
   // At most this many events sent per connection in one sync; the rest go
   // in the next one (Google's per-user rate limits).
   maxChangesPerSync: 50,

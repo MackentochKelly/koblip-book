@@ -237,3 +237,25 @@ test("off-duty members do not provide capacity for unassigned bookings", () => {
   )
   expect(day.times).not.toContain("10:00")
 })
+
+// Santo Domingo is UTC-4: 10:00 local = 14:00 UTC.
+test("a business-wide Google busy time closes those times for every seat", () => {
+  const [day] = availability(
+    base({
+      seats: 3,
+      busy: [{ startAt: "2026-06-01T14:00:00.000Z", endAt: "2026-06-01T15:00:00.000Z", teamMemberId: null }],
+    })
+  )
+  expect(day.times).not.toContain("09:15")
+  expect(day.times).not.toContain("10:30")
+  expect(day.times).toContain("09:00")
+  expect(day.times).toContain("11:00")
+})
+
+test("a team member's Google busy time blocks only them", () => {
+  const busy = [{ startAt: "2026-06-01T14:00:00.000Z", endAt: "2026-06-01T15:00:00.000Z", teamMemberId: "ana" }]
+  const [alone] = availability(base({ teamMemberIds: ["ana"], busy }))
+  expect(alone.times).not.toContain("10:00")
+  const [both] = availability(base({ teamMemberIds: ["ana", "luis"], busy }))
+  expect(both.times).toContain("10:00")
+})

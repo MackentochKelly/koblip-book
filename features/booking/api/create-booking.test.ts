@@ -7,6 +7,8 @@ import {
   bookings,
   businessHours,
   businesses,
+  googleCalendarBusy,
+  googleCalendarConnections,
   inAppNotifications,
   services,
   teamMembers,
@@ -150,6 +152,38 @@ test("returns taken when the slot filled up", async () => {
     phone: "+18095550134",
   })
   expect(result).toEqual({ status: "taken" })
+})
+
+test("returns taken when the team member is busy in their Google Calendar", async () => {
+  const { serviceId, teamId } = await seedShop("google-shop", "biz-google")
+  const { db } = await import("@/lib/db")
+  const [connection] = await db
+    .insert(googleCalendarConnections)
+    .values({
+      businessId: "biz-google",
+      teamMemberId: teamId,
+      googleEmail: "ana@gmail.com",
+      scopes: "",
+    })
+    .returning()
+  await db.insert(googleCalendarBusy).values({
+    connectionId: connection!.id,
+    startAt: "2026-06-01T14:00:00.000Z",
+    endAt: "2026-06-01T15:00:00.000Z",
+  })
+  const book = (time: string) =>
+    createBooking({
+      slug: "google-shop",
+      serviceId,
+      teamMemberId: null,
+      addonIds: [],
+      date: "2026-06-01",
+      time,
+      name: "Luis",
+      phone: "+18095550134",
+    })
+  await expect(book("10:30")).resolves.toEqual({ status: "taken" })
+  await expect(book("11:00")).resolves.toMatchObject({ status: "booked" })
 })
 
 test("cancelled bookings do not block the slot", async () => {

@@ -59,6 +59,13 @@ const integrations: typeof en = {
     connectedToast: "Google Calendar conectado.",
     denied: "Permite el calendario de Koblip Book para conectar.",
     failed: "No se pudo conectar Google Calendar. Inténtalo de nuevo.",
+    manage: "Gestionar",
+    busyTitle: "Tus horas ocupadas bloquean",
+    busyHint: "Solo las horas ocupadas de tu calendario principal de Google.",
+    busyWholeBusiness: "Tus horas ocupadas bloquean todo tu negocio.",
+    busyNobody: "A nadie",
+    busyNobodyHint: "No recibes reservas",
+    saveFailed: "No se pudo guardar. Inténtalo de nuevo.",
   },
   appleCalendar: {
     name: "Apple Calendar",

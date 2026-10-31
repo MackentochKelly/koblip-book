@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
+import { googleBusyTimes } from "@/lib/google-calendar-busy"
 import { saveAll } from "@/lib/db/save-all"
 import {
   bookings,
@@ -143,6 +144,11 @@ export async function moveOwnerBooking(
               lte(bookings.startAt, new Date(dayEnd + 86_400_000).toISOString())
             )
           )
+        const busy = await googleBusyTimes(
+          business.id,
+          new Date(dayStart - 86_400_000).toISOString(),
+          new Date(dayEnd + 86_400_000).toISOString()
+        )
         const [day] = availability({
           hours: hourRows,
           memberHours: memberHourRows,
@@ -151,6 +157,7 @@ export async function moveOwnerBooking(
           seats: business.seats,
           teamMemberIds: booking.teamMemberId ? [booking.teamMemberId] : [],
           taken,
+          busy,
           now: Date.now(),
           dates: [input.date],
           ignoreCutoff: true,

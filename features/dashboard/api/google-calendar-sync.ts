@@ -10,6 +10,7 @@ import {
   googleCalendarEvents,
 } from "@/lib/db/schema"
 import { GoogleCalendarError, googleCalendarApi } from "@/lib/google-calendar"
+import { refreshGoogleBusy } from "@/lib/google-calendar-busy"
 import { GOOGLE_CALENDAR_RULES } from "@/lib/google-calendar-rules"
 import { runInTurn } from "@/lib/run-in-turn"
 
@@ -169,6 +170,13 @@ async function syncConnection(connectionId: string) {
           target: [googleCalendarEvents.connectionId, googleCalendarEvents.bookingId],
           set: saved,
         })
+    }
+    // Busy times (G3), less often than events.
+    if (
+      !connection.busyCheckedAt ||
+      Date.parse(connection.busyCheckedAt) + GOOGLE_CALENDAR_RULES.busyEverySeconds * 1000 <= Date.now()
+    ) {
+      await refreshGoogleBusy(connection.id)
     }
   } catch (error) {
     if (error instanceof CalendarGone) {

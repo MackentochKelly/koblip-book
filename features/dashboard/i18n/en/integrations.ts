@@ -58,6 +58,13 @@ const integrations = {
     connectedToast: "Google Calendar connected.",
     denied: "Allow the Koblip Book calendar to connect.",
     failed: "Couldn't connect Google Calendar. Try again.",
+    manage: "Manage",
+    busyTitle: "Your busy times block",
+    busyHint: "Only busy times from your main Google calendar.",
+    busyWholeBusiness: "Your busy times block your whole business.",
+    busyNobody: "Nobody",
+    busyNobodyHint: "You don't take bookings",
+    saveFailed: "Couldn't save. Try again.",
   },
   appleCalendar: {
     name: "Apple Calendar",

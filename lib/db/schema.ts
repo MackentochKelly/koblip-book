@@ -785,6 +785,12 @@ export const googleCalendarConnections = sqliteTable(
     needsReconnect: integer({ mode: "boolean" }).notNull().default(false),
     // The "Koblip Book" calendar Book made in that account; null until made.
     calendarId: text(),
+    // Whose bookings the business's own Google busy times block (G3): the
+    // team member the owner is; null blocks the whole business when it has
+    // no team, and nobody when it has one. Unused on a member's connection.
+    busyTeamMemberId: text().references(() => teamMembers.id, { onDelete: "set null" }),
+    // When the busy times were last read from Google.
+    busyCheckedAt: text(),
     // The timer's last sync of this connection, and its error, kept short.
     lastSyncAt: text(),
     lastError: text(),
@@ -819,4 +825,20 @@ export const googleCalendarEvents = sqliteTable(
     syncedAt: text().notNull(),
   },
   (table) => [primaryKey({ columns: [table.connectionId, table.bookingId] })]
+)
+
+// Busy times read from a connection's Google calendars (G3), replaced at each
+// read, so the booking page never waits on Google. Only start and end:
+// Book never sees what the time is for (freeBusy).
+export const googleCalendarBusy = sqliteTable(
+  "google_calendar_busy",
+  {
+    id: id(),
+    connectionId: text()
+      .notNull()
+      .references(() => googleCalendarConnections.id, { onDelete: "cascade" }),
+    startAt: text().notNull(),
+    endAt: text().notNull(),
+  },
+  (table) => [index("google_calendar_busy_connection").on(table.connectionId, table.startAt)]
 )

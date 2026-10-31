@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { customerKey } from "@/lib/customer-key"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
+import { googleBusyTimes } from "@/lib/google-calendar-busy"
 import { saveAll } from "@/lib/db/save-all"
 import { notification } from "@/lib/in-app-notifications"
 import {
@@ -152,6 +153,11 @@ export async function createBooking(
             lte(bookings.startAt, new Date(dayEnd + 86_400_000).toISOString())
           )
         )
+      const busy = await googleBusyTimes(
+        business.id,
+        new Date(dayStart - 86_400_000).toISOString(),
+        new Date(dayEnd + 86_400_000).toISOString()
+      )
 
       const [day] = availability({
         hours: hourRows,
@@ -162,6 +168,7 @@ export async function createBooking(
         teamMemberIds:
           input.teamMemberId !== null ? [input.teamMemberId] : allowedIds,
         taken,
+        busy,
         now: Date.now(),
         dates: [input.date],
       })
@@ -184,7 +191,8 @@ export async function createBooking(
                 totalMinutes
               ).length > 0
           ),
-          taken,
+          // A team member busy in Google is not free either.
+          [...taken, ...busy],
           startInstant,
           endInstant
         )

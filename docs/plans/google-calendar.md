@@ -46,7 +46,7 @@ the others, busy times are simply off.
 | --- | --- | --- | --- |
 | G1 | Owner connects Google on Integrations (popup, like Koblip Chat); a "Koblip Book" calendar is made; Disconnect; Reconnect when it stops working | | Done (2026-10-31) |
 | G2 | Every booking goes into that calendar and stays in sync: new, moved, cancelled (server timer, once a minute) | G1 | Done (2026-10-31) |
-| G3 | Busy times in Google cannot be booked (public page, owner's Add and Move booking) | G1 | To do |
+| G3 | Busy times in Google cannot be booked (public page, owner's Add and Move booking); the owner picks which team member they are (Manage panel) | G1 | Done (2026-10-31) |
 | G4 | Owner picks which calendars count as busy | G3 | To do |
 | G5 | Each team member's own calendar: the owner sends a link, the member connects Google on one simple page, no account; only their bookings, only their busy times | G2, G3 | To do |
 | G6 | Event details: customer name, phone, service, team member, note, link to the booking | G2 | To do |
@@ -67,3 +67,6 @@ the others, busy times are simply off.
 | A changed booking is found by a fingerprint of its synced fields | One check finds new, moved, cancelled and edited bookings, like the WhatsApp timer | Dev, 2026-10-31 |
 | Disconnect revokes the token at Google | Google's guide; it also resets the Google login consent, which only asks again once | Dev, 2026-10-31 |
 | A calendar removed in Google is noticed at the next booking change, then made again with every event | Checking it every minute would cost one Google call per connection per minute | Dev, 2026-10-31 |
+| A calendar belongs to a person: with no team the owner's busy times block the whole business; with a team they block the member the owner picks, or nobody | How SaaS booking apps (Square, Fresha, Acuity) sync calendars; the owner's dentist visit never closes a whole salon | Dev, 2026-10-31 |
+| Busy times are read every 2 minutes and kept in `google_calendar_busy`; bookings read the kept ones | A booking never waits on Google; a slow Google never blocks one | Dev, 2026-10-31 |
+| The owner can still book over a Google busy time, like any other busy time (the "book anyway" choice) | Owner bookings already allow a conflict on purpose | Dev, 2026-10-31 |

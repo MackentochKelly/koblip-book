@@ -2,6 +2,7 @@ import "server-only"
 import { and, asc, eq, gte, lte, ne } from "drizzle-orm"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
+import { googleBusyTimes } from "@/lib/google-calendar-busy"
 import {
   bookings,
   businessHours,
@@ -195,6 +196,8 @@ async function freeDays(input: {
       )
     )
 
+  const busy = await googleBusyTimes(input.businessId, from, to)
+
   return availability({
     hours: input.hours,
     memberHours: input.memberHours,
@@ -203,6 +206,7 @@ async function freeDays(input: {
     seats: input.seats,
     teamMemberIds: input.teamMemberIds,
     taken,
+    busy,
     now,
   })
 }

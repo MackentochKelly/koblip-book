@@ -6,6 +6,7 @@ import { customerKey } from "@/lib/customer-key"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
+import { googleBusyTimes } from "@/lib/google-calendar-busy"
 import { saveAll } from "@/lib/db/save-all"
 import {
   bookingAddons,
@@ -168,6 +169,11 @@ export async function createOwnerBooking(
             lte(bookings.startAt, new Date(dayEnd + 86_400_000).toISOString())
           )
         )
+      const busy = await googleBusyTimes(
+        business.id,
+        new Date(dayStart - 86_400_000).toISOString(),
+        new Date(dayEnd + 86_400_000).toISOString()
+      )
 
       if (!input.allowConflict) {
         const startMinute = toMinutes(input.time)
@@ -196,6 +202,7 @@ export async function createOwnerBooking(
           teamMemberIds:
             input.teamMemberId !== null ? [input.teamMemberId] : allowedIds,
           taken,
+          busy,
           now: Date.now(),
           dates: [input.date],
           ignoreCutoff: true,
@@ -221,7 +228,8 @@ export async function createOwnerBooking(
       if (teamMemberId === null && allowedRows.length > 0) {
         const free = firstFreeMember(
           workingRows,
-          taken,
+          // A team member busy in Google is not free either.
+          [...taken, ...busy],
           startInstant,
           endInstant
         )

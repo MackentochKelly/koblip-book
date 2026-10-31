@@ -42,6 +42,7 @@ import {
   type GoogleConnectResult,
 } from "@/types/google-calendar-connect"
 import { ConfirmRemove } from "./confirm-remove"
+import { GoogleCalendarPanel } from "./google-calendar-panel"
 
 // The apps a business connects, as a settings list: each row is the app,
 // what it does and its state. WhatsApp straight from Meta is coming; until
@@ -52,6 +53,7 @@ export function IntegrationsView({
   result,
   googleCalendar,
   googleResult,
+  team,
 }: {
   businessId: string
   connection: ChatConnection | null
@@ -60,6 +62,8 @@ export function IntegrationsView({
   googleCalendar: GoogleCalendarConnection | null
   // The same for Google's window (?google=).
   googleResult: GoogleConnectResult | null
+  // The team, for whose bookings Google busy times block.
+  team: { id: string; name: string }[]
 }) {
   const m = useOwnerMessages()
   const t = m.integrations
@@ -67,6 +71,7 @@ export function IntegrationsView({
   const chatWindow = useConnectWindow()
   const googleWindow = useConnectWindow()
   const [disconnecting, setDisconnecting] = useState<"chat" | "google" | null>(null)
+  const [managingGoogle, setManagingGoogle] = useState(false)
   const setChatWaiting = chatWindow.setWaiting
   const setGoogleWaiting = googleWindow.setWaiting
 
@@ -256,9 +261,9 @@ export function IntegrationsView({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setDisconnecting("google")}
+                    onClick={() => setManagingGoogle(true)}
                   >
-                    {t.googleCalendar.disconnect}
+                    {t.googleCalendar.manage}
                   </Button>
                 </div>
               ) : (
@@ -342,6 +347,19 @@ export function IntegrationsView({
         </ItemGroup>
       </PageSection>
 
+      {googleCalendar && (
+        <GoogleCalendarPanel
+          open={managingGoogle && googleUsable}
+          onClose={() => setManagingGoogle(false)}
+          businessId={businessId}
+          connection={googleCalendar}
+          team={team}
+          onDisconnect={() => {
+            setManagingGoogle(false)
+            setDisconnecting("google")
+          }}
+        />
+      )}
       <ConfirmRemove
         name={
           disconnecting === "chat"

@@ -20,7 +20,7 @@ export default async function IntegrationsPage({ params, searchParams }: Props) 
   const { businessId } = await params
   const { chat, google } = await searchParams
   // Only the business's owner gets here.
-  await getOwnerBusiness(businessId)
+  const { team } = await getOwnerBusiness(businessId)
   const [connection, googleCalendar] = await Promise.all([
     chatConnectionFor(businessId),
     googleCalendarFor(businessId),
@@ -32,6 +32,7 @@ export default async function IntegrationsPage({ params, searchParams }: Props) 
       result={CHAT_CONNECT_RESULTS.find((value) => value === chat) ?? null}
       googleCalendar={googleCalendar}
       googleResult={GOOGLE_CONNECT_RESULTS.find((value) => value === google) ?? null}
+      team={team.map((member) => ({ id: member.id, name: member.name }))}
     />
   )
 }

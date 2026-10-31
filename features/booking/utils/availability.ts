@@ -19,6 +19,13 @@ export interface AvailabilityInput {
     endAt: string
     teamMemberId: string | null
   }>
+  // Busy times from Google Calendar: a team member's block only them, one
+  // with no team member blocks the whole business.
+  busy?: Array<{
+    startAt: string
+    endAt: string
+    teamMemberId: string | null
+  }>
   now: number
   dates?: string[]
   // Owner bookings skip the minimum-notice cutoff (walk-ins, past dates).
@@ -95,6 +102,7 @@ function dayTimes(
   date: string,
   input: AvailabilityInput,
   taken: TakenInstant[],
+  closed: TakenInstant[],
   memberStretches: Record<string, OpenStretch[]>
 ): string[] {
   const stretches = dayOpenStretches(input.hours, date)
@@ -115,6 +123,9 @@ function dayTimes(
         start + input.durationMinutes,
         input.timeZone
       )
+      if (closed.some((time) => overlaps(time, startInstant, endInstant))) {
+        continue
+      }
       const overlapping = taken.filter((booking) =>
         overlaps(booking, startInstant, endInstant)
       )
@@ -193,17 +204,25 @@ export function availability(input: AvailabilityInput): AvailabilityDay[] {
     Array.from({ length: BOOKING_RULES.daysAhead }, (_, i) =>
       addDays(zonedToday(input.now, input.timeZone), i)
     )
-  const taken: TakenInstant[] = input.taken.map((booking) => ({
-    start: Date.parse(booking.startAt),
-    end: Date.parse(booking.endAt),
-    teamMemberId: booking.teamMemberId,
-  }))
+  const instant = (time: AvailabilityInput["taken"][number]): TakenInstant => ({
+    start: Date.parse(time.startAt),
+    end: Date.parse(time.endAt),
+    teamMemberId: time.teamMemberId,
+  })
+  // A member's busy time takes them like a booking; the business's closes it.
+  const busy = input.busy ?? []
+  const taken: TakenInstant[] = [
+    ...input.taken,
+    ...busy.filter((time) => time.teamMemberId !== null),
+  ].map(instant)
+  const closed = busy.filter((time) => time.teamMemberId === null).map(instant)
   return dates.map((date) => ({
     date,
     times: dayTimes(
       date,
       input,
       taken,
+      closed,
       Object.fromEntries(
         input.teamMemberIds.map((id) => [
           id,

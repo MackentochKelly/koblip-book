@@ -5,4 +5,6 @@ export type GoogleCalendarConnection = {
   googleEmail: string
   needsReconnect: boolean
   syncFailed: boolean
+  // The team member the owner is: their Google busy times block only them (G3).
+  busyTeamMemberId: string | null
 }
