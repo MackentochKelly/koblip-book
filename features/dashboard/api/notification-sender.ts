@@ -94,11 +94,28 @@ async function koblipMayServe(businessId: string) {
   return !!row
 }
 
+// Who one message goes to, when it is known: the person's 24-hour window
+// with the business's own number lets that number send a normal message.
+type WindowCheck = {
+  digits: string
+  // A normal message may go inside the window (the 24-hour setting, or a
+  // message that is only ever a normal one, like the thank-you).
+  useWindow: boolean
+  now: Date
+  rules: NotificationRules
+}
+
 // Which number a business sends from now: its own when connected and Meta
-// approved every message it has on, in each language; else Koblip's; else
-// its own as it stands (normal messages in the window, approved templates).
-// "wait" when a connection must be renewed first; null when none can send.
-async function lineFor(businessId: string, turnedOff: BookingMessage[]): Promise<Line | "wait" | null> {
+// approved every message it has on, in each language, or when the person's
+// 24-hour window with it is open and a normal message may go (D35); else
+// Koblip's; else its own as it stands (normal messages in the window,
+// approved templates). "wait" when a connection must be renewed first; null
+// when none can send. Without a recipient (the page), only approval counts.
+async function lineFor(
+  businessId: string,
+  turnedOff: BookingMessage[],
+  recipient?: WindowCheck
+): Promise<Line | "wait" | null> {
   const [[own], koblip] = await Promise.all([
     db.select().from(chatConnections).where(eq(chatConnections.businessId, businessId)).limit(1),
     db
@@ -118,6 +135,19 @@ async function lineFor(businessId: string, turnedOff: BookingMessage[]): Promise
       : null
   const on = BOOKING_MESSAGES.filter((message) => !turnedOff.includes(message))
   if (ownLine && (await ownTemplatesApproved(businessId, on))) return ownLine
+  if (
+    ownLine &&
+    recipient?.useWindow &&
+    (await windowOpen(
+      ownLine.workspaceId,
+      ownLine.phoneNumberId,
+      recipient.digits,
+      recipient.now,
+      recipient.rules
+    ))
+  ) {
+    return ownLine
+  }
   if (koblip && chatConnectionUsable(koblip) && koblip.phoneNumberId) {
     return {
       sender: "koblip",
@@ -481,16 +511,26 @@ async function deliver(
   const kind = send.message
   const off = kind === "thankYou" ? !settings.thankYouReply : settings.turnedOff.includes(kind)
   if (off) return { state: "skipped", reason: "turnedOff" }
-  const line = await lineFor(business.id, settings.turnedOff)
+  const toOwner = isOwnerAlert(kind)
+  const phone = toOwner ? settings.ownerPhone : booking.customerPhone
+  const line = await lineFor(
+    business.id,
+    settings.turnedOff,
+    phone
+      ? {
+          digits: phone.replace(/\D/g, ""),
+          useWindow: kind === "thankYou" || settings.freeTextInWindow,
+          now,
+          rules,
+        }
+      : undefined
+  )
   if (line === "wait") return { state: "pending" }
   if (!line) return { state: "skipped", reason: "notConnected" }
   if (booking.status === "cancelled" && !AFTER_CANCEL.includes(kind)) {
     return { state: "skipped", reason: "cancelled" }
   }
   if (Date.parse(booking.startAt) <= now.getTime()) return { state: "skipped", reason: "late" }
-
-  const toOwner = isOwnerAlert(kind)
-  const phone = toOwner ? settings.ownerPhone : booking.customerPhone
   if (!phone) return { state: "skipped", reason: toOwner ? "noOwnerPhone" : "noPhone" }
   const language: TemplateLanguage = toOwner ? settings.ownerLanguage : booking.language ?? "en"
   const at = localDateTime(new Date(booking.startAt), business.timezone)
@@ -701,7 +741,19 @@ export async function sendTestMessage(
   now = new Date()
 ): Promise<Outcome> {
   const settings = await notificationSettingsFor(businessId)
-  const line = await lineFor(businessId, settings.turnedOff)
+  const rules = await notificationRules(businessId)
+  const line = await lineFor(
+    businessId,
+    settings.turnedOff,
+    settings.ownerPhone
+      ? {
+          digits: settings.ownerPhone.replace(/\D/g, ""),
+          useWindow: settings.freeTextInWindow,
+          now,
+          rules,
+        }
+      : undefined
+  )
   if (!line || line === "wait") return { state: "skipped", reason: "notConnected" }
   if (!settings.ownerPhone) return { state: "skipped", reason: "noOwnerPhone" }
   const [business] = await db
@@ -721,7 +773,7 @@ export async function sendTestMessage(
     values,
     freeTextInWindow: settings.freeTextInWindow,
     now,
-    rules: await notificationRules(businessId),
+    rules,
     refreshed: new Set(),
   })
 }

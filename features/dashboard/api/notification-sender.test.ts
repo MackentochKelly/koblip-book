@@ -770,3 +770,74 @@ test("Koblip's number never sends for a business without an owner or a demo", as
   expect(await sends("b1")).toEqual([])
   expect(sent).toEqual([])
 })
+
+// The business's own number connected, one of its messages still waiting
+// for Meta, and Koblip's number ready (D35).
+async function ownNotApprovedYet() {
+  await connectKoblip()
+  await db
+    .update(chatTemplates)
+    .set({ status: "pending" })
+    .where(and(eq(chatTemplates.message, "reminder"), eq(chatTemplates.language, "en")))
+}
+
+async function wroteTo(workspaceId: string, phoneNumberId: string) {
+  await db.insert(chatReplies).values({
+    workspaceId,
+    phoneNumberId,
+    customerPhone: "18095550101",
+    lastReplyAt: later(-60).toISOString(),
+  })
+}
+
+test("the customer wrote to the business's own number: a normal message goes from it before approval", async () => {
+  await ownNotApprovedYet()
+  await wroteTo("w1", "p1")
+  await book("b1")
+  await runNotifications(NOW)
+  expect(sentWith).toEqual(["Bearer koa_1"])
+  expect(sent[0]).toEqual(expect.objectContaining({ whatsapp_phone_number_id: "p1", messageType: "text" }))
+  expect(await senders("b1")).toEqual(["own"])
+})
+
+test("the customer wrote only to Koblip's number: Koblip's number still sends", async () => {
+  await ownNotApprovedYet()
+  await wroteTo("wk", "pk")
+  await book("b1")
+  await runNotifications(NOW)
+  expect(sentWith).toEqual(["Bearer koa_k"])
+  expect(sent[0]).toEqual(expect.objectContaining({ whatsapp_phone_number_id: "pk", messageType: "text" }))
+  expect(await senders("b1")).toEqual(["koblip"])
+})
+
+test("with the 24-hour setting off, an open window on the own number does not make it send", async () => {
+  await ownNotApprovedYet()
+  await wroteTo("w1", "p1")
+  await db.insert(notificationSettings).values({
+    businessId: "biz",
+    reminders: [1440, 30],
+    quietStart: "21:00",
+    quietEnd: "08:00",
+    turnedOff: [],
+    freeTextInWindow: false,
+  })
+  await book("b1")
+  await runNotifications(NOW)
+  expect(sentWith).toEqual(["Bearer koa_k"])
+  expect(sent[0]).toEqual(expect.objectContaining({ messageType: "template", template_id: "k-confirmed-es" }))
+  expect(await senders("b1")).toEqual(["koblip"])
+})
+
+test("the window on the own number closed: Koblip's number sends the template", async () => {
+  await ownNotApprovedYet()
+  await db.insert(chatReplies).values({
+    workspaceId: "w1",
+    phoneNumberId: "p1",
+    customerPhone: "18095550101",
+    lastReplyAt: later(-25 * 60).toISOString(),
+  })
+  await book("b1")
+  await runNotifications(NOW)
+  expect(sentWith).toEqual(["Bearer koa_k"])
+  expect(sent[0]).toEqual(expect.objectContaining({ messageType: "template" }))
+})

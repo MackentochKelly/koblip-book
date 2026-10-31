@@ -18,6 +18,9 @@ const whatsapp = {
   koblipHint: "Koblip's ready-made messages. Turn each on or off.",
   useOwnNumber: "Use your own number",
   untilApproved: (names: string) => `Your number takes over once Meta approves ${names}.`,
+  // The same, when normal messages go inside 24 hours (D35).
+  untilApprovedWindow: (names: string) =>
+    `Customers who wrote to your number in the last 24 hours already get messages from it; everyone else once Meta approves ${names}.`,
   koblipWording: "Koblip's ready-made wording. Use your own number to change it.",
   // Overview: the setup checklist and the test send.
   setup: "Setup",

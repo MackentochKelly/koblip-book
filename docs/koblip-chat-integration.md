@@ -16,7 +16,7 @@ Settings: the `CHAT_*` and `TOKEN_ENCRYPTION_KEY` lines in `.env.example` (serve
 | 24-hour normal messages | If the customer wrote to Koblip's number | If the customer wrote to the business's number |
 | Limit | 300 template messages per business per calendar month (UTC), changeable by the admin (D3, D29) | None |
 
-The sender picks the number per business at each send (`lineFor` in `features/dashboard/api/notification-sender.ts`, D22): the business's own when its connection works, has a number, and Meta approved every message it has on in both languages; else Koblip's; else its own as it stands. Each sent row records its `sender`. The WhatsApp page and the admin show the same choice (`senderFor`, D26). Booking forms ask for WhatsApp consent, unticked, whenever either number can send (`lib/whatsapp-offer.ts`).
+The sender picks the number at each send (`lineFor` in `features/dashboard/api/notification-sender.ts`, D22, D35): the business's own when its connection works, has a number, and Meta approved every message it has on in both languages, or, before that, when the person's 24-hour window with the own number is open and a normal message may go (the 24-hour setting on; the thank-you always); else Koblip's; else its own as it stands. Each sent row records its `sender`. The WhatsApp page and the admin show the choice by approval alone (`senderFor`, D26); the Overview's line says those who wrote to the own number already get messages from it (D34, D35). Booking forms ask for WhatsApp consent, unticked, whenever either number can send (`lib/whatsapp-offer.ts`).
 
 ## Step 1: Connect with a popup (built)
 
