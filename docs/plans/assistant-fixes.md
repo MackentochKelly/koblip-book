@@ -21,7 +21,7 @@ file: [Plans](README.md).
 | A3 | Voice answers get checked too | M | A2 | Done (2026-10-31) |
 | A4 | At most 2 voice sessions open per owner | S | | Done (2026-10-31) |
 | A5 | Assistant remembers what it looked up | L | | Done (2026-10-31) |
-| A6 | Saving a new chat never fails on a race | S | | To do |
+| A6 | Saving a new chat never fails on a race | S | | Done (2026-10-31) |
 | A7 | Cancel finds any booking, and only upcoming ones | S | | To do |
 | A8 | Waiting cards survive a deploy | M | A1 | To do |
 | A9 | Chat bookings can include extras | M | A1 | To do |

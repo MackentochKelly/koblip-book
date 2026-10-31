@@ -355,3 +355,20 @@ test("PUT keeps a reply's memory, and refuses memory on the owner's words", asyn
     )
   ).toMatchObject({ status: 400 })
 })
+
+test("two saves of a new chat at the same moment both succeed, one row", async () => {
+  const id = crypto.randomUUID()
+  const saves = await Promise.all([
+    PUT(put(id, { businessId: "b1", messages: MESSAGES }), params(id)),
+    PUT(put(id, { businessId: "b1", messages: MESSAGES }), params(id)),
+  ])
+  expect(saves.map((res) => res.status)).toEqual([204, 204])
+  const { db } = await import("@/lib/db")
+  const { assistantConversations } = await import("@/lib/db/schema")
+  const { eq } = await import("drizzle-orm")
+  const rows = await db
+    .select()
+    .from(assistantConversations)
+    .where(eq(assistantConversations.id, id))
+  expect(rows).toHaveLength(1)
+})

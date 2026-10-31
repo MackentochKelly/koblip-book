@@ -77,44 +77,37 @@ export async function getAssistantChat(
   return row ? toChat(row) : null
 }
 
-// Creates the chat or replaces its messages. The title comes from the
-// first owner message and is set once, on create only. Returns false
+// Creates the chat or replaces its messages, in one write, so two saves
+// of a new chat at the same moment cannot collide. The title comes from
+// the first owner message and is set once, on create only. Returns false
 // when the id belongs to another owner or business: never overwrite.
 export async function saveAssistantChat(
   input: SaveChatInput
 ): Promise<boolean> {
-  const [row] = await db
-    .select({
-      id: assistantConversations.id,
-      businessId: assistantConversations.businessId,
-      ownerId: assistantConversations.ownerId,
-    })
-    .from(assistantConversations)
-    .where(eq(assistantConversations.id, input.id))
-    .limit(1)
-  if (row) {
-    if (row.businessId !== input.businessId || row.ownerId !== input.ownerId) {
-      return false
-    }
-    await db
-      .update(assistantConversations)
-      .set({
-        messages: JSON.stringify(input.messages),
-        updatedAt: new Date().toISOString(),
-      })
-      .where(eq(assistantConversations.id, input.id))
-    return true
-  }
   const firstOwner = input.messages.find((m) => m.role === "owner")
   const titleText = (firstOwner ?? input.messages[0])?.text ?? ""
-  await db.insert(assistantConversations).values({
-    id: input.id,
-    businessId: input.businessId,
-    ownerId: input.ownerId,
-    title: titleText.trim().slice(0, ASSISTANT_RULES.maxChatTitleChars),
-    messages: JSON.stringify(input.messages),
-  })
-  return true
+  const messages = JSON.stringify(input.messages)
+  // SQLite upsert: on an existing id, only this owner's and business's
+  // row is updated (setWhere); a foreign row returns nothing.
+  const saved = await db
+    .insert(assistantConversations)
+    .values({
+      id: input.id,
+      businessId: input.businessId,
+      ownerId: input.ownerId,
+      title: titleText.trim().slice(0, ASSISTANT_RULES.maxChatTitleChars),
+      messages,
+    })
+    .onConflictDoUpdate({
+      target: assistantConversations.id,
+      set: { messages, updatedAt: new Date().toISOString() },
+      setWhere: and(
+        eq(assistantConversations.businessId, input.businessId),
+        eq(assistantConversations.ownerId, input.ownerId)
+      ),
+    })
+    .returning({ id: assistantConversations.id })
+  return saved.length > 0
 }
 
 // True when a row was deleted. False when it is missing or belongs to
