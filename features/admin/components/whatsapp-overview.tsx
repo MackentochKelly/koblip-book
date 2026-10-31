@@ -10,7 +10,7 @@ import {
 import { WHATSAPP_ADMIN_RULES } from "@/lib/whatsapp-admin-rules"
 import type { WhatsappOverview as Overview } from "../api/whatsapp-overview"
 import type { AdminMessages } from "../i18n"
-import { formatAgo } from "../utils/format-ago"
+import { formatAgo } from "@/lib/format-ago"
 import { StatCards } from "@/components/stat-cards"
 
 // The admin's WhatsApp Overview (A2): what waits and failed, whether the

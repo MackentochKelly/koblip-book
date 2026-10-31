@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/item"
 import type { WhatsappWindow as Window, WindowEntry } from "../api/whatsapp-window"
 import type { AdminMessages } from "../i18n"
-import { formatAgo } from "../utils/format-ago"
+import { formatAgo } from "@/lib/format-ago"
 import { WhatsappWindowRemove } from "./whatsapp-window-remove"
 
 // WhatsApp → 24-hour window (A6): each customer who wrote, to which number

@@ -11,18 +11,20 @@ import { AccountMenu } from "./account-menu"
 // account menu. Pinned, with a line under it. In the dashboard it starts
 // with ☰, which opens the menu (whose top shows the name on a computer).
 // Before the details are checked the page isn't live yet, so View page can be
-// left out.
+// left out. `bell` shows on a phone only (a computer has it atop the menu).
 export function TopBar({
   business,
   owner,
   menu = false,
   viewPage = true,
+  bell,
   className,
 }: {
   business: { id: string; slug: string; name: string }
   owner: { name: string; email: string; image: string | null }
   menu?: boolean
   viewPage?: boolean
+  bell?: React.ReactNode
   className?: string
 }) {
   const m = useOwnerMessages().shell
@@ -45,6 +47,7 @@ export function TopBar({
           <ExternalLinkIcon data-icon="inline-end" />
         </Button>
       )}
+      {bell && <div className="md:hidden">{bell}</div>}
       <AccountMenu
         owner={owner}
         settingsHref={menu ? `/dashboard/${business.id}/settings` : undefined}

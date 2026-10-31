@@ -28,15 +28,19 @@ import { NAV_ICON_SIZE, NavMain } from "@/components/nav-main"
 import { NavUser } from "./nav-user"
 
 // The owner area's menu, built like Koblip Sales' AppSidebar (shadcn
-// sidebar-07): Search on top, the pages in groups, the account at the foot.
+// sidebar-07): Search and the bell on top, the pages in groups, the account
+// at the foot.
 // On a computer it folds to icons (the top bar's ☰ or the rail); on a phone
 // it is the drawer from the left.
 export function AppSidebar({
   businessId,
   owner,
+  bell,
 }: {
   businessId: string
   owner: Owner
+  // On a phone the bell is in the top bar instead.
+  bell?: React.ReactNode
 }) {
   const pathname = usePathname()
   const m = useOwnerMessages().shell
@@ -52,28 +56,31 @@ export function AppSidebar({
     <Sidebar collapsible="icon">
       <SidebarHeader>
         {/* A search field when open; just the icon when folded. */}
-        <InputGroup className="bg-background group-data-[collapsible=icon]:hidden">
-          <InputGroupAddon>
-            <SearchIcon />
-          </InputGroupAddon>
-          <InputGroupInput
-            readOnly
-            placeholder={m.search}
-            aria-label={m.searchHint}
-            aria-haspopup="dialog"
-            className="cursor-pointer"
-            onClick={openSearch}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault()
-                openSearch()
-              }
-            }}
-          />
-          <InputGroupAddon align="inline-end">
-            <Kbd>⌘K</Kbd>
-          </InputGroupAddon>
-        </InputGroup>
+        <div className="flex items-center gap-1 group-data-[collapsible=icon]:hidden">
+          <InputGroup className="min-w-0 flex-1 bg-background">
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+            <InputGroupInput
+              readOnly
+              placeholder={m.search}
+              aria-label={m.searchHint}
+              aria-haspopup="dialog"
+              className="cursor-pointer"
+              onClick={openSearch}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault()
+                  openSearch()
+                }
+              }}
+            />
+            <InputGroupAddon align="inline-end">
+              <Kbd>⌘K</Kbd>
+            </InputGroupAddon>
+          </InputGroup>
+          {!isMobile && bell}
+        </div>
         <SidebarMenu className="hidden group-data-[collapsible=icon]:flex">
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -86,6 +93,11 @@ export function AppSidebar({
               <span>{m.search}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          {!isMobile && bell && (
+            <SidebarMenuItem className="flex justify-center">
+              {bell}
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="scroll-fade">
