@@ -176,9 +176,9 @@ export function IntegrationsView({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setDisconnecting("chat")}
+              onClick={() => setManagingWhatsapp(true)}
             >
-              {t.koblipChat.disconnect}
+              {t.koblipChat.manage}
             </Button>
           </div>
         ) : (
@@ -415,7 +415,9 @@ export function IntegrationsView({
         </>
       )}
 
-      {sender && (
+      {/* Koblip Chat holds the business's own WhatsApp number, so its
+          Manage opens the same panel as WhatsApp's. */}
+      {(sender || usable) && (
         <WhatsappPanel
           open={managingWhatsapp}
           onClose={() => setManagingWhatsapp(false)}

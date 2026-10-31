@@ -116,7 +116,7 @@ const integrations = {
       "WhatsApp reminders and broadcasts through Koblip Chat, which holds your official Meta connection. Replies arrive in your Koblip Chat inbox.",
     connect: "Connect",
     connected: "Connected",
-    disconnect: "Disconnect",
+    manage: "Manage",
     disconnected: "Koblip Chat disconnected.",
     workspace: (name: string) => `Connected to ${name}`,
     reconnect: "Reconnect",

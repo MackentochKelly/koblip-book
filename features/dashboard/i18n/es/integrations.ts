@@ -117,7 +117,7 @@ const integrations: typeof en = {
       "Recordatorios y difusiones por WhatsApp con Koblip Chat, que tiene tu conexión oficial con Meta. Las respuestas llegan a tu bandeja de Koblip Chat.",
     connect: "Conectar",
     connected: "Conectado",
-    disconnect: "Desconectar",
+    manage: "Gestionar",
     disconnected: "Koblip Chat desconectado.",
     workspace: (name: string) => `Conectado a ${name}`,
     reconnect: "Reconectar",

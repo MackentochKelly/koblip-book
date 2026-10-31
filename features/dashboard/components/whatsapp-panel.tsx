@@ -9,8 +9,8 @@ import { useOwnerMessages } from "../i18n/provider"
 import type { ChatConnection } from "../types/chat-connection"
 import type { Sender } from "@/types/whatsapp"
 
-// WhatsApp, opened from Manage on Integrations: which number sends
-// (senderFor). On Koblip's number, "Use your own number" connects the
+// WhatsApp, opened from Manage on Integrations (WhatsApp's row or Koblip
+// Chat's): which number sends (senderFor), when one does. On Koblip's number, "Use your own number" connects the
 // business's Koblip Chat workspace; once connected, its workspace and how
 // its messages stand, and Disconnect goes back to Koblip's number.
 export function WhatsappPanel({
@@ -24,7 +24,7 @@ export function WhatsappPanel({
 }: {
   open: boolean
   onClose: () => void
-  sender: Sender
+  sender: Sender | null
   connection: ChatConnection | null
   // The Koblip Chat window is open (useConnectWindow on the page).
   connecting: boolean
@@ -55,7 +55,7 @@ export function WhatsappPanel({
       }
     >
       <div className="flex flex-col gap-2">
-        <p className="text-sm">{m.whatsapp.sendingFrom[sender]}</p>
+        {sender && <p className="text-sm">{m.whatsapp.sendingFrom[sender]}</p>}
         {connected && (
           <p className="text-sm text-muted-foreground">
             {connection.messages === "ready"
