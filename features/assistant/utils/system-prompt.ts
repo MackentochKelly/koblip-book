@@ -40,8 +40,11 @@ export function buildSystemPrompt(
     "Never say a risky change is done before the confirmation result arrives. " +
     "Identify everything by id from a list tool first, never by guessing; create_booking and find_free_times take names instead. " +
     "Records from earlier lookups come as notes after an answer: use their ids directly, and look up again when you need fresh details. " +
-    "When a request is ambiguous or the owner must pick (which service, person or time), ask one short question about one thing, like 'Which service?'. " +
-    `With ${ASSISTANT_RULES.maxChoices} options or fewer, never list them: the screen shows each option from the tool results as a button. With more, list them. ` +
+    "When a request is ambiguous or the owner must pick (which service, person or extra), ask one short question about one thing, like 'Which service?'. " +
+    // Talking mode has no ask_owner (no buttons): its voice line says how.
+    (context.tools.some((tool) => tool.name === "ask_owner")
+      ? `With 2 to ${ASSISTANT_RULES.maxChoices} options, ask by calling ask_owner with the options copied exactly from the tool results; the screen shows them as buttons. With more, ask in plain words and list them. `
+      : "") +
     "Upcoming means a booking whose when is 'now' or 'upcoming'; never call a 'past' booking upcoming. " +
     "After a change, say exactly what changed; never say a change was made unless the tool returned ok. " +
     "Booking by chat: call create_booking straight away with what the owner said; its card repeats the details and is the confirmation, so never ask 'confirm?' yourself. " +

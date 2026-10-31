@@ -4,7 +4,7 @@ import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { META_TEXT_MODEL, getMetaAiClient } from "@/lib/meta-ai"
 
 export type AnswerCheck =
-  | { ok: true; choices: string[] }
+  | { ok: true }
   | { ok: false; problems: string[] }
   | { ok: "unknown" }
 
@@ -38,9 +38,6 @@ export async function checkAnswer(input: {
                 "Every fact in the answer (numbers, counts, dates, times, names, prices, statuses) " +
                 "must appear in, or follow directly from, the tool results. " +
                 "Friendly words, questions back to the owner, and offers of help are fine and need no support. " +
-                "If the answer asks the owner to pick one of several options (for example 'Which service?'), put each option in choices " +
-                "exactly as it is written in the tool results, even when the answer does not name them, since the screen shows them as buttons; " +
-                "otherwise choices is an empty array. " +
                 "If something is not supported, set supported to false and list each problem in one short sentence.",
             },
             {
@@ -63,9 +60,8 @@ export async function checkAnswer(input: {
                 properties: {
                   supported: { type: "boolean" },
                   problems: { type: "array", items: { type: "string" } },
-                  choices: { type: "array", items: { type: "string" } },
                 },
-                required: ["supported", "problems", "choices"],
+                required: ["supported", "problems"],
               },
             },
           },
@@ -96,17 +92,9 @@ export async function checkAnswer(input: {
     const verdict = parsed as {
       supported?: unknown
       problems?: unknown
-      choices?: unknown
     }
     if (verdict.supported === true) {
-      // Malformed choices never fail the answer: they just mean no
-      // buttons.
-      const choices =
-        Array.isArray(verdict.choices) &&
-        verdict.choices.every((c) => typeof c === "string")
-          ? (verdict.choices as string[])
-          : []
-      return { ok: true, choices }
+      return { ok: true }
     }
     if (
       verdict.supported === false &&

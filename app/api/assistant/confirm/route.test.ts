@@ -259,6 +259,29 @@ test("execute failure streams a failed step and server text", async () => {
   expect(list[3]).toEqual({ type: "done" })
 })
 
+test("an execute that throws still ends with a result, in both languages", async () => {
+  for (const [language, text] of [
+    ["en", "I couldn't confirm it went through. Check the page to be sure."],
+    ["es", "No pude confirmar si se hizo. Revisa la página para estar seguro."],
+  ] as const) {
+    vi.mocked(getOwnerLanguage).mockResolvedValue(language)
+    vi.mocked(logAssistantAction).mockClear()
+    execute.mockRejectedValueOnce(new Error("database is locked"))
+    const id = await store()
+    const list = await events(
+      await POST(post({ businessId: "b1", id, accept: true }))
+    )
+    expect(list.slice(1)).toEqual([
+      expect.objectContaining({ type: "step", status: "failed" }),
+      { type: "result", ok: false, text, kind: "bookings" },
+      { type: "done" },
+    ])
+    expect(logAssistantAction).toHaveBeenCalledWith(
+      expect.objectContaining({ summary: text, status: "failed" })
+    )
+  }
+})
+
 test("accept false answers in the owner's language", async () => {
   vi.mocked(getOwnerLanguage).mockResolvedValue("es")
   const id = await store()

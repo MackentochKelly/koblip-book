@@ -22,6 +22,7 @@ import {
 } from "../utils/system-prompt"
 import { memoryRow, type MemoryRow } from "../utils/memory"
 import { storeAnswerCheck } from "./answer-checks"
+import { ASK_OWNER_TOOL, askOf } from "./ask-owner"
 import { storePendingAction } from "./pending-actions"
 
 export interface RunChatContext {
@@ -240,6 +241,12 @@ export async function* runChat(
   }
   const t = serverMessagesFor(context.language)
   const byName = new Map(tools.map((t) => [t.definition.name, t]))
+  // Talking mode has no buttons, so it never gets ask_owner: options are
+  // said out loud.
+  const offered = [
+    ...tools.map((tool) => tool.definition),
+    ...(context.voice === true ? [] : [ASK_OWNER_TOOL]),
+  ]
   const { date, time, weekday } = zonedNow(context.now, context.timeZone)
   // The newest few answers that carry records.
   const remembered = new Set(
@@ -253,9 +260,9 @@ export async function* runChat(
     {
       role: "developer",
       content: buildSystemPrompt(context.businessName, {
-        tools: tools.map((t) => ({
-          name: t.definition.name,
-          description: t.definition.description,
+        tools: offered.map((definition) => ({
+          name: definition.name,
+          description: definition.description,
         })),
       }),
     },
@@ -311,12 +318,12 @@ export async function* runChat(
           {
             model: META_TEXT_MODEL,
             messages: history,
-            tools: tools.map((t) => ({
+            tools: offered.map((definition) => ({
               type: "function",
               function: {
-                name: t.definition.name,
-                description: t.definition.description,
-                parameters: t.definition.parameters,
+                name: definition.name,
+                description: definition.description,
+                parameters: definition.parameters,
               },
             })),
             stream: true,
@@ -450,9 +457,6 @@ export async function* runChat(
           ),
           answer: text,
           label: t.steps.checking,
-          // The picker holds the free times, so they never come as
-          // buttons too.
-          withChoices: freeTimes === null && !spoken,
         })
         if ("error" in stored) {
           yield { type: "notice", kind: "unverified" }
@@ -483,6 +487,48 @@ export async function* runChat(
       })
       for (let i = 0; i < toolCalls.length; i += 1) {
         const call = toolCalls[i]
+        if (
+          call.function.name === ASK_OWNER_TOOL.name &&
+          context.voice !== true
+        ) {
+          // The question and its buttons end the reply at once. Options
+          // must come word for word from this request's tool results;
+          // anything else goes back to the model to ask in plain words.
+          let args: unknown = null
+          try {
+            args = JSON.parse(call.function.arguments)
+          } catch {
+            args = null
+          }
+          const ask = askOf(
+            args,
+            history.flatMap((m) =>
+              m.role === "tool" && typeof m.content === "string"
+                ? [m.content]
+                : []
+            )
+          )
+          if (ask === null) {
+            history.push({
+              role: "tool",
+              tool_call_id: call.id,
+              content: JSON.stringify({ error: t.loop.askInvalid }),
+            })
+            continue
+          }
+          if (textSent) {
+            yield { type: "text", delta: "\n\n" }
+          }
+          yield { type: "text", delta: ask.question }
+          yield { type: "choices", options: ask.options }
+          const items = [...sources].flatMap(([kind, count]) =>
+            count > 0 ? [{ kind, count }] : []
+          )
+          if (items.length > 0) yield { type: "sources", items }
+          yield* memoryEvent()
+          yield { type: "done" }
+          return
+        }
         const tool = byName.get(call.function.name)
         if (tool?.definition.needsConfirm && tool.confirm) {
           const stored = yield* handleConfirmCall(

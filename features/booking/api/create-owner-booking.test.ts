@@ -308,3 +308,32 @@ test("someone else's business fails", async () => {
   })
   expect(result).toEqual({ status: "failed" })
 })
+
+test("a page refresh that throws after the save still reports booked", async () => {
+  const { revalidatePath } = await import("next/cache")
+  vi.mocked(revalidatePath).mockImplementationOnce(() => {
+    throw new Error("refresh failed")
+  })
+  const result = await createOwnerBooking({
+    businessId: "biz-owner",
+    serviceId: "svc-all",
+    teamMemberId: null,
+    addonIds: [],
+    date: "2026-06-01",
+    time: "11:00",
+    name: "Walk In",
+    phone: null,
+    note: null,
+    allowConflict: false,
+  })
+  expect(result.status).toBe("booked")
+  if (result.status !== "booked") {
+    return
+  }
+  const { db } = await import("@/lib/db")
+  const [row] = await db
+    .select()
+    .from(bookings)
+    .where(eq(bookings.id, result.bookingId))
+  expect(row).toMatchObject({ customerName: "Walk In", status: "confirmed" })
+})

@@ -40,12 +40,15 @@ const messages = {
     invalidArgs: "those arguments were not valid, ask for what is missing",
     lookupFailed: "that lookup failed, try asking differently",
     tooMany: "too many pending confirmations, answer one first",
+    askInvalid:
+      "no buttons: options must be 2 or more names copied exactly from this turn's tool results; otherwise ask in plain words and list the options",
     stopped: (maxSteps: number) =>
       `I ran out of steps after ${maxSteps} lookups — ask me to narrow it down.`,
   },
   confirm: {
     unchanged: "Okay, nothing was changed.",
     unavailable: "That action is no longer available.",
+    unknown: "I couldn't confirm it went through. Check the page to be sure.",
   },
   // Risky tools never run from a model call; the model only relays these.
   tapFirst: {

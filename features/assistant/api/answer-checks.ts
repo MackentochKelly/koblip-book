@@ -1,6 +1,5 @@
 import "server-only"
 
-import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type { AssistantStreamEvent } from "../types"
 import { checkAnswer } from "./check-answer"
 
@@ -16,7 +15,6 @@ export interface PendingCheck {
   toolResults: string[]
   answer: string
   label: string // the step chip's words, in the owner's language
-  withChoices: boolean // false when the answer has a time picker
   createdAt: number
 }
 
@@ -67,33 +65,9 @@ export function takeAnswerCheck(
   return check
 }
 
-// Buttons from a passed answer check, or null for no buttons: trimmed,
-// de-duplicated, and only options that appear word for word in the
-// request's tool results. A bad choice list never fails the answer.
-function cleanChoices(
-  choices: string[],
-  toolResults: string[]
-): string[] | null {
-  const options: string[] = []
-  for (const choice of choices) {
-    const name = choice.trim()
-    if (
-      name === "" ||
-      name.length > ASSISTANT_RULES.maxChoiceChars ||
-      !toolResults.some((result) => result.includes(name)) ||
-      options.includes(name)
-    ) {
-      continue
-    }
-    options.push(name)
-  }
-  return options.length >= 2 && options.length <= ASSISTANT_RULES.maxChoices
-    ? options
-    : null
-}
-
-// The check's events for the reply it belongs to: its step chip ends, a
-// notice when the answer could not be backed, buttons when it passed.
+// The check's events for the reply it belongs to: its step chip ends, and
+// a notice when the answer could not be backed. Buttons never wait on it:
+// they come with the answer (ask_owner).
 export async function* answerCheckEvents(
   check: PendingCheck,
   signal?: AbortSignal
@@ -112,9 +86,6 @@ export async function* answerCheckEvents(
   }
   if (verdict.ok !== true) {
     yield { type: "notice", kind: "unverified" }
-  } else if (check.withChoices) {
-    const options = cleanChoices(verdict.choices, check.toolResults)
-    if (options !== null) yield { type: "choices", options }
   }
   yield { type: "done" }
 }

@@ -127,9 +127,17 @@ export async function POST(request: Request) {
           })
         )
         // Only the stored args run. Nothing else from the request body.
-        const outcome = tool?.confirm
-          ? await tool.confirm.execute(pending.args)
-          : { ok: false, doneText: t.confirm.unavailable }
+        // The card is already taken, so a throw still ends with a result:
+        // the change may have happened, so the owner is told to check.
+        let outcome: { ok: boolean; doneText: string }
+        try {
+          outcome = tool?.confirm
+            ? await tool.confirm.execute(pending.args)
+            : { ok: false, doneText: t.confirm.unavailable }
+        } catch {
+          console.error("assistant-confirm-failed")
+          outcome = { ok: false, doneText: t.confirm.unknown }
+        }
         await logAssistantAction({
           businessId: owned.business.id,
           ownerId: session.userId,

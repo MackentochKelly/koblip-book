@@ -38,12 +38,15 @@ const messages: typeof en = {
     invalidArgs: "esos argumentos no eran válidos, pide lo que falte",
     lookupFailed: "esa búsqueda falló, pregúntalo de otra forma",
     tooMany: "demasiadas confirmaciones pendientes, responde una primero",
+    askInvalid:
+      "sin botones: las opciones deben ser 2 o más nombres copiados tal cual de los resultados de herramientas de este turno; si no, pregunta con palabras y enumera las opciones",
     stopped: (maxSteps: number) =>
       `Me quedé sin pasos después de ${maxSteps} búsquedas — pídeme algo más concreto.`,
   },
   confirm: {
     unchanged: "Vale, no se cambió nada.",
     unavailable: "Esa acción ya no está disponible.",
+    unknown: "No pude confirmar si se hizo. Revisa la página para estar seguro.",
   },
   tapFirst: {
     cancel: "cancelar necesita tu toque primero",

@@ -50,6 +50,12 @@ import { addDays, zonedInstant, zonedToday } from "../utils/zoned-time"
 export async function createOwnerBooking(
   input: OwnerBookingInput
 ): Promise<OwnerBookingResult> {
+  // Set once the booking is saved: what the refresh after the save needs.
+  let saved: {
+    outcome: OwnerBookingResult
+    slug: string
+    businessId: string
+  } | null = null
   try {
     const name = input.name.trim()
     if (name.length < 1 || name.length > BOOKING_RULES.maxCustomerName) {
@@ -292,13 +298,20 @@ export async function createOwnerBooking(
     if (outcome.status === "conflict") {
       return outcome
     }
-    revalidatePath("/b/" + business.slug)
-    revalidatePath("/dashboard", "layout")
-    // Google Calendar hears of it now, without the booking waiting.
-    requestGoogleSync(business.id)
-    return outcome
+    saved = { outcome, slug: business.slug, businessId: business.id }
   } catch {
     console.error("createOwnerBooking failed")
     return { status: "failed" }
   }
+  // The booking is saved: what follows only refreshes pages and tells
+  // Google Calendar, so a failure here never reports it as failed.
+  try {
+    revalidatePath("/b/" + saved.slug)
+    revalidatePath("/dashboard", "layout")
+    // Google Calendar hears of it now, without the booking waiting.
+    requestGoogleSync(saved.businessId)
+  } catch {
+    console.error("createOwnerBooking refresh failed")
+  }
+  return saved.outcome
 }

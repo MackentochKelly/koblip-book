@@ -9,6 +9,7 @@ import { createServer } from "node:http"
 import next from "next"
 import { WebSocket, WebSocketServer } from "ws"
 import { relayVoice } from "./server/voice-relay.mjs"
+import { handleVoiceUpgrade } from "./server/voice-upgrade.mjs"
 import { createVoiceSlots } from "./server/voice-slots.mjs"
 
 const port = parseInt(process.env.PORT || "3000", 10)
@@ -24,66 +25,25 @@ const wss = new WebSocketServer({ noServer: true })
 // Open live voice sessions per owner (each is a paid upstream session).
 const voiceSlots = createVoiceSlots()
 
-function rejectUpgrade(socket, status, text) {
-  socket.write(`HTTP/1.1 ${status} ${text}\r\nConnection: close\r\n\r\n`)
-  socket.destroy()
-}
+// Same hostname and port this server listens on.
+const voiceCheckUrl = `http://${hostname}:${port}/api/voice/check`
 
-async function handleVoiceUpgrade(request, socket, head) {
-  // Same origin only: the Origin host must equal the Host header.
-  let originHost = null
-  try {
-    originHost =
-      request.headers.origin == null
-        ? null
-        : new URL(request.headers.origin).host
-  } catch {
-    originHost = null
-  }
-  if (originHost === null || originHost !== request.headers.host) {
-    rejectUpgrade(socket, 403, "Forbidden")
-    return
-  }
-
-  // Owner checks stay inside Next: the internal check route sees the
-  // request's cookie. Same hostname and port this server listens on.
-  const url = new URL(request.url || "/", "http://x")
-  let check = null
-  try {
-    check = await fetch(
-      `http://${hostname}:${port}/api/voice/check${url.search}`,
-      { headers: request.headers.cookie ? { cookie: request.headers.cookie } : {} }
-    )
-  } catch {
-    rejectUpgrade(socket, 503, "Service Unavailable")
-    return
-  }
-  if (check.status !== 200) {
-    rejectUpgrade(socket, check.status, "Rejected")
-    return
-  }
-
-  const apiKey = process.env.MODEL_API_KEY
-  if (!apiKey) {
-    rejectUpgrade(socket, 503, "Service Unavailable")
-    return
-  }
-  const settings = await check.json()
-  // At most a few open at once per owner. The slot frees when the socket
-  // closes, however the session ends (or if the upgrade itself fails).
-  const release = voiceSlots.take(settings.ownerId, settings.maxOpenSessions)
-  if (!release) {
-    rejectUpgrade(socket, 429, "Too Many Requests")
-    return
-  }
-  socket.once("close", release)
-  wss.handleUpgrade(request, socket, head, (client) => {
-    relayVoice({
-      client,
-      openUpstream: (target) => new WebSocket(target),
-      settings,
-      apiKey,
-    })
+function startVoiceUpgrade(request, socket, head) {
+  void handleVoiceUpgrade({
+    request,
+    socket,
+    checkUrl: voiceCheckUrl,
+    apiKey: process.env.MODEL_API_KEY,
+    slots: voiceSlots,
+    accept: (settings) =>
+      wss.handleUpgrade(request, socket, head, (client) => {
+        relayVoice({
+          client,
+          openUpstream: (target) => new WebSocket(target),
+          settings,
+          apiKey: process.env.MODEL_API_KEY,
+        })
+      }),
   })
 }
 
@@ -91,7 +51,7 @@ const server = createServer((req, res) => handle(req, res))
 server.on("upgrade", (request, socket, head) => {
   const url = new URL(request.url || "/", "http://x")
   if (url.pathname === "/api/voice/listen") {
-    handleVoiceUpgrade(request, socket, head)
+    startVoiceUpgrade(request, socket, head)
     return
   }
   handleUpgrade(request, socket, head)

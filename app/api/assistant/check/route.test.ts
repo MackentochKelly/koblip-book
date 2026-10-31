@@ -10,7 +10,7 @@ vi.mock("@/features/assistant/api/rate-limit", () => ({
   checkAssistantRateLimit: vi.fn(() => true),
 }))
 vi.mock("@/features/assistant/api/check-answer", () => ({
-  checkAnswer: vi.fn(async () => ({ ok: true, choices: ["Cut", "Fade"] })),
+  checkAnswer: vi.fn(async () => ({ ok: true })),
 }))
 
 const { getSession } = await import("@/lib/dal")
@@ -43,7 +43,7 @@ async function events(res: Response) {
     .map((line) => JSON.parse(line))
 }
 
-function store(ownerId = "u1", businessId = "b1", withChoices = true) {
+function store(ownerId = "u1", businessId = "b1") {
   const stored = storeAnswerCheck({
     ownerId,
     businessId,
@@ -51,7 +51,6 @@ function store(ownerId = "u1", businessId = "b1", withChoices = true) {
     toolResults: ['{"data":{"services":["Cut","Fade"]}}'],
     answer: "Which one?",
     label: "Checking the answer…",
-    withChoices,
   })
   if ("error" in stored) throw new Error("not stored")
   return stored.id
@@ -65,11 +64,10 @@ beforeEach(() => {
   vi.mocked(checkAnswer).mockClear()
 })
 
-test("runs the check once and streams its outcome", async () => {
+test("runs the check once and streams its outcome, never buttons", async () => {
   const id = store()
   expect(await events(await POST(post({ businessId: "b1", id })))).toEqual([
     { type: "step", id, label: "Checking the answer…", status: "done" },
-    { type: "choices", options: ["Cut", "Fade"] },
     { type: "done" },
   ])
   // Single use.
@@ -77,12 +75,6 @@ test("runs the check once and streams its outcome", async () => {
     { type: "error", code: "expired" },
   ])
   expect(checkAnswer).toHaveBeenCalledTimes(1)
-})
-
-test("an answer with a time picker gets no buttons", async () => {
-  const id = store("u1", "b1", false)
-  const sent = await events(await POST(post({ businessId: "b1", id })))
-  expect(sent.some((e) => e.type === "choices")).toBe(false)
 })
 
 test("a failed check marks the answer unchecked", async () => {
