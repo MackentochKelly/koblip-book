@@ -116,6 +116,8 @@ const messages: typeof en = {
     unknown: "No se pudo cancelar: reserva desconocida.",
     failed: (error: string) => `No se pudo cancelar la reserva (${error}).`,
     done: "Reserva cancelada.",
+    alreadyCancelled: "Esa reserva ya estaba cancelada.",
+    started: "No se canceló: esa reserva ya empezó.",
   },
   deleteService: {
     unknown: "No se pudo eliminar: servicio desconocido.",
@@ -219,6 +221,9 @@ const messages: typeof en = {
       "bookingId es obligatorio: lista las reservas primero y usa un id de la lista",
     bookingUnknown:
       "id de reserva desconocido: lista las reservas primero y usa un id de la lista",
+    bookingCancelled: "esa reserva ya está cancelada",
+    bookingStarted:
+      "esa reserva ya empezó o terminó, así que no se puede cancelar; set_booking_status puede marcarla completed o no_show",
     statusInvalid:
       "status debe ser confirmed, completed o no_show (cancelar necesita un toque)",
     rowsInvalid: (max: number) =>

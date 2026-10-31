@@ -30,6 +30,7 @@ import { setBookingStatus } from "@/features/dashboard/api/booking-actions"
 import {
   daysInRange,
   getBookingCounts,
+  getBooking,
   getBookings,
   getBookingsBetween,
   getOwnerBusiness,
@@ -59,6 +60,8 @@ import {
   formatWeekday,
 } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
+import { bookingActions } from "@/features/dashboard/utils/booking-filters"
+import type { OwnerBooking } from "@/features/dashboard/types"
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -479,6 +482,19 @@ export function buildAssistantTools(
     } catch {
       // The action already happened; the row is nice to have.
     }
+  }
+  // The booking to cancel, by id, only when the bookings screen would let
+  // the owner cancel it (confirmed, not started yet). Describe and execute
+  // both use this.
+  const cancellableBooking = async (
+    bookingId: string
+  ): Promise<OwnerBooking | "unknown" | "cancelled" | "started"> => {
+    const booking = await getBooking(businessId, bookingId)
+    if (!booking) return "unknown"
+    if (bookingActions(booking, new Date().toISOString()).includes("cancel")) {
+      return booking
+    }
+    return booking.status === "cancelled" ? "cancelled" : "started"
   }
   // Shared checks for update_service: describe and execute both use this,
   // re-reading the service each time because it may change between calls.
@@ -1693,16 +1709,17 @@ export function buildAssistantTools(
           if (!a || typeof a.bookingId !== "string" || a.bookingId === "") {
             return { error: t.errors.bookingIdRequired }
           }
-          const [upcoming, past] = await Promise.all([
-            getBookings(businessId, "upcoming"),
-            getBookings(businessId, "past"),
-          ])
-          const booking = [...upcoming, ...past].find(
-            (b) => b.id === a.bookingId
-          )
-          if (!booking) {
+          const found = await cancellableBooking(a.bookingId)
+          if (found === "unknown") {
             return { error: t.errors.bookingUnknown }
           }
+          if (found === "cancelled") {
+            return { error: t.errors.bookingCancelled }
+          }
+          if (found === "started") {
+            return { error: t.errors.bookingStarted }
+          }
+          const booking = found
           return {
             title: t.cards.cancel,
             action: t.actions.cancelBooking,
@@ -1715,6 +1732,18 @@ export function buildAssistantTools(
           const bookingId = a?.bookingId
           if (typeof bookingId !== "string" || bookingId === "") {
             return { ok: false, doneText: t.cancel.unknown }
+          }
+          // Checked again at the tap: it may have started or been
+          // cancelled since the card showed.
+          const found = await cancellableBooking(bookingId)
+          if (found === "unknown") {
+            return { ok: false, doneText: t.cancel.unknown }
+          }
+          if (found === "cancelled") {
+            return { ok: false, doneText: t.cancel.alreadyCancelled }
+          }
+          if (found === "started") {
+            return { ok: false, doneText: t.cancel.started }
           }
           const result = await cancelBooking(businessId, bookingId)
           if (!result.ok) {

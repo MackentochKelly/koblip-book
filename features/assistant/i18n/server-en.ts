@@ -119,6 +119,8 @@ const messages = {
     unknown: "Could not cancel: unknown booking.",
     failed: (error: string) => `Could not cancel the booking (${error}).`,
     done: "Cancelled the booking.",
+    alreadyCancelled: "That booking was already cancelled.",
+    started: "Not cancelled: that booking has already started.",
   },
   deleteService: {
     unknown: "Could not delete: unknown service.",
@@ -222,6 +224,9 @@ const messages = {
       "bookingId is required: list bookings first and use an id from the list",
     bookingUnknown:
       "unknown booking id: list bookings first and use an id from the list",
+    bookingCancelled: "that booking is already cancelled",
+    bookingStarted:
+      "that booking has already started or ended, so it cannot be cancelled; set_booking_status can mark it completed or no_show",
     statusInvalid:
       "status must be confirmed, completed or no_show (cancelling needs a tap)",
     rowsInvalid: (max: number) =>

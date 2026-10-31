@@ -194,6 +194,27 @@ export async function getBookings(
   )
 }
 
+// One booking of this business by id, or null. For acting on a single
+// booking (the assistant's cancel), with no list cap in the way.
+export async function getBooking(
+  businessId: string,
+  bookingId: string
+): Promise<OwnerBooking | null> {
+  const business = await ownedBusiness(businessId)
+  const [row] = await db
+    .select()
+    .from(bookings)
+    .where(and(eq(bookings.id, bookingId), eq(bookings.businessId, business.id)))
+    .limit(1)
+  if (!row) return null
+  const addonsByBooking = await getBookingAddons([row.id])
+  return toOwnerBooking(
+    row,
+    business.timezone,
+    addonsByBooking.get(row.id) ?? []
+  )
+}
+
 export async function getBookingCounts(
   businessId: string
 ): Promise<{ today: number; upcoming: number }> {
