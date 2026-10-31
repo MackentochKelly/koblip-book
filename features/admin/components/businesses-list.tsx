@@ -44,6 +44,10 @@ export function BusinessesList({
                 <span key={row.id} className="text-muted-foreground">{formatWeekday(row.weekday, m.locale)} · {formatClock(row.opensAt, m.locale)}–{formatClock(row.closesAt, m.locale)}</span>
               )}
             </div>)}
+            {business.customers && business.customers.length > 0 && <div className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">{t.addedCustomers}</span>
+              {business.customers.map((customer) => <span key={customer.id} className="text-muted-foreground">{customer.phone ? `${customer.name} · ${customer.phone}` : customer.name}</span>)}
+            </div>}
           </ItemContent>
           <ItemActions>
             <Button

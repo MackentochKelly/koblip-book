@@ -3,7 +3,12 @@ import "server-only"
 import { and, inArray, isNull, lt } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
-import { businessHours, businesses, teamMemberHours } from "@/lib/db/schema"
+import {
+  businessHours,
+  businesses,
+  customers,
+  teamMemberHours,
+} from "@/lib/db/schema"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 
 // Deletes imports nobody claimed and nobody confirmed that are older than
@@ -32,6 +37,7 @@ export async function purgeUnclaimedImports(
     const ids = stale.map((row) => row.id)
     await saveAll([
       db.delete(teamMemberHours).where(inArray(teamMemberHours.businessId, ids)),
+      db.delete(customers).where(inArray(customers.businessId, ids)),
       db.delete(businessHours).where(inArray(businessHours.businessId, ids)),
       db.delete(businesses).where(inArray(businesses.id, ids)),
     ])

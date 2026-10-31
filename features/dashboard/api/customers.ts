@@ -5,7 +5,7 @@ import { notFound } from "next/navigation"
 import { customerKey } from "@/lib/customer-key"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
-import { bookingAddons, bookings, businesses } from "@/lib/db/schema"
+import { bookingAddons, bookings, businesses, customers } from "@/lib/db/schema"
 import type { OwnerBooking, OwnerCustomer } from "../types"
 
 function zonedDateTime(
@@ -112,6 +112,8 @@ const MAX_CUSTOMER_BOOKINGS = 100
 // Up to 500 customers, counted by the database (one row per customer, not
 // per booking): those with a next booking first (soonest), then by latest
 // activity. Name and phone come from each customer's latest booking.
+// Customers the owner added who have not booked yet come first, newest
+// first, so one just added is in sight.
 export async function getCustomers(
   businessId: string
 ): Promise<OwnerCustomer[]> {
@@ -149,8 +151,30 @@ export async function getCustomers(
       bookings.customerKey
     )
     .limit(MAX_CUSTOMERS)
+  const saved = await db
+    .select()
+    .from(customers)
+    .where(eq(customers.businessId, business.id))
+    .orderBy(desc(customers.createdAt))
+  const booked = new Set(groups.map((group) => group.key))
+  const added: OwnerCustomer[] = saved
+    .filter((customer) => !booked.has(customer.customerKey))
+    .map((customer) => ({
+      key: customer.customerKey,
+      name: customer.name,
+      phone: customer.phone,
+      bookings: 0,
+      completed: 0,
+      noShows: 0,
+      cancelled: 0,
+      lastVisit: null,
+      firstBooking: null,
+      nextBooking: null,
+      spentMinor: 0,
+      currency: business.currency,
+    }))
   if (groups.length === 0) {
-    return []
+    return added.slice(0, MAX_CUSTOMERS)
   }
 
   const ranked = db
@@ -181,7 +205,7 @@ export async function getCustomers(
 
   const day = (iso: string | null) =>
     iso === null ? null : zonedDateTime(iso, business.timezone).date
-  return groups.map((group) => ({
+  const fromBookings: OwnerCustomer[] = groups.map((group) => ({
     key: group.key,
     name: latest.get(group.key)?.name ?? "",
     phone: latest.get(group.key)?.phone ?? null,
@@ -195,6 +219,7 @@ export async function getCustomers(
     spentMinor: group.spentMinor,
     currency: business.currency,
   }))
+  return [...added, ...fromBookings].slice(0, MAX_CUSTOMERS)
 }
 
 // One customer's latest 100 bookings, newest first.

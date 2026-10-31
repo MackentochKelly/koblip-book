@@ -124,6 +124,13 @@ const bookings = {
     visitsLabel: "Visits",
     noShows: "No-shows",
     spent: "Spent",
+    add: "Add customer",
+    name: "Name",
+    phone: "Phone (optional)",
+    added: (name: string) => `${name} added`,
+    nameRequired: "Add a name",
+    badPhone: "Check the phone number",
+    exists: "Already in your customers",
   },
 }
 

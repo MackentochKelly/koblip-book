@@ -124,6 +124,13 @@ const bookings: typeof en = {
     visitsLabel: "Visitas",
     noShows: "Ausencias",
     spent: "Gastado",
+    add: "Agregar cliente",
+    name: "Nombre",
+    phone: "Teléfono (opcional)",
+    added: (name: string) => `${name} agregado`,
+    nameRequired: "Agrega un nombre",
+    badPhone: "Revisa el número de teléfono",
+    exists: "Ya está en tus clientes",
   },
 }
 

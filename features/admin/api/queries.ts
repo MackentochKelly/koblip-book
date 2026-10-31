@@ -3,7 +3,7 @@ import "server-only"
 import { and, asc, count, desc, eq, gte, sql } from "drizzle-orm"
 import { requireAdmin } from "@/lib/dal"
 import { db } from "@/lib/db"
-import { bookings, businesses, teamMembers, teamMemberHours, user } from "@/lib/db/schema"
+import { bookings, businesses, customers, teamMembers, teamMemberHours, user } from "@/lib/db/schema"
 
 // Every list stops here; the newest come first.
 const MAX_ROWS = 200
@@ -53,6 +53,8 @@ export interface AdminBusiness {
   ownerEmail: string | null
   bookings: number
   team?: Array<{ id: string; name: string; hours: Array<typeof teamMemberHours.$inferSelect> }>
+  // Customers the owner added by hand (booking customers live in bookings).
+  customers?: Array<{ id: string; name: string; phone: string | null }>
 }
 
 export async function getBusinesses(): Promise<AdminBusiness[]> {
@@ -77,13 +79,14 @@ export async function getBusinesses(): Promise<AdminBusiness[]> {
     .leftJoin(bookingCount, eq(bookingCount.businessId, businesses.id))
     .where(realBusiness)
     .orderBy(desc(businesses.createdAt))
-  const [members, hours] = await Promise.all([
+  const [members, hours, saved] = await Promise.all([
     db.select().from(teamMembers).innerJoin(businesses, eq(businesses.id, teamMembers.businessId)).where(realBusiness).orderBy(asc(teamMembers.position)),
     db.select().from(teamMemberHours).innerJoin(businesses, eq(businesses.id, teamMemberHours.businessId)).where(realBusiness).orderBy(asc(teamMemberHours.weekday), asc(teamMemberHours.opensAt)),
+    db.select({ id: customers.id, businessId: customers.businessId, name: customers.name, phone: customers.phone }).from(customers).innerJoin(businesses, eq(businesses.id, customers.businessId)).where(realBusiness).orderBy(desc(customers.createdAt)),
   ])
   return rows.map((row) => ({ ...row, team: members.filter((m) => m.team_members.businessId === row.id).map(({ team_members: member }) => ({
     id: member.id, name: member.name, hours: hours.filter((h) => h.team_member_hours.teamMemberId === member.id).map((h) => h.team_member_hours),
-  })) }))
+  })), customers: saved.filter((c) => c.businessId === row.id).map(({ id, name, phone }) => ({ id, name, phone })) }))
 }
 
 export interface AdminOwner {
