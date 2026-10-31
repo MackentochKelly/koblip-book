@@ -50,6 +50,20 @@ export function AskCard({
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap gap-2">
+        {IDEAS.map(({ key, icon: Icon }) => (
+          <Button
+            key={key}
+            type="button"
+            variant="outline"
+            onClick={() => ask(messages.empty.suggestions[key])}
+          >
+            <Icon data-icon="inline-start" />
+            {messages.empty.suggestions[key]}
+          </Button>
+        ))}
+      </div>
+      {/* The box last, like a chat's. */}
       <form
         onSubmit={(event) => {
           event.preventDefault()
@@ -77,19 +91,6 @@ export function AskCard({
           </InputGroupAddon>
         </InputGroup>
       </form>
-      <div className="flex flex-wrap gap-2">
-        {IDEAS.map(({ key, icon: Icon }) => (
-          <Button
-            key={key}
-            type="button"
-            variant="outline"
-            onClick={() => ask(messages.empty.suggestions[key])}
-          >
-            <Icon data-icon="inline-start" />
-            {messages.empty.suggestions[key]}
-          </Button>
-        ))}
-      </div>
     </div>
   )
 }
