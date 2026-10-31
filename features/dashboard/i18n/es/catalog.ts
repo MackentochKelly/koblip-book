@@ -84,6 +84,9 @@ const catalog: typeof en = {
     offeredWith: "Se ofrece con",
   },
   team: {
+    workingHours: "Horario de trabajo",
+    sameHours: "Igual que el horario del negocio",
+    hoursRequired: "Añade al menos un día de trabajo.",
     title: "Equipo",
     empty: "Aún no hay equipo",
     addPerson: "Agregar una persona",

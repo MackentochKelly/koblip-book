@@ -990,13 +990,13 @@ export function buildAssistantTools(
     {
       definition: {
         name: "list_team",
-        description: "All team members with photo yes/no and service ids.",
+        description: "All team members with photo yes/no, service ids and working hours. No custom hours means business hours; custom hours are restricted to business hours.",
         parameters: schema({}),
         needsConfirm: false,
       },
       label: t.steps.team,
       run: async () => {
-        const [{ team }, teams] = await Promise.all([
+        const [{ team, memberHours }, teams] = await Promise.all([
           getOwnerBusiness(businessId),
           getServiceTeams(businessId),
         ])
@@ -1012,6 +1012,7 @@ export function buildAssistantTools(
           id: m.id,
           name: m.name,
           hasPhoto: m.photoUrl !== null,
+          hours: memberHours.filter((row) => row.teamMemberId === m.id).map(({ weekday, opensAt, closesAt }) => ({ weekday, opensAt, closesAt })),
           serviceIds: serviceIdsByMember.get(m.id) ?? [],
         }))
         const capped = rows.slice(0, 50)

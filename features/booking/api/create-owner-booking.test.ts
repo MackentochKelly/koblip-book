@@ -202,7 +202,7 @@ test("busy slot conflicts, allowConflict books anyway", async () => {
   expect(forced.status).toBe("booked")
 })
 
-test("closed day conflicts, allowConflict books anyway", async () => {
+test("closed day never auto-assigns off-duty staff even with allowConflict", async () => {
   const closed = await createOwnerBooking({
     businessId: "biz-owner",
     serviceId: "svc-all",
@@ -228,7 +228,7 @@ test("closed day conflicts, allowConflict books anyway", async () => {
     note: null,
     allowConflict: true,
   })
-  expect(forced.status).toBe("booked")
+  expect(forced).toEqual({ status: "conflict", reason: "closed" })
 })
 
 test("past dates within the owner window can be booked", async () => {

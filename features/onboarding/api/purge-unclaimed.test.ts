@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
-import { businessHours, businesses, user } from "@/lib/db/schema"
+import { businessHours, businesses, teamMembers, teamMemberHours, user } from "@/lib/db/schema"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 
 vi.mock("server-only", () => ({}))
@@ -105,6 +105,15 @@ test("deletes only old unowned unconfirmed imports, with their hours", async () 
     .select({ id: businessHours.id })
     .from(businessHours)
   expect(hours.map((row) => row.id)).toEqual(["h-owned"])
+})
+
+test("purge removes custom member hours for stale imports", async () => {
+  const { db } = await import("@/lib/db")
+  await db.insert(businesses).values({ id: "stale-hours", slug: "stale-hours", name: "Stale", timezone: "UTC", currency: "USD", createdAt: old })
+  await db.insert(teamMembers).values({ id: "stale-member", businessId: "stale-hours", name: "Member" })
+  await db.insert(teamMemberHours).values({ businessId: "stale-hours", teamMemberId: "stale-member", weekday: 1, opensAt: "09:00", closesAt: "17:00" })
+  await purgeUnclaimedImports()
+  expect(await db.select().from(teamMemberHours)).toEqual([])
 })
 
 test("never throws when the database is gone", async () => {

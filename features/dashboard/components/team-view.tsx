@@ -12,6 +12,10 @@ import {
 } from "@/components/ui/icons"
 import { toast } from "sonner"
 
+import { WeeklyHoursEditor } from "@/components/weekly-hours-editor"
+import { Switch } from "@/components/ui/switch"
+import { validHours, type HoursRow } from "@/lib/hours-rules"
+import { saveTeamMemberWithHours } from "../api/member-hours"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { FloatingActionButton } from "@/components/floating-action-button"
@@ -48,9 +52,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { initials } from "@/lib/initials"
 import {
-  createTeamMember,
   deleteTeamMember,
-  renameTeamMember,
   reorderTeam,
 } from "../api/actions"
 import { removeTeamMemberPhoto, setTeamMemberPhoto } from "../api/photo-actions"
@@ -71,8 +73,12 @@ const MEMBER_FORM = "member-form"
 export function TeamView({
   businessId,
   team,
+  hours,
+  memberHours,
 }: {
   businessId: string
+  hours: HoursRow[]
+  memberHours: (HoursRow & { teamMemberId: string })[]
   team: MemberRow[]
 }) {
   const router = useRouter()
@@ -222,6 +228,8 @@ export function TeamView({
         {editing !== null && (
           <MemberForm
             key={formKey}
+            hours={hours}
+            memberHours={editing === "new" ? [] : memberHours.filter((row) => row.teamMemberId === editing.id)}
             name={editing === "new" ? "" : editing.name}
             photo={
               editing !== "new" && (
@@ -236,13 +244,10 @@ export function TeamView({
                 />
               )
             }
-            onSave={(name) =>
+            onSave={(name, rows) =>
               startTransition(async () => {
-                const result =
-                  editing === "new"
-                    ? await createTeamMember(businessId, name)
-                    : await renameTeamMember(businessId, editing.id, name)
-                if (result.ok) {
+                const result = await saveTeamMemberWithHours(businessId, editing === "new" ? null : editing.id, name, rows).catch(() => null)
+                if (result?.ok) {
                   setEditing(null)
                   toast.success(c.saved)
                   router.refresh()
@@ -266,14 +271,23 @@ export function TeamView({
 
 function MemberForm({
   name: initial,
+  hours,
+  memberHours,
   photo,
   onSave,
 }: {
   name: string
+  hours: HoursRow[]
+  memberHours: HoursRow[]
   photo: React.ReactNode
-  onSave: (name: string) => void
+  onSave: (name: string, rows: HoursRow[] | null) => void
 }) {
-  const c = useOwnerMessages().catalog.common
+  const m = useOwnerMessages()
+  const c = m.catalog.common
+  const t = m.catalog.team
+  const [same, setSame] = useState(memberHours.length === 0)
+  const [rows, setRows] = useState(memberHours.length ? memberHours : hours)
+  const [hoursInvalid, setHoursInvalid] = useState(false)
   const [name, setName] = useState(initial)
   const [invalid, setInvalid] = useState(false)
   return (
@@ -283,7 +297,8 @@ function MemberForm({
       onSubmit={(event) => {
         event.preventDefault()
         if (!name.trim()) return setInvalid(true)
-        onSave(name.trim())
+        if (!same && (!validHours(rows) || rows.length === 0)) { setHoursInvalid(true); return }
+        onSave(name.trim(), same ? null : rows)
       }}
     >
       <FieldGroup>
@@ -293,12 +308,22 @@ function MemberForm({
           <Input
             {...noAutofill("member_name")}
             id="member-name"
+            className="min-h-11 md:min-h-9"
             value={name}
             onChange={(event) => setName(event.target.value)}
             maxLength={80}
             aria-invalid={invalid || undefined}
           />
           {invalid && <FieldError>{c.addName}</FieldError>}
+        </Field>
+        <Field>
+          <FieldLabel>{t.workingHours}</FieldLabel>
+          <FieldLabel htmlFor="member-same-hours" className="flex min-h-11 items-center justify-between gap-3">
+            {t.sameHours}
+            <Switch id="member-same-hours" checked={same} onCheckedChange={setSame} />
+          </FieldLabel>
+          {!same && <WeeklyHoursEditor rows={rows} onChange={(next) => { setRows(next); setHoursInvalid(false) }} locale={m.locale} labels={m.settings.hours} />}
+          {hoursInvalid && <FieldError>{rows.length === 0 ? t.hoursRequired : m.settings.hours.fillEvery}</FieldError>}
         </Field>
       </FieldGroup>
     </form>

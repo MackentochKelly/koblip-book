@@ -13,11 +13,12 @@ import {
   businessHours,
   businesses,
   services,
+  teamMemberHours,
   teamMemberServices,
   teamMembers,
 } from "@/lib/db/schema"
 import type { BookingInput, BookingResult } from "../types"
-import { availability } from "../utils/availability"
+import { workingMemberIds, availability } from "../utils/availability"
 import { checkAddons } from "../utils/addons"
 import { isBookable } from "../utils/is-bookable"
 import { loadGroupsForService } from "./addon-groups"
@@ -62,25 +63,27 @@ export async function createBooking(
       return { status: "failed" }
     }
 
-    const [serviceRows, hourRows, teamRows, linkRows] = await Promise.all([
-      db
-        .select()
-        .from(services)
-        .where(eq(services.businessId, business.id)),
-      db
-        .select()
-        .from(businessHours)
-        .where(eq(businessHours.businessId, business.id)),
-      db
-        .select()
-        .from(teamMembers)
-        .where(eq(teamMembers.businessId, business.id))
-        .orderBy(asc(teamMembers.position)),
-      db
-        .select()
-        .from(teamMemberServices)
-        .where(eq(teamMemberServices.businessId, business.id)),
-    ])
+    const [serviceRows, hourRows, teamRows, linkRows, memberHourRows] =
+      await Promise.all([
+        db.select().from(services).where(eq(services.businessId, business.id)),
+        db
+          .select()
+          .from(businessHours)
+          .where(eq(businessHours.businessId, business.id)),
+        db
+          .select()
+          .from(teamMembers)
+          .where(eq(teamMembers.businessId, business.id))
+          .orderBy(asc(teamMembers.position)),
+        db
+          .select()
+          .from(teamMemberServices)
+          .where(eq(teamMemberServices.businessId, business.id)),
+        db
+          .select()
+          .from(teamMemberHours)
+          .where(eq(teamMemberHours.businessId, business.id)),
+      ])
 
     if (
       !isBookable({
@@ -134,11 +137,7 @@ export async function createBooking(
 
     const confirmation = await inBookingTurn(business.id, async () => {
       const dayStart = zonedInstant(input.date, 0, business.timezone)
-      const dayEnd = zonedInstant(
-        addDays(input.date, 1),
-        0,
-        business.timezone
-      )
+      const dayEnd = zonedInstant(addDays(input.date, 1), 0, business.timezone)
       const taken = await db
         .select()
         .from(bookings)
@@ -146,13 +145,17 @@ export async function createBooking(
           and(
             eq(bookings.businessId, business.id),
             eq(bookings.status, "confirmed"),
-            gte(bookings.startAt, new Date(dayStart - 86_400_000).toISOString()),
+            gte(
+              bookings.startAt,
+              new Date(dayStart - 86_400_000).toISOString()
+            ),
             lte(bookings.startAt, new Date(dayEnd + 86_400_000).toISOString())
           )
         )
 
       const [day] = availability({
         hours: hourRows,
+        memberHours: memberHourRows,
         timeZone: business.timezone,
         durationMinutes: totalMinutes,
         seats: business.seats,
@@ -170,7 +173,17 @@ export async function createBooking(
       let teamMemberName: string | null = member?.name ?? null
       if (teamMemberId === null && allowedRows.length > 0) {
         const free = firstFreeMember(
-          allowedRows,
+          allowedRows.filter(
+            (row) =>
+              workingMemberIds(
+                hourRows,
+                memberHourRows,
+                [row.id],
+                input.date,
+                toMinutes(input.time),
+                totalMinutes
+              ).length > 0
+          ),
           taken,
           startInstant,
           endInstant

@@ -85,6 +85,9 @@ const catalog = {
     offeredWith: "Offered with",
   },
   team: {
+    workingHours: "Working hours",
+    sameHours: "Same as business hours",
+    hoursRequired: "Add at least one working day.",
     title: "Team",
     empty: "No team yet",
     addPerson: "Add a person",

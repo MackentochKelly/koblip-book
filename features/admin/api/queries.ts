@@ -1,9 +1,9 @@
 import "server-only"
 
-import { and, count, desc, eq, gte, sql } from "drizzle-orm"
+import { and, asc, count, desc, eq, gte, sql } from "drizzle-orm"
 import { requireAdmin } from "@/lib/dal"
 import { db } from "@/lib/db"
-import { bookings, businesses, user } from "@/lib/db/schema"
+import { bookings, businesses, teamMembers, teamMemberHours, user } from "@/lib/db/schema"
 
 // Every list stops here; the newest come first.
 const MAX_ROWS = 200
@@ -52,6 +52,7 @@ export interface AdminBusiness {
   ownerName: string | null
   ownerEmail: string | null
   bookings: number
+  team?: Array<{ id: string; name: string; hours: Array<typeof teamMemberHours.$inferSelect> }>
 }
 
 export async function getBusinesses(): Promise<AdminBusiness[]> {
@@ -76,8 +77,13 @@ export async function getBusinesses(): Promise<AdminBusiness[]> {
     .leftJoin(bookingCount, eq(bookingCount.businessId, businesses.id))
     .where(realBusiness)
     .orderBy(desc(businesses.createdAt))
-    .limit(MAX_ROWS)
-  return rows
+  const [members, hours] = await Promise.all([
+    db.select().from(teamMembers).innerJoin(businesses, eq(businesses.id, teamMembers.businessId)).where(realBusiness).orderBy(asc(teamMembers.position)),
+    db.select().from(teamMemberHours).innerJoin(businesses, eq(businesses.id, teamMemberHours.businessId)).where(realBusiness).orderBy(asc(teamMemberHours.weekday), asc(teamMemberHours.opensAt)),
+  ])
+  return rows.map((row) => ({ ...row, team: members.filter((m) => m.team_members.businessId === row.id).map(({ team_members: member }) => ({
+    id: member.id, name: member.name, hours: hours.filter((h) => h.team_member_hours.teamMemberId === member.id).map((h) => h.team_member_hours),
+  })) }))
 }
 
 export interface AdminOwner {

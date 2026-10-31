@@ -13,6 +13,6 @@ type Props = {
 
 export default async function TeamPage({ params }: Props) {
   const { businessId } = await params
-  const { team } = await getOwnerBusiness(businessId)
-  return <TeamView businessId={businessId} team={team} />
+  const { team, hours, memberHours } = await getOwnerBusiness(businessId)
+  return <TeamView businessId={businessId} team={team} hours={hours} memberHours={memberHours} />
 }

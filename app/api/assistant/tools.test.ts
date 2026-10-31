@@ -329,6 +329,7 @@ test("list_team row carries hasPhoto and serviceIds", async () => {
   vi.mocked(getOwnerBusiness).mockResolvedValue({
     business: BUSINESS,
     hours: [],
+    memberHours: [{ teamMemberId: "m1", weekday: 1, opensAt: "10:00", closesAt: "14:00" }],
     services: [],
     team: [{ id: "m1", name: "Ana", photoUrl: null }],
   } as never)
@@ -337,7 +338,7 @@ test("list_team row carries hasPhoto and serviceIds", async () => {
     team: unknown[]
   }
   expect(result.team).toMatchObject([
-    { id: "m1", hasPhoto: false, serviceIds: ["s1", "s2"] },
+    { id: "m1", hasPhoto: false, serviceIds: ["s1", "s2"], hours: [{ weekday: 1, opensAt: "10:00", closesAt: "14:00" }] },
   ])
 })
 

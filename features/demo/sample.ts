@@ -1,3 +1,5 @@
+import type { HoursRow } from "@/lib/hours-rules"
+
 // The home page demo's sample business: a made-up studio, full enough to
 // try everything (services, team, hours, a week of bookings) the moment a
 // copy opens. The same names as the home page pictures (Lumen Studio, Ana,
@@ -73,9 +75,9 @@ export const DEMO_SAMPLE = {
   ],
   // `services`: indexes into services above.
   team: [
-    { name: "Marta Gil", services: [0, 1, 2] },
-    { name: "Sofía León", services: [3, 4, 5] },
-    { name: "Luis Romero", services: [0, 2] },
+    { name: "Marta Gil", services: [0, 1, 2], hours: [] as HoursRow[] },
+    { name: "Sofía León", services: [3, 4, 5], hours: [] as HoursRow[] },
+    { name: "Luis Romero", services: [0, 2], hours: [] as HoursRow[] },
   ],
   customers: [
     "Ana Morales",

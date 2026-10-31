@@ -17,6 +17,7 @@ import {
   businessPhotos,
   services,
   teamMemberServices,
+  teamMemberHours,
   teamMembers,
 } from "@/lib/db/schema"
 import { DEMO_RULES } from "@/lib/demo-rules"
@@ -96,6 +97,7 @@ export async function createDemoCopy(
     ]
   })
 
+  const memberHours = sample.team.flatMap((member, index) => member.hours.map((row) => ({ ...row, businessId, teamMemberId: memberIds[index] })))
   await saveAll([
     db.insert(businesses).values({
       id: businessId,
@@ -137,6 +139,7 @@ export async function createDemoCopy(
         position: index,
       }))
     ),
+    ...(memberHours.length ? [db.insert(teamMemberHours).values(memberHours)] : []),
     db.insert(teamMemberServices).values(
       sample.team.flatMap((member, index) =>
         member.services.map((service) => ({
