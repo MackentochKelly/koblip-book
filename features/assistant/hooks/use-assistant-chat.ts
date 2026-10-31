@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useEffectEvent, useRef, useState } from "react"
 
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type {
@@ -9,6 +9,7 @@ import type {
   AssistantRequest,
   AssistantStreamEvent,
 } from "../types"
+import { takeHandedOffQuestion } from "../utils/ask-handoff"
 import { getChat, putChat } from "../utils/chats-client"
 import {
   applyEvent,
@@ -54,19 +55,27 @@ export function useAssistantChat(
   // draw the same thing first.
   const storageKey = `assistant-chat:${businessId}`
   const idKey = `assistant-chat-id:${businessId}`
+  // A question asked on another page (the Ask card) starts a new chat
+  // instead, sent once the chat is ready.
+  const [handedOff, setHandedOff] = useState<string | null>(null)
   useEffect(() => {
     queueMicrotask(() => {
-      try {
-        // A chat from another version or of another shape starts fresh.
-        setItems(restoreChat(sessionStorage.getItem(storageKey)))
-        const savedId = sessionStorage.getItem(idKey)
-        if (savedId) setChatId(savedId)
-      } catch {
-        // Nothing saved, or storage is off.
+      const question = takeHandedOffQuestion(businessId)
+      if (question) {
+        setHandedOff(question)
+      } else {
+        try {
+          // A chat from another version or of another shape starts fresh.
+          setItems(restoreChat(sessionStorage.getItem(storageKey)))
+          const savedId = sessionStorage.getItem(idKey)
+          if (savedId) setChatId(savedId)
+        } catch {
+          // Nothing saved, or storage is off.
+        }
       }
       setRestored(true)
     })
-  }, [storageKey, idKey])
+  }, [businessId, storageKey, idKey])
   useEffect(() => {
     if (!restored) return
     try {
@@ -223,6 +232,17 @@ export function useAssistantChat(
     setChatId(chat.id)
     return true
   }
+
+  // Sent once, when the chat is ready.
+  const sendHandedOff = useEffectEvent((question: string) => {
+    setHandedOff(null)
+    void send(question)
+  })
+  useEffect(() => {
+    if (!restored || handedOff === null) return
+    const question = handedOff
+    queueMicrotask(() => sendHandedOff(question))
+  }, [restored, handedOff])
 
   return {
     items,

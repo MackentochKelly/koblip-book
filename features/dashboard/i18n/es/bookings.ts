@@ -57,6 +57,13 @@ const bookings: typeof en = {
     call: "Llamar",
     whatsapp: "WhatsApp",
   },
+  // La línea de Inicio sobre hoy.
+  brief: {
+    none: "Sin reservas hoy",
+    count: (n: number) => (n === 1 ? "1 reserva hoy" : `${n} reservas hoy`),
+    next: (time: string, name: string) => `la próxima a las ${time} con ${name}`,
+    noneLeft: "ninguna por empezar",
+  },
   viewAll: "Ver todas",
   list: {
     tabs: { bookings: "Reservas", calendar: "Calendario" },

@@ -11,6 +11,7 @@ import {
 import { FloatingActionButton } from "@/components/floating-action-button"
 import { ViewTabs } from "@/components/view-tabs"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Empty,
   EmptyContent,
@@ -18,10 +19,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { formatClock } from "@/lib/format-booking-time"
 import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import type { PeriodSummary } from "../utils/analytics"
 import { presetRange } from "../utils/booking-range"
+import { todayBrief } from "../utils/today-brief"
 import { type BookingPanelsProps, useBookingPanels } from "./booking-panels"
 import { BookingList } from "./booking-list"
 import { PeriodStats } from "./period-stats"
@@ -38,6 +41,7 @@ export function BookingsView({
   upcoming,
   past,
   now,
+  assistant,
   summary,
   currency,
   ...panelProps
@@ -46,6 +50,8 @@ export function BookingsView({
   past: OwnerBooking[]
   // ISO time the page was loaded: what is upcoming and what can be done.
   now: string
+  // The assistant's Ask card, under today's line.
+  assistant?: React.ReactNode
   summary: PeriodSummary
   currency: string
 }) {
@@ -59,6 +65,7 @@ export function BookingsView({
     { id: "past" as const, label: t.views.past },
   ]
   const list = (view === "upcoming" ? upcoming : past).slice(0, HOME_LIMIT)
+  const brief = todayBrief([...upcoming, ...past], addOptions.today, now)
   // The table's Team column, only for a business with a team.
   const hasTeam = addOptions.team.length > 0
   // Past opens the Bookings page on the last 3 months; upcoming on its
@@ -93,6 +100,24 @@ export function BookingsView({
         currency={currency}
         href={`/dashboard/${businessId}/analytics`}
       />
+      {/* Today in one line, counted (no AI), then the way to ask. */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {brief.count === 0
+              ? t.brief.none
+              : `${t.brief.count(brief.count)} · ${
+                  brief.next
+                    ? t.brief.next(
+                        formatClock(brief.next.time, m.locale),
+                        brief.next.customerName
+                      )
+                    : t.brief.noneLeft
+                }`}
+          </CardTitle>
+        </CardHeader>
+        {assistant && <CardContent>{assistant}</CardContent>}
+      </Card>
       <div className="flex min-w-0 flex-col gap-6">
         <ViewTabs
           views={views}

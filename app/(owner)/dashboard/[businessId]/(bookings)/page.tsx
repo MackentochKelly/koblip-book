@@ -7,7 +7,8 @@ import {
 } from "@/features/dashboard/api/queries"
 import { getAddonGroups } from "@/features/dashboard/api/addon-queries"
 import { getServiceTeams } from "@/features/dashboard/api/team-service-queries"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
+import { getOwnerLanguage, getOwnerMessages } from "@/features/dashboard/i18n/server"
+import { AskCard } from "@/features/assistant/components/ask-card"
 import { BookingsView } from "@/features/dashboard/components/bookings-view"
 import { periodSummary } from "@/features/dashboard/utils/analytics"
 import { ConfirmDetailsCard } from "@/features/dashboard/components/confirm-details-card"
@@ -54,6 +55,12 @@ export default async function BookingsPage({ params }: Props) {
         upcoming={upcoming}
         past={past}
         now={new Date().toISOString()}
+        assistant={
+          <AskCard
+            businessId={businessId}
+            language={await getOwnerLanguage()}
+          />
+        }
         summary={periodSummary(lastDays, firstVisits, today, 7)}
         currency={business.currency}
         addOptions={{

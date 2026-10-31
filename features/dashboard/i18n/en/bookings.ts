@@ -57,6 +57,14 @@ const bookings = {
     whatsapp: "WhatsApp",
   },
   // Home shows the next few; View all opens the Bookings page.
+  // Home's one line about today, e.g. "3 bookings today · next at 10:00
+  // AM with Sofia".
+  brief: {
+    none: "No bookings today",
+    count: (n: number) => (n === 1 ? "1 booking today" : `${n} bookings today`),
+    next: (time: string, name: string) => `next at ${time} with ${name}`,
+    noneLeft: "none left to start",
+  },
   viewAll: "View all",
   // The Bookings page: every booking in a date range, and a calendar.
   list: {
