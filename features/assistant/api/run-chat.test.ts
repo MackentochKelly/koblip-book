@@ -705,6 +705,28 @@ function services(n: number) {
   return Array.from({ length: n }, (_, i) => ({ name: `Cut ${i}` }))
 }
 
+test("a barbershop's 8 services all come as buttons, 13 come as none", async () => {
+  for (const [count, buttons] of [
+    [8, true],
+    [13, false],
+  ] as const) {
+    const list = services(count)
+    scriptedClient(
+      [[toolChunk(0, "call-A", "probe", "{}")], [textChunk("Which one?")]],
+      [judgeOk(list.map((s) => s.name))]
+    )
+    const events = await collect(
+      runChat(MESSAGES, CONTEXT, [probe(async () => ({ services: list }))])
+    )
+    const choices = events.find(
+      (e) => (e as { type: string }).type === "choices"
+    )
+    expect(choices).toEqual(
+      buttons ? { type: "choices", options: list.map((s) => s.name) } : undefined
+    )
+  }
+})
+
 test("sources follow a passed answer with kinds and counts", async () => {
   scriptedClient(
     [
