@@ -113,9 +113,10 @@ export function BookingsView({
   const analytics = `/dashboard/${businessId}/analytics`
   // The table's Team column, only for a business with a team.
   const hasTeam = addOptions.team.length > 0
-  const open = (booking: OwnerBooking) => {
+  // `at` is when the owner tapped, read in the tap handler itself.
+  const open = (booking: OwnerBooking, at: number) => {
     setOpened(booking)
-    setOpenedAt(Date.now())
+    setOpenedAt(at)
     setDetailsOpen(true)
   }
 
@@ -234,7 +235,10 @@ export function BookingsView({
                         key={booking.id}
                         variant="outline"
                         render={
-                          <button type="button" onClick={() => open(booking)} />
+                          <button
+                            type="button"
+                            onClick={() => open(booking, Date.now())}
+                          />
                         }
                         className="text-left"
                       >
@@ -288,7 +292,7 @@ export function BookingsView({
                       <TableRow
                         key={booking.id}
                         className="cursor-pointer"
-                        onClick={() => open(booking)}
+                        onClick={() => open(booking, Date.now())}
                       >
                         {/* The status sits by the time, as on a phone. */}
                         <TableCell className="tabular-nums">
@@ -304,7 +308,7 @@ export function BookingsView({
                             className="h-auto p-0 text-foreground"
                             onClick={(event) => {
                               event.stopPropagation()
-                              open(booking)
+                              open(booking, Date.now())
                             }}
                           >
                             {booking.customerName}
