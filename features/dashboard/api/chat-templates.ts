@@ -575,3 +575,75 @@ export async function koblipMessages(): Promise<KoblipMessage[]> {
     ) as KoblipMessage["texts"],
   }))
 }
+
+type Deleted = { data?: { deleted_from_meta?: boolean; meta_deletion_error?: string } }
+
+// Decision D1 in docs/plans/whatsapp-notifications.md (S2): in every
+// connected business's Koblip Chat, deletes the templates under these names
+// that Meta has not approved, in Chat and at Meta; approved ones are only
+// listed. Templates are listed per WhatsApp account, so a connection without
+// a saved account (wabaId) is skipped. Without `remove` it only says what it
+// would delete. Book then forgets the deleted ones: those messages are back
+// to not submitted.
+export async function removeOldChatTemplates({
+  names,
+  remove,
+  log,
+}: {
+  names: readonly string[]
+  remove: boolean
+  log: (line: string) => void
+}) {
+  let deleted = 0
+  let failed = 0
+  for (const connection of await db.select().from(chatConnections)) {
+    const { businessId, workspaceName, wabaId } = connection
+    if (!chatConnectionUsable(connection)) {
+      log(`${workspaceName}: not usable (reconnect needed), skipped`)
+      continue
+    }
+    if (!wabaId) {
+      log(`${workspaceName}: no WhatsApp account saved yet, skipped`)
+      continue
+    }
+    const call = businessCall(businessId)
+    let list: Templates
+    try {
+      list = await listTemplates(call, wabaId)
+    } catch (error) {
+      if (!(error instanceof ChatApiError)) throw error
+      log(`${workspaceName}: Chat could not be reached (${error.message}), skipped`)
+      failed++
+      continue
+    }
+    for (const row of (list.data ?? []).filter((item) => names.includes(item.template_name))) {
+      const what = `${workspaceName}: ${row.template_name} (${row.language}), ${row.status ?? "unknown"}`
+      if (row.status?.toLowerCase() === "approved") {
+        log(`${what}: approved, kept`)
+        continue
+      }
+      if (!remove) {
+        log(`${what}: would delete`)
+        continue
+      }
+      try {
+        const answer = await call<Deleted>(`/api/template/${encodeURIComponent(row._id)}`, {
+          method: "DELETE",
+          body: { delete_from_meta: true },
+        })
+        const atMeta = answer.data?.deleted_from_meta
+        log(
+          `${what}: deleted in Chat, ${atMeta ? "deleted at Meta" : `NOT at Meta (${answer.data?.meta_deletion_error ?? "no reason"})`}`
+        )
+        if (atMeta) deleted++
+        else failed++
+      } catch (error) {
+        if (!(error instanceof ChatApiError)) throw error
+        log(`${what}: FAILED (${error.message})`)
+        failed++
+      }
+    }
+    if (remove) await refreshChatTemplates(businessId)
+  }
+  return { deleted, failed }
+}
