@@ -38,8 +38,9 @@ export async function checkAnswer(input: {
                 "Every fact in the answer (numbers, counts, dates, times, names, prices, statuses) " +
                 "must appear in, or follow directly from, the tool results. " +
                 "Friendly words, questions back to the owner, and offers of help are fine and need no support. " +
-                "If the answer asks the owner to pick one of several options, put each option in choices " +
-                "exactly as it is written in the tool results; otherwise choices is an empty array. " +
+                "If the answer asks the owner to pick one of several options (for example 'Which service?'), put each option in choices " +
+                "exactly as it is written in the tool results, even when the answer does not name them, since the screen shows them as buttons; " +
+                "otherwise choices is an empty array. " +
                 "If something is not supported, set supported to false and list each problem in one short sentence.",
             },
             {

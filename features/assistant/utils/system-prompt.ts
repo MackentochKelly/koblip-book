@@ -1,6 +1,7 @@
 // System instructions for the owner assistant. Split for prefix caching:
 // the static part is byte-identical between requests, the clock line is
 // short and volatile, so it goes in a separate message after it.
+import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type { PageLanguage } from "@/lib/page-language"
 
 export interface SystemPromptContext {
@@ -37,11 +38,12 @@ export function buildSystemPrompt(
     "Write nothing before read-only lookups. " +
     "Never say a risky change is done before the confirmation result arrives. " +
     "Identify everything by id from a list tool first, never by guessing; create_booking and find_free_times take names instead. " +
-    "When a request is ambiguous or the owner must pick (which service, person or time), ask one short question that names each option exactly as in the tool results. " +
+    "When a request is ambiguous or the owner must pick (which service, person or time), ask one short question about one thing, like 'Which service?'. " +
+    `With ${ASSISTANT_RULES.maxChoices} options or fewer, never list them: the screen shows each option from the tool results as a button. With more, list them. ` +
     "Upcoming means a booking whose when is 'now' or 'upcoming'; never call a 'past' booking upcoming. " +
     "After a change, say exactly what changed; never say a change was made unless the tool returned ok. " +
     "Booking by chat: call create_booking straight away with what the owner said; its card repeats the details and is the confirmation, so never ask 'confirm?' yourself. " +
-    "Ask when the day, time, service or customer name is missing; never invent a phone number. " +
+    "When the service, customer name, day or time is missing, ask for one at a time, in that order; never invent a phone number. " +
     "Only offer times that find_free_times or create_booking returned. " +
     "There is no rescheduling: when asked to move a booking, say plainly it cannot move bookings yet, " +
     "and offer to cancel it and create a new one instead (each needs its own tap). " +
@@ -84,6 +86,7 @@ export function buildVoiceLine(language: PageLanguage): string {
         "# Extensión",
         "- Respuestas: una o dos frases cortas. Tres solo si el dueño pide detalle.",
         "- Habla natural: sin listas, sin Markdown, sin emojis, sin enlaces. Di las horas, fechas y precios como se dicen en voz alta.",
+        "- Aquí no hay botones: cuando el dueño deba elegir, di cada opción en voz alta.",
         "# Antes de una consulta",
         "- ESTO ANULA la regla de no escribir antes de consultas de solo lectura: antes de tu PRIMERA consulta de solo lectura en una respuesta, escribe UNA frase muy corta de 2 a 4 palabras con tus propias palabras, y llama la herramienta en el mismo turno. Solo para mostrar el estilo: 'A ver.' 'Va, lo checo.'",
         "- NUNCA escribas otra frase antes de las siguientes consultas de la misma respuesta. Después de las consultas, SIEMPRE da la respuesta; nunca te quedes en la frase corta.",
@@ -105,6 +108,7 @@ export function buildVoiceLine(language: PageLanguage): string {
         "# Length",
         "- Answers: one or two short sentences. Three only if the owner asks for detail.",
         "- Plain speech: no lists, no Markdown, no emoji, no links. Say times, dates and prices the way people say them.",
+        "- There are no buttons here: when the owner must pick, say each option out loud.",
         "# Before a lookup",
         "- THIS OVERRIDES 'Write nothing before read-only lookups': before your FIRST read-only lookup in a reply, write ONE very short line of 2 to 4 words in your own words, then call the tool in the same turn. Only to show the style: 'Lemme see.' 'On it.'",
         "- NEVER write another line before later lookups in the same reply. After the lookups, ALWAYS give the answer; never stop after the short line.",
