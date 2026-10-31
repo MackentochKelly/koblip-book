@@ -28,7 +28,7 @@ export function FloatingActionButton({
         aria-label={label}
         onClick={onClick}
         disabled={disabled}
-        className="fixed right-4 bottom-[calc(--spacing(20)+env(safe-area-inset-bottom))] z-30 size-12 rounded-full bg-muted/70 text-foreground inset-ring inset-ring-foreground/10 backdrop-blur-2xl backdrop-saturate-150 hover:bg-muted md:hidden [&_svg:not([class*='size-'])]:size-6"
+        className="fixed right-4 bottom-[calc(--spacing(20)+max(env(safe-area-inset-bottom),var(--bottom-cover,0px)))] z-30 size-12 rounded-full bg-muted/70 text-foreground inset-ring inset-ring-foreground/10 backdrop-blur-2xl backdrop-saturate-150 hover:bg-muted md:hidden [&_svg:not([class*='size-'])]:size-6"
       >
         {children}
       </Button>
