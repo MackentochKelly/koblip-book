@@ -279,6 +279,29 @@ export const bookings = sqliteTable(
   ]
 )
 
+// Customers the owner added by hand, before (or without) a booking. The
+// Customers page lists them with everyone who booked; customerKey is the
+// same key bookings carry, so a later booking joins the same customer.
+export const customers = sqliteTable(
+  "customers",
+  {
+    id: id(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    customerKey: text().notNull(),
+    name: text().notNull(),
+    phone: text(),
+    ...timestamps(),
+  },
+  (table) => [
+    uniqueIndex("customers_business_key_idx").on(
+      table.businessId,
+      table.customerKey
+    ),
+  ]
+)
+
 // a service with NO rows here is done by everyone on the team; a service with rows is done only by those members.
 export const teamMemberServices = sqliteTable(
   "team_member_services",

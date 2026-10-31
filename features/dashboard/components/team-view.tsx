@@ -18,7 +18,6 @@ import { validHours, type HoursRow } from "@/lib/hours-rules"
 import { saveTeamMemberWithHours } from "../api/member-hours"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { FloatingActionButton } from "@/components/floating-action-button"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -57,6 +56,7 @@ import {
 } from "../api/actions"
 import { removeTeamMemberPhoto, setTeamMemberPhoto } from "../api/photo-actions"
 import { PhotoField } from "./photo-upload"
+import { useTabBarAction } from "./tab-bar-action"
 import { noAutofill } from "@/lib/no-autofill"
 import { useOwnerMessages } from "../i18n/provider"
 import { ConfirmRemove } from "./confirm-remove"
@@ -93,6 +93,8 @@ export function TeamView({
     setFormKey((value) => value + 1)
     setEditing(member)
   }
+  // On a phone the tab bar's middle button adds a person.
+  useTabBarAction({ label: t.addPerson, onClick: () => openForm("new") })
   const move = (index: number, by: number) => {
     const ids = team.map((member) => member.id)
     const [id] = ids.splice(index, 1)
@@ -118,8 +120,8 @@ export function TeamView({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* On a phone the top bar names the page and Add floats, so this
-          header row is a computer's. */}
+      {/* On a phone the top bar names the page and Add is the tab bar's
+          middle button, so this header row is a computer's. */}
       <div className="flex items-center justify-between gap-3 max-md:contents">
         <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{t.title}</h1>
         <Button className="max-md:hidden" onClick={() => openForm("new")}>
@@ -259,12 +261,6 @@ export function TeamView({
           />
         )}
       </ResponsivePanel>
-      <FloatingActionButton
-        label={t.addPerson}
-        onClick={() => openForm("new")}
-      >
-        <PlusIcon />
-      </FloatingActionButton>
     </div>
   )
 }

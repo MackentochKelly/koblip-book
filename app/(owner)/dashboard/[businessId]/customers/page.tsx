@@ -23,6 +23,7 @@ export default async function CustomersPage({
   ])
   return (
     <CustomersView
+      businessId={businessId}
       customers={customers}
       openKey={openKey}
       openBookings={openBookings}

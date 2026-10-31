@@ -20,6 +20,7 @@ import {
   teamMemberServices,
   teamMembers,
   teamMemberHours,
+  customers,
   translations,
   user,
 } from "@/lib/db/schema"
@@ -59,6 +60,7 @@ export async function purgeOldDemos(now: number = Date.now()): Promise<void> {
               .delete(bookingAddons)
               .where(inArray(bookingAddons.businessId, ids)),
             db.delete(bookings).where(inArray(bookings.businessId, ids)),
+            db.delete(customers).where(inArray(customers.businessId, ids)),
             db
               .delete(teamMemberServices)
               .where(inArray(teamMemberServices.businessId, ids)),
