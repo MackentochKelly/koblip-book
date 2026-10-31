@@ -4,7 +4,6 @@ const shell = {
     home: "Home",
     // The home page's name on a computer; a phone keeps Home.
     dashboard: "Dashboard",
-    analytics: "Analytics",
     owner: "Owner",
     bookings: "Bookings",
     customers: "Customers",

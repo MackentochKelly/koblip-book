@@ -4,7 +4,6 @@ const shell: typeof en = {
   nav: {
     home: "Inicio",
     dashboard: "Panel",
-    analytics: "Estadísticas",
     owner: "Propietario",
     bookings: "Reservas",
     customers: "Clientes",

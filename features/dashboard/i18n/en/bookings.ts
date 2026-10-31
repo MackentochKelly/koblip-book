@@ -1,13 +1,6 @@
 // The owner's bookings and customers: lists, details, the add form.
 const bookings = {
   title: "Bookings",
-  stats: {
-    today: "Today",
-    tomorrow: "Tomorrow",
-    week: "Next 7 days",
-    upcoming: "Upcoming",
-    done: (done: string, booked: string) => `${done} of ${booked} done`,
-  },
   add: "Add",
   addBooking: "Add booking",
   columns: {
@@ -69,9 +62,10 @@ const bookings = {
     bookings: "Bookings",
     noShows: "No-shows",
     newCustomers: "New customers",
-    returning: "Returning customers",
-    busiestDays: "Busiest days",
+    revenue: "Revenue",
+    last7: "Last 7 days",
     topServices: "Top services",
+    otherServices: "Everything else",
     noData: "No bookings yet",
   },
   chart: {
