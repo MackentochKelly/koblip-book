@@ -10,6 +10,7 @@ current.
 | [In-app notifications](in-app-notifications.md) | In progress |
 | [Google Calendar](google-calendar.md) | In progress |
 | [Assistant fixes](assistant-fixes.md) | To do |
+| [Integrations tabs](integrations.md) | To do |
 
 ## How to work with a plan
 
