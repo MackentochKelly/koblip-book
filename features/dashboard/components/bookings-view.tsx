@@ -65,6 +65,8 @@ export function BookingsView({
     { id: "past" as const, label: t.views.past },
   ]
   const list = (view === "upcoming" ? upcoming : past).slice(0, HOME_LIMIT)
+  // The empty list's own Add booking button; the floating one would repeat it.
+  const emptyAdd = list.length === 0 && view === "upcoming" && panels.canAdd
   const brief = todayBrief([...upcoming, ...past], addOptions.today, now)
   // The table's Team column, only for a business with a team.
   const hasTeam = addOptions.team.length > 0
@@ -136,7 +138,7 @@ export function BookingsView({
                 {view === "upcoming" ? t.noUpcoming : t.noPast}
               </EmptyTitle>
             </EmptyHeader>
-            {view === "upcoming" && panels.canAdd && (
+            {emptyAdd && (
               <EmptyContent>
                 <Button onClick={panels.add}>
                   <PlusIcon data-icon="inline-start" />
@@ -169,13 +171,15 @@ export function BookingsView({
         )}
       </div>
 
-      <FloatingActionButton
-        label={t.addBooking}
-        onClick={panels.add}
-        disabled={!panels.canAdd}
-      >
-        <PlusIcon />
-      </FloatingActionButton>
+      {!emptyAdd && (
+        <FloatingActionButton
+          label={t.addBooking}
+          onClick={panels.add}
+          disabled={!panels.canAdd}
+        >
+          <PlusIcon />
+        </FloatingActionButton>
+      )}
 
       {panels.panels}
     </div>
