@@ -152,9 +152,9 @@
     /* Plain news, neither good nor bad (a stat's blue icon): 3:1 or more on
        the card in light and dark. */
     --info: oklch(0.55 0.2 255);
-    /* The owner area's page, behind its white cards: a soft gray, like an
-       iPhone's grouped lists, so cards stand apart. */
-    --app-background: oklch(0.97 0 0);
+    /* The owner area's page, behind its white cards: the menu's own color
+       (--sidebar), so the menu and the page read as one surface. */
+    --app-background: var(--sidebar);
     /* On that gray page, muted fills (a tabs track, a muted row) go a soft
        step darker, in the same neutral gray, so they still show. */
     --app-muted: oklch(0.955 0 0);
