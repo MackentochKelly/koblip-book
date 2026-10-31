@@ -30,6 +30,8 @@ const catalog: typeof en = {
       label: "Servicios y extras",
     },
     suggest: "Sugerir",
+    suggestServices: "Sugerir servicios",
+    suggestExtras: "Sugerir extras",
     empty: "Aún no hay servicios",
     addService: "Agregar un servicio",
     editService: "Editar servicio",
