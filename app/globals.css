@@ -58,6 +58,17 @@
     --color-google-button: var(--google-button);
     --color-google-button-border: var(--google-button-border);
     --color-google-button-foreground: var(--google-button-foreground);
+    --color-google-event-1: var(--google-event-1);
+    --color-google-event-2: var(--google-event-2);
+    --color-google-event-3: var(--google-event-3);
+    --color-google-event-4: var(--google-event-4);
+    --color-google-event-5: var(--google-event-5);
+    --color-google-event-6: var(--google-event-6);
+    --color-google-event-7: var(--google-event-7);
+    --color-google-event-8: var(--google-event-8);
+    --color-google-event-9: var(--google-event-9);
+    --color-google-event-10: var(--google-event-10);
+    --color-google-event-11: var(--google-event-11);
     --color-warning: var(--warning);
     --color-info: var(--info);
     --color-app-background: var(--app-background);
@@ -202,6 +213,19 @@
     --google-button: #ffffff;
     --google-button-border: #747775;
     --google-button-foreground: #1f1f1f;
+    /* Google Calendar's event colours (G7), by colorId, as Google shows
+       them in both themes. */
+    --google-event-1: #7986cb;
+    --google-event-2: #33b679;
+    --google-event-3: #8e24aa;
+    --google-event-4: #e67c73;
+    --google-event-5: #f6bf26;
+    --google-event-6: #f4511e;
+    --google-event-7: #039be5;
+    --google-event-8: #616161;
+    --google-event-9: #3f51b5;
+    --google-event-10: #0b8043;
+    --google-event-11: #d50000;
     --hero-foreground: color-mix(in oklch, var(--foreground) 70%, var(--primary));
     /* How much a glass frame boosts the colours behind it. Fresha uses 4.5
        on a pale page; our gradient is already strong, so far less. */

@@ -4,6 +4,7 @@ import { and, eq, gte } from "drizzle-orm"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { requireAccount } from "@/lib/dal"
 import { db } from "@/lib/db"
+import { isGoogleEventColor } from "@/lib/google-calendar-colors"
 import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
 import {
@@ -178,7 +179,20 @@ function normalizeServiceInput(input: ServiceInput) {
   ) {
     return null
   }
-  return { name, description, durationMinutes: input.durationMinutes, priceMinor: input.priceMinor }
+  if (
+    input.calendarColor !== undefined &&
+    input.calendarColor !== null &&
+    !isGoogleEventColor(input.calendarColor)
+  ) {
+    return null
+  }
+  return {
+    name,
+    description,
+    durationMinutes: input.durationMinutes,
+    priceMinor: input.priceMinor,
+    ...(input.calendarColor !== undefined ? { calendarColor: input.calendarColor } : {}),
+  }
 }
 
 export async function createService(
@@ -239,6 +253,8 @@ export async function updateService(
     .set(normalized)
     .where(eq(services.id, service.id))
   revalidateBusiness(owned.business.slug)
+  // Its bookings' events carry its colour (G7).
+  requestGoogleSync(owned.business.id)
   return { ok: true }
 }
 

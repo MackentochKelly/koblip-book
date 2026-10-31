@@ -1,3 +1,4 @@
+import type { GoogleEventColor } from "@/lib/google-calendar-colors"
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string }
 export interface OwnedBusiness { id: string; slug: string; name: string; address: string | null }
 export type BookingStatus = "confirmed" | "cancelled" | "completed" | "no_show"
@@ -28,7 +29,7 @@ export interface OwnerCustomer {
   currency: string
 }
 export interface HoursRow { weekday: number; opensAt: string; closesAt: string }
-export interface ServiceInput { name: string; description: string | null; durationMinutes: number; priceMinor: number | null }
+export interface ServiceInput { name: string; description: string | null; durationMinutes: number; priceMinor: number | null; calendarColor?: GoogleEventColor | null } // calendarColor left out keeps the service's
 export interface ServiceSuggestion { name: string; description: string | null; durationMinutes: number }
 export interface AddonOptionSuggestion { name: string; description: string | null; durationMinutes: number }
 export interface AddonGroupSuggestion { name: string; prompt: string; minSelect: number; maxSelect: number | null; serviceIds: string[]; options: AddonOptionSuggestion[] }

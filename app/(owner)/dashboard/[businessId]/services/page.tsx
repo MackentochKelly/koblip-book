@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { getAddonGroups } from "@/features/dashboard/api/addon-queries"
+import { usesGoogleCalendar } from "@/features/dashboard/api/google-calendar"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { getServiceTeams } from "@/features/dashboard/api/team-service-queries"
 import { ServicesView } from "@/features/dashboard/components/services-view"
@@ -15,11 +16,12 @@ type Props = {
 
 export default async function ServicesPage({ params }: Props) {
   const { businessId } = await params
-  const [{ business, services, team }, serviceTeams, addonGroups] =
+  const [{ business, services, team }, serviceTeams, addonGroups, googleCalendar] =
     await Promise.all([
       getOwnerBusiness(businessId),
       getServiceTeams(businessId),
       getAddonGroups(businessId),
+      usesGoogleCalendar(businessId),
     ])
   return (
     <ServicesView
@@ -29,6 +31,7 @@ export default async function ServicesPage({ params }: Props) {
       team={team.map(({ id, name }) => ({ id, name }))}
       serviceTeams={serviceTeams}
       addonGroups={addonGroups}
+      googleCalendar={googleCalendar}
     />
   )
 }

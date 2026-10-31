@@ -92,6 +92,9 @@ export const services = sqliteTable(
     durationMinutes: integer().notNull(),
     priceMinor: integer(),
     photoUrl: text(),
+    // Its Google Calendar events' colour: a Google colorId
+    // (lib/google-calendar-colors.ts); null keeps the calendar's colour.
+    calendarColor: text(),
     position: integer().notNull().default(0),
     ...timestamps(),
   },

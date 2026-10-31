@@ -64,6 +64,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
+import {
+  GOOGLE_EVENT_COLORS,
+  isGoogleEventColor,
+  type GoogleEventColor,
+} from "@/lib/google-calendar-colors"
 import { parsePrice } from "@/lib/parse-price"
 import {
   createService,
@@ -78,6 +83,7 @@ import { setServiceTeam } from "../api/team-services"
 import type { OwnerAddonGroup, ServiceInput } from "../types"
 import { ConfirmRemove } from "./confirm-remove"
 import { ExtrasView } from "./extras-view"
+import { GoogleEventDot } from "./google-event-dot"
 import { PhotoField } from "./photo-upload"
 import { useTabBarAction } from "./tab-bar-action"
 import { noAutofill } from "@/lib/no-autofill"
@@ -90,6 +96,7 @@ interface ServiceRow {
   durationMinutes: number
   priceMinor: number | null
   photoUrl: string | null
+  calendarColor: string | null
 }
 
 interface MemberRow {
@@ -98,6 +105,9 @@ interface MemberRow {
 }
 
 const SERVICE_FORM = "service-form"
+
+// "Calendar's colour" in the colour list, which needs a string.
+const NO_COLOR = "" as const
 
 // What the business sells: add, edit, reorder and remove services, or let
 // Meta AI suggest the usual ones for this kind of business.
@@ -108,6 +118,7 @@ export function ServicesView({
   team,
   serviceTeams,
   addonGroups,
+  googleCalendar,
 }: {
   businessId: string
   currency: string
@@ -116,6 +127,8 @@ export function ServicesView({
   // serviceId → the members who do it; missing = everyone.
   serviceTeams: Record<string, string[]>
   addonGroups: OwnerAddonGroup[]
+  // Whether Google Calendar is connected, so services get a colour (G7).
+  googleCalendar: boolean
 }) {
   const router = useRouter()
   const m = useOwnerMessages()
@@ -225,7 +238,12 @@ export function ServicesView({
           {services.map((service, index) => (
             <Item key={service.id} variant="outline">
               <ItemContent>
-                <ItemTitle>{service.name}</ItemTitle>
+                <ItemTitle>
+                  {googleCalendar && isGoogleEventColor(service.calendarColor) && (
+                    <GoogleEventDot color={service.calendarColor} />
+                  )}
+                  {service.name}
+                </ItemTitle>
                 <ItemDescription>
                   {formatDuration(service.durationMinutes)}
                   {service.priceMinor !== null &&
@@ -338,6 +356,7 @@ export function ServicesView({
             service={editing === "new" ? null : editing}
             onChanged={setChanged}
             team={team}
+            googleCalendar={googleCalendar}
             memberIds={
               editing === "new"
                 ? team.map((member) => member.id)
@@ -407,6 +426,7 @@ export function ServicesView({
 function ServiceForm({
   service,
   team,
+  googleCalendar,
   memberIds: initialMembers,
   photo,
   onChanged,
@@ -414,6 +434,7 @@ function ServiceForm({
 }: {
   service: ServiceRow | null
   team: MemberRow[]
+  googleCalendar: boolean
   memberIds: string[]
   photo: React.ReactNode
   onChanged: (changed: boolean) => void
@@ -435,6 +456,12 @@ function ServiceForm({
   )
   const [description, setDescription] = useState(service?.description ?? "")
   const [memberIds, setMemberIds] = useState(initialMembers)
+  const savedColor = isGoogleEventColor(service?.calendarColor) ? service.calendarColor : NO_COLOR
+  const [color, setColor] = useState<GoogleEventColor | typeof NO_COLOR>(savedColor)
+  const colors: { value: GoogleEventColor | typeof NO_COLOR; label: string }[] = [
+    { value: NO_COLOR, label: t.calendarColorNone },
+    ...GOOGLE_EVENT_COLORS.map((value) => ({ value, label: t.calendarColors[value] })),
+  ]
   const [invalid, setInvalid] = useState<"name" | "price" | "team" | null>(null)
   const changed =
     name !== (service?.name ?? "") ||
@@ -442,6 +469,7 @@ function ServiceForm({
     price !==
       (service?.priceMinor != null ? String(service.priceMinor / 100) : "") ||
     description !== (service?.description ?? "") ||
+    color !== savedColor ||
     [...memberIds].sort().join() !== [...initialMembers].sort().join()
   useEffect(() => onChanged(changed), [changed, onChanged])
 
@@ -462,6 +490,8 @@ function ServiceForm({
             description: description.trim() || null,
             durationMinutes: Number(duration),
             priceMinor,
+            // Kept as it is while the form doesn't show it.
+            ...(googleCalendar ? { calendarColor: color || null } : {}),
           },
           memberIds
         )
@@ -541,6 +571,28 @@ function ServiceForm({
               invalid={invalid === "team"}
             />
             {invalid === "team" && <FieldError>{t.pickOne}</FieldError>}
+          </Field>
+        )}
+        {googleCalendar && (
+          <Field>
+            <FieldLabel htmlFor="service-color">{t.calendarColor}</FieldLabel>
+            <Select
+              items={colors}
+              value={color}
+              onValueChange={(value) => setColor(isGoogleEventColor(value) ? value : NO_COLOR)}
+            >
+              <SelectTrigger id="service-color" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {colors.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.value !== NO_COLOR && <GoogleEventDot color={item.value} />}
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
         )}
       </FieldGroup>

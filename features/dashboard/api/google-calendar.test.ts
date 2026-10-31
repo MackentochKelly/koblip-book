@@ -12,6 +12,7 @@ import {
   businesses,
   googleCalendarConnections,
   googleCalendarEvents,
+  services,
   teamMembers,
   user,
 } from "@/lib/db/schema"
@@ -49,7 +50,10 @@ const google = {
   refreshAnswer: "ok" as "ok" | "invalid_grant",
   calendars: new Map<
     string,
-    Map<string, { status: string; summary: string; start: string; description?: string; location?: string }>
+    Map<
+      string,
+      { status: string; summary: string; start: string; description?: string; location?: string; colorId?: string }
+    >
   >(),
   revoked: [] as string[],
   calls: [] as string[],
@@ -144,6 +148,7 @@ const fetchGoogle = vi.fn(async (input: string, init: RequestInit = {}) => {
       start: body.start.dateTime,
       description: body.description,
       location: body.location,
+      colorId: body.colorId,
     })
   if (method === "POST") {
     if (events.has(body.id)) return answer(409, { error: { errors: [{ reason: "duplicate" }] } })
@@ -600,4 +605,18 @@ test("a team member's event has no owner-area link", async () => {
   const { finished } = await memberConnect("m1")
   await syncGoogleCalendar(finished.connectionId!)
   expect(googleEvents().get(eventIdOf("b1"))?.description).not.toContain("Koblip Book:")
+})
+
+test("an event takes its service's colour, and a changed colour updates it", async () => {
+  await db.insert(services).values({ id: "s1", businessId: "biz", name: "Haircut", durationMinutes: 60, calendarColor: "11" })
+  await db.insert(bookings).values(booking("b1", 2 * hour, { serviceId: "s1" }))
+  await db.insert(bookings).values(booking("b2", 4 * hour))
+  const { connectionId } = await connect()
+  await syncGoogleCalendar(connectionId!)
+  expect(googleEvents().get(eventIdOf("b1"))?.colorId).toBe("11")
+  expect(googleEvents().get(eventIdOf("b2"))?.colorId).toBeUndefined()
+  await db.update(services).set({ calendarColor: null }).where(eq(services.id, "s1"))
+  await syncGoogleCalendar(connectionId!)
+  expect(googleEvents().get(eventIdOf("b1"))?.colorId).toBeUndefined()
+  await db.delete(services)
 })

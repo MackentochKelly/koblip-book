@@ -253,6 +253,13 @@
       "when": 1793483462905,
       "tag": "0035_assistant_pending_actions",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1793483720728,
+      "tag": "0036_service_calendar_color",
+      "breakpoints": true
     }
   ]
 }

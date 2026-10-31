@@ -1,11 +1,12 @@
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
+import { isGoogleEventColor } from "@/lib/google-calendar-colors"
 import { phoneLinks } from "@/lib/phone-link"
 
 // What a booking's Google Calendar event says (G6 in
 // docs/plans/google-calendar.md): the service and customer as its title,
 // the business's address as its place, and the details as short lines in
-// the language the owner uses Book in.
+// the language the owner uses Book in. Its colour is the service's (G7).
 
 const WORDS = {
   en: {
@@ -61,7 +62,13 @@ function dayOf(iso: string, timeZone: string) {
   )
 }
 
-export function eventOf(booking: EventBooking, extras: string[], place: EventPlace) {
+export function eventOf(
+  booking: EventBooking,
+  extras: string[],
+  place: EventPlace,
+  // The service's colour (a Google colorId); null keeps the calendar's.
+  color: string | null = null
+) {
   const t = WORDS[place.language]
   const day = dayOf(booking.startAt, place.timeZone)
   const lines = [
@@ -89,6 +96,7 @@ export function eventOf(booking: EventBooking, extras: string[], place: EventPla
     ...(place.address ? { location: place.address } : {}),
     start: { dateTime: booking.startAt, timeZone: place.timeZone },
     end: { dateTime: booking.endAt, timeZone: place.timeZone },
+    ...(isGoogleEventColor(color) ? { colorId: color } : {}),
     // A removed event keeps its id at Google; this brings it back.
     status: "confirmed",
     extendedProperties: { private: { koblipBookingId: booking.id } },

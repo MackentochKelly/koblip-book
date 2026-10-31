@@ -54,3 +54,14 @@ export async function teamCalendarsFor(businessId: string): Promise<Record<strin
     rows.map((row) => [row.teamMemberId!, { googleEmail: row.googleEmail, needsReconnect: row.needsReconnect }])
   )
 }
+
+// Whether the business or any team member has Google Calendar, so the
+// service form shows the events' colour (G7).
+export async function usesGoogleCalendar(businessId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: googleCalendarConnections.id })
+    .from(googleCalendarConnections)
+    .where(eq(googleCalendarConnections.businessId, businessId))
+    .limit(1)
+  return !!row
+}

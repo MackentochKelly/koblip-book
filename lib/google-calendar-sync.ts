@@ -10,6 +10,7 @@ import {
   googleCalendarConnections,
   googleCalendarEvents,
   notificationSettings,
+  services,
 } from "@/lib/db/schema"
 import { GoogleCalendarError, googleCalendarApi, googleTurnKey } from "@/lib/google-calendar"
 import { refreshGoogleBusy } from "@/lib/google-calendar-busy"
@@ -138,8 +139,9 @@ async function syncConnection(connectionId: string) {
     const calendarId = connection.calendarId ?? (await makeCalendar(connection.id, timeZone))
     const since = new Date(Date.now() - GOOGLE_CALENDAR_RULES.keepPastHours * 3_600_000).toISOString()
     const rows = await db
-      .select({ booking: bookings, sent: googleCalendarEvents })
+      .select({ booking: bookings, sent: googleCalendarEvents, color: services.calendarColor })
       .from(bookings)
+      .leftJoin(services, eq(services.id, bookings.serviceId))
       .leftJoin(
         googleCalendarEvents,
         and(
@@ -170,8 +172,8 @@ async function syncConnection(connectionId: string) {
     }
 
     let sent = 0
-    for (const { booking, sent: before } of rows) {
-      const event = eventOf(booking, extras.get(booking.id) ?? [], place)
+    for (const { booking, sent: before, color } of rows) {
+      const event = eventOf(booking, extras.get(booking.id) ?? [], place, color)
       const fingerprint = fingerprintOf(booking, event)
       // Unchanged, or cancelled before it was ever sent.
       if (before ? before.fingerprint === fingerprint : fingerprint === CANCELLED) continue
