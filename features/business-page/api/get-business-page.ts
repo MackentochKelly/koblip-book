@@ -213,7 +213,12 @@ async function loadBusinessPage(
         .where(eq(services.businessId, business.id))
         .orderBy(asc(services.position)),
       db
-        .select()
+        .select({
+          id: teamMembers.id,
+          name: teamMembers.name,
+          photoUrl: teamMembers.photoUrl,
+          description: teamMembers.description,
+        })
         .from(teamMembers)
         .where(eq(teamMembers.businessId, business.id))
         .orderBy(asc(teamMembers.position)),
@@ -278,6 +283,7 @@ async function loadBusinessPage(
   // while its sourceText still equals the current English text exactly.
   let pageBusiness = business
   let pageServices = serviceRows
+  let pageTeam = team
   if (language === "es") {
     const byKey = new Map(
       translationRows.map((row) => [`${row.entityId}\n${row.field}`, row])
@@ -304,6 +310,14 @@ async function loadBusinessPage(
         }
       }
       return next
+    })
+    pageTeam = team.map((member) => {
+      const row = member.description
+        ? byKey.get(`${member.id}\nteam_member.description`)
+        : undefined
+      return row && row.sourceText === member.description
+        ? { ...member, description: row.text }
+        : member
     })
   }
 
@@ -397,7 +411,7 @@ async function loadBusinessPage(
     business: liveBusiness,
     hours,
     services: pageServices,
-    team,
+    team: pageTeam,
     photos,
     reviews: extras.reviews,
     amenities: extras.amenities,

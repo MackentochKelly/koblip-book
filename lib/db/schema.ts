@@ -108,6 +108,11 @@ export const teamMembers = sqliteTable(
       .references(() => businesses.id, { onDelete: "cascade" }),
     name: text().notNull(),
     photoUrl: text(),
+    // For the owner only, never shown to customers.
+    phone: text(),
+    email: text(),
+    // One short line customers see under the name when they book.
+    description: text(),
     position: integer().notNull().default(0),
     ...timestamps(),
   },

@@ -48,17 +48,25 @@ afterAll(() => {
   db.$client.close()
   rmSync(dir, { recursive: true, force: true })
 })
+const person = (name: string) => ({
+  name,
+  phone: null,
+  email: null,
+  description: null,
+})
 const rows = [
   { weekday: 1, opensAt: "22:00", closesAt: "02:00" },
   { weekday: 2, opensAt: "00:00", closesAt: "00:00" },
 ]
 test("owner saves split/overnight hours and restores inheritance", async () => {
-  expect(await saveTeamMemberWithHours("biz", "m", "Ana", rows)).toEqual({
+  expect(await saveTeamMemberWithHours("biz", "m", person("Ana"), rows)).toEqual({
     ok: true,
+    id: "m",
   })
   expect(await db.select().from(teamMemberHours)).toHaveLength(2)
-  expect(await saveTeamMemberWithHours("biz", "m", "Renamed", null)).toEqual({
+  expect(await saveTeamMemberWithHours("biz", "m", person("Renamed"), null)).toEqual({
     ok: true,
+    id: "m",
   })
   expect(await db.select().from(teamMemberHours)).toEqual([])
   expect(
@@ -72,11 +80,11 @@ test("invalid hours cannot rename or create a member", async () => {
     [{ weekday: 1, opensAt: "24:00", closesAt: "11:00" }],
     Array(15).fill(rows[0]),
   ]) {
-    expect(await saveTeamMemberWithHours("biz", "m", "Wrong", bad)).toEqual({
+    expect(await saveTeamMemberWithHours("biz", "m", person("Wrong"), bad)).toEqual({
       ok: false,
       error: "invalid",
     })
-    expect(await saveTeamMemberWithHours("biz", null, "Wrong", bad)).toEqual({
+    expect(await saveTeamMemberWithHours("biz", null, person("Wrong"), bad)).toEqual({
       ok: false,
       error: "invalid",
     })
@@ -88,26 +96,58 @@ test("invalid hours cannot rename or create a member", async () => {
 })
 test("cross-business member and unowned business cannot be changed", async () => {
   expect(
-    await saveTeamMemberWithHours("biz", "stranger", "Wrong", rows)
+    await saveTeamMemberWithHours("biz", "stranger", person("Wrong"), rows)
   ).toEqual({ ok: false, error: "not_found" })
   expect(
-    await saveTeamMemberWithHours("other", "stranger", "Wrong", rows)
+    await saveTeamMemberWithHours("other", "stranger", person("Wrong"), rows)
   ).toEqual({ ok: false, error: "not_found" })
   expect(await db.select().from(teamMemberHours)).toEqual([])
 })
 test("new member and hours save together", async () => {
-  expect(await saveTeamMemberWithHours("biz", null, "New", rows)).toEqual({
-    ok: true,
-  })
+  const saved = await saveTeamMemberWithHours("biz", null, person("New"), rows)
   const [member] = await db
     .select()
     .from(teamMembers)
     .where(eq(teamMembers.name, "New"))
+  expect(saved).toEqual({ ok: true, id: member.id })
   expect(
     (await db.select().from(teamMemberHours)).every(
       (row) => row.teamMemberId === member.id && row.businessId === "biz"
     )
   ).toBe(true)
+})
+
+test("phone, email and description are checked and saved", async () => {
+  const details = {
+    name: " Ana ",
+    phone: " +1 809 555 0000 ",
+    email: "ana@example.com",
+    description: " Colour expert ",
+  }
+  for (const [field, value] of [
+    ["name", ""],
+    ["phone", "call me"],
+    ["email", "ana@"],
+    ["description", "x".repeat(121)],
+  ] as const) {
+    expect(
+      await saveTeamMemberWithHours("biz", "m", { ...details, [field]: value }, null)
+    ).toEqual({ ok: false, error: field })
+  }
+  expect(await saveTeamMemberWithHours("biz", "m", details, null)).toEqual({
+    ok: true,
+    id: "m",
+  })
+  const [saved] = await db.select().from(teamMembers).where(eq(teamMembers.id, "m"))
+  expect(saved).toMatchObject({
+    name: "Ana",
+    phone: "+1 809 555 0000",
+    email: "ana@example.com",
+    description: "Colour expert",
+  })
+  await saveTeamMemberWithHours("biz", "m", { ...details, phone: " ", email: "", description: "" }, null)
+  const [cleared] = await db.select().from(teamMembers).where(eq(teamMembers.id, "m"))
+  expect(cleared).toMatchObject({ phone: null, email: null, description: null })
 })
 
 test("removing a member also removes their custom hours without relying on database cascades", async () => {

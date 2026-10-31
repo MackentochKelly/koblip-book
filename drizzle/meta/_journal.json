@@ -204,6 +204,13 @@
       "when": 1793423343150,
       "tag": "0028_broken_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1793424021876,
+      "tag": "0029_curly_power_man",
+      "breakpoints": true
     }
   ]
 }

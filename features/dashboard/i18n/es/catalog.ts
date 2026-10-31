@@ -96,6 +96,12 @@ const catalog: typeof en = {
       `${name} tiene reservas pendientes. Cancélalas primero.`,
     saveFailed: "No se pudo guardar. Inténtalo de nuevo.",
     photo: (name: string) => `Foto de ${name}`,
+    newPhoto: "Foto de la persona nueva",
+    phone: "Teléfono",
+    email: "Correo",
+    description: "Descripción corta",
+    badPhone: "Revisa el número de teléfono",
+    badEmail: "Revisa el correo",
   },
 }
 

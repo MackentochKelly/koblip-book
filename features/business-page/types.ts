@@ -20,7 +20,11 @@ export type Business = typeof businesses.$inferSelect & {
 }
 export type BusinessHour = typeof businessHours.$inferSelect
 export type Service = typeof services.$inferSelect
-export type TeamMember = typeof teamMembers.$inferSelect
+// What customers see of a person: never their phone or email.
+export type TeamMember = Pick<
+  typeof teamMembers.$inferSelect,
+  "id" | "name" | "photoUrl" | "description"
+>
 export type BusinessPhoto = typeof businessPhotos.$inferSelect
 
 export interface PagePhoto {

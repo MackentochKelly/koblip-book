@@ -6,6 +6,7 @@ import {
   addonGroups,
   addonOptions,
   services,
+  teamMembers,
   translations,
 } from "@/lib/db/schema"
 import { isMetaAiEnabled } from "@/lib/meta-ai"
@@ -28,7 +29,8 @@ export async function translateBusiness(
     return { ok: false, error: "ai_off" }
   }
   const business = owned.business
-  const [serviceRows, addonGroupRows, addonOptionRows] = await Promise.all([
+  const [serviceRows, addonGroupRows, addonOptionRows, teamRows] =
+    await Promise.all([
     db
       .select({
         id: services.id,
@@ -49,6 +51,10 @@ export async function translateBusiness(
       })
       .from(addonOptions)
       .where(eq(addonOptions.businessId, business.id)),
+    db
+      .select({ id: teamMembers.id, description: teamMembers.description })
+      .from(teamMembers)
+      .where(eq(teamMembers.businessId, business.id)),
   ])
   const existing = await db
     .select()
@@ -63,17 +69,19 @@ export async function translateBusiness(
     business.id,
     business.description,
     serviceRows,
-    { groups: addonGroupRows, options: addonOptionRows }
+    { groups: addonGroupRows, options: addonOptionRows },
+    teamRows
   )
   const pending = pendingTranslations(all, existing)
 
-  // Rows whose business, service, add-on group or add-on option no longer
-  // exists.
+  // Rows whose business, service, add-on group, add-on option or team
+  // member no longer exists.
   const liveIds = new Set([
     business.id,
     ...serviceRows.map((service) => service.id),
     ...addonGroupRows.map((group) => group.id),
     ...addonOptionRows.map((option) => option.id),
+    ...teamRows.map((member) => member.id),
   ])
   const orphanIds = existing
     .filter((row) => !liveIds.has(row.entityId))
