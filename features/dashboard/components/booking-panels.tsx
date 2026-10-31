@@ -21,6 +21,8 @@ import { formatClock, formatDay } from "@/lib/format-booking-time"
 import type {
   OwnerBookingInput,
   OwnerBookingResult,
+  OwnerFreeTimes,
+  OwnerFreeTimesInput,
   OwnerMoveInput,
   OwnerMoveResult,
 } from "@/types/owner-booking"
@@ -37,6 +39,7 @@ export interface BookingPanelsProps {
   businessId: string
   addOptions: AddBookingOptions
   createBooking: (input: OwnerBookingInput) => Promise<OwnerBookingResult>
+  findFreeTimes: (input: OwnerFreeTimesInput) => Promise<OwnerFreeTimes>
   moveBooking: (input: OwnerMoveInput) => Promise<OwnerMoveResult>
 }
 
@@ -47,6 +50,7 @@ export function useBookingPanels({
   businessId,
   addOptions,
   createBooking,
+  findFreeTimes,
   moveBooking,
 }: BookingPanelsProps) {
   const [opened, setOpened] = useState<OwnerBooking | null>(null)
@@ -149,6 +153,7 @@ export function useBookingPanels({
         businessId={businessId}
         options={addOptions}
         createBooking={createBooking}
+        findFreeTimes={findFreeTimes}
       />
 
       <MoveBookingPanel

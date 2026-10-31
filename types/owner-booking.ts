@@ -30,3 +30,14 @@ export type OwnerMoveResult =
   | { status: "conflict"; reason: "closed" | "busy" }
   | { status: "invalid"; field: "date" | "time" }
   | { status: "failed" }
+// The free times the owner can pick from when adding a booking: the same
+// ones the booking page offers. null = none to offer (not bookable online).
+export interface OwnerFreeTimesInput {
+  businessId: string
+  serviceId: string
+  teamMemberId: string | null // null = anyone free
+  addonIds: string[]
+}
+export type OwnerFreeTimes = {
+  days: { date: string; times: string[] }[] // "YYYY-MM-DD", "HH:mm", business time zone
+} | null
