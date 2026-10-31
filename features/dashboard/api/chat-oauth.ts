@@ -3,7 +3,9 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto"
 import { eq } from "drizzle-orm"
 
 import { db } from "@/lib/db"
+import { saveAll } from "@/lib/db/save-all"
 import { chatConnections, chatTemplates, koblipChatConnection } from "@/lib/db/schema"
+import { notification } from "@/lib/in-app-notifications"
 import { open, seal } from "@/lib/secret-box"
 import type { ChatConnectResult } from "@/types/chat-connect"
 
@@ -198,7 +200,15 @@ function businessStore(businessId: string): Store {
         .onConflictDoUpdate({ target: chatConnections.businessId, set: row })
     },
     async dropTokens() {
-      await db.update(chatConnections).set(NO_TOKENS).where(where)
+      // The owner's bell hears the connection must be renewed, once each
+      // time it stops working, saved with it.
+      const [row] = await db
+        .select({ needsReconnect: chatConnections.needsReconnect })
+        .from(chatConnections)
+        .where(where)
+        .limit(1)
+      const notice = row && !row.needsReconnect ? await notification(businessId, "connectionRenew", {}) : []
+      await saveAll([db.update(chatConnections).set(NO_TOKENS).where(where), ...notice])
     },
     async remove() {
       await forgetWorkspace(businessId)

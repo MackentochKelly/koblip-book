@@ -4,6 +4,7 @@ import type { BatchItem } from "drizzle-orm/batch"
 
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
+import { notification } from "@/lib/in-app-notifications"
 import {
   bookings,
   businesses,
@@ -139,6 +140,23 @@ export async function applyButtonReply(reply: ButtonReply) {
   }
   if (settings.thankYouReply) {
     queued.push({ ...base, message: "thankYou", state: "pending" })
+  }
+  // The owner's bell hears the answer too, once per booking and move.
+  if (reply.action !== "ok") {
+    const kind =
+      reply.action === "confirm"
+        ? "customerConfirmed"
+        : settings.cantCome === "cancel"
+          ? "customerCancelled"
+          : "customerCantCome"
+    writes.push(
+      ...(await notification(
+        booking.businessId,
+        kind,
+        { customerName: booking.customerName, serviceName: booking.serviceName, startAt: booking.startAt },
+        { dedupeKey: `${kind}:${booking.id}:${booking.moves}` }
+      ))
+    )
   }
   if (queued.length) {
     writes.push(db.insert(notificationSends).values(queued).onConflictDoNothing())

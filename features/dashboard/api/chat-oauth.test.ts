@@ -5,7 +5,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterAll, afterEach, beforeAll, expect, test, vi } from "vitest"
 import { db } from "@/lib/db"
-import { businesses, chatConnections, koblipChatConnection, user } from "@/lib/db/schema"
+import { businesses, chatConnections, inAppNotifications, koblipChatConnection, user } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
 
@@ -135,6 +135,9 @@ test("a refused refresh drops the tokens and asks to reconnect", async () => {
   const [row] = await db.select().from(chatConnections)
   expect(row.accessToken).toBeNull()
   expect(row.refreshToken).toBeNull()
+  // The owner's bell hears it once, not each time it is asked again (N2).
+  expect(await chatAccessToken("biz")).toBeNull()
+  expect((await db.select().from(inAppNotifications)).map(({ kind }) => kind)).toEqual(["connectionRenew"])
 })
 
 test("disconnect revokes at Chat and forgets the connection", async () => {

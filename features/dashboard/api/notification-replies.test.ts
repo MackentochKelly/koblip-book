@@ -9,6 +9,7 @@ import {
   bookings,
   businesses,
   chatConnections,
+  inAppNotifications,
   koblipChatConnection,
   notificationSends,
   notificationSettings,
@@ -150,6 +151,7 @@ afterEach(async () => {
   await db.delete(notificationSends)
   await db.delete(bookings)
   await db.delete(notificationSettings)
+  await db.delete(inAppNotifications)
 })
 
 afterAll(() => {
@@ -263,4 +265,65 @@ test("works for a message sent from Koblip's number", async () => {
   // Koblip's number answers through Koblip's workspace, not the business's.
   await applyChatEvent(tap("cantCome", { replyToMessageId: "wamid.k", occurredAt: "2026-10-30T13:00:00.000Z" }))
   expect((await sends()).find(({ message }) => message === "reminder")?.replyAction).toBe("confirm")
+})
+
+async function bell() {
+  return db
+    .select({ kind: inAppNotifications.kind, data: inAppNotifications.data, readAt: inAppNotifications.readAt })
+    .from(inAppNotifications)
+}
+
+test("the owner's bell hears each answer once per booking and move (N2)", async () => {
+  await booked()
+  await reminderSent({ chatMessageId: "wamid.reminder" })
+  await applyChatEvent(tap("confirm"))
+  await applyChatEvent(tap("confirm"))
+  expect(await bell()).toEqual([
+    {
+      kind: "customerConfirmed",
+      data: { customerName: "Ana", serviceName: "Cut", startAt: VISIT },
+      readAt: null,
+    },
+  ])
+
+  await applyChatEvent(tap("cantCome", { occurredAt: "2026-10-30T13:00:00.000Z" }))
+  expect((await bell()).map(({ kind }) => kind)).toEqual(["customerConfirmed", "customerCantCome"])
+})
+
+test("a Can't make it that cancels tells the bell it was cancelled (N2)", async () => {
+  await booked()
+  await reminderSent({ chatMessageId: "wamid.reminder" })
+  await settings({ cantCome: "cancel", thankYouReply: false })
+  await applyChatEvent(tap("cantCome"))
+  expect((await bell()).map(({ kind }) => kind)).toEqual(["customerCancelled"])
+})
+
+test("a customer who writes is one notification that comes back unread (N2)", async () => {
+  await booked({ customerKey: "p:18095550000" })
+  await db.update(chatConnections).set({ phoneNumberId: "p1" })
+  const wrote = (eventId: string, occurredAt: string) =>
+    applyChatEvent(tap("hello", { eventId, messageType: "text", button: null, text: "Hola", occurredAt }))
+  try {
+    await wrote("w-1", TODAY)
+    await db.update(inAppNotifications).set({ readAt: TODAY })
+    await wrote("w-2", "2026-10-30T13:00:00.000Z")
+    expect(await bell()).toEqual([
+      {
+        kind: "customerReplied",
+        data: { customerName: "Ana", customerPhone: "18095550000" },
+        readAt: null,
+      },
+    ])
+  } finally {
+    await db.update(chatConnections).set({ phoneNumberId: null })
+  }
+})
+
+test("on Koblip's number the reply goes to the business that last wrote to them (N2)", async () => {
+  await booked({ customerKey: "p:18095550000" })
+  await reminderSent({ sender: "koblip", chatRecordId: "r-k", sentAt: TODAY })
+  await applyChatEvent(
+    tap("hello", { eventId: "w-k", workspaceId: "w-koblip", messageType: "text", button: null, text: "Hola" })
+  )
+  expect((await bell()).map(({ kind }) => kind)).toEqual(["customerReplied"])
 })

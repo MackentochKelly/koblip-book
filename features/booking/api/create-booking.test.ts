@@ -7,6 +7,7 @@ import {
   bookings,
   businessHours,
   businesses,
+  inAppNotifications,
   services,
   teamMembers,
 } from "@/lib/db/schema"
@@ -106,6 +107,17 @@ test("books a valid slot and picks the free team member", async () => {
       time: "10:00",
     },
   })
+  // The owner's bell hears it, saved with the booking (N2).
+  const { db } = await import("@/lib/db")
+  const notices = await db.select().from(inAppNotifications)
+  expect(notices.map(({ businessId, kind, data, link }) => ({ businessId, kind, data, link }))).toEqual([
+    {
+      businessId: "biz-book",
+      kind: "newBooking",
+      data: { customerName: "Luis", serviceName: "Cut", startAt: "2026-06-01T14:00:00.000Z" },
+      link: "/dashboard/biz-book",
+    },
+  ])
 })
 
 test("returns taken when the slot filled up", async () => {

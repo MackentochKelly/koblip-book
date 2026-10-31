@@ -3,7 +3,9 @@ import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, notInAr
 import { alias } from "drizzle-orm/sqlite-core"
 
 import { db } from "@/lib/db"
-import { koblipTemplatesSent } from "@/lib/koblip-usage"
+import { saveAll } from "@/lib/db/save-all"
+import { notification, notify } from "@/lib/in-app-notifications"
+import { koblipTemplatesSent, usageMonth } from "@/lib/koblip-usage"
 import {
   bookings,
   businesses,
@@ -399,7 +401,13 @@ async function plan(now: Date) {
     // A message to the customer failed: the owner hears of it once per
     // booking and move, while the visit is still ahead.
     const failed = await db
-      .selectDistinct({ id: bookings.id, moves: notificationSends.moves })
+      .selectDistinct({
+        id: bookings.id,
+        moves: notificationSends.moves,
+        customerName: bookings.customerName,
+        serviceName: bookings.serviceName,
+        startAt: bookings.startAt,
+      })
       .from(notificationSends)
       .innerJoin(bookings, eq(bookings.id, notificationSends.bookingId))
       .leftJoin(
@@ -420,20 +428,34 @@ async function plan(now: Date) {
         )
       )
     if (failed.length) {
-      await db
-        .insert(notificationSends)
-        .values(
-          failed.map(({ id, moves }) => ({
+      // The owner's bell hears it too, saved with the alert's rows.
+      const notices = await Promise.all(
+        failed.map(({ id, moves, customerName, serviceName, startAt }) =>
+          notification(
             businessId,
-            bookingId: id,
-            moves,
-            message: "ownerFailed" as const,
-            dueAt: now.toISOString(),
-            state: settings.ownerPhone ? ("pending" as const) : ("skipped" as const),
-            reason: settings.ownerPhone ? null : "noOwnerPhone",
-          }))
+            "messageFailed",
+            { customerName, serviceName, startAt },
+            { dedupeKey: `messageFailed:${id}:${moves}` }
+          )
         )
-        .onConflictDoNothing()
+      )
+      await saveAll([
+        db
+          .insert(notificationSends)
+          .values(
+            failed.map(({ id, moves }) => ({
+              businessId,
+              bookingId: id,
+              moves,
+              message: "ownerFailed" as const,
+              dueAt: now.toISOString(),
+              state: settings.ownerPhone ? ("pending" as const) : ("skipped" as const),
+              reason: settings.ownerPhone ? null : "noOwnerPhone",
+            }))
+          )
+          .onConflictDoNothing(),
+        ...notices.flat(),
+      ])
     }
 
     // A cancelled booking's other waiting messages never go.
@@ -631,11 +653,18 @@ async function sendMessage({
 
   // Koblip's number sends a business at most its monthly templates (D3,
   // K6); past that, inside the window the words still go alone (free).
+  // The owner's bell hears once a month when the limit is near and when it
+  // is reached.
   if (sender === "koblip" && !text) {
-    const { koblipMonthlyTemplates } = await notificationRules(businessId)
-    if ((await koblipTemplatesSent(businessId, now)) >= koblipMonthlyTemplates) {
+    const { koblipMonthlyTemplates: limit, koblipLimitNearPercent } = await notificationRules(businessId)
+    const sent = await koblipTemplatesSent(businessId, now)
+    const month = usageMonth(now).start.slice(0, 7)
+    if (sent >= limit) {
+      await notify(businessId, "koblipLimitReached", { sent, limit }, { dedupeKey: `koblipLimitReached:${month}` })
       if (!inWindow) return { state: "skipped", reason: "monthlyLimit", sender }
       text = true
+    } else if (sent + 1 >= Math.ceil((limit * koblipLimitNearPercent) / 100)) {
+      await notify(businessId, "koblipLimitNear", { sent: sent + 1, limit }, { dedupeKey: `koblipLimitNear:${month}` })
     }
   }
 

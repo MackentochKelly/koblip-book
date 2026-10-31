@@ -1,14 +1,16 @@
 import "server-only"
 import { createHmac, timingSafeEqual } from "node:crypto"
-import { and, eq, sql } from "drizzle-orm"
+import { and, desc, eq, sql } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import {
+  bookings,
   chatConnections,
   chatReplies,
   koblipChatConnection,
   notificationSends,
 } from "@/lib/db/schema"
+import { notify } from "@/lib/in-app-notifications"
 import {
   applyButtonReply,
   buttonAction,
@@ -181,5 +183,60 @@ export async function applyChatEvent(event: unknown) {
       action,
       at: lastReplyAt,
     })
+  } else if (!action) {
+    await notifyCustomerWrote(reply.workspaceId, reply.senderId, customerPhone, !!koblip)
+  }
+}
+
+// A customer wrote (not a button tap): the owner's bell hears it, one
+// notification per customer that comes back unread when they write again.
+// On a business's own number that business; on Koblip's, which serves many,
+// the business whose message last reached this customer from it.
+async function notifyCustomerWrote(
+  workspaceId: string,
+  phoneNumberId: string,
+  customerPhone: string,
+  koblip: boolean
+) {
+  const own = await db
+    .select({ businessId: chatConnections.businessId })
+    .from(chatConnections)
+    .where(
+      and(
+        eq(chatConnections.workspaceId, workspaceId),
+        eq(chatConnections.phoneNumberId, phoneNumberId),
+        eq(chatConnections.needsReconnect, false)
+      )
+    )
+  let businessIds = own.map(({ businessId }) => businessId)
+  if (!businessIds.length && koblip) {
+    const [last] = await db
+      .select({ businessId: notificationSends.businessId })
+      .from(notificationSends)
+      .innerJoin(bookings, eq(bookings.id, notificationSends.bookingId))
+      .where(
+        and(
+          eq(notificationSends.sender, "koblip"),
+          eq(notificationSends.state, "sent"),
+          eq(bookings.customerKey, `p:${customerPhone}`)
+        )
+      )
+      .orderBy(desc(notificationSends.sentAt))
+      .limit(1)
+    businessIds = last ? [last.businessId] : []
+  }
+  for (const businessId of businessIds) {
+    const [booking] = await db
+      .select({ customerName: bookings.customerName })
+      .from(bookings)
+      .where(and(eq(bookings.businessId, businessId), eq(bookings.customerKey, `p:${customerPhone}`)))
+      .orderBy(desc(bookings.createdAt))
+      .limit(1)
+    await notify(
+      businessId,
+      "customerReplied",
+      { customerName: booking?.customerName, customerPhone },
+      { dedupeKey: `replied:${customerPhone}`, renew: true }
+    )
   }
 }
