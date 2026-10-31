@@ -5,7 +5,11 @@ import { getTranslationStatus } from "@/features/dashboard/api/translation-queri
 import { BusinessPhotosEditor } from "@/features/dashboard/components/business-photos-editor"
 import { DetailsForm } from "@/features/dashboard/components/details-form"
 import { SpanishSection } from "@/features/dashboard/components/spanish-section"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
+import {
+  getOwnerLanguage,
+  getOwnerMessages,
+} from "@/features/dashboard/i18n/server"
+import { NotificationSettingsLink } from "@/features/notifications/components/notification-settings-link"
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getOwnerMessages()).shell.nav.settings }
@@ -17,11 +21,14 @@ type Props = {
 
 export default async function SettingsPage({ params }: Props) {
   const { businessId } = await params
-  const [{ business, team }, photos, translation] = await Promise.all([
-    getOwnerBusiness(businessId),
-    getBusinessPhotos(businessId),
-    getTranslationStatus(businessId),
-  ])
+  const [{ business, team }, photos, translation, language] = await Promise.all(
+    [
+      getOwnerBusiness(businessId),
+      getBusinessPhotos(businessId),
+      getTranslationStatus(businessId),
+      getOwnerLanguage(),
+    ]
+  )
   return (
     <div className="flex flex-col gap-10">
       <DetailsForm
@@ -41,6 +48,10 @@ export default async function SettingsPage({ params }: Props) {
         businessId={businessId}
         slug={business.slug}
         status={translation}
+      />
+      <NotificationSettingsLink
+        href={`/dashboard/${businessId}/settings/notifications`}
+        language={language}
       />
     </div>
   )

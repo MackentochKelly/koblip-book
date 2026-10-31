@@ -42,14 +42,17 @@ const PHONE_RIGHT = ["/services", "/team"]
 
 // The owner area: the ☰ menu (folding on a computer, sliding in on a phone),
 // a bottom tab bar on a phone for the main pages, and a top bar with the
-// business name, its public page and the account menu.
+// business name, its public page and the account menu. `bell` is the
+// notifications bell: in the top bar on a phone, atop the menu on a computer.
 export function DashboardShell({
   business,
   owner,
+  bell,
   children,
 }: {
   business: { id: string; slug: string; name: string }
   owner: { name: string; email: string; image: string | null }
+  bell?: React.ReactNode
   children: React.ReactNode
 }) {
   const pathname = usePathname()
@@ -94,12 +97,13 @@ export function DashboardShell({
     <TooltipProvider>
       <CommandMenuProvider business={business}>
         <SidebarProvider>
-          <AppSidebar businessId={business.id} owner={owner} />
+          <AppSidebar businessId={business.id} owner={owner} bell={bell} />
           <SidebarInset className={cn("min-w-0", assistantOpen && "md:h-dvh")}>
             <TopBar
               business={business}
               owner={owner}
               menu
+              bell={bell}
               className={cn(assistantOpen && "max-md:hidden")}
             />
             <div
