@@ -51,6 +51,13 @@ export function DetailsForm({
   const [website, setWebsite] = useState(details.website ?? "")
   const [seats, setSeats] = useState(String(details.seats))
   const [invalid, setInvalid] = useState<Invalid>(null)
+  const changed =
+    name !== details.name ||
+    address !== (details.address ?? "") ||
+    description !== (details.description ?? "") ||
+    phone !== (details.phone ?? "") ||
+    website !== (details.website ?? "") ||
+    seats !== String(details.seats)
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -188,8 +195,9 @@ export function DetailsForm({
           </Field>
         )}
       </FieldGroup>
-      {/* Save is the big button at the end of the form, like the login card's. */}
-      <Button type="submit" size="lg" disabled={pending}>
+      {/* Save is the big button at the end of the form, like the login card's.
+          In Settings it waits for a change; right after sign-up it moves on. */}
+      <Button type="submit" size="lg" disabled={pending || (!next && !changed)}>
         {pending && <Spinner data-icon="inline-start" />}
         {m.settings.save}
       </Button>

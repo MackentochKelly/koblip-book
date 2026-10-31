@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
   ArrowDownIcon,
@@ -105,6 +105,8 @@ export function TeamView({
   const [removing, setRemoving] = useState<MemberRow | null>(null)
   const [pending, startTransition] = useTransition()
   const [formError, setFormError] = useState<DetailsError | null>(null)
+  // Whether the open form differs from the saved person.
+  const [changed, setChanged] = useState(false)
   const uploadPickedPhoto = useUploadPickedPhoto()
 
   const openForm = (member: MemberRow | "new") => {
@@ -240,7 +242,12 @@ export function TeamView({
         onClose={() => setEditing(null)}
         title={editing === "new" ? t.addPerson : t.editPerson}
         footer={
-          <Button type="submit" size="lg" form={MEMBER_FORM} disabled={pending}>
+          <Button
+            type="submit"
+            size="lg"
+            form={MEMBER_FORM}
+            disabled={pending || (editing !== "new" && !changed)}
+          >
             {pending && <Spinner data-icon="inline-start" />}
             {c.save}
           </Button>
@@ -254,6 +261,7 @@ export function TeamView({
             member={editing === "new" ? null : editing}
             error={formError}
             onError={setFormError}
+            onChanged={setChanged}
             photo={
               editing !== "new" && (
                 <PhotoField
@@ -304,6 +312,7 @@ function MemberForm({
   photo,
   error,
   onError,
+  onChanged,
   onSave,
 }: {
   member: MemberRow | null // null while adding
@@ -312,6 +321,7 @@ function MemberForm({
   photo: React.ReactNode
   error: DetailsError | null
   onError: (error: DetailsError) => void
+  onChanged: (changed: boolean) => void
   onSave: (
     details: TeamMemberDetails,
     rows: HoursRow[] | null,
@@ -329,6 +339,16 @@ function MemberForm({
   const [email, setEmail] = useState(member?.email ?? "")
   const [description, setDescription] = useState(member?.description ?? "")
   const [newPhoto, setNewPhoto] = useState<File | null>(null)
+  const changed =
+    name !== (member?.name ?? "") ||
+    phone !== (member?.phone ?? "") ||
+    email !== (member?.email ?? "") ||
+    description !== (member?.description ?? "") ||
+    same !== (memberHours.length === 0) ||
+    (!same &&
+      JSON.stringify(rows) !==
+        JSON.stringify(memberHours.length ? memberHours : hours))
+  useEffect(() => onChanged(changed), [changed, onChanged])
   return (
     <form
       id={MEMBER_FORM}

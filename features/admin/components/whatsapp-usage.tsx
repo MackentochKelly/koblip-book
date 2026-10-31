@@ -47,6 +47,8 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
   const [editing, setEditing] = useState<Editing | null>(null)
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState("")
+  // The value the panel opened with: Save waits for a change.
+  const [start, setStart] = useState("")
   const [invalid, setInvalid] = useState(false)
   const [pending, startTransition] = useTransition()
   const month = new Intl.DateTimeFormat(m.locale, {
@@ -57,7 +59,9 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
 
   function edit(business: UsageBusiness | null) {
     setEditing({ business })
-    setInput(String(business ? business.limit : usage.limit))
+    const current = String(business ? business.limit : usage.limit)
+    setInput(current)
+    setStart(current)
     setInvalid(false)
     setOpen(true)
   }
@@ -159,7 +163,12 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
                 {editing?.business ? t.useEveryone : t.useDefault}
               </Button>
             )}
-            <Button type="submit" size="lg" form={FORM} disabled={pending}>
+            <Button
+              type="submit"
+              size="lg"
+              form={FORM}
+              disabled={pending || input === start}
+            >
               {pending && <Spinner data-icon="inline-start" />}
               {t.save}
             </Button>

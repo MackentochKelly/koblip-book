@@ -43,7 +43,12 @@ export function HoursForm({
         locale={m.locale}
         labels={t}
       />
-      <Button size="lg" onClick={save} disabled={pending}>
+      {/* Save waits for a change. */}
+      <Button
+        size="lg"
+        onClick={save}
+        disabled={pending || JSON.stringify(rows) === JSON.stringify(hours)}
+      >
         {pending && <Spinner data-icon="inline-start" />}
         {m.settings.save}
       </Button>

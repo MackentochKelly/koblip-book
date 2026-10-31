@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
   ArrowDownIcon,
@@ -112,6 +112,8 @@ export function ExtrasView({
   const [formKey, setFormKey] = useState(0)
   const [removing, setRemoving] = useState<OwnerAddonGroup | null>(null)
   const [pending, startTransition] = useTransition()
+  // Whether the open form differs from the saved group.
+  const [changed, setChanged] = useState(false)
   const panelOpen = adding || editing !== null
   const names = new Map(services.map((service) => [service.id, service.name]))
 
@@ -235,7 +237,12 @@ export function ExtrasView({
         onClose={closePanel}
         title={editing ? t.edit : t.add}
         footer={
-          <Button type="submit" size="lg" form={FORM} disabled={pending}>
+          <Button
+            type="submit"
+            size="lg"
+            form={FORM}
+            disabled={pending || (editing !== null && !changed)}
+          >
             {pending && <Spinner data-icon="inline-start" />}
             {c.save}
           </Button>
@@ -246,6 +253,7 @@ export function ExtrasView({
             key={`${formKey}-${editing?.id ?? "new"}-${adding}`}
             group={editing}
             services={services}
+            onChanged={setChanged}
             onSave={(input) =>
               startTransition(async () => {
                 const result = await (
@@ -283,10 +291,12 @@ type Invalid = "name" | "prompt" | "options" | null
 function ExtrasForm({
   group,
   services,
+  onChanged,
   onSave,
 }: {
   group: OwnerAddonGroup | null
   services: { id: string; name: string }[]
+  onChanged: (changed: boolean) => void
   onSave: (input: AddonGroupInput) => void
 }) {
   const { common: c, extras: t } = useOwnerMessages().catalog
@@ -325,6 +335,23 @@ function ExtrasForm({
   )
   const [invalid, setInvalid] = useState<Invalid>(null)
   const [badOption, setBadOption] = useState<number | null>(null)
+  // Everything the owner can change, to compare with how the form opened.
+  const snapshot = JSON.stringify({
+    name,
+    prompt,
+    choice,
+    serviceIds: [...serviceIds].sort(),
+    options: options.map((option) => [
+      option.id,
+      option.name,
+      option.description,
+      option.price,
+      option.minutes,
+    ]),
+  })
+  const [opened] = useState(snapshot)
+  const changed = snapshot !== opened
+  useEffect(() => onChanged(changed), [changed, onChanged])
 
   const update = (key: number, change: Partial<OptionDraft>) =>
     setOptions((current) =>

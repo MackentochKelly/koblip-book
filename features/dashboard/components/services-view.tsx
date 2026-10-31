@@ -130,6 +130,8 @@ export function ServicesView({
   const [pending, startTransition] = useTransition()
   const [view, setView] = useState<"services" | "extras">("services")
   const [addingExtras, setAddingExtras] = useState(false)
+  // Whether the open form differs from the saved service.
+  const [changed, setChanged] = useState(false)
 
   const openForm = (service: ServiceRow | "new") => {
     setFormKey((value) => value + 1)
@@ -320,7 +322,12 @@ export function ServicesView({
         onClose={() => setEditing(null)}
         title={editing === "new" ? t.addService : t.editService}
         footer={
-          <Button type="submit" size="lg" form={SERVICE_FORM} disabled={pending}>
+          <Button
+            type="submit"
+            size="lg"
+            form={SERVICE_FORM}
+            disabled={pending || (editing !== "new" && !changed)}
+          >
             {pending && <Spinner data-icon="inline-start" />}
             {c.save}
           </Button>
@@ -330,6 +337,7 @@ export function ServicesView({
           <ServiceForm
             key={formKey}
             service={editing === "new" ? null : editing}
+            onChanged={setChanged}
             team={team}
             memberIds={
               editing === "new"
@@ -402,12 +410,14 @@ function ServiceForm({
   team,
   memberIds: initialMembers,
   photo,
+  onChanged,
   onSave,
 }: {
   service: ServiceRow | null
   team: MemberRow[]
   memberIds: string[]
   photo: React.ReactNode
+  onChanged: (changed: boolean) => void
   onSave: (input: ServiceInput, memberIds: string[]) => void
 }) {
   const m = useOwnerMessages()
@@ -427,6 +437,14 @@ function ServiceForm({
   const [description, setDescription] = useState(service?.description ?? "")
   const [memberIds, setMemberIds] = useState(initialMembers)
   const [invalid, setInvalid] = useState<"name" | "price" | "team" | null>(null)
+  const changed =
+    name !== (service?.name ?? "") ||
+    duration !== String(service?.durationMinutes ?? 30) ||
+    price !==
+      (service?.priceMinor != null ? String(service.priceMinor / 100) : "") ||
+    description !== (service?.description ?? "") ||
+    [...memberIds].sort().join() !== [...initialMembers].sort().join()
+  useEffect(() => onChanged(changed), [changed, onChanged])
 
   return (
     <form

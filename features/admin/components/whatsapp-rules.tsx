@@ -67,12 +67,16 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
   const [opened, setOpened] = useState<RuleSetting | null>(null)
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState("")
+  // The value the panel opened with: Save waits for a change.
+  const [start, setStart] = useState("")
   const [invalid, setInvalid] = useState(false)
   const [pending, startTransition] = useTransition()
 
   function edit(rule: RuleSetting) {
     setOpened(rule)
-    setInput(ruleInputOf(rule.key, rule.value ?? rule.defaultValue))
+    const current = ruleInputOf(rule.key, rule.value ?? rule.defaultValue)
+    setInput(current)
+    setStart(current)
     setInvalid(false)
     setOpen(true)
   }
@@ -234,7 +238,12 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
                 {t.useDefault}
               </Button>
             )}
-            <Button type="submit" size="lg" form={FORM} disabled={pending}>
+            <Button
+              type="submit"
+              size="lg"
+              form={FORM}
+              disabled={pending || input === start}
+            >
               {pending && <Spinner data-icon="inline-start" />}
               {t.save}
             </Button>
