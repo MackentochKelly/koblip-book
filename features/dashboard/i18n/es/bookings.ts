@@ -2,9 +2,20 @@ import type en from "../en/bookings"
 
 const bookings: typeof en = {
   title: "Reservas",
-  summary: (today: number, upcoming: number) =>
-    `${today} hoy · ${upcoming} ${upcoming === 1 ? "próxima" : "próximas"}`,
+  stats: {
+    today: "Hoy",
+    tomorrow: "Mañana",
+    week: "Próximos 7 días",
+    upcoming: "Próximas",
+  },
   add: "Agregar",
+  addBooking: "Agregar reserva",
+  columns: {
+    time: "Hora",
+    customer: "Cliente",
+    service: "Servicio",
+    team: "Equipo",
+  },
   views: {
     upcoming: "Próximas",
     past: "Pasadas",

@@ -17,7 +17,7 @@ import { addDaysTo, todayIn } from "@/lib/format-booking-time"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.bookings }
+  return { title: (await getOwnerMessages()).shell.nav.dashboard }
 }
 
 type Props = {

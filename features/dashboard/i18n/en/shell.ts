@@ -2,6 +2,8 @@
 const shell = {
   nav: {
     home: "Home",
+    // The home page's name on a computer; a phone keeps Home.
+    dashboard: "Dashboard",
     owner: "Owner",
     bookings: "Bookings",
     customers: "Customers",

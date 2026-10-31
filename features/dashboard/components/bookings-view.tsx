@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
+import { StatCards } from "@/components/stat-cards"
 import { ViewTabs } from "@/components/view-tabs"
 import {
   AlertDialog,
@@ -22,8 +23,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import {
   Empty,
+  EmptyContent,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
@@ -37,6 +40,14 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import type {
   OwnerBookingInput,
@@ -56,7 +67,8 @@ import { MoveBookingPanel } from "./move-booking-panel"
 
 type View = "upcoming" | "past"
 
-// The business's bookings, by day: upcoming first, past one tab away. Each
+// The home page: today's counts, then the business's bookings by day
+// (upcoming first, past one tab away) beside the chart. Each
 // opens its details; before it starts it can be moved or cancelled, once it
 // has started it can be marked done or no-show.
 export function BookingsView({
@@ -97,6 +109,13 @@ export function BookingsView({
   ]
   const list = view === "upcoming" ? upcoming : past
   const days = groupByDay(list)
+  // The table's Team column, only for a business with a team.
+  const hasTeam = addOptions.team.length > 0
+  const open = (booking: OwnerBooking) => {
+    setOpened(booking)
+    setOpenedAt(Date.now())
+    setDetailsOpen(true)
+  }
 
   const run = (task: () => Promise<{ ok: boolean }>, done: string) =>
     startTransition(async () => {
@@ -131,12 +150,11 @@ export function BookingsView({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t.summary(counts.today, counts.upcoming)}
-          </p>
-        </div>
+        {/* Home on a phone, like its tab; Dashboard on a computer. */}
+        <h1 className="text-2xl font-semibold tracking-tight">
+          <span className="md:hidden">{m.shell.nav.home}</span>
+          <span className="max-md:hidden">{m.shell.nav.dashboard}</span>
+        </h1>
         <Button
           onClick={() => setAdding(true)}
           disabled={addOptions.services.length === 0}
@@ -145,10 +163,23 @@ export function BookingsView({
           {t.add}
         </Button>
       </div>
-      {/* A phone stacks the chart over the list; a computer puts them
-          side by side, the list taking the wider column. */}
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
-        <BookingsChart days={nextDays} />
+      <StatCards
+        stats={[
+          { label: t.stats.today, value: counts.today },
+          { label: t.stats.tomorrow, value: nextDays[1]?.bookings ?? 0 },
+          {
+            label: t.stats.week,
+            value: nextDays
+              .slice(0, 7)
+              .reduce((sum, day) => sum + day.bookings, 0),
+          },
+          { label: t.stats.upcoming, value: counts.upcoming },
+        ]}
+        locale={m.locale}
+      />
+      {/* The list comes first: on a phone the chart sits under it, on a
+          computer beside it in the narrower column. */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-6">
           <ViewTabs
             views={views}
@@ -167,56 +198,127 @@ export function BookingsView({
                   {view === "upcoming" ? t.noUpcoming : t.noPast}
                 </EmptyTitle>
               </EmptyHeader>
+              {view === "upcoming" && addOptions.services.length > 0 && (
+                <EmptyContent>
+                  <Button onClick={() => setAdding(true)}>
+                    <PlusIcon data-icon="inline-start" />
+                    {t.addBooking}
+                  </Button>
+                </EmptyContent>
+              )}
             </Empty>
           ) : (
-            days.map(([date, bookings]) => (
-              <section
-                key={date}
-                className="flex flex-col gap-3"
-                aria-label={formatDay(date, m.locale)}
-              >
-                <h2 className="text-sm font-medium text-muted-foreground">
-                  {formatDay(date, m.locale)}
-                </h2>
-                <ItemGroup className="gap-3">
-                  {bookings.map((booking) => (
-                    <Item
-                      key={booking.id}
-                      variant="outline"
-                      render={
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOpened(booking)
-                            setOpenedAt(Date.now())
-                            setDetailsOpen(true)
-                          }}
-                        />
-                      }
-                      className="text-left"
-                    >
-                      <ItemContent>
-                        <ItemTitle>
-                          {formatClock(booking.time, m.locale)} –{" "}
-                          {formatClock(booking.endTime, m.locale)}
-                          <BookingStatusBadge status={booking.status} />
-                        </ItemTitle>
-                        <ItemDescription>
-                          {booking.customerName} · {booking.serviceName}
-                          {booking.teamMemberName &&
-                            ` · ${booking.teamMemberName}`}
-                        </ItemDescription>
-                      </ItemContent>
-                      <ItemActions>
-                        <ChevronRightIcon />
-                      </ItemActions>
-                    </Item>
+            <>
+              {/* A phone lists each day's bookings. */}
+              <div className="flex flex-col gap-6 md:hidden">
+                {days.map(([date, bookings]) => (
+                  <section
+                    key={date}
+                    className="flex flex-col gap-3"
+                    aria-label={formatDay(date, m.locale)}
+                  >
+                    <h2 className="text-sm font-medium text-muted-foreground">
+                      {formatDay(date, m.locale)}
+                    </h2>
+                    <ItemGroup className="gap-3">
+                      {bookings.map((booking) => (
+                        <Item
+                          key={booking.id}
+                          variant="outline"
+                          render={
+                            <button
+                              type="button"
+                              onClick={() => open(booking)}
+                            />
+                          }
+                          className="text-left"
+                        >
+                          <ItemContent>
+                            <ItemTitle>
+                              {formatClock(booking.time, m.locale)} –{" "}
+                              {formatClock(booking.endTime, m.locale)}
+                              <BookingStatusBadge status={booking.status} />
+                            </ItemTitle>
+                            <ItemDescription>
+                              {booking.customerName} · {booking.serviceName}
+                              {booking.teamMemberName &&
+                                ` · ${booking.teamMemberName}`}
+                            </ItemDescription>
+                          </ItemContent>
+                          <ItemActions>
+                            <ChevronRightIcon />
+                          </ItemActions>
+                        </Item>
+                      ))}
+                    </ItemGroup>
+                  </section>
+                ))}
+              </div>
+              {/* A computer shows one table, each day a heading row, so the
+                  columns line up from day to day. */}
+              <Card className="py-0 max-md:hidden">
+                <Table className="[&_tr>*:first-child]:pl-4 [&_tr>*:last-child]:pr-4">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t.columns.time}</TableHead>
+                      <TableHead>{t.columns.customer}</TableHead>
+                      <TableHead>{t.columns.service}</TableHead>
+                      {hasTeam && <TableHead>{t.columns.team}</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  {days.map(([date, bookings]) => (
+                    <TableBody key={date}>
+                      <TableRow className="bg-muted/50 hover:bg-muted/50">
+                        <TableHead
+                          scope="colgroup"
+                          colSpan={hasTeam ? 4 : 3}
+                          className="h-8 text-xs text-muted-foreground"
+                        >
+                          {formatDay(date, m.locale)}
+                        </TableHead>
+                      </TableRow>
+                      {bookings.map((booking) => (
+                        // The whole row opens the booking for a mouse; the
+                        // customer's name is its button for the keyboard.
+                        <TableRow
+                          key={booking.id}
+                          className="cursor-pointer"
+                          onClick={() => open(booking)}
+                        >
+                          {/* The status sits by the time, as on a phone. */}
+                          <TableCell className="tabular-nums">
+                            <span className="flex items-center gap-2">
+                              {formatClock(booking.time, m.locale)} –{" "}
+                              {formatClock(booking.endTime, m.locale)}
+                              <BookingStatusBadge status={booking.status} />
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="link"
+                              className="h-auto p-0 text-foreground"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                open(booking)
+                              }}
+                            >
+                              {booking.customerName}
+                            </Button>
+                          </TableCell>
+                          <TableCell>{booking.serviceName}</TableCell>
+                          {hasTeam && (
+                            <TableCell>{booking.teamMemberName}</TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
                   ))}
-                </ItemGroup>
-              </section>
-            ))
+                </Table>
+              </Card>
+            </>
           )}
         </div>
+        <BookingsChart days={nextDays} />
       </div>
 
       <ResponsivePanel
