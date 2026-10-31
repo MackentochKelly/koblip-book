@@ -163,7 +163,7 @@ export function BookingsView({
             />
             <Button
               variant="outline"
-              className="self-center max-md:w-full"
+              className="self-center"
               render={<Link href={viewAll} />}
               nativeButton={false}
             >
