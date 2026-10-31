@@ -16,6 +16,7 @@ import {
 
 import { DateRangePicker, type DayRangeValue } from "@/components/date-range-picker"
 import { FacetFilter } from "@/components/facet-filter"
+import { FilterChecks, FilterSheet } from "@/components/filter-sheet"
 import { ViewTabs } from "@/components/view-tabs"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -27,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { FieldLegend, FieldSet } from "@/components/ui/field"
 import {
   Empty,
   EmptyContent,
@@ -87,7 +89,7 @@ import {
   STATUS_FILTERS,
   statusCounts,
 } from "../utils/booking-filters"
-import { RANGE_PRESETS, presetRange } from "../utils/booking-range"
+import { RANGE_PRESETS, presetOf, presetRange } from "../utils/booking-range"
 import { actionLabel, type useBookingPanels } from "./booking-panels"
 import { BookingStateBadge } from "./booking-state-badge"
 
@@ -270,13 +272,30 @@ export function BookingsTable({
     id: status,
     label: `${t.statuses[status]} ${counts[status]}`,
   }))
+  const rangeChoices = RANGE_PRESETS.map((preset) => ({
+    id: preset,
+    label: t.presets[preset],
+    range: presetRange(preset, today),
+  }))
+  const serviceOptions = services.map(({ id, name }) => ({
+    value: id,
+    label: name,
+  }))
+  const teamOptions = team.map(({ id, name }) => ({ value: id, label: name }))
+  // The phone's Filters count: the dates when not the usual ones, and
+  // each list with something ticked.
+  const usualDates = presetOf(range, today) === "around"
+  const filterCount =
+    (usualDates ? 0 : 1) +
+    (filters.serviceIds.length > 0 ? 1 : 0) +
+    (filters.teamIds.length > 0 ? 1 : 0)
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      {/* Search, dates and filters: one row on a computer, wrapping on a
-          phone. */}
-      <div className="flex flex-wrap items-center gap-2">
-        <InputGroup className="w-full md:w-80">
+      {/* A computer: search, dates and filters in one row. A phone: search
+          and one Filters button for a sheet with the rest. */}
+      <div className="flex items-center gap-2 md:flex-wrap">
+        <InputGroup className="min-w-0 flex-1 md:w-80 md:flex-none">
           <InputGroupAddon>
             <SearchIcon />
           </InputGroupAddon>
@@ -288,50 +307,110 @@ export function BookingsTable({
             aria-label={t.search}
           />
         </InputGroup>
-        <DateRangePicker
-          value={range}
-          onChange={onRangeChange}
-          locale={m.locale}
-          label={t.dates}
-          choices={RANGE_PRESETS.map((preset) => ({
-            id: preset,
-            label: t.presets[preset],
-            range: presetRange(preset, today),
-          }))}
-        />
-        {services.length > 1 && (
-          <FacetFilter
-            label={t.services}
-            options={services.map(({ id, name }) => ({ value: id, label: name }))}
-            value={filters.serviceIds}
-            onChange={(serviceIds) => set({ serviceIds })}
-          />
-        )}
-        {hasTeam && (
-          <FacetFilter
-            label={t.team}
-            options={team.map(({ id, name }) => ({ value: id, label: name }))}
-            value={filters.teamIds}
-            onChange={(teamIds) => set({ teamIds })}
-          />
-        )}
-        {filtered && (
-          <Button
-            variant="ghost"
-            onClick={() => set({ ...NO_FILTERS, status: filters.status })}
+        <div className="md:hidden">
+          <FilterSheet
+            label={t.filters}
+            count={filterCount}
+            clearLabel={t.clearAll}
+            onClear={() => {
+              set({ serviceIds: [], teamIds: [] })
+              if (!usualDates) onRangeChange(presetRange("around", today))
+            }}
+            doneLabel={t.showResults(total)}
           >
-            {t.clear}
-            <XIcon data-icon="inline-end" />
-          </Button>
-        )}
+            <FieldSet>
+              <FieldLegend variant="label">{t.dates}</FieldLegend>
+              <DateRangePicker
+                value={range}
+                onChange={onRangeChange}
+                locale={m.locale}
+                label={t.dates}
+                choices={rangeChoices}
+                className="w-full justify-start"
+              />
+            </FieldSet>
+            {services.length > 1 && (
+              <FilterChecks
+                id="filter-services"
+                legend={t.services}
+                options={serviceOptions}
+                value={filters.serviceIds}
+                onChange={(serviceIds) => set({ serviceIds })}
+              />
+            )}
+            {hasTeam && (
+              <FilterChecks
+                id="filter-team"
+                legend={t.team}
+                options={teamOptions}
+                value={filters.teamIds}
+                onChange={(teamIds) => set({ teamIds })}
+              />
+            )}
+          </FilterSheet>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 max-md:hidden">
+          <DateRangePicker
+            value={range}
+            onChange={onRangeChange}
+            locale={m.locale}
+            label={t.dates}
+            choices={rangeChoices}
+          />
+          {services.length > 1 && (
+            <FacetFilter
+              label={t.services}
+              options={serviceOptions}
+              value={filters.serviceIds}
+              onChange={(serviceIds) => set({ serviceIds })}
+            />
+          )}
+          {hasTeam && (
+            <FacetFilter
+              label={t.team}
+              options={teamOptions}
+              value={filters.teamIds}
+              onChange={(teamIds) => set({ teamIds })}
+            />
+          )}
+          {filtered && (
+            <Button
+              variant="ghost"
+              onClick={() => set({ ...NO_FILTERS, status: filters.status })}
+            >
+              {t.clear}
+              <XIcon data-icon="inline-end" />
+            </Button>
+          )}
+        </div>
       </div>
 
+      {/* A phone picks the status from a list, a computer from tabs. */}
+      <Select
+        value={filters.status}
+        onValueChange={(status) => {
+          if (status) set({ status })
+        }}
+        items={statusTabs.map((tab) => ({ value: tab.id, label: tab.label }))}
+      >
+        <SelectTrigger aria-label={t.status} className="w-full md:hidden">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {statusTabs.map((tab) => (
+            <SelectItem key={tab.id} value={tab.id}>
+              {tab.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <ViewTabs
         views={statusTabs}
         value={filters.status}
         onChange={(status) => set({ status })}
         ariaLabel={m.bookings.title}
-        listClassName="w-full md:w-fit"
+        className="max-md:hidden"
+        listClassName="w-fit"
       />
 
       {total === 0 ? (

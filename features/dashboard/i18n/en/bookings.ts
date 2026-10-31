@@ -97,6 +97,11 @@ const bookings = {
     },
     services: "Services",
     team: "Team",
+    filters: "Filters",
+    clearAll: "Clear all",
+    showResults: (count: number) =>
+      count === 1 ? "Show 1 booking" : `Show ${count} bookings`,
+    status: "Status",
     clear: "Clear",
     extras: (count: number) => (count === 1 ? "+1 extra" : `+${count} extras`),
     noMatch: "No bookings match",

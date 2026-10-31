@@ -34,6 +34,7 @@ import {
   DotsVertical as MynaDotsVertical,
   Edit as MynaEdit,
   ExternalLink as MynaExternalLink,
+  Filter as MynaFilter,
   Globe as MynaGlobe,
   Home as MynaHome,
   Image as MynaImage,
@@ -164,6 +165,7 @@ export const BanknoteIcon = icon(LucideBanknote as Icon, "BanknoteIcon")
 export const BellIcon = icon(MynaBell as Icon, "BellIcon")
 export const CalendarDaysIcon = icon(MynaCalendar as Icon, "CalendarDaysIcon")
 export const CalendarIcon = icon(MynaCalendar as Icon, "CalendarIcon")
+export const FilterIcon = icon(MynaFilter as Icon, "FilterIcon")
 export const CalendarX2Icon = icon(MynaCalendarX as Icon, "CalendarX2Icon")
 export const CarFrontIcon = icon(LucideCarFront as Icon, "CarFrontIcon")
 export const CheckIcon = icon(MynaCheck as Icon, "CheckIcon")

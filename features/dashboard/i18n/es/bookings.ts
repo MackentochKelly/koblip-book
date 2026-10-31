@@ -95,6 +95,11 @@ const bookings: typeof en = {
     },
     services: "Servicios",
     team: "Equipo",
+    filters: "Filtros",
+    clearAll: "Borrar todo",
+    showResults: (count: number) =>
+      count === 1 ? "Ver 1 reserva" : `Ver ${count} reservas`,
+    status: "Estado",
     clear: "Borrar",
     extras: (count: number) => (count === 1 ? "+1 extra" : `+${count} extras`),
     noMatch: "Ninguna reserva coincide",
