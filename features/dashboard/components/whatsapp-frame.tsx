@@ -57,7 +57,7 @@ export function WhatsappFrame({
   const t = m.whatsapp
   const router = useRouter()
   const segment = useSelectedLayoutSegment()
-  const base = `/dashboard/${businessId}/notifications`
+  const base = `/dashboard/${businessId}/automations`
   const hrefOf = (part: Part) => (part === "overview" ? base : `${base}/${part}`)
   const part = PARTS.find((item) => item.id === segment)?.id ?? "overview"
   const atOverview = part === "overview"
@@ -85,7 +85,7 @@ export function WhatsappFrame({
   if (!usable) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold tracking-tight">{m.shell.nav.notifications}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{m.shell.nav.automations}</h1>
         <Empty className="border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -108,7 +108,7 @@ export function WhatsappFrame({
 
   return (
     <SectionParts
-      title={m.shell.nav.notifications}
+      title={m.shell.nav.automations}
       parts={PARTS.map((item) => ({
         id: item.id,
         label: t.parts[item.id],

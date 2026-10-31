@@ -34,7 +34,7 @@ export function WhatsappActivity({
         <Button
           variant="outline"
           nativeButton={false}
-          render={<Link href={`/dashboard/${businessId}/notifications#test`} />}
+          render={<Link href={`/dashboard/${businessId}/automations#test`} />}
         >
           {m.whatsapp.sendATest}
         </Button>

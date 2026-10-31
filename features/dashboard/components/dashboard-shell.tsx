@@ -33,7 +33,7 @@ const NAV = [
 
 // Form pages stay a narrow column on a computer, like big apps' settings;
 // lists and the home page use the wider frame.
-const FORM_PAGES = ["/hours", "/notifications", "/integrations", "/settings"]
+const FORM_PAGES = ["/hours", "/automations", "/integrations", "/settings"]
 
 // The phone has room for four tabs with the assistant between them; Hours
 // and Settings open from the ☰ menu (Settings also from the account menu).

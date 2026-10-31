@@ -83,6 +83,8 @@ import {
   GraduationCap as MynaGraduationCap,
   Smile as MynaSmile,
   Wrench as MynaWrench,
+  Zap as MynaZap,
+  ZapSolid as MynaZapSolid,
 } from "@mynaui/icons-react"
 import {
   AudioLines as LucideAudioLines,
@@ -261,6 +263,7 @@ export const WrenchIcon = icon(MynaWrench as Icon, "WrenchIcon")
 // A business's website, everywhere it shows (mynaui has no compass).
 export const WebsiteIcon = icon(LucideCompass as Icon, "WebsiteIcon")
 export const XIcon = icon(MynaX as Icon, "XIcon")
+export const ZapIcon = icon(MynaZap as Icon, "ZapIcon")
 
 // Filled twins of outline icons: the open page's icon shows filled, in the
 // phone tab bar and the sidebar alike, as iPhone and Android apps do. An
@@ -282,6 +285,7 @@ const FILLED = new Map<Icon, Icon>([
   [MessageCircleIcon, icon(MynaChatSolid as Icon, "MessageCircleFilledIcon")],
   [PuzzleIcon, icon(MynaPuzzleSolid as Icon, "PuzzleFilledIcon")],
   [SparklesIcon, icon(MynaSparklesSolid as Icon, "SparklesFilledIcon")],
+  [ZapIcon, icon(MynaZapSolid as Icon, "ZapFilledIcon")],
 ])
 
 export function filledIcon(outline: Icon): Icon {

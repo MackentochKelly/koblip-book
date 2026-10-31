@@ -1,4 +1,4 @@
-// The Notifications page: booking messages sent on WhatsApp through Koblip Chat.
+// The Automations page: booking messages sent on WhatsApp through Koblip Chat.
 const whatsapp = {
   connectTitle: "Connect Koblip Chat to send WhatsApp messages",
   connect: "Connect",

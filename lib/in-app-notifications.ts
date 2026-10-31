@@ -18,12 +18,12 @@ const LINKS: Record<InAppKind, string> = {
   customerCancelled: "",
   customerConfirmed: "",
   customerCantCome: "",
-  customerReplied: "/notifications/activity",
-  messageFailed: "/notifications/activity",
-  templateApproved: "/notifications/messages",
-  templateRejected: "/notifications/messages",
-  koblipLimitNear: "/notifications",
-  koblipLimitReached: "/notifications",
+  customerReplied: "/automations/activity",
+  messageFailed: "/automations/activity",
+  templateApproved: "/automations/messages",
+  templateRejected: "/automations/messages",
+  koblipLimitNear: "/automations",
+  koblipLimitReached: "/automations",
   connectionRenew: "/integrations",
 }
 
