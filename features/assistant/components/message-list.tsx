@@ -55,6 +55,7 @@ import type {
   ChatStep,
 } from "../utils/chat-state"
 import { ConfirmCard } from "./confirm-card"
+import { QuickChoices } from "./quick-choices"
 
 type ErrorCode = Extract<AssistantStreamEvent, { type: "error" }>["code"]
 
@@ -356,17 +357,11 @@ export function MessageList({
                       {/* Quick answers, only while they are still the
                           open question: a tap sends one as the reply. */}
                       {item === last && !busy && item.choices.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {item.choices.map((choice) => (
-                            <Button
-                              key={choice}
-                              variant="outline"
-                              onClick={() => onSend(choice)}
-                            >
-                              {choice}
-                            </Button>
-                          ))}
-                        </div>
+                        <QuickChoices
+                          choices={item.choices}
+                          onPick={onSend}
+                          moreLabel={m.choices.more}
+                        />
                       )}
                       {item.confirms.map((confirm) => (
                         <ConfirmCard

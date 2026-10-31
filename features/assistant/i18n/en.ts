@@ -22,6 +22,10 @@ const messages = {
     done: (count: number) =>
       count === 1 ? "Checked 1 thing" : `Checked ${count} things`,
   },
+  // Quick-answer buttons: the first few, then one that shows the rest.
+  choices: {
+    more: (n: number) => `${n} more`,
+  },
   // What an answer was based on, e.g. "Based on 3 bookings".
   sources: {
     bookings: (n: number) =>

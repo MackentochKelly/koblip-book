@@ -21,6 +21,9 @@ const messages: typeof en = {
     done: (count: number) =>
       count === 1 ? "Revisé 1 cosa" : `Revisé ${count} cosas`,
   },
+  choices: {
+    more: (n: number) => `${n} más`,
+  },
   sources: {
     bookings: (n: number) =>
       n === 1 ? "Basado en 1 reserva" : `Basado en ${n} reservas`,
