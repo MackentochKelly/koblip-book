@@ -128,7 +128,8 @@ export function NotificationBell() {
         {icon}
       </PopoverTrigger>
       <PopoverContent
-        align="start"
+        // The bell sits at the top bar's right edge (N-D11).
+        align="end"
         side="bottom"
         className="max-h-[min(--spacing(140),80dvh)] w-sm gap-2 overflow-y-auto p-2"
       >
