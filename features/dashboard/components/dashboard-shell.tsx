@@ -102,7 +102,12 @@ export function DashboardShell({
       <CommandMenuProvider business={business}>
         <SidebarProvider>
           <AppSidebar businessId={business.id} owner={owner} />
-          <SidebarInset className={cn("min-w-0", assistantOpen && "md:h-dvh")}>
+          <SidebarInset
+            className={cn(
+              "min-w-0 bg-app-background",
+              assistantOpen && "md:h-dvh"
+            )}
+          >
             <TopBar
               business={business}
               owner={owner}
@@ -118,7 +123,9 @@ export function DashboardShell({
                   "flex min-h-0 max-w-none flex-1 flex-col p-0 pb-0 md:p-0"
               )}
             >
-              <TabBarActionContext value={setAction}>{children}</TabBarActionContext>
+              <TabBarActionContext value={setAction}>
+                {children}
+              </TabBarActionContext>
             </div>
           </SidebarInset>
           <nav
