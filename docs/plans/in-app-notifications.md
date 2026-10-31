@@ -47,12 +47,12 @@ Rules that always apply:
 | `customerCancelled` | A customer cancels with "Can't make it" (owner chose "cancel") | The bookings page |
 | `customerConfirmed` | A customer taps "I'll be there" | The bookings page |
 | `customerCantCome` | A customer taps "Can't make it" (owner chose "only alert") | The bookings page |
-| `customerReplied` | A customer writes on WhatsApp (not a button tap) | WhatsApp → Activity |
-| `messageFailed` | A WhatsApp message to a customer failed | WhatsApp → Activity |
-| `templateApproved` | Meta approved one of the business's messages | WhatsApp → Customer messages |
-| `templateRejected` | Meta rejected one of the business's messages | WhatsApp → Customer messages |
-| `koblipLimitNear` | The business used most of its Koblip-number templates this month | WhatsApp → Overview |
-| `koblipLimitReached` | It used all of them | WhatsApp → Overview |
+| `customerReplied` | A customer writes on WhatsApp (not a button tap) | Auto messages → Activity |
+| `messageFailed` | A WhatsApp message to a customer failed | Auto messages → Activity |
+| `templateApproved` | Meta approved one of the business's messages | Auto messages → Customer messages |
+| `templateRejected` | Meta rejected one of the business's messages | Auto messages → Customer messages |
+| `koblipLimitNear` | The business used most of its Koblip-number templates this month | Auto messages → Overview |
+| `koblipLimitReached` | It used all of them | Auto messages → Overview |
 | `connectionRenew` | The business's Koblip Chat connection must be renewed | Integrations |
 
 ## Decisions log
@@ -62,15 +62,16 @@ Rules that always apply:
 | N-D1 | Stored per business in `in_app_notifications` (id, business, kind, `data` JSON with the facts the title needs, `link` path, `readAt`, optional `dedupeKey`, `createdAt`). The words are made on screen from kind + data, in the reader's language. The bell lists every business the signed-in owner owns, newest first, each naming its business. Demo copies never get any. | Words in the data would freeze one language; one bell for all of an owner's businesses means nothing is missed. | Dev 3, 2026-10-30 |
 | N-D2 | One shared function, `notify(businessId, kind, data, options)` in `lib/in-app-notifications.ts`, called where each event already happens. It returns a query for `saveAll` so a notification is saved together with what caused it. It skips a kind the owner turned off and a demo. A `dedupeKey` makes repeats one notification (once per booking and move, once per month). | Features may not import each other; saving with the cause keeps the two true together. | Dev 3, 2026-10-30 |
 | N-D3 | Fresh counts, as the Next.js docs say: the owner layout renders the unread count on the server for the first paint; the bell then asks a Route Handler (`GET /api/notifications`, owner-only, no cache) every `inAppPollSeconds` while the tab is shown and when it comes back (client-side data fetching guide: interval polling against a Route Handler); the read actions are Server Functions that call `refresh()` from `next/cache` so the count on screen updates at once. No new library: a small client hook with `fetch` does the polling. | Route Handlers are the documented way for the browser to read on a timer; Server Functions are for changes. `router.refresh()` every few seconds would re-render the whole page. | Dev 3, 2026-10-30 |
+| N-D4 | N1 as built. Kinds and `InAppData` live in `types/in-app-notifications.ts` (shared, so `lib/` can use them). `notification(businessId, kind, data, { dedupeKey, renew })` returns the writes to put in `saveAll` with the cause (a list: a query builder returned from an async function would run there); `notify(...)` saves on its own. `renew` brings one keyed notification back unread with new facts (a customer writing again). Links: bookings page for booking kinds, Auto messages → Activity, → Customer messages, → Overview (the business page renamed in D36), Integrations. The bell reads `getUnreadCount()` and `getNotificationPage(cursor?)` (Server Components) or `GET /api/notifications?cursor=` → `{ unread, page: { items, nextCursor } }` (`private, no-store`, 401 when signed out); each item has `kind`, `businessId`, `businessName`, `timezone`, `data`, `link`, `read`, `at`. `markNotificationRead(id)` and `markAllNotificationsRead()` return `{ ok }` and call `refresh()`. Pages are cursor-based ("<createdAt>\|<id>") so new ones arriving never shift a page. The choices table (`in_app_notification_settings.turnedOff`, no row = all on) and the rules came with N1, so `notify` honours both from the start: `inAppKeepDays` 90, `inAppPageSize` 20, `inAppPollSeconds` 30, `koblipLimitNearPercent` 80, shown on WhatsApp → Rules in their own group. Migration 0026. | Dev 1 can build the bell against a finished contract; one migration for both tables; every rule is an A0 rule the admin already edits and logs. | Dev 3, 2026-10-30 |
 
 ## Tasks
 
 | ID | Task | Files | Needs | Status |
 | --- | --- | --- | --- | --- |
-| N1 | Contract: types, table + migration, `notify()`, queries and actions for the bell (list newest first, paged; unread count; mark one read; mark all read), the Route Handler, the feature's ESLint zone | `features/notifications/types/`, `features/notifications/api/`, `lib/in-app-notifications.ts`, `lib/db/schema.ts` (+ migration), `app/api/notifications/route.ts`, `eslint.config.mjs` | — | `Working on` Dev 3, 2026-10-30 |
+| N1 | Contract: types, table + migration, `notify()`, queries and actions for the bell (list newest first, paged; unread count; mark one read; mark all read), the Route Handler, the feature's ESLint zone | `features/notifications/types/`, `features/notifications/api/`, `lib/in-app-notifications.ts`, `lib/db/schema.ts` (+ migration), `app/api/notifications/route.ts`, `eslint.config.mjs` | — | `Done` 2026-10-30, see git log (N-D4) |
 | N2 | Create each kind where its event already happens (booking made, button replies, WhatsApp replies, failed sends, Meta's review, Koblip limit, connection renewal) | `features/booking/api/create-booking.ts`, `features/dashboard/api/notification-replies.ts`, `chat-events.ts`, `notification-sender.ts`, `chat-templates.ts`, `chat-oauth.ts` | N1 | `To do` |
-| N3 | The owner's choices per business: which kinds they get (all on by default); query and action | `features/notifications/api/`, `lib/db/schema.ts` (+ migration) | N1 | `To do` |
+| N3 | The owner's choices per business: which kinds they get (all on by default); query and action (the table came with N1) | `features/notifications/api/` | N1 | `To do` |
 | N4 | The bell: count, list as a sheet (phone: top bar; computer: sidebar), each opens its link and is marked read, "Mark all read", empty state; English and Spanish | `features/notifications/components/`, the owner shell | N1 | `To do` |
-| N5 | Rules as A0 rules (kept for, page size, how often the bell checks, "near" the Koblip limit) and old ones removed by the timer | `lib/notification-rules.ts`, `notification-timer.ts`, admin Rules names | N1 | `To do` |
+| N5 | Notifications older than `inAppKeepDays` removed by the timer (the rules came with N1) | `notification-timer.ts`, `lib/in-app-notifications.ts` | N1 | `To do` |
 | N6 | Admin screen: every stored notification with filters (business, kind, read), English and Spanish | `app/(admin)/admin/notifications/`, `features/admin/` | N1 | `To do` |
 | N7 | Owner's choices screen (a list of kinds with switches) | `features/notifications/components/`, the business settings route | N3, N4 | `To do` |

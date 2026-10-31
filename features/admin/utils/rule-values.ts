@@ -24,6 +24,10 @@ export function formatRuleValue(
       return t.characters(Number(value))
     case "words":
       return t.words(Number(value))
+    case "days":
+      return t.days(Number(value))
+    case "percent":
+      return new Intl.NumberFormat(m.locale, { style: "percent" }).format(Number(value) / 100)
     case "switch":
       return value ? t.on : t.off
     case "cantCome":
