@@ -13,8 +13,13 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
-import { ChevronRightIcon } from "@/components/ui/icons"
+import {
+  Empty,
+  EmptyContent,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty"
+import { ChevronRightIcon, PlusIcon } from "@/components/ui/icons"
 import {
   Item,
   ItemActions,
@@ -165,6 +170,14 @@ export function BookingsCalendar({
               <EmptyHeader>
                 <EmptyTitle>{t.free}</EmptyTitle>
               </EmptyHeader>
+              {panels.canAdd && (
+                <EmptyContent>
+                  <Button onClick={panels.add}>
+                    <PlusIcon data-icon="inline-start" />
+                    {m.bookings.addBooking}
+                  </Button>
+                </EmptyContent>
+              )}
             </Empty>
           ) : (
             <>
