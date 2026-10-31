@@ -116,6 +116,9 @@ const bookings = {
   },
   calendar: {
     today: "Today",
+    tomorrow: "Tomorrow",
+    day: "Day",
+    moreDates: "Pick a date",
     previousMonth: "Previous month",
     nextMonth: "Next month",
     count: (count: number) =>

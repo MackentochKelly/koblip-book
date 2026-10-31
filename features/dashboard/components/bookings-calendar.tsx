@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { es } from "react-day-picker/locale"
 
+import { DayStrip } from "@/components/day-strip"
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar"
 import {
   Card,
@@ -23,6 +24,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import {
+  addDaysTo,
   dateFromDay,
   dayFromDate,
   formatClock,
@@ -32,6 +34,7 @@ import { cn } from "cn"
 import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import { type BookingState, bookingState } from "../utils/booking-filters"
+import { monthRange } from "../utils/booking-range"
 import type { useBookingPanels } from "./booking-panels"
 import { BookingStateBadge } from "./booking-state-badge"
 
@@ -71,9 +74,12 @@ export function BookingsCalendar({
   const m = useOwnerMessages()
   const t = m.bookings.calendar
   const [picked, setPicked] = useState<string | null>(null)
-  // The day shown: the one tapped, else today in today's month, else the 1st.
+  // The phone's row: the month and a week either side, the days loaded.
+  const shown = monthRange(month)
+  // The day shown: the one tapped (while its month loads too), else today
+  // in today's month, else the 1st.
   const day =
-    picked?.startsWith(month) === true
+    picked !== null && picked >= shown.from && picked <= shown.to
       ? picked
       : today.startsWith(month)
         ? today
@@ -85,19 +91,49 @@ export function BookingsCalendar({
   }
   const dayBookings = bookings.filter((booking) => booking.date === day)
   const count = perDay.get(day) ?? 0
+  const rowDays: string[] = []
+  for (let date = shown.from; date <= shown.to; date = addDaysTo(date, 1)) {
+    rowDays.push(date)
+  }
+  // A day from another month opens that month too.
+  const pick = (next: string) => {
+    setPicked(next)
+    if (!next.startsWith(month)) onMonthChange(next.slice(0, 7))
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start">
-      <Card className="py-0">
+      {/* A phone picks the day from a row, as on the booking page. */}
+      <div className="min-w-0 md:hidden">
+        <DayStrip
+          days={rowDays}
+          value={day}
+          onChange={pick}
+          today={today}
+          locale={m.locale}
+          labels={t}
+          note={(date) => {
+            const booked = perDay.get(date) ?? 0
+            return (
+              <span className={cn(booked === 0 && "invisible")}>{booked}</span>
+            )
+          }}
+        />
+      </div>
+      <Card className="py-0 max-md:hidden">
         <CardContent className="p-2">
           <Calendar
             mode="single"
             required
             locale={m.locale.startsWith("es") ? es : undefined}
             month={dateFromDay(`${month}-01`)}
-            onMonthChange={(date) => onMonthChange(dayFromDate(date).slice(0, 7))}
+            onMonthChange={(date) => {
+              // A new month opens on today or its 1st.
+              setPicked(null)
+              onMonthChange(dayFromDate(date).slice(0, 7))
+            }}
             selected={dateFromDay(day)}
-            onSelect={(date) => setPicked(dayFromDate(date))}
+            onSelect={(date) => pick(dayFromDate(date))}
             className="[--cell-size:--spacing(11)]"
             classNames={{ root: "mx-auto w-fit" }}
             components={{

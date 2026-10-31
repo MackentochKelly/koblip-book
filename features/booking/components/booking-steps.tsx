@@ -1,13 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { CalendarIcon, CalendarX2Icon, UsersIcon } from "@/components/ui/icons"
-import { es } from "react-day-picker/locale"
+import { CalendarX2Icon, UsersIcon } from "@/components/ui/icons"
 
+import { DayStrip } from "@/components/day-strip"
 import { useMessages } from "@/components/language-provider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
 import {
   Card,
   CardContent,
@@ -35,11 +34,6 @@ import {
   FieldTitle,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -48,13 +42,8 @@ import { BOOKING_RULES } from "@/lib/booking-rules"
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import {
-  addDaysTo,
-  dateFromDay,
-  dayFromDate,
-  dayOfMonth,
   formatClock,
   formatDay,
-  formatWeekdayShort,
   todayIn,
 } from "@/lib/format-booking-time"
 import type { Messages } from "@/lib/i18n"
@@ -292,7 +281,6 @@ export function TimeStep({
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [picked, setPicked] = useState<string | null>(slot?.date ?? null)
-  const [monthOpen, setMonthOpen] = useState(false)
   const addons = addonIds.join(",")
 
   useEffect(() => {
@@ -355,7 +343,6 @@ export function TimeStep({
   const date = picked && freeDays.has(picked) ? picked : free[0].date
   const times = availability.days.find((day) => day.date === date)?.times ?? []
   const today = todayIn(page.timeZone)
-  const tomorrow = addDaysTo(today, 1)
   const first = availability.days[0].date
   const last = availability.days[availability.days.length - 1].date
   const pick = (next: string) => {
@@ -375,71 +362,17 @@ export function TimeStep({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-stretch gap-2">
-        <div className="no-scrollbar min-w-0 flex-1 scroll-fade-x overflow-x-auto">
-          <ToggleGroup
-            variant="outline"
-            aria-label={m.booking.day}
-            value={[date]}
-            onValueChange={(value) => {
-              if (value[0]) pick(value[0])
-            }}
-          >
-            {availability.days.map((day) => (
-              <ToggleGroupItem
-                key={day.date}
-                value={day.date}
-                aria-label={formatDay(day.date, m.locale)}
-                disabled={!freeDays.has(day.date)}
-                className="h-auto min-w-16 flex-col gap-0 py-2"
-              >
-                <span className="text-xs font-normal">
-                  {day.date === today
-                    ? m.booking.today
-                    : day.date === tomorrow
-                      ? m.booking.tomorrow
-                      : formatWeekdayShort(day.date, m.locale)}
-                </span>
-                <span className="text-base font-semibold">
-                  {dayOfMonth(day.date)}
-                </span>
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
-        <Popover open={monthOpen} onOpenChange={setMonthOpen}>
-          <PopoverTrigger
-            render={
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon-lg"
-                aria-label={m.booking.moreDates}
-                className="h-auto self-stretch"
-              />
-            }
-          >
-            <CalendarIcon />
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-2" align="end">
-            <Calendar
-              mode="single"
-              required
-              locale={m.locale.startsWith("es") ? es : undefined}
-              selected={dateFromDay(date)}
-              onSelect={(value) => {
-                pick(dayFromDate(value))
-                setMonthOpen(false)
-              }}
-              defaultMonth={dateFromDay(date)}
-              startMonth={dateFromDay(first)}
-              endMonth={dateFromDay(last)}
-              disabled={(value) => !freeDays.has(dayFromDate(value))}
-              showOutsideDays={false}
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
+      <DayStrip
+        days={availability.days.map((day) => day.date)}
+        value={date}
+        onChange={pick}
+        today={today}
+        locale={m.locale}
+        labels={m.booking}
+        isDisabled={(day) => !freeDays.has(day)}
+        startMonth={first}
+        endMonth={last}
+      />
 
       <p className="text-sm font-medium">{formatDay(date, m.locale)}</p>
       {groups.map((group) => (

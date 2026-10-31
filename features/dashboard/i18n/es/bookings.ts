@@ -114,6 +114,9 @@ const bookings: typeof en = {
   },
   calendar: {
     today: "Hoy",
+    tomorrow: "Mañana",
+    day: "Día",
+    moreDates: "Elegir fecha",
     previousMonth: "Mes anterior",
     nextMonth: "Mes siguiente",
     count: (count: number) =>
