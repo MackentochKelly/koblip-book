@@ -10,6 +10,9 @@ export const GOOGLE_CALENDAR_RULES = {
   // Without push (a site without HTTPS, such as localhost, where Google
   // can't call back), busy times are read this often instead.
   busyWithoutPushSeconds: 120,
+  // At most this many calendars block bookings: Google reads busy times
+  // from 50 calendars at most in one call.
+  maxBusyCalendars: 50,
   // A push channel is renewed this long before Google ends it.
   renewChannelHours: 24,
   // At most this many events sent per connection in one sync; the rest go

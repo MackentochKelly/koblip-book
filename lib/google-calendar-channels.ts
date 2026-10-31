@@ -4,9 +4,20 @@ import { eq } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import { googleCalendarChannels, googleCalendarConnections } from "@/lib/db/schema"
-import { BUSY_CALENDARS, requestGoogleBusyRefresh } from "@/lib/google-calendar-busy"
+import {
+  busyCalendarsOf,
+  refreshGoogleBusy,
+  requestGoogleBusyRefresh,
+} from "@/lib/google-calendar-busy"
 import { GOOGLE_CALENDAR_RULES } from "@/lib/google-calendar-rules"
-import { GOOGLE_SCOPES, googleCalendarApi, stopGoogleChannel } from "@/lib/google-calendar"
+import {
+  GOOGLE_SCOPES,
+  GoogleCalendarError,
+  googleCalendarApi,
+  googleTurnKey,
+  stopGoogleChannel,
+} from "@/lib/google-calendar"
+import { runInTurn } from "@/lib/run-in-turn"
 
 // Push notifications for busy times (G3), as Google recommends instead of
 // asking again and again (developers.google.com/workspace/calendar/api/guides/push):
@@ -37,6 +48,7 @@ export async function ensureGoogleChannels(connectionId: string): Promise<boolea
     .select({
       scopes: googleCalendarConnections.scopes,
       needsReconnect: googleCalendarConnections.needsReconnect,
+      busyCalendarIds: googleCalendarConnections.busyCalendarIds,
     })
     .from(googleCalendarConnections)
     .where(eq(googleCalendarConnections.id, connectionId))
@@ -46,15 +58,15 @@ export async function ensureGoogleChannels(connectionId: string): Promise<boolea
     .from(googleCalendarChannels)
     .where(eq(googleCalendarChannels.connectionId, connectionId))
   const address = googleNotifyAddress()
-  const watching =
+  let watching =
     !!address &&
     !!connection &&
     !connection.needsReconnect &&
     connection.scopes.split(" ").includes(GOOGLE_SCOPES.freeBusy)
   const renewAt = Date.now() + GOOGLE_CALENDAR_RULES.renewChannelHours * 3_600_000
   const keep = new Set<string>()
-  if (watching) {
-    for (const calendarId of BUSY_CALENDARS) {
+  if (watching && address && connection) {
+    for (const calendarId of busyCalendarsOf(connection)) {
       const live = channels.find(
         (channel) => channel.calendarId === calendarId && Date.parse(channel.expiresAt) > renewAt
       )
@@ -64,11 +76,22 @@ export async function ensureGoogleChannels(connectionId: string): Promise<boolea
       }
       const id = randomUUID()
       const token = randomBytes(32).toString("base64url")
-      const watch = await googleCalendarApi<Watch>(
-        connectionId,
-        `/calendars/${encodeURIComponent(calendarId)}/events/watch`,
-        { method: "POST", body: { id, type: "web_hook", address, token } }
-      )
+      let watch: Watch | null
+      try {
+        watch = await googleCalendarApi<Watch>(
+          connectionId,
+          `/calendars/${encodeURIComponent(calendarId)}/events/watch`,
+          { method: "POST", body: { id, type: "web_hook", address, token } }
+        )
+      } catch (error) {
+        // A calendar gone or no longer shared: the timer reads its busy
+        // times without push.
+        if (error instanceof GoogleCalendarError && (error.status === 403 || error.status === 404)) {
+          watching = false
+          continue
+        }
+        throw error
+      }
       const expiresAt = Number(watch?.expiration)
       if (!watch?.resourceId || !Number.isFinite(expiresAt)) {
         throw new Error("Google Calendar: watch answered without a channel")
@@ -112,4 +135,13 @@ export async function handleGoogleNotification(headers: {
   if (!timingSafeEqual(expected, given)) return
   if (headers.state === "sync") return
   requestGoogleBusyRefresh(channel.connectionId)
+}
+
+// The owner changed which calendars block bookings (G4): push channels for
+// the new ones, and busy times read from them now.
+export function requestGoogleBusyUpdate(connectionId: string) {
+  runInTurn(googleTurnKey(connectionId), async () => {
+    await ensureGoogleChannels(connectionId).catch((error) => console.error(error))
+    await refreshGoogleBusy(connectionId)
+  }).catch((error) => console.error(error))
 }

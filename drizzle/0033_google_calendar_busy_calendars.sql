@@ -1,0 +1,1 @@
+ALTER TABLE `google_calendar_connections` ADD `busy_calendar_ids` text;

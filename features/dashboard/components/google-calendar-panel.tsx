@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Field,
   FieldContent,
@@ -16,15 +17,21 @@ import {
   FieldTitle,
 } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { setGoogleCalendarBusyMember } from "../api/google-calendar-actions"
+import { Spinner } from "@/components/ui/spinner"
+import {
+  getGoogleCalendarChoices,
+  setGoogleBusyCalendars,
+  setGoogleCalendarBusyMember,
+} from "../api/google-calendar-actions"
 import { useOwnerMessages } from "../i18n/provider"
-import type { GoogleCalendarConnection } from "../types/google-calendar"
+import type { GoogleCalendarChoice, GoogleCalendarConnection } from "../types/google-calendar"
 
 // "Nobody" in the radio group, which needs a string.
 const NOBODY = ""
 
 // The business's Google Calendar, opened from Manage on Integrations: which
-// account, whose bookings its busy times block (G3), and Disconnect.
+// account, which of its calendars block bookings (G4), whose bookings its
+// busy times block (G3), and Disconnect.
 export function GoogleCalendarPanel({
   open,
   onClose,
@@ -59,6 +66,40 @@ export function GoogleCalendarPanel({
     })
   }
 
+  // The account's calendars, read from Google each time the panel opens.
+  const [calendars, setCalendars] = useState<GoogleCalendarChoice[] | null | "loading">("loading")
+  const [loads, setLoads] = useState(0)
+  useEffect(() => {
+    if (!open) return
+    let current = true
+    getGoogleCalendarChoices(businessId)
+      .catch(() => null)
+      .then((next) => {
+        if (current) setCalendars(next)
+      })
+    return () => {
+      current = false
+      setCalendars("loading")
+    }
+  }, [open, businessId, loads])
+
+  function tick(calendarId: string, on: boolean) {
+    if (!Array.isArray(calendars)) return
+    const before = calendars
+    const next = calendars.map((calendar) =>
+      calendar.id === calendarId ? { ...calendar, blocks: on } : calendar
+    )
+    setCalendars(next)
+    startSaving(async () => {
+      const ids = next.filter((calendar) => calendar.blocks).map((calendar) => calendar.id)
+      const result = await setGoogleBusyCalendars(businessId, ids).catch(() => null)
+      if (!result?.ok) {
+        setCalendars(before)
+        toast.error(t.saveFailed)
+      }
+    })
+  }
+
   return (
     <ResponsivePanel
       open={open}
@@ -72,10 +113,38 @@ export function GoogleCalendarPanel({
     >
       <div className="flex flex-col gap-6">
         <p className="text-sm text-muted-foreground">{t.account(connection.googleEmail)}</p>
+        <FieldSet disabled={saving}>
+          <FieldLegend variant="label">{t.calendarsTitle}</FieldLegend>
+          {calendars === "loading" ? (
+            <Spinner className="text-muted-foreground" />
+          ) : calendars === null ? (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">{t.calendarsFailed}</p>
+              <Button variant="outline" size="sm" onClick={() => setLoads((count) => count + 1)}>
+                {t.tryAgain}
+              </Button>
+            </div>
+          ) : (
+            calendars.map((calendar) => (
+              <FieldLabel key={calendar.id} htmlFor={`calendar-${calendar.id}`}>
+                <Field orientation="horizontal">
+                  <FieldContent>
+                    <FieldTitle>{calendar.name}</FieldTitle>
+                    {calendar.primary && <FieldDescription>{t.mainCalendar}</FieldDescription>}
+                  </FieldContent>
+                  <Checkbox
+                    id={`calendar-${calendar.id}`}
+                    checked={calendar.blocks}
+                    onCheckedChange={(on) => tick(calendar.id, on === true)}
+                  />
+                </Field>
+              </FieldLabel>
+            ))
+          )}
+        </FieldSet>
         {team.length ? (
           <FieldSet disabled={saving}>
             <FieldLegend variant="label">{t.busyTitle}</FieldLegend>
-            <FieldDescription>{t.busyHint}</FieldDescription>
             <RadioGroup value={busyMember} onValueChange={(next) => choose(String(next))}>
               {team.map((member) => (
                 <FieldLabel key={member.id} htmlFor={`busy-${member.id}`}>

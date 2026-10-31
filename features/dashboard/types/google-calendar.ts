@@ -8,3 +8,12 @@ export type GoogleCalendarConnection = {
   // The team member the owner is: their Google busy times block only them (G3).
   busyTeamMemberId: string | null
 }
+
+// One of the account's Google calendars, and whether its busy times block
+// bookings (G4).
+export type GoogleCalendarChoice = {
+  id: string
+  name: string
+  primary: boolean
+  blocks: boolean
+}

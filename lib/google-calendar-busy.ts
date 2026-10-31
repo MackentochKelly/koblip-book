@@ -14,10 +14,52 @@ import { runInTurn } from "@/lib/run-in-turn"
 // timer as a safety check, and kept here; the booking page and owner
 // bookings read the kept ones, so Google never slows a booking down.
 
-// The calendars that count as busy. G4 lets the owner pick; until then, the
-// account's main calendar. Never the "Koblip Book" calendar: its events are
-// the bookings themselves.
-export const BUSY_CALENDARS = ["primary"]
+// The calendars whose busy times block bookings: the ones the owner picked
+// (G4), or the account's main calendar.
+export function busyCalendarsOf(connection: { busyCalendarIds: string[] | null }) {
+  return connection.busyCalendarIds ?? ["primary"]
+}
+
+export type GoogleCalendarChoice = { id: string; name: string; primary: boolean }
+
+type CalendarListPage = {
+  items?: {
+    id: string
+    summary?: string
+    summaryOverride?: string
+    primary?: boolean
+    deleted?: boolean
+  }[]
+  nextPageToken?: string
+}
+
+// The account's calendars Book can read busy times from, main one first;
+// never the "Koblip Book" calendar, whose events are the bookings
+// themselves. null when the owner didn't allow listing them.
+export async function listGoogleCalendars(connectionId: string): Promise<GoogleCalendarChoice[] | null> {
+  const [row] = await db
+    .select({ scopes: googleCalendarConnections.scopes, calendarId: googleCalendarConnections.calendarId })
+    .from(googleCalendarConnections)
+    .where(eq(googleCalendarConnections.id, connectionId))
+    .limit(1)
+  if (!row || !row.scopes.split(" ").includes(GOOGLE_SCOPES.calendarList)) return null
+  const calendars: GoogleCalendarChoice[] = []
+  let pageToken: string | undefined
+  do {
+    const query = new URLSearchParams({ minAccessRole: "freeBusyReader", ...(pageToken ? { pageToken } : {}) })
+    const page = await googleCalendarApi<CalendarListPage>(connectionId, `/users/me/calendarList?${query}`)
+    for (const item of page?.items ?? []) {
+      if (item.deleted || item.id === row.calendarId) continue
+      calendars.push({
+        id: item.id,
+        name: item.summaryOverride ?? item.summary ?? item.id,
+        primary: item.primary === true,
+      })
+    }
+    pageToken = page?.nextPageToken
+  } while (pageToken)
+  return calendars.sort((a, b) => Number(b.primary) - Number(a.primary))
+}
 
 type FreeBusy = {
   calendars?: Record<string, { busy?: { start: string; end: string }[]; errors?: unknown[] }>
@@ -31,6 +73,7 @@ export async function refreshGoogleBusy(connectionId: string) {
     .select({
       scopes: googleCalendarConnections.scopes,
       needsReconnect: googleCalendarConnections.needsReconnect,
+      busyCalendarIds: googleCalendarConnections.busyCalendarIds,
     })
     .from(googleCalendarConnections)
     .where(eq(googleCalendarConnections.id, connectionId))
@@ -53,7 +96,7 @@ export async function refreshGoogleBusy(connectionId: string) {
     body: {
       timeMin: new Date(now).toISOString(),
       timeMax: new Date(now + (BOOKING_RULES.daysAhead + 2) * 86_400_000).toISOString(),
-      items: BUSY_CALENDARS.map((id) => ({ id })),
+      items: busyCalendarsOf(row).map((id) => ({ id })),
     },
   })
   const busy = Object.values(answer?.calendars ?? {}).flatMap((calendar) => calendar.busy ?? [])

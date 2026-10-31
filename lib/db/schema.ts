@@ -791,6 +791,9 @@ export const googleCalendarConnections = sqliteTable(
     busyTeamMemberId: text().references(() => teamMembers.id, { onDelete: "set null" }),
     // When the busy times were last read from Google.
     busyCheckedAt: text(),
+    // The Google calendars whose busy times block bookings, picked by the
+    // owner (G4); null means the account's main calendar alone.
+    busyCalendarIds: text({ mode: "json" }).$type<string[]>(),
     // The timer's last sync of this connection, and its error, kept short.
     lastSyncAt: text(),
     lastError: text(),

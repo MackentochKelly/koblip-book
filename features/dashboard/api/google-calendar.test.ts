@@ -16,6 +16,8 @@ import {
 } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
+// The owner's check (queries.getOwnerBusiness) is tested with the dashboard.
+vi.mock("./queries", () => ({ getOwnerBusiness: vi.fn(async () => ({})) }))
 
 const {
   GOOGLE_SCOPES,
@@ -26,6 +28,7 @@ const {
 } = await import("@/lib/google-calendar")
 const { eventIdOf, syncGoogleCalendar } = await import("@/lib/google-calendar-sync")
 const { googleCalendarFor } = await import("./google-calendar")
+const { getGoogleCalendarChoices, setGoogleBusyCalendars } = await import("./google-calendar-actions")
 const { googleBusyTimes, refreshGoogleBusy } = await import("@/lib/google-calendar-busy")
 const { ensureGoogleChannels, handleGoogleNotification } = await import("@/lib/google-calendar-channels")
 
@@ -45,7 +48,9 @@ const google = {
   // The main calendar's busy times freeBusy answers with.
   busy: [] as { start: string; end: string }[],
   // Push channels Google holds: id → its token and when it ends.
-  channels: new Map<string, { token: string; expiration: number }>(),
+  channels: new Map<string, { token: string; expiration: number; calendar: string }>(),
+  // Busy times of the other calendars, by id.
+  otherBusy: {} as Record<string, { start: string; end: string }[]>,
   stopped: [] as string[],
   channelHours: 24 * 7,
 }
@@ -83,10 +88,22 @@ const fetchGoogle = vi.fn(async (input: string, init: RequestInit = {}) => {
   }
   const path = url.pathname.replace("/calendar/v3", "")
   const body = init.body ? JSON.parse(String(init.body)) : null
-  if (method === "POST" && path === "/calendars/primary/events/watch") {
+  const watched = path.match(/^\/calendars\/([^/]+)\/events\/watch$/)
+  if (method === "POST" && watched) {
+    const calendar = decodeURIComponent(watched[1])
     const expiration = Date.now() + google.channelHours * hour
-    google.channels.set(body.id, { token: body.token, expiration })
-    return answer(200, { kind: "api#channel", id: body.id, resourceId: "res-primary", expiration: String(expiration) })
+    google.channels.set(body.id, { token: body.token, expiration, calendar })
+    return answer(200, { kind: "api#channel", id: body.id, resourceId: `res-${calendar}`, expiration: String(expiration) })
+  }
+  if (method === "GET" && path === "/users/me/calendarList") {
+    return answer(200, {
+      items: [
+        { id: "work@group.calendar.google.com", summary: "Work" },
+        { id: google.email, summary: google.email, primary: true },
+        { id: "family@group.calendar.google.com", summary: "Family", summaryOverride: "Home" },
+        ...[...google.calendars.keys()].map((id) => ({ id, summary: "Koblip Book" })),
+      ],
+    })
   }
   if (method === "POST" && path === "/channels/stop") {
     google.channels.delete(body.id)
@@ -96,7 +113,10 @@ const fetchGoogle = vi.fn(async (input: string, init: RequestInit = {}) => {
   if (method === "POST" && path === "/freeBusy") {
     return answer(200, {
       calendars: Object.fromEntries(
-        body.items.map((item: { id: string }) => [item.id, { busy: item.id === "primary" ? google.busy : [] }])
+        body.items.map((item: { id: string }) => [
+          item.id,
+          { busy: item.id === "primary" ? google.busy : (google.otherBusy[item.id] ?? []) },
+        ])
       ),
     })
   }
@@ -161,6 +181,7 @@ beforeEach(async () => {
   await db.delete(teamMembers)
   google.busy = []
   google.channels.clear()
+  google.otherBusy = {}
   google.stopped = []
   google.channelHours = 24 * 7
   vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3100")
@@ -429,4 +450,42 @@ test("disconnecting stops the push channels before revoking", async () => {
   expect(google.calls.indexOf("POST /calendar/v3/channels/stop")).toBeLessThan(
     google.calls.indexOf("POST /revoke")
   )
+})
+
+test("the owner sees the account's calendars, main first, never Koblip Book's", async () => {
+  const { connectionId } = await connect()
+  await syncGoogleCalendar(connectionId!)
+  await expect(getGoogleCalendarChoices("biz")).resolves.toEqual([
+    { id: "owner@gmail.com", name: "owner@gmail.com", primary: true, blocks: true },
+    { id: "work@group.calendar.google.com", name: "Work", primary: false, blocks: false },
+    { id: "family@group.calendar.google.com", name: "Home", primary: false, blocks: false },
+  ])
+})
+
+test("ticked calendars block bookings and each gets a push channel", async () => {
+  live()
+  const { connectionId } = await connect()
+  google.busy = [busyNow()]
+  const work = { start: new Date(Date.now() + 6 * hour).toISOString(), end: new Date(Date.now() + 7 * hour).toISOString() }
+  google.otherBusy = { "work@group.calendar.google.com": [work] }
+  await expect(setGoogleBusyCalendars("biz", ["work@group.calendar.google.com"])).resolves.toEqual({ ok: true })
+  await vi.waitFor(async () => {
+    await expect(googleBusyTimes("biz", ...range())).resolves.toEqual([
+      { startAt: work.start, endAt: work.end, teamMemberId: null },
+    ])
+  })
+  expect([...google.channels.values()].map((channel) => channel.calendar)).toEqual([
+    "work@group.calendar.google.com",
+  ])
+  await expect(getGoogleCalendarChoices("biz")).resolves.toMatchObject([
+    { primary: true, blocks: false },
+    { name: "Work", blocks: true },
+    { name: "Home", blocks: false },
+  ])
+})
+
+test("a calendar that isn't the account's is refused", async () => {
+  await connect()
+  await expect(setGoogleBusyCalendars("biz", ["someone-else@gmail.com"])).resolves.toEqual({ ok: false })
+  await expect(setGoogleBusyCalendars("biz", "work" as unknown as string[])).resolves.toEqual({ ok: false })
 })
