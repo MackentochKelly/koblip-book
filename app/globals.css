@@ -155,9 +155,6 @@
     /* The owner area's page, behind its white cards: the menu's own color
        (--sidebar), so the menu and the page read as one surface. */
     --app-background: var(--sidebar);
-    /* On that gray page, muted fills (a tabs track, a muted row) go a soft
-       step darker, in the same neutral gray, so they still show. */
-    --app-muted: oklch(0.955 0 0);
     /* Something went through ("Booked"): as light as it goes with white
        words still passing AA (4.5:1). */
     --success: oklch(0.56 0.14 150);
@@ -234,7 +231,6 @@
     --info: oklch(0.7 0.15 250);
     /* Dark cards are already lighter than the page. */
     --app-background: var(--background);
-    --app-muted: var(--muted);
     --success: oklch(0.56 0.14 150);
     --success-foreground: oklch(1 0 0);
     --verified: #1d9bf0;
@@ -298,20 +294,11 @@
 }
 
 @layer base {
-  /* The owner area's gray page (data-surface="app" on its frame): muted
-     fills take the page's muted step, and outline rows are filled like
-     cards, so lists read as white cards on the gray, as cards do. Dark mode
-     is unchanged (its app tokens are the plain ones; rows stay clear). */
-  [data-surface="app"] {
-    --muted: var(--app-muted);
-  }
+  /* The owner area's gray page (data-surface="app" on its frame): outline
+     rows are filled like cards, so lists read as white cards on the gray.
+     Dark mode is unchanged (rows stay clear). */
   :root:not(.dark) [data-surface="app"] [data-slot="item"][data-variant="outline"] {
     @apply bg-card;
-  }
-  /* A tabs track there gets the cards' own faint edge, drawn inside: the
-     tabs row scrolls sideways and would clip an edge drawn outside. */
-  :root:not(.dark) [data-surface="app"] [data-slot="tabs-list"][data-variant="default"] {
-    @apply inset-ring-1 inset-ring-foreground/5;
   }
   /* The phone's status bar height, which the booking page's pinned bars
      keep clear of: the phone's own (viewport-fit=cover in app/layout.tsx),
