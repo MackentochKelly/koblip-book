@@ -17,12 +17,10 @@ import { type PeriodSummary, percentChange } from "../utils/analytics"
 export function PeriodStats({
   summary,
   currency,
-  caption,
   href,
 }: {
   summary: PeriodSummary
   currency: string
-  caption?: string
   href?: string
 }) {
   const m = useOwnerMessages()
@@ -30,7 +28,6 @@ export function PeriodStats({
   const number = new Intl.NumberFormat(m.locale)
   return (
     <StatStrip
-      caption={caption}
       href={href}
       stats={[
         {
