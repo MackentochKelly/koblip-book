@@ -82,7 +82,8 @@ type Panels = ReturnType<typeof useBookingPanels>
 // Bookings as a list, the same on Home and the Bookings page: a computer
 // gets a table sorted by its headers, a phone gets cards. Every row opens
 // the booking; its ⋯ menu moves, cancels or marks it. With `pages` the
-// table has pages and the cards a Show more; without, all are shown.
+// table has pages and the cards a Show more; without, all are shown, or
+// only the first `phoneLimit` cards on a phone.
 export function BookingList({
   bookings,
   now,
@@ -90,6 +91,7 @@ export function BookingList({
   panels,
   newestFirst = false,
   pages = false,
+  phoneLimit,
 }: {
   bookings: OwnerBooking[]
   // ISO time the page was loaded: what is upcoming and what can be done.
@@ -98,6 +100,7 @@ export function BookingList({
   panels: Panels
   newestFirst?: boolean
   pages?: boolean
+  phoneLimit?: number
 }) {
   const m = useOwnerMessages()
   const t = m.bookings.list
@@ -233,7 +236,7 @@ export function BookingList({
       {/* A phone: cards, in the same order as the table. */}
       <div className="flex flex-col gap-3 md:hidden">
         <ItemGroup className="gap-3">
-          {(pages ? sorted.slice(0, shown) : sorted).map(
+          {sorted.slice(0, pages ? shown : phoneLimit).map(
             ({ original: booking }) => (
               <Item
                 key={booking.id}

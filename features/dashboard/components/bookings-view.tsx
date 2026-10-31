@@ -31,8 +31,10 @@ import { PeriodStats } from "./period-stats"
 
 type View = "upcoming" | "past"
 
-// Home shows this many; View all opens the Bookings page for the rest.
-const HOME_LIMIT = 8
+// Home shows this many (fewer on a phone); View all opens the Bookings
+// page for the rest.
+const HOME_LIMIT = 6
+const HOME_PHONE_LIMIT = 3
 
 // The home page: the last 7 days' numbers (they open Analytics), then the
 // next few bookings (the last few one tab away) in the Bookings page's list,
@@ -157,6 +159,7 @@ export function BookingsView({
               hasTeam={hasTeam}
               panels={panels}
               newestFirst={view === "past"}
+              phoneLimit={HOME_PHONE_LIMIT}
             />
             <Button
               variant="outline"
