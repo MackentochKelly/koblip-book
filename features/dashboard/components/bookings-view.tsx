@@ -59,12 +59,12 @@ import { cancelBooking } from "../api/actions"
 import { setBookingStatus } from "../api/booking-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
-import type { DashboardSummary } from "../utils/analytics"
+import type { PeriodSummary } from "../utils/analytics"
 import { AddBookingPanel, type AddBookingOptions } from "./add-booking-panel"
 import { BookingDetails } from "./booking-details"
 import { BookingStatusBadge } from "./booking-status-badge"
 import { MoveBookingPanel } from "./move-booking-panel"
-import { WeekStats } from "./week-stats"
+import { PeriodStats } from "./period-stats"
 
 type View = "upcoming" | "past"
 
@@ -85,7 +85,7 @@ export function BookingsView({
   businessId: string
   upcoming: OwnerBooking[]
   past: OwnerBooking[]
-  summary: DashboardSummary
+  summary: PeriodSummary
   currency: string
   addOptions: AddBookingOptions
   createBooking: (input: OwnerBookingInput) => Promise<OwnerBookingResult>
@@ -168,9 +168,10 @@ export function BookingsView({
           {t.add}
         </Button>
       </div>
-      <WeekStats
+      <PeriodStats
         summary={summary}
         currency={currency}
+        caption={t.analytics.last[7]}
         href={`/dashboard/${businessId}/analytics`}
       />
       <div className="flex min-w-0 flex-col gap-6">

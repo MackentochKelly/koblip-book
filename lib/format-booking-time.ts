@@ -37,6 +37,15 @@ export function formatDayShort(date: string, locale = "en-US"): string {
   }).format(asUtc(date))
 }
 
+// "2026-10-27" → "Oct 27".
+export function formatMonthDay(date: string, locale = "en-US"): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(asUtc(date))
+}
+
 // "2026-10-27" → "Tue".
 export function formatWeekdayShort(date: string, locale = "en-US"): string {
   return new Intl.DateTimeFormat(locale, {

@@ -1,5 +1,9 @@
 import Link from "next/link"
-import { ArrowDownIcon, ArrowUpIcon } from "@/components/ui/icons"
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronRightIcon,
+} from "@/components/ui/icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
@@ -9,8 +13,6 @@ export interface Stat {
   icon: React.ReactNode
   label: string
   value: string
-  // Under the number, e.g. "Last 7 days".
-  note?: string
   // Whole percent against the period before; null hides the badge.
   change?: number | null
   // False for numbers that should go down, like no-shows.
@@ -18,49 +20,48 @@ export interface Stat {
 }
 
 // Key numbers in one card, split by thin lines: two across on a phone, four
-// on a computer (or always two, beside a chart). Each has an icon and label,
-// the number, and how it moved against the period before (green when it
-// went the right way). With an `href` the whole card opens that page.
+// on a computer. Each has an icon and label, then the number with how it
+// moved against the period before beside it (green when it went the right
+// way). `caption` names the period once, at the top; with an `href` the
+// whole card opens that page.
 export function StatStrip({
   stats,
-  columns = 4,
+  caption,
   href,
 }: {
   stats: Stat[]
-  columns?: 2 | 4
+  caption?: string
   href?: string
 }) {
   const card = (
     <Card
       className={cn(
-        "h-full gap-0 py-0",
-        href && "transition-colors [&_dl>div]:transition-colors hover:[&_dl>div]:bg-muted"
+        "gap-0 py-0",
+        href && "transition-colors hover:bg-muted [&_dl>div]:transition-colors hover:[&_dl>div]:bg-muted"
       )}
     >
-      <dl
-        className={cn(
-          "grid h-full grid-cols-2 gap-px bg-border",
-          columns === 4 && "lg:grid-cols-4"
-        )}
-      >
+      {caption && (
+        <div className="flex items-center justify-between gap-2 px-5 pt-4 text-muted-foreground">
+          {caption}
+          {href && <ChevronRightIcon className="size-4" />}
+        </div>
+      )}
+      <dl className="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="flex flex-col gap-3 bg-card p-5">
-            <dt className="flex items-center gap-2 text-muted-foreground [&_svg]:size-4.5 [&_svg]:text-primary">
+          <div key={stat.label} className="flex flex-col gap-2 bg-card p-5">
+            <dt className="flex items-center gap-2 text-muted-foreground [&_svg]:size-4.5 [&_svg]:shrink-0 [&_svg]:text-primary">
               {stat.icon}
               <span className="truncate">{stat.label}</span>
             </dt>
-            <dd className="text-xl font-semibold tracking-tight tabular-nums sm:text-2xl lg:text-3xl">
-              {stat.value}
+            <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="text-3xl font-semibold tracking-tight tabular-nums">
+                {stat.value}
+              </span>
+              <Change
+                change={stat.change ?? null}
+                upIsGood={stat.upIsGood ?? true}
+              />
             </dd>
-            {(stat.note || stat.change != null) && (
-              <dd className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                {stat.note}
-                <Change
-                  change={stat.change ?? null}
-                  upIsGood={stat.upIsGood ?? true}
-                />
-              </dd>
-            )}
           </div>
         ))}
       </dl>
