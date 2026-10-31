@@ -8,8 +8,11 @@ import { cn } from "@/lib/utils"
 const SEAL =
   "M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
 // A business name followed by its verified seal, as on X and Instagram.
-// Tapping the seal or the name slides the seal's word out beside it on a
-// light blue pill; tapping again slides it back.
+// The seal is glued to the name's last word, so a long name that wraps
+// never leaves it alone on a line. Tapping the seal (or, with a pointer,
+// the name) slides the seal's word out beside it on a light blue pill;
+// tapping again slides it back. The seal is the control for the keyboard
+// and screen readers.
 export function VerifiedName({
   name,
   label = "Verified",
@@ -21,22 +24,27 @@ export function VerifiedName({
 }) {
   const [open, setOpen] = useState(false)
   const toggle = () => setOpen((value) => !value)
+  const split = name.trimEnd().lastIndexOf(" ") + 1
+  const head = name.slice(0, split)
+  const last = name.slice(split)
   return (
     <>
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={toggle}
-        className="cursor-pointer rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
-      >
-        {name}
-      </button>
-      <VerifiedBadge
-        label={label}
-        open={open}
-        onToggle={toggle}
-        className={className}
-      />
+      {head && (
+        <span className="cursor-pointer" onClick={toggle}>
+          {head}
+        </span>
+      )}
+      <span className="whitespace-nowrap">
+        <span className="cursor-pointer" onClick={toggle}>
+          {last}
+        </span>
+        <VerifiedBadge
+          label={label}
+          open={open}
+          onToggle={toggle}
+          className={className}
+        />
+      </span>
     </>
   )
 }
@@ -62,7 +70,7 @@ function VerifiedBadge({
       className={cn(
         // Small to look at, but a full 44px to tap (same as every Button).
         touchArea,
-        "group/verified inline-flex items-center rounded-full p-0.5 text-sm font-medium tracking-normal text-verified-foreground transition-[background-color,padding] duration-300 ease-out cursor-pointer outline-none focus-visible:ring-3 focus-visible:ring-ring/30 data-open:bg-verified/15 data-open:pr-2.5",
+        "group/verified inline-flex cursor-pointer items-center rounded-full p-0.5 text-sm font-medium tracking-normal text-verified-foreground transition-[background-color,padding] duration-300 ease-out outline-none focus-visible:ring-3 focus-visible:ring-ring/30 data-open:bg-verified/15 data-open:pr-2.5",
         className
       )}
     >
