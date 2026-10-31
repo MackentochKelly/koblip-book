@@ -40,6 +40,7 @@ export function BusinessesList({
             </ItemDescription>
             {business.team?.map((member) => <div key={member.id} className="flex flex-col gap-1 text-sm">
               <span className="font-medium">{member.name}</span>
+              {[member.description, member.phone, member.email].filter(Boolean).map((detail) => <span key={detail} className="text-muted-foreground">{detail}</span>)}
               {member.hours.length === 0 ? <span className="text-muted-foreground">{t.sameHours}</span> : member.hours.map((row) =>
                 <span key={row.id} className="text-muted-foreground">{formatWeekday(row.weekday, m.locale)} · {formatClock(row.opensAt, m.locale)}–{formatClock(row.closesAt, m.locale)}</span>
               )}

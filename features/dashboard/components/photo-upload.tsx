@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { ImageIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
@@ -71,7 +71,7 @@ export function usePhotoUpload<T extends object>(
 }
 
 // One photo (a service's or a person's): the picture, then Upload or
-// Change, and Remove.
+// Change, and Remove. Each change is saved right away.
 export function PhotoField({
   label,
   photoUrl,
@@ -92,8 +92,122 @@ export function PhotoField({
   const { pick, pending, field } = usePhotoUpload(upload, (result) =>
     setUrl(result.photoUrl)
   )
-  const busy = pending || removing
 
+  return (
+    <PhotoRow
+      label={label}
+      url={url}
+      fallback={fallback}
+      pending={pending}
+      busy={pending || removing}
+      onPick={pick}
+      onRemove={() =>
+        startRemoving(async () => {
+          const result = await remove().catch(
+            () => ({ ok: false, error: "not_found" }) as const
+          )
+          if (result.ok) {
+            setUrl(null)
+            router.refresh()
+          } else {
+            toast.error(photoErrors(m)[result.error])
+          }
+        })
+      }
+      field={field}
+    />
+  )
+}
+
+// The same photo row for something not saved yet (a person being added):
+// the picked photo stays in the form, made smaller, until the form saves
+// it with uploadPickedPhoto.
+export function PickedPhotoField({
+  label,
+  fallback,
+  onChange,
+}: {
+  label: string
+  fallback?: React.ReactNode
+  onChange: (file: File | null) => void
+}) {
+  const input = useRef<HTMLInputElement>(null)
+  const [pending, startTransition] = useTransition()
+  const [url, setUrl] = useState<string | null>(null)
+  // The preview lives until the next photo replaces it or the form closes.
+  useEffect(() => () => {
+    if (url) URL.revokeObjectURL(url)
+  }, [url])
+  const choose = (next: File | null) => {
+    setUrl(next ? URL.createObjectURL(next) : null)
+    onChange(next)
+  }
+
+  return (
+    <PhotoRow
+      label={label}
+      url={url}
+      fallback={fallback}
+      pending={pending}
+      busy={pending}
+      onPick={() => input.current?.click()}
+      onRemove={() => choose(null)}
+      field={
+        <Input
+          ref={input}
+          type="file"
+          accept={ACCEPT}
+          hidden
+          onChange={(event) => {
+            const picked = event.target.files?.[0]
+            event.target.value = ""
+            if (picked)
+              startTransition(async () => choose(await resizeImage(picked)))
+          }}
+        />
+      }
+    />
+  )
+}
+
+// Sends a photo picked with PickedPhotoField once its owner is saved.
+// Shows why when it is refused; answers whether it was saved.
+export function useUploadPickedPhoto() {
+  const m = useOwnerMessages()
+  return async (
+    file: File,
+    upload: (formData: FormData) => Promise<PhotoResult<object>>
+  ) => {
+    const formData = new FormData()
+    formData.set("file", file)
+    const result = await upload(formData).catch(
+      () => ({ ok: false, error: "not_found" }) as const
+    )
+    if (!result.ok) toast.error(photoErrors(m)[result.error])
+    return result.ok
+  }
+}
+
+function PhotoRow({
+  label,
+  url,
+  fallback,
+  pending,
+  busy,
+  onPick,
+  onRemove,
+  field,
+}: {
+  label: string
+  url: string | null
+  fallback?: React.ReactNode
+  pending: boolean
+  busy: boolean
+  onPick: () => void
+  onRemove: () => void
+  field: React.ReactNode
+}) {
+  const m = useOwnerMessages()
   return (
     <div className="flex items-center gap-4">
       <Avatar size="lg" aria-label={label}>
@@ -106,7 +220,7 @@ export function PhotoField({
           variant="outline"
           size="sm"
           disabled={busy}
-          onClick={pick}
+          onClick={onPick}
         >
           {pending && <Spinner data-icon="inline-start" />}
           {url ? m.settings.photos.change : m.settings.photos.addPhoto}
@@ -117,19 +231,7 @@ export function PhotoField({
             variant="ghost"
             size="sm"
             disabled={busy}
-            onClick={() =>
-              startRemoving(async () => {
-                const result = await remove().catch(
-                  () => ({ ok: false, error: "not_found" }) as const
-                )
-                if (result.ok) {
-                  setUrl(null)
-                  router.refresh()
-                } else {
-                  toast.error(photoErrors(m)[result.error])
-                }
-              })
-            }
+            onClick={onRemove}
           >
             {m.settings.photos.remove}
           </Button>

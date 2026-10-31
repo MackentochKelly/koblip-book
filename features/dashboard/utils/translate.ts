@@ -13,6 +13,7 @@ export type TranslationField =
   | "addon_group.prompt"
   | "addon.name"
   | "addon.description"
+  | "team_member.description"
 
 export interface AddonTranslatableRows {
   groups: { id: string; prompt: string }[]
@@ -44,12 +45,13 @@ export function translationId(
 // Every text that needs a Spanish translation: About (if any) + every
 // service name + every service description (if any) + every add-on group
 // prompt + every add-on option name + every add-on option description
-// (if any).
+// (if any) + every team member's short description (if any).
 export function collectTranslatableTexts(
   businessId: string,
   businessDescription: string | null,
   serviceRows: { id: string; name: string; description: string | null }[],
-  addonRows: AddonTranslatableRows = { groups: [], options: [] }
+  addonRows: AddonTranslatableRows = { groups: [], options: [] },
+  teamRows: { id: string; description: string | null }[] = []
 ): TranslatableText[] {
   const all: TranslatableText[] = []
   if (businessDescription && businessDescription.trim() !== "") {
@@ -97,6 +99,16 @@ export function collectTranslatableTexts(
         entityId: option.id,
         field: "addon.description",
         text: option.description,
+      })
+    }
+  }
+  for (const member of teamRows) {
+    if (member.description && member.description.trim() !== "") {
+      all.push({
+        id: translationId(member.id, "team_member.description"),
+        entityId: member.id,
+        field: "team_member.description",
+        text: member.description,
       })
     }
   }

@@ -232,7 +232,7 @@ export function MemberStep({
       detail: m.booking.whoeverFree,
       photoUrl: null,
     },
-    ...team.map((member) => ({ ...member, detail: null })),
+    ...team.map((member) => ({ ...member, detail: member.description })),
   ]
   return (
     <RadioGroup

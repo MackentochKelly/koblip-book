@@ -97,6 +97,12 @@ const catalog = {
       `${name} has upcoming bookings. Cancel them first.`,
     saveFailed: "Could not save. Please try again.",
     photo: (name: string) => `${name}'s photo`,
+    newPhoto: "New person's photo",
+    phone: "Phone",
+    email: "Email",
+    description: "Short description",
+    badPhone: "Check the phone number",
+    badEmail: "Check the email address",
   },
 }
 

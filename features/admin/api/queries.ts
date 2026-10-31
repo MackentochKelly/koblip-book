@@ -52,7 +52,7 @@ export interface AdminBusiness {
   ownerName: string | null
   ownerEmail: string | null
   bookings: number
-  team?: Array<{ id: string; name: string; hours: Array<typeof teamMemberHours.$inferSelect> }>
+  team?: Array<{ id: string; name: string; phone: string | null; email: string | null; description: string | null; hours: Array<typeof teamMemberHours.$inferSelect> }>
   // Customers the owner added by hand (booking customers live in bookings).
   customers?: Array<{ id: string; name: string; phone: string | null }>
 }
@@ -85,7 +85,7 @@ export async function getBusinesses(): Promise<AdminBusiness[]> {
     db.select({ id: customers.id, businessId: customers.businessId, name: customers.name, phone: customers.phone }).from(customers).innerJoin(businesses, eq(businesses.id, customers.businessId)).where(realBusiness).orderBy(desc(customers.createdAt)),
   ])
   return rows.map((row) => ({ ...row, team: members.filter((m) => m.team_members.businessId === row.id).map(({ team_members: member }) => ({
-    id: member.id, name: member.name, hours: hours.filter((h) => h.team_member_hours.teamMemberId === member.id).map((h) => h.team_member_hours),
+    id: member.id, name: member.name, phone: member.phone, email: member.email, description: member.description, hours: hours.filter((h) => h.team_member_hours.teamMemberId === member.id).map((h) => h.team_member_hours),
   })), customers: saved.filter((c) => c.businessId === row.id).map(({ id, name, phone }) => ({ id, name, phone })) }))
 }
 

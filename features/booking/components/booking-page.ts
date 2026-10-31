@@ -9,7 +9,10 @@ export type BookingService = Pick<
   ServiceRow,
   "id" | "name" | "durationMinutes" | "priceMinor"
 >
-export type BookingMember = Pick<TeamMemberRow, "id" | "name" | "photoUrl">
+export type BookingMember = Pick<
+  TeamMemberRow,
+  "id" | "name" | "photoUrl" | "description"
+>
 
 export interface BookingAddonOption {
   id: string
@@ -110,7 +113,7 @@ export function toBookingPage(data: {
   }
   photos: { url: string }[]
   services: ServiceRow[]
-  team: TeamMemberRow[]
+  team: BookingMember[]
   serviceTeams: Record<string, string[]>
   addonGroups: BookingAddonGroup[]
   whatsapp: boolean
@@ -130,7 +133,12 @@ export function toBookingPage(data: {
       durationMinutes,
       priceMinor,
     })),
-    team: data.team.map(({ id, name, photoUrl }) => ({ id, name, photoUrl })),
+    team: data.team.map(({ id, name, photoUrl, description }) => ({
+      id,
+      name,
+      photoUrl,
+      description,
+    })),
     serviceTeams: data.serviceTeams,
     addonGroups: data.addonGroups,
     whatsapp: data.whatsapp,

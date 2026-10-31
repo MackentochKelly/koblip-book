@@ -8,6 +8,7 @@ import {
   addonOptions,
   businesses,
   services,
+  teamMembers,
   translations,
 } from "@/lib/db/schema"
 import { isMetaAiEnabled } from "@/lib/meta-ai"
@@ -34,7 +35,8 @@ export async function getTranslationStatus(
   businessId: string
 ): Promise<TranslationStatus> {
   const business = await ownedBusiness(businessId)
-  const [serviceRows, addonGroupRows, addonOptionRows] = await Promise.all([
+  const [serviceRows, addonGroupRows, addonOptionRows, teamRows] =
+    await Promise.all([
     db
       .select({
         id: services.id,
@@ -55,6 +57,10 @@ export async function getTranslationStatus(
       })
       .from(addonOptions)
       .where(eq(addonOptions.businessId, business.id)),
+    db
+      .select({ id: teamMembers.id, description: teamMembers.description })
+      .from(teamMembers)
+      .where(eq(teamMembers.businessId, business.id)),
   ])
   const existing = await db
     .select({
@@ -73,7 +79,8 @@ export async function getTranslationStatus(
     business.id,
     business.description,
     serviceRows,
-    { groups: addonGroupRows, options: addonOptionRows }
+    { groups: addonGroupRows, options: addonOptionRows },
+    teamRows
   )
   const pending = pendingTranslations(all, existing)
   return {

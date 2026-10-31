@@ -10,6 +10,8 @@ export const BOOKING_RULES = {
   maxSeats: 20,
   maxServiceName: 80,
   maxTeamName: 80,
+  maxTeamDescription: 120,
+  maxEmail: 254,
   maxServiceDescription: 300,
   maxBusinessName: 120,
   maxBusinessAddress: 300,
@@ -37,3 +39,6 @@ export const BOOKING_RULES = {
 } as const
 
 export const PHONE_PATTERN = /^\+?[\d\s().-]{7,25}$/
+
+// One address: something@something.something, no spaces.
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
