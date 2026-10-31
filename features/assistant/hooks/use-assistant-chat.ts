@@ -9,7 +9,11 @@ import type {
   AssistantRequest,
   AssistantStreamEvent,
 } from "../types"
-import { takeHandedOffQuestion } from "../utils/ask-handoff"
+import {
+  clearHandOff,
+  type HandOff,
+  readHandOff,
+} from "../utils/ask-handoff"
 import { getChat, putChat } from "../utils/chats-client"
 import {
   applyEvent,
@@ -55,14 +59,15 @@ export function useAssistantChat(
   // draw the same thing first.
   const storageKey = `assistant-chat:${businessId}`
   const idKey = `assistant-chat-id:${businessId}`
-  // A question asked on another page (the Ask card) starts a new chat
-  // instead, sent once the chat is ready.
-  const [handedOff, setHandedOff] = useState<string | null>(null)
+  // Something started on another page (the Ask card) begins a new chat
+  // instead: its question is sent once the chat is ready, or talking live
+  // starts (see liveRequested).
+  const [handedOff, setHandedOff] = useState<HandOff | null>(null)
   useEffect(() => {
     queueMicrotask(() => {
-      const question = takeHandedOffQuestion(businessId)
-      if (question) {
-        setHandedOff(question)
+      const started = readHandOff(businessId)
+      if (started) {
+        setHandedOff(started)
       } else {
         try {
           // A chat from another version or of another shape starts fresh.
@@ -233,19 +238,25 @@ export function useAssistantChat(
     return true
   }
 
-  // Sent once, when the chat is ready.
+  // Taken once the chat has started from it.
+  useEffect(() => {
+    if (restored && handedOff) clearHandOff(businessId)
+  }, [restored, handedOff, businessId])
+  // A handed-off question is sent once, when the chat is ready.
   const sendHandedOff = useEffectEvent((question: string) => {
     setHandedOff(null)
     void send(question)
   })
   useEffect(() => {
-    if (!restored || handedOff === null) return
-    const question = handedOff
+    if (!restored || handedOff?.kind !== "ask") return
+    const question = handedOff.text
     queueMicrotask(() => sendHandedOff(question))
   }, [restored, handedOff])
 
   return {
     items,
+    // The owner tapped Talk live on another page: start it here.
+    liveRequested: restored && handedOff?.kind === "live",
     busy,
     error,
     chatId,

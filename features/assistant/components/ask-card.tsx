@@ -1,25 +1,17 @@
 "use client"
 
-import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
-  ArrowUpIcon,
   CalendarDaysIcon,
   ContactIcon,
   UsersIcon,
 } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from "@/components/ui/input-group"
-import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type { PageLanguage } from "@/lib/page-language"
 import { assistantMessagesFor } from "../i18n"
-import { handOffQuestion } from "../utils/ask-handoff"
+import { type HandOff, handOff } from "../utils/ask-handoff"
+import { AssistantComposer } from "./assistant-composer"
 
 // Ideas a tap sends, the same words as an empty chat's.
 const IDEAS = [
@@ -28,9 +20,9 @@ const IDEAS = [
   { key: "book", icon: ContactIcon },
 ] as const
 
-// A way into the assistant from another page (Home): a box to ask in and a
-// few ideas to tap. Either opens the assistant with it as a new chat; no AI
-// runs until then.
+// A way into the assistant from another page (Home): a few ideas to tap and
+// the assistant's own message box under them. A question, or Talk live,
+// opens the assistant to carry on there as a new chat; no AI runs until then.
 export function AskCard({
   businessId,
   language,
@@ -40,12 +32,13 @@ export function AskCard({
 }) {
   const messages = assistantMessagesFor(language)
   const router = useRouter()
-  const [text, setText] = useState("")
+  const open = (value: HandOff) => {
+    handOff(businessId, value)
+    router.push(`/dashboard/${businessId}/assistant`)
+  }
   const ask = (question: string) => {
     const clean = question.trim()
-    if (!clean) return
-    handOffQuestion(businessId, clean)
-    router.push(`/dashboard/${businessId}/assistant`)
+    if (clean) open({ kind: "ask", text: clean })
   }
 
   return (
@@ -63,34 +56,22 @@ export function AskCard({
           </Button>
         ))}
       </div>
-      {/* The box last, like a chat's. */}
-      <form
-        onSubmit={(event) => {
-          event.preventDefault()
-          ask(text)
-        }}
-      >
-        <InputGroup>
-          <InputGroupInput
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            placeholder={messages.composer.placeholder}
-            aria-label={messages.composer.label}
-            maxLength={ASSISTANT_RULES.maxMessageChars}
-          />
-          <InputGroupAddon align="inline-end">
-            <InputGroupButton
-              type="submit"
-              variant="default"
-              size="icon-sm"
-              aria-label={messages.composer.send}
-              disabled={text.trim() === ""}
-            >
-              <ArrowUpIcon />
-            </InputGroupButton>
-          </InputGroupAddon>
-        </InputGroup>
-      </form>
+      {/* Nothing is answered here, so the talking-mode handlers have no
+          chat to act on: talking live opens the assistant instead. */}
+      <AssistantComposer
+        businessId={businessId}
+        labels={messages.composer}
+        errors={messages.errors}
+        busy={false}
+        stoppable={false}
+        onSend={ask}
+        onSendSpoken={async () => null}
+        onStop={() => {}}
+        onCutOff={() => {}}
+        onWithdraw={() => {}}
+        onTalkLive={() => open({ kind: "live" })}
+        inline
+      />
     </div>
   )
 }

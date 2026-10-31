@@ -180,6 +180,7 @@ export function AssistantChat({
                 onStop={chat.stop}
                 onCutOff={chat.cutOff}
                 onWithdraw={chat.withdraw}
+                startLive={chat.liveRequested}
               />
             </div>
           </>

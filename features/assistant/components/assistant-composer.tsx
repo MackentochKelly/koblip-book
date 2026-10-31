@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useEffectEvent, useRef, useState } from "react"
 import {
   ArrowUpIcon,
   AudioLinesIcon,
@@ -45,7 +45,8 @@ const MODE_LABELS: Record<
 
 // The message box. Enter sends; Shift+Enter starts a new line. Like
 // ChatGPT: the voice button talks live (the box then shows what it hears,
-// and an end button).
+// and an end button). On another page (Home's Ask card) `onTalkLive` takes
+// the voice button to the assistant page, which gets `startLive` to offer it.
 export function AssistantComposer({
   businessId,
   labels,
@@ -57,6 +58,9 @@ export function AssistantComposer({
   onStop,
   onCutOff,
   onWithdraw,
+  onTalkLive,
+  startLive: startLiveNow = false,
+  inline = false,
 }: {
   businessId: string
   labels: AssistantMessages["composer"]
@@ -75,6 +79,13 @@ export function AssistantComposer({
   onCutOff: (heard: string) => void
   // Talking mode: takes the last question and its unfinished answer off.
   onWithdraw: () => void
+  // Talking live happens somewhere else: the voice button calls this.
+  onTalkLive?: () => void
+  // Offer talking live as soon as this shows (asked for on another page).
+  startLive?: boolean
+  // One line, the button beside the words (a card on another page); the
+  // chat itself puts the buttons under them.
+  inline?: boolean
 }) {
   const [text, setText] = useState("")
   const canSend = text.trim() !== "" && !busy
@@ -108,12 +119,26 @@ export function AssistantComposer({
   const [introHidden, hideIntro] = useStoredFlag(VOICE_INTRO_HIDDEN_KEY)
   const [introOpen, setIntroOpen] = useState(false)
   const startLive = () => {
-    if (introHidden) {
+    if (onTalkLive) {
+      onTalkLive()
+    } else if (introHidden) {
       void live.start()
     } else {
       setIntroOpen(true)
     }
   }
+  // Asked for on another page: once, when it shows, the intro opens (even
+  // after "Don't show again"), since phones only let the voice play when it
+  // starts inside a tap here; its Continue is that tap.
+  const started = useRef(false)
+  const startLiveOnce = useEffectEvent(() => {
+    if (started.current) return
+    started.current = true
+    setIntroOpen(true)
+  })
+  useEffect(() => {
+    if (startLiveNow) startLiveOnce()
+  }, [startLiveNow])
 
   const submit = () => {
     if (!canSend) return
@@ -196,7 +221,10 @@ export function AssistantComposer({
         />
         {/* Like big chat apps: the words on top, the buttons under them;
             the round one changes with what the owner is doing. */}
-        <InputGroupAddon align="block-end" className="justify-end">
+        <InputGroupAddon
+          align={inline ? "inline-end" : "block-end"}
+          className={inline ? undefined : "justify-end"}
+        >
           {/* A new key per state, so each change fades and grows in, in
               the same spot (instant with reduced motion). */}
           <InputGroupButton
