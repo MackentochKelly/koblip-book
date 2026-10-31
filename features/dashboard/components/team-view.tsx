@@ -16,6 +16,7 @@ import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { FloatingActionButton } from "@/components/floating-action-button"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -125,7 +126,8 @@ export function TeamView({
             <ClockIcon data-icon="inline-start" />
             {messages.shell.nav.hours}
           </Button>
-          <Button onClick={() => openForm("new")}>
+          {/* On a phone Add floats at the foot instead. */}
+          <Button className="max-md:hidden" onClick={() => openForm("new")}>
             <PlusIcon data-icon="inline-start" />
             {c.add}
           </Button>
@@ -264,6 +266,12 @@ export function TeamView({
           />
         )}
       </ResponsivePanel>
+      <FloatingActionButton
+        label={t.addPerson}
+        onClick={() => openForm("new")}
+      >
+        <PlusIcon />
+      </FloatingActionButton>
     </div>
   )
 }

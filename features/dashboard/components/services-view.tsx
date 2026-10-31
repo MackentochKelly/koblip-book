@@ -15,6 +15,7 @@ import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { ViewTabs } from "@/components/view-tabs"
+import { FloatingActionButton } from "@/components/floating-action-button"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -166,7 +167,9 @@ export function ServicesView({
             <SparklesIcon data-icon="inline-start" />
             {t.suggest}
           </Button>
+          {/* On a phone Add floats at the foot instead. */}
           <Button
+            className="max-md:hidden"
             onClick={() =>
               view === "services" ? openForm("new") : setAddingExtras(true)
             }
@@ -360,6 +363,15 @@ export function ServicesView({
           router.refresh()
         }}
       />
+      <FloatingActionButton
+        label={view === "services" ? t.addService : m.catalog.extras.add}
+        onClick={() =>
+          view === "services" ? openForm("new") : setAddingExtras(true)
+        }
+        disabled={view === "extras" && services.length === 0}
+      >
+        <PlusIcon />
+      </FloatingActionButton>
     </div>
   )
 }
