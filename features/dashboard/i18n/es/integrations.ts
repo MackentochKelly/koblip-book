@@ -69,6 +69,8 @@ const integrations: typeof en = {
     busyNobody: "A nadie",
     busyNobodyHint: "No recibes reservas",
     saveFailed: "No se pudo guardar. Inténtalo de nuevo.",
+    removeEvents: "Quitar también las reservas de Google Calendar",
+    removeEventsFailed: "Desconectado. No se pudieron quitar las reservas de Google Calendar.",
     syncNow: "Sincronizar ahora",
     synced: (ago: string) => `Sincronizado ${ago}`,
     notSynced: "Aún sin sincronizar",

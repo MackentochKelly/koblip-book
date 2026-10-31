@@ -43,6 +43,7 @@ import {
 } from "@/types/google-calendar-connect"
 import { ConfirmRemove } from "./confirm-remove"
 import { GoogleCalendarPanel } from "./google-calendar-panel"
+import { RemoveGoogleEvents } from "./remove-google-events"
 
 // The apps a business connects, as a settings list: each row is the app,
 // what it does and its state. WhatsApp straight from Meta is coming; until
@@ -72,6 +73,7 @@ export function IntegrationsView({
   const googleWindow = useConnectWindow()
   const [disconnecting, setDisconnecting] = useState<"chat" | "google" | null>(null)
   const [managingGoogle, setManagingGoogle] = useState(false)
+  const [removeGoogleEvents, setRemoveGoogleEvents] = useState(false)
   const setChatWaiting = chatWindow.setWaiting
   const setGoogleWaiting = googleWindow.setWaiting
 
@@ -356,6 +358,7 @@ export function IntegrationsView({
           team={team}
           onDisconnect={() => {
             setManagingGoogle(false)
+            setRemoveGoogleEvents(false)
             setDisconnecting("google")
           }}
         />
@@ -371,15 +374,20 @@ export function IntegrationsView({
         onClose={() => setDisconnecting(null)}
         onConfirm={async () => {
           if (disconnecting === "google") {
-            await disconnectGoogleCalendar(businessId)
-            toast(t.googleCalendar.disconnected)
+            const result = await disconnectGoogleCalendar(businessId, removeGoogleEvents)
+            if (result.eventsRemoved) toast(t.googleCalendar.disconnected)
+            else toast.error(t.googleCalendar.removeEventsFailed)
           } else {
             await disconnectChat(businessId)
             toast(t.koblipChat.disconnected)
           }
           router.refresh()
         }}
-      />
+      >
+        {disconnecting === "google" && (
+          <RemoveGoogleEvents checked={removeGoogleEvents} onCheckedChange={setRemoveGoogleEvents} />
+        )}
+      </ConfirmRemove>
     </div>
   )
 }

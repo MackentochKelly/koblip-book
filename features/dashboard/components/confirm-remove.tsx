@@ -14,15 +14,18 @@ import { useOwnerMessages } from "../i18n/provider"
 
 // Asks before anything is removed for good (shadcn's Alert Dialog, as for
 // cancelling a booking): open while `name` is set. Remove closes it and
-// runs `onConfirm`; the result shows as a toast.
+// runs `onConfirm`; the result shows as a toast. `children` is an extra
+// choice about how to remove it, under the description.
 export function ConfirmRemove({
   name,
   onConfirm,
   onClose,
+  children,
 }: {
   name: string | null
   onConfirm: () => void
   onClose: () => void
+  children?: React.ReactNode
 }) {
   const c = useOwnerMessages().catalog.common
   return (
@@ -41,6 +44,7 @@ export function ConfirmRemove({
             {c.confirmRemove.description}
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {children}
         <AlertDialogFooter>
           <AlertDialogCancel>{c.confirmRemove.keep}</AlertDialogCancel>
           <AlertDialogAction

@@ -117,6 +117,11 @@ const fetchGoogle = vi.fn(async (input: string, init: RequestInit = {}) => {
       ],
     })
   }
+  const calendarPath = path.match(/^\/calendars\/([^/]+)$/)
+  if (method === "DELETE" && calendarPath) {
+    const removed = google.calendars.delete(decodeURIComponent(calendarPath[1]))
+    return removed ? answer(204) : answer(404, { error: { errors: [{ reason: "notFound" }] } })
+  }
   if (method === "POST" && path === "/channels/stop") {
     google.channels.delete(body.id)
     google.stopped.push(body.id)
@@ -630,4 +635,21 @@ test("Sync now reads busy times again even when they aren't due", async () => {
   await expect(googleBusyTimes("biz", ...range())).resolves.toEqual([])
   await syncGoogleCalendarNow(connectionId!)
   await expect(googleBusyTimes("biz", ...range())).resolves.toHaveLength(1)
+})
+
+test("disconnecting keeps the bookings in Google, or removes them with the Koblip Book calendar", async () => {
+  await db.insert(bookings).values(booking("b1", 2 * hour))
+  const kept = await connect()
+  await syncGoogleCalendar(kept.connectionId!)
+  await expect(endGoogleCalendarConnection(kept.connectionId!)).resolves.toEqual({ eventsRemoved: false })
+  expect(google.calendars.size).toBe(1)
+
+  google.calendars.clear()
+  const removed = await connect()
+  await syncGoogleCalendar(removed.connectionId!)
+  await expect(
+    endGoogleCalendarConnection(removed.connectionId!, { removeEvents: true })
+  ).resolves.toEqual({ eventsRemoved: true })
+  expect(google.calendars.size).toBe(0)
+  await expect(googleCalendarFor("biz")).resolves.toBeNull()
 })

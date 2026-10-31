@@ -79,6 +79,7 @@ import {
 import type { TeamCalendar } from "../types/google-calendar"
 import { useOwnerMessages } from "../i18n/provider"
 import { ConfirmRemove } from "./confirm-remove"
+import { RemoveGoogleEvents } from "./remove-google-events"
 
 interface MemberRow {
   id: string
@@ -117,6 +118,7 @@ export function TeamView({
   const [formKey, setFormKey] = useState(0)
   const [removing, setRemoving] = useState<MemberRow | null>(null)
   const [unlinking, setUnlinking] = useState<MemberRow | null>(null)
+  const [removeEvents, setRemoveEvents] = useState(false)
   const [pending, startTransition] = useTransition()
   const [formError, setFormError] = useState<DetailsError | null>(null)
   // Whether the open form differs from the saved person.
@@ -175,9 +177,10 @@ export function TeamView({
     })
   const unlinkCalendar = (member: MemberRow) =>
     startTransition(async () => {
-      const result = await disconnectTeamCalendar(businessId, member.id).catch(() => null)
+      const result = await disconnectTeamCalendar(businessId, member.id, removeEvents).catch(() => null)
       if (result?.ok) {
-        toast.success(t.calendarDisconnected)
+        if (result.eventsRemoved) toast.success(t.calendarDisconnected)
+        else toast.error(messages.integrations.googleCalendar.removeEventsFailed)
         router.refresh()
       } else {
         toast.error(c.failed)
@@ -265,7 +268,13 @@ export function TeamView({
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
                       {calendars[member.id] && !calendars[member.id].needsReconnect ? (
-                        <DropdownMenuItem disabled={pending} onClick={() => setUnlinking(member)}>
+                        <DropdownMenuItem
+                          disabled={pending}
+                          onClick={() => {
+                            setRemoveEvents(false)
+                            setUnlinking(member)
+                          }}
+                        >
                           <CalendarIcon />
                           {t.disconnectCalendar}
                         </DropdownMenuItem>
@@ -304,7 +313,9 @@ export function TeamView({
         name={unlinking ? t.calendarName(unlinking.name) : null}
         onClose={() => setUnlinking(null)}
         onConfirm={() => unlinking && unlinkCalendar(unlinking)}
-      />
+      >
+        <RemoveGoogleEvents checked={removeEvents} onCheckedChange={setRemoveEvents} />
+      </ConfirmRemove>
 
       <ResponsivePanel
         open={editing !== null}

@@ -68,6 +68,8 @@ const integrations = {
     busyNobody: "Nobody",
     busyNobodyHint: "You don't take bookings",
     saveFailed: "Couldn't save. Try again.",
+    removeEvents: "Also remove the bookings from Google Calendar",
+    removeEventsFailed: "Disconnected. Couldn't remove the bookings from Google Calendar.",
     syncNow: "Sync now",
     synced: (ago: string) => `Synced ${ago}`,
     notSynced: "Not synced yet",

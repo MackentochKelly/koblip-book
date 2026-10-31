@@ -19,19 +19,22 @@ import { getOwnerLanguage } from "../i18n/server"
 import { getOwnerBusiness } from "./queries"
 
 // Disconnect on the Integrations page: ends the connection at Google and
-// forgets its tokens here. The "Koblip Book" calendar stays in Google (G10
-// lets the owner remove its events).
+// forgets its tokens here. The "Koblip Book" calendar stays in Google, or
+// goes with every booking's event when the owner asks (G10).
 export async function disconnectGoogleCalendar(
-  businessId: string
-): Promise<{ ok: true }> {
+  businessId: string,
+  removeEvents: boolean
+): Promise<{ ok: true; eventsRemoved: boolean }> {
   await getOwnerBusiness(businessId)
   const [row] = await db
     .select({ id: googleCalendarConnections.id })
     .from(googleCalendarConnections)
     .where(businessConnectionWhere(businessId))
     .limit(1)
-  if (row) await endGoogleCalendarConnection(row.id)
-  return { ok: true }
+  const ended = row
+    ? await endGoogleCalendarConnection(row.id, { removeEvents: removeEvents === true })
+    : { eventsRemoved: true }
+  return { ok: true, eventsRemoved: ended.eventsRemoved }
 }
 
 // Sync now in the Manage panel (G9): the business's calendar gets every
@@ -178,8 +181,9 @@ export async function sendTeamCalendarLink(
 // Ends a team member's own Google Calendar connection (G5).
 export async function disconnectTeamCalendar(
   businessId: string,
-  teamMemberId: string
-): Promise<{ ok: boolean }> {
+  teamMemberId: string,
+  removeEvents: boolean
+): Promise<{ ok: true; eventsRemoved: boolean } | { ok: false }> {
   await getOwnerBusiness(businessId)
   if (typeof teamMemberId !== "string") return { ok: false }
   const [row] = await db
@@ -192,6 +196,8 @@ export async function disconnectTeamCalendar(
       )
     )
     .limit(1)
-  if (row) await endGoogleCalendarConnection(row.id)
-  return { ok: true }
+  const ended = row
+    ? await endGoogleCalendarConnection(row.id, { removeEvents: removeEvents === true })
+    : { eventsRemoved: true }
+  return { ok: true, eventsRemoved: ended.eventsRemoved }
 }

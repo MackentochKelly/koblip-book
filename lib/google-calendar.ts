@@ -395,8 +395,18 @@ export async function stopGoogleChannel(
 
 // Ends the connection at Google, then forgets it here. Forgetting happens
 // even if Google cannot be reached; the person can also remove Book at
-// myaccount.google.com/permissions.
-export async function endGoogleCalendarConnection(connectionId: string) {
+// myaccount.google.com/permissions. With removeEvents, the "Koblip Book"
+// calendar Book made goes too, and with it every booking's event (G10);
+// gives back whether that worked. Runs in the connection's turn, so no sync
+// makes the calendar again meanwhile.
+export function endGoogleCalendarConnection(
+  connectionId: string,
+  { removeEvents = false }: { removeEvents?: boolean } = {}
+): Promise<{ eventsRemoved: boolean }> {
+  return runInTurn(googleTurnKey(connectionId), () => endConnection(connectionId, removeEvents))
+}
+
+async function endConnection(connectionId: string, removeEvents: boolean) {
   // Push channels first: stopping one needs the account's token.
   const channels = await db
     .select()
@@ -404,6 +414,24 @@ export async function endGoogleCalendarConnection(connectionId: string) {
     .where(eq(googleCalendarChannels.connectionId, connectionId))
   for (const channel of channels) await stopGoogleChannel(connectionId, channel)
   const row = await readConnection(connectionId)
+  let eventsRemoved = false
+  if (removeEvents && row?.calendarId) {
+    try {
+      // Book may delete only calendars it made (calendar.app.created).
+      await googleCalendarApi(connectionId, `/calendars/${encodeURIComponent(row.calendarId)}`, {
+        method: "DELETE",
+      })
+      eventsRemoved = true
+    } catch (error) {
+      if (!(error instanceof GoogleCalendarError)) throw error
+      // Already removed in Google.
+      eventsRemoved = error.status === 404 || error.status === 410
+      if (!eventsRemoved) console.error(error)
+    }
+  } else if (removeEvents) {
+    // Never made: nothing to remove.
+    eventsRemoved = true
+  }
   if (row?.refreshToken) {
     await fetch(REVOKE_URL, {
       method: "POST",
@@ -413,4 +441,5 @@ export async function endGoogleCalendarConnection(connectionId: string) {
     }).catch(() => null)
   }
   await db.delete(googleCalendarConnections).where(eq(googleCalendarConnections.id, connectionId))
+  return { eventsRemoved }
 }
