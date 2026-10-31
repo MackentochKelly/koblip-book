@@ -85,7 +85,7 @@ export function WhatsappFrame({
   if (!usable) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold tracking-tight">{m.shell.nav.automations}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{m.shell.nav.automations}</h1>
         <Empty className="border">
           <EmptyHeader>
             <EmptyMedia variant="icon">

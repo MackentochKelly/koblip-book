@@ -1,4 +1,5 @@
 import {
+  ChartColumnIcon,
   ContactIcon,
   LayoutDashboardIcon,
   PuzzleIcon,
@@ -18,6 +19,7 @@ export const NAV_GROUPS = [
     key: "main",
     items: [
       { path: "", key: "home", icon: LayoutDashboardIcon },
+      { path: "/analytics", key: "analytics", icon: ChartColumnIcon },
       { path: "/customers", key: "customers", icon: ContactIcon },
       { path: "/assistant", key: "assistant", icon: SparklesIcon },
     ],
@@ -39,3 +41,16 @@ export const NAV_GROUPS = [
     ],
   },
 ] as const
+
+// The page a path is on, for the top bar's title: the menu page whose path
+// starts it (the longest one, so Home only matches itself). Sub-pages, like
+// Settings' tabs, take their menu page's name.
+export function navKeyFor(pathname: string, base: string) {
+  const items = NAV_GROUPS.flatMap((group) => group.items)
+  const found = items
+    .filter((item) =>
+      item.path ? pathname.startsWith(base + item.path) : pathname === base
+    )
+    .sort((a, b) => b.path.length - a.path.length)[0]
+  return found?.key
+}

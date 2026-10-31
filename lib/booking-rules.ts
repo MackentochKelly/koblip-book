@@ -29,6 +29,9 @@ export const BOOKING_RULES = {
   // The open bookings screen looks for new bookings this often (seconds),
   // so one made on the booking page shows up without reloading.
   ownerRefreshSeconds: 5,
+  // How many days ahead the owner's counts and Analytics chart cover: today
+  // and the 13 after it (the chart's 14 days view).
+  chartDays: 14,
 } as const
 
 export const PHONE_PATTERN = /^\+?[\d\s().-]{7,25}$/
