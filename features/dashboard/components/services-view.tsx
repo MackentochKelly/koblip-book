@@ -17,6 +17,7 @@ import { ResponsivePanel } from "@/components/responsive-panel"
 import { ViewTabs } from "@/components/view-tabs"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { MultiPick } from "@/components/multi-pick"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,8 +40,6 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldLegend,
-  FieldSet,
   FieldTitle,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -528,37 +527,21 @@ function ServiceForm({
           />
         </Field>
         {team.length > 1 && (
-          <FieldSet data-invalid={invalid === "team" || undefined}>
-            <FieldLegend variant="label">{t.whoDoesIt}</FieldLegend>
-            <FieldGroup data-slot="checkbox-group">
-              {team.map((member) => (
-                <Field key={member.id} orientation="horizontal">
-                  <Checkbox
-                    id={`service-member-${member.id}`}
-                    checked={memberIds.includes(member.id)}
-                    onCheckedChange={(on) =>
-                      setMemberIds((current) =>
-                        on
-                          ? team
-                              .map((item) => item.id)
-                              .filter(
-                                (id) => id === member.id || current.includes(id)
-                              )
-                          : current.filter((id) => id !== member.id)
-                      )
-                    }
-                  />
-                  <FieldLabel
-                    htmlFor={`service-member-${member.id}`}
-                    className="font-normal"
-                  >
-                    {member.name}
-                  </FieldLabel>
-                </Field>
-              ))}
-            </FieldGroup>
+          <Field data-invalid={invalid === "team" || undefined}>
+            <FieldLabel htmlFor="service-members">{t.whoDoesIt}</FieldLabel>
+            <MultiPick
+              id="service-members"
+              items={team.map((member) => ({
+                value: member.id,
+                label: member.name,
+              }))}
+              value={memberIds}
+              onChange={setMemberIds}
+              empty={c.noMatch}
+              invalid={invalid === "team"}
+            />
             {invalid === "team" && <FieldError>{t.pickOne}</FieldError>}
-          </FieldSet>
+          </Field>
         )}
       </FieldGroup>
     </form>

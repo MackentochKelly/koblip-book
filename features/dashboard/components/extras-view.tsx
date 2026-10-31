@@ -15,7 +15,7 @@ import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { MultiPick } from "@/components/multi-pick"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -588,32 +588,19 @@ function ExtrasForm({
         </FieldSet>
 
         {services.length > 0 && (
-          <FieldSet>
-            <FieldLegend variant="label">{t.offeredWith}</FieldLegend>
-            <FieldGroup data-slot="checkbox-group">
-              {services.map((service) => (
-                <Field key={service.id} orientation="horizontal">
-                  <Checkbox
-                    id={`extras-service-${service.id}`}
-                    checked={serviceIds.includes(service.id)}
-                    onCheckedChange={(on) =>
-                      setServiceIds((current) =>
-                        on
-                          ? [...current, service.id]
-                          : current.filter((id) => id !== service.id)
-                      )
-                    }
-                  />
-                  <FieldLabel
-                    htmlFor={`extras-service-${service.id}`}
-                    className="font-normal"
-                  >
-                    {service.name}
-                  </FieldLabel>
-                </Field>
-              ))}
-            </FieldGroup>
-          </FieldSet>
+          <Field>
+            <FieldLabel htmlFor="extras-services">{t.offeredWith}</FieldLabel>
+            <MultiPick
+              id="extras-services"
+              items={services.map((service) => ({
+                value: service.id,
+                label: service.name,
+              }))}
+              value={serviceIds}
+              onChange={setServiceIds}
+              empty={c.noMatch}
+            />
+          </Field>
         )}
       </FieldGroup>
     </form>
