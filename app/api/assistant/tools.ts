@@ -51,6 +51,7 @@ import {
 import { logAssistantAction } from "@/features/assistant/api/audit-log"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import { getAvailability } from "@/features/booking/api/get-availability"
+import { checkAddons } from "@/features/booking/utils/addons"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { bookingStats } from "./booking-stats"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
@@ -116,6 +117,14 @@ function schema(
     required,
     additionalProperties: false,
   }
+}
+
+// The extras a booking or free-times lookup is for, as the owner said them.
+const EXTRAS_PARAMETER = {
+  type: "array",
+  items: { type: "string" },
+  description:
+    "Extra names as the owner said them, omit for none; when the service needs an extra, it returns the choices to ask about",
 }
 
 // Finds a service or team member from the words the owner said ("classic
@@ -245,9 +254,78 @@ function validHoursRows(value: unknown): HoursInput[] | null {
   return rows
 }
 
+// The extras the owner said for one service, matched like services are
+// (pickByName), then checked with the booking page's own rule
+// (checkAddons), so the free times and the total fit what is booked.
+interface PickedExtras {
+  ids: string[]
+  names: string[]
+  extraMinutes: number
+  extraPriceMinor: number | null
+}
+
+async function pickExtras(
+  businessId: string,
+  service: { id: string; name: string },
+  wanted: unknown,
+  t: ServerMessages
+): Promise<PickedExtras | { error: string }> {
+  const said = wanted === undefined || wanted === null ? [] : wanted
+  if (
+    !Array.isArray(said) ||
+    said.length > BOOKING_RULES.maxAddonOptions ||
+    said.some((name) => typeof name !== "string" || name.trim() === "")
+  ) {
+    return { error: t.errors.extrasInvalid }
+  }
+  const groups = (await getAddonGroups(businessId)).filter((group) =>
+    group.serviceIds.includes(service.id)
+  )
+  const options = groups.flatMap((group) => group.options)
+  if (said.length > 0 && options.length === 0) {
+    return { error: t.errors.noExtras(service.name) }
+  }
+  const ids = new Set<string>()
+  for (const name of said as string[]) {
+    const pick = pickByName(options, name)
+    if ("choices" in pick) {
+      return { error: t.errors.extraWhich(pick.choices.join(", ")) }
+    }
+    ids.add(pick.found.id)
+  }
+  // Ask about the first group with too few or too many picks.
+  for (const group of groups) {
+    const picked = group.options.filter((option) => ids.has(option.id))
+    if (picked.length < group.minSelect) {
+      return {
+        error: t.errors.extraNeeded(
+          group.prompt || group.name,
+          group.minSelect,
+          group.options.map((option) => option.name).join(", ")
+        ),
+      }
+    }
+    if (group.maxSelect !== null && picked.length > group.maxSelect) {
+      return { error: t.errors.extraTooMany(group.name, group.maxSelect) }
+    }
+  }
+  const checked = checkAddons(groups, [...ids])
+  if (!checked.ok) {
+    return { error: t.errors.extrasInvalid }
+  }
+  return {
+    ids: checked.options.map((option) => option.id),
+    names: checked.options.map((option) => option.name),
+    extraMinutes: checked.extraMinutes,
+    extraPriceMinor: checked.extraPriceMinor,
+  }
+}
+
 // Checked arguments for create_booking, shared by describe and execute.
 interface CheckedBooking {
   service: { id: string; name: string; priceMinor: number | null }
+  extras: PickedExtras
+  durationMinutes: number
   memberId: string | null
   memberName: string
   date: string
@@ -266,6 +344,7 @@ interface BookingToRun {
   serviceId: string
   serviceName: string
   teamMemberId: string | null
+  addonIds: string[]
   date: string
   time: string
   name: string
@@ -278,6 +357,7 @@ function bookingToRun(checked: CheckedBooking): BookingToRun {
     serviceId: checked.service.id,
     serviceName: checked.service.name,
     teamMemberId: checked.memberId,
+    addonIds: checked.extras.ids,
     date: checked.date,
     time: checked.time,
     name: checked.name,
@@ -298,6 +378,8 @@ function asBookingToRun(args: unknown): BookingToRun | null {
     !text(a.serviceId) ||
     !text(a.serviceName) ||
     !(a.teamMemberId === null || text(a.teamMemberId)) ||
+    !Array.isArray(a.addonIds) ||
+    !a.addonIds.every(text) ||
     typeof a.date !== "string" ||
     !isRealDate(a.date) ||
     typeof a.time !== "string" ||
@@ -389,8 +471,18 @@ async function checkBookingArgs(
     member = memberPick.found
   }
   const memberId = member?.id ?? null
-  // Checked here, so a card is only shown for a time that is free.
-  const free = await getAvailability(business.slug, service.id, memberId, [])
+  const extras = await pickExtras(businessId, service, a.extras, t)
+  if ("error" in extras) {
+    return extras
+  }
+  // Checked here, so a card is only shown for a time that is free for the
+  // service with its extras.
+  const free = await getAvailability(
+    business.slug,
+    service.id,
+    memberId,
+    extras.ids
+  )
   if (!free) {
     return { error: t.errors.freeTimesUnknown }
   }
@@ -403,12 +495,20 @@ async function checkBookingArgs(
           : t.errors.dayNotFree,
     }
   }
+  // The total as the booking stores it (createOwnerBooking): no price only
+  // when neither the service nor an extra has one.
+  const priceMinor =
+    service.priceMinor === null
+      ? extras.extraPriceMinor
+      : service.priceMinor + (extras.extraPriceMinor ?? 0)
   return {
     service: {
       id: service.id,
       name: service.name,
       priceMinor: service.priceMinor,
     },
+    extras,
+    durationMinutes: service.durationMinutes + extras.extraMinutes,
     memberId,
     memberName: member?.name ?? t.booking.anyone,
     date,
@@ -417,11 +517,11 @@ async function checkBookingArgs(
     phone,
     note,
     price:
-      service.priceMinor === null
+      priceMinor === null
         ? t.booking.noPrice
-        : service.priceMinor === 0
+        : priceMinor === 0
           ? t.booking.free
-          : formatPrice(service.priceMinor, business.currency, t.locale),
+          : formatPrice(priceMinor, business.currency, t.locale),
     timeZone: business.timezone,
   }
 }
@@ -560,7 +660,10 @@ export function buildAssistantTools(
     }
   }
   // Price text like the booking card: localized money, or No price.
-  const describePrice = (priceMinor: number | null, currency: string): string =>
+  const describePrice = (
+    priceMinor: number | null,
+    currency: string
+  ): string =>
     priceMinor === null
       ? t.booking.noPrice
       : priceMinor === 0
@@ -570,7 +673,11 @@ export function buildAssistantTools(
   const checkServiceTeamArgs = async (
     args: unknown
   ): Promise<
-    | { service: { id: string; name: string }; memberIds: string[]; team: { id: string; name: string }[] }
+    | {
+        service: { id: string; name: string }
+        memberIds: string[]
+        team: { id: string; name: string }[]
+      }
     | { error: string }
   > => {
     const a = asRecord(args)
@@ -598,7 +705,11 @@ export function buildAssistantTools(
   const checkMemberServicesArgs = async (
     args: unknown
   ): Promise<
-    | { member: { id: string; name: string }; serviceIds: string[]; services: { id: string; name: string }[] }
+    | {
+        member: { id: string; name: string }
+        serviceIds: string[]
+        services: { id: string; name: string }[]
+      }
     | { error: string }
   > => {
     const a = asRecord(args)
@@ -677,7 +788,13 @@ export function buildAssistantTools(
     ) {
       return null
     }
-    return { id, name, description, priceMinor, durationMinutes: o.durationMinutes }
+    return {
+      id,
+      name,
+      description,
+      priceMinor,
+      durationMinutes: o.durationMinutes,
+    }
   }
   const checkAddonOptions = (
     value: unknown,
@@ -756,16 +873,12 @@ export function buildAssistantTools(
     }
     if (current) {
       const currentIds = new Set(current.options.map((o) => o.id))
-      if (
-        rawOptions.some((o) => o.id !== null && !currentIds.has(o.id))
-      ) {
+      if (rawOptions.some((o) => o.id !== null && !currentIds.has(o.id))) {
         return { error: t.errors.optionsInvalid(BOOKING_RULES.maxAddonOptions) }
       }
     }
     const minSelect =
-      a.minSelect === undefined && current
-        ? current.minSelect
-        : a.minSelect
+      a.minSelect === undefined && current ? current.minSelect : a.minSelect
     const maxSelect =
       a.maxSelect === undefined ? (current?.maxSelect ?? null) : a.maxSelect
     if (
@@ -774,8 +887,7 @@ export function buildAssistantTools(
       (minSelect as number) > rawOptions.length ||
       (maxSelect !== null &&
         (!Number.isInteger(maxSelect) ||
-          (maxSelect as number) <
-            Math.max(1, minSelect as number) ||
+          (maxSelect as number) < Math.max(1, minSelect as number) ||
           (maxSelect as number) > rawOptions.length))
     ) {
       return { error: t.errors.selectsInvalid }
@@ -873,14 +985,18 @@ export function buildAssistantTools(
     }
     const address = textField(a.address, BOOKING_RULES.maxBusinessAddress)
     if (address === "invalid") {
-      return { error: t.errors.addressInvalid(BOOKING_RULES.maxBusinessAddress) }
+      return {
+        error: t.errors.addressInvalid(BOOKING_RULES.maxBusinessAddress),
+      }
     }
     const description = textField(
       a.description,
       BOOKING_RULES.maxBusinessDescription
     )
     if (description === "invalid") {
-      return { error: t.errors.aboutInvalid(BOOKING_RULES.maxBusinessDescription) }
+      return {
+        error: t.errors.aboutInvalid(BOOKING_RULES.maxBusinessDescription),
+      }
     }
     const phone =
       a.phone === undefined
@@ -1058,7 +1174,8 @@ export function buildAssistantTools(
     {
       definition: {
         name: "list_team",
-        description: "All team members with photo yes/no, service ids and working hours. No custom hours means business hours; custom hours are restricted to business hours.",
+        description:
+          "All team members with photo yes/no, service ids and working hours. No custom hours means business hours; custom hours are restricted to business hours.",
         parameters: schema({}),
         needsConfirm: false,
       },
@@ -1080,7 +1197,13 @@ export function buildAssistantTools(
           id: m.id,
           name: m.name,
           hasPhoto: m.photoUrl !== null,
-          hours: memberHours.filter((row) => row.teamMemberId === m.id).map(({ weekday, opensAt, closesAt }) => ({ weekday, opensAt, closesAt })),
+          hours: memberHours
+            .filter((row) => row.teamMemberId === m.id)
+            .map(({ weekday, opensAt, closesAt }) => ({
+              weekday,
+              opensAt,
+              closesAt,
+            })),
           serviceIds: serviceIdsByMember.get(m.id) ?? [],
         }))
         const capped = rows.slice(0, 50)
@@ -1330,19 +1453,19 @@ export function buildAssistantTools(
         if (typeof a.to !== "string" || !isRealDate(a.to) || a.to < a.from) {
           return bad(t.errors.toInvalid)
         }
-        if (
-          daysInRange(a.from, a.to) > ASSISTANT_RULES.maxStatsRangeDays
-        ) {
-          return bad(
-            t.errors.rangeTooLong(ASSISTANT_RULES.maxStatsRangeDays)
-          )
+        if (daysInRange(a.from, a.to) > ASSISTANT_RULES.maxStatsRangeDays) {
+          return bad(t.errors.rangeTooLong(ASSISTANT_RULES.maxStatsRangeDays))
         }
         const [rows, { business }] = await Promise.all([
           getBookingsBetween(businessId, a.from, a.to),
           getOwnerBusiness(businessId),
         ])
         const now = new Date().toISOString()
-        return { ...bookingStats(rows, now, business.currency), from: a.from, to: a.to }
+        return {
+          ...bookingStats(rows, now, business.currency),
+          from: a.from,
+          to: a.to,
+        }
       },
     },
     {
@@ -1365,9 +1488,13 @@ export function buildAssistantTools(
       label: t.steps.customers,
       run: async (args: unknown) => {
         const a = asRecord(args) ?? {}
-        const sorts = ["bookings", "spent", "lastVisit", "firstBooking"] as const
-        const sort =
-          a.sort === undefined ? ("lastVisit" as const) : a.sort
+        const sorts = [
+          "bookings",
+          "spent",
+          "lastVisit",
+          "firstBooking",
+        ] as const
+        const sort = a.sort === undefined ? ("lastVisit" as const) : a.sort
         if (!sorts.includes(sort as (typeof sorts)[number])) {
           return bad(t.errors.sortInvalid)
         }
@@ -1377,15 +1504,13 @@ export function buildAssistantTools(
         ) {
           return bad(t.errors.dayInvalid("newSince"))
         }
-        const newSince =
-          typeof a.newSince === "string" ? a.newSince : undefined
+        const newSince = typeof a.newSince === "string" ? a.newSince : undefined
         const all = await getCustomers(businessId)
         const filtered =
           newSince === undefined
             ? all
             : all.filter(
-                (c) =>
-                  c.firstBooking !== null && c.firstBooking >= newSince
+                (c) => c.firstBooking !== null && c.firstBooking >= newSince
               )
         const value = (
           c: (typeof filtered)[number]
@@ -2166,12 +2291,8 @@ export function buildAssistantTools(
               `${current.serviceIds.map(serviceName).join(", ")} → ${checked.input.serviceIds.map(serviceName).join(", ")}`
             )
           }
-          const currentIds = new Set(
-            current.options.map((o) => o.id)
-          )
-          const nextIds = new Set(
-            checked.input.options.map((o) => o.id)
-          )
+          const currentIds = new Set(current.options.map((o) => o.id))
+          const nextIds = new Set(checked.input.options.map((o) => o.id))
           for (const o of checked.input.options) {
             if (o.id === null || !currentIds.has(o.id)) {
               parts.push(`+ ${o.name}`)
@@ -2300,11 +2421,7 @@ export function buildAssistantTools(
             return checked
           }
           const short = (value: string | null): string =>
-            value === null
-              ? ""
-              : value.length > 60
-                ? value.slice(0, 60)
-                : value
+            value === null ? "" : value.length > 60 ? value.slice(0, 60) : value
           const fields = t.updateBusiness.fields
           const rows: [string, string | null, string | null][] = [
             [fields.name, checked.current.name, checked.input.name],
@@ -2346,10 +2463,7 @@ export function buildAssistantTools(
               doneText: t.updateBusiness.failed(checked.error),
             }
           }
-          const result = await updateBusinessDetails(
-            businessId,
-            checked.input
-          )
+          const result = await updateBusinessDetails(businessId, checked.input)
           if (!result.ok) {
             return {
               ok: false,
@@ -2405,8 +2519,7 @@ export function buildAssistantTools(
           return {
             title: t.cards.hours,
             action: t.actions.hours,
-            summary:
-              lines.length > 0 ? lines.join(", ") : t.booking.closedWeek,
+            summary: lines.length > 0 ? lines.join(", ") : t.booking.closedWeek,
             destructive: true,
           }
         },
@@ -2429,7 +2542,7 @@ export function buildAssistantTools(
     {
       definition: {
         name: "find_free_times",
-        description: `Free start times per day for a service, found by the names the owner said. Default is today plus 6 days. At most ${ASSISTANT_RULES.maxFreeTimesDays} days at once. When the service or team member is unclear, it returns the choices to ask about.`,
+        description: `Free start times per day for a service with any extras, found by the names the owner said. Default is today plus 6 days. At most ${ASSISTANT_RULES.maxFreeTimesDays} days at once. When the service or team member is unclear, it returns the choices to ask about.`,
         parameters: schema({
           service: {
             type: "string",
@@ -2439,6 +2552,7 @@ export function buildAssistantTools(
             type: "string",
             description: "Team member name as said, omit for anyone",
           },
+          extras: EXTRAS_PARAMETER,
           from: {
             type: "string",
             description: "YYYY-MM-DD in the business timezone",
@@ -2496,11 +2610,20 @@ export function buildAssistantTools(
         if (daysInRange(from, to) > ASSISTANT_RULES.maxFreeTimesDays) {
           return bad(t.errors.spanInvalid(ASSISTANT_RULES.maxFreeTimesDays))
         }
+        const extras = await pickExtras(
+          businessId,
+          servicePick.found,
+          a.extras,
+          t
+        )
+        if ("error" in extras) {
+          return extras
+        }
         const found = await getAvailability(
           business.slug,
           servicePick.found.id,
           teamMember?.id ?? null,
-          []
+          extras.ids
         )
         if (!found) {
           return bad(t.errors.freeTimesUnknown)
@@ -2520,7 +2643,7 @@ export function buildAssistantTools(
       definition: {
         name: "create_booking",
         description:
-          "Book an appointment for a CUSTOMER in one step: pass what the owner said (service, team member, day or date, time, customer name). It finds the service and team member by name and checks the time is free; when something is unclear or taken, it returns the choices to ask about. name is the customer being booked, never a team member. Its card is the confirmation and needs the owner's tap.",
+          "Book an appointment for a CUSTOMER in one step: pass what the owner said (service, extras, team member, day or date, time, customer name). It finds the service, extras and team member by name and checks the time is free; when something is unclear or taken, it returns the choices to ask about. name is the customer being booked, never a team member. Its card is the confirmation and needs the owner's tap.",
         // One call instead of list_services → list_team → find_free_times →
         // create_booking: "Combine functions that are always called in
         // sequence" (OpenAI function calling guide:
@@ -2535,6 +2658,7 @@ export function buildAssistantTools(
               type: "string",
               description: "Team member name as said, omit for anyone",
             },
+            extras: EXTRAS_PARAMETER,
             day: { type: "string", enum: ["today", "tomorrow"] },
             date: {
               type: "string",
@@ -2569,9 +2693,9 @@ export function buildAssistantTools(
             title: t.cards.book,
             action: t.actions.book,
             summary:
-              `${checked.name} · ${checked.service.name} · ` +
+              `${checked.name} · ${[checked.service.name, ...checked.extras.names].join(" + ")} · ` +
               `${formatDay(checked.date, t.locale)} · ${formatClock(checked.time, t.locale)} · ` +
-              `${checked.memberName} · ${checked.price}`,
+              `${checked.memberName} · ${t.booking.minutes(checked.durationMinutes)} · ${checked.price}`,
             destructive: false,
             args: bookingToRun(checked),
           }
@@ -2589,7 +2713,7 @@ export function buildAssistantTools(
             businessId,
             serviceId: booking.serviceId,
             teamMemberId: booking.teamMemberId,
-            addonIds: [],
+            addonIds: booking.addonIds,
             date: booking.date,
             time: booking.time,
             name: booking.name,

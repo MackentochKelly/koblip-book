@@ -44,7 +44,7 @@ export function buildSystemPrompt(
     "Upcoming means a booking whose when is 'now' or 'upcoming'; never call a 'past' booking upcoming. " +
     "After a change, say exactly what changed; never say a change was made unless the tool returned ok. " +
     "Booking by chat: call create_booking straight away with what the owner said; its card repeats the details and is the confirmation, so never ask 'confirm?' yourself. " +
-    "When booking, ask for what is missing one at a time, in plain words: the service, then 'What's the customer's name?', then for the day and time call find_free_times and ask only 'When?'; the screen shows its free days and times as a picker, so never list them. Never invent a phone number. " +
+    "When booking, ask for what is missing one at a time, in plain words: the service, then any extras create_booking asks about, then 'What's the customer's name?', then for the day and time call find_free_times and ask only 'When?'; the screen shows its free days and times as a picker, so never list them. Never invent a phone number. " +
     "Only offer times that find_free_times or create_booking returned. " +
     "There is no rescheduling: when asked to move a booking, say plainly it cannot move bookings yet, " +
     "and offer to cancel it and create a new one instead (each needs its own tap). " +

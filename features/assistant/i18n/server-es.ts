@@ -53,7 +53,8 @@ const messages: typeof en = {
     booking: "reservar necesita tu toque primero",
     updateService: "cambiar necesita tu toque primero",
     serviceTeam: "cambiar el equipo de un servicio necesita tu toque primero",
-    memberServices: "cambiar los servicios de un miembro necesita tu toque primero",
+    memberServices:
+      "cambiar los servicios de un miembro necesita tu toque primero",
     createAddon: "crear extras necesita tu toque primero",
     updateAddon: "cambiar extras necesita tu toque primero",
     deleteAddon: "eliminar extras necesita tu toque primero",
@@ -193,6 +194,15 @@ const messages: typeof en = {
       `¿qué servicio? pide al dueño que elija uno de: ${names}`,
     memberWhich: (names: string) =>
       `¿qué miembro del equipo? pide al dueño que elija uno de: ${names}`,
+    extrasInvalid: "extras debe ser una lista corta de nombres de extras",
+    noExtras: (service: string) =>
+      `${service} no tiene extras: resérvalo sin extras`,
+    extraWhich: (names: string) =>
+      `¿qué extra? pide al dueño que elija uno de: ${names}`,
+    extraNeeded: (group: string, count: number, names: string) =>
+      `${group}: elige al menos ${count}; pide al dueño que elija entre: ${names}`,
+    extraTooMany: (group: string, count: number) =>
+      `${group}: como máximo ${count}; pregunta al dueño cuáles deja`,
     bookingDayInvalid:
       "day debe ser today o tomorrow; usa date para otros días",
     slotNotFree: (times: string) =>
@@ -245,8 +255,10 @@ const messages: typeof en = {
     optionsInvalid: (max: number) =>
       `options debe ser 1-${max} con nombre, duración y precio`,
     businessNameInvalid: (max: number) => `name debe ser 1-${max} caracteres`,
-    addressInvalid: (max: number) => `address debe ser como máximo ${max} caracteres`,
-    aboutInvalid: (max: number) => `about debe ser como máximo ${max} caracteres`,
+    addressInvalid: (max: number) =>
+      `address debe ser como máximo ${max} caracteres`,
+    aboutInvalid: (max: number) =>
+      `about debe ser como máximo ${max} caracteres`,
     websiteInvalid: "website debe ser una URL http(s)",
     seatsInvalid: (max: number) => `seats debe estar entre 1 y ${max}`,
   },

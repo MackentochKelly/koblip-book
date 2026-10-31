@@ -164,7 +164,8 @@ const messages = {
     done: "Extras deleted.",
   },
   updateBusiness: {
-    failed: (error: string) => `Could not save the business details (${error}).`,
+    failed: (error: string) =>
+      `Could not save the business details (${error}).`,
     done: "Business details updated.",
     fields: {
       name: "Name",
@@ -197,6 +198,15 @@ const messages = {
       `which service? ask the owner to pick one of: ${names}`,
     memberWhich: (names: string) =>
       `which team member? ask the owner to pick one of: ${names}`,
+    extrasInvalid: "extras must be a short list of extra names",
+    noExtras: (service: string) =>
+      `${service} has no extras: book it without extras`,
+    extraWhich: (names: string) =>
+      `which extra? ask the owner to pick one of: ${names}`,
+    extraNeeded: (group: string, count: number, names: string) =>
+      `${group}: pick at least ${count}; ask the owner to pick from: ${names}`,
+    extraTooMany: (group: string, count: number) =>
+      `${group}: at most ${count}; ask the owner which to keep`,
     bookingDayInvalid: "day must be today or tomorrow; use date for other days",
     slotNotFree: (times: string) =>
       `that time is not free; free times that day: ${times}`,
@@ -247,7 +257,8 @@ const messages = {
     optionsInvalid: (max: number) =>
       `options must be 1-${max} with a name, duration and price`,
     businessNameInvalid: (max: number) => `name must be 1-${max} characters`,
-    addressInvalid: (max: number) => `address must be at most ${max} characters`,
+    addressInvalid: (max: number) =>
+      `address must be at most ${max} characters`,
     aboutInvalid: (max: number) => `about must be at most ${max} characters`,
     websiteInvalid: "website must be an http(s) URL",
     seatsInvalid: (max: number) => `seats must be between 1 and ${max}`,

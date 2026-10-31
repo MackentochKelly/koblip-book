@@ -335,7 +335,9 @@ test("list_team row carries hasPhoto and serviceIds", async () => {
   vi.mocked(getOwnerBusiness).mockResolvedValue({
     business: BUSINESS,
     hours: [],
-    memberHours: [{ teamMemberId: "m1", weekday: 1, opensAt: "10:00", closesAt: "14:00" }],
+    memberHours: [
+      { teamMemberId: "m1", weekday: 1, opensAt: "10:00", closesAt: "14:00" },
+    ],
     services: [],
     team: [{ id: "m1", name: "Ana", photoUrl: null }],
   } as never)
@@ -344,7 +346,12 @@ test("list_team row carries hasPhoto and serviceIds", async () => {
     team: unknown[]
   }
   expect(result.team).toMatchObject([
-    { id: "m1", hasPhoto: false, serviceIds: ["s1", "s2"], hours: [{ weekday: 1, opensAt: "10:00", closesAt: "14:00" }] },
+    {
+      id: "m1",
+      hasPhoto: false,
+      serviceIds: ["s1", "s2"],
+      hours: [{ weekday: 1, opensAt: "10:00", closesAt: "14:00" }],
+    },
   ])
 })
 
@@ -1240,7 +1247,11 @@ test("cancel_booking refuses a started, past or cancelled booking", async () => 
   vi.mocked(cancelBooking).mockClear()
   const tool = byName("cancel_booking")
   const cases: [Record<string, unknown>, string, string][] = [
-    [{ startAt: "2020-01-01T09:00:00.000Z" }, "already started", "already started"],
+    [
+      { startAt: "2020-01-01T09:00:00.000Z" },
+      "already started",
+      "already started",
+    ],
     [{ status: "completed" }, "already started", "already started"],
     [{ status: "cancelled" }, "already cancelled", "already cancelled"],
   ]
@@ -1786,6 +1797,7 @@ const STORED_BOOKING = {
   serviceId: "s1",
   serviceName: "Cut",
   teamMemberId: "m1",
+  addonIds: [],
   date: "2099-01-01",
   time: "10:00",
   name: "Ana",
@@ -1958,6 +1970,8 @@ test("create_booking's tap refuses args that are not a stored booking", async ()
     { ...STORED_BOOKING, date: "2099-02-30" },
     { ...STORED_BOOKING, time: "25:00" },
     { ...STORED_BOOKING, teamMemberId: 7 },
+    { ...STORED_BOOKING, addonIds: undefined },
+    { ...STORED_BOOKING, addonIds: [""] },
   ]) {
     expect((await execute(args)).ok).toBe(false)
   }
@@ -2067,6 +2081,148 @@ test("create_booking knows a service by its Spanish name", async () => {
   expect(await describe({ ...args, service: "corte clásico" })).toEqual({
     error: expect.stringContaining("Classic Haircut, Kids Haircut"),
   })
+})
+
+// Cut's extras: a required length and an optional beard trim.
+function mockExtras() {
+  vi.mocked(getAddonGroups).mockResolvedValue([
+    {
+      id: "g1",
+      name: "Length",
+      prompt: "Which length?",
+      minSelect: 1,
+      maxSelect: 1,
+      serviceIds: ["s1"],
+      options: [
+        {
+          id: "o1",
+          name: "Short",
+          description: null,
+          priceMinor: null,
+          durationMinutes: 0,
+        },
+        {
+          id: "o2",
+          name: "Long hair",
+          description: null,
+          priceMinor: 1000,
+          durationMinutes: 15,
+        },
+      ],
+    },
+    {
+      id: "g2",
+      name: "Add-ons",
+      prompt: "",
+      minSelect: 0,
+      maxSelect: null,
+      serviceIds: ["s1"],
+      options: [
+        {
+          id: "o3",
+          name: "Beard trim",
+          description: null,
+          priceMinor: 500,
+          durationMinutes: 15,
+        },
+      ],
+    },
+    {
+      id: "g3",
+      name: "Other",
+      prompt: "",
+      minSelect: 1,
+      maxSelect: 1,
+      serviceIds: ["s9"],
+      options: [
+        {
+          id: "o9",
+          name: "Wax",
+          description: null,
+          priceMinor: 0,
+          durationMinutes: 5,
+        },
+      ],
+    },
+  ] as never)
+}
+
+test("create_booking books extras with the total price and time", async () => {
+  mockBookingShop()
+  mockExtras()
+  vi.mocked(createOwnerBooking).mockResolvedValue({
+    status: "booked",
+    bookingId: "k9",
+  })
+  const tool = byName("create_booking")
+  const card = (await tool.confirm!.describe({
+    ...BOOKING_ARGS,
+    extras: ["long", "beard trim"],
+  })) as { summary: string; args: unknown }
+  expect(card.summary).toContain("Cut + Long hair + Beard trim")
+  expect(card.summary).toContain("60 min")
+  expect(card.summary).toContain("40.00")
+  expect(card.args).toMatchObject({ addonIds: ["o2", "o3"] })
+  // Free times are for the longer booking.
+  expect(getAvailability).toHaveBeenCalledWith("salon", "s1", "m1", [
+    "o2",
+    "o3",
+  ])
+  expect((await tool.confirm!.execute(card.args)).ok).toBe(true)
+  expect(createOwnerBooking).toHaveBeenCalledWith(
+    expect.objectContaining({ addonIds: ["o2", "o3"] })
+  )
+})
+
+test("create_booking asks about a missing, unknown or extra pick", async () => {
+  mockBookingShop()
+  mockExtras()
+  const describe = byName("create_booking").confirm!.describe
+  // The length is required.
+  expect(await describe(BOOKING_ARGS)).toEqual({
+    error: expect.stringContaining("Which length?"),
+  })
+  expect(await describe({ ...BOOKING_ARGS, extras: ["beard"] })).toEqual({
+    error: expect.stringContaining("Short, Long hair"),
+  })
+  // Unknown: every extra of this service, never another service's.
+  const unknown = (await describe({
+    ...BOOKING_ARGS,
+    extras: ["glitter"],
+  })) as {
+    error: string
+  }
+  expect(unknown.error).toContain("Short, Long hair, Beard trim")
+  expect(unknown.error).not.toContain("Wax")
+  // Two lengths.
+  expect(
+    await describe({ ...BOOKING_ARGS, extras: ["short", "long"] })
+  ).toEqual({ error: expect.stringContaining("Length") })
+  expect(await describe({ ...BOOKING_ARGS, extras: "short" })).toEqual({
+    error: expect.any(String),
+  })
+  expect(vi.mocked(createOwnerBooking)).not.toHaveBeenCalled()
+})
+
+test("create_booking refuses extras for a service with none", async () => {
+  mockBookingShop()
+  expect(
+    await byName("create_booking").confirm!.describe({
+      ...BOOKING_ARGS,
+      extras: ["beard"],
+    })
+  ).toEqual({ error: expect.stringContaining("Cut has no extras") })
+})
+
+test("find_free_times looks up times with the extras", async () => {
+  mockBookingShop()
+  mockExtras()
+  const tool = byName("find_free_times")
+  expect(await tool.run({ service: "cut" })).toEqual({
+    error: expect.stringContaining("Which length?"),
+  })
+  await tool.run({ service: "cut", extras: ["long"] })
+  expect(getAvailability).toHaveBeenCalledWith("salon", "s1", null, ["o2"])
 })
 
 test("find_free_times takes names too", async () => {

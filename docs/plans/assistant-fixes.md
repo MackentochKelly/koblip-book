@@ -24,7 +24,7 @@ file: [Plans](README.md).
 | A6 | Saving a new chat never fails on a race | S | | Done (2026-10-31) |
 | A7 | Cancel finds any booking, and only upcoming ones | S | | Done (2026-10-31) |
 | A8 | Waiting cards survive a deploy | M | A1 | Done (2026-10-31) |
-| A9 | Chat bookings can include extras | M | A1 | To do |
+| A9 | Chat bookings can include extras | M | A1 | Done (2026-10-31) |
 
 ---
 
@@ -198,7 +198,7 @@ still works. A double tap runs once.
 - Booking uses `addonIds`. `createOwnerBooking` already checks them
   (`checkAddons`).
 
-**Files:** `app/api/assistant/tools.ts`, `features/assistant/utils/system-prompt.ts`, i18n (+ tests).
+**Files:** `app/api/assistant/tools.ts`, `features/assistant/utils/system-prompt.ts`, `features/assistant/i18n/server-*.ts` (+ tests). `find_free_times` takes the same `extras`, so its times fit the longer booking and a service with a required extra can be looked up.
 
 **Done when:** tests: one extra booked with the right total, a missing
 required extra asks, an unknown extra asks.
