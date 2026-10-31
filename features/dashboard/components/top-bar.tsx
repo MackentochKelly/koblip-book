@@ -6,6 +6,7 @@ import { AppTopBar } from "@/components/app-top-bar"
 import { ExternalLinkIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { navKeyFor } from "../navigation"
 import { AccountMenu } from "./account-menu"
@@ -15,7 +16,8 @@ import { AccountMenu } from "./account-menu"
 // it. In the dashboard it starts with ☰, which opens the menu (whose top
 // shows the name on a computer).
 // Before the details are checked the page isn't live yet, so View page can be
-// left out. `bell` sits beside the account menu on every screen (N-D11).
+// left out. `bell` sits beside the account menu on every screen (N-D11);
+// a short line splits the bar's buttons from the account menu.
 export function TopBar({
   business,
   owner,
@@ -44,11 +46,12 @@ export function TopBar({
       menuLabel={menu ? m.menu : undefined}
       className={className}
     >
-      {/* Just the icon on a phone, so the title has room. */}
+      {/* Just the icon on a phone, so the title has room: plain, like the
+          bell beside it. */}
       {viewPage && (
         <Button
-          variant="outline"
-          size="icon-sm"
+          variant="ghost"
+          size="icon"
           aria-label={m.viewPage}
           className="md:hidden"
           nativeButton={false}
@@ -74,6 +77,10 @@ export function TopBar({
         </Button>
       )}
       {bell}
+      <Separator
+        orientation="vertical"
+        className="data-vertical:h-5 data-vertical:self-center"
+      />
       <AccountMenu
         owner={owner}
         settingsHref={menu ? `/dashboard/${business.id}/settings` : undefined}
