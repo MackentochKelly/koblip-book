@@ -55,7 +55,7 @@ the others, busy times are simply off.
 | G8 | Customer gets a calendar invite | G2 | Decision: bookings have no customer email today |
 | G9 | Sync now button in the Manage panel, with when it last synced: sends every change and reads busy times again | G2 | Done (2026-10-31) |
 | G10 | Disconnect (owner or team member): keep the bookings in Google, or remove them with the Koblip Book calendar (calendars.delete, allowed by calendar.app.created); keep is the default | G1 | Done (2026-10-31) |
-| G11 | Admin screen: every connection, last sync, errors | G2 | To do |
+| G11 | Admin screen: every connection, last sync, errors | G2 | Later (owner: not now, 2026-10-31) |
 | G12 | Text and steps for Google's app check | G4 | To do |
 
 ## Decisions
