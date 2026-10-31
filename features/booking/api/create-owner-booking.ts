@@ -13,6 +13,7 @@ import {
   businessHours,
   businesses,
   services,
+  teamMemberHours,
   teamMemberServices,
   teamMembers,
 } from "@/lib/db/schema"
@@ -20,7 +21,12 @@ import type {
   OwnerBookingInput,
   OwnerBookingResult,
 } from "@/types/owner-booking"
-import { availability, dayOpenStretches } from "../utils/availability"
+import {
+  workingMemberIds,
+  availability,
+  dayOpenStretches,
+  memberOpenStretches,
+} from "../utils/availability"
 import { checkAddons } from "../utils/addons"
 import { loadGroupsForService } from "./addon-groups"
 import { inBookingTurn } from "./booking-turn"
@@ -76,25 +82,27 @@ export async function createOwnerBooking(
       return { status: "failed" }
     }
 
-    const [serviceRows, hourRows, teamRows, linkRows] = await Promise.all([
-      db
-        .select()
-        .from(services)
-        .where(eq(services.businessId, business.id)),
-      db
-        .select()
-        .from(businessHours)
-        .where(eq(businessHours.businessId, business.id)),
-      db
-        .select()
-        .from(teamMembers)
-        .where(eq(teamMembers.businessId, business.id))
-        .orderBy(asc(teamMembers.position)),
-      db
-        .select()
-        .from(teamMemberServices)
-        .where(eq(teamMemberServices.businessId, business.id)),
-    ])
+    const [serviceRows, hourRows, teamRows, linkRows, memberHourRows] =
+      await Promise.all([
+        db.select().from(services).where(eq(services.businessId, business.id)),
+        db
+          .select()
+          .from(businessHours)
+          .where(eq(businessHours.businessId, business.id)),
+        db
+          .select()
+          .from(teamMembers)
+          .where(eq(teamMembers.businessId, business.id))
+          .orderBy(asc(teamMembers.position)),
+        db
+          .select()
+          .from(teamMemberServices)
+          .where(eq(teamMemberServices.businessId, business.id)),
+        db
+          .select()
+          .from(teamMemberHours)
+          .where(eq(teamMemberHours.businessId, business.id)),
+      ])
 
     const service = serviceRows.find((row) => row.id === input.serviceId)
     if (!service) {
@@ -145,11 +153,7 @@ export async function createOwnerBooking(
 
     const outcome = await inBookingTurn(business.id, async () => {
       const dayStart = zonedInstant(input.date, 0, business.timezone)
-      const dayEnd = zonedInstant(
-        addDays(input.date, 1),
-        0,
-        business.timezone
-      )
+      const dayEnd = zonedInstant(addDays(input.date, 1), 0, business.timezone)
       const taken = await db
         .select()
         .from(bookings)
@@ -157,7 +161,10 @@ export async function createOwnerBooking(
           and(
             eq(bookings.businessId, business.id),
             eq(bookings.status, "confirmed"),
-            gte(bookings.startAt, new Date(dayStart - 86_400_000).toISOString()),
+            gte(
+              bookings.startAt,
+              new Date(dayStart - 86_400_000).toISOString()
+            ),
             lte(bookings.startAt, new Date(dayEnd + 86_400_000).toISOString())
           )
         )
@@ -165,15 +172,24 @@ export async function createOwnerBooking(
       if (!input.allowConflict) {
         const startMinute = toMinutes(input.time)
         const endMinute = startMinute + totalMinutes
-        const open = dayOpenStretches(hourRows, input.date).some(
-          (stretch) =>
-            stretch.start <= startMinute && endMinute <= stretch.end
+        const open = (
+          member
+            ? memberOpenStretches(
+                hourRows,
+                memberHourRows,
+                member.id,
+                input.date
+              )
+            : dayOpenStretches(hourRows, input.date)
+        ).some(
+          (stretch) => stretch.start <= startMinute && endMinute <= stretch.end
         )
         if (!open) {
           return { status: "conflict", reason: "closed" } as const
         }
         const [day] = availability({
           hours: hourRows,
+          memberHours: memberHourRows,
           timeZone: business.timezone,
           durationMinutes: totalMinutes,
           seats: business.seats,
@@ -189,11 +205,22 @@ export async function createOwnerBooking(
         }
       }
 
+      const workingIds = workingMemberIds(
+        hourRows,
+        memberHourRows,
+        allowedIds,
+        input.date,
+        toMinutes(input.time),
+        totalMinutes
+      )
+      const workingRows = allowedRows.filter((row) =>
+        workingIds.includes(row.id)
+      )
       let teamMemberId: string | null = input.teamMemberId
       let teamMemberName: string | null = member?.name ?? null
       if (teamMemberId === null && allowedRows.length > 0) {
         const free = firstFreeMember(
-          allowedRows,
+          workingRows,
           taken,
           startInstant,
           endInstant
@@ -204,8 +231,10 @@ export async function createOwnerBooking(
         } else if (!input.allowConflict) {
           return { status: "conflict", reason: "busy" } as const
         } else {
-          teamMemberId = allowedRows[0].id
-          teamMemberName = allowedRows[0].name
+          if (!workingRows.length)
+            return { status: "conflict", reason: "closed" } as const
+          teamMemberId = workingRows[0].id
+          teamMemberName = workingRows[0].name
         }
       }
 

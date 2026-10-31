@@ -12,6 +12,7 @@ import {
   services,
   session,
   teamMemberServices,
+  teamMemberHours,
   teamMembers,
   user,
 } from "@/lib/db/schema"
@@ -167,4 +168,18 @@ test("one address opens only so many new copies an hour", () => {
   expect(mayOpenNewDemo("1.2.3.4", now)).toBe(false)
   expect(mayOpenNewDemo("5.6.7.8", now)).toBe(true)
   expect(mayOpenNewDemo("1.2.3.4", now + HOUR + 1)).toBe(true)
+})
+
+ test("custom sample hours are copied to new member ids and purged", async () => {
+  DEMO_SAMPLE.team[0].hours.push({ weekday: 1, opensAt: "10:00", closesAt: "14:00" })
+  const now = Date.now()
+  let copy: Awaited<ReturnType<typeof createDemoCopy>>
+  try { copy = await createDemoCopy("guest", now) } finally { DEMO_SAMPLE.team[0].hours.pop() }
+  const [member] = await db.select().from(teamMembers).where(eq(teamMembers.businessId, copy.id))
+  const copied = await db.select().from(teamMemberHours).where(eq(teamMemberHours.businessId, copy.id))
+  expect(copied).toHaveLength(1)
+  expect(copied[0]).toMatchObject({ teamMemberId: member.id, weekday: 1, opensAt: "10:00", closesAt: "14:00" })
+  await db.update(businesses).set({ createdAt: new Date(now - (DEMO_RULES.keepHours + 1) * HOUR).toISOString() }).where(eq(businesses.id, copy.id))
+  await purgeOldDemos(now)
+  expect(await db.select().from(teamMemberHours).where(eq(teamMemberHours.businessId, copy.id))).toEqual([])
 })

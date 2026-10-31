@@ -10,6 +10,7 @@ import {
   businesses,
   services,
   teamMembers,
+  teamMemberHours,
 } from "@/lib/db/schema"
 import type { OwnedBusiness, OwnerBooking } from "../types"
 import { getBookingAddons, toOwnerBooking } from "./customers"
@@ -139,7 +140,7 @@ export async function getMyBusinesses(): Promise<OwnedBusiness[]> {
 
 export async function getOwnerBusiness(businessId: string) {
   const business = await ownedBusiness(businessId)
-  const [hours, serviceRows, team] = await Promise.all([
+  const [hours, serviceRows, team, memberHours] = await Promise.all([
     db
       .select()
       .from(businessHours)
@@ -155,8 +156,9 @@ export async function getOwnerBusiness(businessId: string) {
       .from(teamMembers)
       .where(eq(teamMembers.businessId, business.id))
       .orderBy(asc(teamMembers.position)),
+    db.select().from(teamMemberHours).where(eq(teamMemberHours.businessId, business.id)).orderBy(asc(teamMemberHours.weekday), asc(teamMemberHours.opensAt)),
   ])
-  return { business, hours, services: serviceRows, team }
+  return { business, hours, services: serviceRows, team, memberHours }
 }
 
 export async function getBookings(

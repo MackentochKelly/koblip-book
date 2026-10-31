@@ -9,11 +9,16 @@ import { saveAll } from "@/lib/db/save-all"
 import {
   bookings,
   businessHours,
+  teamMemberHours,
   businesses,
   notificationSends,
 } from "@/lib/db/schema"
 import type { OwnerMoveInput, OwnerMoveResult } from "@/types/owner-booking"
-import { availability, dayOpenStretches } from "../utils/availability"
+import {
+  availability,
+  dayOpenStretches,
+  memberOpenStretches,
+} from "../utils/availability"
 import {
   DATE_PATTERN,
   TIME_PATTERN,
@@ -98,14 +103,31 @@ export async function moveOwnerBooking(
           .select()
           .from(businessHours)
           .where(eq(businessHours.businessId, business.id))
-        const open = dayOpenStretches(hourRows, input.date).some(
+        const memberHourRows = await db
+          .select()
+          .from(teamMemberHours)
+          .where(eq(teamMemberHours.businessId, business.id))
+        const open = (
+          booking.teamMemberId
+            ? memberOpenStretches(
+                hourRows,
+                memberHourRows,
+                booking.teamMemberId,
+                input.date
+              )
+            : dayOpenStretches(hourRows, input.date)
+        ).some(
           (stretch) => stretch.start <= startMinute && endMinute <= stretch.end
         )
         if (!open) {
           return { status: "conflict", reason: "closed" } as const
         }
         const dayStart = zonedInstant(input.date, 0, business.timezone)
-        const dayEnd = zonedInstant(addDays(input.date, 1), 0, business.timezone)
+        const dayEnd = zonedInstant(
+          addDays(input.date, 1),
+          0,
+          business.timezone
+        )
         const taken = await db
           .select()
           .from(bookings)
@@ -114,12 +136,16 @@ export async function moveOwnerBooking(
               eq(bookings.businessId, business.id),
               eq(bookings.status, "confirmed"),
               ne(bookings.id, booking.id),
-              gte(bookings.startAt, new Date(dayStart - 86_400_000).toISOString()),
+              gte(
+                bookings.startAt,
+                new Date(dayStart - 86_400_000).toISOString()
+              ),
               lte(bookings.startAt, new Date(dayEnd + 86_400_000).toISOString())
             )
           )
         const [day] = availability({
           hours: hourRows,
+          memberHours: memberHourRows,
           timeZone: business.timezone,
           durationMinutes: booking.durationMinutes,
           seats: business.seats,

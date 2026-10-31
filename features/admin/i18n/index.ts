@@ -322,6 +322,7 @@ const en = {
   businesses: {
     none: "No businesses yet",
     noOwner: "No owner",
+    sameHours: "Same as business hours",
     bookings: (n: number) => (n === 1 ? "1 booking" : `${n} bookings`),
     open: (name: string) => `Open ${name}'s page`,
   },
@@ -734,6 +735,7 @@ const es: AdminMessages = {
   businesses: {
     none: "Aún no hay negocios",
     noOwner: "Sin dueño",
+    sameHours: "Igual que el horario del negocio",
     bookings: (n: number) => (n === 1 ? "1 reserva" : `${n} reservas`),
     open: (name: string) => `Abrir la página de ${name}`,
   },

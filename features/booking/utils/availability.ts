@@ -4,6 +4,12 @@ import { addDays, weekdayOf, zonedInstant, zonedToday } from "./zoned-time"
 
 export interface AvailabilityInput {
   hours: Array<{ weekday: number; opensAt: string; closesAt: string }>
+  memberHours?: Array<{
+    teamMemberId: string
+    weekday: number
+    opensAt: string
+    closesAt: string
+  }>
   timeZone: string
   durationMinutes: number
   seats: number
@@ -88,14 +94,10 @@ function overlaps(booking: TakenInstant, start: number, end: number): boolean {
 function dayTimes(
   date: string,
   input: AvailabilityInput,
-  taken: TakenInstant[]
+  taken: TakenInstant[],
+  memberStretches: Record<string, OpenStretch[]>
 ): string[] {
-  const weekday = weekdayOf(date)
-  const stretches = openStretches(
-    input.hours,
-    weekday,
-    (weekday + 6) % 7
-  )
+  const stretches = dayOpenStretches(input.hours, date)
   const cutoff = input.now + BOOKING_RULES.minimumNoticeMinutes * 60_000
   const minutes = new Set<number>()
   for (const stretch of stretches) {
@@ -122,7 +124,11 @@ function dayTimes(
       } else {
         const freeMembers = input.teamMemberIds.filter(
           (id) =>
-            !overlapping.some((booking) => booking.teamMemberId === id)
+            (memberStretches[id] ?? stretches).some(
+              (stretch) =>
+                stretch.start <= start &&
+                start + input.durationMinutes <= stretch.end
+            ) && !overlapping.some((booking) => booking.teamMemberId === id)
         )
         const nullBookings = overlapping.filter(
           (booking) => booking.teamMemberId === null
@@ -147,6 +153,40 @@ export function dayOpenStretches(
   return openStretches(hours, weekday, (weekday + 6) % 7)
 }
 
+// No member rows means inherited hours. Overnight expansion stays in dayOpenStretches.
+export function memberOpenStretches(
+  hours: AvailabilityInput["hours"],
+  memberHours: NonNullable<AvailabilityInput["memberHours"]>,
+  memberId: string,
+  date: string
+): OpenStretch[] {
+  const business = dayOpenStretches(hours, date)
+  const own = memberHours.filter((row) => row.teamMemberId === memberId)
+  if (own.length === 0) return business
+  return business.flatMap((b) =>
+    dayOpenStretches(own, date).flatMap((m) => {
+      const start = Math.max(b.start, m.start)
+      const end = Math.min(b.end, m.end)
+      return start < end ? [{ start, end }] : []
+    })
+  )
+}
+
+export function workingMemberIds(
+  hours: AvailabilityInput["hours"],
+  memberHours: NonNullable<AvailabilityInput["memberHours"]>,
+  memberIds: string[],
+  date: string,
+  start: number,
+  duration: number
+): string[] {
+  return memberIds.filter((id) =>
+    memberOpenStretches(hours, memberHours, id, date).some(
+      (stretch) => stretch.start <= start && start + duration <= stretch.end
+    )
+  )
+}
+
 export function availability(input: AvailabilityInput): AvailabilityDay[] {
   const dates =
     input.dates ??
@@ -158,5 +198,18 @@ export function availability(input: AvailabilityInput): AvailabilityDay[] {
     end: Date.parse(booking.endAt),
     teamMemberId: booking.teamMemberId,
   }))
-  return dates.map((date) => ({ date, times: dayTimes(date, input, taken) }))
+  return dates.map((date) => ({
+    date,
+    times: dayTimes(
+      date,
+      input,
+      taken,
+      Object.fromEntries(
+        input.teamMemberIds.map((id) => [
+          id,
+          memberOpenStretches(input.hours, input.memberHours ?? [], id, date),
+        ])
+      )
+    ),
+  }))
 }

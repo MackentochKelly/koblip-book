@@ -158,3 +158,82 @@ test("cancelled bookings are simply not passed in", () => {
   const [day] = availability(base({ durationMinutes: 30, taken: [] }))
   expect(day.times).toContain("10:00")
 })
+
+const ownHours = (
+  teamMemberId: string,
+  weekday: number,
+  opensAt: string,
+  closesAt: string
+) => ({ teamMemberId, weekday, opensAt, closesAt })
+
+test("members with no rows inherit business hours", () => {
+  expect(
+    availability(base({ teamMemberIds: ["m1"], memberHours: [] }))
+  ).toEqual(availability(base({ teamMemberIds: ["m1"] })))
+})
+
+test("member hours are intersected with business hours for the whole service", () => {
+  const [own] = availability(
+    base({
+      teamMemberIds: ["m1"],
+      memberHours: [ownHours("m1", 1, "10:00", "12:00")],
+    })
+  )
+  expect(own.times[0]).toBe("10:00")
+  expect(own.times.at(-1)).toBe("11:00")
+  const [wide] = availability(
+    base({
+      teamMemberIds: ["m1"],
+      memberHours: [ownHours("m1", 1, "00:00", "00:00")],
+    })
+  )
+  expect(wide.times).toEqual(availability(base())[0].times)
+})
+
+test("chosen member and anyone use the right days", () => {
+  const input = base({
+    teamMemberIds: ["m1", "m2"],
+    dates: ["2026-06-01", "2026-06-02"],
+    memberHours: [
+      ownHours("m1", 1, "10:00", "12:00"),
+      ownHours("m2", 2, "14:00", "16:00"),
+    ],
+  })
+  expect(availability(input).map((d) => [d.times[0], d.times.at(-1)])).toEqual([
+    ["10:00", "11:00"],
+    ["14:00", "15:00"],
+  ])
+  expect(availability({ ...input, teamMemberIds: ["m1"] })[1].times).toEqual([])
+})
+
+test("member overnight spill is clipped to business overnight hours", () => {
+  const days = availability(
+    base({
+      hours: [{ weekday: 5, opensAt: "20:00", closesAt: "03:00" }],
+      teamMemberIds: ["m1"],
+      memberHours: [ownHours("m1", 5, "22:00", "02:00")],
+      dates: ["2026-06-05", "2026-06-06"],
+    })
+  )
+  expect(days.map((d) => [d.times[0], d.times.at(-1)])).toEqual([
+    ["22:00", "23:00"],
+    ["00:00", "01:00"],
+  ])
+})
+
+test("off-duty members do not provide capacity for unassigned bookings", () => {
+  const [day] = availability(
+    base({
+      teamMemberIds: ["m1", "m2"],
+      memberHours: [ownHours("m2", 2, "09:00", "18:00")],
+      taken: [
+        {
+          startAt: "2026-06-01T14:00:00Z",
+          endAt: "2026-06-01T15:00:00Z",
+          teamMemberId: null,
+        },
+      ],
+    })
+  )
+  expect(day.times).not.toContain("10:00")
+})

@@ -7,6 +7,7 @@ import {
   businessHours,
   businesses,
   services,
+  teamMemberHours,
   teamMemberServices,
   teamMembers,
 } from "@/lib/db/schema"
@@ -34,25 +35,27 @@ export async function getAvailability(
     return null
   }
 
-  const [serviceRows, hourRows, teamRows, linkRows] = await Promise.all([
-    db
-      .select()
-      .from(services)
-      .where(eq(services.businessId, business.id)),
-    db
-      .select()
-      .from(businessHours)
-      .where(eq(businessHours.businessId, business.id)),
-    db
-      .select()
-      .from(teamMembers)
-      .where(eq(teamMembers.businessId, business.id))
-      .orderBy(asc(teamMembers.position)),
-    db
-      .select()
-      .from(teamMemberServices)
-      .where(eq(teamMemberServices.businessId, business.id)),
-  ])
+  const [serviceRows, hourRows, teamRows, linkRows, memberHourRows] =
+    await Promise.all([
+      db.select().from(services).where(eq(services.businessId, business.id)),
+      db
+        .select()
+        .from(businessHours)
+        .where(eq(businessHours.businessId, business.id)),
+      db
+        .select()
+        .from(teamMembers)
+        .where(eq(teamMembers.businessId, business.id))
+        .orderBy(asc(teamMembers.position)),
+      db
+        .select()
+        .from(teamMemberServices)
+        .where(eq(teamMemberServices.businessId, business.id)),
+      db
+        .select()
+        .from(teamMemberHours)
+        .where(eq(teamMemberHours.businessId, business.id)),
+    ])
 
   if (
     !isBookable({
@@ -104,11 +107,11 @@ export async function getAvailability(
 
   const days = availability({
     hours: hourRows,
+    memberHours: memberHourRows,
     timeZone: business.timezone,
     durationMinutes,
     seats: business.seats,
-    teamMemberIds:
-      teamMemberId !== null ? [teamMemberId] : allowedIds,
+    teamMemberIds: teamMemberId !== null ? [teamMemberId] : allowedIds,
     taken,
     now,
   })

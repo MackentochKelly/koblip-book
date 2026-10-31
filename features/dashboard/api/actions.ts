@@ -11,6 +11,7 @@ import {
   businesses,
   services,
   teamMembers,
+  teamMemberHours,
 } from "@/lib/db/schema"
 import { getMetaAiClient, isMetaAiEnabled, META_TEXT_MODEL } from "@/lib/meta-ai"
 import { isPageLanguage, type PageLanguage } from "@/lib/page-language"
@@ -24,7 +25,7 @@ import type {
 import { claimBusinessForUser } from "./claim"
 import { ownedBusiness, revalidateBusiness } from "./owned-business"
 
-const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
+import { validHours } from "@/lib/hours-rules"
 
 function invalid(): { ok: false; error: string } {
   return { ok: false, error: "invalid" }
@@ -122,23 +123,7 @@ export async function saveHours(
   if (!owned) {
     return { ok: false, error: "not_found" }
   }
-  if (!Array.isArray(rows) || rows.length > BOOKING_RULES.maxHoursRows) {
-    return invalid()
-  }
-  for (const row of rows) {
-    if (
-      !row ||
-      !Number.isInteger(row.weekday) ||
-      row.weekday < 0 ||
-      row.weekday > 6 ||
-      typeof row.opensAt !== "string" ||
-      typeof row.closesAt !== "string" ||
-      !TIME_PATTERN.test(row.opensAt) ||
-      !TIME_PATTERN.test(row.closesAt)
-    ) {
-      return invalid()
-    }
-  }
+  if (!validHours(rows)) return invalid()
   await saveAll([
     db
       .delete(businessHours)
@@ -418,7 +403,10 @@ export async function deleteTeamMember(
   if (upcoming) {
     return { ok: false, error: "has_bookings" }
   }
-  await db.delete(teamMembers).where(eq(teamMembers.id, member.id))
+  await saveAll([
+    db.delete(teamMemberHours).where(and(eq(teamMemberHours.businessId, businessId), eq(teamMemberHours.teamMemberId, member.id))),
+    db.delete(teamMembers).where(eq(teamMembers.id, member.id)),
+  ])
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }

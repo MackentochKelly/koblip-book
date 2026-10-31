@@ -116,6 +116,20 @@ export const teamMembers = sqliteTable(
   ]
 )
 
+export const teamMemberHours = sqliteTable(
+  "team_member_hours",
+  {
+    id: id(),
+    businessId: text().notNull().references(() => businesses.id, { onDelete: "cascade" }),
+    teamMemberId: text().notNull().references(() => teamMembers.id, { onDelete: "cascade" }),
+    weekday: integer().notNull(),
+    opensAt: text().notNull(),
+    closesAt: text().notNull(),
+    ...timestamps(),
+  },
+  (table) => [index("team_member_hours_member_idx").on(table.teamMemberId, table.weekday)]
+)
+
 export const businessPhotos = sqliteTable(
   "business_photos",
   {
