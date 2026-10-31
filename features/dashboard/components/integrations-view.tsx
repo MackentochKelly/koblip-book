@@ -266,6 +266,12 @@ export function IntegrationsView({
     usable && <Fragment key="chat">{chatRow}</Fragment>,
     googleUsable && <Fragment key="google">{googleRow}</Fragment>,
   ].filter(Boolean)
+  // Suggested: the apps that work today and aren't connected yet, Google
+  // Calendar first. "Coming soon" apps are never suggested.
+  const suggestedRows = [
+    !googleUsable && <Fragment key="google">{googleRow}</Fragment>,
+    !usable && <Fragment key="chat">{chatRow}</Fragment>,
+  ].filter(Boolean)
 
   return (
     <div className="flex flex-col gap-6">
@@ -284,15 +290,22 @@ export function IntegrationsView({
       />
 
       {view === "connected" ? (
-        connectedRows.length === 0 ? (
-          <Empty className="border">
-            <EmptyHeader>
-              <EmptyTitle>{t.noneConnected}</EmptyTitle>
-            </EmptyHeader>
-          </Empty>
-        ) : (
-          <ItemGroup className="gap-3">{connectedRows}</ItemGroup>
-        )
+        <>
+          {connectedRows.length === 0 ? (
+            <Empty className="border">
+              <EmptyHeader>
+                <EmptyTitle>{t.noneConnected}</EmptyTitle>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <ItemGroup className="gap-3">{connectedRows}</ItemGroup>
+          )}
+          {suggestedRows.length > 0 && (
+            <PageSection id="suggested" title={t.suggested}>
+              <ItemGroup className="gap-3">{suggestedRows}</ItemGroup>
+            </PageSection>
+          )}
+        </>
       ) : (
         <>
           <PageSection id="messaging" title={t.messaging}>

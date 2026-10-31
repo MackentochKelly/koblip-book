@@ -7,6 +7,7 @@ const integrations: typeof en = {
     label: "Conectadas y todas las apps",
   },
   noneConnected: "Nada conectado todavía",
+  suggested: "Sugeridas",
   messaging: "Mensajes",
   calendar: "Calendario",
   payments: "Pagos",

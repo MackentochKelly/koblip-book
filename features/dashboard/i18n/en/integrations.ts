@@ -6,6 +6,7 @@ const integrations = {
     label: "Connected and all apps",
   },
   noneConnected: "Nothing connected yet",
+  suggested: "Suggested",
   messaging: "Messaging",
   calendar: "Calendar",
   payments: "Payments",
