@@ -46,34 +46,11 @@ export function TopBar({
       menuLabel={menu ? m.menu : undefined}
       className={className}
     >
-      {/* The bar's buttons sit together, their tap areas touching, so the
-          icons keep an even, close spacing on a phone. */}
-      <div className="flex items-center md:gap-2">
-        {/* Just the icon on a phone, so the title has room: plain, a 20 px
-          icon like the bell beside it. */}
-        {viewPage && (
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={m.viewPage}
-            className="md:hidden [&_svg:not([class*='size-'])]:size-5"
-            nativeButton={false}
-            render={
-              <a
-                href={`/b/${business.slug}`}
-                target="_blank"
-                rel="noreferrer"
-              />
-            }
-          >
-            <ExternalLinkIcon />
-          </Button>
-        )}
+      <div className="flex items-center gap-2">
         {viewPage && (
           <Button
             variant="outline"
             size="sm"
-            className="max-md:hidden"
             nativeButton={false}
             render={
               <a
