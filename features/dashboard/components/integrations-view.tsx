@@ -14,7 +14,7 @@ import { DetailsButton } from "@/components/details-button"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import {
   Item,
   ItemActions,
@@ -296,6 +296,11 @@ export function IntegrationsView({
               <EmptyHeader>
                 <EmptyTitle>{t.noneConnected}</EmptyTitle>
               </EmptyHeader>
+              <EmptyContent>
+                <Button variant="outline" onClick={() => setView("all")}>
+                  {t.seeAllApps}
+                </Button>
+              </EmptyContent>
             </Empty>
           ) : (
             <ItemGroup className="gap-3">{connectedRows}</ItemGroup>

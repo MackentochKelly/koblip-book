@@ -8,6 +8,7 @@ const integrations: typeof en = {
   },
   noneConnected: "Nada conectado todavía",
   suggested: "Sugeridas",
+  seeAllApps: "Ver todas las apps",
   messaging: "Mensajes",
   calendar: "Calendario",
   payments: "Pagos",

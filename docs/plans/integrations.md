@@ -38,7 +38,7 @@ Two tabs on Integrations, like Services (`components/view-tabs.tsx`):
 | I3 | WhatsApp Manage panel (`ResponsivePanel`): which number sends; "Use your own number" starts the Koblip Chat connect (`/api/chat/connect`, `useConnectWindow`); with their own number: its workspace and Disconnect (back to Koblip's number) | I2 | new `features/dashboard/components/whatsapp-panel.tsx`, integrations-view, i18n | Done (2026-10-31) |
 | I4 | Koblip Chat's inline Disconnect moves into its Manage panel, like Google Calendar's (`google-calendar-panel.tsx`), so every connected row is the same: Connected + Manage | I1 | integrations-view, whatsapp-panel | Done (2026-10-31) |
 | I5 | Suggested group on Connected: apps that work today and aren't connected yet, Google Calendar first, each with Connect; hidden when none are left. "Coming soon" apps are never suggested | I1 | integrations-view, i18n | Done (2026-10-31) |
-| I6 | Connected with nothing in it (no Koblip number, such as a demo business): a title and one "See all apps" button | I1 | integrations-view, i18n | Working on (Claude, 2026-10-31) |
+| I6 | Connected with nothing in it (no Koblip number, such as a demo business): a title and one "See all apps" button | I1 | integrations-view, i18n | Done (2026-10-31) |
 
 ## Decisions
 

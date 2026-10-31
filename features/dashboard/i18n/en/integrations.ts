@@ -7,6 +7,7 @@ const integrations = {
   },
   noneConnected: "Nothing connected yet",
   suggested: "Suggested",
+  seeAllApps: "See all apps",
   messaging: "Messaging",
   calendar: "Calendar",
   payments: "Payments",
