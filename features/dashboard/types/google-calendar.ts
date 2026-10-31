@@ -17,3 +17,9 @@ export type GoogleCalendarChoice = {
   primary: boolean
   blocks: boolean
 }
+
+// A team member's own Google Calendar, as the Team page sees it (G5).
+export type TeamCalendar = {
+  googleEmail: string
+  needsReconnect: boolean
+}

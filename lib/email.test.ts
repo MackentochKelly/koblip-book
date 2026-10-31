@@ -44,7 +44,7 @@ test("without SMTP setup it warns once and never sends or throws", async () => {
       text: "t",
       html: "<p>t</p>",
     })
-  ).resolves.toBeUndefined()
+  ).resolves.toBe(false)
   await expect(
     sendEmail({
       to: "owner@example.com",
@@ -52,7 +52,7 @@ test("without SMTP setup it warns once and never sends or throws", async () => {
       text: "t",
       html: "<p>t</p>",
     })
-  ).resolves.toBeUndefined()
+  ).resolves.toBe(false)
 
   expect(createTransportMock).not.toHaveBeenCalled()
   expect(sendMailMock).not.toHaveBeenCalled()
@@ -112,7 +112,7 @@ test("a send failure only logs its message", async () => {
       text: "t",
       html: "<p>t</p>",
     })
-  ).resolves.toBeUndefined()
+  ).resolves.toBe(false)
 
   expect(error).toHaveBeenCalledTimes(1)
   expect(error).toHaveBeenCalledWith("smtp down")

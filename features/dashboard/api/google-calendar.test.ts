@@ -29,6 +29,10 @@ const {
 const { eventIdOf, syncGoogleCalendar } = await import("@/lib/google-calendar-sync")
 const { googleCalendarFor } = await import("./google-calendar")
 const { getGoogleCalendarChoices, setGoogleBusyCalendars } = await import("./google-calendar-actions")
+const { createGoogleInvite, googleInviteReady, markGoogleInviteUsed, readGoogleInvite } = await import(
+  "@/lib/google-calendar-invites"
+)
+const { teamCalendarsFor } = await import("./google-calendar")
 const { googleBusyTimes, refreshGoogleBusy } = await import("@/lib/google-calendar-busy")
 const { ensureGoogleChannels, handleGoogleNotification } = await import("@/lib/google-calendar-channels")
 
@@ -216,7 +220,7 @@ function booking(id: string, startsIn: number, more: Partial<typeof bookings.$in
 }
 
 async function connect() {
-  const { url, cookie } = startGoogleCalendarConnect("biz", "u1", "owner@example.com")
+  const { url, cookie } = startGoogleCalendarConnect({ businessId: "biz", userId: "u1" }, "owner@example.com")
   const attempt = readGoogleCalendarAttempt(cookie, new URL(url).searchParams.get("state"))
   return finishGoogleCalendarConnect(attempt!, "code")
 }
@@ -226,7 +230,7 @@ function googleEvents() {
 }
 
 test("the consent link asks for offline access with the sealed verifier's PKCE challenge", () => {
-  const { url, cookie } = startGoogleCalendarConnect("biz", "u1", "owner@example.com")
+  const { url, cookie } = startGoogleCalendarConnect({ businessId: "biz", userId: "u1" }, "owner@example.com")
   const link = new URL(url)
   expect(link.origin + link.pathname).toBe("https://accounts.google.com/o/oauth2/v2/auth")
   expect(link.searchParams.get("redirect_uri")).toBe("http://localhost:3100/api/google-calendar/callback")
@@ -464,7 +468,7 @@ test("the owner sees the account's calendars, main first, never Koblip Book's", 
 
 test("ticked calendars block bookings and each gets a push channel", async () => {
   live()
-  const { connectionId } = await connect()
+  await connect()
   google.busy = [busyNow()]
   const work = { start: new Date(Date.now() + 6 * hour).toISOString(), end: new Date(Date.now() + 7 * hour).toISOString() }
   google.otherBusy = { "work@group.calendar.google.com": [work] }
@@ -488,4 +492,65 @@ test("a calendar that isn't the account's is refused", async () => {
   await connect()
   await expect(setGoogleBusyCalendars("biz", ["someone-else@gmail.com"])).resolves.toEqual({ ok: false })
   await expect(setGoogleBusyCalendars("biz", "work" as unknown as string[])).resolves.toEqual({ ok: false })
+})
+
+async function memberConnect(teamMemberId: string) {
+  const { url } = await createGoogleInvite({ businessId: "biz", teamMemberId, createdBy: "u1" })
+  const token = url.split("/team-calendar/")[1]!
+  const invite = await readGoogleInvite(token)
+  const start = startGoogleCalendarConnect({ businessId: "biz", teamMemberId, inviteId: invite!.id })
+  const attempt = readGoogleCalendarAttempt(start.cookie, new URL(start.url).searchParams.get("state"))
+  return { token, invite: invite!, finished: await finishGoogleCalendarConnect(attempt!, "code") }
+}
+
+test("a team member's link connects their own calendar, with only their bookings", async () => {
+  await db.insert(teamMembers).values([
+    { id: "m1", businessId: "biz", name: "Ana" },
+    { id: "m2", businessId: "biz", name: "Luis" },
+  ])
+  await db.insert(bookings).values([
+    booking("b-ana", 2 * hour, { teamMemberId: "m1" }),
+    booking("b-luis", 3 * hour, { teamMemberId: "m2" }),
+  ])
+  google.email = "ana@gmail.com"
+  const { invite, finished } = await memberConnect("m1")
+  expect(invite).toMatchObject({ businessName: "Shop", memberName: "Ana", state: "ready" })
+  expect(finished.result).toBe("connected")
+  await syncGoogleCalendar(finished.connectionId!)
+  expect([...googleEvents().keys()]).toEqual([eventIdOf("b-ana")])
+  await expect(teamCalendarsFor("biz")).resolves.toEqual({
+    m1: { googleEmail: "ana@gmail.com", needsReconnect: false },
+  })
+  // The business's own connection is a different one.
+  await expect(googleCalendarFor("biz")).resolves.toBeNull()
+})
+
+test("a team member's busy times block only them", async () => {
+  await db.insert(teamMembers).values([
+    { id: "m1", businessId: "biz", name: "Ana" },
+    { id: "m2", businessId: "biz", name: "Luis" },
+  ])
+  google.busy = [busyNow()]
+  const { finished } = await memberConnect("m1")
+  await refreshGoogleBusy(finished.connectionId!)
+  await expect(googleBusyTimes("biz", ...range())).resolves.toMatchObject([{ teamMemberId: "m1" }])
+})
+
+test("a link works once, until it runs out, and a new one ends the old one", async () => {
+  await db.insert(teamMembers).values({ id: "m1", businessId: "biz", name: "Ana" })
+  const first = await createGoogleInvite({ businessId: "biz", teamMemberId: "m1", createdBy: "u1" })
+  const second = await createGoogleInvite({ businessId: "biz", teamMemberId: "m1", createdBy: "u1" })
+  await expect(readGoogleInvite(first.url.split("/team-calendar/")[1]!)).resolves.toBeNull()
+  const invite = await readGoogleInvite(second.url.split("/team-calendar/")[1]!)
+  await expect(googleInviteReady(invite!.id)).resolves.toBe(true)
+  await markGoogleInviteUsed(invite!.id)
+  await expect(googleInviteReady(invite!.id)).resolves.toBe(false)
+  await expect(readGoogleInvite(second.url.split("/team-calendar/")[1]!)).resolves.toMatchObject({ state: "used" })
+  await expect(readGoogleInvite("not-a-token")).resolves.toBeNull()
+
+  vi.useFakeTimers({ now: Date.now() })
+  const third = await createGoogleInvite({ businessId: "biz", teamMemberId: "m1", createdBy: "u1" })
+  vi.setSystemTime(Date.now() + 8 * 24 * hour)
+  await expect(readGoogleInvite(third.url.split("/team-calendar/")[1]!)).resolves.toMatchObject({ state: "expired" })
+  vi.useRealTimers()
 })

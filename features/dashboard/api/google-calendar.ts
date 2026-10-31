@@ -1,9 +1,9 @@
 import "server-only"
-import { and, eq, isNull } from "drizzle-orm"
+import { and, eq, isNotNull, isNull } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import { googleCalendarConnections } from "@/lib/db/schema"
-import type { GoogleCalendarConnection } from "../types/google-calendar"
+import type { GoogleCalendarConnection, TeamCalendar } from "../types/google-calendar"
 
 // The business's own Google Calendar connection (not a team member's).
 export function businessConnectionWhere(businessId: string) {
@@ -33,4 +33,24 @@ export async function googleCalendarFor(
     syncFailed: !!row.lastError,
     busyTeamMemberId: row.busyTeamMemberId,
   }
+}
+
+// Each team member's own Google Calendar (G5), by team member id.
+export async function teamCalendarsFor(businessId: string): Promise<Record<string, TeamCalendar>> {
+  const rows = await db
+    .select({
+      teamMemberId: googleCalendarConnections.teamMemberId,
+      googleEmail: googleCalendarConnections.googleEmail,
+      needsReconnect: googleCalendarConnections.needsReconnect,
+    })
+    .from(googleCalendarConnections)
+    .where(
+      and(
+        eq(googleCalendarConnections.businessId, businessId),
+        isNotNull(googleCalendarConnections.teamMemberId)
+      )
+    )
+  return Object.fromEntries(
+    rows.map((row) => [row.teamMemberId!, { googleEmail: row.googleEmail, needsReconnect: row.needsReconnect }])
+  )
 }

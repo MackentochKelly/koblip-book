@@ -104,6 +104,16 @@ const catalog = {
     description: "Short description",
     badPhone: "Check the phone number",
     badEmail: "Check the email address",
+    calendarConnected: "Google Calendar connected",
+    calendarStopped: "Google Calendar stopped. Send a new link.",
+    sendCalendarLink: "Send calendar link",
+    calendarLinkSent: (email: string) => `Link sent to ${email}`,
+    calendarLinkCopied: "Link copied",
+    calendarLinkTitle: "Connect your Google Calendar",
+    calendarLinkText: (business: string) => `Connect your Google Calendar to ${business}:`,
+    disconnectCalendar: "Disconnect calendar",
+    calendarName: (name: string) => `${name}'s Google Calendar`,
+    calendarDisconnected: "Calendar disconnected",
   },
 }
 

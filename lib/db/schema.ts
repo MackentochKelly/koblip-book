@@ -868,3 +868,26 @@ export const googleCalendarChannels = sqliteTable(
   },
   (table) => [index("google_calendar_channels_connection").on(table.connectionId, table.expiresAt)]
 )
+
+// A link a team member opens to connect their own Google Calendar without an
+// account (G5). Only the token's hash is kept; it works once, until it runs
+// out, and a new link for the same person ends the old one.
+export const googleCalendarInvites = sqliteTable(
+  "google_calendar_invites",
+  {
+    id: id(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    teamMemberId: text()
+      .notNull()
+      .references(() => teamMembers.id, { onDelete: "cascade" }),
+    tokenHash: text().notNull().unique(),
+    expiresAt: text().notNull(),
+    usedAt: text(),
+    // The owner who made it.
+    createdBy: text().references(() => user.id, { onDelete: "set null" }),
+    ...timestamps(),
+  },
+  (table) => [index("google_calendar_invites_member").on(table.teamMemberId)]
+)

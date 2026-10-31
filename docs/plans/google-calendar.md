@@ -49,7 +49,7 @@ the others, busy times are simply off.
 | G2 | Every booking goes into that calendar and stays in sync: new, moved, cancelled (server timer, once a minute) | G1 | Done (2026-10-31) |
 | G3 | Busy times in Google cannot be booked (public page, owner's Add and Move booking); the owner picks which team member they are (Manage panel) | G1 | Done (2026-10-31) |
 | G4 | Owner picks which calendars count as busy (ticks in the Manage panel; main calendar by default) | G3 | Done (2026-10-31) |
-| G5 | Each team member's own calendar: the owner sends a link, the member connects Google on one simple page, no account; only their bookings, only their busy times | G2, G3 | To do |
+| G5 | Each team member's own calendar: the owner sends a link (Team page menu), the member connects Google on one simple page, no account; only their bookings, only their busy times | G2, G3 | Done (2026-10-31) |
 | G6 | Event details: customer name, phone, service, team member, note, link to the booking | G2 | To do |
 | G7 | Colour by service | G2 | To do |
 | G8 | Customer gets a calendar invite | G2 | Decision: bookings have no customer email today |
@@ -74,3 +74,4 @@ the others, busy times are simply off.
 | Booking changes go to Google right after they are saved (`requestGoogleSync`); the 1-minute timer is only the safety net | Changes show at once; nothing is lost if a send fails | Dev, 2026-10-31 |
 | Push channels are renewed 24 hours before Google ends them, the old one stopped after the new one starts | Google never renews a channel itself | Dev, 2026-10-31 |
 | The owner ticks which calendars block bookings; the main one by default; at most 50 | How Calendly ("calendars to check for conflicts") and Cal.com ("Check for conflicts") do it; Google's freeBusy reads 50 calendars at most | Dev, 2026-10-31 |
+| A team member's link is like a sign-in link: random token, only its hash kept, works once, 7 days, a new link ends the old one; emailed when the person has an email, else the phone's share sheet | No account needed and nothing to guess or reuse; the owner can always share it on WhatsApp | Dev, 2026-10-31 |

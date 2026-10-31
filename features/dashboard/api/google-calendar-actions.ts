@@ -4,12 +4,17 @@ import { and, eq } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import { googleCalendarConnections, teamMembers } from "@/lib/db/schema"
+import { requireOwner } from "@/lib/dal"
+import { sendEmail } from "@/lib/email"
+import { teamCalendarEmail } from "@/lib/email-templates"
 import { endGoogleCalendarConnection } from "@/lib/google-calendar"
+import { createGoogleInvite } from "@/lib/google-calendar-invites"
 import { busyCalendarsOf, listGoogleCalendars } from "@/lib/google-calendar-busy"
 import { requestGoogleBusyUpdate } from "@/lib/google-calendar-channels"
 import { GOOGLE_CALENDAR_RULES } from "@/lib/google-calendar-rules"
 import type { GoogleCalendarChoice } from "../types/google-calendar"
 import { businessConnectionWhere } from "./google-calendar"
+import { getOwnerLanguage } from "../i18n/server"
 import { getOwnerBusiness } from "./queries"
 
 // Disconnect on the Integrations page: ends the connection at Google and
@@ -103,5 +108,56 @@ export async function setGoogleBusyCalendars(
     .set({ busyCalendarIds: [...new Set(calendarIds)] })
     .where(eq(googleCalendarConnections.id, row.id))
   requestGoogleBusyUpdate(row.id)
+  return { ok: true }
+}
+
+// A new link for a team member to connect their own Google Calendar (G5):
+// emailed when they have an email, and always given back so the owner can
+// share it too.
+export async function sendTeamCalendarLink(
+  businessId: string,
+  teamMemberId: string
+): Promise<{ ok: true; url: string; emailedTo: string | null } | { ok: false }> {
+  const { business, team } = await getOwnerBusiness(businessId)
+  const member = team.find((row) => row.id === teamMemberId)
+  if (typeof teamMemberId !== "string" || !member) return { ok: false }
+  const session = await requireOwner()
+  const { url } = await createGoogleInvite({
+    businessId,
+    teamMemberId: member.id,
+    createdBy: session.userId,
+  })
+  const emailed =
+    !!member.email &&
+    (await sendEmail({
+      to: member.email,
+      ...teamCalendarEmail({
+        businessName: business.name,
+        url,
+        days: GOOGLE_CALENDAR_RULES.inviteDays,
+        language: await getOwnerLanguage(),
+      }),
+    }))
+  return { ok: true, url, emailedTo: emailed ? member.email : null }
+}
+
+// Ends a team member's own Google Calendar connection (G5).
+export async function disconnectTeamCalendar(
+  businessId: string,
+  teamMemberId: string
+): Promise<{ ok: boolean }> {
+  await getOwnerBusiness(businessId)
+  if (typeof teamMemberId !== "string") return { ok: false }
+  const [row] = await db
+    .select({ id: googleCalendarConnections.id })
+    .from(googleCalendarConnections)
+    .where(
+      and(
+        eq(googleCalendarConnections.businessId, businessId),
+        eq(googleCalendarConnections.teamMemberId, teamMemberId)
+      )
+    )
+    .limit(1)
+  if (row) await endGoogleCalendarConnection(row.id)
   return { ok: true }
 }

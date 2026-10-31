@@ -1,6 +1,5 @@
 import { NextResponse, after, type NextRequest } from "next/server"
 
-import { syncGoogleCalendar } from "@/lib/google-calendar-sync"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { getSession } from "@/lib/dal"
 import {
@@ -9,23 +8,32 @@ import {
   finishGoogleCalendarConnect,
   googleCalendarDoneUrl,
   readGoogleCalendarAttempt,
+  teamCalendarDoneUrl,
 } from "@/lib/google-calendar"
+import { googleInviteReady, markGoogleInviteUsed } from "@/lib/google-calendar-invites"
+import { syncGoogleCalendar } from "@/lib/google-calendar-sync"
 import type { GoogleConnectResult } from "@/types/google-calendar-connect"
 
-// Where Google sends the window back: with a one-time code after Allow, or
+// Where Google sends the browser back: with a one-time code after Allow, or
 // error=access_denied after Cancel. The answer counts only for the same
-// browser, person and attempt that started it, and only once.
+// browser and attempt that started it, and only once: for the owner, the
+// same signed-in person; for a team member, a link still unused (G5).
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams
   const attempt = readGoogleCalendarAttempt(
     request.cookies.get(GOOGLE_ATTEMPT_COOKIE)?.value,
     params.get("state")
   )
-  const session = await getSession()
   let result: GoogleConnectResult = "failed"
-  if (attempt && session?.userId === attempt.userId) {
+  let allowed = false
+  if (attempt && "inviteId" in attempt) {
+    allowed = await googleInviteReady(attempt.inviteId)
+  } else if (attempt) {
+    allowed = (await getSession())?.userId === attempt.userId
     // Still this owner's business.
-    await getOwnerBusiness(attempt.businessId)
+    if (allowed) await getOwnerBusiness(attempt.businessId)
+  }
+  if (attempt && allowed) {
     const code = params.get("code")
     if (params.get("error") === "access_denied") {
       result = "denied"
@@ -33,6 +41,9 @@ export async function GET(request: NextRequest) {
       try {
         const finished = await finishGoogleCalendarConnect(attempt, code)
         result = finished.result
+        if (result === "connected" && "inviteId" in attempt) {
+          await markGoogleInviteUsed(attempt.inviteId)
+        }
         // The calendar and its events right away, not at the next tick.
         const { connectionId } = finished
         if (connectionId) after(() => syncGoogleCalendar(connectionId))
@@ -41,7 +52,11 @@ export async function GET(request: NextRequest) {
       }
     }
   }
-  const response = NextResponse.redirect(googleCalendarDoneUrl(attempt?.businessId ?? "", result))
+  const done =
+    attempt && "inviteId" in attempt
+      ? teamCalendarDoneUrl(allowed ? result : "expired")
+      : googleCalendarDoneUrl(attempt?.businessId ?? "", result)
+  const response = NextResponse.redirect(done)
   response.cookies.delete({ name: GOOGLE_ATTEMPT_COOKIE, path: GOOGLE_ATTEMPT_COOKIE_PATH })
   return response
 }

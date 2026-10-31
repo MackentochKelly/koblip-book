@@ -70,24 +70,37 @@ export function googleCalendarDoneUrl(businessId: string, result: string) {
   return url
 }
 
-type Attempt = {
+// Where a team member's Google window ends (G5): a page of its own, as they
+// have no account and opened Book from a link.
+export function teamCalendarDoneUrl(result: string) {
+  const site = process.env.BETTER_AUTH_URL
+  if (!site) throw new Error("Google Calendar: BETTER_AUTH_URL is not set. See .env.example.")
+  const url = new URL("/team-calendar/done", site)
+  url.search = new URLSearchParams({ result }).toString()
+  return url
+}
+
+// Whose connection an attempt makes: the business's own, by its owner, or
+// a team member's, from their link (G5).
+export type ConnectFor =
+  | { businessId: string; userId: string }
+  | { businessId: string; teamMemberId: string; inviteId: string }
+
+type Attempt = ConnectFor & {
   state: string
   verifier: string
-  businessId: string
-  userId: string
   startedAt: number
 }
 
 // Google's consent URL to open, and the sealed attempt to keep in a cookie.
 // prompt=consent: Google gives a refresh token only on a consent screen,
 // and a reconnect needs a new one.
-export function startGoogleCalendarConnect(businessId: string, userId: string, email: string) {
+export function startGoogleCalendarConnect(who: ConnectFor, email?: string) {
   const { clientId, redirectUri } = config()
   const attempt: Attempt = {
+    ...who,
     state: randomBytes(32).toString("base64url"),
     verifier: randomBytes(32).toString("base64url"),
-    businessId,
-    userId,
     startedAt: Date.now(),
   }
   const url = new URL(AUTH_URL)
@@ -99,7 +112,7 @@ export function startGoogleCalendarConnect(businessId: string, userId: string, e
     access_type: "offline",
     prompt: "consent",
     include_granted_scopes: "true",
-    login_hint: email,
+    ...(email ? { login_hint: email } : {}),
     state: attempt.state,
     code_challenge: createHash("sha256").update(attempt.verifier).digest("base64url"),
     code_challenge_method: "S256",
@@ -170,8 +183,9 @@ function emailOf(idToken: string | undefined): string | null {
   }
 }
 
-// Swaps Google's one-time code for tokens and saves the business's
-// connection, then says how it ended and, when connected, the connection.
+// Swaps Google's one-time code for tokens and saves the connection (the
+// business's, or the team member's), then says how it ended and, when
+// connected, the connection.
 // "denied" when the person left out the calendar itself.
 export async function finishGoogleCalendarConnect(
   attempt: Attempt,
@@ -192,9 +206,12 @@ export async function finishGoogleCalendarConnect(
   if (!tokens.refresh_token || !email) return { result: "failed" }
   const refreshToken = tokens.refresh_token
 
+  const teamMemberId = "teamMemberId" in attempt ? attempt.teamMemberId : null
   const where = and(
     eq(googleCalendarConnections.businessId, attempt.businessId),
-    isNull(googleCalendarConnections.teamMemberId)
+    teamMemberId
+      ? eq(googleCalendarConnections.teamMemberId, teamMemberId)
+      : isNull(googleCalendarConnections.teamMemberId)
   )
   const connectionId = await runInTurn(`google-calendar:${attempt.businessId}`, async () => {
     const [before] = await db.select().from(googleCalendarConnections).where(where).limit(1)
@@ -206,12 +223,12 @@ export async function finishGoogleCalendarConnect(
       accessExpiresAt: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
       needsReconnect: false,
       lastError: null,
-      connectedBy: attempt.userId,
+      connectedBy: "userId" in attempt ? attempt.userId : null,
     }
     if (!before) {
       const [made] = await db
         .insert(googleCalendarConnections)
-        .values({ businessId: attempt.businessId, ...row })
+        .values({ businessId: attempt.businessId, teamMemberId, ...row })
         .returning({ id: googleCalendarConnections.id })
       return made!.id
     }
@@ -221,7 +238,7 @@ export async function finishGoogleCalendarConnect(
     await saveAll([
       db
         .update(googleCalendarConnections)
-        .set({ ...row, ...(moved ? { calendarId: null } : {}) })
+        .set({ ...row, ...(moved ? { calendarId: null, busyCalendarIds: null } : {}) })
         .where(eq(googleCalendarConnections.id, before.id)),
       ...(moved
         ? [db.delete(googleCalendarEvents).where(eq(googleCalendarEvents.connectionId, before.id))]

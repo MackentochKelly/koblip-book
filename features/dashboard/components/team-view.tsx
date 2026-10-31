@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
+  CalendarIcon,
   EllipsisVerticalIcon,
   PlusIcon,
   Trash2Icon,
@@ -50,6 +51,7 @@ import {
   Item,
   ItemActions,
   ItemContent,
+  ItemDescription,
   ItemGroup,
   ItemMedia,
   ItemTitle,
@@ -69,6 +71,12 @@ import {
 } from "./photo-upload"
 import { useTabBarAction } from "./tab-bar-action"
 import { noAutofill } from "@/lib/no-autofill"
+import { shareLink } from "@/lib/share-link"
+import {
+  disconnectTeamCalendar,
+  sendTeamCalendarLink,
+} from "../api/google-calendar-actions"
+import type { TeamCalendar } from "../types/google-calendar"
 import { useOwnerMessages } from "../i18n/provider"
 import { ConfirmRemove } from "./confirm-remove"
 
@@ -88,11 +96,16 @@ const MEMBER_FORM = "member-form"
 // Who takes bookings. With two or more, customers can pick who they see.
 export function TeamView({
   businessId,
+  businessName,
   team,
   hours,
   memberHours,
+  calendars,
 }: {
   businessId: string
+  businessName: string
+  // Each person's own Google Calendar, by id (G5).
+  calendars: Record<string, TeamCalendar>
   hours: HoursRow[]
   memberHours: (HoursRow & { teamMemberId: string })[]
   team: MemberRow[]
@@ -103,6 +116,7 @@ export function TeamView({
   const [editing, setEditing] = useState<MemberRow | "new" | null>(null)
   const [formKey, setFormKey] = useState(0)
   const [removing, setRemoving] = useState<MemberRow | null>(null)
+  const [unlinking, setUnlinking] = useState<MemberRow | null>(null)
   const [pending, startTransition] = useTransition()
   const [formError, setFormError] = useState<DetailsError | null>(null)
   // Whether the open form differs from the saved person.
@@ -134,6 +148,37 @@ export function TeamView({
         router.refresh()
       } else if (result.error === "has_bookings") {
         toast.error(t.hasBookings(member.name))
+      } else {
+        toast.error(c.failed)
+      }
+    })
+
+  // A link for the person to connect their own Google Calendar: emailed
+  // when they have an email, else the phone's share sheet (or copied).
+  const sendCalendarLink = (member: MemberRow) =>
+    startTransition(async () => {
+      const result = await sendTeamCalendarLink(businessId, member.id).catch(() => null)
+      if (!result?.ok) {
+        toast.error(c.failed)
+        return
+      }
+      if (result.emailedTo) {
+        toast.success(t.calendarLinkSent(result.emailedTo))
+        return
+      }
+      const shared = await shareLink({
+        title: t.calendarLinkTitle,
+        text: t.calendarLinkText(businessName),
+        url: result.url,
+      })
+      if (shared === "copied") toast.success(t.calendarLinkCopied)
+    })
+  const unlinkCalendar = (member: MemberRow) =>
+    startTransition(async () => {
+      const result = await disconnectTeamCalendar(businessId, member.id).catch(() => null)
+      if (result?.ok) {
+        toast.success(t.calendarDisconnected)
+        router.refresh()
       } else {
         toast.error(c.failed)
       }
@@ -174,6 +219,11 @@ export function TeamView({
               </ItemMedia>
               <ItemContent>
                 <ItemTitle>{member.name}</ItemTitle>
+                {calendars[member.id] && (
+                  <ItemDescription>
+                    {calendars[member.id].needsReconnect ? t.calendarStopped : t.calendarConnected}
+                  </ItemDescription>
+                )}
               </ItemContent>
               <ItemActions>
                 <Button
@@ -214,6 +264,20 @@ export function TeamView({
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
+                      {calendars[member.id] && !calendars[member.id].needsReconnect ? (
+                        <DropdownMenuItem disabled={pending} onClick={() => setUnlinking(member)}>
+                          <CalendarIcon />
+                          {t.disconnectCalendar}
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem disabled={pending} onClick={() => sendCalendarLink(member)}>
+                          <CalendarIcon />
+                          {t.sendCalendarLink}
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
                       <DropdownMenuItem
                         variant="destructive"
                         disabled={pending}
@@ -235,6 +299,11 @@ export function TeamView({
         name={removing?.name ?? null}
         onClose={() => setRemoving(null)}
         onConfirm={() => removing && remove(removing)}
+      />
+      <ConfirmRemove
+        name={unlinking ? t.calendarName(unlinking.name) : null}
+        onClose={() => setUnlinking(null)}
+        onConfirm={() => unlinking && unlinkCalendar(unlinking)}
       />
 
       <ResponsivePanel

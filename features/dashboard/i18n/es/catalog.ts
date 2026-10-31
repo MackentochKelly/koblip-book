@@ -103,6 +103,16 @@ const catalog: typeof en = {
     description: "Descripción corta",
     badPhone: "Revisa el número de teléfono",
     badEmail: "Revisa el correo",
+    calendarConnected: "Google Calendar conectado",
+    calendarStopped: "Google Calendar se detuvo. Envía un enlace nuevo.",
+    sendCalendarLink: "Enviar enlace del calendario",
+    calendarLinkSent: (email: string) => `Enlace enviado a ${email}`,
+    calendarLinkCopied: "Enlace copiado",
+    calendarLinkTitle: "Conecta tu Google Calendar",
+    calendarLinkText: (business: string) => `Conecta tu Google Calendar a ${business}:`,
+    disconnectCalendar: "Desconectar calendario",
+    calendarName: (name: string) => `Google Calendar de ${name}`,
+    calendarDisconnected: "Calendario desconectado",
   },
 }
 

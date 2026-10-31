@@ -39,15 +39,16 @@ function getTransporter(): Transporter {
   return transporter
 }
 
-// Sends one email. Never throws: without SMTP setup it warns once and
-// returns (so local dev works); a send failure only logs its message.
-export async function sendEmail(message: EmailMessage): Promise<void> {
+// Sends one email and says whether it went. Never throws: without SMTP
+// setup it warns once and returns false (so local dev works); a send
+// failure only logs its message.
+export async function sendEmail(message: EmailMessage): Promise<boolean> {
   if (!isConfigured()) {
     if (!warnedMissing) {
       warnedMissing = true
       console.warn("Email is not set up")
     }
-    return
+    return false
   }
   try {
     await getTransporter().sendMail({
@@ -57,7 +58,9 @@ export async function sendEmail(message: EmailMessage): Promise<void> {
       text: message.text,
       html: message.html,
     })
+    return true
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
+    return false
   }
 }

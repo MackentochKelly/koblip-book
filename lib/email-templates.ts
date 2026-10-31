@@ -22,3 +22,44 @@ export function verificationEmail(url: string): VerificationEmail {
       `<p>The link works for ${hours} hours. If you didn't sign up, ignore this email.</p>`,
   }
 }
+
+// Names in an email's HTML are text, never markup.
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+}
+
+// A team member's link to connect their Google Calendar (G5 in
+// docs/plans/google-calendar.md), in the owner's language. One link, no
+// images, no tracking.
+export function teamCalendarEmail(input: {
+  businessName: string
+  url: string
+  days: number
+  language: "en" | "es"
+}): VerificationEmail {
+  const { businessName, url, days } = input
+  const words =
+    input.language === "es"
+      ? {
+          subject: `Conecta tu Google Calendar a ${businessName}`,
+          lead: `${businessName} te pide conectar tu Google Calendar: tus reservas aparecen ahí y tus horas ocupadas no se pueden reservar.`,
+          note: `El enlace funciona ${days} días y solo una vez.`,
+        }
+      : {
+          subject: `Connect your Google Calendar to ${businessName}`,
+          lead: `${businessName} asks you to connect your Google Calendar: your bookings show up there, and your busy times can't be booked.`,
+          note: `The link works for ${days} days, once.`,
+        }
+  return {
+    subject: words.subject,
+    text: `${words.lead}\n\n${url}\n\n${words.note}`,
+    html:
+      `<p>${escapeHtml(words.lead)}</p>` +
+      `<p><a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>` +
+      `<p>${escapeHtml(words.note)}</p>`,
+  }
+}

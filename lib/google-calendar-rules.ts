@@ -20,6 +20,8 @@ export const GOOGLE_CALENDAR_RULES = {
   maxChangesPerSync: 50,
   // Bookings that ended up to this long ago are still kept in sync.
   keepPastHours: 24,
+  // A team member's link to connect their calendar works this long (G5).
+  inviteDays: 7,
   // The calendar Book makes in each Google account.
   calendarName: "Koblip Book",
 } as const
