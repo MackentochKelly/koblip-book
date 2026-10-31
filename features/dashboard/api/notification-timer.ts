@@ -2,6 +2,7 @@ import "server-only"
 
 import { db } from "@/lib/db"
 import { notificationTimer } from "@/lib/db/schema"
+import { removeOldNotifications } from "@/lib/in-app-notifications"
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
 import { notificationRules } from "@/lib/platform-settings"
 import { runNotifications } from "./notification-sender"
@@ -9,7 +10,8 @@ import { runNotifications } from "./notification-sender"
 // The server's timer for WhatsApp booking messages, started once when the
 // server starts (instrumentation.ts). One check at a time: the next is set
 // only when one ends, after the admin's current `sendEverySeconds`. Each
-// check leaves its time (and error) for the admin's Overview (A2).
+// check leaves its time (and error) for the admin's Overview (A2), and
+// removes in-app notifications past their keep time (in-app N5).
 
 const timer = globalThis as typeof globalThis & {
   koblipNotificationTimer?: NodeJS.Timeout
@@ -25,6 +27,11 @@ async function check() {
       0,
       200
     )
+  }
+  try {
+    await removeOldNotifications()
+  } catch (error) {
+    console.error(error)
   }
   try {
     const lastRunAt = new Date().toISOString()

@@ -1,10 +1,11 @@
 import "server-only"
-import { eq, sql } from "drizzle-orm"
+import { eq, lt, sql } from "drizzle-orm"
 import type { BatchItem } from "drizzle-orm/batch"
 
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { businesses, inAppNotificationSettings, inAppNotifications } from "@/lib/db/schema"
+import { notificationRules } from "@/lib/platform-settings"
 import type { InAppData, InAppKind } from "@/types/in-app-notifications"
 
 // Creating the owner's in-app notifications (docs/plans/in-app-notifications.md,
@@ -77,4 +78,12 @@ export async function notify(
   options?: NotifyOptions
 ) {
   await saveAll(await notification(businessId, kind, data, options))
+}
+
+// Notifications older than the admin's `inAppKeepDays`, read or not, are
+// removed (N5); the server's timer calls this on each check.
+export async function removeOldNotifications(now = new Date()) {
+  const { inAppKeepDays } = await notificationRules()
+  const before = new Date(now.getTime() - inAppKeepDays * 86_400_000).toISOString()
+  await db.delete(inAppNotifications).where(lt(inAppNotifications.createdAt, before))
 }

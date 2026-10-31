@@ -16,7 +16,7 @@ vi.mock("@/lib/dal", () => ({
   requireOwner: vi.fn(async () => ({ userId: signedIn })),
 }))
 
-const { notification, notify } = await import("@/lib/in-app-notifications")
+const { notification, notify, removeOldNotifications } = await import("@/lib/in-app-notifications")
 const { saveAll } = await import("@/lib/db/save-all")
 const { getNotificationChoices, getNotificationPage, getUnreadCount } = await import("./queries")
 const { markAllNotificationsRead, markNotificationRead, setNotificationChoice } = await import("./actions")
@@ -165,6 +165,27 @@ test("the owner's choices: all on at first, each kind switched per business, onl
   expect(await setNotificationChoice("a", "nope" as never, false)).toEqual({ ok: false, error: "invalid" })
   expect(await setNotificationChoice("b", "newBooking", true)).toEqual({ ok: true })
   expect(await offs("b")).toEqual([])
+})
+
+test("notifications older than the keep days are removed, read or not", async () => {
+  const day = (n: number) => new Date(Date.UTC(2026, 10, n, 12)).toISOString()
+  await db.insert(inAppNotifications).values(
+    [
+      [1, null],
+      [2, day(3)],
+      [3, null],
+    ].map(([n, readAt]) => ({
+      businessId: "a",
+      kind: "newBooking" as const,
+      data: { customerName: `C${n}` },
+      link: "/dashboard/a",
+      readAt: readAt as string | null,
+      createdAt: day(n as number),
+    }))
+  )
+  // 90 days by default: on day 92 the first two are older.
+  await removeOldNotifications(new Date(Date.UTC(2026, 10, 92, 13)))
+  expect((await db.select().from(inAppNotifications)).map(({ data }) => data.customerName)).toEqual(["C3"])
 })
 
 function eqBusiness(businessId: string) {
