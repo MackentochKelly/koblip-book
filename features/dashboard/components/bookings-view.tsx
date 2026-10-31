@@ -161,15 +161,18 @@ export function BookingsView({
               newestFirst={view === "past"}
               phoneLimit={HOME_PHONE_LIMIT}
             />
-            <Button
-              variant="outline"
-              className="self-center"
-              render={<Link href={viewAll} />}
-              nativeButton={false}
-            >
-              {t.viewAll}
-              <ChevronRightIcon data-icon="inline-end" />
-            </Button>
+            {/* With only one or two bookings, they are all here already. */}
+            {list.length >= HOME_PHONE_LIMIT && (
+              <Button
+                variant="outline"
+                className="self-center"
+                render={<Link href={viewAll} />}
+                nativeButton={false}
+              >
+                {t.viewAll}
+                <ChevronRightIcon data-icon="inline-end" />
+              </Button>
+            )}
           </div>
         )}
       </div>
