@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm"
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from "vitest"
 import { db } from "@/lib/db"
 import {
+  bookingAddons,
   bookings,
   businesses,
   googleCalendarConnections,
@@ -46,7 +47,10 @@ const google = {
   scope: "",
   email: "owner@gmail.com",
   refreshAnswer: "ok" as "ok" | "invalid_grant",
-  calendars: new Map<string, Map<string, { status: string; summary: string; start: string }>>(),
+  calendars: new Map<
+    string,
+    Map<string, { status: string; summary: string; start: string; description?: string; location?: string }>
+  >(),
   revoked: [] as string[],
   calls: [] as string[],
   // The main calendar's busy times freeBusy answers with.
@@ -134,7 +138,13 @@ const fetchGoogle = vi.fn(async (input: string, init: RequestInit = {}) => {
   if (!match || !events) return answer(404, { error: { errors: [{ reason: "notFound" }] } })
   const eventId = match[2]
   const save = (id: string) =>
-    events.set(id, { status: body.status, summary: body.summary, start: body.start.dateTime })
+    events.set(id, {
+      status: body.status,
+      summary: body.summary,
+      start: body.start.dateTime,
+      description: body.description,
+      location: body.location,
+    })
   if (method === "POST") {
     if (events.has(body.id)) return answer(409, { error: { errors: [{ reason: "duplicate" }] } })
     save(body.id)
@@ -553,4 +563,41 @@ test("a link works once, until it runs out, and a new one ends the old one", asy
   vi.setSystemTime(Date.now() + 8 * 24 * hour)
   await expect(readGoogleInvite(third.url.split("/team-calendar/")[1]!)).resolves.toMatchObject({ state: "expired" })
   vi.useRealTimers()
+})
+
+test("an event carries the booking's details and a link to its day", async () => {
+  vi.stubEnv("BETTER_AUTH_URL", "https://book.example.com")
+  await db.update(businesses).set({ address: "Calle 1, Santo Domingo" }).where(eq(businesses.id, "biz"))
+  await db.insert(teamMembers).values({ id: "m1", businessId: "biz", name: "Ana" })
+  await db.insert(bookings).values(
+    booking("b1", 2 * hour, {
+      teamMemberId: "m1",
+      teamMemberName: "Ana",
+      customerName: "Maria",
+      customerPhone: "+18095550134",
+      note: "First visit",
+      priceMinor: 150000,
+    })
+  )
+  await db.insert(bookingAddons).values({ businessId: "biz", bookingId: "b1", name: "Beard trim", durationMinutes: 15 })
+  const { connectionId } = await connect()
+  await syncGoogleCalendar(connectionId!)
+  const event = googleEvents().get(eventIdOf("b1"))!
+  expect(event.summary).toBe("Haircut · Maria")
+  expect(event.location).toBe("Calle 1, Santo Domingo")
+  expect(event.description).toContain("Extras: Beard trim")
+  expect(event.description).toContain("With: Ana")
+  expect(event.description).toContain("Phone: +18095550134")
+  expect(event.description).toContain("WhatsApp: https://wa.me/18095550134")
+  expect(event.description).toContain("Note: First visit")
+  expect(event.description).toMatch(/Open in Koblip Book: https:\/\/book\.example\.com\/dashboard\/biz\/bookings\?from=\d{4}-\d{2}-\d{2}&to=/)
+  await db.update(businesses).set({ address: null }).where(eq(businesses.id, "biz"))
+})
+
+test("a team member's event has no owner-area link", async () => {
+  await db.insert(teamMembers).values({ id: "m1", businessId: "biz", name: "Ana" })
+  await db.insert(bookings).values(booking("b1", 2 * hour, { teamMemberId: "m1" }))
+  const { finished } = await memberConnect("m1")
+  await syncGoogleCalendar(finished.connectionId!)
+  expect(googleEvents().get(eventIdOf("b1"))?.description).not.toContain("Koblip Book:")
 })

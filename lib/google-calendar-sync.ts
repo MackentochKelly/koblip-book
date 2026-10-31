@@ -1,17 +1,20 @@
 import "server-only"
 import { createHash } from "node:crypto"
-import { and, asc, eq, gte } from "drizzle-orm"
+import { and, asc, eq, gte, inArray } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import {
+  bookingAddons,
   bookings,
   businesses,
   googleCalendarConnections,
   googleCalendarEvents,
+  notificationSettings,
 } from "@/lib/db/schema"
 import { GoogleCalendarError, googleCalendarApi, googleTurnKey } from "@/lib/google-calendar"
 import { refreshGoogleBusy } from "@/lib/google-calendar-busy"
 import { ensureGoogleChannels } from "@/lib/google-calendar-channels"
+import { eventOf, type EventPlace, type GoogleEvent } from "@/lib/google-calendar-event"
 import { GOOGLE_CALENDAR_RULES } from "@/lib/google-calendar-rules"
 import { runInTurn } from "@/lib/run-in-turn"
 
@@ -23,7 +26,7 @@ import { runInTurn } from "@/lib/run-in-turn"
 // the server's timer as a safety net for anything that didn't go through.
 
 // Raised whenever the event's content changes, so every event is sent again.
-const EVENT_VERSION = 1
+const EVENT_VERSION = 2
 
 type Booking = typeof bookings.$inferSelect
 
@@ -33,24 +36,13 @@ export function eventIdOf(bookingId: string) {
   return createHash("sha256").update(bookingId).digest("hex").slice(0, 40)
 }
 
-export function eventOf(booking: Booking, timeZone: string) {
-  return {
-    summary: `${booking.serviceName} · ${booking.customerName}`,
-    start: { dateTime: booking.startAt, timeZone },
-    end: { dateTime: booking.endAt, timeZone },
-    // A removed event keeps its id at Google; this brings it back.
-    status: "confirmed",
-    extendedProperties: { private: { koblipBookingId: booking.id } },
-  }
-}
-
 // What a cancelled booking's event is: removed.
 const CANCELLED = "cancelled"
 
-export function fingerprintOf(booking: Booking, timeZone: string) {
+export function fingerprintOf(booking: Booking, event: GoogleEvent) {
   if (booking.status === "cancelled") return CANCELLED
   return createHash("sha256")
-    .update(JSON.stringify([EVENT_VERSION, eventOf(booking, timeZone)]))
+    .update(JSON.stringify([EVENT_VERSION, event]))
     .digest("base64url")
 }
 
@@ -78,7 +70,7 @@ async function putEvent(
   connectionId: string,
   calendarId: string,
   eventId: string,
-  body: ReturnType<typeof eventOf>,
+  body: GoogleEvent,
   sentBefore: boolean
 ) {
   const events = `/calendars/${encodeURIComponent(calendarId)}/events`
@@ -119,13 +111,27 @@ async function removeEvent(connectionId: string, calendarId: string, eventId: st
 
 async function syncConnection(connectionId: string) {
   const [row] = await db
-    .select({ connection: googleCalendarConnections, timeZone: businesses.timezone })
+    .select({
+      connection: googleCalendarConnections,
+      timeZone: businesses.timezone,
+      address: businesses.address,
+      language: notificationSettings.ownerLanguage,
+    })
     .from(googleCalendarConnections)
     .innerJoin(businesses, eq(businesses.id, googleCalendarConnections.businessId))
+    .leftJoin(notificationSettings, eq(notificationSettings.businessId, businesses.id))
     .where(eq(googleCalendarConnections.id, connectionId))
     .limit(1)
   if (!row || row.connection.needsReconnect) return
   const { connection, timeZone } = row
+  const place: EventPlace = {
+    businessId: connection.businessId,
+    timeZone,
+    address: row.address,
+    language: row.language ?? "en",
+    // Only the owner can open the owner area.
+    site: connection.teamMemberId ? null : (process.env.BETTER_AUTH_URL ?? null),
+  }
 
   let lastError: string | null = null
   try {
@@ -150,10 +156,23 @@ async function syncConnection(connectionId: string) {
         )
       )
       .orderBy(asc(bookings.startAt))
+    const extras = new Map<string, string[]>()
+    const ids = rows.map(({ booking }) => booking.id)
+    if (ids.length) {
+      const addons = await db
+        .select({ bookingId: bookingAddons.bookingId, name: bookingAddons.name })
+        .from(bookingAddons)
+        .where(inArray(bookingAddons.bookingId, ids))
+        .orderBy(asc(bookingAddons.position))
+      for (const addon of addons) {
+        extras.set(addon.bookingId, [...(extras.get(addon.bookingId) ?? []), addon.name])
+      }
+    }
 
     let sent = 0
     for (const { booking, sent: before } of rows) {
-      const fingerprint = fingerprintOf(booking, timeZone)
+      const event = eventOf(booking, extras.get(booking.id) ?? [], place)
+      const fingerprint = fingerprintOf(booking, event)
       // Unchanged, or cancelled before it was ever sent.
       if (before ? before.fingerprint === fingerprint : fingerprint === CANCELLED) continue
       if (sent >= GOOGLE_CALENDAR_RULES.maxChangesPerSync) break
@@ -162,7 +181,7 @@ async function syncConnection(connectionId: string) {
       if (fingerprint === CANCELLED) {
         await removeEvent(connection.id, calendarId, eventId)
       } else {
-        await putEvent(connection.id, calendarId, eventId, eventOf(booking, timeZone), !!before)
+        await putEvent(connection.id, calendarId, eventId, event, !!before)
       }
       const saved = { eventId, fingerprint, syncedAt: new Date().toISOString() }
       await db
