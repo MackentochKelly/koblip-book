@@ -66,6 +66,13 @@ const bookings: typeof en = {
     last7: "Últimos 7 días",
     topServices: "Servicios más pedidos",
     otherServices: "Todo lo demás",
+    returning: "Clientes que vuelven",
+    busiestDays: "Días más ocupados",
+    today: "Hoy",
+    tomorrow: "Mañana",
+    next7: "Próximos 7 días",
+    upcoming: "Próximas",
+    comingUp: "Lo que viene",
     noData: "Aún no hay reservas",
   },
   chart: {

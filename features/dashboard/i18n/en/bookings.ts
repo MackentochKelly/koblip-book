@@ -66,6 +66,13 @@ const bookings = {
     last7: "Last 7 days",
     topServices: "Top services",
     otherServices: "Everything else",
+    returning: "Returning customers",
+    busiestDays: "Busiest days",
+    today: "Today",
+    tomorrow: "Tomorrow",
+    next7: "Next 7 days",
+    upcoming: "Upcoming",
+    comingUp: "Coming up",
     noData: "No bookings yet",
   },
   chart: {

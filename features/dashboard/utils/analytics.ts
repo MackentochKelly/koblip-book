@@ -42,6 +42,25 @@ export function dashboardSummary(
         customer.firstBooking <= to
     ).length
 
+  // Busiest days over the 30 days: bookings per weekday, Monday first.
+  const weekdays = Array.from({ length: 7 }, () => 0)
+  for (const booking of kept) {
+    const sunday0 = new Date(`${booking.date}T00:00:00Z`).getUTCDay()
+    weekdays[(sunday0 + 6) % 7] += 1
+  }
+  // New over the 30 days: their first booking ever falls in it; everyone
+  // else who came is returning.
+  const from = addDaysTo(today, -29)
+  const visitors = new Set(kept.map((booking) => booking.customerKey))
+  const firstBooking = new Map(
+    customers.map((customer) => [customer.key, customer.firstBooking])
+  )
+  let newIn30 = 0
+  for (const key of visitors) {
+    const first = firstBooking.get(key)
+    if (first && first >= from) newIn30 += 1
+  }
+
   const perService = new Map<string, number>()
   for (const booking of kept) {
     perService.set(
@@ -71,7 +90,13 @@ export function dashboardSummary(
       ...ranked.slice(0, TOP_SERVICES),
       ...(others > 0 ? [{ name: null, count: others }] : []),
     ] as { name: string | null; count: number }[],
-    total30: kept.length,
+    last30: {
+      bookings: kept.length,
+      noShows: kept.filter((booking) => booking.status === "no_show").length,
+      newCustomers: newIn30,
+      returning: visitors.size - newIn30,
+    },
+    weekdays,
   }
 }
 

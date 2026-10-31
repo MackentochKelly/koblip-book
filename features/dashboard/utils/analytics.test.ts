@@ -32,7 +32,14 @@ test("splits the last 7 days from the 7 before and leaves cancelled out", () => 
     { name: "Cut", count: 3 },
     { name: "Beard", count: 2 },
   ])
-  expect(summary.total30).toBe(5)
+  expect(summary.last30).toEqual({
+    bookings: 5,
+    noShows: 1,
+    newCustomers: 0,
+    returning: 1,
+  })
+  // Saturdays: Oct 31, 24 and 10. Sundays: Oct 25 (cancelled left out), 18.
+  expect(summary.weekdays).toEqual([0, 0, 0, 0, 0, 3, 2])
 })
 
 test("services past the top five are grouped as one", () => {
