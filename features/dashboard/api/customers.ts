@@ -241,3 +241,34 @@ export async function getCustomerBookings(
     toOwnerBooking(row, business.timezone, addonsByBooking.get(row.id) ?? [])
   )
 }
+
+// When each of these customers first booked (any status), as "YYYY-MM-DD"
+// in the business's time zone: tells a new customer from a returning one.
+// Counted by the database over all their bookings, however old.
+export async function getFirstVisits(
+  businessId: string,
+  keys: string[]
+): Promise<Record<string, string>> {
+  const business = await ownedBusinessOrNotFound(businessId)
+  const unique = [...new Set(keys)]
+  if (unique.length === 0) return {}
+  const rows = await db
+    .select({
+      key: sql<string>`${bookings.customerKey}`,
+      firstStart: sql<string>`min(${bookings.startAt})`,
+    })
+    .from(bookings)
+    .where(
+      and(
+        eq(bookings.businessId, business.id),
+        inArray(bookings.customerKey, unique)
+      )
+    )
+    .groupBy(bookings.customerKey)
+  return Object.fromEntries(
+    rows.map((row) => [
+      row.key,
+      zonedDateTime(row.firstStart, business.timezone).date,
+    ])
+  )
+}

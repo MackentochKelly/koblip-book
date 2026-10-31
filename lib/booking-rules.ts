@@ -34,8 +34,6 @@ export const BOOKING_RULES = {
   // How many days ahead the owner's counts and Analytics chart cover: today
   // and the 13 after it (the chart's 14 days view).
   chartDays: 14,
-  // How many days back the Analytics page looks: today and the 29 before.
-  analyticsDays: 30,
 } as const
 
 export const PHONE_PATTERN = /^\+?[\d\s().-]{7,25}$/

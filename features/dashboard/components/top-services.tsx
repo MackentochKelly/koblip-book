@@ -20,12 +20,14 @@ const SHADES = [
   "bg-chart-5",
 ]
 
-// What people book most (last 30 days): one bar split by service, then each
-// service with its share. Past the top five, the rest show as one.
+// What people book most over the period: one bar split by service, then
+// each service with its share. Past the top five, the rest show as one.
 export function TopServices({
   services,
+  period,
 }: {
   services: { name: string | null; count: number }[]
+  period: string
 }) {
   const m = useOwnerMessages()
   const a = m.bookings.analytics
@@ -36,10 +38,10 @@ export function TopServices({
     name === null ? "bg-muted-foreground/30" : SHADES[index % SHADES.length]
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>{a.topServices}</CardTitle>
-        <CardDescription>{a.last30}</CardDescription>
+        <CardDescription>{period}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-6">
         {total === 0 ? (
@@ -50,12 +52,6 @@ export function TopServices({
           </Empty>
         ) : (
           <>
-            <div className="flex flex-col gap-1">
-              <span className="text-3xl font-semibold tracking-tight tabular-nums">
-                {number.format(total)}
-              </span>
-              <span className="text-muted-foreground">{a.bookings}</span>
-            </div>
             <div className="flex h-3 gap-1" aria-hidden>
               {services.map((service, index) => (
                 <div
