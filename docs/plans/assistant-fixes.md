@@ -25,6 +25,7 @@ file: [Plans](README.md).
 | A7 | Cancel finds any booking, and only upcoming ones | S | | Done (2026-10-31) |
 | A8 | Waiting cards survive a deploy | M | A1 | Done (2026-10-31) |
 | A9 | Chat bookings can include extras | M | A1 | Done (2026-10-31) |
+| A10 | Times, days and prices read and sound normal | M | | Done (2026-10-31) |
 
 ---
 
@@ -204,6 +205,25 @@ still works. A double tap runs once.
 required extra asks, an unknown extra asks.
 
 ---
+
+### A10 · Times, days and prices read and sound normal
+
+**Problem (owner, 2026-10-31):** answers showed "17:50", and the voice
+read a list like a script ("17:50 - Sofia - Classic Haircut"). The AI got
+raw values (24-hour times, YYYY-MM-DD days, prices in cents) and the
+Markdown rule beat the voice "no lists" rule.
+
+**Fix:**
+- Every lookup also gives ready-made words in the owner's language, like
+  the cards: `timeText` "5:50 PM", `dayText` "Friday, October 31",
+  `priceText` "€25.00" (and hours, stats, customers, free times). The raw
+  values stay for tool calls. The prompt says to use the Text words.
+- In voice, the rules now say they replace the Markdown rule: normal
+  sentences, no lists or dashes, never a 24-hour time.
+- Safety step before the voice (ElevenLabs normalization guide): list
+  dashes and dots become pauses, and any 24-hour time becomes a 12-hour one.
+
+**Files:** `app/api/assistant/tools.ts`, `features/assistant/utils/system-prompt.ts`, `features/assistant/utils/speak-client.ts`, `features/assistant/api/run-chat.ts` (+ tests).
 
 ## Decisions
 

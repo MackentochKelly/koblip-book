@@ -325,9 +325,10 @@ test("missing key yields unavailable", async () => {
 
 const { peekPendingAction } = await import("./pending-actions")
 // The stand-in store's own reset (see the mock above).
-const { resetPendingActionsForTests } = (await import(
-  "./pending-actions"
-)) as unknown as { resetPendingActionsForTests: () => void }
+const { resetPendingActionsForTests } =
+  (await import("./pending-actions")) as unknown as {
+    resetPendingActionsForTests: () => void
+  }
 
 function risky(describe: (args: unknown) => Promise<unknown>) {
   return {
@@ -433,6 +434,8 @@ test("a lookup's records come back as memory and spare the next lookup", async (
               service: "Cut",
               date: "2026-10-28",
               time: "10:00",
+              dayText: "Wednesday, October 28",
+              timeText: "10:00 AM",
               status: "confirmed",
             },
             { id: "k2", customer: "Leo", service: "Fade" },
@@ -449,7 +452,7 @@ test("a lookup's records come back as memory and spare the next lookup", async (
     {
       kind: "booking",
       id: "k1",
-      label: "Ana · Cut · 2026-10-28 10:00 · confirmed",
+      label: "Ana · Cut · Wednesday, October 28 10:00 AM · confirmed",
     },
     { kind: "booking", id: "k2", label: "Leo · Fade" },
   ])
@@ -485,7 +488,9 @@ test("a lookup's records come back as memory and spare the next lookup", async (
   expect(list).not.toHaveBeenCalled()
   expect(carded[0]).toMatchObject({ type: "confirm" })
   const notes = seen[0].messages.filter(
-    (m) => m.role === "developer" && String((m as { content?: unknown }).content).includes("k1")
+    (m) =>
+      m.role === "developer" &&
+      String((m as { content?: unknown }).content).includes("k1")
   )
   expect(notes).toHaveLength(1)
   // The note sits right after the answer it belongs to.
@@ -774,13 +779,20 @@ test("a check is only for its owner and business, and expires", async () => {
   const answer = await collect(
     runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
   )
-  const id = (answer.find((e) => (e as { type: string }).type === "check") as {
-    id: string
-  }).id
+  const id = (
+    answer.find((e) => (e as { type: string }).type === "check") as {
+      id: string
+    }
+  ).id
   expect(takeAnswerCheck(id, "someone-else", CONTEXT.businessId)).toBeNull()
   expect(takeAnswerCheck(id, CONTEXT.ownerId, "other-business")).toBeNull()
   expect(
-    takeAnswerCheck(id, CONTEXT.ownerId, CONTEXT.businessId, Date.now() + 121_000)
+    takeAnswerCheck(
+      id,
+      CONTEXT.ownerId,
+      CONTEXT.businessId,
+      Date.now() + 121_000
+    )
   ).toBeNull()
 })
 
@@ -906,7 +918,9 @@ test("a barbershop's 8 services all come as buttons, 49 come as none", async () 
       (e) => (e as { type: string }).type === "choices"
     )
     expect(choices).toEqual(
-      buttons ? { type: "choices", options: list.map((s) => s.name) } : undefined
+      buttons
+        ? { type: "choices", options: list.map((s) => s.name) }
+        : undefined
     )
   }
 })
@@ -1033,7 +1047,9 @@ test("voice uses minimal reasoning and its answer is checked after, with no butt
       "list_bookings"
     ),
   ]
-  const { answer, check } = await collectChecked(runChat(MESSAGES, voice, tools))
+  const { answer, check } = await collectChecked(
+    runChat(MESSAGES, voice, tools)
+  )
   for (const [body] of create.mock.calls.slice(0, 2))
     expect(body).toMatchObject({ reasoning_effort: "minimal" })
   // The answer ends before the check, which comes after.
@@ -1049,10 +1065,7 @@ test("voice uses minimal reasoning and its answer is checked after, with no butt
   ])
   // Passed: still no buttons in talking mode.
   scriptedClient(
-    [
-      [toolChunk(0, "a", "list_bookings", "{}")],
-      [textChunk("Ana or Leo?")],
-    ],
+    [[toolChunk(0, "a", "list_bookings", "{}")], [textChunk("Ana or Leo?")]],
     [judgeOk(["Ana", "Leo"])]
   )
   const passed = await collectChecked(runChat(MESSAGES, voice, tools))
@@ -1201,10 +1214,7 @@ test("free times come as a picker under the answer, never as buttons too", async
     { date: "2026-10-29", times: ["09:00", "09:15"] },
   ]
   scriptedClient(
-    [
-      [toolChunk(0, "call-A", "find_free_times", "{}")],
-      [textChunk("When?")],
-    ],
+    [[toolChunk(0, "call-A", "find_free_times", "{}")], [textChunk("When?")]],
     [judgeOk(["09:00", "09:15"])]
   )
   const { answer, check } = await collectChecked(

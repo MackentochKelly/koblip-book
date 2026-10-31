@@ -8,6 +8,23 @@ test("Markdown is stripped before speaking", () => {
   ).toBe("Done. You have 3 bookings today: Ana Luis")
 })
 
+test("list separators become pauses and 24-hour times 12-hour ones", () => {
+  expect(
+    speakableText(
+      "- **17:50** - **Sofia** - Classic Haircut\n- 19:15 · Stanley – Cut"
+    )
+  ).toBe("5:50 PM, Sofia, Classic Haircut 7:15 PM, Stanley, Cut")
+  expect(speakableText("De 09:00 a 00:30 y a las 12:00")).toBe(
+    "De 9:00 AM a 12:30 AM y a las 12:00"
+  )
+  // Already readable: left alone.
+  expect(speakableText("At 5:50 PM, or 10:30, or 5:50 p. m.")).toBe(
+    "At 5:50 PM, or 10:30, or 5:50 p. m."
+  )
+  // A word with a dash stays one word.
+  expect(speakableText("A walk-in at 3:15")).toBe("A walk-in at 3:15")
+})
+
 // A stand-in socket that records what the page sends.
 class FakeSocket {
   static OPEN = 1

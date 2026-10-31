@@ -491,7 +491,12 @@ async function checkBookingArgs(
     return {
       error:
         times.length > 0
-          ? t.errors.slotNotFree(times.slice(0, 12).join(", "))
+          ? t.errors.slotNotFree(
+              times
+                .slice(0, 12)
+                .map((time) => `${formatClock(time, t.locale)} (${time})`)
+                .join(", ")
+            )
           : t.errors.dayNotFree,
     }
   }
@@ -516,14 +521,45 @@ async function checkBookingArgs(
     name,
     phone,
     note,
-    price:
-      priceMinor === null
-        ? t.booking.noPrice
-        : priceMinor === 0
-          ? t.booking.free
-          : formatPrice(priceMinor, business.currency, t.locale),
+    price: priceText(t, priceMinor, business.currency),
     timeZone: business.timezone,
   }
+}
+
+// Ready-made words for times, days and prices, in the owner's language
+// and as the booking cards show them ("5:50 PM", "Friday, October 31",
+// "€25.00"). Results carry them next to the raw values, which stay for
+// tool calls, so answers never repeat "17:50" or cents and the voice
+// gets text it can read (ElevenLabs normalization guide:
+// https://elevenlabs.io/docs/best-practices/prompting/normalization).
+function priceText(
+  t: ServerMessages,
+  priceMinor: number | null,
+  currency: string
+): string {
+  return priceMinor === null
+    ? t.booking.noPrice
+    : priceMinor === 0
+      ? t.booking.free
+      : formatPrice(priceMinor, currency, t.locale)
+}
+
+function dayText(t: ServerMessages, date: string | null): string | null {
+  return date === null ? null : formatDay(date, t.locale)
+}
+
+function hoursText(
+  t: ServerMessages,
+  rows: { weekday: number; opensAt: string; closesAt: string }[]
+) {
+  return rows.map(({ weekday, opensAt, closesAt }) => ({
+    weekday,
+    opensAt,
+    closesAt,
+    weekdayText: formatWeekday(weekday, t.locale),
+    opensAtText: formatClock(opensAt, t.locale),
+    closesAtText: formatClock(closesAt, t.locale),
+  }))
 }
 
 // Checked arguments for update_service, shared by describe and execute.
@@ -659,16 +695,6 @@ export function buildAssistantTools(
       currency: business.currency,
     }
   }
-  // Price text like the booking card: localized money, or No price.
-  const describePrice = (
-    priceMinor: number | null,
-    currency: string
-  ): string =>
-    priceMinor === null
-      ? t.booking.noPrice
-      : priceMinor === 0
-        ? t.booking.free
-        : formatPrice(priceMinor, currency, t.locale)
   // Shared checks for set_service_team: describe and execute both use this.
   const checkServiceTeamArgs = async (
     args: unknown
@@ -1081,11 +1107,7 @@ export function buildAssistantTools(
           phone: business.phone,
           timezone: business.timezone,
           currency: business.currency,
-          hours: hours.map((h) => ({
-            weekday: h.weekday,
-            opensAt: h.opensAt,
-            closesAt: h.closesAt,
-          })),
+          hours: hoursText(t, hours),
           todayBookings: counts.today,
           upcomingBookings: counts.upcoming,
           about: business.description,
@@ -1112,7 +1134,7 @@ export function buildAssistantTools(
       },
       label: t.steps.services,
       run: async () => {
-        const [{ services }, teams, groups] = await Promise.all([
+        const [{ business, services }, teams, groups] = await Promise.all([
           getOwnerBusiness(businessId),
           getServiceTeams(businessId),
           getAddonGroups(businessId),
@@ -1122,6 +1144,7 @@ export function buildAssistantTools(
           name: s.name,
           durationMinutes: s.durationMinutes,
           priceMinor: s.priceMinor,
+          priceText: priceText(t, s.priceMinor, business.currency),
           description: s.description,
           hasPhoto: s.photoUrl !== null,
           teamMemberIds: teams[s.id] ?? [],
@@ -1147,7 +1170,10 @@ export function buildAssistantTools(
       },
       label: t.steps.addons,
       run: async () => {
-        const groups = await getAddonGroups(businessId)
+        const [groups, { business }] = await Promise.all([
+          getAddonGroups(businessId),
+          getOwnerBusiness(businessId),
+        ])
         const rows = groups.map((g) => ({
           id: g.id,
           name: g.name,
@@ -1160,6 +1186,7 @@ export function buildAssistantTools(
             name: o.name,
             description: o.description,
             priceMinor: o.priceMinor,
+            priceText: priceText(t, o.priceMinor, business.currency),
             durationMinutes: o.durationMinutes,
           })),
         }))
@@ -1197,13 +1224,10 @@ export function buildAssistantTools(
           id: m.id,
           name: m.name,
           hasPhoto: m.photoUrl !== null,
-          hours: memberHours
-            .filter((row) => row.teamMemberId === m.id)
-            .map(({ weekday, opensAt, closesAt }) => ({
-              weekday,
-              opensAt,
-              closesAt,
-            })),
+          hours: hoursText(
+            t,
+            memberHours.filter((row) => row.teamMemberId === m.id)
+          ),
           serviceIds: serviceIdsByMember.get(m.id) ?? [],
         }))
         const capped = rows.slice(0, 50)
@@ -1332,6 +1356,9 @@ export function buildAssistantTools(
           date: b.date,
           time: b.time,
           endTime: b.endTime,
+          dayText: formatDay(b.date, t.locale),
+          timeText: formatClock(b.time, t.locale),
+          endTimeText: formatClock(b.endTime, t.locale),
           when:
             b.endAt < now
               ? ("past" as const)
@@ -1346,17 +1373,21 @@ export function buildAssistantTools(
           durationMinutes: b.durationMinutes,
           priceMinor: b.priceMinor,
           currency: b.currency,
+          priceText: priceText(t, b.priceMinor, b.currency),
           source: b.source,
           note: b.note,
           addons: b.addons.map((a) => ({
             name: a.name,
             priceMinor: a.priceMinor,
+            priceText: priceText(t, a.priceMinor, b.currency),
             durationMinutes: a.durationMinutes,
           })),
         }))
         return {
           // The date a plain day stood for, so the answer can name it.
-          ...(a.day !== undefined ? { date: a.from } : {}),
+          ...(a.day !== undefined
+            ? { date: a.from, dayText: dayText(t, a.from as string) }
+            : {}),
           bookings: capped,
           total: filtered.length,
           truncated: filtered.length > capped.length,
@@ -1407,10 +1438,16 @@ export function buildAssistantTools(
               lastVisit: c.lastVisit,
               nextBooking: c.nextBooking,
               firstBooking: c.firstBooking,
+              lastVisitText: dayText(t, c.lastVisit),
+              nextBookingText: dayText(t, c.nextBooking),
+              firstBookingText: dayText(t, c.firstBooking),
               spentMinor: c.spentMinor,
+              spentText: priceText(t, c.spentMinor, c.currency),
               recent: recent.slice(0, 3).map((b) => ({
                 date: b.date,
                 time: b.time,
+                dayText: formatDay(b.date, t.locale),
+                timeText: formatClock(b.time, t.locale),
                 service: b.serviceName,
                 status: b.status,
               })),
@@ -1461,10 +1498,23 @@ export function buildAssistantTools(
           getOwnerBusiness(businessId),
         ])
         const now = new Date().toISOString()
+        const stats = bookingStats(rows, now, business.currency)
         return {
-          ...bookingStats(rows, now, business.currency),
+          ...stats,
+          earnedText: priceText(t, stats.earnedMinor, stats.currency),
+          expectedText: priceText(t, stats.expectedMinor, stats.currency),
+          byWeekday: stats.byWeekday.map((row) => ({
+            ...row,
+            weekdayText: formatWeekday(row.weekday, t.locale),
+          })),
+          byHour: stats.byHour.map((row) => ({
+            ...row,
+            hourText: formatClock(`${row.hour}:00`, t.locale),
+          })),
           from: a.from,
           to: a.to,
+          fromText: formatDay(a.from, t.locale),
+          toText: formatDay(a.to, t.locale),
         }
       },
     },
@@ -1550,8 +1600,12 @@ export function buildAssistantTools(
           firstBooking: c.firstBooking,
           lastVisit: c.lastVisit,
           nextBooking: c.nextBooking,
+          firstBookingText: dayText(t, c.firstBooking),
+          lastVisitText: dayText(t, c.lastVisit),
+          nextBookingText: dayText(t, c.nextBooking),
           spentMinor: c.spentMinor,
           currency: c.currency,
+          spentText: priceText(t, c.spentMinor, c.currency),
         }))
         return {
           customers: capped,
@@ -1674,7 +1728,7 @@ export function buildAssistantTools(
           }
           if (checked.priceMinor !== checked.current.priceMinor) {
             parts.push(
-              `${describePrice(checked.current.priceMinor, checked.currency)} → ${describePrice(checked.priceMinor, checked.currency)}`
+              `${priceText(t, checked.current.priceMinor, checked.currency)} → ${priceText(t, checked.priceMinor, checked.currency)}`
             )
           }
           if (checked.durationMinutes !== checked.current.durationMinutes) {
@@ -2633,7 +2687,11 @@ export function buildAssistantTools(
         return {
           service: servicePick.found.name,
           teamMember: teamMember?.name ?? null,
-          days: capped,
+          days: capped.map((day) => ({
+            ...day,
+            dayText: formatDay(day.date, t.locale),
+            timesText: day.times.map((time) => formatClock(time, t.locale)),
+          })),
           total: inRange.length,
           truncated: inRange.length > capped.length,
         }

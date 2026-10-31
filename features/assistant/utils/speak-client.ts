@@ -10,10 +10,29 @@ import strip from "strip-markdown"
 
 const markdown = remark().use(strip)
 
-// The talking-mode prompt asks for plain speech; this keeps any stray
-// Markdown (stars, links, lists) from being read out.
+// A 24-hour time with no AM or PM after it ("17:50", "09:00").
+const DAY_CLOCK =
+  /\b([01]\d|2[0-3]|\d):([0-5]\d)\b(?!\s*(?:[aApP]\.?\s?[mM]\b))/g
+
+// "17:50" → "5:50 PM". Times from 1 to 12 with no leading zero are left
+// as they are: they already read the way people say them.
+function twelveHour(match: string, hours: string, minutes: string): string {
+  const hour = Number(hours)
+  if (hour >= 1 && hour <= 12 && !hours.startsWith("0")) return match
+  return `${hour % 12 === 0 ? 12 : hour % 12}:${minutes} ${hour < 12 ? "AM" : "PM"}`
+}
+
+// The talking-mode prompt asks for plain speech; this is the safety net
+// in code that ElevenLabs suggests for text an LLM wrote
+// (https://elevenlabs.io/docs/best-practices/prompting/normalization):
+// stray Markdown (stars, links, lists) is stripped, separators like
+// " - " and " · " become a pause, and 24-hour times become 12-hour ones.
 export function speakableText(text: string): string {
-  return String(markdown.processSync(text)).replace(/\s+/g, " ").trim()
+  return String(markdown.processSync(text))
+    .replace(/\s+[-–—·•|]\s+/g, ", ")
+    .replace(DAY_CLOCK, twelveHour)
+    .replace(/\s+/g, " ")
+    .trim()
 }
 
 // The socket closes after 20 s without a message; this keeps it open while
