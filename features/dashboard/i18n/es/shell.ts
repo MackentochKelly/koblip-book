@@ -3,6 +3,7 @@ import type en from "../en/shell"
 const shell: typeof en = {
   nav: {
     home: "Inicio",
+    dashboard: "Panel",
     owner: "Propietario",
     bookings: "Reservas",
     customers: "Clientes",

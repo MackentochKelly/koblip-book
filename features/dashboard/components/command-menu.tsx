@@ -19,6 +19,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { PAGE_LANGUAGES } from "@/lib/page-language"
 import { useOwnerLanguage, useOwnerMessages } from "../i18n/provider"
 import { LANGUAGE_NAMES } from "../i18n/language"
@@ -74,6 +75,7 @@ function CommandMenu({
   const { setTheme } = useTheme()
   const [, setLanguage] = useOwnerLanguage()
   const signOut = useSignOut()
+  const phone = useIsMobile()
   const base = `/dashboard/${business.id}`
   const run = (task: () => void) => {
     onOpenChange(false)
@@ -104,7 +106,10 @@ function CommandMenu({
                   }
                 >
                   <item.icon />
-                  {m.nav[item.key]}
+                  {/* As in the menu: Dashboard on a computer. */}
+                  {item.key === "home" && !phone
+                    ? m.nav.dashboard
+                    : m.nav[item.key]}
                 </CommandItem>
               ))}
             </CommandGroup>

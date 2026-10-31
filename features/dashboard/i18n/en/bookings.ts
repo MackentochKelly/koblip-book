@@ -1,9 +1,20 @@
 // The owner's bookings and customers: lists, details, the add form.
 const bookings = {
   title: "Bookings",
-  summary: (today: number, upcoming: number) =>
-    `${today} today · ${upcoming} upcoming`,
+  stats: {
+    today: "Today",
+    tomorrow: "Tomorrow",
+    week: "Next 7 days",
+    upcoming: "Upcoming",
+  },
   add: "Add",
+  addBooking: "Add booking",
+  columns: {
+    time: "Time",
+    customer: "Customer",
+    service: "Service",
+    team: "Team",
+  },
   views: {
     upcoming: "Upcoming",
     past: "Past",

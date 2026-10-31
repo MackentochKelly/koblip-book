@@ -34,10 +34,26 @@ export function TopBar({
       menuLabel={menu ? m.menu : undefined}
       className={className}
     >
+      {/* Just the icon on a phone, so the business name has room. */}
+      {viewPage && (
+        <Button
+          variant="outline"
+          size="icon-sm"
+          aria-label={m.viewPage}
+          className="md:hidden"
+          nativeButton={false}
+          render={
+            <a href={`/b/${business.slug}`} target="_blank" rel="noreferrer" />
+          }
+        >
+          <ExternalLinkIcon />
+        </Button>
+      )}
       {viewPage && (
         <Button
           variant="outline"
           size="sm"
+          className="max-md:hidden"
           nativeButton={false}
           render={
             <a href={`/b/${business.slug}`} target="_blank" rel="noreferrer" />

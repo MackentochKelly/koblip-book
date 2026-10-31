@@ -97,7 +97,12 @@ export function AppSidebar({
               const href = base + item.path
               return {
                 href,
-                label: m.nav[item.key],
+                // Home is Dashboard on a computer; the phone's menu keeps
+                // Home, like its tab.
+                label:
+                  item.key === "home" && !isMobile
+                    ? m.nav.dashboard
+                    : m.nav[item.key],
                 icon: item.icon,
                 active: item.path
                   ? pathname.startsWith(href)
