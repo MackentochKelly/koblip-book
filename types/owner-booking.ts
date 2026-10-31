@@ -15,7 +15,18 @@ export interface OwnerBookingInput {
 export type OwnerBookingResult =
   | { status: "booked"; bookingId: string }
   | { status: "conflict"; reason: "closed" | "busy" }
-  | { status: "invalid"; field: "service" | "teamMember" | "addons" | "date" | "time" | "name" | "phone" | "note" }
+  | {
+      status: "invalid"
+      field:
+        | "service"
+        | "teamMember"
+        | "addons"
+        | "date"
+        | "time"
+        | "name"
+        | "phone"
+        | "note"
+    }
   | { status: "failed" }
 // The owner moves a booking that has not started to another day or time.
 export interface OwnerMoveInput {
@@ -41,3 +52,7 @@ export interface OwnerFreeTimesInput {
 export type OwnerFreeTimes = {
   days: { date: string; times: string[] }[] // "YYYY-MM-DD", "HH:mm", business time zone
 } | null
+export interface OwnerMoveFreeTimesInput {
+  businessId: string
+  bookingId: string
+}

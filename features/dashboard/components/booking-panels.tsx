@@ -23,6 +23,7 @@ import type {
   OwnerBookingResult,
   OwnerFreeTimes,
   OwnerFreeTimesInput,
+  OwnerMoveFreeTimesInput,
   OwnerMoveInput,
   OwnerMoveResult,
 } from "@/types/owner-booking"
@@ -41,6 +42,7 @@ export interface BookingPanelsProps {
   createBooking: (input: OwnerBookingInput) => Promise<OwnerBookingResult>
   findFreeTimes: (input: OwnerFreeTimesInput) => Promise<OwnerFreeTimes>
   moveBooking: (input: OwnerMoveInput) => Promise<OwnerMoveResult>
+  findMoveFreeTimes: (input: OwnerMoveFreeTimesInput) => Promise<OwnerFreeTimes>
 }
 
 // Everything a booking can open, shared by Home and the Bookings page: its
@@ -52,6 +54,7 @@ export function useBookingPanels({
   createBooking,
   findFreeTimes,
   moveBooking,
+  findMoveFreeTimes,
 }: BookingPanelsProps) {
   const [opened, setOpened] = useState<OwnerBooking | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -164,6 +167,7 @@ export function useBookingPanels({
         businessId={businessId}
         today={addOptions.today}
         moveBooking={moveBooking}
+        findFreeTimes={findMoveFreeTimes}
       />
 
       <AlertDialog

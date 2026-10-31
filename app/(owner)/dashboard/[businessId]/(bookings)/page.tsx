@@ -17,7 +17,10 @@ import { periodSummary } from "@/features/dashboard/utils/analytics"
 import { ConfirmDetailsCard } from "@/features/dashboard/components/confirm-details-card"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import { moveOwnerBooking } from "@/features/booking/api/move-owner-booking"
-import { findOwnerFreeTimes } from "@/features/booking/api/owner-free-times"
+import {
+  findMoveFreeTimes,
+  findOwnerFreeTimes,
+} from "@/features/booking/api/owner-free-times"
 import { LiveRefresh } from "@/components/live-refresh"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { addDaysTo, todayIn } from "@/lib/format-booking-time"
@@ -81,6 +84,7 @@ export default async function BookingsPage({ params }: Props) {
         }}
         createBooking={createOwnerBooking}
         findFreeTimes={findOwnerFreeTimes}
+        findMoveFreeTimes={findMoveFreeTimes}
         moveBooking={moveOwnerBooking}
       />
     </>

@@ -7,8 +7,9 @@ import { businesses } from "@/lib/db/schema"
 import type {
   OwnerFreeTimes,
   OwnerFreeTimesInput,
+  OwnerMoveFreeTimesInput,
 } from "@/types/owner-booking"
-import { getAvailability } from "./get-availability"
+import { getAvailability, getMoveAvailability } from "./get-availability"
 
 // The free times for a booking the owner adds, from the same rules as the
 // booking page (opening and team hours, bookings already made, the
@@ -37,4 +38,19 @@ export async function findOwnerFreeTimes(
     input.teamMemberId,
     input.addonIds
   )
+}
+
+// The free times to move a booking to: the same person and length, its own
+// time left free. Only the business's owner may ask.
+export async function findMoveFreeTimes(
+  input: OwnerMoveFreeTimesInput
+): Promise<OwnerFreeTimes> {
+  const session = await requireOwner()
+  if (
+    typeof input.businessId !== "string" ||
+    typeof input.bookingId !== "string"
+  ) {
+    return null
+  }
+  return getMoveAvailability(input.businessId, session.userId, input.bookingId)
 }

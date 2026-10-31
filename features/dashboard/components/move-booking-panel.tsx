@@ -18,20 +18,33 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { addDaysTo } from "@/lib/format-booking-time"
-import type { OwnerMoveInput, OwnerMoveResult } from "@/types/owner-booking"
+import type {
+  OwnerFreeTimes,
+  OwnerMoveFreeTimesInput,
+  OwnerMoveInput,
+  OwnerMoveResult,
+} from "@/types/owner-booking"
 import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
+import { BookingWhen, firstFreeDay, useFreeTimes } from "./booking-when"
 
 const FORM = "move-booking-form"
 
 type InvalidField = Extract<OwnerMoveResult, { status: "invalid" }>["field"]
 
 // The owner moves a booking to another day or time, with the same person
-// and length. A closed or taken time asks once, then can be moved anyway.
+// and length. It offers the free times first, as Add booking does; Other
+// time opens any day and time. A closed or taken time asks once, then can
+// be moved anyway.
 export function MoveBookingPanel({
   booking,
   open,
@@ -40,6 +53,7 @@ export function MoveBookingPanel({
   businessId,
   today,
   moveBooking,
+  findFreeTimes,
 }: {
   booking: OwnerBooking | null
   open: boolean
@@ -48,6 +62,7 @@ export function MoveBookingPanel({
   businessId: string
   today: string
   moveBooking: (input: OwnerMoveInput) => Promise<OwnerMoveResult>
+  findFreeTimes: (input: OwnerMoveFreeTimesInput) => Promise<OwnerFreeTimes>
 }) {
   const router = useRouter()
   const m = useOwnerMessages()
@@ -102,6 +117,9 @@ export function MoveBookingPanel({
             today={today}
             invalid={invalid}
             onInvalid={setInvalid}
+            loadFreeTimes={() =>
+              findFreeTimes({ businessId, bookingId: booking.id })
+            }
             onSubmit={(date, time) =>
               send({
                 businessId,
@@ -151,18 +169,34 @@ function MoveForm({
   today,
   invalid,
   onInvalid,
+  loadFreeTimes,
   onSubmit,
 }: {
   booking: OwnerBooking
   today: string
   invalid: InvalidField | null
   onInvalid: (field: InvalidField | null) => void
+  loadFreeTimes: () => Promise<OwnerFreeTimes>
   onSubmit: (date: string, time: string) => void
 }) {
   const m = useOwnerMessages()
   const form = m.bookings.form
   const [date, setDate] = useState(booking.date)
   const [time, setTime] = useState(booking.time)
+  // Other time (`anyTime`) shows the plain day and time fields instead.
+  const [anyTime, setAnyTime] = useState(false)
+  const free = useFreeTimes(booking.id, loadFreeTimes, (found) => {
+    // Stay on the booking's own day when it has free times; else start on
+    // the first day that does.
+    const onDay = found?.days.some(
+      (day) => day.date === booking.date && day.times.length > 0
+    )
+    const first = firstFreeDay(found)
+    if (!onDay && first) {
+      setDate(first)
+      setTime("")
+    }
+  })
   const error = (field: InvalidField) => invalid === field || undefined
 
   return (
@@ -178,34 +212,52 @@ function MoveForm({
       }}
     >
       <FieldGroup>
-        <div className="grid grid-cols-2 gap-4">
-          <Field data-invalid={error("date")}>
-            <FieldLabel htmlFor="move-date">{form.day}</FieldLabel>
-            <DatePicker
-              id="move-date"
-              value={date}
-              min={today}
-              max={addDaysTo(today, BOOKING_RULES.ownerDaysAhead)}
-              onChange={setDate}
-              locale={m.locale}
-              invalid={error("date")}
-            />
-            {invalid === "date" && <FieldError>{form.pickDay}</FieldError>}
-          </Field>
-          <Field data-invalid={error("time")}>
-            <FieldLabel htmlFor="move-time">{form.time}</FieldLabel>
-            <TimeInput
-              id="move-time"
-              step={300}
-              value={time}
-              onChange={(event) => setTime(event.target.value)}
-              aria-invalid={error("time")}
-            />
-            {invalid === "time" && (
-              <FieldError>{m.bookings.move.later}</FieldError>
-            )}
-          </Field>
-        </div>
+        <BookingWhen
+          free={free}
+          anyTime={anyTime}
+          onAnyTimeChange={setAnyTime}
+          date={date}
+          onDateChange={setDate}
+          time={time}
+          onTimeChange={setTime}
+          today={today}
+          error={
+            invalid === "date" || (invalid === "time" && !time)
+              ? form.pickTime
+              : invalid === "time"
+                ? m.bookings.move.later
+                : null
+          }
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <Field data-invalid={error("date")}>
+              <FieldLabel htmlFor="move-date">{form.day}</FieldLabel>
+              <DatePicker
+                id="move-date"
+                value={date}
+                min={today}
+                max={addDaysTo(today, BOOKING_RULES.ownerDaysAhead)}
+                onChange={setDate}
+                locale={m.locale}
+                invalid={error("date")}
+              />
+              {invalid === "date" && <FieldError>{form.pickDay}</FieldError>}
+            </Field>
+            <Field data-invalid={error("time")}>
+              <FieldLabel htmlFor="move-time">{form.time}</FieldLabel>
+              <TimeInput
+                id="move-time"
+                step={300}
+                value={time}
+                onChange={(event) => setTime(event.target.value)}
+                aria-invalid={error("time")}
+              />
+              {invalid === "time" && (
+                <FieldError>{m.bookings.move.later}</FieldError>
+              )}
+            </Field>
+          </div>
+        </BookingWhen>
       </FieldGroup>
     </form>
   )

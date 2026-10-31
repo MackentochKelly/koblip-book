@@ -1,13 +1,12 @@
 "use client"
 
-import { useEffect, useEffectEvent, useState, useTransition } from "react"
+import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { DatePicker } from "@/components/date-picker"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { TimeInput } from "@/components/time-input"
-import { TimePicker } from "@/components/time-picker"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +28,6 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -50,6 +48,7 @@ import type {
 } from "@/types/owner-booking"
 import { noAutofill } from "@/lib/no-autofill"
 import { useOwnerMessages } from "../i18n/provider"
+import { BookingWhen, firstFreeDay, useFreeTimes } from "./booking-when"
 
 const FORM = "add-booking-form"
 const ANYONE = "any"
@@ -207,41 +206,19 @@ function BookingForm({
   const [note, setNote] = useState("")
   const [whatsappOptIn, setWhatsappOptIn] = useState(false)
   const [addonIds, setAddonIds] = useState<string[]>([])
-  // The free times for what is picked; undefined while they load. Other
-  // time (`anyTime`) shows the plain day and time fields instead.
-  const [free, setFree] = useState<OwnerFreeTimes | undefined>(undefined)
+  // Other time (`anyTime`) shows the plain day and time fields instead.
   const [anyTime, setAnyTime] = useState(false)
   const teamMemberId = memberId === ANYONE ? null : memberId
-  const addonKey = addonIds.join(",")
-  // The page hands down a new copy of the action when it refreshes; reading
-  // it here keeps the times from loading again for that alone.
-  const loadFreeTimes = useEffectEvent((input: OwnerFreeTimesInput) =>
-    findFreeTimes(input)
-  )
-  useEffect(() => {
-    let current = true
-    loadFreeTimes({
-      businessId,
-      serviceId,
-      teamMemberId,
-      addonIds: addonKey ? addonKey.split(",") : [],
-    })
-      .catch(() => null)
-      .then((found) => {
-        if (!current) return
-        setFree(found)
-        // Start on the first day with a free time; the old time may be gone.
-        const first = found?.days.find((day) => day.times.length > 0)
-        if (first) setDate(first.date)
-        setTime("")
-      })
-    return () => {
-      current = false
-      setFree(undefined)
+  const free = useFreeTimes(
+    [serviceId, teamMemberId, ...addonIds].join(","),
+    () => findFreeTimes({ businessId, serviceId, teamMemberId, addonIds }),
+    (found) => {
+      // Start on the first day with a free time; the old time may be gone.
+      const first = firstFreeDay(found)
+      if (first) setDate(first)
+      setTime("")
     }
-  }, [businessId, serviceId, teamMemberId, addonKey])
-  const hasFree = !!free?.days.some((day) => day.times.length > 0)
-  const showFree = !anyTime && hasFree
+  )
   const groups = options.addonGroups.filter((group) =>
     group.serviceIds.includes(serviceId)
   )
@@ -388,90 +365,44 @@ function BookingForm({
           )
         })}
         {invalid === "addons" && <FieldError>{t.checkExtras}</FieldError>}
-        {free === undefined && !anyTime ? (
-          <Field>
-            <FieldLabel>{t.when}</FieldLabel>
-            <Skeleton className="h-40 w-full rounded-2xl" />
-          </Field>
-        ) : showFree && free ? (
-          <FieldSet
-            className="min-w-0"
-            data-invalid={error("time") ?? error("date")}
-          >
-            <FieldLegend variant="label">{t.when}</FieldLegend>
-            <TimePicker
-              days={free.days}
-              date={date}
-              onDateChange={(next) => {
-                setDate(next)
-                setTime("")
-              }}
-              time={time || null}
-              onTimeChange={setTime}
-              today={options.today}
-              locale={locale}
-              labels={t.picker}
-            />
-            {(invalid === "time" || invalid === "date") && (
-              <FieldError>{t.pickTime}</FieldError>
-            )}
-            <Button
-              type="button"
-              variant="link"
-              className="w-fit px-0"
-              onClick={() => setAnyTime(true)}
-            >
-              {t.otherTime}
-            </Button>
-          </FieldSet>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 gap-4">
-              <Field data-invalid={error("date")}>
-                <FieldLabel htmlFor="add-date">{t.day}</FieldLabel>
-                <DatePicker
-                  id="add-date"
-                  value={date}
-                  min={addDaysTo(options.today, -BOOKING_RULES.ownerDaysBack)}
-                  max={addDaysTo(options.today, BOOKING_RULES.ownerDaysAhead)}
-                  onChange={setDate}
-                  locale={locale}
-                  invalid={error("date")}
-                />
-                {invalid === "date" && <FieldError>{t.pickDay}</FieldError>}
-              </Field>
-              <Field data-invalid={error("time")}>
-                <FieldLabel htmlFor="add-time">{t.time}</FieldLabel>
-                <TimeInput
-                  id="add-time"
-                  step={300}
-                  value={time}
-                  onChange={(event) => setTime(event.target.value)}
-                  aria-invalid={error("time")}
-                />
-                {invalid === "time" && <FieldError>{t.pickTime}</FieldError>}
-              </Field>
-            </div>
-            {hasFree && (
-              <Button
-                type="button"
-                variant="link"
-                className="w-fit px-0"
-                onClick={() => {
-                  setAnyTime(false)
-                  setTime("")
-                  const first = free?.days.find((day) => day.times.length > 0)
-                  const isFree = free?.days.some(
-                    (day) => day.date === date && day.times.length > 0
-                  )
-                  if (first && !isFree) setDate(first.date)
-                }}
-              >
-                {t.freeTimes}
-              </Button>
-            )}
-          </>
-        )}
+        <BookingWhen
+          free={free}
+          anyTime={anyTime}
+          onAnyTimeChange={setAnyTime}
+          date={date}
+          onDateChange={setDate}
+          time={time}
+          onTimeChange={setTime}
+          today={options.today}
+          error={invalid === "time" || invalid === "date" ? t.pickTime : null}
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <Field data-invalid={error("date")}>
+              <FieldLabel htmlFor="add-date">{t.day}</FieldLabel>
+              <DatePicker
+                id="add-date"
+                value={date}
+                min={addDaysTo(options.today, -BOOKING_RULES.ownerDaysBack)}
+                max={addDaysTo(options.today, BOOKING_RULES.ownerDaysAhead)}
+                onChange={setDate}
+                locale={locale}
+                invalid={error("date")}
+              />
+              {invalid === "date" && <FieldError>{t.pickDay}</FieldError>}
+            </Field>
+            <Field data-invalid={error("time")}>
+              <FieldLabel htmlFor="add-time">{t.time}</FieldLabel>
+              <TimeInput
+                id="add-time"
+                step={300}
+                value={time}
+                onChange={(event) => setTime(event.target.value)}
+                aria-invalid={error("time")}
+              />
+              {invalid === "time" && <FieldError>{t.pickTime}</FieldError>}
+            </Field>
+          </div>
+        </BookingWhen>
         <Field data-invalid={error("name")}>
           <FieldLabel htmlFor="add-name">{t.customer}</FieldLabel>
           <Input

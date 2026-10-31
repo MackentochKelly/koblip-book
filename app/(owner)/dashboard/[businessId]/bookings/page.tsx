@@ -2,7 +2,10 @@ import type { Metadata } from "next"
 import { LiveRefresh } from "@/components/live-refresh"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import { moveOwnerBooking } from "@/features/booking/api/move-owner-booking"
-import { findOwnerFreeTimes } from "@/features/booking/api/owner-free-times"
+import {
+  findMoveFreeTimes,
+  findOwnerFreeTimes,
+} from "@/features/booking/api/owner-free-times"
 import { getAddonGroups } from "@/features/dashboard/api/addon-queries"
 import {
   getBookingsBetween,
@@ -68,6 +71,7 @@ export default async function AllBookingsPage({
         }}
         createBooking={createOwnerBooking}
         findFreeTimes={findOwnerFreeTimes}
+        findMoveFreeTimes={findMoveFreeTimes}
         moveBooking={moveOwnerBooking}
       />
     </>
