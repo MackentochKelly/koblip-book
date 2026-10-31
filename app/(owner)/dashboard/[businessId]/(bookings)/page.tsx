@@ -53,6 +53,7 @@ export default async function BookingsPage({ params }: Props) {
         businessId={businessId}
         upcoming={upcoming}
         past={past}
+        now={new Date().toISOString()}
         summary={periodSummary(lastDays, firstVisits, today, 7)}
         currency={business.currency}
         addOptions={{

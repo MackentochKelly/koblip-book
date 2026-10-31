@@ -11,7 +11,6 @@ import {
 import { FloatingActionButton } from "@/components/floating-action-button"
 import { ViewTabs } from "@/components/view-tabs"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import {
   Empty,
   EmptyContent,
@@ -19,29 +18,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemTitle,
-} from "@/components/ui/item"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import type { PeriodSummary } from "../utils/analytics"
 import { presetRange } from "../utils/booking-range"
 import { type BookingPanelsProps, useBookingPanels } from "./booking-panels"
-import { BookingStatusBadge } from "./booking-status-badge"
+import { BookingList } from "./booking-list"
 import { PeriodStats } from "./period-stats"
 
 type View = "upcoming" | "past"
@@ -50,17 +32,20 @@ type View = "upcoming" | "past"
 const HOME_LIMIT = 8
 
 // The home page: the last 7 days' numbers (they open Analytics), then the
-// next few bookings by day (the last few one tab away), and View all for
-// the Bookings page. Each opens its details, as on the Bookings page.
+// next few bookings (the last few one tab away) in the Bookings page's list,
+// and View all for the rest.
 export function BookingsView({
   upcoming,
   past,
+  now,
   summary,
   currency,
   ...panelProps
 }: BookingPanelsProps & {
   upcoming: OwnerBooking[]
   past: OwnerBooking[]
+  // ISO time the page was loaded: what is upcoming and what can be done.
+  now: string
   summary: PeriodSummary
   currency: string
 }) {
@@ -74,7 +59,6 @@ export function BookingsView({
     { id: "past" as const, label: t.views.past },
   ]
   const list = (view === "upcoming" ? upcoming : past).slice(0, HOME_LIMIT)
-  const days = groupByDay(list)
   // The table's Team column, only for a business with a team.
   const hasTeam = addOptions.team.length > 0
   // Past opens the Bookings page on the last 3 months; upcoming on its
@@ -117,7 +101,7 @@ export function BookingsView({
           ariaLabel={t.title}
           listClassName="w-full md:w-fit"
         />
-        {days.length === 0 ? (
+        {list.length === 0 ? (
           <Empty className="border">
             <EmptyHeader>
               <EmptyMedia variant="icon">
@@ -138,112 +122,15 @@ export function BookingsView({
           </Empty>
         ) : (
           <>
-            {/* A phone lists each day's bookings. */}
-            <div className="flex flex-col gap-6 md:hidden">
-              {days.map(([date, bookings]) => (
-                <section
-                  key={date}
-                  className="flex flex-col gap-3"
-                  aria-label={formatDay(date, m.locale)}
-                >
-                  <h2 className="text-sm font-medium text-muted-foreground">
-                    {formatDay(date, m.locale)}
-                  </h2>
-                  <ItemGroup className="gap-3">
-                    {bookings.map((booking) => (
-                      <Item
-                        key={booking.id}
-                        variant="outline"
-                        render={
-                          <button
-                            type="button"
-                            onClick={() => panels.open(booking, Date.now())}
-                          />
-                        }
-                        className="text-left"
-                      >
-                        <ItemContent>
-                          <ItemTitle>
-                            {formatClock(booking.time, m.locale)} –{" "}
-                            {formatClock(booking.endTime, m.locale)}
-                            <BookingStatusBadge status={booking.status} />
-                          </ItemTitle>
-                          <ItemDescription>
-                            {booking.customerName} · {booking.serviceName}
-                            {booking.teamMemberName &&
-                              ` · ${booking.teamMemberName}`}
-                          </ItemDescription>
-                        </ItemContent>
-                        <ItemActions>
-                          <ChevronRightIcon />
-                        </ItemActions>
-                      </Item>
-                    ))}
-                  </ItemGroup>
-                </section>
-              ))}
-            </div>
-            {/* A computer shows one table, each day a heading row, so the
-                  columns line up from day to day. */}
-            <Card className="py-0 max-md:hidden">
-              <Table className="[&_tr>*:first-child]:pl-4 [&_tr>*:last-child]:pr-4">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t.columns.time}</TableHead>
-                    <TableHead>{t.columns.customer}</TableHead>
-                    <TableHead>{t.columns.service}</TableHead>
-                    {hasTeam && <TableHead>{t.columns.team}</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                {days.map(([date, bookings]) => (
-                  <TableBody key={date}>
-                    <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead
-                        scope="colgroup"
-                        colSpan={hasTeam ? 4 : 3}
-                        className="h-8 text-xs text-muted-foreground"
-                      >
-                        {formatDay(date, m.locale)}
-                      </TableHead>
-                    </TableRow>
-                    {bookings.map((booking) => (
-                      // The whole row opens the booking for a mouse; the
-                      // customer's name is its button for the keyboard.
-                      <TableRow
-                        key={booking.id}
-                        className="cursor-pointer"
-                        onClick={() => panels.open(booking, Date.now())}
-                      >
-                        {/* The status sits by the time, as on a phone. */}
-                        <TableCell className="tabular-nums">
-                          <span className="flex items-center gap-2">
-                            {formatClock(booking.time, m.locale)} –{" "}
-                            {formatClock(booking.endTime, m.locale)}
-                            <BookingStatusBadge status={booking.status} />
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="link"
-                            className="h-auto p-0 text-foreground"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              panels.open(booking, Date.now())
-                            }}
-                          >
-                            {booking.customerName}
-                          </Button>
-                        </TableCell>
-                        <TableCell>{booking.serviceName}</TableCell>
-                        {hasTeam && (
-                          <TableCell>{booking.teamMemberName}</TableCell>
-                        )}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                ))}
-              </Table>
-            </Card>
+            <BookingList
+              // A new list (the other tab) starts sorted afresh.
+              key={view}
+              bookings={list}
+              now={now}
+              hasTeam={hasTeam}
+              panels={panels}
+              newestFirst={view === "past"}
+            />
             <Button
               variant="outline"
               className="self-center max-md:w-full"
@@ -268,14 +155,4 @@ export function BookingsView({
       {panels.panels}
     </div>
   )
-}
-
-function groupByDay(bookings: OwnerBooking[]): Array<[string, OwnerBooking[]]> {
-  const days = new Map<string, OwnerBooking[]>()
-  for (const booking of bookings) {
-    const day = days.get(booking.date) ?? []
-    day.push(booking)
-    days.set(booking.date, day)
-  }
-  return [...days]
 }
