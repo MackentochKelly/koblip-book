@@ -5,6 +5,8 @@ export type GoogleCalendarConnection = {
   googleEmail: string
   needsReconnect: boolean
   syncFailed: boolean
+  // When it last synced (ISO), shown next to Sync now (G9).
+  lastSyncAt: string | null
   // The team member the owner is: their Google busy times block only them (G3).
   busyTeamMemberId: string | null
 }

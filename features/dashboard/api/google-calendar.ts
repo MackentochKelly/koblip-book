@@ -21,6 +21,7 @@ export async function googleCalendarFor(
       googleEmail: googleCalendarConnections.googleEmail,
       needsReconnect: googleCalendarConnections.needsReconnect,
       lastError: googleCalendarConnections.lastError,
+      lastSyncAt: googleCalendarConnections.lastSyncAt,
       busyTeamMemberId: googleCalendarConnections.busyTeamMemberId,
     })
     .from(googleCalendarConnections)
@@ -31,6 +32,7 @@ export async function googleCalendarFor(
     googleEmail: row.googleEmail,
     needsReconnect: row.needsReconnect,
     syncFailed: !!row.lastError,
+    lastSyncAt: row.lastSyncAt,
     busyTeamMemberId: row.busyTeamMemberId,
   }
 }

@@ -22,6 +22,9 @@ export const GOOGLE_CALENDAR_RULES = {
   keepPastHours: 24,
   // A team member's link to connect their calendar works this long (G5).
   inviteDays: 7,
+  // Sync now (G9) asks Google again only when the last sync and busy read
+  // are older than this, so tapping it again and again costs nothing.
+  syncNowSeconds: 10,
   // The calendar Book makes in each Google account.
   calendarName: "Koblip Book",
 } as const

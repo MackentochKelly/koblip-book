@@ -28,7 +28,7 @@ const {
   readGoogleCalendarAttempt,
   startGoogleCalendarConnect,
 } = await import("@/lib/google-calendar")
-const { eventIdOf, syncGoogleCalendar } = await import("@/lib/google-calendar-sync")
+const { eventIdOf, syncGoogleCalendar, syncGoogleCalendarNow } = await import("@/lib/google-calendar-sync")
 const { googleCalendarFor } = await import("./google-calendar")
 const { getGoogleCalendarChoices, setGoogleBusyCalendars } = await import("./google-calendar-actions")
 const { createGoogleInvite, googleInviteReady, markGoogleInviteUsed, readGoogleInvite } = await import(
@@ -270,6 +270,7 @@ test("connecting saves the account with sealed tokens", async () => {
   await expect(googleCalendarFor("biz")).resolves.toEqual({
     googleEmail: "owner@gmail.com",
     needsReconnect: false,
+    lastSyncAt: null,
     syncFailed: false,
     busyTeamMemberId: null,
   })
@@ -619,4 +620,14 @@ test("an event takes its service's colour, and a changed colour updates it", asy
   await syncGoogleCalendar(connectionId!)
   expect(googleEvents().get(eventIdOf("b1"))?.colorId).toBeUndefined()
   await db.delete(services)
+})
+
+test("Sync now reads busy times again even when they aren't due", async () => {
+  const { connectionId } = await connect()
+  await syncGoogleCalendar(connectionId!)
+  google.busy = [busyNow()]
+  await syncGoogleCalendar(connectionId!)
+  await expect(googleBusyTimes("biz", ...range())).resolves.toEqual([])
+  await syncGoogleCalendarNow(connectionId!)
+  await expect(googleBusyTimes("biz", ...range())).resolves.toHaveLength(1)
 })

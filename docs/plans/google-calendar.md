@@ -53,7 +53,7 @@ the others, busy times are simply off.
 | G6 | Event details: customer name, phone, WhatsApp link, service, extras, team member, note, price, address, link to the booking's day (owner only) | G2 | Done (2026-10-31) |
 | G7 | Colour by service: the owner picks one of Google's event colours on the service (shown once Google Calendar is connected); its events take it | G2 | Done (2026-10-31) |
 | G8 | Customer gets a calendar invite | G2 | Decision: bookings have no customer email today |
-| G9 | Sync now button | G2 | To do |
+| G9 | Sync now button in the Manage panel, with when it last synced: sends every change and reads busy times again | G2 | Done (2026-10-31) |
 | G10 | Disconnect: keep or remove the Koblip events | G1 | To do |
 | G11 | Admin screen: every connection, last sync, errors | G2 | To do |
 | G12 | Text and steps for Google's app check | G4 | To do |

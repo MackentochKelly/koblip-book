@@ -110,7 +110,8 @@ async function removeEvent(connectionId: string, calendarId: string, eventId: st
   }
 }
 
-async function syncConnection(connectionId: string) {
+// busy "now" reads the busy times whether or not they are due (Sync now).
+async function syncConnection(connectionId: string, busy: "when_due" | "now" = "when_due") {
   const [row] = await db
     .select({
       connection: googleCalendarConnections,
@@ -203,7 +204,11 @@ async function syncConnection(connectionId: string) {
     const every = pushed
       ? GOOGLE_CALENDAR_RULES.busySafetyMinutes * 60_000
       : GOOGLE_CALENDAR_RULES.busyWithoutPushSeconds * 1000
-    if (!connection.busyCheckedAt || Date.parse(connection.busyCheckedAt) + every <= Date.now()) {
+    if (
+      busy === "now" ||
+      !connection.busyCheckedAt ||
+      Date.parse(connection.busyCheckedAt) + every <= Date.now()
+    ) {
       await refreshGoogleBusy(connection.id)
     }
   } catch (error) {
@@ -232,6 +237,11 @@ async function syncConnection(connectionId: string) {
 // Syncs one connection, never two syncs of it at once.
 export function syncGoogleCalendar(connectionId: string) {
   return runInTurn(googleTurnKey(connectionId), () => syncConnection(connectionId))
+}
+
+// Sync now (G9): sends every change and reads the busy times again, now.
+export function syncGoogleCalendarNow(connectionId: string) {
+  return runInTurn(googleTurnKey(connectionId), () => syncConnection(connectionId, "now"))
 }
 
 // Connections waiting for a sync: many changes at once make one sync.

@@ -18,10 +18,13 @@ import {
 } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Spinner } from "@/components/ui/spinner"
+import { useNow } from "@/hooks/use-now"
+import { formatAgo } from "@/lib/format-ago"
 import {
   getGoogleCalendarChoices,
   setGoogleBusyCalendars,
   setGoogleCalendarBusyMember,
+  syncGoogleCalendarNowFor,
 } from "../api/google-calendar-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { GoogleCalendarChoice, GoogleCalendarConnection } from "../types/google-calendar"
@@ -30,8 +33,9 @@ import type { GoogleCalendarChoice, GoogleCalendarConnection } from "../types/go
 const NOBODY = ""
 
 // The business's Google Calendar, opened from Manage on Integrations: which
-// account, which of its calendars block bookings (G4), whose bookings its
-// busy times block (G3), and Disconnect.
+// account, when it last synced and Sync now (G9), which of its calendars
+// block bookings (G4), whose bookings its busy times block (G3), and
+// Disconnect.
 export function GoogleCalendarPanel({
   open,
   onClose,
@@ -47,7 +51,8 @@ export function GoogleCalendarPanel({
   team: { id: string; name: string }[]
   onDisconnect: () => void
 }) {
-  const t = useOwnerMessages().integrations.googleCalendar
+  const m = useOwnerMessages()
+  const t = m.integrations.googleCalendar
   const router = useRouter()
   const [busyMember, setBusyMember] = useState(connection.busyTeamMemberId ?? NOBODY)
   const [saving, startSaving] = useTransition()
@@ -62,6 +67,23 @@ export function GoogleCalendarPanel({
         toast.error(t.saveFailed)
         return
       }
+      router.refresh()
+    })
+  }
+
+  // This panel's own Sync now answer, until the page has the newer one.
+  const [synced, setSynced] = useState<string | null>(null)
+  const lastSyncAt =
+    synced && (!connection.lastSyncAt || synced > connection.lastSyncAt) ? synced : connection.lastSyncAt
+  const now = useNow()
+  const [syncing, startSyncing] = useTransition()
+
+  function syncNow() {
+    startSyncing(async () => {
+      const result = await syncGoogleCalendarNowFor(businessId).catch(() => null)
+      if (result?.ok) setSynced(result.lastSyncAt)
+      if (!result?.ok || result.failed) toast.error(t.syncNowFailed)
+      // The Integrations row shows the same state.
       router.refresh()
     })
   }
@@ -113,6 +135,17 @@ export function GoogleCalendarPanel({
     >
       <div className="flex flex-col gap-6">
         <p className="text-sm text-muted-foreground">{t.account(connection.googleEmail)}</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            {!lastSyncAt ? t.notSynced : now !== null &&
+                // Never "in 5 seconds" when the clock ticked before the sync.
+                t.synced(formatAgo(lastSyncAt, Math.max(now, Date.parse(lastSyncAt)), m.locale))}
+          </p>
+          <Button variant="outline" size="sm" onClick={syncNow} disabled={syncing}>
+            {syncing && <Spinner data-icon="inline-start" />}
+            {t.syncNow}
+          </Button>
+        </div>
         <FieldSet disabled={saving}>
           <FieldLegend variant="label">{t.calendarsTitle}</FieldLegend>
           {calendars === "loading" ? (

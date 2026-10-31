@@ -69,6 +69,10 @@ const integrations: typeof en = {
     busyNobody: "A nadie",
     busyNobodyHint: "No recibes reservas",
     saveFailed: "No se pudo guardar. Inténtalo de nuevo.",
+    syncNow: "Sincronizar ahora",
+    synced: (ago: string) => `Sincronizado ${ago}`,
+    notSynced: "Aún sin sincronizar",
+    syncNowFailed: "No se pudo sincronizar. Inténtalo de nuevo.",
   },
   appleCalendar: {
     name: "Apple Calendar",

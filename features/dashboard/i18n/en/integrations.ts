@@ -68,6 +68,10 @@ const integrations = {
     busyNobody: "Nobody",
     busyNobodyHint: "You don't take bookings",
     saveFailed: "Couldn't save. Try again.",
+    syncNow: "Sync now",
+    synced: (ago: string) => `Synced ${ago}`,
+    notSynced: "Not synced yet",
+    syncNowFailed: "Couldn't sync. Try again.",
   },
   appleCalendar: {
     name: "Apple Calendar",

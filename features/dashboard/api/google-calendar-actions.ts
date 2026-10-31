@@ -12,6 +12,7 @@ import { createGoogleInvite } from "@/lib/google-calendar-invites"
 import { busyCalendarsOf, listGoogleCalendars } from "@/lib/google-calendar-busy"
 import { requestGoogleBusyUpdate } from "@/lib/google-calendar-channels"
 import { GOOGLE_CALENDAR_RULES } from "@/lib/google-calendar-rules"
+import { syncGoogleCalendarNow } from "@/lib/google-calendar-sync"
 import type { GoogleCalendarChoice } from "../types/google-calendar"
 import { businessConnectionWhere } from "./google-calendar"
 import { getOwnerLanguage } from "../i18n/server"
@@ -31,6 +32,39 @@ export async function disconnectGoogleCalendar(
     .limit(1)
   if (row) await endGoogleCalendarConnection(row.id)
   return { ok: true }
+}
+
+// Sync now in the Manage panel (G9): the business's calendar gets every
+// change and its busy times are read again, right away. Gives back when it
+// synced and whether that worked.
+export async function syncGoogleCalendarNowFor(
+  businessId: string
+): Promise<{ ok: true; lastSyncAt: string | null; failed: boolean } | { ok: false }> {
+  await getOwnerBusiness(businessId)
+  const read = async () => {
+    const [row] = await db
+      .select({
+        id: googleCalendarConnections.id,
+        needsReconnect: googleCalendarConnections.needsReconnect,
+        lastSyncAt: googleCalendarConnections.lastSyncAt,
+        busyCheckedAt: googleCalendarConnections.busyCheckedAt,
+        lastError: googleCalendarConnections.lastError,
+      })
+      .from(googleCalendarConnections)
+      .where(businessConnectionWhere(businessId))
+      .limit(1)
+    return row ?? null
+  }
+  const before = await read()
+  if (!before || before.needsReconnect) return { ok: false }
+  const fresh = (iso: string | null) =>
+    !!iso && Date.parse(iso) + GOOGLE_CALENDAR_RULES.syncNowSeconds * 1000 > Date.now()
+  const after =
+    fresh(before.lastSyncAt) && fresh(before.busyCheckedAt)
+      ? before
+      : (await syncGoogleCalendarNow(before.id), await read())
+  if (!after || after.needsReconnect) return { ok: false }
+  return { ok: true, lastSyncAt: after.lastSyncAt, failed: !!after.lastError }
 }
 
 // Which team member the owner is (G3): their Google busy times block only
