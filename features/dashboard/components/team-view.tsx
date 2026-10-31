@@ -1,12 +1,10 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
-  ClockIcon,
   EllipsisVerticalIcon,
   PlusIcon,
   Trash2Icon,
@@ -114,24 +112,14 @@ export function TeamView({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-3">
+      {/* On a phone the top bar names the page and Add floats, so this
+          header row is a computer's. */}
+      <div className="flex items-center justify-between gap-3 max-md:contents">
         <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{t.title}</h1>
-        <div className="flex gap-2">
-          {/* Hours lives in Settings; the team's hours start from it. */}
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={<Link href={`/dashboard/${businessId}/settings/hours`} />}
-          >
-            <ClockIcon data-icon="inline-start" />
-            {messages.shell.nav.hours}
-          </Button>
-          {/* On a phone Add floats at the foot instead. */}
-          <Button className="max-md:hidden" onClick={() => openForm("new")}>
-            <PlusIcon data-icon="inline-start" />
-            {c.add}
-          </Button>
-        </div>
+        <Button className="max-md:hidden" onClick={() => openForm("new")}>
+          <PlusIcon data-icon="inline-start" />
+          {c.add}
+        </Button>
       </div>
 
       {team.length === 0 ? (
