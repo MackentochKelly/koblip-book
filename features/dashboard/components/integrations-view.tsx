@@ -47,6 +47,7 @@ import {
 import { ConfirmRemove } from "./confirm-remove"
 import { GoogleCalendarPanel } from "./google-calendar-panel"
 import { RemoveGoogleEvents } from "./remove-google-events"
+import { WhatsappPanel } from "./whatsapp-panel"
 
 // The apps a business connects, as a settings list: each row is the app,
 // what it does and its state. WhatsApp straight from Meta is coming; until
@@ -80,6 +81,7 @@ export function IntegrationsView({
   const [disconnecting, setDisconnecting] = useState<"chat" | "google" | null>(null)
   const [view, setView] = useState<"connected" | "all">("connected")
   const [managingGoogle, setManagingGoogle] = useState(false)
+  const [managingWhatsapp, setManagingWhatsapp] = useState(false)
   const [removeGoogleEvents, setRemoveGoogleEvents] = useState(false)
   const setChatWaiting = chatWindow.setWaiting
   const setGoogleWaiting = googleWindow.setWaiting
@@ -147,6 +149,9 @@ export function IntegrationsView({
 
   const query = `businessId=${encodeURIComponent(businessId)}`
   const waiting = chatWindow.waiting
+  // Koblip Chat's window, from its row or WhatsApp's "Use your own number".
+  const connectChat = () =>
+    chatWindow.openWindow(`/api/chat/connect?${query}`, "koblip-chat-connect")
   const googleUsable = !!googleCalendar && !googleCalendar.needsReconnect
 
   // The same rows show on both tabs.
@@ -180,9 +185,7 @@ export function IntegrationsView({
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              chatWindow.openWindow(`/api/chat/connect?${query}`, "koblip-chat-connect")
-            }
+            onClick={connectChat}
             disabled={waiting}
           >
             {waiting && <Spinner data-icon="inline-start" />}
@@ -247,7 +250,14 @@ export function IntegrationsView({
       logo="/brands/whatsapp-glyph-green.svg"
       name={t.whatsapp.name}
       description={m.whatsapp.sendingFrom[sender]}
-      action={<Badge variant="secondary">{t.whatsapp.connected}</Badge>}
+      action={
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">{t.whatsapp.connected}</Badge>
+          <Button variant="outline" size="sm" onClick={() => setManagingWhatsapp(true)}>
+            {t.whatsapp.manage}
+          </Button>
+        </div>
+      }
     />
   )
   // Connected: the apps working for the business now.
@@ -405,6 +415,20 @@ export function IntegrationsView({
         </>
       )}
 
+      {sender && (
+        <WhatsappPanel
+          open={managingWhatsapp}
+          onClose={() => setManagingWhatsapp(false)}
+          sender={sender}
+          connection={connection}
+          connecting={waiting}
+          onConnect={connectChat}
+          onDisconnect={() => {
+            setManagingWhatsapp(false)
+            setDisconnecting("chat")
+          }}
+        />
+      )}
       {googleCalendar && (
         <GoogleCalendarPanel
           open={managingGoogle && googleUsable}
