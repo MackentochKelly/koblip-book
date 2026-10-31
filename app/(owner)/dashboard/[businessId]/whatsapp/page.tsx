@@ -44,6 +44,7 @@ export default async function WhatsappOverviewPage({
       sender={sender}
       messages={messages}
       waiting={waiting}
+      freeTextInWindow={settings.freeTextInWindow}
       ownerPhone={settings.ownerPhone}
     />
   )

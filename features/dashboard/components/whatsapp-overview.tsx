@@ -50,6 +50,7 @@ export function WhatsappOverview({
   sender,
   messages,
   waiting,
+  freeTextInWindow,
   ownerPhone,
 }: {
   businessId: string
@@ -58,6 +59,9 @@ export function WhatsappOverview({
   messages: NotificationMessage[]
   // Messages Meta must still approve before the business's own number sends.
   waiting: BookingMessage[]
+  // The 24-hour setting: then the own number already answers those who
+  // wrote to it (D35).
+  freeTextInWindow: boolean
   ownerPhone: string | null
 }) {
   const m = useOwnerMessages()
@@ -66,8 +70,9 @@ export function WhatsappOverview({
   const steps = setupSteps(connection, messages)
   // One line: with its own number connected but Koblip's sending, the
   // messages Meta must still approve (D34); else the workspace's state.
+  const until = freeTextInWindow ? t.untilApprovedWindow : t.untilApproved
   const status = waiting.length
-    ? t.untilApproved(
+    ? until(
         new Intl.ListFormat(m.locale, { type: "conjunction" }).format(
           waiting.map((message) => t.names[message])
         )

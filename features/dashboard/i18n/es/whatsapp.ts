@@ -20,6 +20,8 @@ const whatsapp: typeof en = {
   koblipHint: "Mensajes listos de Koblip. Activa o desactiva cada uno.",
   useOwnNumber: "Usar tu propio número",
   untilApproved: (names: string) => `Tu número empieza cuando Meta apruebe ${names}.`,
+  untilApprovedWindow: (names: string) =>
+    `Quien escribió a tu número en las últimas 24 horas ya recibe mensajes desde él; el resto, cuando Meta apruebe ${names}.`,
   koblipWording: "Texto listo de Koblip. Usa tu propio número para cambiarlo.",
   // Resumen: la lista de pasos y la prueba.
   setup: "Puesta en marcha",
