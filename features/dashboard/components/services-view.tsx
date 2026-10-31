@@ -15,7 +15,6 @@ import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { ViewTabs } from "@/components/view-tabs"
-import { FloatingActionButton } from "@/components/floating-action-button"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -81,6 +80,7 @@ import type { OwnerAddonGroup, ServiceInput } from "../types"
 import { ConfirmRemove } from "./confirm-remove"
 import { ExtrasView } from "./extras-view"
 import { PhotoField } from "./photo-upload"
+import { useTabBarAction } from "./tab-bar-action"
 import { noAutofill } from "@/lib/no-autofill"
 import { useOwnerLanguage, useOwnerMessages } from "../i18n/provider"
 
@@ -151,6 +151,13 @@ export function ServicesView({
     ids.splice(index + by, 0, id)
     run(() => reorderServices(businessId, ids))
   }
+  // On a phone the tab bar's middle button adds a service (or extras).
+  useTabBarAction({
+    label: view === "services" ? t.addService : m.catalog.extras.add,
+    onClick: () =>
+      view === "services" ? openForm("new") : setAddingExtras(true),
+    disabled: view === "extras" && services.length === 0,
+  })
   // A fresh set of suggestions each time the panel opens.
   const suggest = () => {
     setSuggestKey((value) => value + 1)
@@ -160,7 +167,8 @@ export function ServicesView({
   return (
     <div className="flex flex-col gap-6">
       {/* On a phone the top bar names the page, Suggest sits at the foot of
-          the list and Add floats, so this header row is a computer's. */}
+          the list and Add is the tab bar's middle button, so this header row
+          is a computer's. */}
       <div className="flex flex-wrap items-center justify-between gap-3 max-md:contents">
         <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{t.title}</h1>
         <div className="flex gap-2 max-md:hidden">
@@ -385,15 +393,6 @@ export function ServicesView({
           router.refresh()
         }}
       />
-      <FloatingActionButton
-        label={view === "services" ? t.addService : m.catalog.extras.add}
-        onClick={() =>
-          view === "services" ? openForm("new") : setAddingExtras(true)
-        }
-        disabled={view === "extras" && services.length === 0}
-      >
-        <PlusIcon />
-      </FloatingActionButton>
     </div>
   )
 }
