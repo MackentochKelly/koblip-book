@@ -1,33 +1,28 @@
 import type { Metadata } from "next"
-import {
-  notificationMessagesFor,
-  notificationSettingsFor,
-} from "@/features/dashboard/api/notifications"
+import { notificationMessagesFor } from "@/features/dashboard/api/notifications"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
-import { WhatsappAlerts } from "@/features/dashboard/components/whatsapp-alerts"
+import { WhatsappMessages } from "@/features/dashboard/components/whatsapp-messages"
 import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { notificationRules } from "@/lib/platform-settings"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).whatsapp.parts.alerts }
+  return { title: (await getOwnerMessages()).whatsapp.parts.messages }
 }
 
-export default async function WhatsappAlertsPage({
+export default async function WhatsappMessagesPage({
   params,
-}: PageProps<"/dashboard/[businessId]/whatsapp/alerts">) {
+}: PageProps<"/dashboard/[businessId]/auto-messages/messages">) {
   const { businessId } = await params
   // Only the business's owner gets here.
   await getOwnerBusiness(businessId)
-  const [messages, settings, rules] = await Promise.all([
+  const [messages, rules] = await Promise.all([
     notificationMessagesFor(businessId),
-    notificationSettingsFor(businessId),
     notificationRules(businessId),
   ])
   return (
-    <WhatsappAlerts
+    <WhatsappMessages
       businessId={businessId}
       messages={messages}
-      settings={settings}
       limits={{
         maxHeader: rules.maxHeader,
         maxBody: rules.maxBody,

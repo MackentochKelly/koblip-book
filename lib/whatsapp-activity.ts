@@ -1,9 +1,9 @@
 import "server-only"
-import { and, desc, eq, or, sql, type SQL } from "drizzle-orm"
+import { and, count, desc, eq, gte, isNotNull, or, sql, type SQL } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import { bookings, businesses, notificationSends } from "@/lib/db/schema"
-import type { ActivityFilter, BusinessNotificationSend } from "@/types/whatsapp"
+import type { ActivityFilter, ActivityState, BusinessNotificationSend } from "@/types/whatsapp"
 
 // A LIKE pattern that finds `text` anywhere, with LIKE's own wildcards
 // taken literally.
@@ -20,6 +20,13 @@ function searchCondition(search: string): SQL | undefined {
   const digits = text.replace(/\D/g, "")
   if (!digits) return byName
   return or(byName, sql`${bookings.customerKey} like ${`p:${contains(digits)}`} escape '\\'`)
+}
+
+// The status filter: a state, or the read and answered views (D36).
+function stateCondition(state: ActivityState): SQL | undefined {
+  if (state === "read") return eq(notificationSends.delivery, "read")
+  if (state === "replied") return isNotNull(notificationSends.replyAction)
+  return eq(notificationSends.state, state)
 }
 
 // The latest messages, newest first: what is waiting, sent, or was not sent
@@ -55,7 +62,7 @@ export async function whatsappActivity(
       and(
         businessId ? eq(notificationSends.businessId, businessId) : undefined,
         filter.message ? eq(notificationSends.message, filter.message) : undefined,
-        filter.state ? eq(notificationSends.state, filter.state) : undefined,
+        filter.state ? stateCondition(filter.state) : undefined,
         filter.search ? searchCondition(filter.search) : undefined
       )
     )
@@ -66,4 +73,30 @@ export async function whatsappActivity(
     at: sentAt ?? dueAt,
     reply: replyAction && repliedAt ? { action: replyAction, at: repliedAt } : null,
   }))
+}
+
+export type ActivityStats = { sent: number; read: number; replied: number; failed: number }
+
+// One business's messages over the last `days` (by when each went or was
+// due), for the Auto messages Overview (D36): sent, read by the customer,
+// answered with a button, and failed. Each matches one Activity filter.
+export async function whatsappActivityStats(
+  businessId: string,
+  days: number
+): Promise<ActivityStats> {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString()
+  const at = sql`coalesce(${notificationSends.sentAt}, ${notificationSends.dueAt})`
+  const counted = (condition: SQL | undefined) =>
+    db
+      .select({ value: count() })
+      .from(notificationSends)
+      .where(and(eq(notificationSends.businessId, businessId), gte(at, since), condition))
+      .then(([row]) => row?.value ?? 0)
+  const [sent, read, replied, failed] = await Promise.all([
+    counted(stateCondition("sent")),
+    counted(stateCondition("read")),
+    counted(stateCondition("replied")),
+    counted(stateCondition("failed")),
+  ])
+  return { sent, read, replied, failed }
 }

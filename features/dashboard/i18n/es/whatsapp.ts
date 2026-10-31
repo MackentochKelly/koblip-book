@@ -1,30 +1,45 @@
 import type en from "../en/whatsapp"
 
-// La página de WhatsApp: avisos de reservas enviados con Koblip Chat.
+// La página Mensajes automáticos: mensajes de reservas enviados por WhatsApp con Koblip Chat.
 const whatsapp: typeof en = {
   connectTitle: "Conecta Koblip Chat para enviar mensajes de WhatsApp",
   connect: "Conectar",
   // Las partes de la página: pestañas en computadora, una lista en el móvil.
   parts: {
     overview: "Resumen",
-    messages: "Mensajes al cliente",
-    alerts: "Tus avisos",
+    messages: "Mensajes",
+    alerts: "Avisos",
     timing: "Horarios",
     replies: "Respuestas",
     activity: "Actividad",
   },
-  partsLabel: "Partes de WhatsApp",
+  partsLabel: "Partes de Mensajes automáticos",
   ready: "Listo para enviar",
   // Qué número envía (K4).
   sendingFrom: { koblip: "Enviando desde el número de Koblip", own: "Enviando desde tu número" },
-  koblipHint: "Mensajes listos de Koblip. Activa o desactiva cada uno.",
   useOwnNumber: "Usar tu propio número",
-  untilApproved: (names: string) => `Tu número empieza cuando Meta apruebe ${names}.`,
+  untilApproved: (names: string) => `El número de Koblip envía hasta que Meta apruebe ${names}.`,
   untilApprovedWindow: (names: string) =>
-    `Quien escribió a tu número en las últimas 24 horas ya recibe mensajes desde él; el resto, cuando Meta apruebe ${names}.`,
+    `Tu número responde los chats recientes; el de Koblip envía el resto hasta que Meta apruebe ${names}.`,
   koblipWording: "Texto listo de Koblip. Usa tu propio número para cambiarlo.",
-  // Resumen: la lista de pasos y la prueba.
+  // Resumen (D36): un estado, el siguiente paso, pasos, cifras, mensajes, prueba.
+  channel: "Se envía por WhatsApp",
+  overviewStates: { live: "Activo", action: "Requiere acción", waiting: "Esperando a Meta" },
+  nextSteps: {
+    connect: "Conectar",
+    reconnect: "Conectar de nuevo",
+    addNumber: "Añadir tu número",
+    fix: "Corregir mensajes",
+    review: "Revisar mensajes",
+    submit: "Enviar a Meta",
+    turnOn: "Activar mensajes",
+  },
   setup: "Puesta en marcha",
+  setupProgress: (done: number, total: number) => `${done} de ${total} hechos`,
+  setupDone: "Puesta en marcha lista",
+  statsTitle: (days: number) => (days === 1 ? "Último día" : `Últimos ${days} días`),
+  stats: { sent: "Enviados", read: "Leídos", replied: "Respuestas", failed: "Fallidos" },
+  yourMessages: "Tus mensajes",
   steps: {
     connected: "Conectado",
     reviewed: "Textos revisados",
@@ -41,13 +56,14 @@ const whatsapp: typeof en = {
   },
   stepDone: "Hecho",
   stepToDo: "Pendiente",
-  open: "Abrir",
+  stepNow: "Ahora",
   test: "Prueba",
   testMessage: "Mensaje",
   sendTest: "Enviar una prueba a mi teléfono",
+  sendATest: "Enviar una prueba",
   testSent: "Enviado. Mira tu WhatsApp.",
   testFailed: "No se pudo enviar la prueba. Inténtalo de nuevo.",
-  testNeedsPhone: "Añade tu WhatsApp primero.",
+  testPhoneHint: "Guarda tu WhatsApp para recibir la prueba.",
   messages: "Mensajes",
   names: {
     confirmed: "Reserva confirmada",
@@ -72,8 +88,8 @@ const whatsapp: typeof en = {
   },
   review: {
     missing: "Sin preparar",
-    draft: "Sin enviar",
-    waiting: "Esperando a Meta",
+    draft: "Borrador",
+    waiting: "En revisión",
     approved: "Aprobado",
     rejected: "Rechazado por Meta",
   },
@@ -190,6 +206,7 @@ const whatsapp: typeof en = {
     sent: "Enviado",
     delivered: "Entregado",
     read: "Leído",
+    replied: "Respondido",
     failed: "Falló",
     skipped: "No enviado",
   } as Record<string, string>,

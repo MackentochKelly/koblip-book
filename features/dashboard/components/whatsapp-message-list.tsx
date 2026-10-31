@@ -4,7 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
+import { MetaStatusBadge } from "@/components/meta-status-badge"
 import {
   Item,
   ItemActions,
@@ -112,15 +112,7 @@ function MessageRow({
           <ItemTitle>{name}</ItemTitle>
           <ItemDescription>{t.about[item.message]}</ItemDescription>
         </button>
-        {/* Koblip's ready-made set is Koblip's to get approved. */}
-        {item.editable && review !== "approved" && (
-          <Badge
-            variant={review === "rejected" ? "destructive" : "secondary"}
-            className="mt-1"
-          >
-            {t.review[review]}
-          </Badge>
-        )}
+        <MetaStatusBadge review={review} labels={t.review} className="mt-1" />
       </ItemContent>
       <ItemActions>
         <Switch

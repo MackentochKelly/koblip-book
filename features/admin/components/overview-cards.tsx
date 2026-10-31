@@ -1,6 +1,6 @@
 import type { AdminOverview } from "../api/queries"
 import type { AdminMessages } from "../i18n"
-import { StatCards } from "./stat-cards"
+import { StatCards } from "@/components/stat-cards"
 
 // The four app-wide counts.
 export function OverviewCards({

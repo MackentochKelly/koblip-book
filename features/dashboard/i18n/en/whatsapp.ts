@@ -1,29 +1,44 @@
-// The WhatsApp page: booking notifications sent through Koblip Chat.
+// The Auto messages page: booking messages sent on WhatsApp through Koblip Chat.
 const whatsapp = {
   connectTitle: "Connect Koblip Chat to send WhatsApp messages",
   connect: "Connect",
   // The page's parts: tabs on a computer, a list on a phone.
   parts: {
     overview: "Overview",
-    messages: "Customer messages",
-    alerts: "Your alerts",
+    messages: "Messages",
+    alerts: "Alerts",
     timing: "Timing",
     replies: "Replies",
     activity: "Activity",
   },
-  partsLabel: "WhatsApp parts",
+  partsLabel: "Auto message parts",
   ready: "Ready to send",
   // Which number sends (K4).
   sendingFrom: { koblip: "Sending from Koblip's number", own: "Sending from your number" },
-  koblipHint: "Koblip's ready-made messages. Turn each on or off.",
   useOwnNumber: "Use your own number",
-  untilApproved: (names: string) => `Your number takes over once Meta approves ${names}.`,
+  untilApproved: (names: string) => `Koblip's number sends until Meta approves ${names}.`,
   // The same, when normal messages go inside 24 hours (D35).
   untilApprovedWindow: (names: string) =>
-    `Customers who wrote to your number in the last 24 hours already get messages from it; everyone else once Meta approves ${names}.`,
+    `Your number answers recent chats; Koblip's sends the rest until Meta approves ${names}.`,
   koblipWording: "Koblip's ready-made wording. Use your own number to change it.",
-  // Overview: the setup checklist and the test send.
+  // Overview (D36): one state, the next step, setup, numbers, messages, test.
+  channel: "Sent on WhatsApp",
+  overviewStates: { live: "Live", action: "Needs action", waiting: "Waiting for Meta" },
+  nextSteps: {
+    connect: "Connect",
+    reconnect: "Connect again",
+    addNumber: "Add your number",
+    fix: "Fix messages",
+    review: "Review messages",
+    submit: "Submit to Meta",
+    turnOn: "Turn on messages",
+  },
   setup: "Setup",
+  setupProgress: (done: number, total: number) => `${done} of ${total} done`,
+  setupDone: "Setup done",
+  statsTitle: (days: number) => (days === 1 ? "Last day" : `Last ${days} days`),
+  stats: { sent: "Sent", read: "Read", replied: "Replies", failed: "Failed" },
+  yourMessages: "Your messages",
   steps: {
     connected: "Connected",
     reviewed: "Wording checked",
@@ -40,13 +55,14 @@ const whatsapp = {
   },
   stepDone: "Done",
   stepToDo: "To do",
-  open: "Open",
+  stepNow: "Now",
   test: "Test",
   testMessage: "Message",
   sendTest: "Send a test to my phone",
+  sendATest: "Send a test",
   testSent: "Sent. Check your WhatsApp.",
   testFailed: "Couldn't send the test. Try again.",
-  testNeedsPhone: "Add your WhatsApp first.",
+  testPhoneHint: "Save your WhatsApp to get the test.",
   messages: "Messages",
   names: {
     confirmed: "Booking confirmed",
@@ -71,8 +87,8 @@ const whatsapp = {
   },
   review: {
     missing: "Not set up",
-    draft: "Not submitted",
-    waiting: "Waiting for Meta",
+    draft: "Draft",
+    waiting: "In review",
     approved: "Approved",
     rejected: "Rejected by Meta",
   },
@@ -190,6 +206,7 @@ const whatsapp = {
     sent: "Sent",
     delivered: "Delivered",
     read: "Read",
+    replied: "Answered",
     failed: "Failed",
     skipped: "Not sent",
   } as Record<string, string>,

@@ -1,4 +1,4 @@
-import type { BookingMessage, ButtonAction, Sender } from "@/types/whatsapp"
+import type { BookingMessage, ButtonAction, Sender, TemplateReview } from "@/types/whatsapp"
 import type { TemplateLanguage, Wording } from "../utils/booking-templates"
 
 // The contract for WhatsApp notifications v2 (docs/plans/whatsapp-notifications.md,
@@ -16,6 +16,7 @@ export type {
   OwnerAlert,
   Sender,
   SendKind,
+  TemplateReview,
 } from "@/types/whatsapp"
 
 export type MessageButton = { action: ButtonAction; label: string }
@@ -38,9 +39,6 @@ export type NotificationSettings = {
   thankYouReply: boolean
 }
 
-// Meta's review of one message in one language. "draft": Book has the
-// wording but the owner has not submitted it to Meta yet.
-export type TemplateReview = "missing" | "draft" | "waiting" | "approved" | "rejected"
 
 export type NotificationText = {
   wording: Wording

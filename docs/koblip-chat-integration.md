@@ -16,7 +16,7 @@ Settings: the `CHAT_*` and `TOKEN_ENCRYPTION_KEY` lines in `.env.example` (serve
 | 24-hour normal messages | If the customer wrote to Koblip's number | If the customer wrote to the business's number |
 | Limit | 300 template messages per business per calendar month (UTC), changeable by the admin (D3, D29) | None |
 
-The sender picks the number at each send (`lineFor` in `features/dashboard/api/notification-sender.ts`, D22, D35): the business's own when its connection works, has a number, and Meta approved every message it has on in both languages, or, before that, when the person's 24-hour window with the own number is open and a normal message may go (the 24-hour setting on; the thank-you always); else Koblip's; else its own as it stands. Each sent row records its `sender`. The WhatsApp page and the admin show the choice by approval alone (`senderFor`, D26); the Overview's line says those who wrote to the own number already get messages from it (D34, D35). Booking forms ask for WhatsApp consent, unticked, whenever either number can send (`lib/whatsapp-offer.ts`).
+The sender picks the number at each send (`lineFor` in `features/dashboard/api/notification-sender.ts`, D22, D35): the business's own when its connection works, has a number, and Meta approved every message it has on in both languages, or, before that, when the person's 24-hour window with the own number is open and a normal message may go (the 24-hour setting on; the thank-you always); else Koblip's; else its own as it stands. Each sent row records its `sender`. The Auto messages page and the admin show the choice by approval alone (`senderFor`, D26); the Overview's line says those who wrote to the own number already get messages from it (D34, D35). Booking forms ask for WhatsApp consent, unticked, whenever either number can send (`lib/whatsapp-offer.ts`).
 
 ## Step 1: Connect with a popup (built)
 
@@ -95,16 +95,16 @@ A tap arrives as Chat's event; Book finds the message it answers by WhatsApp's i
 
 ## Screens
 
-Business: `/dashboard/[businessId]/whatsapp`. Phone: Overview with a list of the other parts, each its own screen with Back; computer: tabs (`components/section-parts.tsx`, D10, D19).
+Business: Auto messages, `/dashboard/[businessId]/auto-messages` (the old `whatsapp/` and `notifications/` addresses redirect there, D36). Phone: Overview with a list of the other parts, each its own screen with Back; computer: tabs (`components/section-parts.tsx`, D10, D19).
 
 | Part | What the owner does there |
 | --- | --- |
-| Overview | Which number sends ("Sending from Koblip" or from their own, "Use your own number"), the setup checklist on their own number (Connected → Wording checked → Submitted → Approved → Live, D23), "Send a test to my phone" (D17) |
-| Customer messages | On/off; on their own number: wording and buttons in English and Spanish, preview, Meta's status and reason, "Submit to Meta". On Koblip's number: on/off only (D26) |
-| Your alerts | The owner's WhatsApp number and language, then each alert |
+| Overview | One status (Live, Needs action or Waiting for Meta) with the number that sends, why Koblip's number still sends (D34, D35) and one button for the next step; the own number's setup progress (D23), folded once live; the last days' Sent, Read, Replies and Failed, each opening Activity filtered; the four customer messages with on/off and Meta's status; "Send a test to my phone", or a field for the owner's WhatsApp (D17, D36) |
+| Messages | On/off and Meta's status on each; on their own number: wording and buttons in English and Spanish, preview, Meta's status and reason, "Submit to Meta". On Koblip's number: on/off only (D26) |
+| Alerts | The owner's WhatsApp number and language, then each alert |
 | Timing | Reminder times, quiet hours, the 24-hour setting |
 | Replies | What "Can't make it" does, thank-you on/off |
-| Activity | Every message: who, which, when, which number, normal or template, delivered/read, the customer's answer; filters, search by name or phone, "Send again" for failed (D4, D14) |
+| Activity | Every message: who, which, when, which number, normal or template, delivered/read, the customer's answer; filters, search by name or phone, "Send again" for failed (D4, D14); with nothing sent yet, "Send a test" |
 
 Admin: `/admin/whatsapp` (admins only; nothing hidden, every change in the Change log; secrets show as set or missing, never their value).
 

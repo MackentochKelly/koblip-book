@@ -8,7 +8,7 @@ import { bookings, businesses, notificationSends, user } from "@/lib/db/schema"
 vi.mock("server-only", () => ({}))
 
 const { cancelWaitingWrite, sendAgainWrite } = await import("./whatsapp-sends")
-const { whatsappActivity } = await import("./whatsapp-activity")
+const { whatsappActivity, whatsappActivityStats } = await import("./whatsapp-activity")
 
 let dir: string
 let closeDb: () => void
@@ -145,4 +145,26 @@ test("activity lists every business with its name and time zone, or one", async 
   expect(all[0].timeZone).toBe("America/Santo_Domingo")
   const one = await whatsappActivity({ state: "failed" }, { businessId: "b1", limit: 10 })
   expect(one).toEqual([])
+})
+
+test("stats count the last days, each matching one Activity filter", async () => {
+  const { db } = await import("@/lib/db")
+  const { eq } = await import("drizzle-orm")
+  const read = await send({ state: "sent" })
+  await db
+    .update(notificationSends)
+    .set({ delivery: "read", replyAction: "confirm", repliedAt: past })
+    .where(eq(notificationSends.id, read))
+  await send({ state: "sent" })
+  await send({ state: "failed" })
+  const old = await send({ state: "failed" })
+  await db
+    .update(notificationSends)
+    .set({ dueAt: new Date(Date.now() - 30 * 86_400_000).toISOString() })
+    .where(eq(notificationSends.id, old))
+  expect(await whatsappActivityStats("b1", 7)).toEqual({ sent: 2, read: 1, replied: 1, failed: 1 })
+  const ids = async (state: "read" | "replied") =>
+    (await whatsappActivity({ state }, { businessId: "b1", limit: 10 })).map((row) => row.id)
+  expect(await ids("read")).toEqual([read])
+  expect(await ids("replied")).toEqual([read])
 })
