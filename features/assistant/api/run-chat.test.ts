@@ -858,22 +858,51 @@ test("ask_owner sends the question and its buttons at once, with no check", asyn
   expect(judgeBodies(create)).toEqual([])
 })
 
-test("words written before ask_owner stay apart from its question", async () => {
+test("a question the model wrote with the call is not asked twice", async () => {
   scriptedClient([
     [toolChunk(0, "call-A", "probe", "{}")],
-    [textChunk("Two match."), askChunk("Which one?", ["Cut", "Fade"])],
+    [textChunk("Which service would you like?"), askChunk("Which service?", ["Cut", "Fade"])],
   ])
   const events = await collect(
     runChat(MESSAGES, CONTEXT, [
       probe(async () => ({ services: [{ name: "Cut" }, { name: "Fade" }] })),
     ])
   )
-  expect(events).toContainEqual({ type: "text", delta: "\n\n" })
-  expect(events.slice(-3)).toEqual([
-    { type: "text", delta: "Which one?" },
+  expect(events.filter((e) => (e as { type: string }).type === "text")).toEqual([
+    { type: "text", delta: "Which service would you like?" },
+  ])
+  expect(events.slice(-2)).toEqual([
     { type: "choices", options: ["Cut", "Fade"] },
     { type: "done" },
   ])
+})
+
+test("ask_owner's question shows when the words before it ask nothing", async () => {
+  for (const turns of [
+    // A line before the lookup, then the call alone.
+    [
+      [textChunk("Two match."), toolChunk(0, "call-A", "probe", "{}")],
+      [askChunk("Which one?", ["Cut", "Fade"])],
+    ],
+    // A plain statement written with the call.
+    [
+      [toolChunk(0, "call-A", "probe", "{}")],
+      [textChunk("Two match."), askChunk("Which one?", ["Cut", "Fade"])],
+    ],
+  ]) {
+    scriptedClient(turns)
+    const events = await collect(
+      runChat(MESSAGES, CONTEXT, [
+        probe(async () => ({ services: [{ name: "Cut" }, { name: "Fade" }] })),
+      ])
+    )
+    expect(events.slice(-4)).toEqual([
+      { type: "text", delta: "\n\n" },
+      { type: "text", delta: "Which one?" },
+      { type: "choices", options: ["Cut", "Fade"] },
+      { type: "done" },
+    ])
+  }
 })
 
 test("ask_owner options are trimmed, de-duplicated and kept only when found", async () => {

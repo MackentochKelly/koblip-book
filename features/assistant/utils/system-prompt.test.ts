@@ -49,6 +49,6 @@ test("with ask_owner offered, the prompt says to ask with buttons", () => {
     ],
   })
   expect(prompt).toContain(
-    "With 2 to 48 options, ask by calling ask_owner with the options copied exactly from the tool results; the screen shows them as buttons. Its question is your reply: never write the question yourself too. With more, ask in plain words and list them. "
+    "With 2 to 48 options, ask by calling ask_owner with the options copied exactly from the tool results; the screen shows them as buttons. Write nothing with that call, and never name a tool to the owner. With more, ask in plain words and list them. "
   )
 })

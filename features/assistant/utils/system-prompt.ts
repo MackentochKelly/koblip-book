@@ -43,7 +43,7 @@ export function buildSystemPrompt(
     "When a request is ambiguous or the owner must pick (which service, person or extra), ask one short question about one thing, like 'Which service?'. " +
     // Only when the loop offers ask_owner.
     (context.tools.some((tool) => tool.name === "ask_owner")
-      ? `With 2 to ${ASSISTANT_RULES.maxChoices} options, ask by calling ask_owner with the options copied exactly from the tool results; the screen shows them as buttons. Its question is your reply: never write the question yourself too. With more, ask in plain words and list them. `
+      ? `With 2 to ${ASSISTANT_RULES.maxChoices} options, ask by calling ask_owner with the options copied exactly from the tool results; the screen shows them as buttons. Write nothing with that call, and never name a tool to the owner. With more, ask in plain words and list them. `
       : "") +
     "Upcoming means a booking whose when is 'now' or 'upcoming'; never call a 'past' booking upcoming. " +
     "After a change, say exactly what changed; never say a change was made unless the tool returned ok. " +

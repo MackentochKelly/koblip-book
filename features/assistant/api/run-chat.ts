@@ -509,10 +509,15 @@ export async function* runChat(
             })
             continue
           }
-          if (textSent) {
-            yield { type: "text", delta: "\n\n" }
+          // When the words written with the call already ask (they have a
+          // question mark), they are the question; otherwise ask_owner's
+          // question is shown. Never asked twice, never buttons unasked.
+          if (!/[?？]/.test(text)) {
+            if (textSent) {
+              yield { type: "text", delta: "\n\n" }
+            }
+            yield { type: "text", delta: ask.question }
           }
-          yield { type: "text", delta: ask.question }
           yield { type: "choices", options: ask.options }
           const items = [...sources].flatMap(([kind, count]) =>
             count > 0 ? [{ kind, count }] : []
