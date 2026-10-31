@@ -2,22 +2,23 @@ import type { PageLanguage } from "@/lib/page-language"
 import type { BookingMessage } from "@/types/whatsapp"
 
 // The bell's words (docs/plans/in-app-notifications.md, N4 and N7), in the
-// owner area's language. Spanish is typed against English, so a missing
-// word fails the typecheck.
+// owner area's language. On screen they are "Updates" ("Novedades"), so they
+// never clash with the business's Notifications page (N-D12). Spanish is
+// typed against English, so a missing word fails the typecheck.
 const en = {
   locale: "en-US",
-  bell: "Notifications",
+  bell: "Updates",
   bellUnread: (n: number) =>
-    n === 1 ? "Notifications, 1 unread" : `Notifications, ${n} unread`,
-  title: "Notifications",
+    n === 1 ? "Updates, 1 unread" : `Updates, ${n} unread`,
+  title: "Updates",
   markAll: "Mark all as read",
-  settings: "Notification settings",
+  settings: "Updates settings",
   today: "Today",
   earlier: "Earlier",
   unread: "Unread",
   more: "Show more",
   empty: "You're all caught up",
-  failed: "Couldn't load notifications.",
+  failed: "Couldn't load updates.",
   retry: "Try again",
   someone: "A customer",
   // Each kind's title, from its facts.
@@ -49,7 +50,7 @@ const en = {
   aMessage: "a message",
   // The owner's choices screen (N7).
   choices: {
-    title: "Notifications",
+    title: "Updates",
     groups: { bookings: "Bookings", whatsapp: "WhatsApp" },
     names: {
       newBooking: "New bookings",
@@ -64,7 +65,7 @@ const en = {
       koblipLimitReached: "Monthly limit reached",
       connectionRenew: "Connection to renew",
     },
-    open: "Choose which notifications you get",
+    open: "Choose which updates you get",
     failed: "Couldn't save. Try again.",
   },
 }
@@ -73,18 +74,18 @@ export type NotificationMessages = typeof en
 
 const es: NotificationMessages = {
   locale: "es-US",
-  bell: "Notificaciones",
+  bell: "Novedades",
   bellUnread: (n: number) =>
-    n === 1 ? "Notificaciones, 1 sin leer" : `Notificaciones, ${n} sin leer`,
-  title: "Notificaciones",
+    n === 1 ? "Novedades, 1 sin leer" : `Novedades, ${n} sin leer`,
+  title: "Novedades",
   markAll: "Marcar todo como leído",
-  settings: "Ajustes de notificaciones",
+  settings: "Ajustes de novedades",
   today: "Hoy",
   earlier: "Antes",
   unread: "Sin leer",
   more: "Ver más",
   empty: "Estás al día",
-  failed: "No se pudieron cargar las notificaciones.",
+  failed: "No se pudieron cargar las novedades.",
   retry: "Intentar de nuevo",
   someone: "Un cliente",
   kinds: {
@@ -113,7 +114,7 @@ const es: NotificationMessages = {
   },
   aMessage: "un mensaje",
   choices: {
-    title: "Notificaciones",
+    title: "Novedades",
     groups: { bookings: "Reservas", whatsapp: "WhatsApp" },
     names: {
       newBooking: "Nuevas reservas",
@@ -128,7 +129,7 @@ const es: NotificationMessages = {
       koblipLimitReached: "Límite mensual alcanzado",
       connectionRenew: "Conexión por renovar",
     },
-    open: "Elige qué notificaciones recibes",
+    open: "Elige qué novedades recibes",
     failed: "No se pudo guardar. Inténtalo de nuevo.",
   },
 }

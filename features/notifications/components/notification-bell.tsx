@@ -15,6 +15,11 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { NotificationList } from "./notification-list"
 import { useNotifications } from "./notifications-provider"
@@ -115,18 +120,26 @@ export function NotificationBell() {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={label}
-            className={buttonClass}
-          />
-        }
-      >
-        {icon}
-      </PopoverTrigger>
+      {/* Its name on hover, "Updates" (N-D12); one button opens both. */}
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={label}
+                  className={buttonClass}
+                />
+              }
+            />
+          }
+        >
+          {icon}
+        </TooltipTrigger>
+        <TooltipContent>{t.bell}</TooltipContent>
+      </Tooltip>
       <PopoverContent
         // The bell sits at the top bar's right edge (N-D11).
         align="end"

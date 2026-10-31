@@ -50,7 +50,7 @@ export default async function SettingsPage({ params }: Props) {
         status={translation}
       />
       <NotificationSettingsLink
-        href={`/dashboard/${businessId}/settings/notifications`}
+        href={`/dashboard/${businessId}/settings/updates`}
         language={language}
       />
     </div>
