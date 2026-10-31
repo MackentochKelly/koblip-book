@@ -3,14 +3,19 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
+  BanknoteIcon,
   CalendarDaysIcon,
+  CalendarIcon,
   ChevronRightIcon,
+  OctagonXIcon,
   PlusIcon,
+  SmileIcon,
 } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { FloatingActionButton } from "@/components/floating-action-button"
 import { ResponsivePanel } from "@/components/responsive-panel"
+import { StatStrip } from "@/components/stat-strip"
 import { ViewTabs } from "@/components/view-tabs"
 import {
   AlertDialog,
@@ -49,6 +54,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
+import { formatMoneyShort } from "@/lib/format-price"
 import type {
   OwnerBookingInput,
   OwnerBookingResult,
@@ -59,15 +65,18 @@ import { cancelBooking } from "../api/actions"
 import { setBookingStatus } from "../api/booking-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
+import { type DashboardSummary, percentChange } from "../utils/analytics"
 import { AddBookingPanel, type AddBookingOptions } from "./add-booking-panel"
 import { BookingDetails } from "./booking-details"
 import { BookingStatusBadge } from "./booking-status-badge"
 import { MoveBookingPanel } from "./move-booking-panel"
-import { TodayCard } from "./today-card"
+import { BookingsChart } from "./bookings-chart"
+import { TopServices } from "./top-services"
 
 type View = "upcoming" | "past"
 
-// The home page: a ring for today plus the next days (opens Analytics), then the business's
+// The dashboard: the last 7 days' numbers against the week before, the
+// days ahead and the most booked services, then the business's
 // bookings by day (upcoming first, past one tab away). Each
 // opens its details; before it starts it can be moved or cancelled, once it
 // has started it can be marked done or no-show.
@@ -75,7 +84,8 @@ export function BookingsView({
   businessId,
   upcoming,
   past,
-  counts,
+  summary,
+  currency,
   nextDays,
   addOptions,
   createBooking,
@@ -84,12 +94,8 @@ export function BookingsView({
   businessId: string
   upcoming: OwnerBooking[]
   past: OwnerBooking[]
-  counts: {
-    today: number
-    upcoming: number
-    todayBooked: number
-    todayDone: number
-  }
+  summary: DashboardSummary
+  currency: string
   nextDays: Array<{ date: string; bookings: number }>
   addOptions: AddBookingOptions
   createBooking: (input: OwnerBookingInput) => Promise<OwnerBookingResult>
@@ -108,14 +114,14 @@ export function BookingsView({
   const router = useRouter()
   const m = useOwnerMessages()
   const t = m.bookings
+  const a = t.analytics
+  const number = new Intl.NumberFormat(m.locale)
   const views = [
     { id: "upcoming" as const, label: t.views.upcoming },
     { id: "past" as const, label: t.views.past },
   ]
   const list = view === "upcoming" ? upcoming : past
   const days = groupByDay(list)
-  // Each count opens the Analytics page for more.
-  const analytics = `/dashboard/${businessId}/analytics`
   // The table's Team column, only for a business with a team.
   const hasTeam = addOptions.team.length > 0
   // `at` is when the owner tapped, read in the tap handler itself.
@@ -174,21 +180,47 @@ export function BookingsView({
           {t.add}
         </Button>
       </div>
-      <TodayCard
-        href={analytics}
-        booked={counts.todayBooked}
-        done={counts.todayDone}
-        others={[
-          { label: t.stats.tomorrow, value: nextDays[1]?.bookings ?? 0 },
+      <StatStrip
+        stats={[
           {
-            label: t.stats.week,
-            value: nextDays
-              .slice(0, 7)
-              .reduce((sum, day) => sum + day.bookings, 0),
+            icon: <CalendarIcon />,
+            label: a.bookings,
+            value: number.format(summary.bookings.current),
+            note: a.last7,
+            change: percentChange(summary.bookings),
           },
-          { label: t.stats.upcoming, value: counts.upcoming },
+          {
+            icon: <BanknoteIcon />,
+            label: a.revenue,
+            value: formatMoneyShort(summary.revenue.current, currency, m.locale),
+            note: a.last7,
+            change: percentChange(summary.revenue),
+          },
+          {
+            icon: <SmileIcon />,
+            label: a.newCustomers,
+            value: number.format(summary.newCustomers.current),
+            note: a.last7,
+            change: percentChange(summary.newCustomers),
+          },
+          {
+            icon: <OctagonXIcon />,
+            label: a.noShows,
+            value: number.format(summary.noShows.current),
+            note: a.last7,
+            change: percentChange(summary.noShows),
+            upIsGood: false,
+          },
         ]}
       />
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="min-w-0 lg:col-span-3">
+          <BookingsChart days={nextDays} />
+        </div>
+        <div className="flex min-w-0 lg:col-span-2 [&>*]:flex-1">
+          <TopServices services={summary.topServices} />
+        </div>
+      </div>
       <div className="flex min-w-0 flex-col gap-6">
         <ViewTabs
           views={views}

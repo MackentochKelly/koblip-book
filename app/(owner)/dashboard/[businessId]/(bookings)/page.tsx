@@ -1,20 +1,22 @@
 import type { Metadata } from "next"
+import { getCustomers } from "@/features/dashboard/api/customers"
 import {
-  getBookingCounts,
   getBookings,
+  getBookingsBetween,
   getOwnerBusiness,
 } from "@/features/dashboard/api/queries"
 import { getAddonGroups } from "@/features/dashboard/api/addon-queries"
 import { getServiceTeams } from "@/features/dashboard/api/team-service-queries"
 import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { BookingsView } from "@/features/dashboard/components/bookings-view"
+import { dashboardSummary } from "@/features/dashboard/utils/analytics"
 import { bookingsPerDay } from "@/features/dashboard/utils/bookings-per-day"
 import { ConfirmDetailsCard } from "@/features/dashboard/components/confirm-details-card"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import { moveOwnerBooking } from "@/features/booking/api/move-owner-booking"
 import { LiveRefresh } from "@/components/live-refresh"
 import { BOOKING_RULES } from "@/lib/booking-rules"
-import { todayIn } from "@/lib/format-booking-time"
+import { addDaysTo, todayIn } from "@/lib/format-booking-time"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,18 +29,23 @@ type Props = {
 
 export default async function BookingsPage({ params }: Props) {
   const { businessId } = await params
-  const [upcoming, past, counts, owner, serviceTeams, addonGroups, whatsapp] =
+  const owner = await getOwnerBusiness(businessId)
+  const { business } = owner
+  const today = todayIn(business.timezone)
+  const [upcoming, past, lastDays, customers, serviceTeams, addonGroups, whatsapp] =
     await Promise.all([
       getBookings(businessId, "upcoming"),
       getBookings(businessId, "past"),
-      getBookingCounts(businessId),
-      getOwnerBusiness(businessId),
+      getBookingsBetween(
+        businessId,
+        addDaysTo(today, 1 - BOOKING_RULES.analyticsDays),
+        today
+      ),
+      getCustomers(businessId),
       getServiceTeams(businessId),
       getAddonGroups(businessId),
       offersWhatsapp(businessId),
     ])
-  const { business } = owner
-  const today = todayIn(business.timezone)
   const nextDays = bookingsPerDay(upcoming, today, BOOKING_RULES.chartDays)
   const bookings = (
     <>
@@ -48,7 +55,8 @@ export default async function BookingsPage({ params }: Props) {
         businessId={businessId}
         upcoming={upcoming}
         past={past}
-        counts={counts}
+        summary={dashboardSummary(lastDays, customers, today)}
+        currency={business.currency}
         nextDays={nextDays}
         addOptions={{
           services: owner.services.map(({ id, name, durationMinutes }) => ({

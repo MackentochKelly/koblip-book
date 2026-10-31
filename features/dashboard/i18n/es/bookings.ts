@@ -2,13 +2,6 @@ import type en from "../en/bookings"
 
 const bookings: typeof en = {
   title: "Reservas",
-  stats: {
-    today: "Hoy",
-    tomorrow: "Mañana",
-    week: "Próximos 7 días",
-    upcoming: "Próximas",
-    done: (done: string, booked: string) => `${done} de ${booked} terminadas`,
-  },
   add: "Agregar",
   addBooking: "Agregar reserva",
   columns: {
@@ -69,9 +62,10 @@ const bookings: typeof en = {
     bookings: "Reservas",
     noShows: "No se presentaron",
     newCustomers: "Clientes nuevos",
-    returning: "Clientes que vuelven",
-    busiestDays: "Días más ocupados",
+    revenue: "Ingresos",
+    last7: "Últimos 7 días",
     topServices: "Servicios más pedidos",
+    otherServices: "Todo lo demás",
     noData: "Aún no hay reservas",
   },
   chart: {
