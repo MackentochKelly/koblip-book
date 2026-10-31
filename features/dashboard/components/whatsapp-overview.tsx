@@ -7,6 +7,7 @@ import { toast } from "sonner"
 
 import { PageSection } from "@/components/page-section"
 import { StatCards } from "@/components/stat-cards"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -64,7 +65,11 @@ import type {
   Sender,
   SetupStep,
 } from "../types/notifications"
-import type { BookingMessage } from "../utils/booking-templates"
+import {
+  TEMPLATE_LANGUAGES,
+  type BookingMessage,
+  type TemplateLanguage,
+} from "../utils/booking-templates"
 import { isCustomerMessage } from "../utils/customer-messages"
 import {
   notificationStatus,
@@ -114,6 +119,14 @@ export function WhatsappOverview({
   const m = useOwnerMessages()
   const t = m.whatsapp
   const { state, next, steps } = notificationStatus(sender, connection, messages)
+  // What "Submit to Meta" sends: the same drafts submitDraftsToMeta picks.
+  const drafts = messages
+    .filter((item) => item.on && item.editable)
+    .map((item) => ({
+      message: item.message,
+      languages: TEMPLATE_LANGUAGES.filter((language) => item.texts[language].review === "draft"),
+    }))
+    .filter((item) => item.languages.length > 0)
   const base = `/dashboard/${businessId}/auto-messages`
   const activity = (state: "sent" | "read" | "replied" | "failed") =>
     `${base}/activity${activityQuery({ state })}`
@@ -127,6 +140,7 @@ export function WhatsappOverview({
         state={state}
         next={next}
         waiting={waiting}
+        drafts={drafts}
         freeTextInWindow={settings.freeTextInWindow}
       />
 
@@ -175,6 +189,7 @@ function StatusCard({
   state,
   next,
   waiting,
+  drafts,
   freeTextInWindow,
 }: {
   businessId: string
@@ -183,12 +198,26 @@ function StatusCard({
   state: OverviewState
   next: NextStep | null
   waiting: BookingMessage[]
+  // The drafts "Submit to Meta" sends, each with its languages.
+  drafts: { message: BookingMessage; languages: TemplateLanguage[] }[]
   freeTextInWindow: boolean
 }) {
   const m = useOwnerMessages()
   const t = m.whatsapp
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+  // "Submit to Meta" asks first, naming what goes (D37).
+  const [asking, setAsking] = useState(false)
+  const list = new Intl.ListFormat(m.locale, { type: "conjunction" })
+  const draftCount = drafts.reduce((sum, item) => sum + item.languages.length, 0)
+  const draftList = list.format(
+    drafts.map(
+      (item) =>
+        `${t.names[item.message]} (${list.format(
+          item.languages.map((language) => (language === "en" ? t.english : t.spanish))
+        )})`
+    )
+  )
   const own = connection && !connection.needsReconnect ? connection : null
   const until = freeTextInWindow ? t.untilApprovedWindow : t.untilApproved
   // One short line: why Koblip's number sends, else the channel.
@@ -234,10 +263,26 @@ function StatusCard({
       {(next || !connection) && (
         <CardFooter className="flex flex-col gap-2 sm:flex-row">
           {next === "submit" ? (
-            <Button className="w-full sm:w-auto" disabled={pending} onClick={submit}>
-              {pending && <Spinner data-icon="inline-start" />}
-              {t.nextSteps.submit}
-            </Button>
+            <>
+              <Button
+                className="w-full sm:w-auto"
+                disabled={pending || draftCount === 0}
+                onClick={() => setAsking(true)}
+              >
+                {pending && <Spinner data-icon="inline-start" />}
+                {t.nextSteps.submit}
+              </Button>
+              <ConfirmDialog
+                open={asking}
+                title={t.submitTitle(draftCount)}
+                description={draftList}
+                confirm={t.submitConfirm}
+                cancel={t.submitCancel}
+                tone="default"
+                onConfirm={submit}
+                onClose={() => setAsking(false)}
+              />
+            </>
           ) : next ? (
             <Button
               className="w-full sm:w-auto"

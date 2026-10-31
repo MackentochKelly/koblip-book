@@ -13,13 +13,15 @@ import {
 
 // Asks before a change that is hard to undo (shadcn's Alert Dialog): open
 // while `open` is true. Confirm closes it and runs `onConfirm`. Words come
-// from the caller, in its language.
+// from the caller, in its language. `tone` "default" is for a change that
+// removes nothing (sending something for review); removals stay red.
 export function ConfirmDialog({
   open,
   title,
   description,
   confirm,
   cancel,
+  tone = "destructive",
   onConfirm,
   onClose,
 }: {
@@ -28,6 +30,7 @@ export function ConfirmDialog({
   description: string
   confirm: string
   cancel: string
+  tone?: "destructive" | "default"
   onConfirm: () => void
   onClose: () => void
 }) {
@@ -46,7 +49,7 @@ export function ConfirmDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>{cancel}</AlertDialogCancel>
           <AlertDialogAction
-            variant="destructive"
+            variant={tone}
             onClick={() => {
               onClose()
               onConfirm()

@@ -34,6 +34,10 @@ const whatsapp: typeof en = {
     submit: "Enviar a Meta",
     turnOn: "Activar mensajes",
   },
+  // "Enviar a Meta" pregunta antes (D37).
+  submitTitle: (n: number) => (n === 1 ? "¿Enviar 1 mensaje a Meta?" : `¿Enviar ${n} mensajes a Meta?`),
+  submitConfirm: "Enviar",
+  submitCancel: "Cancelar",
   setup: "Puesta en marcha",
   setupProgress: (done: number, total: number) => `${done} de ${total} hechos`,
   setupDone: "Puesta en marcha lista",
