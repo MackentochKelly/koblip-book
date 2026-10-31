@@ -20,7 +20,7 @@ import {
   INTERRUPTED_REPLY_NOTE,
   INTERRUPTED_BEFORE_WORDS_NOTE,
 } from "../utils/system-prompt"
-import { checkAnswer } from "./check-answer"
+import { storeAnswerCheck } from "./answer-checks"
 import { storePendingAction } from "./pending-actions"
 
 export interface RunChatContext {
@@ -79,31 +79,6 @@ function freeTimesOf(data: unknown): FreeTimes | null {
     teamMember,
     days: valid.map((day) => ({ date: day.date, times: day.times })),
   }
-}
-
-// Buttons from a passed answer check, or null for no buttons: trimmed,
-// de-duplicated, and only options that appear word for word in this
-// request's tool results. A bad choice list never fails the answer.
-function cleanChoices(
-  choices: string[],
-  toolResults: string[]
-): string[] | null {
-  const options: string[] = []
-  for (const choice of choices) {
-    const name = choice.trim()
-    if (
-      name === "" ||
-      name.length > ASSISTANT_RULES.maxChoiceChars ||
-      !toolResults.some((result) => result.includes(name)) ||
-      options.includes(name)
-    ) {
-      continue
-    }
-    options.push(name)
-  }
-  return options.length >= 2 && options.length <= ASSISTANT_RULES.maxChoices
-    ? options
-    : null
 }
 
 // Today in the business timezone, for the system prompt.
@@ -392,41 +367,34 @@ export async function* runChat(
           yield { type: "done" }
           return
         }
-        const stepId = `check-${turn}`
-        yield {
-          type: "step",
-          id: stepId,
-          label: t.steps.checking,
-          status: "running",
-        }
-        const question =
-          [...messages].reverse().find((m) => m.role === "owner")?.text ?? ""
-        const toolResults = history.flatMap((m) =>
-          m.role === "tool" && typeof m.content === "string" ? [m.content] : []
-        )
-        const verdict = await checkAnswer({
-          question,
-          toolResults,
+        // The reply ends here: the screen runs the check right after
+        // (POST /api/assistant/check), so nothing waits for it.
+        const stored = storeAnswerCheck({
+          ownerId: context.ownerId,
+          businessId: context.businessId,
+          question:
+            [...messages].reverse().find((m) => m.role === "owner")?.text ??
+            "",
+          toolResults: history.flatMap((m) =>
+            m.role === "tool" && typeof m.content === "string"
+              ? [m.content]
+              : []
+          ),
           answer: text,
-          signal: opts?.signal,
-        })
-        yield {
-          type: "step",
-          id: stepId,
           label: t.steps.checking,
-          status: verdict.ok === true ? "done" : "failed",
+          // The picker holds the free times, so they never come as
+          // buttons too.
+          withChoices: freeTimes === null,
+        })
+        if ("error" in stored) {
+          yield { type: "notice", kind: "unverified" }
+        } else {
+          yield { type: "check", id: stored.id, label: t.steps.checking }
         }
         if (items.length > 0) yield { type: "sources", items }
-        if (verdict.ok !== true) {
-          yield { type: "notice", kind: "unverified" }
-        }
-        // The picker holds the free times, so they never come as buttons
-        // too; it shows even unchecked, since it is the tool's own data.
+        // The picker shows at once, unchecked: it is the tool's own data.
         if (freeTimes !== null) {
           yield { type: "times", today: date, ...freeTimes }
-        } else if (verdict.ok === true) {
-          const options = cleanChoices(verdict.choices, toolResults)
-          if (options !== null) yield { type: "choices", options }
         }
         yield { type: "done" }
         return

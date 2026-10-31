@@ -63,11 +63,18 @@ export type ChatItem =
 type AssistantItem = Extract<ChatItem, { role: "assistant" }>
 
 // The reply being written is the last item; a new one starts after the
-// owner's message.
-function withReply(
+// owner's message. With `replyId`, that reply wherever it is (an answer's
+// check ends after the owner may have asked again); gone means no change.
+function withReplyOf(
   items: ChatItem[],
-  change: (reply: AssistantItem) => AssistantItem
+  change: (reply: AssistantItem) => AssistantItem,
+  replyId?: string
 ): ChatItem[] {
+  if (replyId !== undefined) {
+    return items.map((item) =>
+      item.id === replyId && item.role === "assistant" ? change(item) : item
+    )
+  }
   const last = items.at(-1)
   if (last?.role === "assistant") {
     return [...items.slice(0, -1), change(last)]
@@ -116,18 +123,22 @@ export function newReply(): ChatItem {
   }
 }
 
+// `replyId` sends the event to that reply instead of the last one.
 export function applyEvent(
   items: ChatItem[],
-  event: AssistantStreamEvent
+  event: AssistantStreamEvent,
+  replyId?: string
 ): ChatItem[] {
+  const withReply = (change: (reply: AssistantItem) => AssistantItem) =>
+    withReplyOf(items, change, replyId)
   switch (event.type) {
     case "text":
-      return withReply(items, (reply) => ({
+      return withReply((reply) => ({
         ...reply,
         text: reply.text + event.delta,
       }))
     case "step":
-      return withReply(items, (reply) => {
+      return withReply((reply) => {
         const step: ChatStep = {
           id: event.id,
           label: event.label,
@@ -142,7 +153,7 @@ export function applyEvent(
         }
       })
     case "confirm":
-      return withReply(items, (reply) => ({
+      return withReply((reply) => ({
         ...reply,
         confirms: [
           ...reply.confirms,
@@ -156,13 +167,22 @@ export function applyEvent(
           },
         ],
       }))
+    case "check":
+      // The check runs after the reply ends; its chip shows meanwhile.
+      return withReply((reply) => ({
+        ...reply,
+        steps: [
+          ...reply.steps,
+          { id: event.id, label: event.label, status: "running" },
+        ],
+      }))
     case "choices":
-      return withReply(items, (reply) => ({
+      return withReply((reply) => ({
         ...reply,
         choices: event.options,
       }))
     case "times":
-      return withReply(items, (reply) => ({
+      return withReply((reply) => ({
         ...reply,
         times: {
           service: event.service,
@@ -172,14 +192,14 @@ export function applyEvent(
         },
       }))
     case "result":
-      return withReply(items, (reply) => ({
+      return withReply((reply) => ({
         ...reply,
         result: { ok: event.ok, text: event.text, kind: event.kind },
       }))
     case "sources":
-      return withReply(items, (reply) => ({ ...reply, sources: event.items }))
+      return withReply((reply) => ({ ...reply, sources: event.items }))
     case "notice":
-      return withReply(items, (reply) => ({ ...reply, unverified: true }))
+      return withReply((reply) => ({ ...reply, unverified: true }))
     default:
       return items
   }
@@ -300,7 +320,22 @@ export function restoreChat(saved: string | null): ChatItem[] {
     if (typeof data !== "object" || data === null) return []
     const { version, items } = data as { version?: unknown; items?: unknown }
     if (version !== CHAT_STORAGE_VERSION || !Array.isArray(items)) return []
-    return items.every(isChatItem) ? items : []
+    if (!items.every(isChatItem)) return []
+    // Nothing runs after a reload: a step left running (an answer's check
+    // the page closed on) ended without its outcome.
+    return items.map((item) =>
+      item.role === "assistant" &&
+      item.steps.some((step) => step.status === "running")
+        ? {
+            ...item,
+            steps: item.steps.map((step) =>
+              step.status === "running"
+                ? { ...step, status: "failed" as const }
+                : step
+            ),
+          }
+        : item
+    )
   } catch {
     return []
   }

@@ -23,6 +23,7 @@ export type AssistantStreamEvent =
       destructive: boolean
       action: string // the button's word, e.g. "Book", "Delete"
     } // card with the action button and Cancel
+  | { type: "check"; id: string; label: string } // the answer's check runs next: POST /api/assistant/check with this id; label = its step chip
   | { type: "choices"; options: string[] } // quick answers; a tap sends one
   | {
       type: "times"
@@ -78,6 +79,12 @@ export interface AssistantConfirmRequest {
   businessId: string
   id: string
   accept: boolean
+}
+
+// Request for POST /api/assistant/check (an answer's check, after it ends).
+export interface AssistantCheckRequest {
+  businessId: string
+  id: string
 }
 
 // One tool the route handler offers to the loop.

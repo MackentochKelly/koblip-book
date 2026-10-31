@@ -17,7 +17,7 @@ file: [Plans](README.md).
 | Task | What | Size | Needs | Status |
 | --- | --- | --- | --- | --- |
 | A1 | Booking card books exactly what it shows | M | | Done (2026-10-31) |
-| A2 | Time picker shows right away | S | | Working on (2026-10-31) |
+| A2 | Time picker shows right away | M | | Done (2026-10-31) |
 | A3 | Voice answers get checked too | M | A2 | To do |
 | A4 | At most 2 voice sessions open per owner | S | | To do |
 | A5 | Assistant remembers what it looked up | L | | To do |
@@ -53,13 +53,19 @@ booking keeps the card's day. A rename between card and tap changes nothing.
 ### A2 · Time picker shows right away
 
 **Problem:** the free times picker waits for the answer check (up to 20 s).
+The screen only shows the picker once the whole reply ends, so moving the
+`times` event alone is not enough.
 
-**Fix:** in `run-chat.ts`, send the `times` event before the check step.
-The check still runs on the text.
+**Fix (owner's pick, 2026-10-31):** the check runs after the reply.
+- The reply ends at once. The server stores the check (`answer-checks.ts`)
+  and sends a `check` event.
+- The screen then calls `POST /api/assistant/check`. Its outcome (chip,
+  notice, buttons) goes to that reply, even if the owner already asked again.
 
-**Files:** `features/assistant/api/run-chat.ts` (+ test).
+**Files:** `features/assistant/api/answer-checks.ts`, `app/api/assistant/check/route.ts`, `features/assistant/api/run-chat.ts`, `features/assistant/types.ts`, `features/assistant/utils/chat-state.ts`, `features/assistant/utils/http-transport.ts`, `features/assistant/hooks/use-assistant-chat.ts` (+ tests).
 
-**Done when:** a test shows `times` comes before the `check` step.
+**Done when:** the reply and picker come with no check call. The check
+runs after, once, only for its owner.
 
 ---
 
@@ -69,14 +75,12 @@ The check still runs on the text.
 can be said out loud with no warning.
 
 **Fix:**
-- In voice mode, the server sends a new `answered` event when the spoken
-  part ends, then runs the check, then sends `notice` (if it fails) and
-  `done`.
-- Voice listens again on `answered`, so the check never makes the owner wait.
+- Voice uses A2's check-after flow: the reply ends at once and sends
+  `check`, and voice listens again right away.
 - If the check fails: show the "not checked" notice on screen, and the app
   says one short fixed line (EN/ES) when it is not talking.
 
-**Files:** `features/assistant/types.ts`, `features/assistant/api/run-chat.ts`, `features/assistant/hooks/use-assistant-chat.ts`, `features/assistant/utils/live-voice-session.ts`, `features/assistant/i18n/*`.
+**Files:** `features/assistant/api/run-chat.ts`, `features/assistant/hooks/use-assistant-chat.ts`, `features/assistant/utils/live-voice-session.ts`, `features/assistant/i18n/*`.
 
 **Done when:** tests cover: check passes (no line), check fails (notice +
 line), and the next question is not delayed.
@@ -206,3 +210,4 @@ required extra asks, an unknown extra asks.
 | Rate limits stay in memory | One process; a deploy resets them for at most one minute. Waiting cards move to the database (A8) because owners lose them | Dev, 2026-10-31 |
 | Memory goes through the client, not a server store | No new table, works with saved chats, and tools already check the business | Dev, 2026-10-31 |
 | A failed voice check shows on screen and says one short line | The owner hears the warning without a long stop | Dev, 2026-10-31 |
+| The answer check runs after the reply, in its own request (A2) | The reply and picker never wait; A3 reuses it for voice | Owner, 2026-10-31 |

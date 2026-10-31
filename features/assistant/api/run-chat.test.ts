@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { expect, test, vi } from "vitest"
+import { beforeEach, expect, test, vi } from "vitest"
 
 vi.mock("server-only", () => ({}))
 
@@ -101,6 +101,39 @@ async function collect(gen: AsyncGenerator<unknown>): Promise<unknown[]> {
   return events
 }
 
+const { answerCheckEvents, resetAnswerChecksForTests, takeAnswerCheck } =
+  await import("./answer-checks")
+
+beforeEach(() => resetAnswerChecksForTests())
+
+// The answer's events, then the events of the check it left behind, as
+// POST /api/assistant/check sends them right after.
+async function collectChecked(
+  gen: AsyncGenerator<unknown>
+): Promise<{ answer: unknown[]; check: unknown[] }> {
+  const answer = await collect(gen)
+  const event = answer.find((e) => (e as { type: string }).type === "check")
+  if (!event) return { answer, check: [] }
+  const check = takeAnswerCheck(
+    (event as { id: string }).id,
+    CONTEXT.ownerId,
+    CONTEXT.businessId
+  )
+  return { answer, check: check ? await collect(answerCheckEvents(check)) : [] }
+}
+
+const CHECK = {
+  type: "check",
+  id: expect.any(String),
+  label: "Checking the answer…",
+}
+const CHECKED = {
+  type: "step",
+  id: expect.any(String),
+  label: "Checking the answer…",
+  status: "done",
+}
+
 test("plain answer sends one text event then done, with tools offered", async () => {
   const { seen } = scriptedClient([[textChunk("Hi"), textChunk("!")]])
   const events = await collect(
@@ -143,18 +176,7 @@ test("tool call then final answer, ids matched in order", async () => {
     { type: "step", id: "call-B", label: "Probing…", status: "running" },
     { type: "step", id: "call-B", label: "Probing…", status: "done" },
     { type: "text", delta: "Done." },
-    {
-      type: "step",
-      id: "check-1",
-      label: "Checking the answer…",
-      status: "running",
-    },
-    {
-      type: "step",
-      id: "check-1",
-      label: "Checking the answer…",
-      status: "done",
-    },
+    CHECK,
     { type: "done" },
   ])
   expect(run).toHaveBeenCalledTimes(2)
@@ -576,7 +598,7 @@ test("no tool means one text event and no judge call", async () => {
   expect(judgeBodies(create)).toEqual([])
 })
 
-test("tool then supported answer comes after a checking step", async () => {
+test("a supported answer ends at once, and its check passes after", async () => {
   const { create } = scriptedClient(
     [
       [toolChunk(0, "call-A", "probe", "{}")],
@@ -584,28 +606,50 @@ test("tool then supported answer comes after a checking step", async () => {
     ],
     [judgeOk()]
   )
-  const events = await collect(
+  const answer = await collect(
     runChat(MESSAGES, CONTEXT, [probe(async () => ({ today: 2 }))])
   )
-  expect(events).toEqual([
+  expect(answer).toEqual([
     { type: "step", id: "call-A", label: "Probing…", status: "running" },
     { type: "step", id: "call-A", label: "Probing…", status: "done" },
     { type: "text", delta: "You have 2 bookings." },
-    {
-      type: "step",
-      id: "check-1",
-      label: "Checking the answer…",
-      status: "running",
-    },
-    {
-      type: "step",
-      id: "check-1",
-      label: "Checking the answer…",
-      status: "done",
-    },
+    CHECK,
+    { type: "done" },
+  ])
+  // Nothing waited for the check.
+  expect(judgeBodies(create)).toHaveLength(0)
+  const id = (answer[3] as { id: string }).id
+  const check = takeAnswerCheck(id, CONTEXT.ownerId, CONTEXT.businessId)
+  expect(check).toMatchObject({
+    question: "hello",
+    answer: "You have 2 bookings.",
+    toolResults: ['{"data":{"today":2}}'],
+  })
+  expect(await collect(answerCheckEvents(check!))).toEqual([
+    { ...CHECKED, id },
     { type: "done" },
   ])
   expect(judgeBodies(create)).toHaveLength(1)
+  // Single use, and only for its owner and business.
+  expect(takeAnswerCheck(id, CONTEXT.ownerId, CONTEXT.businessId)).toBeNull()
+})
+
+test("a check is only for its owner and business, and expires", async () => {
+  scriptedClient(
+    [[toolChunk(0, "call-A", "probe", "{}")], [textChunk("2 bookings.")]],
+    [judgeOk()]
+  )
+  const answer = await collect(
+    runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
+  )
+  const id = (answer.find((e) => (e as { type: string }).type === "check") as {
+    id: string
+  }).id
+  expect(takeAnswerCheck(id, "someone-else", CONTEXT.businessId)).toBeNull()
+  expect(takeAnswerCheck(id, CONTEXT.ownerId, "other-business")).toBeNull()
+  expect(
+    takeAnswerCheck(id, CONTEXT.ownerId, CONTEXT.businessId, Date.now() + 121_000)
+  ).toBeNull()
 })
 
 test("unknown judge verdict sends the answer marked unverified", async () => {
@@ -613,24 +657,15 @@ test("unknown judge verdict sends the answer marked unverified", async () => {
     [[toolChunk(0, "call-A", "probe", "{}")], [textChunk("2 bookings.")]],
     ["not json"]
   )
-  const events = await collect(
+  const { answer, check } = await collectChecked(
     runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
   )
-  expect(events).toContainEqual({ type: "text", delta: "2 bookings." })
-  expect(events).toContainEqual({ type: "notice", kind: "unverified" })
-  const checkSteps = events.filter(
-    (e) =>
-      (e as { type: string }).type === "step" &&
-      (e as { id: string }).id.startsWith("check-")
-  )
-  expect(checkSteps.map((e) => (e as { status: string }).status)).toEqual([
-    "running",
-    "failed",
+  expect(answer).toContainEqual({ type: "text", delta: "2 bookings." })
+  expect(check).toEqual([
+    { ...CHECKED, status: "failed" },
+    { type: "notice", kind: "unverified" },
+    { type: "done" },
   ])
-  expect(events.some((e) => (e as { type: string }).type === "choices")).toBe(
-    false
-  )
-  expect(events[events.length - 1]).toEqual({ type: "done" })
 })
 
 test("confirm card makes no judge call", async () => {
@@ -662,29 +697,22 @@ test("judge choices from the tool results send text, buttons, done", async () =>
     ],
     [judgeOk(["Classic Haircut", "Skin Fade"])]
   )
-  const events = await collect(
+  const { answer, check } = await collectChecked(
     runChat(MESSAGES, CONTEXT, [
       probe(async () => ({
         services: [{ name: "Classic Haircut" }, { name: "Skin Fade" }],
       })),
     ])
   )
-  expect(events).toEqual([
+  expect(answer).toEqual([
     { type: "step", id: "call-A", label: "Probing…", status: "running" },
     { type: "step", id: "call-A", label: "Probing…", status: "done" },
     { type: "text", delta: "Which one: Classic Haircut or Skin Fade?" },
-    {
-      type: "step",
-      id: "check-1",
-      label: "Checking the answer…",
-      status: "running",
-    },
-    {
-      type: "step",
-      id: "check-1",
-      label: "Checking the answer…",
-      status: "done",
-    },
+    CHECK,
+    { type: "done" },
+  ])
+  expect(check).toEqual([
+    CHECKED,
     { type: "choices", options: ["Classic Haircut", "Skin Fade"] },
     { type: "done" },
   ])
@@ -695,12 +723,12 @@ test("a choice missing from the tool results is dropped", async () => {
     [[toolChunk(0, "call-A", "probe", "{}")], [textChunk("Which one?")]],
     [judgeOk([" Cut ", "Cut", "Nope", "x".repeat(61), "Fade"])]
   )
-  const events = await collect(
+  const { check } = await collectChecked(
     runChat(MESSAGES, CONTEXT, [
       probe(async () => ({ services: [{ name: "Cut" }, { name: "Fade" }] })),
     ])
   )
-  expect(events).toContainEqual({
+  expect(check).toContainEqual({
     type: "choices",
     options: ["Cut", "Fade"],
   })
@@ -739,10 +767,10 @@ test("a barbershop's 8 services all come as buttons, 49 come as none", async () 
       [[toolChunk(0, "call-A", "probe", "{}")], [textChunk("Which one?")]],
       [judgeOk(list.map((s) => s.name))]
     )
-    const events = await collect(
+    const { check } = await collectChecked(
       runChat(MESSAGES, CONTEXT, [probe(async () => ({ services: list }))])
     )
-    const choices = events.find(
+    const choices = check.find(
       (e) => (e as { type: string }).type === "choices"
     )
     expect(choices).toEqual(
@@ -774,8 +802,7 @@ test("sources follow a passed answer with kinds and counts", async () => {
   const at = events.findIndex((e) => (e as { type: string }).type === "text")
   expect(events.slice(at).map((e) => (e as { type: string }).type)).toEqual([
     "text",
-    "step",
-    "step",
+    "check",
     "sources",
     "done",
   ])
@@ -820,14 +847,17 @@ test("sources with an unverified answer, no sources after a confirm card", async
     [[toolChunk(0, "call-A", "list_services", "{}")], [textChunk("Nope.")]],
     ["not json"]
   )
-  const unverified = await collect(
+  const unverified = await collectChecked(
     runChat(MESSAGES, CONTEXT, [
       probe(async () => ({ services: services(2) }), "list_services"),
     ])
   )
-  expect(unverified).toContainEqual({ type: "notice", kind: "unverified" })
+  expect(unverified.check).toContainEqual({
+    type: "notice",
+    kind: "unverified",
+  })
   expect(
-    unverified.some((e) => (e as { type: string }).type === "sources")
+    unverified.answer.some((e) => (e as { type: string }).type === "sources")
   ).toBe(true)
   resetPendingActionsForTests()
   scriptedClient([
@@ -907,22 +937,23 @@ test("typed failure sends sources and notice without another model turn", async 
     [[toolChunk(0, "a", "list_services", "{}")], [textChunk("Wrong.")]],
     [judgeNo(["Wrong count"])]
   )
-  const events = await collect(
+  const { answer, check } = await collectChecked(
     runChat(MESSAGES, CONTEXT, [
       probe(async () => ({ services: [{}] }), "list_services"),
     ])
   )
   expect(create).toHaveBeenCalledTimes(3)
-  expect(events.slice(-3)).toEqual([
+  expect(answer.slice(-4)).toEqual([
+    { type: "text", delta: "Wrong." },
+    CHECK,
     { type: "sources", items: [{ kind: "services", count: 1 }] },
+    { type: "done" },
+  ])
+  expect(check).toEqual([
+    { ...CHECKED, status: "failed" },
     { type: "notice", kind: "unverified" },
     { type: "done" },
   ])
-  expect(
-    events.findIndex((e) => (e as { type: string }).type === "text")
-  ).toBeLessThan(
-    events.findIndex((e) => (e as { id?: string }).id === "check-1")
-  )
 })
 
 test.each([false, true])(
@@ -1006,7 +1037,7 @@ test("free times come as a picker under the answer, never as buttons too", async
     ],
     [judgeOk(["09:00", "09:15"])]
   )
-  const events = await collect(
+  const { answer, check } = await collectChecked(
     runChat(MESSAGES, CONTEXT, [
       probe(
         async () => ({ service: "Cut", teamMember: null, days }),
@@ -1014,16 +1045,18 @@ test("free times come as a picker under the answer, never as buttons too", async
       ),
     ])
   )
-  expect(events).toContainEqual({
-    type: "times",
-    service: "Cut",
-    teamMember: null,
-    today: "2026-10-28",
-    days,
-  })
-  expect(events.some((e) => (e as { type: string }).type === "choices")).toBe(
-    false
-  )
+  // The picker comes with the answer itself, never after the check.
+  expect(answer.slice(-2)).toEqual([
+    {
+      type: "times",
+      service: "Cut",
+      teamMember: null,
+      today: "2026-10-28",
+      days,
+    },
+    { type: "done" },
+  ])
+  expect(check).toEqual([CHECKED, { type: "done" }])
 })
 
 test("no free time at all means no picker", async () => {

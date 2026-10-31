@@ -235,3 +235,37 @@ test("free times land on the reply and come back from storage", () => {
   expect(reply.role === "assistant" && reply.times).toEqual(times)
   expect(restoreChat(saveChat(items))).toEqual(items)
 })
+
+test("an answer's check shows as a chip and ends on its own reply", () => {
+  let items: ChatItem[] = [owner]
+  items = applyEvent(items, { type: "text", delta: "2 bookings." })
+  items = applyEvent(items, { type: "check", id: "c1", label: "Checking…" })
+  const replyId = items[1].id
+  // The owner asks again before the check ends.
+  items = [...items, { id: "o2", role: "owner", text: "And tomorrow?" }]
+  items = applyEvent(items, { type: "text", delta: "None." })
+  const check = { type: "step", id: "c1", label: "Checking…" } as const
+  items = applyEvent(items, { ...check, status: "failed" }, replyId)
+  items = applyEvent(items, { type: "notice", kind: "unverified" }, replyId)
+  items = applyEvent(items, { type: "choices", options: ["A", "B"] }, replyId)
+  const [, first, , last] = items
+  expect(first).toMatchObject({
+    steps: [{ id: "c1", label: "Checking…", status: "failed" }],
+    unverified: true,
+    choices: ["A", "B"],
+  })
+  expect(last).toMatchObject({ text: "None.", steps: [], unverified: false })
+  // A reply that is gone takes nothing.
+  expect(
+    applyEvent(items, { type: "notice", kind: "unverified" }, "gone")
+  ).toEqual(items)
+})
+
+test("a check left running when the page closed comes back ended", () => {
+  let items: ChatItem[] = [owner]
+  items = applyEvent(items, { type: "text", delta: "2 bookings." })
+  items = applyEvent(items, { type: "check", id: "c1", label: "Checking…" })
+  expect(restoreChat(saveChat(items))[1]).toMatchObject({
+    steps: [{ id: "c1", status: "failed" }],
+  })
+})

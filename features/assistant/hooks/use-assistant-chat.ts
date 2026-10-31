@@ -5,6 +5,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type {
   AnswerListener,
+  AssistantCheckRequest,
   AssistantConfirmRequest,
   AssistantRequest,
   AssistantStreamEvent,
@@ -35,6 +36,7 @@ export interface AssistantTransport {
     signal?: AbortSignal
   ): AsyncIterable<AssistantStreamEvent>
   confirm(request: AssistantConfirmRequest): AsyncIterable<AssistantStreamEvent>
+  check(request: AssistantCheckRequest): AsyncIterable<AssistantStreamEvent>
 }
 
 type ErrorCode = Extract<AssistantStreamEvent, { type: "error" }>["code"]
@@ -108,6 +110,31 @@ export function useAssistantChat(
     })
   }, [busy, items, businessId, chatId])
 
+  // An answer's check, run after its reply ended so nothing waits for it:
+  // its outcome goes to that reply, even when the owner already asked
+  // again. A check that fails to answer marks the reply unchecked.
+  const runCheck = async (
+    { id, label }: { id: string; label: string },
+    replyId: string
+  ) => {
+    const apply = (event: AssistantStreamEvent) =>
+      setItems((current) => applyEvent(current, event, replyId))
+    let ended = false
+    try {
+      for await (const event of transport.check({ businessId, id })) {
+        if (event.type === "error") break
+        if (event.type === "step") ended = true
+        apply(event)
+      }
+    } catch {
+      // Same as no answer: marked unchecked below.
+    }
+    if (!ended) {
+      apply({ type: "step", id, label, status: "failed" })
+      apply({ type: "notice", kind: "unverified" })
+    }
+  }
+
   // Shows each event as it comes, and gives back the items as they end, so
   // a caller (talking mode) can read the finished reply without waiting for
   // the screen to update.
@@ -120,8 +147,10 @@ export function useAssistantChat(
     setError(null)
     unsaved.current = true
     let latest = start
+    let check: { id: string; label: string } | null = null
     try {
       for await (const event of stream) {
+        if (event.type === "check") check = event
         if (event.type === "error") setError(event.code)
         else {
           if (event.type === "text") listen?.onText(event.delta)
@@ -136,6 +165,10 @@ export function useAssistantChat(
       setError("unavailable")
     } finally {
       setBusy(false)
+    }
+    const reply = latest.at(-1)
+    if (check !== null && reply?.role === "assistant") {
+      void runCheck(check, reply.id)
     }
     return latest
   }
