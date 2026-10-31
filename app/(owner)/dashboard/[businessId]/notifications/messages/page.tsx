@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function WhatsappMessagesPage({
   params,
-}: PageProps<"/dashboard/[businessId]/auto-messages/messages">) {
+}: PageProps<"/dashboard/[businessId]/notifications/messages">) {
   const { businessId } = await params
   // Only the business's owner gets here.
   await getOwnerBusiness(businessId)

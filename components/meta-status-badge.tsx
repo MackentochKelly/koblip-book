@@ -3,7 +3,7 @@ import { CircleCheckIcon, ClockIcon } from "@/components/ui/icons"
 import type { TemplateReview } from "@/types/whatsapp"
 
 // Meta's review of a WhatsApp message as one Badge, the same on the
-// business's Auto messages page and in the admin (D36): approved with a
+// business's Notifications page and in the admin (D36): approved with a
 // check, in review with a clock, refused in red, a draft plain. Words come
 // from the caller, in its language.
 export function MetaStatusBadge({

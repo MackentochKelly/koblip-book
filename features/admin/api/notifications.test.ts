@@ -43,7 +43,7 @@ beforeAll(async () => {
       businessId: "a",
       kind: "messageFailed",
       data: {},
-      link: "/dashboard/a/auto-messages/activity",
+      link: "/dashboard/a/notifications/activity",
       readAt: at(3),
       createdAt: at(2),
     },

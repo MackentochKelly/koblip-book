@@ -9,7 +9,7 @@ const shell: typeof en = {
     services: "Servicios",
     team: "Equipo",
     hours: "Horario",
-    autoMessages: "Mensajes automáticos",
+    notifications: "Notificaciones",
     integrations: "Integraciones",
     settings: "Ajustes",
     assistant: "Asistente",

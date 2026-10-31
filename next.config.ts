@@ -6,13 +6,13 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "5mb",
     },
   },
-  // The WhatsApp page became Auto messages (D36): old links and bookmarks,
-  // from its first name and the short-lived "Notifications", land on the
-  // same part there. A page added at notifications/ must drop that rule.
+  // The WhatsApp page became Notifications (D36, D38): old links and
+  // bookmarks, from its first name and the short-lived "Auto messages", land
+  // on the same part there, with their filters.
   async redirects() {
-    return ["whatsapp", "notifications"].map((old) => ({
+    return ["whatsapp", "auto-messages"].map((old) => ({
       source: `/dashboard/:businessId/${old}/:path*`,
-      destination: "/dashboard/:businessId/auto-messages/:path*",
+      destination: "/dashboard/:businessId/notifications/:path*",
       permanent: true,
     }))
   },

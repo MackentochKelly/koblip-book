@@ -1,6 +1,6 @@
 import type en from "../en/whatsapp"
 
-// La página Mensajes automáticos: mensajes de reservas enviados por WhatsApp con Koblip Chat.
+// La página Notificaciones: mensajes de reservas enviados por WhatsApp con Koblip Chat.
 const whatsapp: typeof en = {
   connectTitle: "Conecta Koblip Chat para enviar mensajes de WhatsApp",
   connect: "Conectar",
@@ -13,7 +13,7 @@ const whatsapp: typeof en = {
     replies: "Respuestas",
     activity: "Actividad",
   },
-  partsLabel: "Partes de Mensajes automáticos",
+  partsLabel: "Partes de Notificaciones",
   ready: "Listo para enviar",
   // Qué número envía (K4).
   sendingFrom: { koblip: "Enviando desde el número de Koblip", own: "Enviando desde tu número" },

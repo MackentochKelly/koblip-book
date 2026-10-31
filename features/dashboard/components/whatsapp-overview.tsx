@@ -91,7 +91,7 @@ const STEP_PLACES: Record<Exclude<NextStep, "submit">, "integrations" | "message
   turnOn: "messages",
 }
 
-// The Auto messages Overview (D36), top to bottom: one status with the next
+// The Notifications Overview (D36), top to bottom: one status with the next
 // step, the own number's setup (folded away once live), the last days'
 // numbers, the customer messages and a test to the owner's own phone.
 export function WhatsappOverview({
@@ -127,7 +127,7 @@ export function WhatsappOverview({
       languages: TEMPLATE_LANGUAGES.filter((language) => item.texts[language].review === "draft"),
     }))
     .filter((item) => item.languages.length > 0)
-  const base = `/dashboard/${businessId}/auto-messages`
+  const base = `/dashboard/${businessId}/notifications`
   const activity = (state: "sent" | "read" | "replied" | "failed") =>
     `${base}/activity${activityQuery({ state })}`
 
@@ -248,7 +248,7 @@ function StatusCard({
   const placeOf = (step: Exclude<NextStep, "submit">) =>
     STEP_PLACES[step] === "integrations"
       ? `/dashboard/${businessId}/integrations`
-      : `/dashboard/${businessId}/auto-messages/messages`
+      : `/dashboard/${businessId}/notifications/messages`
 
   return (
     <Card>

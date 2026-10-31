@@ -78,7 +78,7 @@ export async function whatsappActivity(
 export type ActivityStats = { sent: number; read: number; replied: number; failed: number }
 
 // One business's messages over the last `days` (by when each went or was
-// due), for the Auto messages Overview (D36): sent, read by the customer,
+// due), for the Notifications Overview (D36): sent, read by the customer,
 // answered with a button, and failed. Each matches one Activity filter.
 export async function whatsappActivityStats(
   businessId: string,

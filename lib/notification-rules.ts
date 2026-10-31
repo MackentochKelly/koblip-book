@@ -21,7 +21,7 @@ export const NOTIFICATION_RULES = {
   stuckSendingMinutes: 10,
   // How many of the latest messages the WhatsApp page's history shows.
   historySize: 30,
-  // The days the Auto messages Overview counts its numbers over.
+  // The days the Notifications Overview counts its numbers over.
   statsDays: 7,
   // Inside 24 hours of the person's last message a normal message goes
   // instead of the template, unless the owner turns it off.

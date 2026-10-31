@@ -7,7 +7,7 @@ import { WhatsappFrame } from "@/features/dashboard/components/whatsapp-frame"
 export default async function WhatsappLayout({
   params,
   children,
-}: LayoutProps<"/dashboard/[businessId]/auto-messages">) {
+}: LayoutProps<"/dashboard/[businessId]/notifications">) {
   const { businessId } = await params
   const [connection, sender] = await Promise.all([
     chatConnectionFor(businessId),
