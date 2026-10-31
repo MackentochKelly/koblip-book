@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import {
+  BellIcon,
   CalendarDaysIcon,
   ContactIcon,
   LayoutDashboardIcon,
@@ -29,6 +30,7 @@ const NAV = [
   { path: "/owners", key: "owners", icon: ContactIcon },
   { path: "/bookings", key: "bookings", icon: CalendarDaysIcon },
   { path: "/whatsapp", key: "whatsapp", icon: MessageCircleIcon },
+  { path: "/notifications", key: "notifications", icon: BellIcon },
 ] as const
 
 // The admin area, built like the owner dashboard: the same menu (folding on
