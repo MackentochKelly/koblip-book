@@ -45,8 +45,10 @@ export const NAV_GROUPS = [
 // The page a path is on, for the top bar's title: the menu page whose path
 // starts it (the longest one, so Home only matches itself). Sub-pages, like
 // Settings' tabs, take their menu page's name.
+type NavItem = (typeof NAV_GROUPS)[number]["items"][number]
+
 export function navKeyFor(pathname: string, base: string) {
-  const items = NAV_GROUPS.flatMap((group) => group.items)
+  const items = NAV_GROUPS.flatMap((group): readonly NavItem[] => group.items)
   const found = items
     .filter((item) =>
       item.path ? pathname.startsWith(base + item.path) : pathname === base
