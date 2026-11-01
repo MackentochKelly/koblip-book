@@ -22,6 +22,7 @@ import { BookingsView } from "@/features/dashboard/components/bookings-view"
 import { periodSummary } from "@/features/dashboard/utils/analytics"
 import { bookingsPerDay } from "@/features/dashboard/utils/bookings-per-day"
 import { newCustomers } from "@/features/dashboard/utils/new-customers"
+import { partOfDay } from "@/features/dashboard/utils/part-of-day"
 import { SetupList } from "@/features/dashboard/components/setup-list"
 import { setupTasks } from "@/features/dashboard/utils/setup-tasks"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
@@ -34,6 +35,7 @@ import { LiveRefresh } from "@/components/live-refresh"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { addDaysTo, todayIn } from "@/lib/format-booking-time"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
+import { requireOwner } from "@/lib/dal"
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getOwnerMessages()).shell.nav.dashboard }
@@ -75,7 +77,29 @@ export default async function BookingsPage({ params }: Props) {
     lastDays.map((booking) => booking.customerKey)
   )
   const now = new Date().toISOString()
-  const bookings = (
+  const session = await requireOwner()
+  const firstName = session.isGuest
+    ? undefined
+    : session.name.trim().split(/\s+/)[0] || undefined
+  const greeting = (await getOwnerMessages()).shell.greeting[
+    partOfDay(business.timezone)
+  ](firstName)
+  const openDays = new Set(owner.hours.map((hour) => hour.weekday)).size
+  const confirmed = business.detailsConfirmedAt !== null
+  const steps = setupTasks(
+    {
+      detailsConfirmed: confirmed,
+      openDays,
+      services: owner.services.length,
+      team: owner.team.length,
+      photos: photos.length,
+      bookings: upcoming.length + past.length,
+    },
+    `/dashboard/${businessId}`,
+    `/b/${business.slug}`
+  )
+  const settingUp = steps.some((step) => !step.done)
+  return (
     <>
       {/* New bookings (from the booking page) show up by themselves. */}
       <LiveRefresh seconds={BOOKING_RULES.ownerRefreshSeconds} />
@@ -84,6 +108,10 @@ export default async function BookingsPage({ params }: Props) {
         upcoming={upcoming}
         past={past}
         now={now}
+        greeting={greeting}
+        // The first steps come first until they are all done. (Sign-up's
+        // Check your details step confirms what came from Google Maps.)
+        setup={settingUp ? <SetupList steps={steps} /> : undefined}
         assistant={
           <AskCard
             businessId={businessId}
@@ -125,29 +153,5 @@ export default async function BookingsPage({ params }: Props) {
         moveBooking={moveOwnerBooking}
       />
     </>
-  )
-  const openDays = new Set(owner.hours.map((hour) => hour.weekday)).size
-  const confirmed = business.detailsConfirmedAt !== null
-  const steps = setupTasks(
-    {
-      detailsConfirmed: confirmed,
-      openDays,
-      services: owner.services.length,
-      team: owner.team.length,
-      photos: photos.length,
-      bookings: upcoming.length + past.length,
-    },
-    `/dashboard/${businessId}`,
-    `/b/${business.slug}`
-  )
-  const settingUp = steps.some((step) => !step.done)
-  if (!settingUp) return bookings
-  // The first steps come first until they are all done. (Sign-up's Check
-  // your details step confirms what came from Google Maps.)
-  return (
-    <div className="flex flex-col gap-6">
-      {settingUp && <SetupList steps={steps} />}
-      {bookings}
-    </div>
   )
 }

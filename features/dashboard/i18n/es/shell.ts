@@ -35,6 +35,13 @@ const shell: typeof en = {
   device: "Dispositivo",
   language: "Idioma",
   signOut: "Cerrar sesión",
+  greeting: {
+    morning: (name?: string) => (name ? `Buenos días, ${name}` : "Buenos días"),
+    afternoon: (name?: string) =>
+      name ? `Buenas tardes, ${name}` : "Buenas tardes",
+    evening: (name?: string) =>
+      name ? `Buenas noches, ${name}` : "Buenas noches",
+  },
   // /dashboard before the first business.
   start: {
     welcome: (name: string) => `Hola, ${name}`,

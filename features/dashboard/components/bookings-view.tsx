@@ -47,6 +47,8 @@ export function BookingsView({
   upcoming,
   past,
   now,
+  greeting,
+  setup,
   assistant,
   summary,
   currency,
@@ -55,6 +57,10 @@ export function BookingsView({
 }: BookingPanelsProps & {
   upcoming: OwnerBooking[]
   past: OwnerBooking[]
+  // "Good afternoon, Kelly", made on the server by the business's clock.
+  greeting: string
+  // The Get set up list, under the greeting until every step is done.
+  setup?: React.ReactNode
   // ISO time the page was loaded: what is upcoming and what can be done.
   now: string
   // The assistant's Ask card, under today's line.
@@ -184,11 +190,16 @@ export function BookingsView({
       {/* On a phone the top bar names the page and Add floats at the foot,
           so this header row only shows on a computer. */}
       <div className="flex items-center justify-between gap-3 max-md:contents">
-        {/* Home on a phone, like its tab; Dashboard on a computer. */}
-        <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">
-          <span className="md:hidden">{m.shell.nav.home}</span>
-          <span className="max-md:hidden">{m.shell.nav.dashboard}</span>
-        </h1>
+        {/* The page's name sits small over the greeting (only for screen
+            readers on a phone, where the top bar names it). */}
+        <div className="flex flex-col gap-1">
+          {/* Home on a phone, like its tab; Dashboard on a computer. */}
+          <h1 className="text-sm text-muted-foreground max-md:sr-only">
+            <span className="md:hidden">{m.shell.nav.home}</span>
+            <span className="max-md:hidden">{m.shell.nav.dashboard}</span>
+          </h1>
+          <p className="text-2xl font-semibold tracking-tight">{greeting}</p>
+        </div>
         <Button
           className="max-md:hidden"
           onClick={panels.add}
@@ -198,6 +209,7 @@ export function BookingsView({
           {t.add}
         </Button>
       </div>
+      {setup}
       <WidgetBoard
         businessId={businessId}
         layout={widgets.layout}

@@ -35,6 +35,15 @@ const shell = {
   device: "Device",
   language: "Language",
   signOut: "Sign out",
+  // Home's greeting, by the business's clock; no name for a demo guest.
+  greeting: {
+    morning: (name?: string) =>
+      name ? `Good morning, ${name}` : "Good morning",
+    afternoon: (name?: string) =>
+      name ? `Good afternoon, ${name}` : "Good afternoon",
+    evening: (name?: string) =>
+      name ? `Good evening, ${name}` : "Good evening",
+  },
   // /dashboard before the first business.
   start: {
     welcome: (name: string) => `Welcome, ${name}`,
