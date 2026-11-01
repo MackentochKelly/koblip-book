@@ -319,9 +319,10 @@
 
 @layer base {
   /* The owner area's gray page (data-surface="app" on its frame): outline
-     rows are filled like cards, so lists read as white cards on the gray.
-     Dark mode is unchanged (rows stay clear). */
-  :root:not(.dark) [data-surface="app"] [data-slot="item"][data-variant="outline"] {
+     rows and empty states are filled like cards, so they read as white
+     cards on the gray. Dark mode is unchanged (they stay clear). */
+  :root:not(.dark) [data-surface="app"] [data-slot="item"][data-variant="outline"],
+  :root:not(.dark) [data-surface="app"] [data-slot="empty"] {
     @apply bg-card;
   }
   /* Tabs tracks get a faint edge, drawn inside so a scrolling tab row
