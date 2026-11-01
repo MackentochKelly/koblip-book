@@ -1,3 +1,4 @@
+import { fieldsToLabels, fieldsFromLabels, fillFields } from "@/lib/message-fields"
 import type { ButtonsProblem, WordingProblem } from "@/types/koblip-messages"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { formatDuration } from "@/lib/format-duration"
@@ -348,19 +349,11 @@ export function bookingTemplate(
 // The owner sees fields in their own language ({nombre}); Book keeps them as
 // {name}. Both directions leave anything else as it is.
 export function fieldsForOwner(text: string, labels: Record<BookingField, string>) {
-  return text.replace(FIELD, (whole, key: string) =>
-    key in labels ? `{${labels[key as BookingField]}}` : whole
-  )
+  return fieldsToLabels(text, labels)
 }
 
 export function fieldsFromOwner(text: string, labels: Record<BookingField, string>) {
-  const byLabel = new Map(
-    Object.entries(labels).map(([key, label]) => [label.toLowerCase(), key])
-  )
-  return text.replace(FIELD, (whole, label: string) => {
-    const key = byLabel.get(label.toLowerCase())
-    return key ? `{${key}}` : whole
-  })
+  return fieldsFromLabels(text, labels)
 }
 
 // The sample values Meta reviews with, also used for a test message.
@@ -370,9 +363,7 @@ export function exampleValues(language: TemplateLanguage): Record<BookingField, 
 
 // A message's text with sample values, as the customer would read it.
 export function withExamples(text: string, language: TemplateLanguage) {
-  return text.replace(FIELD, (whole, key: string) =>
-    key in EXAMPLES[language] ? EXAMPLES[language][key as BookingField] : whole
-  )
+  return fillFields(text, EXAMPLES[language])
 }
 
 // Dates, times and prices as the customer saw them on the booking page
