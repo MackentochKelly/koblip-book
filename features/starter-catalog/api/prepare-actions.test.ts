@@ -154,7 +154,8 @@ test("draws a team photo once, from saved facts", async () => {
   expect(generateMock.mock.calls[0][0]).toMatchObject({ model: "muse-image-1.0", reasoning_strength: "low" })
   expect(generateMock.mock.calls[0][0].prompt).toContain("Ana, who works at a barber shop (Classic cuts.)")
 
-  expect(await drawTeamPhoto(businessId, member.id)).toEqual({ ok: false })
+  // The setup screen asking again gets the same photo, never a second one.
+  expect(await drawTeamPhoto(businessId, member.id)).toEqual({ ok: true, photoUrl: "/uploads/ana.webp" })
   expect(generateMock).toHaveBeenCalledTimes(1)
 })
 

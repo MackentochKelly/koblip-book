@@ -4,6 +4,7 @@ import { after } from "next/server"
 import { GlassCard } from "@/components/glass-frame"
 import { getBusinessPage } from "@/features/business-page/api/get-business-page"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
+import { translateBusinessTexts } from "@/features/dashboard/api/translate-business"
 import { TopBar } from "@/features/dashboard/components/top-bar"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { GoogleDetailsCard } from "@/features/onboarding/components/google-details-card"
@@ -29,10 +30,12 @@ export default async function GoogleDetailsPage({
   const { business } = await getOwnerBusiness(businessId)
   const language = await getOwnerLanguage()
   const page = await getBusinessPage(business.slug)
-  // Muse starts the page's services and policies now, while the owner
-  // reads this screen and checks the details, so they are nearly ready by
-  // "Getting your page ready".
-  after(() => startPreparing(business))
+  // Muse starts the page's services, policies, team photos and Spanish
+  // version now, while the owner reads this screen and checks the details,
+  // so they are nearly ready by "Getting your page ready".
+  after(() =>
+    startPreparing(business, () => translateBusinessTexts(business))
+  )
   return (
     <div
       className={cn(

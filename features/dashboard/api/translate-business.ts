@@ -18,13 +18,42 @@ import {
   translateTexts,
 } from "../utils/translate"
 
+type Business = Pick<typeof businesses.$inferSelect, "id" | "description">
+type TranslateResult =
+  | { ok: true; translated: number }
+  | { ok: false; error: "failed" }
+
+// The last run per business in this server process, on globalThis so
+// every module copy (a page, a Server Action, a dev reload) sees it.
+const store = globalThis as typeof globalThis & {
+  koblipTranslateRuns?: Map<string, Promise<TranslateResult>>
+}
+const runs = (store.koblipTranslateRuns ??= new Map())
+
 // Brings a business's Spanish texts up to date (only new or changed ones
 // go to Meta AI) and drops those of deleted items. No session check: the
 // Translate action checks the owner, and the starter-catalog refill script
-// runs it on the server.
-export async function translateBusinessTexts(
-  business: Pick<typeof businesses.$inferSelect, "id" | "description">
-): Promise<{ ok: true; translated: number } | { ok: false; error: "failed" }> {
+// and the sign-up setup run it on the server.
+//
+// One run at a time per business: a call made while one is going waits
+// for it, then translates only what is still missing (often nothing), so
+// the same text is never sent twice.
+export function translateBusinessTexts(
+  business: Business
+): Promise<TranslateResult> {
+  const previous = runs.get(business.id)
+  const run = (previous ?? Promise.resolve())
+    .catch(() => null)
+    .then(() => translateNow(business))
+  runs.set(business.id, run)
+  const forget = () => {
+    if (runs.get(business.id) === run) runs.delete(business.id)
+  }
+  run.then(forget, forget)
+  return run
+}
+
+async function translateNow(business: Business): Promise<TranslateResult> {
   const [serviceRows, addonGroupRows, addonOptionRows, teamRows, policyRows, pointRows] =
     await Promise.all([
     db

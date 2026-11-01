@@ -6,8 +6,7 @@ import { requireAccount } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { businesses } from "@/lib/db/schema"
 import type { StarterResult } from "../types"
-import { drawMemberPhoto } from "./fill-catalog"
-import { catalogJob, policiesJob } from "./prepare-jobs"
+import { catalogJob, photoJob, policiesJob } from "./prepare-jobs"
 
 // The signed-in owner's own real business (never a demo copy), or null.
 // The id comes from the browser, so ownership is checked here.
@@ -65,7 +64,8 @@ export async function startPolicies(
 
 // Muse Image draws one team member's photo. Only for a member of the
 // owner's business who has no photo yet, so a photo is never replaced and
-// a second call costs nothing.
+// a second call costs nothing. Usually already drawing since the team was
+// written (./prepare-jobs), so the photos come side by side.
 export async function drawTeamPhoto(
   businessId: string,
   memberId: string
@@ -74,10 +74,9 @@ export async function drawTeamPhoto(
   if (!owned || typeof memberId !== "string") {
     return { ok: false }
   }
-  const photoUrl = await drawMemberPhoto(owned.business, memberId, owned.userId)
-  if (!photoUrl) {
-    return { ok: false }
+  const result = await photoJob(owned.business, memberId)
+  if (result.ok) {
+    revalidatePath("/b/" + owned.business.slug)
   }
-  revalidatePath("/b/" + owned.business.slug)
-  return { ok: true, photoUrl }
+  return result
 }

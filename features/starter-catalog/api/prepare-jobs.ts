@@ -4,7 +4,13 @@ import type { businesses } from "@/lib/db/schema"
 import { isMetaAiEnabled } from "@/lib/meta-ai"
 import { STARTER_CATALOG_RULES as RULES } from "@/lib/starter-catalog-rules"
 import type { StarterResult } from "../types"
-import { catalogSummary, draftFor, hasCatalog, writeCatalog } from "./fill-catalog"
+import {
+  catalogSummary,
+  draftFor,
+  drawMemberPhoto,
+  hasCatalog,
+  writeCatalog,
+} from "./fill-catalog"
 import {
   draftPoliciesFor,
   policyParts,
@@ -22,7 +28,13 @@ type Business = typeof businesses.$inferSelect
 // One job per business and kind in this server process: a second caller
 // gets the same promise. A finished job is kept a while so the setup
 // screen still sees what it made; a failed one is dropped so it can retry.
-const jobs = new Map<string, Promise<unknown>>()
+// Kept on globalThis: the page that starts a job and the Server Action
+// that joins it can load this file as separate module copies (and the dev
+// server reloads it on every edit), but they share the process.
+const store = globalThis as typeof globalThis & {
+  koblipPrepareJobs?: Map<string, Promise<unknown>>
+}
+const jobs = (store.koblipPrepareJobs ??= new Map())
 
 function once<T extends { ok: boolean }>(
   key: string,
@@ -90,9 +102,34 @@ export function policiesJob(business: Business): Promise<{ ok: boolean }> {
   })
 }
 
-// Starts both, for a business the caller has checked is the owner's.
-export function startPreparing(business: Business): void {
+// Muse Image draws one team member's photo, for a member with none yet.
+export function photoJob(
+  business: Business,
+  memberId: string
+): Promise<{ ok: true; photoUrl: string } | { ok: false }> {
+  return once(`photo:${business.id}:${memberId}`, async () => {
+    if (!business.ownerId) return { ok: false as const }
+    const photoUrl = await drawMemberPhoto(business, memberId, business.ownerId)
+    return photoUrl ? { ok: true as const, photoUrl } : { ok: false as const }
+  })
+}
+
+// Starts everything, for a business the caller has checked is the owner's:
+// the catalog and policies side by side, the team photos as soon as the
+// team is written, then `translate` (the Spanish version, which includes
+// them all). Resolves when the work is done; nothing here throws.
+export async function startPreparing(
+  business: Business,
+  translate: () => Promise<unknown>
+): Promise<void> {
   if (business.isDemo) return
-  void catalogJob(business).catch(() => null)
-  void policiesJob(business).catch(() => null)
+  const catalog = catalogJob(business).then((result) => {
+    if (result.ok && result.summary.created) {
+      for (const member of result.summary.team) {
+        void photoJob(business, member.id).catch(() => null)
+      }
+    }
+  })
+  await Promise.allSettled([catalog, policiesJob(business)])
+  await translate().catch(() => null)
 }
