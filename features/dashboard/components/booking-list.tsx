@@ -113,21 +113,6 @@ export function BookingList({
   }
 
   const columns = column.columns([
-    column.accessor("startAt", {
-      id: "date",
-      header: t.columns.date,
-      sortFn: "basic",
-      // One line, day then start time; the end is in the details.
-      cell: ({ row }) => (
-        <span className="whitespace-nowrap tabular-nums">
-          {formatDayShort(row.original.date, m.locale)}
-          <span className="text-muted-foreground">
-            {" · "}
-            {formatClock(row.original.time, m.locale)}
-          </span>
-        </span>
-      ),
-    }),
     column.accessor("customerName", {
       id: "customer",
       header: t.columns.customer,
@@ -194,6 +179,21 @@ export function BookingList({
       sortFn: "text",
       cell: ({ row }) => (
         <BookingStateBadge state={bookingState(row.original, now)} />
+      ),
+    }),
+    column.accessor("startAt", {
+      id: "date",
+      header: t.columns.date,
+      sortFn: "basic",
+      // One line, day then start time; the end is in the details.
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap tabular-nums">
+          {formatDayShort(row.original.date, m.locale)}
+          <span className="text-muted-foreground">
+            {" · "}
+            {formatClock(row.original.time, m.locale)}
+          </span>
+        </span>
       ),
     }),
     column.display({
