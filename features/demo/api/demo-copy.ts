@@ -11,10 +11,13 @@ import { customerKey } from "@/lib/customer-key"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import {
+  addonGroups,
+  addonOptions,
   bookings,
   businesses,
   businessHours,
   businessPhotos,
+  serviceAddonGroups,
   services,
   teamMemberServices,
   teamMemberHours,
@@ -67,6 +70,7 @@ export async function createDemoCopy(
   const slug = `${sample.slugPrefix}-${businessId.slice(0, 8)}`
   const serviceIds = sample.services.map(() => crypto.randomUUID())
   const memberIds = sample.team.map(() => crypto.randomUUID())
+  const groupIds = sample.extras.map(() => crypto.randomUUID())
   const today = zonedToday(now, sample.timezone)
 
   const bookingRows = sample.bookings.flatMap((booking) => {
@@ -136,8 +140,38 @@ export async function createDemoCopy(
         id: memberIds[index],
         businessId,
         name: member.name,
+        description: member.description,
+        photoUrl: member.photoUrl,
         position: index,
       }))
+    ),
+    db.insert(addonGroups).values(
+      sample.extras.map((group, index) => ({
+        id: groupIds[index],
+        businessId,
+        name: group.name,
+        prompt: group.prompt,
+        position: index,
+      }))
+    ),
+    db.insert(addonOptions).values(
+      sample.extras.flatMap((group, index) =>
+        group.options.map((option, position) => ({
+          businessId,
+          groupId: groupIds[index],
+          ...option,
+          position,
+        }))
+      )
+    ),
+    db.insert(serviceAddonGroups).values(
+      sample.extras.flatMap((group, index) =>
+        group.services.map((service) => ({
+          businessId,
+          serviceId: serviceIds[service],
+          groupId: groupIds[index],
+        }))
+      )
     ),
     ...(memberHours.length ? [db.insert(teamMemberHours).values(memberHours)] : []),
     db.insert(teamMemberServices).values(

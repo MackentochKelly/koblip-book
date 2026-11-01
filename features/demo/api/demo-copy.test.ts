@@ -5,10 +5,12 @@ import { join } from "node:path"
 import { eq } from "drizzle-orm"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
 import {
+  addonOptions,
   bookings,
   businesses,
   businessHours,
   businessPhotos,
+  serviceAddonGroups,
   services,
   session,
   teamMemberServices,
@@ -108,6 +110,15 @@ test("a copy is the full sample, owned by the guest and marked demo", async () =
         .where(eq(teamMemberServices.businessId, copy.id))
     ).length
   ).toBe(DEMO_SAMPLE.team.reduce((sum, m) => sum + m.services.length, 0))
+  // Every extra and its services, and every member's photo.
+  expect(
+    (await db.select().from(addonOptions).where(eq(addonOptions.businessId, copy.id))).length
+  ).toBe(DEMO_SAMPLE.extras.reduce((sum, g) => sum + g.options.length, 0))
+  expect(
+    (await db.select().from(serviceAddonGroups).where(eq(serviceAddonGroups.businessId, copy.id))).length
+  ).toBe(DEMO_SAMPLE.extras.reduce((sum, g) => sum + g.services.length, 0))
+  const members = await db.select().from(teamMembers).where(eq(teamMembers.businessId, copy.id))
+  expect(members.every((member) => member.photoUrl?.startsWith("/demo/lumen/"))).toBe(true)
   // Sundays are skipped, so at least most of the week's bookings land.
   const booked = await db
     .select()

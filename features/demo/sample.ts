@@ -73,11 +73,78 @@ export const DEMO_SAMPLE = {
       priceMinor: 1200,
     },
   ],
-  // `services`: indexes into services above.
+  // Extras offered after picking a service. `services`: indexes into
+  // services above.
+  extras: [
+    {
+      name: "Hair extras",
+      prompt: "Add something to your visit?",
+      services: [0, 1, 2],
+      options: [
+        {
+          name: "Deep conditioning",
+          description: "A rich mask for soft, shiny hair.",
+          durationMinutes: 15,
+          priceMinor: 1200,
+        },
+        {
+          name: "Scalp massage",
+          description: "Ten relaxing minutes at the basin.",
+          durationMinutes: 10,
+          priceMinor: 800,
+        },
+        {
+          name: "Gloss toner",
+          description: "Refreshes tone and adds shine.",
+          durationMinutes: 15,
+          priceMinor: 1500,
+        },
+      ],
+    },
+    {
+      name: "Care extras",
+      prompt: "Treat yourself a little more?",
+      services: [3, 4, 5],
+      options: [
+        {
+          name: "Nail art",
+          description: "Simple designs on two nails.",
+          durationMinutes: 15,
+          priceMinor: 1000,
+        },
+        {
+          name: "Eye mask",
+          description: "Cooling mask for tired eyes.",
+          durationMinutes: 10,
+          priceMinor: 900,
+        },
+      ],
+    },
+  ],
+  // `services`: indexes into services above. Photos: portraits made for
+  // the demo with Muse Image, saved in public/demo/lumen.
   team: [
-    { name: "Marta Gil", services: [0, 1, 2], hours: [] as HoursRow[] },
-    { name: "Sofía León", services: [3, 4, 5], hours: [] as HoursRow[] },
-    { name: "Luis Romero", services: [0, 2], hours: [] as HoursRow[] },
+    {
+      name: "Marta Gil",
+      description: "Cuts and colour",
+      photoUrl: "/demo/lumen/team-01.webp",
+      services: [0, 1, 2],
+      hours: [] as HoursRow[],
+    },
+    {
+      name: "Sofía León",
+      description: "Nails, facials and brows",
+      photoUrl: "/demo/lumen/team-02.webp",
+      services: [3, 4, 5],
+      hours: [] as HoursRow[],
+    },
+    {
+      name: "Luis Romero",
+      description: "Cuts and blow-dry",
+      photoUrl: "/demo/lumen/team-03.webp",
+      services: [0, 2],
+      hours: [] as HoursRow[],
+    },
   ],
   customers: [
     "Ana Morales",
