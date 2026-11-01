@@ -38,10 +38,11 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { noAutofill } from "@/lib/no-autofill"
 import { cn } from "@/lib/utils"
-import { ACTIVITY_STATES, activityQuery } from "@/lib/whatsapp-activity-filter"
+import { ACTIVITY_STATES, AUTOMATIONS, activityQuery } from "@/lib/whatsapp-activity-filter"
 import { BOOKING_MESSAGES } from "@/lib/whatsapp-messages"
 import type {
   ActivityFilter,
+  ActivityRun,
   ButtonAction,
   NotificationSend,
   SendKind,
@@ -74,6 +75,9 @@ export type ActivityLabels = {
   sentAgain: string
   sendAgainFailed: string
   sendAgainProblems: Record<string, string>
+  // Where automation runs show among the messages (D18 of the automations
+  // plan): the filter's name and each step's.
+  automations?: { filter: string; steps: Record<string, string> }
   // Only where a waiting message can be cancelled (the admin).
   cancelSend?: {
     label: (name: string) => string
@@ -96,9 +100,11 @@ type Result = { ok: true } | { ok: false; error?: string }
 // filters are in the address, D14). A failed message can be sent again; with
 // `onCancel`, a waiting one can be cancelled. With `showBusiness`, each row
 // names its business and shows its time in that business's time zone.
-// `emptyAction` is the one action under "No messages yet".
+// `emptyAction` is the one action under "No messages yet". With `runs`,
+// automation runs show among the messages, newest first.
 export function WhatsappActivityList({
   rows,
+  runs = [],
   filter,
   timeZone,
   labels: t,
@@ -108,6 +114,7 @@ export function WhatsappActivityList({
   emptyAction,
 }: {
   rows: Row[]
+  runs?: ActivityRun[]
   filter: ActivityFilter
   timeZone?: string
   labels: ActivityLabels
@@ -120,9 +127,9 @@ export function WhatsappActivityList({
   const pathname = usePathname()
   const [query, setQuery] = useState(filter.search ?? "")
   const [pending, startTransition] = useTransition()
-  const filtered = !!(filter.message || filter.state || filter.search)
+  const filtered = !!(filter.message || filter.automations || filter.state || filter.search)
   const formatters = new Map<string, Intl.DateTimeFormat>()
-  const when = (row: Row) => {
+  const when = (row: { at: string; timeZone?: string }) => {
     const zone = row.timeZone ?? timeZone
     const key = zone ?? ""
     let format = formatters.get(key)
@@ -146,6 +153,7 @@ export function WhatsappActivityList({
 
   const messageItems = [
     { value: ANY, label: t.allMessages },
+    ...(t.automations ? [{ value: AUTOMATIONS, label: t.automations.filter }] : []),
     ...BOOKING_MESSAGES.map((message) => ({ value: message, label: t.names[message] })),
   ]
   const stateItems = [
@@ -153,8 +161,14 @@ export function WhatsappActivityList({
     ...ACTIVITY_STATES.map((state) => ({ value: state, label: t.states[state] })),
   ]
 
+  // Messages and runs together, newest first.
+  const entries = [
+    ...rows.map((row) => ({ at: row.at, row, run: null })),
+    ...runs.map((run) => ({ at: run.at, row: null, run })),
+  ].sort((a, b) => b.at.localeCompare(a.at))
+
   // Nothing sent yet and no filter on: nothing to filter either.
-  if (rows.length === 0 && !filtered) {
+  if (entries.length === 0 && !filtered) {
     return (
       <Empty className="border">
         <EmptyHeader>
@@ -198,11 +212,15 @@ export function WhatsappActivityList({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:flex">
           <Select
             items={messageItems}
-            value={filter.message ?? ANY}
+            value={filter.message ?? (filter.automations ? AUTOMATIONS : ANY)}
             onValueChange={(value) =>
               show({
                 ...filter,
-                message: value === ANY ? undefined : (value as ActivityFilter["message"]),
+                automations: value === AUTOMATIONS || undefined,
+                message:
+                  value === ANY || value === AUTOMATIONS
+                    ? undefined
+                    : (value as ActivityFilter["message"]),
               })
             }
           >
@@ -242,7 +260,7 @@ export function WhatsappActivityList({
       </div>
 
       <div aria-busy={pending} className={cn("transition-opacity", pending && "opacity-60")}>
-        {rows.length === 0 ? (
+        {entries.length === 0 ? (
           <Empty className="border">
             <EmptyHeader>
               <EmptyMedia variant="icon">
@@ -264,7 +282,19 @@ export function WhatsappActivityList({
           </Empty>
         ) : (
           <ItemGroup className="gap-2">
-            {rows.map((row) => {
+            {entries.map(({ row, run }) => {
+              if (run) {
+                return (
+                  <RunItem
+                    key={`run-${run.id}`}
+                    run={run}
+                    labels={t}
+                    showBusiness={showBusiness}
+                    when={when(run)}
+                  />
+                )
+              }
+              if (!row) return null
               const shown = row.state === "sent" && row.delivery ? row.delivery : row.state
               const reason = row.reason && (t.reasons[row.reason] ?? t.reasons.other)
               return (
@@ -310,6 +340,42 @@ export function WhatsappActivityList({
         )}
       </div>
     </div>
+  )
+}
+
+// One automation run: its step, to whom, when, and whether it went.
+function RunItem({
+  run,
+  labels: t,
+  showBusiness,
+  when,
+}: {
+  run: ActivityRun
+  labels: ActivityLabels
+  showBusiness: boolean
+  when: string
+}) {
+  const reason = run.reason && (t.reasons[run.reason] ?? t.reasons.other)
+  return (
+    <Item variant="outline" size="sm">
+      <ItemContent className="min-w-0">
+        <ItemTitle>{t.automations?.steps[run.step] ?? run.step}</ItemTitle>
+        <ItemDescription>
+          {[showBusiness && run.businessName, run.customerName, when, reason]
+            .filter(Boolean)
+            .join(" · ")}
+        </ItemDescription>
+      </ItemContent>
+      <ItemActions>
+        <Badge
+          variant={
+            run.state === "failed" ? "destructive" : run.state === "skipped" ? "outline" : "secondary"
+          }
+        >
+          {t.states[run.state]}
+        </Badge>
+      </ItemActions>
+    </Item>
   )
 }
 

@@ -1,6 +1,10 @@
 import { expect, test } from "vitest"
 
-import { activityFilterFrom, activityQuery } from "./whatsapp-activity-filter"
+import {
+  activityFilterFrom,
+  activityQuery,
+  activitySources,
+} from "./whatsapp-activity-filter"
 
 test("reads known filters from the address", () => {
   expect(activityFilterFrom({ message: "reminder", state: "failed", q: " ana " })).toEqual({
@@ -29,4 +33,27 @@ test("an address read back gives the same filter", () => {
   const filter = { message: "confirmed", state: "sent", search: "809" } as const
   const query = Object.fromEntries(new URLSearchParams(activityQuery(filter)))
   expect(activityFilterFrom(query)).toEqual(filter)
+})
+
+test("Automations is a message filter of its own, kept in the address", () => {
+  const filter = activityFilterFrom({ message: "automations", state: "failed" })
+  expect(filter).toEqual({
+    message: undefined,
+    automations: true,
+    state: "failed",
+  })
+  expect(activityQuery(filter)).toBe("?message=automations&state=failed")
+})
+
+test("each filter loads messages, runs or both", () => {
+  expect(activitySources({})).toEqual({ messages: true, runs: {} })
+  expect(
+    activitySources({ automations: true, state: "failed", search: "ana" })
+  ).toEqual({
+    messages: false,
+    runs: { state: "failed", search: "ana" },
+  })
+  // One booking message, or a state runs never have: no runs.
+  expect(activitySources({ message: "reminder" }).runs).toBeNull()
+  expect(activitySources({ state: "read" }).runs).toBeNull()
 })

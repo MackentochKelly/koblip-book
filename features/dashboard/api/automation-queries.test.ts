@@ -21,12 +21,15 @@ async function addRun(id: string, options: {
   automationId?: string
   state?: AutomationRun["state"]
   at?: string
+  customerName?: string | null
+  customerPhone?: string
 } = {}) {
   const businessId = options.businessId ?? "one"
   await db.insert(runsTable).values({
     id, businessId, automationId: options.automationId ?? `${businessId}-welcome`,
     workspaceId: `workspace-${businessId}`, phoneNumberId: "number", eventId: `event-${id}`,
-    customerPhone: "15551234567", customerName: "Customer", language: "en",
+    customerPhone: options.customerPhone ?? "15551234567",
+    customerName: options.customerName === undefined ? "Customer" : options.customerName, language: "en",
     step: "welcome", state: options.state ?? "sent", reason: null,
     chatRecordId: `chat-${id}`, chatMessageId: `message-${id}`, at: options.at ?? AT,
   })
@@ -177,3 +180,89 @@ test.each([null, [], { state: "pending" }, { automationId: "" }, { automationId:
     expect(ownerCheck).toHaveBeenCalledWith("one")
   }
 )
+
+
+test("search trims text, matches customer names without case and stays within the business", async () => {
+  await seedAutomations()
+  await addRun("ana", { customerName: "Ana Rivera" })
+  await addRun("other", { customerName: "Alex" })
+  await addRun("foreign-ana", { businessId: "two", customerName: "ANA Rivera" })
+  expect((await automationRuns("one", { search: "  aNA ri  " })).runs.map((run) => run.id)).toEqual(["ana"])
+  expect((await automationRuns("two", { search: "ana" })).runs.map((run) => run.id)).toEqual(["foreign-ana"])
+})
+
+test("formatted phone searches use digits and find customers without a name", async () => {
+  await seedAutomations()
+  await addRun("phone", { customerName: null, customerPhone: "18095550123" })
+  await addRun("other", { customerName: "Other", customerPhone: "18095550999" })
+  expect((await automationRuns("one", { search: " +1 (809) 555-0123 " })).runs.map((run) => run.id)).toEqual(["phone"])
+  expect((await automationRuns("one", { search: "555-0123" })).runs.map((run) => run.id)).toEqual(["phone"])
+})
+
+test.each([
+  { search: "%", name: "Ana 50%", decoy: "Ana 50 percent" },
+  { search: "_", name: "Ana_Rivera", decoy: "Ana Rivera" },
+  { search: "\\", name: "Ana\\Rivera", decoy: "Ana Rivera" },
+])("search treats LIKE special character $search literally", async ({ search, name, decoy }) => {
+  await seedAutomations()
+  await addRun("literal", { customerName: name })
+  await addRun("decoy", { customerName: decoy })
+  expect((await automationRuns("one", { search })).runs.map((run) => run.id)).toEqual(["literal"])
+})
+
+test("empty and whitespace-only searches leave the run list unchanged", async () => {
+  await seedAutomations()
+  await addRun("a", { customerName: "Ana" })
+  await addRun("b", { customerName: null })
+  const unfiltered = await automationRuns("one", {})
+  expect(await automationRuns("one", { search: "" })).toEqual(unfiltered)
+  expect(await automationRuns("one", { search: " \t \n " })).toEqual(unfiltered)
+})
+
+test("search combines with automation and state filters without widening tenant scope", async () => {
+  await seedAutomations()
+  await db.insert(automations).values({ id: "one-extra", businessId: "one", key: "extra", trigger: "firstMessage", ...welcomeDefaults() })
+  await addRun("match", { customerName: "Ana", state: "failed" })
+  await addRun("wrong-state", { customerName: "Ana", state: "sent" })
+  await addRun("wrong-automation", { customerName: "Ana", state: "failed", automationId: "one-extra" })
+  await addRun("wrong-name", { customerName: "Alex", state: "failed" })
+  await addRun("wrong-business", { businessId: "two", customerName: "Ana", state: "failed" })
+  expect((await automationRuns("one", { search: "Ana", automationId: "one-welcome", state: "failed" })).runs.map((run) => run.id)).toEqual(["match"])
+})
+
+test("search pagination retains the trimmed search and rejects a cursor for another search", async () => {
+  await seedAutomations()
+  await setPageSize(1)
+  await addRun("ana-a", { customerName: "Ana" })
+  await addRun("ana-b", { customerName: "Ana" })
+  await addRun("alex", { customerName: "Alex" })
+  const first = await automationRuns("one", { search: " Ana " })
+  expect(first.runs.map((run) => run.id)).toEqual(["ana-b"])
+  expect(first.next).toEqual(expect.any(String))
+  const second = await automationRuns("one", { search: "Ana", cursor: first.next! })
+  expect(second.runs.map((run) => run.id)).toEqual(["ana-a"])
+  expect(second.next).toBeNull()
+  expect(await automationRuns("one", { search: "Alex", cursor: first.next! })).toEqual(EMPTY)
+  expect(await automationRuns("one", { cursor: first.next! })).toEqual(EMPTY)
+  const unfiltered = await automationRuns("one", {})
+  expect(unfiltered.next).not.toBeNull()
+  expect(await automationRuns("one", { search: "Ana", cursor: unfiltered.next! })).toEqual(EMPTY)
+})
+
+test("legacy owner cursors without a search scope are rejected", async () => {
+  await seedAutomations()
+  await addRun("a", { customerName: "Ana" })
+  const cursor = Buffer.from(JSON.stringify({ businessId: "one", automationId: null, state: null, at: AT, id: "z" })).toString("base64url")
+  expect(await automationRuns("one", { cursor })).toEqual(EMPTY)
+  expect(await automationRuns("one", { cursor, search: "Ana" })).toEqual(EMPTY)
+})
+
+test.each([null, 42, true, [], {}])("invalid search type %j is rejected after checking ownership", async (search) => {
+  await seedAutomations()
+  await addRun("a")
+  const filter = { search } as unknown as Parameters<typeof automationRuns>[1]
+  expect(await automationRuns("one", filter)).toEqual(EMPTY)
+  expect(ownerCheck).toHaveBeenCalledWith("one")
+  ownerCheck.mockRejectedValueOnce(new Error("not owned"))
+  await expect(automationRuns("two", filter)).rejects.toThrow("not owned")
+})

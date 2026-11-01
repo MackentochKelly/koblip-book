@@ -252,7 +252,20 @@ const whatsapp: typeof en = {
     failed: "Falló",
     skipped: "No enviado",
   } as Record<string, string>,
+  // Automatizaciones en Actividad (D18).
+  automations: {
+    filter: "Automatizaciones",
+    steps: {
+      welcome: "Bienvenida",
+      bookingLink: "Enlace de reserva",
+      servicesList: "Lista de servicios",
+      serviceLink: "Enlace del servicio",
+      handoff: "Hablar con nosotros",
+    } as Record<string, string>,
+  },
   reasons: {
+    paused: "Pasado a ti",
+    noServices: "Sin servicios para mostrar",
     noOptIn: "El cliente no aceptó",
     noPhone: "Sin teléfono",
     noOwnerPhone: "Añade tu WhatsApp",

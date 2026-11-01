@@ -254,8 +254,21 @@ const whatsapp = {
     failed: "Failed",
     skipped: "Not sent",
   } as Record<string, string>,
+  // Automation runs in Activity (D18).
+  automations: {
+    filter: "Automations",
+    steps: {
+      welcome: "Welcome",
+      bookingLink: "Booking link",
+      servicesList: "Services list",
+      serviceLink: "Service link",
+      handoff: "Talk to us",
+    } as Record<string, string>,
+  },
   // Why a message was not sent; anything else reads as `other`.
   reasons: {
+    paused: "Handed to you",
+    noServices: "No services to show",
     noOptIn: "Customer didn't agree",
     noPhone: "No phone number",
     noOwnerPhone: "Add your WhatsApp",

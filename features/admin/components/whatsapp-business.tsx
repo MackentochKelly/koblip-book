@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 
+import { AutomationSteps } from "@/components/automation-steps"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -48,6 +49,18 @@ export type BusinessWhatsapp = {
     cantCome: "cancel" | "alertOnly"
     thankYouReply: boolean
   }
+  // Its automations, read-only: on or off and their steps (U3).
+  automations: {
+    id: string
+    trigger: "firstMessage"
+    on: boolean
+    wording: Record<Language, { body: string }>
+    buttons: {
+      id: string
+      label: Record<Language, string>
+      action: { type: "bookingLink" | "servicesList" | "handoff" }
+    }[]
+  }[]
 }
 
 const LANGUAGES: readonly Language[] = ["en", "es"]
@@ -72,7 +85,9 @@ export function WhatsappBusiness({
 }) {
   const m = useAdminMessages()
   const t = m.whatsapp.businesses
-  const { business, connection, messages, settings } = data
+  const { business, connection, messages, settings, automations } = data
+  // Automations read in the admin's language.
+  const language: Language = m.locale.startsWith("es") ? "es" : "en"
   // What the dialog asks; kept while it closes, so its words stay.
   const [ask, setAskState] = useState<Ask | null>(null)
   const [asking, setAsking] = useState(false)
@@ -244,6 +259,53 @@ export function WhatsappBusiness({
           })}
         </ItemGroup>
       </section>
+
+      {automations.length > 0 && (
+        <section
+          className="flex flex-col gap-3"
+          aria-labelledby="business-automations"
+        >
+          <h3
+            id="business-automations"
+            className="text-lg font-semibold tracking-tight"
+          >
+            {t.automationsTitle}
+          </h3>
+          {automations.map((automation) => {
+            const name = t.flows.names[automation.trigger]
+            return (
+              <div key={automation.id} className="flex flex-col gap-3">
+                <Item variant="outline">
+                  <ItemContent className="min-w-0">
+                    <ItemTitle>{name}</ItemTitle>
+                  </ItemContent>
+                  <ItemActions>
+                    <Badge variant={automation.on ? "secondary" : "outline"}>
+                      {automation.on ? t.on : t.off}
+                    </Badge>
+                  </ItemActions>
+                </Item>
+                <AutomationSteps
+                  body={automation.wording[language].body.replaceAll(
+                    "{business}",
+                    business.name
+                  )}
+                  buttons={automation.buttons.map((button) => ({
+                    id: button.id,
+                    label: button.label[language],
+                    action: button.action.type,
+                  }))}
+                  labels={{
+                    ...t.flows,
+                    label: t.flows.stepsLabel(name),
+                    trigger: t.flows.triggers[automation.trigger],
+                  }}
+                />
+              </div>
+            )
+          })}
+        </section>
+      )}
 
       <section
         className="flex flex-col gap-3"

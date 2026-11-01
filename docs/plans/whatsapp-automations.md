@@ -29,7 +29,7 @@ automations can come later without new tables. Approved by the owner
 
 | Lane | Tasks | Files it owns |
 | --- | --- | --- |
-| Backend dev (Codex) | B1–B3 | `lib/db/schema.ts`, `drizzle/`, `features/dashboard/api/automation-*.ts` (new), `features/dashboard/api/chat-events.ts` (one hook only, B2), `features/dashboard/types/automations.ts` (new), `features/dashboard/utils/automation-*.ts` (new), `lib/platform-settings.ts` (new rules only), and their tests. Never a `.tsx` file, `components/`, `app/` or i18n. |
+| Backend dev (Codex) | B1–B4 | `lib/db/schema.ts`, `drizzle/`, `features/dashboard/api/automation-*.ts` (new), `features/dashboard/api/chat-events.ts` (one hook only, B2), `features/dashboard/types/automations.ts` (new), `features/dashboard/utils/automation-*.ts` (new), `features/admin/api/automations.ts` (new, B4), `lib/platform-settings.ts` (new rules only), and their tests. Never a `.tsx` file, `components/`, `app/` or i18n. |
 | UI dev | U1–U3 | `components/**` (new shared parts), `features/dashboard/components/**`, `features/admin/components/**`, owner and admin i18n, `app/(owner)/dashboard/[businessId]/automations/**`, `app/(admin)/admin/**`. Never the Backend dev's files. |
 
 A change the other lane's files need goes to that lane's developer, never
@@ -98,8 +98,27 @@ export type AutomationRun = {
 export async function automationsFor(businessId: string): Promise<Automation[]>
 export async function automationRuns(
   businessId: string,
-  filter: { automationId?: string; state?: AutomationRun["state"]; cursor?: string }
+  filter: {
+    automationId?: string
+    state?: AutomationRun["state"]
+    search?: string // customer name or phone, like Activity's search (B4)
+    cursor?: string
+  }
 ): Promise<{ runs: AutomationRun[]; next: string | null }>
+
+// features/admin/api/automations.ts (B4; requireAdmin, read-only)
+export type BusinessAutomationRun = AutomationRun & {
+  businessId: string
+  businessName: string
+  timeZone: string
+}
+export async function adminAutomations(businessId: string): Promise<Automation[]>
+export async function adminAutomationRuns(filter: {
+  businessId?: string
+  state?: AutomationRun["state"]
+  search?: string
+  cursor?: string
+}): Promise<{ runs: BusinessAutomationRun[]; next: string | null }>
 
 // features/dashboard/api/automation-actions.ts ("use server")
 export async function saveAutomation(
@@ -118,9 +137,11 @@ export async function setAutomationOn(
 
 | # | Task | Needs | Status |
 | --- | --- | --- | --- |
-| B1 | **Data and limits.** Tables `automations`, `automationRuns`, `automationEvents` (event ids seen, D6), `automationPauses` (customer, until), with a drizzle-kit migration; a business's `welcome` row is made on first read with Book's default (no seed script). `utils/automation-rules.ts`: one checker `automationProblem(input, rules)` for every limit in D7, with a unit test per limit. | — | Done (Backend dev, 2026-10-31; uncommitted) |
-| B2 | **Actions and hook.** The Contract's queries and actions (owner check, then `automationProblem`, then one transaction; `noOwnNumber` per D2). In `applyChatEvent`, after the reply is stored, one call to `runAutomations(event)`; nothing else in that file changes. | B1 | Done (Backend dev, 2026-10-31; uncommitted) |
-| B3 | **Engine and tests.** `automation-engine.ts`: trigger (D3), dedupe (D6), pause (D5), send through Chat's `POST /api/whatsapp/send` with the reminders' `Line`/`post` path (`button`, `cta_url`, `list`), log every run. Taps come back as `inbound` with `button.payload` = the button id. Tests: Welcome sends once; a repeated event sends nothing; each action; handoff pauses; Koblip's number sends nothing; a Chat error logs `failed` and never throws out of the webhook. | B2 | Done (Backend dev, 2026-10-31; uncommitted) |
+| B1 | **Data and limits.** Tables `automations`, `automationRuns`, `automationEvents` (event ids seen, D6), `automationPauses` (customer, until), with a drizzle-kit migration; a business's `welcome` row is made on first read with Book's default (no seed script). `utils/automation-rules.ts`: one checker `automationProblem(input, rules)` for every limit in D7, with a unit test per limit. | — | Done (Backend dev, 2026-10-31) |
+| B2 | **Actions and hook.** The Contract's queries and actions (owner check, then `automationProblem`, then one transaction; `noOwnNumber` per D2). In `applyChatEvent`, after the reply is stored, one call to `runAutomations(event)`; nothing else in that file changes. | B1 | Done (Backend dev, 2026-10-31) |
+| B3 | **Engine and tests.** `automation-engine.ts`: trigger (D3), dedupe (D6), pause (D5), send through Chat's `POST /api/whatsapp/send` with the reminders' `Line`/`post` path (`button`, `cta_url`, `list`), log every run. Taps come back as `inbound` with `button.payload` = the button id. Tests: Welcome sends once; a repeated event sends nothing; each action; handoff pauses; Koblip's number sends nothing; a Chat error logs `failed` and never throws out of the webhook. | B2 | Done (Backend dev, 2026-10-31) |
+
+| B4 | **Search and admin reads.** `search` on `automationRuns` (customer name or phone, same matching as `notificationHistoryFor`). `features/admin/api/automations.ts`: `adminAutomations` and `adminAutomationRuns` per the Contract, `requireAdmin` first, never a write (an admin read does not create the Welcome row). Page size from the admin rules (`WHATSAPP_ADMIN_RULES.listRows`). Tests: admin only, search, business filter, cursor. | B3 | Done (Backend dev, 2026-11-01) |
 
 ### UI
 
@@ -128,7 +149,7 @@ export async function setAutomationOn(
 | --- | --- | --- | --- |
 | U1 | **Flows tab and steps.** New Automations tab **Flows** (D11) with Welcome as a card and its switch, like Messages. Shared `components/flow-steps.tsx`: trigger → message → each button → what it does, top to bottom, shadcn parts only. | Contract | Done (UI dev, 2026-10-31) |
 | U2 | **Editor.** ResponsivePanel: every word and the buttons (add, remove, reorder, rename, pick the action), EN/ES switch on the first field's row, `WhatsappPreview` at the bottom, Reset to Book's default, each `AutomationProblem` under its field. | U1 | Done (UI dev, 2026-10-31) |
-| U3 | **Activity and admin.** Runs in Activity with an "Automations" filter; the admin sees every business's automations and runs, read-only. | B2 | To do |
+| U3 | **Activity and admin.** Runs mixed into Activity, newest first, with an "Automations" filter (D18); the admin sees every business's automations and runs, read-only. | B4 | Done (UI dev, 2026-11-01) |
 
 ## Decisions
 
@@ -229,6 +250,19 @@ export async function setAutomationOn(
   Failure reasons are stable codes, never provider wording or private data.
   Chat currently truncates list bodies to its `maxBody` limit; longer list
   bodies fail visibly before sending rather than being silently truncated.
+- **D18 One Activity** (Owner, 2026-10-31). Automation runs show in the same
+  Activity list as booking messages, newest first. The message filter gains
+  "Automations", which shows only runs; any other message shows none. Search
+  and the sent/failed/skipped states apply to runs too (B4).
+
+- **D19 B4 search and admin reads** (Backend dev, 2026-11-01). Automation
+  Activity matches booking Activity's escaped name search and normalized
+  phone digits. Cursors bind the trimmed search and filters and use time/id
+  ordering so tied timestamps paginate reliably. Both admin queries check
+  `requireAdmin` before reading or validating inputs, select only Contract
+  fields, and never initialize defaults or write. Admin DTO types derive
+  from the shared schema, preserving feature boundaries without changing
+  the public Contract. Admin pages use `WHATSAPP_ADMIN_RULES.listRows`.
 
 ### B1 verification (2026-10-31)
 
@@ -259,6 +293,17 @@ save/enable/off correction are covered. `runAutomations` contains failures,
 including a failed diagnostic write, without logging private data. Service
 preselection remains a UI follow-up; current links open `#services` as approved.
 The public Contract is unchanged. No commit, push or deployment.
+
+### B4 verification (2026-11-01)
+
+`npm run typecheck`, `npm run lint`, `npm test -- --exclude '**/.claude/**' --maxWorkers=4`,
+and `npm run build` passed. Tests: 1,145 passed, 26 skipped. Lint retains the
+existing unused `Geist` warning. Tests cover authorization first, matching
+search behavior, business/state filters, filter-scoped cursor pagination at
+identical timestamps, exact DTO fields and time zones, and read-only admin
+queries with SQLite writes disabled. No Welcome row is created by admin reads.
+Contract unchanged. Concurrent UI changes were left untouched. No commit,
+push or deployment.
 
 ## Docs (read the ones your task needs, before coding)
 

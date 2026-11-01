@@ -52,12 +52,27 @@ export type BusinessNotificationSend = NotificationSend & {
   timeZone: string
 }
 
+// One automation run in Activity, among the messages (D18): which step went
+// to whom, and whether it went. With a business and time zone in the admin.
+export type ActivityRun = {
+  id: string
+  step: string
+  state: "sent" | "failed" | "skipped"
+  reason: string | null
+  customerName: string | null
+  at: string
+  businessName?: string
+  timeZone?: string
+}
+
 // What Activity's status filter can pick: a message's state, or two views
 // the Overview's stats open (D36): read by the customer, or answered.
 export type ActivityState = NotificationSend["state"] | "read" | "replied"
 
 export type ActivityFilter = {
   message?: SendKind
+  // Only automation runs, no booking messages (D18 of the automations plan).
+  automations?: boolean
   state?: ActivityState
   // Customer name or phone.
   search?: string

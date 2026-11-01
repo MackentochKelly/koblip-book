@@ -120,7 +120,20 @@ const en = {
         failed: "Failed",
         skipped: "Not sent",
       } as Record<string, string>,
+      // Automation runs among the messages (D18 of the automations plan).
+      automations: {
+        filter: "Automations",
+        steps: {
+          welcome: "Welcome",
+          bookingLink: "Booking link",
+          servicesList: "Services list",
+          serviceLink: "Service link",
+          handoff: "Talk to us",
+        } as Record<string, string>,
+      },
       reasons: {
+        paused: "Handed to the owner",
+        noServices: "No services to show",
         noOptIn: "Customer didn't agree",
         noPhone: "No phone number",
         noOwnerPhone: "No owner WhatsApp",
@@ -189,6 +202,21 @@ const en = {
       disconnect: "Disconnect",
       disconnectTitle: "Disconnect this business's number?",
       disconnectText: "It sends from Koblip's number until the owner connects again.",
+      // The business's automations, read-only (U3).
+      automationsTitle: "Automations",
+      flows: {
+        names: { firstMessage: "Welcome" },
+        stepsLabel: (name: string) => `${name} steps`,
+        when: "When",
+        send: "Sends",
+        button: "Button",
+        triggers: { firstMessage: "A customer writes for the first time" },
+        actions: {
+          bookingLink: "Opens the booking page",
+          servicesList: "Sends the services",
+          handoff: "Tells the owner, then stays quiet",
+        },
+      },
       messagesTitle: "Messages",
       ownWording: "Own wording",
       bookWording: "Book's wording",
@@ -591,7 +619,20 @@ const es: AdminMessages = {
         failed: "Falló",
         skipped: "No enviado",
       } as Record<string, string>,
+      // Automatizaciones entre los mensajes (D18 del plan de automatizaciones).
+      automations: {
+        filter: "Automatizaciones",
+        steps: {
+          welcome: "Bienvenida",
+          bookingLink: "Enlace de reserva",
+          servicesList: "Lista de servicios",
+          serviceLink: "Enlace del servicio",
+          handoff: "Hablar con nosotros",
+        } as Record<string, string>,
+      },
       reasons: {
+        paused: "Pasado al dueño",
+        noServices: "Sin servicios para mostrar",
         noOptIn: "El cliente no aceptó",
         noPhone: "Sin teléfono",
         noOwnerPhone: "El dueño no tiene WhatsApp",
@@ -660,6 +701,21 @@ const es: AdminMessages = {
       disconnect: "Desconectar",
       disconnectTitle: "¿Desconectar el número de este negocio?",
       disconnectText: "Envía desde el número de Koblip hasta que el dueño vuelva a conectar.",
+      // Las automatizaciones del negocio, solo para ver (U3).
+      automationsTitle: "Automatizaciones",
+      flows: {
+        names: { firstMessage: "Bienvenida" },
+        stepsLabel: (name: string) => `Pasos de ${name.toLowerCase()}`,
+        when: "Cuando",
+        send: "Envía",
+        button: "Botón",
+        triggers: { firstMessage: "Un cliente escribe por primera vez" },
+        actions: {
+          bookingLink: "Abre la página de reservas",
+          servicesList: "Envía los servicios",
+          handoff: "Avisa al dueño y luego no responde",
+        },
+      },
       messagesTitle: "Mensajes",
       ownWording: "Texto propio",
       bookWording: "Texto de Book",

@@ -5,32 +5,14 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
-import { type FlowStep, FlowSteps } from "@/components/flow-steps"
+import { AutomationSteps } from "@/components/automation-steps"
 import { Button } from "@/components/ui/button"
-import {
-  CalendarIcon,
-  TagIcon,
-  MessageCircleIcon,
-  UsersIcon,
-  WhatsAppIcon,
-} from "@/components/ui/icons"
 import { SwitchCard } from "@/components/switch-card"
 import { ItemGroup } from "@/components/ui/item"
 import { setAutomationOn } from "../api/automation-actions"
 import { useOwnerMessages } from "../i18n/provider"
-import type {
-  Automation,
-  AutomationAction,
-  AutomationLanguage,
-} from "../types/automations"
+import type { Automation, AutomationLanguage } from "../types/automations"
 import { AutomationEditor, type AutomationLimits } from "./automation-editor"
-
-// What each button's action looks like as a step.
-const ACTION_ICONS: Record<AutomationAction["type"], React.ReactNode> = {
-  bookingLink: <CalendarIcon />,
-  servicesList: <TagIcon />,
-  handoff: <UsersIcon />,
-}
 
 // Flows: each automation as a card with its switch, like Messages, and its
 // steps under it; the card opens its editor (D11). Flows answer only on the
@@ -85,9 +67,19 @@ export function WhatsappFlows({
               }}
             />
           </ItemGroup>
-          <FlowSteps
-            label={t.flows.stepsLabel(t.flows.names[automation.trigger])}
-            steps={stepsOf(automation, language, businessName, t.flows)}
+          <AutomationSteps
+            body={automation.wording[language].body.replaceAll("{business}", businessName)}
+            buttons={automation.buttons.map((button) => ({
+              id: button.id,
+              label: button.label[language],
+              action: button.action.type,
+            }))}
+            labels={{
+              label: t.flows.stepsLabel(t.flows.names[automation.trigger]),
+              ...t.flows.kickers,
+              trigger: t.flows.triggers[automation.trigger],
+              actions: t.flows.actions,
+            }}
           />
         </div>
       ))}
@@ -102,40 +94,6 @@ export function WhatsappFlows({
       />
     </div>
   )
-}
-
-// The flow top to bottom: what starts it, what it sends, each button and
-// what it does.
-function stepsOf(
-  automation: Automation,
-  language: AutomationLanguage,
-  businessName: string,
-  t: ReturnType<typeof useOwnerMessages>["whatsapp"]["flows"]
-): FlowStep[] {
-  const words = automation.wording[language]
-  return [
-    {
-      id: "trigger",
-      icon: <MessageCircleIcon />,
-      tone: "info",
-      kicker: t.kickers.when,
-      title: t.triggers[automation.trigger],
-    },
-    {
-      id: "message",
-      icon: <WhatsAppIcon />,
-      tone: "success",
-      kicker: t.kickers.send,
-      title: words.body.replaceAll("{business}", businessName),
-      branches: automation.buttons.map((button) => ({
-        id: button.id,
-        icon: ACTION_ICONS[button.action.type],
-        kicker: t.kickers.button,
-        title: button.label[language],
-        description: t.actions[button.action.type],
-      })),
-    },
-  ]
 }
 
 function FlowRow({
