@@ -14,6 +14,7 @@ import {
   useTable,
 } from "@tanstack/react-table"
 
+import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -22,7 +23,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
   ArrowDownIcon,
@@ -30,7 +30,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsUpDownIcon,
-  EllipsisVerticalIcon,
 } from "@/components/ui/icons"
 import {
   Item,
@@ -439,17 +438,7 @@ function RowMenu({
   return (
     <div onClick={(event) => event.stopPropagation()}>
       <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={t.list.actions}
-            />
-          }
-        >
-          <EllipsisVerticalIcon />
-        </DropdownMenuTrigger>
+        <MoreMenuTrigger label={t.list.actions} />
         <DropdownMenuContent align="end">
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => panels.open(booking, Date.now())}>

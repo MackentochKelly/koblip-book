@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
-  EllipsisVerticalIcon,
   PlusIcon,
   SparklesIcon,
   Trash2Icon,
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/icons"
 import { toast } from "sonner"
 
+import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Button } from "@/components/ui/button"
 import { MultiPick } from "@/components/multi-pick"
@@ -23,7 +23,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
   Empty,
@@ -183,17 +182,7 @@ export function ExtrasView({
                   {c.edit}
                 </Button>
                 <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        aria-label={c.more}
-                      />
-                    }
-                  >
-                    <EllipsisVerticalIcon />
-                  </DropdownMenuTrigger>
+                  <MoreMenuTrigger label={c.more} />
                   <DropdownMenuContent align="end">
                     <DropdownMenuGroup>
                       <DropdownMenuItem

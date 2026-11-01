@@ -6,13 +6,13 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   CalendarIcon,
-  EllipsisVerticalIcon,
   PlusIcon,
   Trash2Icon,
   UsersIcon,
 } from "@/components/ui/icons"
 import { toast } from "sonner"
 
+import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { WeeklyHoursEditor } from "@/components/weekly-hours-editor"
 import { Switch } from "@/components/ui/switch"
 import { validHours, type HoursRow } from "@/lib/hours-rules"
@@ -29,7 +29,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
   Empty,
@@ -237,17 +236,7 @@ export function TeamView({
                   {c.edit}
                 </Button>
                 <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        aria-label={c.more}
-                      />
-                    }
-                  >
-                    <EllipsisVerticalIcon />
-                  </DropdownMenuTrigger>
+                  <MoreMenuTrigger label={c.more} />
                   <DropdownMenuContent align="end">
                     <DropdownMenuGroup>
                       <DropdownMenuItem

@@ -6,13 +6,13 @@ import { useRouter } from "next/navigation"
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
-  EllipsisVerticalIcon,
   ImageIcon,
   PlusIcon,
   Trash2Icon,
 } from "@/components/ui/icons"
 import { toast } from "sonner"
 
+import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { PageSection } from "@/components/page-section"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,7 +21,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
   Empty,
@@ -111,18 +110,7 @@ export function BusinessPhotosEditor({
                 className="object-cover"
               />
               <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label={t.options(index + 1)}
-                      className="absolute top-2 right-2"
-                    />
-                  }
-                >
-                  <EllipsisVerticalIcon />
-                </DropdownMenuTrigger>
+                <MoreMenuTrigger label={t.options(index + 1)} className="absolute top-2 right-2" />
                 <DropdownMenuContent align="end">
                   <DropdownMenuGroup>
                     <DropdownMenuItem

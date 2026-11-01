@@ -5,11 +5,11 @@ import Link from "next/link"
 import {
   ChevronRightIcon,
   ContactIcon,
-  EllipsisVerticalIcon,
   PhoneIcon,
   WhatsAppIcon,
 } from "@/components/ui/icons"
 
+import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,7 +24,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
   Item,
@@ -111,13 +110,7 @@ function CustomerMenu({ href, phone }: { href: string; phone: string | null }) {
   const links = phone ? phoneLinks(phone) : null
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button variant="ghost" size="icon-sm" aria-label={t.list.actions} />
-        }
-      >
-        <EllipsisVerticalIcon />
-      </DropdownMenuTrigger>
+      <MoreMenuTrigger label={t.list.actions} />
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
           <DropdownMenuItem render={<Link href={href as Route} />}>

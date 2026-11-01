@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
-  EllipsisVerticalIcon,
   PlusIcon,
   TagIcon,
   SparklesIcon,
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/icons"
 import { toast } from "sonner"
 
+import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { ViewTabs } from "@/components/view-tabs"
 import { useShowFirst } from "@/hooks/use-show-first"
@@ -25,7 +25,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
   Empty,
@@ -272,17 +271,7 @@ export function ServicesView({
                   {c.edit}
                 </Button>
                 <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        aria-label={c.more}
-                      />
-                    }
-                  >
-                    <EllipsisVerticalIcon />
-                  </DropdownMenuTrigger>
+                  <MoreMenuTrigger label={c.more} />
                   <DropdownMenuContent align="end">
                     <DropdownMenuGroup>
                       <DropdownMenuItem
