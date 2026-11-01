@@ -80,6 +80,13 @@ const en = {
     fromGoogle: "Photos, opening times and reviews from",
     builtBy: "Built by",
   },
+  // A team member's public profile (docs/plans/team-accounts.md).
+  teamProfile: {
+    appointments: "Appointments completed",
+    clients: "Clients served",
+    about: "About",
+    languages: "Languages",
+  },
   // The business's own policies, linked from its page's footer.
   policies: {
     booking: "Booking policy",
@@ -385,6 +392,12 @@ const es: Messages = {
     rights: "Todos los derechos reservados.",
     fromGoogle: "Fotos, horario y reseñas de",
     builtBy: "Hecho por",
+  },
+  teamProfile: {
+    appointments: "Citas completadas",
+    clients: "Clientes atendidos",
+    about: "Sobre mí",
+    languages: "Idiomas",
   },
   policies: {
     booking: "Política de reservas",

@@ -11,9 +11,13 @@ import { cn } from "@/lib/utils"
 // the booking page. A service id starts it on that service. The sheet opens
 // by changing only the address (the browser's history, which Next.js keeps
 // in sync), so the page is not loaded again from the server.
+// A team member's id starts it with them picked. From another page (a team
+// member's profile), `fromAway` opens the business page with the sheet.
 export function BookButton({
   slug,
   serviceId,
+  memberId,
+  fromAway = false,
   label,
   variant = "default",
   size = "lg",
@@ -21,6 +25,8 @@ export function BookButton({
 }: {
   slug: string
   serviceId?: string
+  memberId?: string
+  fromAway?: boolean
   label?: string
   variant?: "default" | "outline"
   size?: "lg" | "sm"
@@ -32,6 +38,7 @@ export function BookButton({
   // The page's language goes along (?lang=), so booking speaks it too.
   const query = new URLSearchParams()
   if (serviceId) query.set("service", serviceId)
+  if (memberId) query.set("member", memberId)
   if (language !== DEFAULT_LANGUAGE) query.set("lang", language)
   const extra = query.size > 0 ? `${query}` : ""
   const sheet = `/b/${slug}?book=1${extra && `&${extra}`}`
@@ -44,13 +51,17 @@ export function BookButton({
         className={cn("md:hidden", className)}
         nativeButton={false}
         render={
-          <a
-            href={sheet}
-            onClick={(event) => {
-              event.preventDefault()
-              window.history.pushState(null, "", sheet)
-            }}
-          />
+          fromAway ? (
+            <Link href={sheet} />
+          ) : (
+            <a
+              href={sheet}
+              onClick={(event) => {
+                event.preventDefault()
+                window.history.pushState(null, "", sheet)
+              }}
+            />
+          )
         }
       >
         {text}

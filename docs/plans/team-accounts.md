@@ -49,10 +49,12 @@ per person yet).
 | T2 | Owner invites a team member from Team (link to copy or share, email when they have one); shows who joined; remove access | T1 | Done (2026-11-01) |
 | T3 | Join page `/join/[token]`: sign in or create an account, then join | T1 | Done (2026-11-01) |
 | T4 | Team area `/team/[memberId]`: Bookings, Hours, Profile; login lands there for someone with no business | T1 | Done (2026-11-01) |
-| T5 | Public profile page; team photos on the business page open it; booking from it starts with that person | T1 | To do |
+| T5 | Public profile page; team photos on the business page open it; booking from it starts with that person | T1 | Done (2026-11-01) |
 | T6 | Owner edits About and Languages in the team member form | T1 | Done (2026-11-01) |
 | T7 | Team members change their own photo (the photo field moves to `components/` with its words as props) | T4 | To do |
 | T8 | Admin screen for team accounts and open invite links (nothing hidden) | T2 | To do |
+| T9 | Booking from a profile: the service step lists only that person's services, and the professional step is skipped | T5 | To do |
+| T10 | A team member's About in the page's other language (like services' translations) | T5 | To do |
 
 ## Decisions log
 

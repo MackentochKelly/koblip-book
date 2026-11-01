@@ -55,17 +55,22 @@ function ServiceFacts({
 }
 
 // What the business sells, like Fresha: a few cards, then See all. With
-// booking on, each card has its own Book button.
+// booking on, each card has its own Book button. On a team member's profile
+// the buttons book with them (`memberId`), from that page (`fromAway`).
 export function ServiceList({
   services,
   currency,
   slug,
   bookable,
+  memberId,
+  fromAway,
 }: {
   services: Service[]
   currency: string
   slug: string
   bookable: boolean
+  memberId?: string
+  fromAway?: boolean
 }) {
   const m = useMessages()
   if (services.length === 0) return null
@@ -106,6 +111,8 @@ export function ServiceList({
                 <BookButton
                   slug={slug}
                   serviceId={service.id}
+                  memberId={memberId}
+                  fromAway={fromAway}
                   label={m.actions.book}
                   variant="outline"
                   size="sm"
@@ -120,6 +127,8 @@ export function ServiceList({
       {more && (
         <BookButton
           slug={slug}
+          memberId={memberId}
+          fromAway={fromAway}
           label={m.page.seeAll}
           variant="outline"
           size="lg"

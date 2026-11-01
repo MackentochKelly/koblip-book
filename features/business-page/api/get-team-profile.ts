@@ -1,0 +1,66 @@
+import "server-only"
+
+import { cache } from "react"
+import { and, countDistinct, count, eq, lt, notInArray, sql } from "drizzle-orm"
+
+import { db } from "@/lib/db"
+import { bookings, teamMembers } from "@/lib/db/schema"
+import type { PageLanguage } from "@/lib/page-language"
+import type { TeamProfilePage } from "../types/team-profile"
+import { getBusinessPage } from "./get-business-page"
+
+// A team member's public profile (docs/plans/team-accounts.md): the
+// business page's data (its translated services, who does what), their
+// About and languages, and what they have done here. Null when the
+// business or the person doesn't exist.
+async function loadTeamProfile(
+  slug: string,
+  memberId: string,
+  language: PageLanguage
+): Promise<TeamProfilePage | null> {
+  const data = await getBusinessPage(slug, language)
+  const member = data?.team.find((person) => person.id === memberId)
+  if (!data || !member) return null
+  const now = new Date().toISOString()
+  const [[profile], [done]] = await Promise.all([
+    db
+      .select({ about: teamMembers.about, languages: teamMembers.languages })
+      .from(teamMembers)
+      .where(eq(teamMembers.id, member.id))
+      .limit(1),
+    // Bookings with them that took place: ended, not cancelled or missed.
+    // Customers count once each (by their key, else their name).
+    db
+      .select({
+        appointments: count(),
+        clients: countDistinct(
+          sql`coalesce(${bookings.customerKey}, ${bookings.customerName})`
+        ),
+      })
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.businessId, data.business.id),
+          eq(bookings.teamMemberId, member.id),
+          lt(bookings.endAt, now),
+          notInArray(bookings.status, ["cancelled", "no_show"])
+        )
+      ),
+  ])
+  return {
+    data,
+    member: {
+      ...member,
+      about: profile?.about ?? null,
+      languages: profile?.languages ?? [],
+    },
+    // The services they do: a service with no team list is everyone's.
+    services: data.services.filter(
+      (service) => data.serviceTeams[service.id]?.includes(member.id) ?? true
+    ),
+    appointments: done?.appointments ?? 0,
+    clients: done?.clients ?? 0,
+  }
+}
+
+export const getTeamProfile = cache(loadTeamProfile)

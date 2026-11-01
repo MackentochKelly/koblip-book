@@ -137,7 +137,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
             />
             {team.length > 0 && (
               <>
-                <TeamList team={team} language={language} />
+                <TeamList slug={business.slug} team={team} language={language} />
                 <Separator />
               </>
             )}
