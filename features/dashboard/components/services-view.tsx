@@ -84,6 +84,7 @@ import type { OwnerAddonGroup, ServiceInput } from "../types"
 import { CATALOG_FIRST_SHOWN } from "../utils/catalog-list"
 import { ConfirmRemove } from "./confirm-remove"
 import { ExtrasView } from "./extras-view"
+import { ListFooter, LoadMore } from "./list-footer"
 import { GoogleEventDot } from "./google-event-dot"
 import { PhotoField } from "./photo-upload"
 import { useTabBarAction } from "./tab-bar-action"
@@ -179,6 +180,15 @@ export function ServicesView({
     setSuggestKey((value) => value + 1)
     setSuggesting(true)
   }
+  // A phone's Suggest: after the last item, where the owner thinks of what
+  // else to add; the computer's outline button, centred and as wide as its
+  // words. Extras need a service first.
+  const phoneSuggest = !(view === "extras" && services.length === 0) && (
+    <Button variant="outline" className="md:hidden" onClick={suggest}>
+      <SparklesIcon data-icon="inline-start" />
+      {view === "services" ? t.suggestServices : t.suggestExtras}
+    </Button>
+  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -225,6 +235,7 @@ export function ServicesView({
           services={services.map(({ id, name }) => ({ id, name }))}
           adding={addingExtras}
           onAddClosed={() => setAddingExtras(false)}
+          phoneSuggest={phoneSuggest}
         />
       ) : services.length === 0 ? (
         <Empty className="border">
@@ -236,93 +247,83 @@ export function ServicesView({
           </EmptyHeader>
         </Empty>
       ) : (
-        <>
-          <ItemGroup className="gap-3">
-            {first.shown.map((service, index) => (
-              <Item key={service.id} variant="outline">
-                <ItemContent>
-                  <ItemTitle>
-                    {googleCalendar && isGoogleEventColor(service.calendarColor) && (
-                      <GoogleEventDot color={service.calendarColor} />
-                    )}
-                    {service.name}
-                  </ItemTitle>
-                  <ItemDescription>
-                    {formatDuration(service.durationMinutes)}
-                    {service.priceMinor !== null &&
-                      ` · ${service.priceMinor === 0 ? c.free : formatPrice(service.priceMinor, currency, m.locale)}`}
-                  </ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openForm(service)}
+        <ItemGroup className="gap-3">
+          {first.shown.map((service, index) => (
+            <Item key={service.id} variant="outline">
+              <ItemContent>
+                <ItemTitle>
+                  {googleCalendar && isGoogleEventColor(service.calendarColor) && (
+                    <GoogleEventDot color={service.calendarColor} />
+                  )}
+                  {service.name}
+                </ItemTitle>
+                <ItemDescription>
+                  {formatDuration(service.durationMinutes)}
+                  {service.priceMinor !== null &&
+                    ` · ${service.priceMinor === 0 ? c.free : formatPrice(service.priceMinor, currency, m.locale)}`}
+                </ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openForm(service)}
+                >
+                  {c.edit}
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label={c.more}
+                      />
+                    }
                   >
-                    {c.edit}
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button
-                          variant="outline"
-                          size="icon-sm"
-                          aria-label={c.more}
-                        />
-                      }
-                    >
-                      <EllipsisVerticalIcon />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem
-                          disabled={index === 0 || pending}
-                          onClick={() => move(index, -1)}
-                        >
-                          <ArrowUpIcon />
-                          {c.moveUp}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={index === services.length - 1 || pending}
-                          onClick={() => move(index, 1)}
-                        >
-                          <ArrowDownIcon />
-                          {c.moveDown}
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem
-                          variant="destructive"
-                          disabled={pending}
-                          onClick={() => setRemoving(service)}
-                        >
-                          <Trash2Icon />
-                          {c.remove}
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </ItemActions>
-              </Item>
-            ))}
-          </ItemGroup>
-          {first.hidden > 0 && (
-            <Button variant="outline" className="self-center" onClick={first.showAll}>
-              {c.loadMore}
-            </Button>
-          )}
-        </>
+                    <EllipsisVerticalIcon />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem
+                        disabled={index === 0 || pending}
+                        onClick={() => move(index, -1)}
+                      >
+                        <ArrowUpIcon />
+                        {c.moveUp}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={index === services.length - 1 || pending}
+                        onClick={() => move(index, 1)}
+                      >
+                        <ArrowDownIcon />
+                        {c.moveDown}
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        disabled={pending}
+                        onClick={() => setRemoving(service)}
+                      >
+                        <Trash2Icon />
+                        {c.remove}
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </ItemActions>
+            </Item>
+          ))}
+        </ItemGroup>
       )}
 
-      {/* A phone's Suggest: after the last item, where the owner thinks of
-          what else to add; the computer's outline button, centred and as
-          wide as its words. Extras need a service first. */}
-      {!(view === "extras" && services.length === 0) && (
-        <Button variant="outline" className="self-center md:hidden" onClick={suggest}>
-          <SparklesIcon data-icon="inline-start" />
-          {view === "services" ? t.suggestServices : t.suggestExtras}
-        </Button>
+      {view === "services" && (
+        <ListFooter
+          loadMore={first.hidden > 0 && <LoadMore label={c.loadMore} onClick={first.showAll} />}
+          suggest={phoneSuggest}
+        />
       )}
 
       <ConfirmRemove

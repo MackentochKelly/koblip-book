@@ -71,6 +71,7 @@ import { CATALOG_FIRST_SHOWN } from "../utils/catalog-list"
 import { noAutofill } from "@/lib/no-autofill"
 import { useOwnerMessages } from "../i18n/provider"
 import { ConfirmRemove } from "./confirm-remove"
+import { ListFooter, LoadMore } from "./list-footer"
 
 const FORM = "extras-form"
 
@@ -100,6 +101,7 @@ export function ExtrasView({
   services,
   adding,
   onAddClosed,
+  phoneSuggest,
 }: {
   businessId: string
   groups: OwnerAddonGroup[]
@@ -107,6 +109,8 @@ export function ExtrasView({
   // The page's Add button opens a new group here.
   adding: boolean
   onAddClosed: () => void
+  // The phone's Suggest button, under the list with Load more.
+  phoneSuggest?: React.ReactNode
 }) {
   const router = useRouter()
   const { common: c, extras: t } = useOwnerMessages().catalog
@@ -153,85 +157,82 @@ export function ExtrasView({
           </EmptyHeader>
         </Empty>
       ) : (
-        <>
-          <ItemGroup className="gap-3">
-            {first.shown.map((group, index) => (
-              <Item key={group.id} variant="outline">
-                <ItemContent>
-                  <ItemTitle>{group.name}</ItemTitle>
-                  <ItemDescription>
-                    {group.options.map((option) => option.name).join(", ")}
-                    {group.serviceIds.length > 0 &&
-                      ` · ${group.serviceIds
-                        .map((id) => names.get(id))
-                        .filter(Boolean)
-                        .join(", ")}`}
-                  </ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFormKey((value) => value + 1)
-                      setEditing(group)
-                    }}
+        <ItemGroup className="gap-3">
+          {first.shown.map((group, index) => (
+            <Item key={group.id} variant="outline">
+              <ItemContent>
+                <ItemTitle>{group.name}</ItemTitle>
+                <ItemDescription>
+                  {group.options.map((option) => option.name).join(", ")}
+                  {group.serviceIds.length > 0 &&
+                    ` · ${group.serviceIds
+                      .map((id) => names.get(id))
+                      .filter(Boolean)
+                      .join(", ")}`}
+                </ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFormKey((value) => value + 1)
+                    setEditing(group)
+                  }}
+                >
+                  {c.edit}
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label={c.more}
+                      />
+                    }
                   >
-                    {c.edit}
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button
-                          variant="outline"
-                          size="icon-sm"
-                          aria-label={c.more}
-                        />
-                      }
-                    >
-                      <EllipsisVerticalIcon />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem
-                          disabled={index === 0 || pending}
-                          onClick={() => move(index, -1)}
-                        >
-                          <ArrowUpIcon />
-                          {c.moveUp}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={index === groups.length - 1 || pending}
-                          onClick={() => move(index, 1)}
-                        >
-                          <ArrowDownIcon />
-                          {c.moveDown}
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem
-                          variant="destructive"
-                          disabled={pending}
-                          onClick={() => setRemoving(group)}
-                        >
-                          <Trash2Icon />
-                          {c.remove}
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </ItemActions>
-              </Item>
-            ))}
-          </ItemGroup>
-          {first.hidden > 0 && (
-            <Button variant="outline" className="self-center" onClick={first.showAll}>
-              {c.loadMore}
-            </Button>
-          )}
-        </>
+                    <EllipsisVerticalIcon />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem
+                        disabled={index === 0 || pending}
+                        onClick={() => move(index, -1)}
+                      >
+                        <ArrowUpIcon />
+                        {c.moveUp}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={index === groups.length - 1 || pending}
+                        onClick={() => move(index, 1)}
+                      >
+                        <ArrowDownIcon />
+                        {c.moveDown}
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        disabled={pending}
+                        onClick={() => setRemoving(group)}
+                      >
+                        <Trash2Icon />
+                        {c.remove}
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </ItemActions>
+            </Item>
+          ))}
+        </ItemGroup>
       )}
+      <ListFooter
+        loadMore={first.hidden > 0 && <LoadMore label={c.loadMore} onClick={first.showAll} />}
+        suggest={phoneSuggest}
+      />
 
       <ConfirmRemove
         name={removing?.name ?? null}
