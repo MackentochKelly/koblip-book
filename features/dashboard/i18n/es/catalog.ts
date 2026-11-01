@@ -6,6 +6,7 @@ const catalog: typeof en = {
     edit: "Editar",
     save: "Guardar",
     more: "Más",
+    loadMore: "Cargar más",
     moveUp: "Subir",
     moveDown: "Bajar",
     remove: "Quitar",

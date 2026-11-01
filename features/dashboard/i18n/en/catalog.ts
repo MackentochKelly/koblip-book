@@ -5,6 +5,8 @@ const catalog = {
     edit: "Edit",
     save: "Save",
     more: "More",
+    // Past the first few services or extras.
+    loadMore: "Load more",
     moveUp: "Move up",
     moveDown: "Move down",
     remove: "Remove",

@@ -15,6 +15,7 @@ import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { ViewTabs } from "@/components/view-tabs"
+import { useShowFirst } from "@/hooks/use-show-first"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { MultiPick } from "@/components/multi-pick"
@@ -80,6 +81,7 @@ import { createAddonGroup, suggestAddonGroups } from "../api/addon-actions"
 import { removeServicePhoto, setServicePhoto } from "../api/photo-actions"
 import { setServiceTeam } from "../api/team-services"
 import type { OwnerAddonGroup, ServiceInput } from "../types"
+import { CATALOG_FIRST_SHOWN } from "../utils/catalog-list"
 import { ConfirmRemove } from "./confirm-remove"
 import { ExtrasView } from "./extras-view"
 import { GoogleEventDot } from "./google-event-dot"
@@ -171,6 +173,7 @@ export function ServicesView({
       view === "services" ? openForm("new") : setAddingExtras(true),
     disabled: view === "extras" && services.length === 0,
   })
+  const first = useShowFirst(services, CATALOG_FIRST_SHOWN)
   // A fresh set of suggestions each time the panel opens.
   const suggest = () => {
     setSuggestKey((value) => value + 1)
@@ -233,76 +236,83 @@ export function ServicesView({
           </EmptyHeader>
         </Empty>
       ) : (
-        <ItemGroup className="gap-3">
-          {services.map((service, index) => (
-            <Item key={service.id} variant="outline">
-              <ItemContent>
-                <ItemTitle>
-                  {googleCalendar && isGoogleEventColor(service.calendarColor) && (
-                    <GoogleEventDot color={service.calendarColor} />
-                  )}
-                  {service.name}
-                </ItemTitle>
-                <ItemDescription>
-                  {formatDuration(service.durationMinutes)}
-                  {service.priceMinor !== null &&
-                    ` · ${service.priceMinor === 0 ? c.free : formatPrice(service.priceMinor, currency, m.locale)}`}
-                </ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openForm(service)}
-                >
-                  {c.edit}
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        aria-label={c.more}
-                      />
-                    }
+        <>
+          <ItemGroup className="gap-3">
+            {first.shown.map((service, index) => (
+              <Item key={service.id} variant="outline">
+                <ItemContent>
+                  <ItemTitle>
+                    {googleCalendar && isGoogleEventColor(service.calendarColor) && (
+                      <GoogleEventDot color={service.calendarColor} />
+                    )}
+                    {service.name}
+                  </ItemTitle>
+                  <ItemDescription>
+                    {formatDuration(service.durationMinutes)}
+                    {service.priceMinor !== null &&
+                      ` · ${service.priceMinor === 0 ? c.free : formatPrice(service.priceMinor, currency, m.locale)}`}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openForm(service)}
                   >
-                    <EllipsisVerticalIcon />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem
-                        disabled={index === 0 || pending}
-                        onClick={() => move(index, -1)}
-                      >
-                        <ArrowUpIcon />
-                        {c.moveUp}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        disabled={index === services.length - 1 || pending}
-                        onClick={() => move(index, 1)}
-                      >
-                        <ArrowDownIcon />
-                        {c.moveDown}
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        disabled={pending}
-                        onClick={() => setRemoving(service)}
-                      >
-                        <Trash2Icon />
-                        {c.remove}
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </ItemActions>
-            </Item>
-          ))}
-        </ItemGroup>
+                    {c.edit}
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          aria-label={c.more}
+                        />
+                      }
+                    >
+                      <EllipsisVerticalIcon />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          disabled={index === 0 || pending}
+                          onClick={() => move(index, -1)}
+                        >
+                          <ArrowUpIcon />
+                          {c.moveUp}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={index === services.length - 1 || pending}
+                          onClick={() => move(index, 1)}
+                        >
+                          <ArrowDownIcon />
+                          {c.moveDown}
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          disabled={pending}
+                          onClick={() => setRemoving(service)}
+                        >
+                          <Trash2Icon />
+                          {c.remove}
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </ItemActions>
+              </Item>
+            ))}
+          </ItemGroup>
+          {first.hidden > 0 && (
+            <Button variant="outline" className="self-center" onClick={first.showAll}>
+              {c.loadMore}
+            </Button>
+          )}
+        </>
       )}
 
       {/* A phone's Suggest: after the last item, where the owner thinks of
