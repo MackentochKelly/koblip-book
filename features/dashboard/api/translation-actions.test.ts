@@ -83,6 +83,7 @@ beforeAll(async () => {
     slug: "t-shop",
     name: "T Shop",
     description: "About us",
+    category: "Photography studio",
     timezone: "America/Santo_Domingo",
     currency: "DOP",
     ownerId: "u1",
@@ -113,16 +114,23 @@ afterAll(() => {
 test("translates everything missing, then reports nothing to do", async () => {
   fresh()
   const first = await translateBusiness("biz-t")
-  expect(first).toEqual({ ok: true, translated: 3 })
+  expect(first).toEqual({ ok: true, translated: 4 })
   expect(
     (await rows())
       .map((row) => [row.entityId, row.field] as [string, string])
       .sort()
   ).toEqual([
+    ["biz-t", "business.category"],
     ["biz-t", "business.description"],
     ["svc-1", "service.description"],
     ["svc-1", "service.name"],
   ])
+  expect((await rows()).find((row) => row.field === "business.category")).toMatchObject({
+    sourceText: "Photography studio", text: "ES Photography studio",
+  })
+  const content = createMock.mock.calls[0][0].messages[1].content as string
+  const asked = JSON.parse(content.slice(content.indexOf("[")))
+  expect(asked).toContainEqual({ id: "biz-t:business.category", text: "Photography studio" })
   const second = await translateBusiness("biz-t")
   expect(second).toEqual({ ok: true, translated: 0 })
   expect(createMock).toHaveBeenCalledTimes(1)

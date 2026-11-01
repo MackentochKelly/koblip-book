@@ -29,7 +29,7 @@ and faster. How to use this file: [Plans](README.md).
 | S8 | Search box hint fits at 375px | S | | Done |
 | S9 | Setup still finishes after a server restart | M | | Done |
 | S10 | Keyboard focus stays in the list after a suggested search | S | S1 | Done |
-| S11 | The category shows in Spanish on Spanish pages | S | S7 | Working on: M Kelly B, 2026-11-01 |
+| S11 | The category shows in Spanish on Spanish pages | S | S7 | Done |
 
 ---
 
@@ -250,6 +250,11 @@ show the category.
 
 **Done when:** a Spanish page shows the category in Spanish; a test covers
 it.
+
+**Done (2026-11-01):** category joins the normal Spanish translation
+run and pending count. Public pages use it only while its English source
+still matches; stale or missing translations fall back to English.
+Owner and admin screens keep the original. No backfill.
 
 ## Decisions log
 

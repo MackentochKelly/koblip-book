@@ -18,7 +18,7 @@ import {
   translateTexts,
 } from "../utils/translate"
 
-type Business = Pick<typeof businesses.$inferSelect, "id" | "description">
+type Business = Pick<typeof businesses.$inferSelect, "id" | "description" | "category">
 type TranslateResult =
   | { ok: true; translated: number }
   | { ok: false; error: "failed" }
@@ -109,6 +109,7 @@ async function translateNow(business: Business): Promise<TranslateResult> {
   const all = collectTranslatableTexts(
     business.id,
     business.description,
+    business.category,
     serviceRows,
     { groups: addonGroupRows, options: addonOptionRows },
     teamRows,

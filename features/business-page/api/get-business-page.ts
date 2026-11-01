@@ -298,7 +298,7 @@ async function loadBusinessPage(
     ;(serviceTeams[link.serviceId] ??= []).push(link.teamMemberId)
   }
 
-  // Spanish: replace About and each service's name/description with its
+  // Spanish: replace About, category and each service's name/description with its
   // up-to-date translation where there is one. A translation counts only
   // while its sourceText still equals the current English text exactly.
   let pageBusiness = business
@@ -313,6 +313,12 @@ async function loadBusinessPage(
       const row = byKey.get(`${business.id}\nbusiness.description`)
       if (row && row.sourceText === business.description) {
         pageBusiness = { ...business, description: row.text }
+      }
+    }
+    if (business.category) {
+      const row = byKey.get(`${business.id}\nbusiness.category`)
+      if (row && row.sourceText === business.category) {
+        pageBusiness = { ...pageBusiness, category: row.text }
       }
     }
     pageServices = serviceRows.map((service) => {

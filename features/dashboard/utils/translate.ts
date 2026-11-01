@@ -10,6 +10,7 @@ import {
 
 export type TranslationField =
   | "business.description"
+  | "business.category"
   | "service.name"
   | "service.description"
   | "addon_group.prompt"
@@ -48,13 +49,15 @@ export function translationId(
   return `${entityId}:${field}`
 }
 
-// Every text that needs a Spanish translation: About (if any) + every
+// Every text that needs a Spanish translation: About and category (if any) + every
 // service name + every service description (if any) + every add-on group
 // prompt + every add-on option name + every add-on option description
-// (if any) + every team member's job title and About (if any).
+// (if any) + every team member's job title and About (if any) + policies
+// and their key points.
 export function collectTranslatableTexts(
   businessId: string,
   businessDescription: string | null,
+  businessCategory: string | null,
   serviceRows: { id: string; name: string; description: string | null }[],
   addonRows: AddonTranslatableRows = { groups: [], options: [] },
   teamRows: { id: string; description: string | null; about?: string | null }[] = [],
@@ -68,6 +71,14 @@ export function collectTranslatableTexts(
       entityId: businessId,
       field: "business.description",
       text: businessDescription,
+    })
+  }
+  if (businessCategory && businessCategory.trim() !== "") {
+    all.push({
+      id: translationId(businessId, "business.category"),
+      entityId: businessId,
+      field: "business.category",
+      text: businessCategory,
     })
   }
   for (const service of serviceRows) {
@@ -167,7 +178,7 @@ export function pendingTranslations(
 }
 
 const TRANSLATE_SYSTEM_MESSAGE =
-  "You translate texts for a local business's booking page into neutral Latin American Spanish. Keep the meaning; keep names, brands, numbers and prices exactly as they are; do not add anything. Return every id exactly once."
+  "You translate texts for a local business's booking page into neutral Latin American Spanish. Keep the meaning; keep names, brands, numbers and prices exactly as they are; do not add anything. For ids ending in :business.category, translate the short business-type label, not a business name (Photography studio becomes Estudio de fotografía). Keep it short. Return every id exactly once."
 
 const TRANSLATIONS_SCHEMA_NAME = "booking_page_translations"
 

@@ -138,6 +138,7 @@ test("collectTranslatableTexts counts About, names and descriptions", () => {
   const all = collectTranslatableTexts(
     "biz-1",
     "Cozy shop",
+    null,
     [
       { id: "svc-1", name: "Cut", description: "A cut" },
       { id: "svc-2", name: "Trim", description: null },
@@ -155,9 +156,9 @@ test("collectTranslatableTexts counts About, names and descriptions", () => {
 })
 
 test("collectTranslatableTexts skips a missing About", () => {
-  expect(collectTranslatableTexts("biz-1", null, [])).toEqual([])
+  expect(collectTranslatableTexts("biz-1", null, null, [])).toEqual([])
   expect(
-    collectTranslatableTexts("biz-1", "  ", [
+    collectTranslatableTexts("biz-1", "  ", null, [
       { id: "svc-1", name: "Cut", description: null },
     ]).map((item) => item.field)
   ).toEqual(["service.name"])
@@ -166,6 +167,7 @@ test("collectTranslatableTexts skips a missing About", () => {
 test("collectTranslatableTexts counts each team member's job title and About", () => {
   const all = collectTranslatableTexts(
     "biz-1",
+    null,
     null,
     [],
     undefined,
@@ -186,6 +188,7 @@ test("pendingTranslations keeps only missing or out-of-date texts", () => {
   const all = collectTranslatableTexts(
     "biz-1",
     "Cozy shop",
+    null,
     [{ id: "svc-1", name: "Cut", description: "A cut" }]
   )
   expect(pendingTranslations(all, [])).toEqual(all)
@@ -206,7 +209,7 @@ test("pendingTranslations keeps only missing or out-of-date texts", () => {
 })
 
 test("collectTranslatableTexts adds each policy that has text", () => {
-  const all = collectTranslatableTexts("biz-1", null, [], undefined, [], [
+  const all = collectTranslatableTexts("biz-1", null, null, [], undefined, [], [
     { id: "pol-1", body: "Cancel a day ahead." },
     { id: "pol-2", body: "  " },
   ])
@@ -229,4 +232,26 @@ test("translationBatches splits by count and by length, in order", () => {
   // A text over the budget still goes, alone.
   const huge = { text: "x".repeat(4000) }
   expect(translationBatches([huge, { text: "c" }])).toEqual([[huge], [{ text: "c" }]])
+})
+
+test("collectTranslatableTexts collects a category next to About", () => {
+  expect(collectTranslatableTexts("biz-1", "Cozy shop", "Photography studio", [])).toEqual([
+    { id: translationId("biz-1", "business.description"), entityId: "biz-1", field: "business.description", text: "Cozy shop" },
+    { id: translationId("biz-1", "business.category"), entityId: "biz-1", field: "business.category", text: "Photography studio" },
+  ])
+})
+
+test.each([null, "", "   "])("collectTranslatableTexts skips an empty category: %s", (category) => {
+  expect(collectTranslatableTexts("biz-1", null, category, [])).toEqual([])
+})
+
+test("the prompt treats a category as a short business-type label", async () => {
+  fresh()
+  const id = translationId("biz-1", "business.category")
+  createMock.mockResolvedValue(reply([{ id, text: "Estudio de fotografía" }]))
+  expect(await translateTexts([{ id, text: "Photography studio" }])).toEqual(new Map([[id, "Estudio de fotografía"]]))
+  const request = createMock.mock.calls[0][0]
+  expect(request.messages[0].content).toContain(":business.category")
+  expect(request.messages[0].content).toContain("short business-type label, not a business name")
+  expect(request.messages[1].content).toContain(JSON.stringify({ id, text: "Photography studio" }))
 })

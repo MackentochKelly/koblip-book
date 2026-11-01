@@ -92,6 +92,7 @@ export async function getTranslationStatus(
   const all = collectTranslatableTexts(
     business.id,
     business.description,
+    business.category,
     serviceRows,
     { groups: addonGroupRows, options: addonOptionRows },
     teamRows,

@@ -49,6 +49,7 @@ beforeAll(async () => {
     slug: "q-shop",
     name: "Q Shop",
     description: "About us",
+    category: "Photography studio",
     timezone: "America/Santo_Domingo",
     currency: "DOP",
     ownerId: "u1",
@@ -72,7 +73,7 @@ test("counts total texts and up-to-date translations", async () => {
   expect(await getTranslationStatus("biz-q")).toEqual({
     language: "es",
     enabled: true,
-    total: 2,
+    total: 3,
     upToDate: 0,
   })
   const { db } = await import("@/lib/db")
@@ -87,7 +88,7 @@ test("counts total texts and up-to-date translations", async () => {
   expect(await getTranslationStatus("biz-q")).toEqual({
     language: "es",
     enabled: true,
-    total: 2,
+    total: 3,
     upToDate: 1,
   })
 })
@@ -96,6 +97,17 @@ test("reports disabled when Meta AI is off", async () => {
   vi.stubEnv("MODEL_API_KEY", "")
   const status = await getTranslationStatus("biz-q")
   expect(status.enabled).toBe(false)
-  expect(status.total).toBe(2)
+  expect(status.total).toBe(3)
   vi.stubEnv("MODEL_API_KEY", "test-key")
+})
+
+test("the category is pending until its Spanish source matches", async () => {
+  const { db } = await import("@/lib/db")
+  const { eq } = await import("drizzle-orm")
+  await db.insert(businesses).values({ id: "biz-category", slug: "category-shop", name: "Category Shop", category: "Photography studio", timezone: "America/Santo_Domingo", currency: "DOP", ownerId: "u1" })
+  expect(await getTranslationStatus("biz-category")).toMatchObject({ total: 1, upToDate: 0 })
+  await db.insert(translations).values({ businessId: "biz-category", entityId: "biz-category", field: "business.category", language: "es", sourceText: "Photography studio", text: "Estudio de fotografía" })
+  expect(await getTranslationStatus("biz-category")).toMatchObject({ total: 1, upToDate: 1 })
+  await db.update(businesses).set({ category: "Photo studio" }).where(eq(businesses.id, "biz-category"))
+  expect(await getTranslationStatus("biz-category")).toMatchObject({ total: 1, upToDate: 0 })
 })

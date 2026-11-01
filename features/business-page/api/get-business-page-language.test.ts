@@ -33,6 +33,7 @@ beforeAll(async () => {
     slug: "lang-shop",
     name: "Lang Shop",
     description: "Cozy family barbershop",
+    category: "Photography studio",
     timezone: "America/Santo_Domingo",
     currency: "DOP",
     googlePlaceId: "ChIJ-lang",
@@ -66,6 +67,7 @@ beforeAll(async () => {
     serviceId: "svc-a",
   })
   await db.insert(translations).values([
+    { businessId: "biz-lang", entityId: "biz-lang", field: "business.category", language: "es", sourceText: "Photography studio", text: "Estudio de fotografía" },
     {
       businessId: "biz-lang",
       entityId: "biz-lang",
@@ -117,6 +119,7 @@ afterAll(() => {
 test("es shows up-to-date translations and English for the stale one", async () => {
   const data = await getBusinessPage("lang-shop", "es")
   expect(data?.language).toBe("es")
+  expect(data?.business.category).toBe("Estudio de fotografía")
   expect(data?.business.description).toBe("Barbería familiar acogedora")
   expect(data?.services.map((service) => service.name)).toEqual([
     "Corte Clásico",
@@ -129,6 +132,7 @@ test("es shows up-to-date translations and English for the stale one", async () 
 test("en never shows translations", async () => {
   const data = await getBusinessPage("lang-shop", "en")
   expect(data?.language).toBe("en")
+  expect(data?.business.category).toBe("Photography studio")
   expect(data?.business.description).toBe("Cozy family barbershop")
   expect(data?.services.map((service) => service.name)).toEqual([
     "Classic Cut",
@@ -139,6 +143,7 @@ test("en never shows translations", async () => {
 test("the default call is English", async () => {
   const data = await getBusinessPage("lang-shop")
   expect(data?.language).toBe("en")
+  expect(data?.business.category).toBe("Photography studio")
   expect(data?.business.description).toBe("Cozy family barbershop")
 })
 
@@ -153,4 +158,15 @@ test("Google Details is asked in the page language", async () => {
   expect(seenUrls.some((url) => url.includes("languageCode=es"))).toBe(true)
   expect(seenUrls.some((url) => url.includes("languageCode=en"))).toBe(true)
   expect(seenUrls.some((url) => url.includes("languageCode=fr"))).toBe(false)
+})
+
+test("Spanish keeps the English category when its translation is stale or missing", async () => {
+  const { db } = await import("@/lib/db")
+  await db.insert(businesses).values([
+    { id: "biz-stale", slug: "stale-category", name: "Stale Category", category: "Photography studio", timezone: "America/Santo_Domingo", currency: "DOP" },
+    { id: "biz-missing", slug: "missing-category", name: "Missing Category", category: "Photography studio", timezone: "America/Santo_Domingo", currency: "DOP" },
+  ])
+  await db.insert(translations).values({ businessId: "biz-stale", entityId: "biz-stale", field: "business.category", language: "es", sourceText: "Barber shop", text: "Barbería" })
+  expect((await getBusinessPage("stale-category", "es"))?.business.category).toBe("Photography studio")
+  expect((await getBusinessPage("missing-category", "es"))?.business.category).toBe("Photography studio")
 })
