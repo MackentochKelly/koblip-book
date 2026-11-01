@@ -1,4 +1,5 @@
 import { StoreIcon } from "@/components/ui/icons"
+import { adminDeleteBusiness } from "@/features/dashboard/api/delete-actions"
 import { getBusinesses } from "@/features/admin/api/queries"
 import { AdminPage } from "@/features/admin/components/admin-page"
 import { BusinessesList } from "@/features/admin/components/businesses-list"
@@ -15,7 +16,11 @@ export default async function AdminBusinessesPage() {
       icon={<StoreIcon />}
       empty={businesses.length ? null : m.businesses.none}
     >
-      <BusinessesList businesses={businesses} m={m} />
+      <BusinessesList
+        businesses={businesses}
+        m={m}
+        onDelete={adminDeleteBusiness}
+      />
     </AdminPage>
   )
 }

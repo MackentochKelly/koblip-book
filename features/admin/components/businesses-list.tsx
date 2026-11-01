@@ -14,14 +14,18 @@ import { formatClock, formatWeekday } from "@/lib/format-booking-time"
 import { initials } from "@/lib/initials"
 import type { AdminBusiness } from "../api/queries"
 import type { AdminMessages } from "../i18n"
+import { AdminDeleteButton } from "./admin-delete-button"
 
-// Every business: its owner, its bookings and a link to its public page.
+// Every business: its owner, its bookings, a link to its public page and
+// Delete (onDelete comes from the page).
 export function BusinessesList({
   businesses,
   m,
+  onDelete,
 }: {
   businesses: AdminBusiness[]
   m: AdminMessages
+  onDelete: (businessId: string) => Promise<{ ok: boolean }>
 }) {
   const t = m.businesses
   return (
@@ -66,6 +70,11 @@ export function BusinessesList({
             >
               <ExternalLinkIcon />
             </Button>
+            <AdminDeleteButton
+              name={business.name}
+              description={m.remove.businessText}
+              onDelete={onDelete.bind(null, business.id)}
+            />
           </ItemActions>
         </Item>
       ))}

@@ -1,4 +1,5 @@
 import { ContactIcon } from "@/components/ui/icons"
+import { adminDeleteUser } from "@/features/dashboard/api/delete-actions"
 import { getOwners } from "@/features/admin/api/queries"
 import { AdminPage } from "@/features/admin/components/admin-page"
 import { OwnersList } from "@/features/admin/components/owners-list"
@@ -17,7 +18,12 @@ export default async function AdminOwnersPage() {
       icon={<ContactIcon />}
       empty={owners.length ? null : m.owners.none}
     >
-      <OwnersList owners={owners} selfId={session.userId} m={m} />
+      <OwnersList
+        owners={owners}
+        selfId={session.userId}
+        m={m}
+        onDelete={adminDeleteUser}
+      />
     </AdminPage>
   )
 }

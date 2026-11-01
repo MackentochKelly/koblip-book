@@ -12,17 +12,21 @@ import {
 import { initials } from "@/lib/initials"
 import type { AdminOwner } from "../api/queries"
 import type { AdminMessages } from "../i18n"
+import { AdminDeleteButton } from "./admin-delete-button"
 import { OwnerBlockButton } from "./owner-block-button"
 
-// Every account, newest first; any but the admin's own can be blocked.
+// Every account, newest first; any but the admin's own can be blocked or
+// deleted (onDelete comes from the page).
 export function OwnersList({
   owners,
   selfId,
   m,
+  onDelete,
 }: {
   owners: AdminOwner[]
   selfId: string
   m: AdminMessages
+  onDelete: (userId: string) => Promise<{ ok: boolean }>
 }) {
   const t = m.owners
   return (
@@ -53,6 +57,11 @@ export function OwnersList({
                   userId={owner.id}
                   name={owner.name}
                   blocked={owner.banned}
+                />
+                <AdminDeleteButton
+                  name={owner.name}
+                  description={m.remove.ownerText}
+                  onDelete={onDelete.bind(null, owner.id)}
                 />
               </ItemActions>
             )}

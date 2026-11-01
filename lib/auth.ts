@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { nextCookies } from "better-auth/next-js"
 import { admin, anonymous } from "better-auth/plugins"
+import { ACCOUNT_RULES } from "./account-rules"
 import { db } from "./db"
 import * as authSchema from "./db/auth-schema"
 import { sendEmail } from "./email"
@@ -44,6 +45,11 @@ export const auth = betterAuth({
           },
         }
       : undefined,
+  // Owners delete their own account in Settings → Account
+  // (better-auth.com/docs/concepts/users-accounts#delete-user); their
+  // businesses go first (features/dashboard/api/delete-actions.ts).
+  user: { deleteUser: { enabled: true } },
+  session: { freshAge: ACCOUNT_RULES.freshLoginHours * 3600 },
   advanced: { database: { generateId: () => crypto.randomUUID() } },
   // The app owner's admin area (better-auth.com/docs/plugins/admin): the
   // accounts in ADMIN_USER_IDS (comma-separated user ids, .env.local) are

@@ -398,6 +398,16 @@ const en = {
     bookings: "Bookings",
     newOwners: "New owners this week",
   },
+  remove: {
+    label: (name: string) => `Delete ${name}`,
+    title: (name: string) => `Delete ${name}?`,
+    businessText: "Its page, bookings, services, team and customers are deleted for good.",
+    ownerText: "Their account and every business they own are deleted for good.",
+    delete: "Delete",
+    cancel: "Cancel",
+    deleted: "Deleted",
+    failed: "That did not work. Please try again.",
+  },
   businesses: {
     none: "No businesses yet",
     noOwner: "No owner",
@@ -896,6 +906,16 @@ const es: AdminMessages = {
     owners: "Dueños",
     bookings: "Reservas",
     newOwners: "Dueños nuevos esta semana",
+  },
+  remove: {
+    label: (name: string) => `Eliminar ${name}`,
+    title: (name: string) => `¿Eliminar ${name}?`,
+    businessText: "Su página, reservas, servicios, equipo y clientes se eliminan para siempre.",
+    ownerText: "Su cuenta y todos sus negocios se eliminan para siempre.",
+    delete: "Eliminar",
+    cancel: "Cancelar",
+    deleted: "Eliminado",
+    failed: "No funcionó. Inténtalo de nuevo.",
   },
   businesses: {
     none: "Aún no hay negocios",

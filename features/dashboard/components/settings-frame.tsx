@@ -13,6 +13,7 @@ const PARTS = [
   "spanish",
   "theme",
   "notifications",
+  "account",
 ] as const
 
 type Part = (typeof PARTS)[number]
