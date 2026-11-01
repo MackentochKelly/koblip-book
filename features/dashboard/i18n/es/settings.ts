@@ -102,22 +102,6 @@ const settings: typeof en = {
       photos: "Añade fotos",
       booking: "Consigue tu primera reserva",
     },
-    hints: {
-      details: "Comprueba que tu nombre, teléfono y dirección estén bien.",
-      hours: "Los clientes solo pueden reservar cuando abres.",
-      services: "Lo que los clientes pueden reservar, con tiempos y precios.",
-      team: "Quién hace el trabajo, para que los clientes elijan.",
-      photos: "Muestra tu local en tu página de reservas.",
-      booking: "Comparte el enlace de tu página con tus clientes.",
-    },
-    actions: {
-      details: "Revisar",
-      hours: "Poner horario",
-      services: "Añadir",
-      team: "Añadir",
-      photos: "Añadir",
-      booking: "Ver página",
-    },
   },
   share: {
     linkCopied: "Enlace copiado",

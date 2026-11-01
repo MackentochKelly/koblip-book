@@ -5,16 +5,27 @@ import Link from "next/link"
 import { PageSection } from "@/components/page-section"
 import { Button } from "@/components/ui/button"
 import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { ChevronDownIcon, CircleCheckIcon } from "@/components/ui/icons"
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  CircleCheckIcon,
+} from "@/components/ui/icons"
 import {
   Item,
+  ItemActions,
   ItemContent,
   ItemDescription,
-  ItemActions,
   ItemGroup,
   ItemMedia,
   ItemTitle,
@@ -25,11 +36,11 @@ import { cn } from "@/lib/utils"
 export type SetupStepItem = {
   id: string
   title: string
-  // What to do, shown on the current step only.
-  hint: string
+  // What to do, shown on the current step (not in a boxed list).
+  hint?: string
   done: boolean
-  // Where to do it, as a button on the current step.
-  action?: { label: string; href: string }
+  // Where to do it: the whole row opens it.
+  href?: string
 }
 
 export type SetupStepsLabels = {
@@ -44,14 +55,16 @@ export type SetupStepsLabels = {
 }
 
 // A setup guide: steps in order with a bar, done ones checked, the current
-// one marked with what to do, the rest muted. Folded away once all are done
-// (or when the caller says).
-// Any setup reuses it (WhatsApp's own number, a new owner's first steps).
+// one marked, the rest muted. Steps with a link open it from the whole row.
+// Folded away once all are done (or when the caller says). `boxed` puts it
+// in a small bordered box with short rows (the home page's first steps);
+// otherwise it is a page section (WhatsApp's own number).
 export function SetupSteps({
   id,
   steps,
   labels,
   folded,
+  boxed = false,
 }: {
   // The section's anchor.
   id: string
@@ -59,69 +72,96 @@ export function SetupSteps({
   labels: SetupStepsLabels
   // Folded away; by default once every step is done.
   folded?: boolean
+  boxed?: boolean
 }) {
   const t = labels
   const done = steps.filter((step) => step.done).length
   const current = steps.find((step) => !step.done)
 
+  const list = (
+    <ItemGroup className={boxed ? "gap-0" : "gap-1"}>
+      {steps.map((step, index) => {
+        const isCurrent = step === current
+        return (
+          <Item
+            key={step.id}
+            role="listitem"
+            size="sm"
+            variant={isCurrent && !boxed ? "outline" : "default"}
+            aria-current={isCurrent ? "step" : undefined}
+            render={step.href ? <Link href={step.href} /> : undefined}
+          >
+            <ItemMedia variant="icon">
+              {step.done ? (
+                <CircleCheckIcon className="text-success" />
+              ) : (
+                <span
+                  className={cn(
+                    "flex size-4 items-center justify-center text-sm font-medium",
+                    isCurrent ? "text-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  {index + 1}
+                </span>
+              )}
+            </ItemMedia>
+            <ItemContent className="min-w-0">
+              <ItemTitle
+                className={cn(!step.done && !isCurrent && "text-muted-foreground")}
+              >
+                {step.title}
+                <span className="sr-only">
+                  {" "}
+                  ({step.done ? t.done : isCurrent ? t.now : t.toDo})
+                </span>
+              </ItemTitle>
+              {isCurrent && !boxed && (
+                <ItemDescription className="line-clamp-none">{step.hint}</ItemDescription>
+              )}
+            </ItemContent>
+            {step.href && (
+              <ItemActions>
+                <ChevronRightIcon className="size-4 text-muted-foreground" />
+              </ItemActions>
+            )}
+          </Item>
+        )
+      })}
+    </ItemGroup>
+  )
+
+  const progress = (
+    <Progress value={(done / steps.length) * 100}>
+      <ProgressLabel className="sr-only">{t.title}</ProgressLabel>
+      {!boxed && (
+        <ProgressValue>{() => t.progress(done, steps.length)}</ProgressValue>
+      )}
+    </Progress>
+  )
+
+  if (boxed && !(folded ?? !current)) {
+    return (
+      <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-16">
+        <Card size="sm" className="gap-3 border bg-muted/50 ring-0">
+          <CardHeader>
+            <CardTitle id={`${id}-title`}>{t.title}</CardTitle>
+            <CardAction className="text-sm text-muted-foreground tabular-nums">
+              {t.progress(done, steps.length)}
+            </CardAction>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {progress}
+            <div className="-mx-2">{list}</div>
+          </CardContent>
+        </Card>
+      </section>
+    )
+  }
+
   const content = (
     <div className="flex flex-col gap-4">
-      <Progress value={(done / steps.length) * 100}>
-        <ProgressLabel className="sr-only">{t.title}</ProgressLabel>
-        <ProgressValue>{() => t.progress(done, steps.length)}</ProgressValue>
-      </Progress>
-      <ItemGroup className="gap-1">
-        {steps.map((step, index) => {
-          const isCurrent = step === current
-          return (
-            <Item
-              key={step.id}
-              role="listitem"
-              size="sm"
-              variant={isCurrent ? "outline" : "default"}
-              aria-current={isCurrent ? "step" : undefined}
-            >
-              <ItemMedia variant="icon">
-                {step.done ? (
-                  <CircleCheckIcon className="text-success" />
-                ) : (
-                  <span
-                    className={cn(
-                      "text-sm font-medium",
-                      isCurrent ? "text-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    {index + 1}
-                  </span>
-                )}
-              </ItemMedia>
-              <ItemContent className="min-w-0">
-                <ItemTitle className={cn(!step.done && !isCurrent && "text-muted-foreground")}>
-                  {step.title}
-                  <span className="sr-only">
-                    {" "}
-                    ({step.done ? t.done : isCurrent ? t.now : t.toDo})
-                  </span>
-                </ItemTitle>
-                {isCurrent && (
-                  <ItemDescription className="line-clamp-none">{step.hint}</ItemDescription>
-                )}
-              </ItemContent>
-              {isCurrent && step.action && (
-                <ItemActions>
-                  <Button
-                    size="sm"
-                    nativeButton={false}
-                    render={<Link href={step.action.href} />}
-                  >
-                    {step.action.label}
-                  </Button>
-                </ItemActions>
-              )}
-            </Item>
-          )
-        })}
-      </ItemGroup>
+      {progress}
+      {list}
     </div>
   )
 

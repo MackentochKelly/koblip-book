@@ -102,22 +102,6 @@ const settings = {
       photos: "Add photos",
       booking: "Get your first booking",
     },
-    hints: {
-      details: "Make sure your name, phone and address are right.",
-      hours: "Customers can only book when you are open.",
-      services: "What customers can book, with times and prices.",
-      team: "Who does the work, so customers can pick.",
-      photos: "Show your place on your booking page.",
-      booking: "Share your page link with your customers.",
-    },
-    actions: {
-      details: "Check",
-      hours: "Set hours",
-      services: "Add",
-      team: "Add",
-      photos: "Add",
-      booking: "View page",
-    },
   },
   share: {
     linkCopied: "Link copied",
