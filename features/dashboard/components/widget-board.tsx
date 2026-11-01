@@ -25,6 +25,9 @@ import {
 } from "../utils/widget-layout"
 import type { WidgetId, WidgetLayout } from "../widgets"
 
+// The space between widgets: roomier on a computer.
+const STACK = "flex flex-col gap-6 md:gap-10"
+
 // Home's widgets in the owner's order. Edit widgets (at the foot, like the
 // iPhone's widget list) lets each one be dragged by its handle or taken off
 // with its X; Add widget opens the Widgets page for the rest; Done ends it.
@@ -74,7 +77,7 @@ export function WidgetBoard({
 
   if (!editing) {
     return (
-      <>
+      <div className={STACK}>
         {shown.map((id) => (
           <section key={id} aria-label={t.names[id]} className="min-w-0">
             {widgets[id]}
@@ -88,19 +91,19 @@ export function WidgetBoard({
           <SquarePenIcon data-icon="inline-start" />
           {t.edit}
         </Button>
-      </>
+      </div>
     )
   }
 
   return (
-    <>
+    <div className={STACK}>
       <SortableList
         ids={shown}
         onReorder={(next) => save(reorderShown(layout, next))}
         handleLabel={(id) => t.move(t.names[id])}
         announcements={announcements}
         instructions={instructions}
-        className="flex flex-col gap-6"
+        className={STACK}
       >
         {(id, handle) => (
           <section
@@ -126,6 +129,6 @@ export function WidgetBoard({
         {addWidget}
         <Button onClick={() => setEditing(false)}>{t.done}</Button>
       </div>
-    </>
+    </div>
   )
 }
