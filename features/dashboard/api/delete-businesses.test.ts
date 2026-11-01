@@ -38,8 +38,8 @@ test("an owner's businesses go with everything in them, then the account can go"
     business("theirs", "other"),
   ])
   await db.insert(services).values([
-    { businessId: "mine", name: "Cut", durationMinutes: 30, priceCents: 1000 },
-    { businessId: "theirs", name: "Cut", durationMinutes: 30, priceCents: 1000 },
+    { businessId: "mine", name: "Cut", durationMinutes: 30, priceMinor: 1000 },
+    { businessId: "theirs", name: "Cut", durationMinutes: 30, priceMinor: 1000 },
   ])
 
   const ids = await ownedBusinessIds("owner")
