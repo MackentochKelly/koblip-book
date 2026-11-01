@@ -12,7 +12,7 @@ const { businesses } = await import("../lib/db/schema")
 const { fetchPlace } = await import("../features/place-import/api/fetch-place")
 const { writeAbout } =
   await import("../features/place-import/api/write-about")
-const { googleCategory, specificTypes } =
+const { CATCH_ALL_PLACE_TYPES, specificTypes } =
   await import("../features/place-import/utils/map-place")
 
 // Businesses saved before S7 kept Google's catch-all category ("Services").
@@ -44,9 +44,18 @@ for (const row of rows) {
     console.error(`${row.slug}: Google failed (${String(error)})`)
     continue
   }
-  // Only what Google gave is replaced, and only a catch-all.
+  // Only a saved catch-all that is still what Google gave is replaced.
+  // A row with no category is left alone (a city or country someone
+  // imported is not a business to name).
   const google = place.primaryTypeDisplayName?.text ?? null
-  if (googleCategory(place) !== null || row.category !== google) continue
+  if (
+    !place.primaryType ||
+    !CATCH_ALL_PLACE_TYPES.has(place.primaryType) ||
+    row.category === null ||
+    row.category !== google
+  ) {
+    continue
+  }
   const words = await writeAbout({
     name: row.name,
     address: row.address,
@@ -55,18 +64,18 @@ for (const row of rows) {
     nameCategory: true,
   })
   const category = words?.category ?? null
-  console.log(`${row.slug}: ${row.category ?? "none"} → ${category ?? "none"}`)
+  if (!category) {
+    // Kept for a later run rather than cleared.
+    console.log(`${row.slug}: ${row.category} kept (Muse gave no category)`)
+    continue
+  }
+  console.log(`${row.slug}: ${row.category} → ${category}`)
   if (apply) {
     await db
       .update(businesses)
       .set({ category })
       .where(
-        and(
-          eq(businesses.id, row.id),
-          row.category === null
-            ? undefined
-            : eq(businesses.category, row.category)
-        )
+        and(eq(businesses.id, row.id), eq(businesses.category, row.category))
       )
   }
   fixed += 1
