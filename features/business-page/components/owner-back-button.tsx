@@ -19,7 +19,7 @@ export function OwnerBackButton({ businessId }: { businessId: string }) {
         title={label}
         nativeButton={false}
         render={<Link href={"/dashboard/" + businessId} draggable={false} />}
-        className="size-12 rounded-full bg-muted/70 text-foreground inset-ring inset-ring-foreground/10 backdrop-blur-2xl backdrop-saturate-150 hover:bg-muted [&_svg:not([class*='size-'])]:size-6"
+        className="size-12 rounded-full border border-foreground/25 bg-muted/70 text-foreground backdrop-blur-2xl backdrop-saturate-150 hover:bg-muted [&_svg:not([class*='size-'])]:size-6"
       >
         <ArrowLeftIcon />
       </Button>

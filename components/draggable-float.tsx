@@ -5,44 +5,48 @@ import { useLayoutEffect, useRef } from "react"
 
 import { DRAG_RULES } from "@/lib/drag-rules"
 
-type Side = "left" | "right"
-
-// Where the button rests: a side, and how high up that side (0 = bottom,
-// 1 = top), so the spot still fits after the screen changes size.
-interface Spot {
-  side: Side
-  rise: number
+// The screen corner the button rests in.
+interface Corner {
+  side: "left" | "right"
+  edge: "top" | "bottom"
 }
 
-function readSpot(key: string): Spot | null {
+function readCorner(key: string): Corner | null {
   try {
     const saved = JSON.parse(localStorage.getItem(key) ?? "null")
     if (
       (saved?.side === "left" || saved?.side === "right") &&
-      typeof saved.rise === "number"
+      (saved?.edge === "top" || saved?.edge === "bottom")
     ) {
-      return { side: saved.side, rise: Math.min(1, Math.max(0, saved.rise)) }
+      return { side: saved.side, edge: saved.edge }
     }
   } catch {}
   return null
 }
 
-function saveSpot(key: string, spot: Spot) {
+function saveCorner(key: string, corner: Corner) {
   try {
-    localStorage.setItem(key, JSON.stringify(spot))
+    localStorage.setItem(key, JSON.stringify(corner))
   } catch {}
 }
 
-// A floating button people can drag anywhere on the screen, like a phone's
-// floating shortcut: let go and it glides to the nearest side, and it comes
-// back to that spot next time. It starts at the bottom right, clear of the
-// phone's bottom bar, and never leaves the screen's safe area. A tap still
-// works as a tap; a drag never counts as one (motion.dev/docs/react-drag).
+// Where a throw at this speed (px per second) would come to rest.
+function project(velocity: number) {
+  const rate = DRAG_RULES.deceleration
+  return ((velocity / 1000) * rate) / (1 - rate)
+}
+
+// A floating button people can drag anywhere on the screen, like the
+// Next.js dev button: let go (or flick it) and it glides into the nearest
+// corner, and it comes back to that corner next time. It starts at the
+// bottom right, clear of the phone's bottom bar, and never leaves the
+// screen's safe area. A tap still works as a tap; a drag never counts as
+// one (motion.dev/docs/react-drag).
 export function DraggableFloat({
   id,
   children,
 }: {
-  // Names the spot this button keeps in the browser.
+  // Names the corner this button keeps in the browser.
   id: string
   children: React.ReactNode
 }) {
@@ -66,15 +70,15 @@ export function DraggableFloat({
     }
   }
 
-  // Put the button back where it was left last time, before it is drawn.
+  // Put the button back in its last corner, before it is drawn.
   useLayoutEffect(() => {
-    const spot = readSpot(key)
+    const corner = readCorner(key)
     const space = room()
-    if (!spot || !space) {
+    if (!corner || !space) {
       return
     }
-    x.set(spot.side === "left" ? -space.across : 0)
-    y.set(-spot.rise * space.up)
+    x.set(corner.side === "left" ? -space.across : 0)
+    y.set(corner.edge === "top" ? -space.up : 0)
   }, [key, x, y])
 
   function handleDragEnd(_: PointerEvent, info: PanInfo) {
@@ -82,13 +86,19 @@ export function DraggableFloat({
     if (!space) {
       return
     }
-    const side: Side = x.get() < -space.across / 2 ? "left" : "right"
-    animate(x, side === "left" ? -space.across : 0, {
+    const corner: Corner = {
+      side: x.get() + project(info.velocity.x) < -space.across / 2 ? "left" : "right",
+      edge: y.get() + project(info.velocity.y) < -space.up / 2 ? "top" : "bottom",
+    }
+    animate(x, corner.side === "left" ? -space.across : 0, {
       ...DRAG_RULES.snap,
       velocity: info.velocity.x,
     })
-    const rise = space.up > 0 ? Math.min(1, Math.max(0, -y.get() / space.up)) : 0
-    saveSpot(key, { side, rise })
+    animate(y, corner.edge === "top" ? -space.up : 0, {
+      ...DRAG_RULES.snap,
+      velocity: info.velocity.y,
+    })
+    saveCorner(key, corner)
   }
 
   return (
