@@ -120,8 +120,10 @@ export function AssistantChat({
       style={visible ? { top: visible.top, height: visible.height } : undefined}
     >
       <header className="shrink-0 bg-background pt-[env(safe-area-inset-top)]">
-        {/* Back | Chat · Recent | new chat, the tabs in the middle. */}
-        <div className="mx-auto grid h-14 w-full max-w-3xl grid-cols-[1fr_auto_1fr] items-center gap-2 px-2">
+        {/* Back | Chat · Recent | new chat, the tabs in the middle. On a
+            computer the row spans the page, so new chat sits at its edge
+            under the top bar's buttons, not beside the words. */}
+        <div className="mx-auto grid h-14 w-full max-w-3xl grid-cols-[1fr_auto_1fr] items-center gap-2 px-2 md:max-w-none md:px-4">
           <h1 className="sr-only">{messages.title}</h1>
           <Button
             type="button"
