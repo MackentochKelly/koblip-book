@@ -9,12 +9,38 @@ vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }))
 
 const { MessageEditor } = await import("./message-editor")
 type Item = import("./message-editor").MessageEditorItem
-const { ownerMessagesFor } = await import("@/features/dashboard/i18n")
 
 afterEach(cleanup)
 
-const t = ownerMessagesFor("en").whatsapp
-const labels = { ...t, readOnly: t.koblipWording }
+const t = {
+  normalMessage: "Normal message",
+  normalHint: "Inside 24 hours",
+  template: "Template",
+  templateHint: "Outside 24 hours",
+  approvedNow: "Sending now",
+}
+const labels: import("./message-editor").MessageEditorLabels = {
+  ...t,
+  edit: (name) => `Edit ${name}`,
+  english: "English",
+  spanish: "Spanish",
+  metaReason: "Meta's reason",
+  review: { missing: "Draft", draft: "Draft", waiting: "In review", approved: "Approved", rejected: "Rejected" },
+  readOnly: "Read-only",
+  title: "Title",
+  text: "Text",
+  footer: "Footer",
+  buttons: "Buttons",
+  buttonKinds: { confirm: "Confirms", cantCome: "Can't come", ok: "OK" },
+  addButton: "Add button",
+  removeButton: (label) => `Remove ${label}`,
+  reset: "Reset",
+  save: "Save",
+  submit: "Submit to Meta",
+  saved: "Saved",
+  submitted: "Submitted",
+  failed: "Failed",
+}
 const limits = { maxHeader: 60, maxBody: 1024, maxFooter: 60, maxButtons: 3, maxButtonLabel: 20 }
 
 const saved = {
