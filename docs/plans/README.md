@@ -12,6 +12,7 @@ current.
 | [Team accounts and profiles](team-accounts.md) | In progress |
 | [Assistant fixes](assistant-fixes.md) | In progress |
 | [Voice picker](voice-picker.md) | In progress |
+| [Sign-up follow-ups](signup-follow-ups.md) | To do |
 | [Sign-up fixes](signup-fixes.md) | Done |
 | [Integrations tabs](integrations.md) | Done |
 | [Message editing](message-editing.md) | To do |
