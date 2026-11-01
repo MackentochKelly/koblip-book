@@ -29,8 +29,9 @@ type Invalid = "name" | "phone" | "website" | "seats" | null
 
 // The business's name, address, About, phone and website, and how many people can be booked at
 // the same time when there is no team. In Settings, and right after sign-up
-// (with `next`: where Save goes). With Meta AI on, Muse can tidy the name
-// and rewrite the About in the form; nothing is saved until Save.
+// (with `next`: the button says Continue and goes there). With Meta AI on,
+// Muse can tidy the name and rewrite the About in the form; nothing is
+// saved until the button is pressed.
 export function DetailsForm({
   businessId,
   details,
@@ -262,12 +263,13 @@ export function DetailsForm({
           </Field>
         )}
       </FieldGroup>
-      {/* Save is the big button at the end of the form, like the login card's.
-          In Settings it waits for a change; right after sign-up it moves on. */}
+      {/* The big button at the end of the form, like the login card's. In
+          Settings it is Save and waits for a change; right after sign-up it
+          is Continue and moves on. */}
       <FormActions>
         <Button type="submit" size="lg" disabled={pending || (!next && !changed)}>
           {pending && <Spinner data-icon="inline-start" />}
-          {m.settings.save}
+          {next ? m.settings.continue : m.settings.save}
         </Button>
       </FormActions>
     </form>

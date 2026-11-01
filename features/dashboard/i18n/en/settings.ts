@@ -13,6 +13,8 @@ const settings = {
   },
   partsLabel: "Settings parts",
   save: "Save",
+  // A form's button when it moves on to the next setup step.
+  continue: "Continue",
   saved: "Saved",
   tryAgain: "That did not work. Please try again.",
   details: {

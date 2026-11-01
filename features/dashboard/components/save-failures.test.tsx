@@ -58,6 +58,22 @@ test("save waits for a change", () => {
   expect(screen.getByRole("button", { name: "Save" })).toHaveProperty("disabled", true)
 })
 
+test("details in setup say Continue and need no change", () => {
+  render(
+    <DetailsForm
+      businessId="b1"
+      details={details}
+      hasTeam={false}
+      next="/setup/b1/preparing"
+    />
+  )
+  expect(screen.queryByRole("button", { name: "Save" })).toBeNull()
+  expect(screen.getByRole("button", { name: "Continue" })).toHaveProperty(
+    "disabled",
+    false
+  )
+})
+
 // A save the server never answers shows a message instead of breaking the
 // screen.
 test("hours: a save with no answer says try again", async () => {

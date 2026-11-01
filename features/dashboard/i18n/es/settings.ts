@@ -14,6 +14,7 @@ const settings: typeof en = {
   },
   partsLabel: "Partes de ajustes",
   save: "Guardar",
+  continue: "Continuar",
   saved: "Guardado",
   tryAgain: "No funcionó. Inténtalo de nuevo.",
   details: {

@@ -16,7 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // Right after sign-up: the owner checks and fixes what came from Google
-// Maps, and Save (which confirms the details) opens the dashboard. A plain
+// Maps, and Continue (which saves and confirms the details) moves on to
+// getting the page ready. A plain
 // page: Safari can't run a moving gradient under its own bars.
 export default async function SetupPage({
   params,
