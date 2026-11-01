@@ -41,7 +41,7 @@ export default async function SetupPage({
             businessId={businessId}
             hasTeam={team.length > 0}
             title={m.shell.titles.checkDetails}
-            next={`/setup/${businessId}/ready`}
+            next={`/setup/${businessId}/preparing`}
             details={{
               name: business.name,
               address: business.address,
