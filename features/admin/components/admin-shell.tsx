@@ -11,13 +11,13 @@ import {
   StoreIcon,
 } from "@/components/ui/icons"
 
+import { AppInset } from "@/components/app-inset"
 import { AppTopBar } from "@/components/app-top-bar"
 import { NavMain } from "@/components/nav-main"
 import { PageContent } from "@/components/page-content"
 import {
   Sidebar,
   SidebarContent,
-  SidebarInset,
   SidebarProvider,
   SidebarRail,
 } from "@/components/ui/sidebar"
@@ -58,10 +58,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </SidebarContent>
           <SidebarRail />
         </Sidebar>
-        <SidebarInset className="min-w-0">
+        <AppInset>
           <AppTopBar title={m.admin} menuLabel={m.admin} />
           <PageContent>{children}</PageContent>
-        </SidebarInset>
+        </AppInset>
       </SidebarProvider>
     </TooltipProvider>
   )

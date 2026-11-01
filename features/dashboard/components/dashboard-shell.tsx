@@ -14,10 +14,11 @@ import {
   UsersIcon,
 } from "@/components/ui/icons"
 
+import { AppInset } from "@/components/app-inset"
 import { PageContent } from "@/components/page-content"
 import { SpinSwap } from "@/components/spin-swap"
 import { Button } from "@/components/ui/button"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { cn } from "@/lib/utils"
@@ -113,13 +114,7 @@ export function DashboardShell({
       <CommandMenuProvider business={business}>
         <SidebarProvider>
           <AppSidebar businessId={business.id} owner={owner} />
-          <SidebarInset
-            data-surface="app"
-            className={cn(
-              "min-w-0 bg-app-background",
-              assistantOpen && "md:h-dvh"
-            )}
-          >
+          <AppInset className={cn(assistantOpen && "md:h-dvh")}>
             <TopBar
               business={business}
               owner={owner}
@@ -135,7 +130,7 @@ export function DashboardShell({
                 {children}
               </TabBarActionContext>
             </PageContent>
-          </SidebarInset>
+          </AppInset>
           <nav
             aria-label={m.owner}
             className={cn(
