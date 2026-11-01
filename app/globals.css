@@ -337,10 +337,6 @@
   :root:not(.dark) [data-surface="app"] [data-slot="empty"] {
     @apply bg-card shadow-card;
   }
-  /* The sidebar's edge on a computer is a hairline (--hairline). */
-  [data-slot="sidebar-container"][data-side="left"] {
-    border-right-width: var(--hairline);
-  }
   /* Tabs tracks get a faint edge, drawn inside so a scrolling tab row
      cannot clip it. */
   [data-surface="app"] [data-slot="tabs-list"][data-variant="default"] {
@@ -401,4 +397,10 @@
   :root:not(.dark) [data-surface="app"] [data-slot="field-label"]:has(> [data-slot="field"]):not(:hover) {
     @apply bg-card;
   }
+}
+
+/* The sidebar's edge on a computer is a hairline (--hairline). Outside the
+   layers on purpose: the stock sidebar draws it with a border-r utility. */
+[data-slot="sidebar-container"][data-side="left"] {
+  border-right-width: var(--hairline);
 }
