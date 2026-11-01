@@ -120,6 +120,11 @@ const whatsapp = {
   // The two ways a message goes, shown apart in the editor.
   normalMessage: "Normal message",
   normalHint: "Inside 24 hours · sends as soon as you save",
+  // The one helper line above the list of messages, more behind its ⓘ.
+  listHint: "Tap a message to change its words.",
+  listMore:
+    "Inside 24 hours of the person's last message, your saved words send right away. Outside 24 hours, the template sends once Meta approves it.",
+  moreInfo: "More info",
   template: "Template",
   templateHint: "Outside 24 hours · sends once Meta approves",
   approvedNow: "Sending now, until Meta approves your change",

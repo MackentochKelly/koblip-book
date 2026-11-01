@@ -9,6 +9,7 @@ import {
   type EditorResult,
   type MessageEditorItem,
 } from "@/components/message-editor"
+import { HelperLine } from "@/components/helper-line"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
@@ -99,7 +100,10 @@ export function WhatsappKoblipMessages({
   }
 
   return (
-    <>
+    <div className="flex flex-col gap-3">
+      <HelperLine more={t.more} moreLabel={t.moreInfo}>
+        {t.hint}
+      </HelperLine>
       <ItemGroup className="gap-3">
         {messages.map((item) => {
           const name = m.messages[item.message]
@@ -135,7 +139,7 @@ export function WhatsappKoblipMessages({
         submit={submit}
         onClose={() => setOpen(null)}
       />
-    </>
+    </div>
   )
 }
 

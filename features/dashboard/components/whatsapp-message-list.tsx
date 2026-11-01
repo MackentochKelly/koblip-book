@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
+import { HelperLine } from "@/components/helper-line"
 import { MetaStatusBadge } from "@/components/meta-status-badge"
 import {
   Item,
@@ -36,8 +37,12 @@ export function WhatsappMessageList({
   // page's refresh shows Meta's new review in the editor too.
   const [editing, setEditing] = useState<BookingMessage | null>(null)
   const [editorKey, setEditorKey] = useState(0)
+  const t = useOwnerMessages().whatsapp
   return (
-    <>
+    <div className="flex flex-col gap-3">
+      <HelperLine more={t.listMore} moreLabel={t.moreInfo}>
+        {t.listHint}
+      </HelperLine>
       <ItemGroup className="gap-3">
         {messages.map((item) => (
           <MessageRow
@@ -58,7 +63,7 @@ export function WhatsappMessageList({
         limits={limits}
         onClose={() => setEditing(null)}
       />
-    </>
+    </div>
   )
 }
 
