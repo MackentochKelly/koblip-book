@@ -117,8 +117,12 @@ const whatsapp = {
     address: "address",
     phone: "phone",
   },
-  preview: "Preview",
-  reviewHint: "Customers get a change once Meta approves it.",
+  // The two ways a message goes, shown apart in the editor.
+  normalMessage: "Normal message",
+  normalHint: "Inside 24 hours · sends as soon as you save",
+  template: "Template",
+  templateHint: "Outside 24 hours · sends once Meta approves",
+  approvedNow: "Sending now, until Meta approves your change",
   // The buttons under a message, and what each one does.
   buttons: "Buttons",
   addButton: "Add button",
@@ -128,7 +132,6 @@ const whatsapp = {
     cantCome: "Says they can't come",
     ok: "Just OK",
   },
-  metaStatus: "Meta",
   metaReason: "Meta's reason",
   submit: "Submit to Meta",
   submitted: "Sent to Meta for review.",

@@ -71,6 +71,9 @@ export type MessageEditorItem = {
       review: TemplateReview
       // Meta's reason when it refused, in Meta's words.
       reason: string | null
+      // What goes outside 24 hours: the words Meta approved, or null until
+      // Meta approved a version (docs/plans/message-editing.md, D1).
+      approved?: EditorDraft | null
     }
   >
 }
@@ -83,7 +86,6 @@ export type MessageEditorLabels = {
   edit: (name: string) => string
   english: string
   spanish: string
-  metaStatus: string
   metaReason: string
   review: Record<TemplateReview, string>
   readOnly: string
@@ -94,8 +96,11 @@ export type MessageEditorLabels = {
   buttonKinds: Record<ButtonAction, string>
   addButton: string
   removeButton: (label: string) => string
-  preview: string
-  reviewHint: string
+  normalMessage: string
+  normalHint: string
+  template: string
+  templateHint: string
+  approvedNow: string
   reset: string
   save: string
   submit: string
@@ -108,8 +113,10 @@ export type MessageEditorLabels = {
 // or refused. While Meta reviews, or once it approved, there is nothing to send.
 const SUBMITTABLE: readonly TemplateReview[] = ["missing", "draft", "rejected"]
 
-// One message's wording and buttons, English and Spanish on tabs, with a
-// preview as the customer sees it and Meta's review of the open language.
+// One message's wording and buttons, English and Spanish on tabs, and its two
+// ways out shown apart: the normal message (inside 24 hours, the saved words
+// at once) and the template (outside 24 hours, with Meta's review and the
+// words Meta approved while a change waits).
 // Saving keeps a draft; "Submit to Meta" sends what is saved for review
 // (D8 in docs/plans/whatsapp-notifications.md). The same editor serves a
 // business's own messages and the admin's Koblip messages
@@ -158,6 +165,12 @@ export function MessageEditor({
   // Unsaved: the open language differs from what is kept.
   const changed = !!draft && JSON.stringify(draft) !== JSON.stringify(draftOf(language))
   const submittable = !!text && SUBMITTABLE.includes(text.review)
+  // The template still sends what Meta approved while the saved words differ.
+  const approved =
+    text?.approved &&
+    JSON.stringify(text.approved) !== JSON.stringify(draftOf(language))
+      ? text.approved
+      : null
   const allowed = item?.buttonActions ?? []
   const unused = allowed.filter(
     (action) => !draft?.buttons.some((button) => button.action === action)
@@ -264,20 +277,7 @@ export function MessageEditor({
               </TabsList>
             </Tabs>
 
-            {editable ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">{t.metaStatus}</span>
-                <MetaStatusBadge review={text.review} labels={t.review} />
-              </div>
-            ) : (
-              <FieldDescription>{t.readOnly}</FieldDescription>
-            )}
-            {editable && text.review === "rejected" && text.reason && (
-              <Alert variant="destructive">
-                <AlertTitle>{t.metaReason}</AlertTitle>
-                <AlertDescription>{text.reason}</AlertDescription>
-              </Alert>
-            )}
+            {!editable && <FieldDescription>{t.readOnly}</FieldDescription>}
 
             {/* A message the reader can't change is read-only. */}
             <fieldset disabled={!editable || pending} className="contents">
@@ -363,23 +363,60 @@ export function MessageEditor({
               )}
             </fieldset>
 
-            <Field>
-              <FieldLabel>{t.preview}</FieldLabel>
-              <WhatsappPreview
-                header={draft.wording.header}
-                body={preview(draft.wording.body, language)}
-                footer={draft.wording.footer}
-                buttons={draft.buttons.map((button) => ({
-                  key: button.action,
-                  label: button.label || t.buttonKinds[button.action],
-                }))}
-              />
-              {editable && <FieldDescription>{t.reviewHint}</FieldDescription>}
-            </Field>
+            <FieldSet>
+              <FieldLegend variant="label">{t.normalMessage}</FieldLegend>
+              <FieldDescription>{t.normalHint}</FieldDescription>
+              <MessagePreview draft={draft} language={language} preview={preview} labels={t} />
+            </FieldSet>
+
+            <FieldSet>
+              <FieldLegend variant="label" className="flex items-center gap-2">
+                {t.template}
+                {editable && <MetaStatusBadge review={text.review} labels={t.review} />}
+              </FieldLegend>
+              <FieldDescription>{t.templateHint}</FieldDescription>
+              {editable && text.review === "rejected" && text.reason && (
+                <Alert variant="destructive">
+                  <AlertTitle>{t.metaReason}</AlertTitle>
+                  <AlertDescription>{text.reason}</AlertDescription>
+                </Alert>
+              )}
+              {approved && (
+                <>
+                  <MessagePreview draft={approved} language={language} preview={preview} labels={t} />
+                  <FieldDescription>{t.approvedNow}</FieldDescription>
+                </>
+              )}
+            </FieldSet>
           </FieldGroup>
         </form>
       )}
     </ResponsivePanel>
+  )
+}
+
+// One version of the message as a customer reads it on WhatsApp.
+function MessagePreview({
+  draft,
+  language,
+  preview,
+  labels,
+}: {
+  draft: EditorDraft
+  language: EditorLanguage
+  preview: (body: string, language: EditorLanguage) => string
+  labels: MessageEditorLabels
+}) {
+  return (
+    <WhatsappPreview
+      header={draft.wording.header}
+      body={preview(draft.wording.body, language)}
+      footer={draft.wording.footer}
+      buttons={draft.buttons.map((button) => ({
+        key: button.action,
+        label: button.label || labels.buttonKinds[button.action],
+      }))}
+    />
   )
 }
 

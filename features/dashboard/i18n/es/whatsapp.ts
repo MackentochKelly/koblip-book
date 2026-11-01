@@ -117,8 +117,12 @@ const whatsapp: typeof en = {
     address: "direccion",
     phone: "telefono",
   },
-  preview: "Vista previa",
-  reviewHint: "Los clientes reciben el cambio cuando Meta lo aprueba.",
+  // Las dos formas en que sale un mensaje, separadas en el editor.
+  normalMessage: "Mensaje normal",
+  normalHint: "Dentro de 24 horas · se envía al guardar",
+  template: "Plantilla",
+  templateHint: "Fuera de 24 horas · se envía cuando Meta la aprueba",
+  approvedNow: "Se envía ahora, hasta que Meta apruebe tu cambio",
   // Los botones bajo un mensaje, y qué hace cada uno.
   buttons: "Botones",
   addButton: "Añadir botón",
@@ -128,7 +132,6 @@ const whatsapp: typeof en = {
     cantCome: "Avisa que no puede ir",
     ok: "Solo OK",
   },
-  metaStatus: "Meta",
   metaReason: "Motivo de Meta",
   submit: "Enviar a Meta",
   submitted: "Enviado a Meta para revisión.",
