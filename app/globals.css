@@ -240,7 +240,7 @@
     /* Cards sit just above the page: a hairline contact shadow and a soft,
        wide one, faint enough to feel rather than see. */
     --card-shadow:
-      0 1px 2px oklch(0 0 0 / 4%), 0 4px 12px -4px oklch(0 0 0 / 6%);
+      0 1px 2px oklch(0 0 0 / 3%), 0 2px 6px -2px oklch(0 0 0 / 3%);
     --radius: 0.625rem;
     --sidebar: oklch(1 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
