@@ -160,4 +160,15 @@ test("a refused token is an error", async () => {
   const onError = vi.fn()
   open({ onError })
   await vi.waitFor(() => expect(onError).toHaveBeenCalledTimes(1))
+  expect(onError).toHaveBeenCalledWith("unavailable")
+})
+
+test("an owner with no voice is told apart, so the screen can ask for one", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ error: "no_voice" }, { status: 409 }))
+  )
+  const onError = vi.fn()
+  open({ onError })
+  await vi.waitFor(() => expect(onError).toHaveBeenCalledWith("no_voice"))
 })

@@ -39,6 +39,10 @@ export function speakableText(text: string): string {
 // the assistant looks things up.
 const KEEP_ALIVE_MS = 10_000
 
+// Why a voice could not speak: the owner has no voice (none chosen, or
+// ElevenLabs no longer has it), or anything else.
+export type SpeechError = "no_voice" | "unavailable"
+
 export interface SpeechStream {
   // Speaks one complete sentence (or line) now.
   say: (text: string) => void
@@ -60,7 +64,7 @@ export function openSpeech({
   onAudio: (base64: string, words: string) => void
   // Every chunk has arrived (the last one may still be playing).
   onDone: () => void
-  onError: () => void
+  onError: (error: SpeechError) => void
 }): SpeechStream {
   let stopped = false
   let finished = false
@@ -76,6 +80,8 @@ export function openSpeech({
     clearInterval(keepAlive)
     callback?.()
   }
+  const fail = (error: SpeechError = "unavailable") =>
+    stop(() => onError(error))
   const send = (message: () => object) => {
     if (stopped) return
     if (socket?.readyState === WebSocket.OPEN) {
@@ -90,12 +96,17 @@ export function openSpeech({
     let url: string
     try {
       const response = await fetch(`/api/voice/speak-token?${query}`)
-      if (!response.ok) return stop(onError)
+      if (!response.ok) {
+        const body: { error?: string } | null = await response
+          .json()
+          .catch(() => null)
+        return fail(body?.error === "no_voice" ? "no_voice" : "unavailable")
+      }
       const data: { url: string; voiceId: string } = await response.json()
       url = data.url
       tokenVoiceId = data.voiceId
     } catch {
-      return stop(onError)
+      return fail()
     }
     if (stopped) return
 
@@ -119,15 +130,15 @@ export function openSpeech({
         is_final?: boolean
         error?: string
       } = JSON.parse(event.data)
-      if (message.error) return stop(onError)
+      if (message.error) return fail()
       if (message.audio) {
         onAudio(message.audio, message.alignment?.chars.join("") ?? "")
       }
       if (message.is_final) stop(onDone)
     }
-    socket.onerror = () => stop(onError)
+    socket.onerror = () => fail()
     // Closing before finish() is a failure; after it, the end.
-    socket.onclose = () => stop(finished ? onDone : onError)
+    socket.onclose = () => (finished ? stop(onDone) : fail())
   })()
 
   return {

@@ -149,6 +149,18 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "off",
     },
   },
+  // ElevenLabs UI's Orb, kept as their registry writes it: React Three Fiber
+  // changes three.js objects in place every frame, by design
+  // (https://r3f.docs.pmnd.rs/advanced/pitfalls), which these rules forbid.
+  {
+    files: ["components/ui/orb.tsx"],
+    rules: {
+      "react-hooks/purity": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/immutability": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

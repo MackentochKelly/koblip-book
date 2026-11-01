@@ -20,6 +20,8 @@ import type { PageLanguage } from "@/lib/page-language"
 import { assistantMessagesFor } from "../i18n"
 import { useAssistantChat } from "../hooks/use-assistant-chat"
 import { useLiveVoice } from "../hooks/use-live-voice"
+import { useVoiceChoice } from "../hooks/use-voice-choice"
+import type { VoiceChoice } from "../types"
 import { httpTransport } from "../utils/http-transport"
 import { AssistantComposer } from "./assistant-composer"
 import { MessageList } from "./message-list"
@@ -40,13 +42,16 @@ const SUGGESTIONS = [
 export function AssistantChat({
   businessId,
   language,
+  voiceChoice,
 }: {
   businessId: string
   language: PageLanguage
+  voiceChoice: VoiceChoice
 }) {
   const messages = assistantMessagesFor(language)
   const router = useRouter()
   const chat = useAssistantChat(businessId, httpTransport)
+  const voice = useVoiceChoice(voiceChoice)
   // Talking live, owned here so the chat's buttons can speak into it.
   const live = useLiveVoice({
     businessId,
@@ -60,12 +65,20 @@ export function AssistantChat({
     fillers: messages.composer.live.fillers,
     cutIns: messages.composer.live.cutIns,
     greeting: messages.composer.live.greeting,
-    onError: (error) =>
-      toast.error(
-        error === "mic_denied"
-          ? messages.composer.micDenied
-          : messages.errors[error]
-      ),
+    onError: (error) => {
+      // The voice is gone from ElevenLabs: stop and ask for another.
+      if (error === "no_voice") {
+        live.end()
+        voice.forget()
+        voice.ask()
+      } else {
+        toast.error(
+          error === "mic_denied"
+            ? messages.composer.micDenied
+            : messages.errors[error]
+        )
+      }
+    },
   })
   // A tap on an answer's buttons: said into the talk while talking live
   // (the answer is spoken), sent as a typed message otherwise.
@@ -205,6 +218,7 @@ export function AssistantChat({
                 onSend={chat.send}
                 onStop={chat.stop}
                 live={live}
+                voice={{ picking: voice, labels: messages.voice }}
                 startLive={chat.liveRequested}
               />
             </div>

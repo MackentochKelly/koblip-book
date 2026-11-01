@@ -111,6 +111,32 @@ const messages = {
     confirmed: "Confirmed",
     cancelled: "Cancelled",
   },
+  // The voice that talks live: picked the first time, changed in Settings.
+  voice: {
+    title: "Choose a voice",
+    hint: "Tap a circle to hear it.",
+    start: "Start talking",
+    setting: "Voice",
+    none: "None chosen",
+    choose: "Choose",
+    change: "Change",
+    saved: "Voice saved",
+    notSaved: "Couldn't save the voice. Try again.",
+    unavailable: "Voices aren't available right now.",
+    // ElevenLabs' voice labels; others show as they come.
+    labels: {
+      american: "American",
+      british: "British",
+      "latin american": "Latin American",
+      peninsular: "Spain",
+      male: "Male",
+      female: "Female",
+      neutral: "Neutral",
+      young: "Young",
+      middle_aged: "Middle-aged",
+      old: "Older",
+    } as Record<string, string>,
+  },
   errors: {
     rate_limited: "Too many messages. Wait a moment.",
     unavailable: "The assistant is not available. Try again.",

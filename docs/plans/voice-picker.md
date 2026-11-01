@@ -21,7 +21,7 @@ order. How to use this file: [Plans](README.md).
 | Task | What | Size | Needs | Status |
 | --- | --- | --- | --- | --- |
 | V1 | Voices list and each owner's saved voice | M | | Done: 2026-11-01 |
-| V2 | Picker in the talk dialog and Settings → Account | M | V1 | Working on: M Kelly B, 2026-11-01 |
+| V2 | Picker in the talk dialog and Settings → Account | M | V1 | Done: 2026-11-01 |
 | V3 | Add the 4 most used voices, live check | S | V2 | To do |
 
 ---
@@ -64,7 +64,7 @@ there is none or it is gone.
 - Settings → Account: a Voice row that opens the same list.
 - A "no voice" answer from speak-token opens the picker.
 
-**Files:** `components.json`, `components/ui/*` (registry parts), `components/voice-picker-list.tsx` (new, shared), `features/assistant/components/voice-intro.tsx`, `features/assistant/hooks/use-live-voice.ts`, `features/dashboard/components/account-section.tsx`, `app/(owner)/dashboard/[businessId]/settings/account/page.tsx`, i18n files (+ tests).
+**Files:** `components/ui/voice-picker.tsx`, `audio-player.tsx`, `orb.tsx` (registry parts), `components/ui/icons.tsx`, `eslint.config.mjs`, `features/assistant/api/voice-choice.ts`, `features/assistant/hooks/use-voice-choice.ts`, `features/assistant/components/voice-list.tsx`, `voice-section.tsx`, `voice-intro.tsx`, `assistant-composer.tsx`, `assistant-chat.tsx`, `features/assistant/utils/speak-client.ts`, `live-voice-session.ts`, the assistant and Settings → Account pages, i18n files (+ tests).
 
 **Done when:** tests and a live check at 375 px, light and dark: the first
 talk asks, a sample plays, the chosen voice speaks, Settings changes it.
@@ -87,3 +87,9 @@ account. Then check the whole flow live, including a removed voice.
 | Pick at the first live talk and in Settings → Account; no default voice | The owner wants every owner to choose | Owner, 2026-11-01 |
 | The sample is each voice's own ElevenLabs preview | Free and made by ElevenLabs; a custom script would cost credits on every play | Owner, 2026-11-01 |
 | One voice per owner, not per business | "Each owner chooses their own" | Owner, 2026-11-01 |
+| ElevenLabs UI parts come from their official registry files on GitHub, installed with the shadcn CLI without their shadcn dependencies | ui.elevenlabs.io blocks the CLI (Vercel bot check); their dependencies would overwrite 7 of our shadcn parts | M Kelly B, 2026-11-01 |
+| Their icons use the app's icon set; the Orb keeps ElevenLabs' code with four React Compiler lint rules off for that file | One icon set; React Three Fiber changes three.js objects in place by design | M Kelly B, 2026-11-01 |
+| The list shows the voices that speak the owner's language, plus their pick | Each orb is one WebGL canvas and browsers run about 16 per page; the account has 13 voices, 17 after V3 | M Kelly B, 2026-11-01 |
+| A row shows accent and gender (translated), not age | Three labels wrapped badly at 375 px; less text | M Kelly B, 2026-11-01 |
+| Choosing a voice saves it at once; Start talking then starts in the same tap | Phones only play sound when it starts inside a tap | M Kelly B, 2026-11-01 |
+| The Settings voice row lives in the assistant feature, placed by the Account page | One feature owns voices; a feature never imports another | M Kelly B, 2026-11-01 |

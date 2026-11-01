@@ -1,7 +1,12 @@
 import type { Metadata } from "next"
+import { getVoiceChoice } from "@/features/assistant/api/voice-choice"
+import { VoiceSection } from "@/features/assistant/components/voice-section"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { AccountSection } from "@/features/dashboard/components/account-section"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
+import {
+  getOwnerLanguage,
+  getOwnerMessages,
+} from "@/features/dashboard/i18n/server"
 import { requireAccount } from "@/lib/dal"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,9 +20,16 @@ type Props = {
 export default async function AccountPage({ params }: Props) {
   const { businessId } = await params
   const returnTo = `/dashboard/${businessId}/settings/account`
-  const [owner] = await Promise.all([
+  const [owner, , language] = await Promise.all([
     requireAccount(returnTo),
     getOwnerBusiness(businessId),
+    getOwnerLanguage(),
   ])
-  return <AccountSection email={owner.email} returnTo={returnTo} />
+  const voiceChoice = await getVoiceChoice(owner.userId, language)
+  return (
+    <div className="flex flex-col gap-10">
+      <VoiceSection language={language} voiceChoice={voiceChoice} />
+      <AccountSection email={owner.email} returnTo={returnTo} />
+    </div>
+  )
 }

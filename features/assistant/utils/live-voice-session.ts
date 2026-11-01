@@ -2,6 +2,7 @@ import { VOICE_RULES } from "@/lib/voice-rules"
 
 import type { AnswerListener, AssistantStreamEvent } from "../types"
 import type { ChatItem } from "./chat-state"
+import type { SpeechError } from "./speak-client"
 
 // Talking mode, like ChatGPT voice: the owner speaks, Meta hears it live
 // (through our /api/voice/listen relay), the assistant answers in the chat,
@@ -18,7 +19,7 @@ import type { ChatItem } from "./chat-state"
 export type LiveVoiceState = "connecting" | "listening" | "thinking" | "talking"
 
 type ErrorCode = Extract<AssistantStreamEvent, { type: "error" }>["code"]
-export type LiveVoiceError = ErrorCode | "mic_denied"
+export type LiveVoiceError = ErrorCode | "mic_denied" | "no_voice"
 
 export type Reply = Extract<ChatItem, { role: "assistant" }>
 
@@ -53,7 +54,7 @@ export interface LiveVoiceParts {
   openSpeech: (handlers: {
     onAudio: () => void
     onDone: () => void
-    onError: () => void
+    onError: (error: SpeechError) => void
   }) => Speech
   // The speaker: still playing, cut off, and told when it falls silent.
   playing: () => boolean
@@ -343,10 +344,10 @@ export class LiveVoiceSession {
         this.speechDone = true
         if (!this.parts.playing()) this.afterSpeech()
       },
-      onError: () => {
+      onError: (error) => {
         if (this.speech !== speech) return
         this.speech = null
-        this.parts.onError("unavailable")
+        this.parts.onError(error)
         if (!this.thinking) this.next()
       },
     })

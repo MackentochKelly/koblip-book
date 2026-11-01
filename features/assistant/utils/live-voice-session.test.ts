@@ -58,6 +58,7 @@ function setup() {
     cancelled: boolean
     audio: () => void
     done: () => void
+    fail: (error: "no_voice" | "unavailable") => void
   }[] = []
   const parts: LiveVoiceParts = {
     send: vi.fn(
@@ -84,6 +85,7 @@ function setup() {
         cancelled: false,
         audio: handlers.onAudio,
         done: handlers.onDone,
+        fail: handlers.onError,
       }
       voices.push(voice)
       return {
@@ -462,6 +464,13 @@ test("an error from the relay ends the session", () => {
   expect(t.parts.onError).toHaveBeenCalledWith("rate_limited")
   expect(t.parts.close).toHaveBeenCalled()
   expect(t.parts.onEnd).toHaveBeenCalled()
+})
+
+test("a voice that can't speak says why, so the screen can ask for a voice", () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Hi" })
+  t.voices[0].fail("no_voice")
+  expect(t.parts.onError).toHaveBeenCalledWith("no_voice")
 })
 
 test("a clean close at the time limit ends without an error", () => {

@@ -21,6 +21,7 @@ import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type { AssistantMessages } from "../i18n"
 import { type LiveVoice, useLiveVoiceSupported } from "../hooks/use-live-voice"
+import type { VoicePicking } from "../hooks/use-voice-choice"
 import { VoiceIntro } from "./voice-intro"
 
 // Set on this device once the owner picks "Don't show again".
@@ -52,6 +53,7 @@ export function AssistantComposer({
   onSend,
   onStop,
   live,
+  voice,
   onTalkLive,
   startLive: startLiveNow = false,
   inline = false,
@@ -64,6 +66,8 @@ export function AssistantComposer({
   onStop: () => void
   // The chat's live session; absent where talking live happens elsewhere.
   live?: LiveVoice
+  // The owner's voice for it, asked for before the first talk.
+  voice?: { picking: VoicePicking; labels: AssistantMessages["voice"] }
   // Talking live happens somewhere else: the voice button calls this.
   onTalkLive?: () => void
   // Offer talking live as soon as this shows (asked for on another page).
@@ -86,14 +90,19 @@ export function AssistantComposer({
         ? "send"
         : "live"
 
-  // Talking live opens the voice intro first, until "Don't show again".
+  // Talking live opens the voice intro first, until "Don't show again",
+  // and asks for a voice while none is chosen.
   const [introHidden, hideIntro] = useStoredFlag(VOICE_INTRO_HIDDEN_KEY)
   const [introOpen, setIntroOpen] = useState(false)
+  const talk = () => {
+    if (voice && !voice.picking.chosen) voice.picking.ask()
+    else void live?.start()
+  }
   const startLive = () => {
     if (onTalkLive) {
       onTalkLive()
     } else if (introHidden) {
-      void live?.start()
+      talk()
     } else {
       setIntroOpen(true)
     }
@@ -222,20 +231,32 @@ export function AssistantComposer({
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
-      <VoiceIntro
-        open={introOpen}
-        labels={labels.voiceIntro}
-        onClose={() => setIntroOpen(false)}
-        onContinue={() => {
-          setIntroOpen(false)
-          void live?.start()
-        }}
-        onNeverShow={() => {
-          hideIntro()
-          setIntroOpen(false)
-          void live?.start()
-        }}
-      />
+      {voice && (
+        <VoiceIntro
+          open={introOpen || voice.picking.asking}
+          step={introOpen ? "intro" : "voice"}
+          labels={labels.voiceIntro}
+          voiceLabels={voice.labels}
+          voice={voice.picking}
+          onClose={() => {
+            setIntroOpen(false)
+            voice.picking.stopAsking()
+          }}
+          onContinue={() => {
+            setIntroOpen(false)
+            talk()
+          }}
+          onNeverShow={() => {
+            hideIntro()
+            setIntroOpen(false)
+            talk()
+          }}
+          onStart={() => {
+            voice.picking.stopAsking()
+            void live?.start()
+          }}
+        />
+      )}
     </form>
   )
 }

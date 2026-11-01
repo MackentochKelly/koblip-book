@@ -100,6 +100,8 @@ import {
   PlusSquare as MynaPlusSquare,
   Bookmark as MynaBookmark,
   Glasses as MynaGlasses,
+  Pause as MynaPause,
+  Play as MynaPlay,
 } from "@mynaui/icons-react"
 import {
   AudioLines as LucideAudioLines,
@@ -266,9 +268,11 @@ export const NfcIcon = icon(LucideNfc as Icon, "NfcIcon")
 export const OctagonXIcon = icon(LucideOctagonX as Icon, "OctagonXIcon")
 export const PaletteIcon = icon(LucidePalette as Icon, "PaletteIcon")
 export const PanelLeftIcon = icon(MynaSidebar as Icon, "PanelLeftIcon")
+export const PauseIcon = icon(MynaPause as Icon, "PauseIcon")
 export const PawPrintIcon = icon(LucidePawPrint as Icon, "PawPrintIcon")
 export const PhoneCallIcon = icon(MynaTelephoneCall as Icon, "PhoneCallIcon")
 export const PhoneIcon = icon(MynaTelephone as Icon, "PhoneIcon")
+export const PlayIcon = icon(MynaPlay as Icon, "PlayIcon")
 export const PlusSquareIcon = icon(MynaPlusSquare as Icon, "PlusSquareIcon")
 export const PlusIcon = icon(MynaPlus as Icon, "PlusIcon")
 export const PuzzleIcon = icon(MynaPuzzle as Icon, "PuzzleIcon")

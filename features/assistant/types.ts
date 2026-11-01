@@ -141,3 +141,17 @@ export interface AnswerListener {
   // The answer's check, run after it ended, could not back it.
   onUnchecked?: () => void
 }
+
+// One voice the owner can pick for talking live (an account voice, see
+// lib/account-voices.ts), and the one they chose (null: none yet).
+export interface VoiceOption {
+  voiceId: string
+  name: string
+  previewUrl: string | null
+  labels: Record<string, string>
+}
+export interface VoiceChoice {
+  // Null when ElevenLabs could not be reached.
+  voices: VoiceOption[] | null
+  chosen: string | null
+}
