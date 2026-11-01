@@ -86,9 +86,16 @@ function useSheetHeight(
   return enabled ? height : null
 }
 
-// A phone panel: the stock Drawer as a bottom sheet. It floats at its
-// content's height, slides to a new height when the content changes and
-// swipes down to close. Keep it mounted and toggle `open` so it animates.
+// A long sheet's two steps, like iOS's sheets: half the screen, floating,
+// then the whole screen, edge to edge (Base UI's snap points; 1 is the full
+// step, which Base UI marks data-expanded).
+const HALF = 0.5
+const STEPS = [HALF, 1]
+
+// A phone panel: the stock Drawer as a bottom sheet. A short one floats at
+// its content's height, slides to a new height when the content changes and
+// swipes down to close. A long one opens half way and drags up to fill the
+// screen. Keep it mounted and toggle `open` so it animates.
 export function BottomPanel({
   open,
   onClose,
@@ -111,6 +118,9 @@ export function BottomPanel({
   const scroll = React.useRef<HTMLDivElement | null>(null)
   const inner = React.useRef<HTMLDivElement | null>(null)
   const height = useSheetHeight(open, { popup, scroll, inner })
+  // Taller than half the screen: it takes the two steps.
+  const long = height !== null && height > window.innerHeight * HALF
+  const [step, setStep] = React.useState<DrawerPrimitive.Root.SnapPoint | null>(HALF)
   return (
     <Drawer
       open={open}
@@ -118,14 +128,28 @@ export function BottomPanel({
         if (!next) onClose()
       }}
       onOpenChangeComplete={(next) => {
-        if (!next) onClosed?.()
+        if (next) return
+        // The next time it opens half way again.
+        setStep(HALF)
+        onClosed?.()
       }}
+      snapPoints={long ? STEPS : undefined}
+      // Always passed, so Base UI keeps it controlled; a short sheet has no
+      // steps for it to apply to.
+      snapPoint={step}
+      onSnapPointChange={setStep}
       showSwipeHandle
       swipeDirection="down"
     >
       <DrawerPrimitive.VirtualKeyboardProvider>
         <DrawerContent
           ref={popup}
+          // Typing needs room: a long sheet fills the screen.
+          onFocusCapture={(event) => {
+            if (long && (event.target as HTMLElement).matches("input, textarea, [contenteditable]")) {
+              setStep(1)
+            }
+          }}
           style={
             height === null
               ? undefined
@@ -136,7 +160,16 @@ export function BottomPanel({
             // Base UI's own height (while a sheet is open on top) still wins.
             "[--drawer-content-height:var(--drawer-height,var(--sheet-height,auto))]",
             // While the keyboard is open the sheet rises to its tallest.
-            "min-h-[min(var(--drawer-content-max-height),calc(var(--drawer-keyboard-inset,0px)*1000))]"
+            "min-h-[min(var(--drawer-content-max-height),calc(var(--drawer-keyboard-inset,0px)*1000))]",
+            // Two steps: the full step stops under the status bar, and the
+            // part below the screen at the half step is padded off, so the
+            // buttons stay in view.
+            "data-[swipe-axis=y]:data-snap-points:[--drawer-content-max-height:calc(100dvh-max(env(safe-area-inset-top),--spacing(4)))]",
+            "data-snap-points:pb-[calc(var(--drawer-snap-point-offset,0px)+max(var(--drawer-keyboard-inset,0px),env(safe-area-inset-bottom)))]",
+            "data-snap-points:transition-[transform,height,opacity,filter,margin,border-radius,padding]",
+            // The full step fills the screen's width and bottom: no gap,
+            // round only at the top.
+            "data-snap-points:data-expanded:rounded-b-none data-snap-points:data-expanded:border-x-0 data-snap-points:data-expanded:border-b-0 data-snap-points:data-expanded:[--drawer-inset:0px]"
           )}
         >
           {header ?? (
