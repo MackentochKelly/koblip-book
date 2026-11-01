@@ -51,13 +51,6 @@ export default async function AutoMessagesOverviewPage({
       settings={settings}
       stats={stats}
       statsDays={rules.statsDays}
-      limits={{
-        maxHeader: rules.maxHeader,
-        maxBody: rules.maxBody,
-        maxFooter: rules.maxFooter,
-        maxButtons: rules.maxButtons,
-        maxButtonLabel: rules.maxButtonLabel,
-      }}
     />
   )
 }

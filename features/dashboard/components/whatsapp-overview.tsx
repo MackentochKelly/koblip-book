@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { PageSection } from "@/components/page-section"
+import { SetupSteps } from "@/components/setup-steps"
 import { StatCards } from "@/components/stat-cards"
 import { ConfirmDialog } from "@/components/confirm-dialog"
+import { InfoTip } from "@/components/info-tip"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,28 +20,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import {
-  ChevronDownIcon,
   CircleAlertIcon,
   CircleCheckIcon,
   ClockIcon,
 } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
-import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
 import {
   Select,
   SelectContent,
@@ -49,7 +36,6 @@ import {
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { PHONE_PATTERN } from "@/lib/booking-rules"
-import { cn } from "@/lib/utils"
 import { activityQuery } from "@/lib/whatsapp-activity-filter"
 import type { ActivityStats } from "@/lib/whatsapp-activity"
 import {
@@ -63,22 +49,18 @@ import type {
   NotificationMessage,
   NotificationSettings,
   Sender,
-  SetupStep,
 } from "../types/notifications"
 import {
   TEMPLATE_LANGUAGES,
   type BookingMessage,
   type TemplateLanguage,
 } from "../utils/booking-templates"
-import { isCustomerMessage } from "../utils/customer-messages"
 import {
   notificationStatus,
   type NextStep,
   type OverviewState,
 } from "../utils/notification-status"
 import { SETUP_STEPS } from "../utils/setup-steps"
-import type { EditorLimits } from "@/components/message-editor"
-import { WhatsappMessageList } from "./whatsapp-message-list"
 
 // Where each next step is done: in the business's Koblip Chat connection
 // (Integrations) or on the Messages tab. "submit" is done right here.
@@ -93,7 +75,8 @@ const STEP_PLACES: Record<Exclude<NextStep, "submit">, "integrations" | "message
 
 // The Notifications Overview (D36), top to bottom: one status with the next
 // step, the own number's setup (folded away once live), the last days'
-// numbers, the customer messages and a test to the owner's own phone.
+// numbers and a test to the owner's own phone. The messages themselves are
+// on the Messages tab.
 export function WhatsappOverview({
   businessId,
   connection,
@@ -103,7 +86,6 @@ export function WhatsappOverview({
   settings,
   stats,
   statsDays,
-  limits,
 }: {
   businessId: string
   connection: ChatConnection | null
@@ -114,7 +96,6 @@ export function WhatsappOverview({
   settings: NotificationSettings
   stats: ActivityStats
   statsDays: number
-  limits: EditorLimits
 }) {
   const m = useOwnerMessages()
   const t = m.whatsapp
@@ -145,7 +126,24 @@ export function WhatsappOverview({
       />
 
       {connection && !connection.needsReconnect && (
-        <SetupProgress steps={steps} live={state === "live" && steps.live} />
+        <SetupSteps
+          id="setup"
+          steps={SETUP_STEPS.map((step) => ({
+            id: step,
+            title: t.steps[step],
+            hint: t.stepHints[step],
+            done: steps[step],
+          }))}
+          labels={{
+            title: t.setup,
+            progress: t.setupProgress,
+            allDone: t.setupDone,
+            done: t.stepDone,
+            now: t.stepNow,
+            toDo: t.stepToDo,
+          }}
+          folded={state === "live" && steps.live}
+        />
       )}
 
       <PageSection id="stats" title={t.statsTitle(statsDays)}>
@@ -156,14 +154,6 @@ export function WhatsappOverview({
             value: stats[key],
             href: activity(key),
           }))}
-        />
-      </PageSection>
-
-      <PageSection id="your-messages" title={t.yourMessages}>
-        <WhatsappMessageList
-          businessId={businessId}
-          limits={limits}
-          messages={messages.filter((item) => isCustomerMessage(item.message))}
         />
       </PageSection>
 
@@ -220,13 +210,17 @@ function StatusCard({
   )
   const own = connection && !connection.needsReconnect ? connection : null
   const until = freeTextInWindow ? t.untilApprovedWindow : t.untilApproved
-  // One short line: why Koblip's number sends, else the channel.
-  const line = waiting.length
+  // One short line: why Koblip's number sends (which messages behind its
+  // ⓘ), else the channel.
+  const why = waiting.length
     ? until(
         new Intl.ListFormat(m.locale, { type: "conjunction" }).format(
           waiting.map((message) => t.names[message])
         )
       )
+    : null
+  const line = why
+    ? t.untilApprovedShort
     : own
       ? `${t.channel} · ${own.workspaceName}`
       : t.channel
@@ -258,7 +252,10 @@ function StatusCard({
           <StateBadge state={state} />
         </CardAction>
         {/* The whole line, never cut short (Spanish runs longer). */}
-        <CardDescription>{line}</CardDescription>
+        <CardDescription className="flex items-center gap-1">
+          {line}
+          {why && <InfoTip label={t.moreInfo}>{why}</InfoTip>}
+        </CardDescription>
       </CardHeader>
       {(next || !connection) && (
         <CardFooter className="flex flex-col gap-2 sm:flex-row">
@@ -312,93 +309,13 @@ function StatusCard({
 function StateBadge({ state }: { state: OverviewState }) {
   const t = useOwnerMessages().whatsapp
   return (
-    <Badge variant={state === "live" ? "secondary" : state === "action" ? "default" : "outline"}>
+    // A soft badge: the card's button is the one strong colour.
+    <Badge variant={state === "waiting" ? "outline" : "secondary"}>
       {state === "live" && <CircleCheckIcon data-icon="inline-start" className="text-success" />}
-      {state === "action" && <CircleAlertIcon data-icon="inline-start" />}
+      {state === "action" && <CircleAlertIcon data-icon="inline-start" className="text-warning" />}
       {state === "waiting" && <ClockIcon data-icon="inline-start" />}
       {t.overviewStates[state]}
     </Badge>
-  )
-}
-
-// The own number's setup steps (D23) with a bar: done ones checked, the
-// current one marked with what to do, the rest muted. Folded away once live.
-function SetupProgress({ steps, live }: { steps: Record<SetupStep, boolean>; live: boolean }) {
-  const t = useOwnerMessages().whatsapp
-  const done = SETUP_STEPS.filter((step) => steps[step]).length
-  const current = SETUP_STEPS.find((step) => !steps[step])
-
-  const content = (
-    <div className="flex flex-col gap-4">
-      <Progress value={(done / SETUP_STEPS.length) * 100}>
-        <ProgressLabel className="sr-only">{t.setup}</ProgressLabel>
-        <ProgressValue>{() => t.setupProgress(done, SETUP_STEPS.length)}</ProgressValue>
-      </Progress>
-      <ItemGroup className="gap-1">
-        {SETUP_STEPS.map((step, index) => {
-          const isCurrent = step === current
-          return (
-            <Item
-              key={step}
-              role="listitem"
-              size="sm"
-              variant={isCurrent ? "outline" : "default"}
-              aria-current={isCurrent ? "step" : undefined}
-            >
-              <ItemMedia variant="icon">
-                {steps[step] ? (
-                  <CircleCheckIcon className="text-success" />
-                ) : (
-                  <span
-                    className={cn(
-                      "text-sm font-medium",
-                      isCurrent ? "text-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    {index + 1}
-                  </span>
-                )}
-              </ItemMedia>
-              <ItemContent className="min-w-0">
-                <ItemTitle className={cn(!steps[step] && !isCurrent && "text-muted-foreground")}>
-                  {t.steps[step]}
-                  <span className="sr-only">
-                    {" "}
-                    ({steps[step] ? t.stepDone : isCurrent ? t.stepNow : t.stepToDo})
-                  </span>
-                </ItemTitle>
-                {isCurrent && (
-                  <ItemDescription className="line-clamp-none">{t.stepHints[step]}</ItemDescription>
-                )}
-              </ItemContent>
-            </Item>
-          )
-        })}
-      </ItemGroup>
-    </div>
-  )
-
-  if (live) {
-    return (
-      <Collapsible>
-        <CollapsibleTrigger
-          render={<Button variant="ghost" className="group -ml-2.5 w-fit" />}
-        >
-          <CircleCheckIcon data-icon="inline-start" className="text-success" />
-          {t.setupDone}
-          <ChevronDownIcon
-            data-icon="inline-end"
-            className="transition-transform group-data-[panel-open]:rotate-180"
-          />
-        </CollapsibleTrigger>
-        <CollapsibleContent className="pt-4">{content}</CollapsibleContent>
-      </Collapsible>
-    )
-  }
-  return (
-    <PageSection id="setup" title={t.setup}>
-      {content}
-    </PageSection>
   )
 }
 

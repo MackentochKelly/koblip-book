@@ -21,6 +21,7 @@ const whatsapp: typeof en = {
   untilApproved: (names: string) => `El número de Koblip envía hasta que Meta apruebe ${names}.`,
   untilApprovedWindow: (names: string) =>
     `Tu número responde los chats recientes; el de Koblip envía el resto hasta que Meta apruebe ${names}.`,
+  untilApprovedShort: "Hasta que Meta apruebe tus mensajes.",
   koblipWording: "Texto listo de Koblip. Usa tu propio número para cambiarlo.",
   // Resumen (D36): un estado, el siguiente paso, pasos, cifras, mensajes, prueba.
   channel: "Se envía por WhatsApp",
@@ -43,7 +44,6 @@ const whatsapp: typeof en = {
   setupDone: "Puesta en marcha lista",
   statsTitle: (days: number) => (days === 1 ? "Último día" : `Últimos ${days} días`),
   stats: { sent: "Enviados", read: "Leídos", replied: "Respuestas", failed: "Fallidos" },
-  yourMessages: "Tus mensajes",
   steps: {
     connected: "Conectado",
     reviewed: "Textos revisados",

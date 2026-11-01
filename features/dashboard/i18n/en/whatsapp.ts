@@ -20,6 +20,8 @@ const whatsapp = {
   // The same, when normal messages go inside 24 hours (D35).
   untilApprovedWindow: (names: string) =>
     `Your number answers recent chats; Koblip's sends the rest until Meta approves ${names}.`,
+  // The card's short line; the whole sentence above is behind its ⓘ.
+  untilApprovedShort: "Until Meta approves your messages.",
   koblipWording: "Koblip's ready-made wording. Use your own number to change it.",
   // Overview (D36): one state, the next step, setup, numbers, messages, test.
   channel: "Sent on WhatsApp",
@@ -42,7 +44,6 @@ const whatsapp = {
   setupDone: "Setup done",
   statsTitle: (days: number) => (days === 1 ? "Last day" : `Last ${days} days`),
   stats: { sent: "Sent", read: "Read", replied: "Replies", failed: "Failed" },
-  yourMessages: "Your messages",
   steps: {
     connected: "Connected",
     reviewed: "Wording checked",
