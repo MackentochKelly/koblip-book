@@ -16,7 +16,7 @@ import {
 vi.mock("server-only", () => ({}))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 vi.mock("@/lib/dal", () => ({
-  requireOwner: vi.fn(async () => ({ userId: "u1", name: "Owner", email: "owner@example.com" })),
+  requireAccount: vi.fn(async () => ({ userId: "u1", name: "Owner", email: "owner@example.com" })),
 }))
 
 const { createMock, generateMock, savePhotoMock } = vi.hoisted(() => ({
@@ -156,4 +156,25 @@ test("draws a team photo once, from saved facts", async () => {
 
   expect(await drawTeamPhoto(businessId, member.id)).toEqual({ ok: false })
   expect(generateMock).toHaveBeenCalledTimes(1)
+})
+
+test("the refill swaps the old catalog for the new one in one save", async () => {
+  const { replaceCatalog } = await import("./fill-catalog")
+  const { checkCatalog } = await import("../utils/check-catalog")
+  const { db } = await import("@/lib/db")
+  const { eq } = await import("drizzle-orm")
+  const businessId = await seedBusiness()
+  await db.insert(services).values({ businessId, name: "Old cut", durationMinutes: 30 })
+  await db.insert(teamMembers).values({ businessId, name: "Old barber" })
+  const [business] = await db.select().from(businesses).where(eq(businesses.id, businessId))
+  const check = checkCatalog(catalog)
+  if (!check.ok) throw new Error("bad fixture")
+
+  await replaceCatalog(business, check.catalog)
+
+  const names = (await db.select().from(services).where(eq(services.businessId, businessId))).map((row) => row.name)
+  expect(names).not.toContain("Old cut")
+  expect(names).toHaveLength(4)
+  const team = (await db.select().from(teamMembers).where(eq(teamMembers.businessId, businessId))).map((row) => row.name)
+  expect(team).toEqual(["Luis", "Ana", "Marco"])
 })

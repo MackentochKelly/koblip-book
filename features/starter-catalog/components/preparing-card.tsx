@@ -104,7 +104,8 @@ export function PreparingCard({
           await pause(RULES.revealMs)
         }
         mark("photos", "working")
-        await Promise.all(
+        // One photo failing (or its request) never stops the others.
+        await Promise.allSettled(
           result.summary.team.map(async (member) => {
             const photo = await drawTeamPhoto(businessId, member.id)
             if (!photo.ok) return
