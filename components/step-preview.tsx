@@ -176,7 +176,7 @@ function FindPreview({ words, shared }: { words: Words; shared: Shared }) {
 
 // A tap: a soft circle that grows and fades on what is tapped (a
 // `relative` parent).
-function TapMark({ ms, className }: { ms: number; className?: string }) {
+export function TapMark({ ms, className }: { ms: number; className?: string }) {
   return (
     <motion.span
       aria-hidden

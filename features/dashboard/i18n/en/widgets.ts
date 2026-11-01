@@ -43,6 +43,15 @@ const widgets = {
   // The iPhone's own button names, in the order they're tapped.
   installShare: "Tap Share",
   installAdd: "Tap Add to Home Screen",
+  installConfirm: "Tap Add",
+  installTitle: "Add to Home Screen",
+  installHowTo: "Show me how",
+  gotIt: "Got it",
+  playAgain: "Play again",
+  // Sample words in the steps' picture of the iPhone.
+  installCopy: "Copy",
+  installFavorite: "Add to Favorites",
+  installAddButton: "Add",
 }
 
 export default widgets

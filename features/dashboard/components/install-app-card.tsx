@@ -1,32 +1,30 @@
 "use client"
 
 import Image from "next/image"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  DownloadIcon,
-  PlusSquareIcon,
-  ShareUpIcon,
-} from "@/components/ui/icons"
+import { DownloadIcon, PlayCircleIcon } from "@/components/ui/icons"
 import {
   Item,
   ItemContent,
   ItemDescription,
-  ItemGroup,
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
 import { useAppInstall } from "@/hooks/use-app-install"
 import { APP_NAME } from "@/lib/app-install"
 import { useOwnerMessages } from "../i18n/provider"
+import { InstallStepsPanel } from "./install-steps-panel"
 
 // The Get the app widget: Koblip Book on the Home Screen. An Install button
-// where the browser has one, Share → Add to Home Screen on an iPhone or
-// iPad, and nothing once it already runs as the app.
+// where the browser has one; on an iPhone or iPad, Show me how opens the
+// steps, shown happening; nothing once it already runs as the app.
 export function InstallAppCard() {
   const t = useOwnerMessages().widgets
   const { way, install } = useAppInstall()
+  const [steps, setSteps] = useState(false)
   if (way === "installed") return null
 
   return (
@@ -53,24 +51,13 @@ export function InstallAppCard() {
           </Button>
         )}
         {way === "ios" && (
-          <ItemGroup>
-            <Item size="sm">
-              <ItemMedia variant="icon">
-                <ShareUpIcon />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>{t.installShare}</ItemTitle>
-              </ItemContent>
-            </Item>
-            <Item size="sm">
-              <ItemMedia variant="icon">
-                <PlusSquareIcon />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>{t.installAdd}</ItemTitle>
-              </ItemContent>
-            </Item>
-          </ItemGroup>
+          <>
+            <Button className="md:self-start" onClick={() => setSteps(true)}>
+              <PlayCircleIcon data-icon="inline-start" />
+              {t.installHowTo}
+            </Button>
+            <InstallStepsPanel open={steps} onClose={() => setSteps(false)} />
+          </>
         )}
       </CardContent>
     </Card>

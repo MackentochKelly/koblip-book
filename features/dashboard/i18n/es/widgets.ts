@@ -41,6 +41,14 @@ const widgets: typeof en = {
   installButton: "Instalar app",
   installShare: "Toca Compartir",
   installAdd: "Toca Añadir a pantalla de inicio",
+  installConfirm: "Toca Añadir",
+  installTitle: "Añadir a pantalla de inicio",
+  installHowTo: "Muéstrame cómo",
+  gotIt: "Entendido",
+  playAgain: "Ver de nuevo",
+  installCopy: "Copiar",
+  installFavorite: "Añadir a Favoritos",
+  installAddButton: "Añadir",
 }
 
 export default widgets

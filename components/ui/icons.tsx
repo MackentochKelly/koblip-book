@@ -95,6 +95,7 @@ import {
   UserPlus as MynaUserPlus,
   Download as MynaDownload,
   PlusSquare as MynaPlusSquare,
+  PlayCircle as MynaPlayCircle,
 } from "@mynaui/icons-react"
 import {
   AudioLines as LucideAudioLines,
@@ -254,12 +255,10 @@ export const PanelLeftIcon = icon(MynaSidebar as Icon, "PanelLeftIcon")
 export const PawPrintIcon = icon(LucidePawPrint as Icon, "PawPrintIcon")
 export const PhoneCallIcon = icon(MynaTelephoneCall as Icon, "PhoneCallIcon")
 export const PhoneIcon = icon(MynaTelephone as Icon, "PhoneIcon")
-export const PlusSquareIcon = icon(
-  MynaPlusSquare as Icon,
-  "PlusSquareIcon"
-)
+export const PlusSquareIcon = icon(MynaPlusSquare as Icon, "PlusSquareIcon")
 export const PlusIcon = icon(MynaPlus as Icon, "PlusIcon")
 export const PuzzleIcon = icon(MynaPuzzle as Icon, "PuzzleIcon")
+export const PlayCircleIcon = icon(MynaPlayCircle as Icon, "PlayCircleIcon")
 export const RefreshIcon = icon(MynaRefresh as Icon, "RefreshIcon")
 export const TagIcon = icon(MynaTag as Icon, "TagIcon")
 export const SearchIcon = icon(MynaSearch as Icon, "SearchIcon")
@@ -286,10 +285,7 @@ export const TriangleAlertIcon = icon(
   MynaDangerTriangle as Icon,
   "TriangleAlertIcon"
 )
-export const TrendingUpIcon = icon(
-  MynaTrendingUp as Icon,
-  "TrendingUpIcon"
-)
+export const TrendingUpIcon = icon(MynaTrendingUp as Icon, "TrendingUpIcon")
 export const UserPlusIcon = icon(MynaUserPlus as Icon, "UserPlusIcon")
 export const UserXIcon = icon(MynaUserX as Icon, "UserXIcon")
 export const UsersIcon = icon(MynaUsers as Icon, "UsersIcon")
