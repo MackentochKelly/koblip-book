@@ -540,6 +540,24 @@ export const koblipChatTemplates = sqliteTable(
       footer: string
       buttons: { action: "confirm" | "cantCome" | "ok"; label: string }[]
     }>(),
+    // Latest submission and the independently sendable approved copy.
+    version: integer().notNull().default(2),
+    live: text({ mode: "json" }).$type<{
+      chatTemplateId: string
+      name: string
+      submitted: {
+        header: string
+        body: string
+        footer: string
+        buttons: { action: "confirm" | "cantCome" | "ok"; label: string }[]
+      }
+    }>(),
+    // Retained until both Chat and Meta confirm retirement.
+    retired: text({ mode: "json" }).$type<{
+      chatTemplateId: string
+      name: string
+      language: "en" | "es"
+    }[]>(),
     ...timestamps(),
   },
   (table) => [primaryKey({ columns: [table.message, table.language] })]

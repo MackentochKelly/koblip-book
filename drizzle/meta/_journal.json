@@ -267,6 +267,13 @@
       "when": 1793492994117,
       "tag": "0037_lumpy_old_lace",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "6",
+      "when": 1793493353352,
+      "tag": "0038_flippant_wolfsbane",
+      "breakpoints": true
     }
   ]
 }

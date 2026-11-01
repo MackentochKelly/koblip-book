@@ -47,7 +47,10 @@ let stored: {
   rejection_reason?: string
 }[] = []
 // Templates Meta has but Chat lost, and Chat's copies of them.
-let atMeta: { id: string; name: string; language: string }[] = []
+let atMeta: { id: string; name: string; language: string; status?: string }[] = []
+let createRefusal: string | null = null
+let deletionSucceeds = true
+let beforeDelete: (() => Promise<void>) | null = null
 const copied: unknown[] = []
 const created: Record<string, unknown>[] = []
 const edited: { id: string; body: Record<string, unknown> }[] = []
@@ -64,9 +67,14 @@ const chat = vi.fn(async (url: string, init: RequestInit = {}) => {
   }
   if (init.method === "DELETE" && path.startsWith("/api/template/")) {
     const id = path.split("/").pop()!
+    await beforeDelete?.()
     removed.push({ id, body: JSON.parse(String(init.body)) })
+    const removedRow = stored.find((row) => row._id === id)
     stored = stored.filter((row) => row._id !== id)
-    return answer({ success: true, data: { deleted_from_meta: true } })
+    if (deletionSucceeds && removedRow) {
+      atMeta = atMeta.filter((row) => row.name !== removedRow.template_name || row.language !== removedRow.language)
+    }
+    return answer({ success: true, data: { deleted_from_meta: deletionSucceeds, meta_deletion_error: deletionSucceeds ? undefined : "Meta unavailable" } })
   }
   if (init.method === "PUT" && path.startsWith("/api/template/")) {
     edited.push({ id: path.split("/").pop()!, body: JSON.parse(String(init.body)) })
@@ -81,11 +89,12 @@ const chat = vi.fn(async (url: string, init: RequestInit = {}) => {
     const body = JSON.parse(String(init.body))
     copied.push(body)
     for (const row of atMeta.filter((item) => body.meta_template_ids.includes(item.id))) {
-      stored.push({ _id: `c-${row.id}`, template_name: row.name, language: row.language, status: "PENDING" })
+      stored.push({ _id: `c-${row.id}`, template_name: row.name, language: row.language, status: row.status ?? "PENDING" })
     }
     return answer({ success: true })
   }
   if (path === "/api/template/create") {
+    if (createRefusal) return answer({ success: false, message: createRefusal }, 400)
     const body = JSON.parse(String(init.body))
     created.push(body)
     const _id = `t${created.length}`
@@ -139,6 +148,9 @@ beforeEach(async () => {
   numbers = []
   stored = []
   atMeta = []
+  createRefusal = null
+  deletionSucceeds = true
+  beforeDelete = null
   copied.length = 0
   created.length = 0
   edited.length = 0
@@ -351,10 +363,10 @@ test("submitting one of Koblip's messages makes it in Koblip's workspace and log
   expect(reminder.texts.en.review).toBe("draft")
   expect(reminder.texts.es.preview).toContain("Ana")
 
-  // Submitting again changes Chat's copy instead of making another.
+  // An unchanged pending submission is already under review.
   expect(await submitKoblipTemplate("reminder", "es", "u1")).toBeNull()
   expect(created).toHaveLength(1)
-  expect(edited).toEqual([expect.objectContaining({ id: "t1" })])
+  expect(edited).toEqual([])
 })
 
 test("Meta's review of Koblip's set is read back, and the approved one is sent", async () => {
@@ -366,7 +378,7 @@ test("Meta's review of Koblip's set is read back, and the approved one is sent",
   stored[1].status = "REJECTED"
   stored[1].rejection_reason = "Too promotional"
   await refreshKoblipTemplates()
-  expect(synced).toEqual([{ waba_id: "wabak", template_ids: ["t1", "t2"] }])
+  expect(synced).toContainEqual({ waba_id: "wabak", template_ids: ["t1", "t2"] })
 
   const messages = await koblipMessages()
   expect(messages.find((item) => item.message === "confirmed")!.texts.en.review).toBe("approved")
@@ -455,4 +467,265 @@ test("a business using Koblip's number sees the saved Koblip wording and default
   expect(reminder.editable).toBe(false)
   expect(reminder.texts.es).toMatchObject({ wording, buttons: defaultButtons("reminder", "es"), review: "draft" })
   expect(reminder.texts.en.wording).toEqual(defaultWording("reminder", "en"))
+})
+
+async function approvedKoblipReminder(language: "en" | "es" = "en") {
+  await submitKoblipTemplate("reminder", language, "u1")
+  const row = stored.find((item) => item.template_name === "koblip_booking_reminder_v2" && item.language === language)!
+  row.status = "APPROVED"
+  await refreshKoblipTemplates()
+  return (await koblipSendableTemplate("reminder", language)).approved!
+}
+
+async function changeKoblipReminder(language: "en" | "es" = "en", header = "Your next appointment") {
+  const wording = { ...defaultWording("reminder", language), header }
+  await db.insert(koblipNotificationTexts)
+    .values({ message: "reminder", language, ...wording, buttons: null })
+    .onConflictDoUpdate({ target: [koblipNotificationTexts.message, koblipNotificationTexts.language], set: wording })
+  return wording
+}
+
+test("an approved Koblip version stays live until refresh sees approval, then switches before deleting it", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  const original = await approvedKoblipReminder()
+  const wording = await changeKoblipReminder()
+  await submitKoblipTemplate("reminder", "en", "u1")
+  expect(created.map((row) => row.template_name)).toEqual(["koblip_booking_reminder_v2", "koblip_booking_reminder_v3"])
+  expect(edited).toEqual([])
+  expect((await koblipSendableTemplate("reminder", "en")).approved).toEqual(original)
+  expect(removed).toEqual([])
+  expect((await koblipMessages()).find((row) => row.message === "reminder")!.texts.en.review).toBe("waiting")
+
+  stored.find((row) => row._id === "t2")!.status = "APPROVED"
+  beforeDelete = async () => {
+    const live = (await koblipSendableTemplate("reminder", "en")).approved!
+    expect(live.chatTemplateId).toBe("t2")
+    expect(live.template).toMatchObject({ ...wording, name: "koblip_booking_reminder_v3" })
+  }
+  await refreshKoblipTemplates()
+  expect((await koblipSendableTemplate("reminder", "en")).approved!.chatTemplateId).toBe("t2")
+  expect(removed).toEqual([{ id: "t1", body: { delete_from_meta: true } }])
+  beforeDelete = null
+  await changeKoblipReminder("en", "Another approved update")
+  await submitKoblipTemplate("reminder", "en", "u1")
+  expect(created[2].template_name).toBe("koblip_booking_reminder_v4")
+  expect((await koblipSendableTemplate("reminder", "en")).approved!.chatTemplateId).toBe("t2")
+})
+
+test("Meta refusing creation or rejecting review keeps the old approved Koblip version live", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  const original = await approvedKoblipReminder()
+  await changeKoblipReminder()
+  const beforeChanges = await db.select().from(platformSettingChanges)
+  createRefusal = "Template limit reached"
+  await expect(submitKoblipTemplate("reminder", "en", "u1")).rejects.toMatchObject({ reason: "Template limit reached" })
+  expect((await koblipSendableTemplate("reminder", "en")).approved).toEqual(original)
+  expect(await db.select().from(platformSettingChanges)).toEqual(beforeChanges)
+  createRefusal = null
+  await submitKoblipTemplate("reminder", "en", "u1")
+  stored.find((row) => row._id === "t2")!.status = "REJECTED"
+  stored.find((row) => row._id === "t2")!.rejection_reason = "Promotional wording"
+  await refreshKoblipTemplates()
+  expect((await koblipSendableTemplate("reminder", "en")).approved).toEqual(original)
+  expect((await koblipMessages()).find((row) => row.message === "reminder")!.texts.en).toMatchObject({ review: "rejected", reason: "Promotional wording" })
+  expect(removed).toEqual([])
+})
+
+test("English and Spanish switch independently and a shared old name stays until neither language uses it", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  const oldEn = await approvedKoblipReminder("en")
+  const oldEs = await approvedKoblipReminder("es")
+  await changeKoblipReminder("en")
+  await submitKoblipTemplate("reminder", "en", "u1")
+  const nextEn = stored.find((row) => row.template_name === "koblip_booking_reminder_v3" && row.language === "en")!
+  nextEn.status = "APPROVED"
+  await refreshKoblipTemplates()
+  expect((await koblipSendableTemplate("reminder", "en")).approved!.chatTemplateId).toBe(nextEn._id)
+  expect((await koblipSendableTemplate("reminder", "es")).approved).toEqual(oldEs)
+  expect(removed).toEqual([])
+
+  await changeKoblipReminder("es", "Tu próxima cita")
+  await submitKoblipTemplate("reminder", "es", "u1")
+  expect(removed).toEqual([])
+  const nextEs = stored.find((row) => row.template_name === "koblip_booking_reminder_v3" && row.language === "es")!
+  nextEs.status = "APPROVED"
+  await refreshKoblipTemplates()
+  expect((await koblipSendableTemplate("reminder", "es")).approved!.chatTemplateId).toBe(nextEs._id)
+  expect(removed.map((row) => row.id)).toEqual(expect.arrayContaining([oldEn.chatTemplateId, oldEs.chatTemplateId]))
+})
+
+test("a rejected Koblip candidate lost by Chat is copied back before resubmitting without disturbing the live version", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  const original = await approvedKoblipReminder()
+  await changeKoblipReminder()
+  await submitKoblipTemplate("reminder", "en", "u1")
+  stored.find((row) => row._id === "t2")!.status = "REJECTED"
+  await refreshKoblipTemplates()
+  stored = stored.filter((row) => row._id !== "t2")
+  atMeta = [{ id: "meta3", name: "koblip_booking_reminder_v3", language: "en", status: "REJECTED" }]
+  await submitKoblipTemplate("reminder", "en", "u1")
+  expect(copied).toContainEqual({ waba_id: "wabak", meta_template_ids: ["meta3"] })
+  expect(edited).toEqual([expect.objectContaining({ id: "c-meta3" })])
+  expect(created).toHaveLength(2)
+  expect((await koblipSendableTemplate("reminder", "en")).approved).toEqual(original)
+})
+
+test("refresh restores a live Koblip template Chat lost without submitting or discarding its approved snapshot", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  const original = await approvedKoblipReminder()
+  stored = []
+  atMeta = [{ id: "meta2", name: "koblip_booking_reminder_v2", language: "en", status: "APPROVED" }]
+  await refreshKoblipTemplates()
+  expect(copied).toContainEqual({ waba_id: "wabak", meta_template_ids: ["meta2"] })
+  expect((await koblipSendableTemplate("reminder", "en")).approved).toMatchObject({ chatTemplateId: "c-meta2", template: original.template })
+  expect(created).toHaveLength(1)
+  expect(edited).toEqual([])
+})
+
+test("failed Meta cleanup is retried after restoring Chat's deleted copy while the replacement keeps sending", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  await approvedKoblipReminder()
+  atMeta = [{ id: "meta2", name: "koblip_booking_reminder_v2", language: "en", status: "APPROVED" }]
+  await changeKoblipReminder()
+  await submitKoblipTemplate("reminder", "en", "u1")
+  stored.find((row) => row._id === "t2")!.status = "APPROVED"
+  deletionSucceeds = false
+  await refreshKoblipTemplates()
+  expect((await koblipSendableTemplate("reminder", "en")).approved!.chatTemplateId).toBe("t2")
+  expect(stored.some((row) => row._id === "t1")).toBe(false)
+  deletionSucceeds = true
+  await refreshKoblipTemplates()
+  expect(copied).toContainEqual({ waba_id: "wabak", meta_template_ids: ["meta2"] })
+  expect(removed.map((row) => row.id)).toEqual(["t1", "c-meta2"])
+  expect(atMeta).toEqual([])
+  const deletedCount = removed.length
+  await refreshKoblipTemplates()
+  expect(removed).toHaveLength(deletedCount)
+  expect((await koblipSendableTemplate("reminder", "en")).approved!.chatTemplateId).toBe("t2")
+})
+
+test("two simultaneous Koblip refreshes share one operation and release it for the next refresh", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  const first = refreshKoblipTemplates()
+  const second = refreshKoblipTemplates()
+  expect(second).toBe(first)
+  await Promise.all([first, second])
+  expect(chat.mock.calls.filter(([url]) => new URL(url).pathname === "/api/whatsapp/connections")).toHaveLength(1)
+  await refreshKoblipTemplates()
+  expect(chat.mock.calls.filter(([url]) => new URL(url).pathname === "/api/whatsapp/connections")).toHaveLength(2)
+})
+
+test("editing a pending Koblip submission makes a new version and never edits a template still under review", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  await submitKoblipTemplate("reminder", "en", "u1")
+  await changeKoblipReminder()
+  await submitKoblipTemplate("reminder", "en", "u1")
+  expect(created.map((row) => row.template_name)).toEqual(["koblip_booking_reminder_v2", "koblip_booking_reminder_v3"])
+  expect(edited).toEqual([])
+  expect((await koblipSendableTemplate("reminder", "en")).approved).toBeNull()
+})
+
+test("Use default after submission changes normal wording immediately and waits for approval before replacing the custom template", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  const custom = await changeKoblipReminder("en", "Your custom reminder")
+  const original = await approvedKoblipReminder()
+  expect(original.template.header).toBe(custom.header)
+  await db.delete(koblipNotificationTexts)
+  const reset = await koblipSendableTemplate("reminder", "en")
+  expect(reset.template).toMatchObject({ ...defaultWording("reminder", "en"), buttons: defaultButtons("reminder", "en") })
+  expect(reset.approved).toEqual(original)
+  expect((await koblipMessages()).find((row) => row.message === "reminder")!.texts.en.review).toBe("draft")
+  await submitKoblipTemplate("reminder", "en", "u1")
+  expect(created[1].template_name).toBe("koblip_booking_reminder_v3")
+  expect((await koblipSendableTemplate("reminder", "en")).approved).toEqual(original)
+  stored.find((row) => row._id === "t2")!.status = "APPROVED"
+  await refreshKoblipTemplates()
+  expect((await koblipSendableTemplate("reminder", "en")).approved!.template)
+    .toMatchObject({ ...defaultWording("reminder", "en"), buttons: defaultButtons("reminder", "en") })
+})
+
+test("an unchanged pending submit adds an audit entry without sending a remote edit", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  await submitKoblipTemplate("reminder", "en", "u1")
+  const [first] = await db.select().from(platformSettingChanges)
+  expect(await submitKoblipTemplate("reminder", "en", "u1")).toBeNull()
+  const changes = await db.select().from(platformSettingChanges)
+  expect(changes).toHaveLength(2)
+  expect(changes).toEqual(expect.arrayContaining([
+    expect.objectContaining({
+      key: "whatsapp.koblipSubmit.reminder.en",
+      before: first.after,
+      after: first.after,
+      changedBy: "u1",
+    }),
+  ]))
+  expect(created).toHaveLength(1)
+  expect(edited).toEqual([])
+})
+
+test("submission first promotes a remotely approved pending version before creating the next edit", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  await submitKoblipTemplate("reminder", "en", "u1")
+  stored.find((row) => row._id === "t1")!.status = "APPROVED"
+  expect((await db.select().from(koblipChatTemplates))[0].status).toBe("pending")
+  const wording = await changeKoblipReminder()
+  await submitKoblipTemplate("reminder", "en", "u1")
+  const sendable = await koblipSendableTemplate("reminder", "en")
+  expect(sendable.template).toMatchObject(wording)
+  expect(sendable.approved).toMatchObject({
+    chatTemplateId: "t1",
+    template: { ...defaultWording("reminder", "en"), name: "koblip_booking_reminder_v2" },
+  })
+  expect(created.map((row) => row.template_name)).toEqual(["koblip_booking_reminder_v2", "koblip_booking_reminder_v3"])
+  expect(edited).toEqual([])
+  expect(removed).toEqual([])
+})
+
+test("a paused older live version stops sending but stays tracked until its waiting replacement is approved", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  await approvedKoblipReminder()
+  await changeKoblipReminder()
+  await submitKoblipTemplate("reminder", "en", "u1")
+  stored.find((row) => row._id === "t1")!.status = "PAUSED"
+  await refreshKoblipTemplates()
+  expect((await koblipSendableTemplate("reminder", "en")).approved).toBeNull()
+  const [waiting] = await db.select().from(koblipChatTemplates)
+  expect(waiting.status).toBe("pending")
+  expect(waiting.live).toBeNull()
+  expect(waiting.retired).toEqual(expect.arrayContaining([
+    { chatTemplateId: "t1", name: "koblip_booking_reminder_v2", language: "en" },
+  ]))
+  expect(removed).toEqual([])
+  stored.find((row) => row._id === "t2")!.status = "APPROVED"
+  await refreshKoblipTemplates()
+  expect((await koblipSendableTemplate("reminder", "en")).approved!.chatTemplateId).toBe("t2")
+  expect(removed).toEqual([{ id: "t1", body: { delete_from_meta: true } }])
+  expect((await db.select().from(koblipChatTemplates))[0].retired).toEqual([])
+})
+
+test("a missing template advances the version instead of reusing a deleted Meta name", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  await approvedKoblipReminder()
+  stored = []
+  atMeta = []
+  await refreshKoblipTemplates()
+  expect((await koblipSendableTemplate("reminder", "en")).approved).toBeNull()
+  expect((await db.select().from(koblipChatTemplates))[0]).toMatchObject({ status: "missing", version: 2 })
+  await submitKoblipTemplate("reminder", "en", "u1")
+  expect(created.map((row) => row.template_name)).toEqual(["koblip_booking_reminder_v2", "koblip_booking_reminder_v3"])
+  expect(edited).toEqual([])
+  expect((await koblipSendableTemplate("reminder", "en")).approved).toBeNull()
 })
