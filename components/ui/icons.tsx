@@ -91,6 +91,7 @@ import {
   Zap as MynaZap,
   ZapSolid as MynaZapSolid,
   TrendingUp as MynaTrendingUp,
+  UserX as MynaUserX,
 } from "@mynaui/icons-react"
 import {
   AudioLines as LucideAudioLines,
@@ -278,6 +279,7 @@ export const TrendingUpIcon = icon(
   MynaTrendingUp as Icon,
   "TrendingUpIcon"
 )
+export const UserXIcon = icon(MynaUserX as Icon, "UserXIcon")
 export const UsersIcon = icon(MynaUsers as Icon, "UsersIcon")
 export const WrenchIcon = icon(MynaWrench as Icon, "WrenchIcon")
 // A business's website, everywhere it shows (mynaui has no compass).

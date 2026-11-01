@@ -4,7 +4,7 @@ import { StatStrip } from "@/components/stat-strip"
 import {
   BanknoteIcon,
   CalendarIcon,
-  OctagonXIcon,
+  UserXIcon,
   SmileIcon,
 } from "@/components/ui/icons"
 import { formatMoneyShort } from "@/lib/format-price"
@@ -55,7 +55,7 @@ export function PeriodStats({
           change: percentChange(summary.newCustomers),
         },
         {
-          icon: <OctagonXIcon />,
+          icon: <UserXIcon />,
           tone: "destructive",
           label: a.noShows,
           hint: a.hints.noShows,
