@@ -2,6 +2,7 @@
 
 import type { Route } from "next"
 import Link from "next/link"
+import { Fragment } from "react"
 import {
   ChevronRightIcon,
   ContactIcon,
@@ -32,6 +33,7 @@ import {
   ItemDescription,
   ItemGroup,
   ItemMedia,
+  ItemSeparator,
   ItemTitle,
 } from "@/components/ui/item"
 import { formatDayShort } from "@/lib/format-booking-time"
@@ -75,26 +77,31 @@ export function NewCustomersCard({
       <CardContent>
         {customers.length > 0 ? (
           <ItemGroup>
-            {customers.map((customer) => (
-              <Item key={customer.key} size="sm">
-                <ItemMedia>
-                  <Avatar>
-                    <AvatarFallback>{initials(customer.name) || "?"}</AvatarFallback>
-                  </Avatar>
-                </ItemMedia>
-                <ItemContent>
-                  <ItemTitle>{customer.name}</ItemTitle>
-                  <ItemDescription>
-                    {t.firstVisit} · {formatDayShort(customer.date, m.locale)}
-                  </ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  <CustomerMenu
-                    href={`${href}?customer=${encodeURIComponent(customer.key)}`}
-                    phone={customer.phone}
-                  />
-                </ItemActions>
-              </Item>
+            {customers.map((customer, index) => (
+              <Fragment key={customer.key}>
+                {index > 0 && <ItemSeparator />}
+                <Item size="sm">
+                  <ItemMedia>
+                    <Avatar>
+                      <AvatarFallback>
+                        {initials(customer.name) || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>{customer.name}</ItemTitle>
+                    <ItemDescription>
+                      {t.firstVisit} · {formatDayShort(customer.date, m.locale)}
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <CustomerMenu
+                      href={`${href}?customer=${encodeURIComponent(customer.key)}`}
+                      phone={customer.phone}
+                    />
+                  </ItemActions>
+                </Item>
+              </Fragment>
             ))}
           </ItemGroup>
         ) : (
