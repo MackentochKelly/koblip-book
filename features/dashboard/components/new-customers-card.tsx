@@ -38,10 +38,8 @@ import {
 } from "@/components/ui/item"
 import { formatDayShort } from "@/lib/format-booking-time"
 import { initials } from "@/lib/initials"
-import { cn } from "@/lib/utils"
 import { phoneLinks } from "@/lib/phone-link"
 import { useOwnerMessages } from "../i18n/provider"
-import { WIDGET_PHONE_LIST_LIMIT } from "../widgets"
 
 // The New customers widget: who booked for the first time lately, newest
 // first, each with a ⋮ menu (open them on the Customers page, call or
@@ -81,10 +79,8 @@ export function NewCustomersCard({
           <ItemGroup>
             {customers.map((customer, index) => (
               <Fragment key={customer.key}>
-                {index > 0 && (
-                  <ItemSeparator className={cn(phoneHidden(index))} />
-                )}
-                <Item size="sm" className={cn(phoneHidden(index))}>
+                {index > 0 && <ItemSeparator />}
+                <Item size="sm">
                   <ItemMedia>
                     <Avatar>
                       <AvatarFallback>
@@ -148,9 +144,4 @@ function CustomerMenu({ href, phone }: { href: string; phone: string | null }) {
       </DropdownMenuContent>
     </DropdownMenu>
   )
-}
-
-// Rows past the phone's limit only show on a computer.
-function phoneHidden(index: number) {
-  return index >= WIDGET_PHONE_LIST_LIMIT && "max-md:hidden"
 }

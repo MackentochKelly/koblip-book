@@ -36,7 +36,6 @@ export interface WidgetLayout {
 export const WIDGETS_COOKIE_PREFIX = "widgets-"
 export const WIDGETS_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
-// How many rows a list widget (New customers) shows: on a computer, and on
-// a phone.
-export const WIDGET_LIST_LIMIT = 5
-export const WIDGET_PHONE_LIST_LIMIT = 4
+// How many rows a list widget (New customers) shows, on a phone and a
+// computer alike.
+export const WIDGET_LIST_LIMIT = 4
