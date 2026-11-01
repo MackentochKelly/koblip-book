@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { CircleAlertIcon, InfoIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -19,6 +21,7 @@ import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import type { PageLanguage } from "@/lib/page-language"
 import { emailStatus } from "../api/email-status"
 import { authWordsFor } from "../i18n"
+import { authError, type AuthError } from "../utils/auth-error"
 import { GoogleButton } from "./google-button"
 import { GoogleError } from "./google-error"
 import { noAutofill } from "@/lib/no-autofill"
@@ -55,26 +58,26 @@ export function AuthForm({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [sending, setSending] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState<AuthError | null>(null)
   const busy = sending || disabled
 
   const checkEmail = async () => {
     const status = await emailStatus(email).catch(() => null)
     if (!status?.ok) {
-      setError(t.errors.email)
+      setError(status ? { field: "email", message: "email" } : authError(null, "password"))
       return
     }
-    setError("")
+    setError(null)
     setStep(status.exists ? "password" : "create")
   }
 
   const logIn = async () => {
     if (step === "create" && !name.trim()) {
-      setError(t.errors.name)
+      setError({ field: "name", message: "name" })
       return
     }
     if (password.length < ONBOARDING_RULES.minPasswordLength) {
-      setError(t.errors.password)
+      setError({ field: "password", message: "password" })
       return
     }
     // Null when the server could not be reached.
@@ -89,15 +92,16 @@ export function AuthForm({
           })
         : authClient.signIn.email({ email: email.trim(), password })
     ).catch(() => null)
-    if (!result) {
-      setError(t.errors.signUp)
+    if (!result || result.error) {
+      const mapped = authError(result?.error ?? null, step === "create" ? "create" : "password")
+      if (mapped.message === "existingAccount") {
+        setStep("password")
+        setPassword("")
+      }
+      setError(mapped)
       return
     }
-    if (result.error) {
-      setError(step === "create" ? t.errors.signUp : t.errors.wrongPassword)
-      return
-    }
-    setError("")
+    setError(null)
     if (onSignedIn) {
       await onSignedIn()
       return
@@ -120,7 +124,7 @@ export function AuthForm({
   const changeEmail = () => {
     setStep("email")
     setPassword("")
-    setError("")
+    setError(null)
   }
 
   return (
@@ -139,12 +143,13 @@ export function AuthForm({
             </FieldSeparator>
           </>
         )}
-        <Field data-invalid={(step === "email" && Boolean(error)) || undefined}>
+        <Field data-invalid={error?.field === "email" || undefined}>
           <FieldLabel htmlFor="auth-email">{t.email}</FieldLabel>
           {/* The account's username: password managers fill it with the
               saved password, so it keeps autofill (not noAutofill). */}
           <Input
             id="auth-email"
+            aria-describedby={error?.field === "email" ? "auth-email-error" : undefined}
             name="email"
             autoComplete="username"
             type="email"
@@ -153,7 +158,7 @@ export function AuthForm({
             onChange={(event) => setEmail(event.target.value)}
             readOnly={step !== "email"}
             disabled={busy}
-            aria-invalid={(step === "email" && Boolean(error)) || undefined}
+            aria-invalid={error?.field === "email" || undefined}
           />
           {step !== "email" && (
             <FieldDescription>
@@ -168,28 +173,32 @@ export function AuthForm({
               </Button>
             </FieldDescription>
           )}
-          {step === "email" && error && <FieldError>{error}</FieldError>}
+          {error?.field === "email" && <FieldError id="auth-email-error">{t.errors[error.message]}</FieldError>}
         </Field>
         {step === "create" && (
-          <Field>
+          <Field data-invalid={error?.field === "name" || undefined}>
             <FieldLabel htmlFor="auth-name">{t.yourName}</FieldLabel>
             <Input
               {...noAutofill("auth_name")}
               id="auth-name"
+              aria-invalid={error?.field === "name" || undefined}
+              aria-describedby={error?.field === "name" ? "auth-name-error" : undefined}
               value={name}
               onChange={(event) => setName(event.target.value)}
               disabled={busy}
               autoFocus
             />
+            {error?.field === "name" && <FieldError id="auth-name-error">{t.errors[error.message]}</FieldError>}
           </Field>
         )}
         {step !== "email" && (
-          <Field data-invalid={Boolean(error) || undefined}>
+          <Field data-invalid={error?.field === "password" || undefined}>
             <FieldLabel htmlFor="auth-password">
               {step === "create" ? t.choosePassword : t.password}
             </FieldLabel>
             <Input
               id="auth-password"
+              aria-describedby={error?.field === "password" ? "auth-password-error" : undefined}
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -198,10 +207,16 @@ export function AuthForm({
               }
               disabled={busy}
               autoFocus={step === "password"}
-              aria-invalid={Boolean(error) || undefined}
+              aria-invalid={error?.field === "password" || undefined}
             />
-            {error && <FieldError>{error}</FieldError>}
+            {error?.field === "password" && <FieldError id="auth-password-error">{t.errors[error.message]}</FieldError>}
           </Field>
+        )}
+        {error?.field === "form" && (
+          <Alert variant={error.message === "existingAccount" ? "default" : "destructive"}>
+            {error.message === "existingAccount" ? <InfoIcon /> : <CircleAlertIcon />}
+            <AlertDescription>{t.errors[error.message]}</AlertDescription>
+          </Alert>
         )}
         <Button type="submit" size="lg" disabled={busy}>
           {busy && <Spinner data-icon="inline-start" />}

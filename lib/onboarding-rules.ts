@@ -5,6 +5,8 @@ export const ONBOARDING_RULES = {
   minInput: 2,
   maxInput: 100,
   minPasswordLength: 8,
+  // Better Auth's default maximum, set explicitly so the form's words match.
+  maxPasswordLength: 128,
   // How long each Google Maps detail shows as working after sign-up (ms),
   // one at a time: quick for a plain field, longer for more to look at.
   revealMs: {

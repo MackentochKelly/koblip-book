@@ -16,6 +16,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: ONBOARDING_RULES.minPasswordLength,
+    maxPasswordLength: ONBOARDING_RULES.maxPasswordLength,
   },
   // Password sign-ups verify their email so Google can later join the
   // same account (accountLinking stays strict). Owners are NOT blocked

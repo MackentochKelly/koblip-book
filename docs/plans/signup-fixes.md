@@ -21,7 +21,7 @@ and faster. How to use this file: [Plans](README.md).
 | --- | --- | --- | --- | --- |
 | S1 | Search by kind and town finds businesses | M | | Done |
 | S2 | Search shows businesses, not street addresses | S | S1 | Done |
-| S3 | Sign-up errors say what went wrong, in the right place | S | | Working on: M Kelly B, 2026-11-01 |
+| S3 | Sign-up errors say what went wrong, in the right place | S | | Done |
 | S4 | "Getting your page ready" never looks stuck | M | | Done |
 | S5 | Check details says Continue | S | | Done |
 | S6 | Live screen has one "View page" | S | | Working on: M Kelly B, 2026-11-01 |
@@ -91,6 +91,11 @@ errors on the password field, the rest as a form error.
 
 **Done when:** each case shows its own message on the right field; tests
 cover each one.
+
+**Done (2026-11-01):** Better Auth codes and HTTP status pick short
+English/Spanish messages. Only the matching field is marked invalid;
+blocked requests, rate limits and connection failures use a form Alert.
+An existing sign-up email switches to log in with a calm hint.
 
 ### S4 · "Getting your page ready" never looks stuck 🟡
 
@@ -218,4 +223,5 @@ both cases.
 | --- | --- | --- | --- |
 | S9: setup state is saved on the business (`setupFinishedAt`), not kept in server memory | A restart or the 15-minute job expiry lost what was left to do; a saved column is the smallest safe fix. A saved jobs queue with a worker was left for later (more parts, risk of paying twice for AI calls) | M Kelly B | 2026-11-01 |
 | S9: backfill demo copies and owned businesses with at least one service or team member with the migration time; all others stay null | Finished listings skip setup; unclaimed imports and owned listings without services or team can still prepare their catalog. Ownership claims keep the saved finish time. | M Kelly B | 2026-11-01 |
+| S3: existing email on sign-up switches to log in instead of an error | Keep the email, clear the password and explain the next step with a calm hint. | M Kelly B | 2026-11-01 |
 | S2: business-only filter goes in the Autocomplete request, not on the results | Owners mostly search by their business name, which now lists only businesses. Trade-off: with no location set, kind-plus-town suggestions point at places inside the town and the right town can rank lower ("Brockton, MA" rows 4–5); filtering the results instead would leave an empty list whenever Google returns only addresses. | M Kelly B | 2026-11-01 |
