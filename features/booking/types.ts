@@ -1,6 +1,9 @@
 export interface AvailabilityDay { date: string; times: string[] } // date "YYYY-MM-DD", times "HH:mm", business time zone
 export interface Availability { days: AvailabilityDay[] }
-export interface BookingInput { slug: string; serviceId: string; teamMemberId: string | null; addonIds: string[]; date: string; time: string; name: string; phone: string; language?: "en" | "es" }
+export interface BookingInput { slug: string; serviceId: string; teamMemberId: string | null; addonIds: string[]; date: string; time: string; name: string; phone: string; language?: "en" | "es"
+  // The customer ticked the box agreeing to the business's policies; needed
+  // whenever the business has any.
+  acceptedPolicies?: boolean }
 export interface BookingConfirmation {
   id: string; businessName: string; address: string | null; timeZone: string
   serviceName: string; teamMemberName: string | null; durationMinutes: number; priceMinor: number | null; currency: string
@@ -10,5 +13,5 @@ export interface BookingConfirmation {
 export type BookingResult =
   | { status: "booked"; booking: BookingConfirmation }
   | { status: "taken" }
-  | { status: "invalid"; field: "service" | "teamMember" | "addons" | "time" | "name" | "phone" }
+  | { status: "invalid"; field: "service" | "teamMember" | "addons" | "time" | "name" | "phone" | "policies" }
   | { status: "failed" }

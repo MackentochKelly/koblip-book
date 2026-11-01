@@ -1,5 +1,5 @@
 import type { PageLanguage } from "@/lib/page-language"
-import type { PolicyKind } from "@/lib/policy-rules"
+import type { PolicyKind, PolicyPointIcon } from "@/lib/policy-rules"
 import type {
   businessHours,
   businessPhotos,
@@ -66,4 +66,13 @@ export interface BusinessPageData {
   addonGroups: { id: string; prompt: string; minSelect: number; maxSelect: number | null; serviceIds: string[]; options: { id: string; name: string; description: string | null; priceMinor: number | null; durationMinutes: number }[] }[]
   // The business's policies that have text, linked from the footer.
   policies: PolicyKind[]
+  // Its key policy points, agreed to in the booking flow's last step.
+  policyPoints: PolicyPoint[]
+}
+
+export interface PolicyPoint {
+  id: string
+  icon: PolicyPointIcon
+  title: string
+  body: string
 }

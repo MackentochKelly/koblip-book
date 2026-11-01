@@ -1,4 +1,5 @@
 import type { CancelReason } from "@/lib/booking-rules"
+import type { PolicyKind, PolicyPointIcon } from "@/lib/policy-rules"
 import type { GoogleEventColor } from "@/lib/google-calendar-colors"
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string }
 export interface OwnedBusiness { id: string; slug: string; name: string; address: string | null; category: string | null; photoUrl: string | null }
@@ -37,3 +38,8 @@ export interface AddonOptionSuggestion { name: string; description: string | nul
 export interface AddonGroupSuggestion { name: string; prompt: string; minSelect: number; maxSelect: number | null; serviceIds: string[]; options: AddonOptionSuggestion[] }
 // `currency` (ISO 4217) is left out where the form has none (right after sign-up).
 export interface BusinessDetailsInput { name: string; address: string | null; description: string | null; phone: string | null; website: string | null; seats: number; currency?: string }
+// Settings > Policies: the three texts ("" = not on the page) and the key
+// points the booking flow asks customers to agree to.
+export interface OwnerPolicyPoint { id: string; icon: PolicyPointIcon; title: string; body: string }
+export interface OwnerPolicies { texts: Record<PolicyKind, string>; points: OwnerPolicyPoint[] }
+export interface PolicyPointInput { icon: PolicyPointIcon; title: string; body: string }

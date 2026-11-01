@@ -10,17 +10,17 @@ loadEnvConfig(process.cwd())
 const { db } = await import("../lib/db/index")
 const { businesses } = await import("../lib/db/schema")
 const { isMetaAiEnabled } = await import("../lib/meta-ai")
-const { draftPoliciesFor, hasPolicies, writePolicies } =
+const { draftPoliciesFor, policyParts, writeMissingPolicies } =
   await import("../features/starter-catalog/api/fill-policies")
 const { translateBusinessTexts } =
   await import("../features/dashboard/api/translate-business")
 
-// Muse writes the booking policy, terms and privacy notice for every real
-// business (or only the slugs given) that has none yet, then translates
-// them. A business with any policy is never changed, so owners' edits stay.
+// Muse writes the booking policy, terms, privacy notice and key points for
+// every real business (or only the slugs given) missing any of them, then
+// translates them. Only missing parts are written, so owners' edits stay.
 // Demo copies are skipped.
 //
-//   npm run policies:fill            every real business without policies
+//   npm run policies:fill            every real business missing some
 //   npm run policies:fill -- <slug>  only these
 const slugs = process.argv.slice(2)
 
@@ -39,7 +39,8 @@ const targets = slugs.length > 0 ? rows.filter((row) => slugs.includes(row.slug)
 let failed = 0
 let skipped = 0
 for (const business of targets) {
-  if (await hasPolicies(business.id)) {
+  const parts = await policyParts(business.id)
+  if (parts.texts && parts.points) {
     skipped += 1
     continue
   }
@@ -49,7 +50,7 @@ for (const business of targets) {
     console.log(`✗ ${business.slug}: no policies written`)
     continue
   }
-  await writePolicies(business, policies)
+  await writeMissingPolicies(business, policies, parts)
   const spanish = await translateBusinessTexts(business)
   console.log(`✓ ${business.slug}: policies written, Spanish ${spanish.ok ? "done" : "failed"}`)
 }

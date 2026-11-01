@@ -1,6 +1,21 @@
-import { POLICY_KINDS, POLICY_RULES, type PolicyKind } from "@/lib/policy-rules"
+import {
+  isPolicyPointIcon,
+  POLICY_KINDS,
+  POLICY_RULES,
+  type PolicyKind,
+  type PolicyPointIcon,
+} from "@/lib/policy-rules"
 
-export type DraftPolicies = Record<PolicyKind, string>
+export interface DraftPolicyPoint {
+  icon: PolicyPointIcon
+  title: string
+  body: string
+}
+
+export interface DraftPolicies {
+  texts: Record<PolicyKind, string>
+  points: DraftPolicyPoint[]
+}
 
 // Things a draft must never hold: blanks left to fill in, Markdown the page
 // would show as symbols, or money the app never takes.
@@ -13,17 +28,63 @@ const FORBIDDEN: Array<{ pattern: RegExp; problem: string }> = [
   },
 ]
 
-// Muse's policies checked with fixed rules: each one there, plain text,
-// within length, nothing to fill in, no payments. Problems go back to Muse.
+function forbidden(label: string, text: string): string[] {
+  return FORBIDDEN.filter((rule) => rule.pattern.test(text)).map(
+    (rule) => `${label} ${rule.problem}.`
+  )
+}
+
+function checkPoints(value: unknown, problems: string[]): DraftPolicyPoint[] {
+  const raw = Array.isArray(value) ? value : []
+  if (
+    raw.length < POLICY_RULES.minDraftPoints ||
+    raw.length > POLICY_RULES.maxPoints
+  ) {
+    problems.push(
+      `points must have ${POLICY_RULES.minDraftPoints} to ${POLICY_RULES.maxPoints} items.`
+    )
+  }
+  return raw.slice(0, POLICY_RULES.maxPoints).map((item: unknown, index) => {
+    const point = (item && typeof item === "object" ? item : {}) as Record<
+      string,
+      unknown
+    >
+    const label = `point ${index + 1}`
+    const title = typeof point.title === "string" ? point.title.trim() : ""
+    const body = typeof point.body === "string" ? point.body.trim() : ""
+    if (!isPolicyPointIcon(point.icon)) {
+      problems.push(`${label} needs an icon from the list.`)
+    }
+    if (title === "" || title.length > POLICY_RULES.maxPointTitle) {
+      problems.push(`${label} title must be 1 to ${POLICY_RULES.maxPointTitle} characters.`)
+    }
+    if (body === "" || body.length > POLICY_RULES.maxPointBody) {
+      problems.push(`${label} text must be 1 to ${POLICY_RULES.maxPointBody} characters.`)
+    }
+    problems.push(...forbidden(label, `${title}\n${body}`))
+    return {
+      icon: isPolicyPointIcon(point.icon) ? point.icon : "info",
+      title,
+      body,
+    }
+  })
+}
+
+// Muse's policies checked with fixed rules: each text there, plain, within
+// length, nothing to fill in, no payments; and 3 or 4 short key points.
+// Problems go back to Muse.
 export function checkPolicies(
   value: unknown
 ): { ok: true; policies: DraftPolicies } | { ok: false; problems: string[] } {
   if (!value || typeof value !== "object") {
-    return { ok: false, problems: ["Answer with booking, terms and privacy."] }
+    return {
+      ok: false,
+      problems: ["Answer with booking, terms, privacy and points."],
+    }
   }
   const draft = value as Record<string, unknown>
   const problems: string[] = []
-  const policies = {} as DraftPolicies
+  const texts = {} as Record<PolicyKind, string>
   for (const kind of POLICY_KINDS) {
     const text = typeof draft[kind] === "string" ? draft[kind].trim() : ""
     if (text.length < POLICY_RULES.minDraftLength) {
@@ -31,10 +92,11 @@ export function checkPolicies(
     } else if (text.length > POLICY_RULES.maxLength) {
       problems.push(`${kind} is over ${POLICY_RULES.maxLength} characters.`)
     }
-    for (const rule of FORBIDDEN) {
-      if (rule.pattern.test(text)) problems.push(`${kind} ${rule.problem}.`)
-    }
-    policies[kind] = text
+    problems.push(...forbidden(kind, text))
+    texts[kind] = text
   }
-  return problems.length > 0 ? { ok: false, problems } : { ok: true, policies }
+  const points = checkPoints(draft.points, problems)
+  return problems.length > 0
+    ? { ok: false, problems }
+    : { ok: true, policies: { texts, points } }
 }

@@ -16,6 +16,8 @@ export type TranslationField =
   | "addon.description"
   | "team_member.description"
   | "policy.body"
+  | "policy_point.title"
+  | "policy_point.body"
 
 export interface AddonTranslatableRows {
   groups: { id: string; prompt: string }[]
@@ -54,7 +56,8 @@ export function collectTranslatableTexts(
   serviceRows: { id: string; name: string; description: string | null }[],
   addonRows: AddonTranslatableRows = { groups: [], options: [] },
   teamRows: { id: string; description: string | null }[] = [],
-  policyRows: { id: string; body: string }[] = []
+  policyRows: { id: string; body: string }[] = [],
+  pointRows: { id: string; title: string; body: string }[] = []
 ): TranslatableText[] {
   const all: TranslatableText[] = []
   if (businessDescription && businessDescription.trim() !== "") {
@@ -122,6 +125,17 @@ export function collectTranslatableTexts(
         entityId: policy.id,
         field: "policy.body",
         text: policy.body,
+      })
+    }
+  }
+  for (const point of pointRows) {
+    for (const field of ["policy_point.title", "policy_point.body"] as const) {
+      const text = field === "policy_point.title" ? point.title : point.body
+      all.push({
+        id: translationId(point.id, field),
+        entityId: point.id,
+        field,
+        text,
       })
     }
   }
@@ -216,8 +230,14 @@ function limitForId(id: string): number {
   if (field === "addon_group.prompt") {
     return BOOKING_RULES.maxAddonPrompt
   }
+  // Spanish runs longer than English.
+  if (field === "policy_point.title") {
+    return Math.ceil(POLICY_RULES.maxPointTitle * 1.5)
+  }
+  if (field === "policy_point.body") {
+    return Math.ceil(POLICY_RULES.maxPointBody * 1.5)
+  }
   if (field === "policy.body") {
-    // Spanish runs longer than English.
     return Math.ceil(POLICY_RULES.maxLength * 1.5)
   }
   return BOOKING_RULES.maxBusinessDescription

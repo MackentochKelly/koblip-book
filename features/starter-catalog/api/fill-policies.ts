@@ -1,8 +1,14 @@
 import "server-only"
 
 import { eq } from "drizzle-orm"
+import type { BatchItem } from "drizzle-orm/batch"
 import { db } from "@/lib/db"
-import { type businesses, businessPolicies } from "@/lib/db/schema"
+import { saveAll } from "@/lib/db/save-all"
+import {
+  type businesses,
+  businessPolicies,
+  businessPolicyPoints,
+} from "@/lib/db/schema"
 import { POLICY_KINDS } from "@/lib/policy-rules"
 import type { DraftPolicies } from "../utils/check-policies"
 import { draftPolicies } from "./draft-policies"
@@ -12,13 +18,27 @@ import { draftPolicies } from "./draft-policies"
 
 type Business = typeof businesses.$inferSelect
 
-export async function hasPolicies(businessId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: businessPolicies.id })
-    .from(businessPolicies)
-    .where(eq(businessPolicies.businessId, businessId))
-    .limit(1)
-  return Boolean(row)
+// Which of a business's policy parts already exist. Muse fills only the
+// missing ones, so an owner's own texts and points are never replaced.
+export interface PolicyParts {
+  texts: boolean
+  points: boolean
+}
+
+export async function policyParts(businessId: string): Promise<PolicyParts> {
+  const [[text], [point]] = await Promise.all([
+    db
+      .select({ id: businessPolicies.id })
+      .from(businessPolicies)
+      .where(eq(businessPolicies.businessId, businessId))
+      .limit(1),
+    db
+      .select({ id: businessPolicyPoints.id })
+      .from(businessPolicyPoints)
+      .where(eq(businessPolicyPoints.businessId, businessId))
+      .limit(1),
+  ])
+  return { texts: Boolean(text), points: Boolean(point) }
 }
 
 // Muse Spark's checked policies for this business, or null.
@@ -31,16 +51,34 @@ export function draftPoliciesFor(business: Business): Promise<DraftPolicies | nu
   })
 }
 
-// Saves the three policies in one insert.
-export async function writePolicies(
+// Saves the parts the business does not have yet, in one batch.
+export async function writeMissingPolicies(
   business: Business,
-  policies: DraftPolicies
+  policies: DraftPolicies,
+  existing: PolicyParts
 ): Promise<void> {
-  await db.insert(businessPolicies).values(
-    POLICY_KINDS.map((kind) => ({
-      businessId: business.id,
-      kind,
-      body: policies[kind],
-    }))
-  )
+  const writes: BatchItem<"sqlite">[] = []
+  if (!existing.texts) {
+    writes.push(
+      db.insert(businessPolicies).values(
+        POLICY_KINDS.map((kind) => ({
+          businessId: business.id,
+          kind,
+          body: policies.texts[kind],
+        }))
+      )
+    )
+  }
+  if (!existing.points) {
+    writes.push(
+      db.insert(businessPolicyPoints).values(
+        policies.points.map((point, position) => ({
+          businessId: business.id,
+          ...point,
+          position,
+        }))
+      )
+    )
+  }
+  await saveAll(writes)
 }

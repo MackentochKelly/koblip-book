@@ -14,6 +14,8 @@ import {
   bookingAddons,
   bookings,
   businessHours,
+  businessPolicies,
+  businessPolicyPoints,
   businesses,
   services,
   teamMemberHours,
@@ -38,6 +40,22 @@ const TIME_PATTERN = /^\d{2}:\d{2}$/
 function toMinutes(time: string): number {
   const [hour, minute] = time.split(":").map(Number)
   return hour * 60 + minute
+}
+
+async function hasPolicies(businessId: string): Promise<boolean> {
+  const [[text], [point]] = await Promise.all([
+    db
+      .select({ id: businessPolicies.id })
+      .from(businessPolicies)
+      .where(eq(businessPolicies.businessId, businessId))
+      .limit(1),
+    db
+      .select({ id: businessPolicyPoints.id })
+      .from(businessPolicyPoints)
+      .where(eq(businessPolicyPoints.businessId, businessId))
+      .limit(1),
+  ])
+  return Boolean(text || point)
 }
 
 // No sign-in needed for customers. Every unexpected error becomes "failed".
@@ -66,6 +84,11 @@ export async function createBooking(
       return { status: "failed" }
     }
     const whatsapp = await offersWhatsapp(business.id)
+    // A business with policies is booked only once they are agreed to.
+    const withPolicies = await hasPolicies(business.id)
+    if (withPolicies && input.acceptedPolicies !== true) {
+      return { status: "invalid", field: "policies" }
+    }
 
     const [serviceRows, hourRows, teamRows, linkRows, memberHourRows] =
       await Promise.all([
@@ -234,6 +257,7 @@ export async function createBooking(
           // The booking page names the business in the ⓘ on Phone whenever
           // it sends WhatsApp booking messages: booking is the yes.
           whatsappOptIn: whatsapp,
+          policiesAcceptedAt: withPolicies ? new Date(Date.now()).toISOString() : null,
           language: input.language === "es" ? "es" : "en",
         }),
         ...(addonCheck.options.length > 0

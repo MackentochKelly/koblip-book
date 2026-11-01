@@ -8,6 +8,7 @@ import {
   addonOptions,
   businesses,
   businessPolicies,
+  businessPolicyPoints,
   services,
   teamMembers,
   translations,
@@ -36,7 +37,7 @@ export async function getTranslationStatus(
   businessId: string
 ): Promise<TranslationStatus> {
   const business = await ownedBusiness(businessId)
-  const [serviceRows, addonGroupRows, addonOptionRows, teamRows, policyRows] =
+  const [serviceRows, addonGroupRows, addonOptionRows, teamRows, policyRows, pointRows] =
     await Promise.all([
     db
       .select({
@@ -66,6 +67,14 @@ export async function getTranslationStatus(
       .select({ id: businessPolicies.id, body: businessPolicies.body })
       .from(businessPolicies)
       .where(eq(businessPolicies.businessId, business.id)),
+    db
+      .select({
+        id: businessPolicyPoints.id,
+        title: businessPolicyPoints.title,
+        body: businessPolicyPoints.body,
+      })
+      .from(businessPolicyPoints)
+      .where(eq(businessPolicyPoints.businessId, business.id)),
   ])
   const existing = await db
     .select({
@@ -86,7 +95,8 @@ export async function getTranslationStatus(
     serviceRows,
     { groups: addonGroupRows, options: addonOptionRows },
     teamRows,
-    policyRows
+    policyRows,
+    pointRows
   )
   const pending = pendingTranslations(all, existing)
   return {

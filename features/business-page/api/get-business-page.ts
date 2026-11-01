@@ -8,6 +8,7 @@ import {
   businessHours,
   businessPhotos,
   businessPolicies,
+  businessPolicyPoints,
   businesses,
   serviceAddonGroups,
   services,
@@ -204,6 +205,7 @@ async function loadBusinessPage(
     addonOptionRows,
     addonLinkRows,
     policyRows,
+    pointRows,
   ] = await Promise.all([
       db
         .select()
@@ -266,6 +268,16 @@ async function loadBusinessPage(
         .select({ kind: businessPolicies.kind })
         .from(businessPolicies)
         .where(eq(businessPolicies.businessId, business.id)),
+      db
+        .select({
+          id: businessPolicyPoints.id,
+          icon: businessPolicyPoints.icon,
+          title: businessPolicyPoints.title,
+          body: businessPolicyPoints.body,
+        })
+        .from(businessPolicyPoints)
+        .where(eq(businessPolicyPoints.businessId, business.id))
+        .orderBy(asc(businessPolicyPoints.position)),
     ])
 
   const extras = await getGoogleExtras(business.googlePlaceId, language)
@@ -291,6 +303,7 @@ async function loadBusinessPage(
   let pageBusiness = business
   let pageServices = serviceRows
   let pageTeam = team
+  let pagePoints = pointRows
   if (language === "es") {
     const byKey = new Map(
       translationRows.map((row) => [`${row.entityId}\n${row.field}`, row])
@@ -325,6 +338,19 @@ async function loadBusinessPage(
       return row && row.sourceText === member.description
         ? { ...member, description: row.text }
         : member
+    })
+    pagePoints = pointRows.map((point) => {
+      const titleRow = byKey.get(`${point.id}\npolicy_point.title`)
+      const bodyRow = byKey.get(`${point.id}\npolicy_point.body`)
+      return {
+        ...point,
+        title:
+          titleRow && titleRow.sourceText === point.title
+            ? titleRow.text
+            : point.title,
+        body:
+          bodyRow && bodyRow.sourceText === point.body ? bodyRow.text : point.body,
+      }
     })
   }
 
@@ -429,6 +455,7 @@ async function loadBusinessPage(
     policies: POLICY_KINDS.filter((kind) =>
       policyRows.some((row) => row.kind === kind)
     ),
+    policyPoints: pagePoints,
   }
 }
 

@@ -2,10 +2,12 @@
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { eq } from "drizzle-orm"
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest"
 import {
   bookings,
   businessHours,
+  businessPolicyPoints,
   businesses,
   googleCalendarBusy,
   googleCalendarConnections,
@@ -250,4 +252,62 @@ test("validation paths", async () => {
   await expect(
     createBooking({ ...valid, teamMemberId: "nope" })
   ).resolves.toEqual({ status: "invalid", field: "teamMember" })
+})
+
+test("a business with policies books only once they are agreed to", async () => {
+  const { serviceId } = await seedShop("rules-shop", "biz-rules")
+  const { db } = await import("@/lib/db")
+  await db.insert(businessPolicyPoints).values({
+    businessId: "biz-rules",
+    icon: "clock",
+    title: "Arriving",
+    body: "Come five minutes early.",
+    position: 0,
+  })
+  const input = {
+    slug: "rules-shop",
+    serviceId,
+    teamMemberId: null,
+    addonIds: [],
+    date: "2026-06-01",
+    time: "11:00",
+    name: "Luis",
+    phone: "+18095550134",
+  }
+  expect(await createBooking(input)).toEqual({
+    status: "invalid",
+    field: "policies",
+  })
+  expect(await createBooking({ ...input, acceptedPolicies: false })).toEqual({
+    status: "invalid",
+    field: "policies",
+  })
+  const result = await createBooking({ ...input, acceptedPolicies: true })
+  expect(result.status).toBe("booked")
+  const [row] = await db
+    .select({ policiesAcceptedAt: bookings.policiesAcceptedAt })
+    .from(bookings)
+    .where(eq(bookings.businessId, "biz-rules"))
+  expect(row.policiesAcceptedAt).toBe(new Date(NOW).toISOString())
+})
+
+test("a business without policies books without the box, and saves no agreement", async () => {
+  const { serviceId } = await seedShop("plain-shop", "biz-plain")
+  const result = await createBooking({
+    slug: "plain-shop",
+    serviceId,
+    teamMemberId: null,
+    addonIds: [],
+    date: "2026-06-01",
+    time: "12:00",
+    name: "Luis",
+    phone: "+18095550134",
+  })
+  expect(result.status).toBe("booked")
+  const { db } = await import("@/lib/db")
+  const [row] = await db
+    .select({ policiesAcceptedAt: bookings.policiesAcceptedAt })
+    .from(bookings)
+    .where(eq(bookings.businessId, "biz-plain"))
+  expect(row.policiesAcceptedAt).toBeNull()
 })

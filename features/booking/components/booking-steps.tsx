@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { CalendarX2Icon, UsersIcon } from "@/components/ui/icons"
 
 import { InfoTip } from "@/components/info-tip"
+import { PolicyPointIcon } from "@/components/policy-point-icon"
 import { useMessages } from "@/components/language-provider"
 import { TimePicker } from "@/components/time-picker"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -35,6 +36,14 @@ import {
   FieldTitle,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -48,6 +57,7 @@ import type { Availability } from "../types"
 import {
   bookingTotals,
   type BookingAddonGroup,
+  type BookingPolicies,
   type BookingMember,
   type BookingPage,
   type BookingService,
@@ -540,6 +550,91 @@ export function BookingTotal({
         {formatDuration(totals.durationMinutes)}
         {price && ` · ${price}`}
       </p>
+    </div>
+  )
+}
+
+// The last step: the business's key points as cards, then one box that
+// agrees to them and to its policies (each a link, opened in a new tab so
+// the booking stays as it is). Confirm waits for the box.
+export function PoliciesStep({
+  slug,
+  policies,
+  agreed,
+  onAgreedChange,
+  sending,
+}: {
+  slug: string
+  policies: BookingPolicies
+  agreed: boolean
+  onAgreedChange: (agreed: boolean) => void
+  sending: boolean
+}) {
+  const m = useMessages()
+  const language = m.locale.startsWith("es") ? "es" : "en"
+  const links = policies.documents.map((kind) => (
+    <span key={kind}>
+      {m.policies.articles[kind]}{" "}
+      <a
+        href={`/b/${slug}/policies/${kind}?lang=${language}`}
+        target="_blank"
+        rel="noreferrer"
+        className="font-medium text-foreground underline underline-offset-4"
+      >
+        {m.policies[kind]}
+      </a>
+    </span>
+  ))
+  // "the A, the B and the C", joined the language's own way.
+  const sentence =
+    links.length > 0
+      ? new Intl.ListFormat(m.locale, { type: "conjunction" })
+          .formatToParts(links.map((_, index) => String(index)))
+          .map((part) =>
+            part.type === "element" ? links[Number(part.value)] : part.value
+          )
+      : null
+
+  return (
+    <div className="flex flex-col gap-4">
+      {policies.points.length > 0 && (
+        <ItemGroup className="grid gap-3 sm:grid-cols-2">
+          {policies.points.map((point) => (
+            <Item key={point.id} variant="muted" className="items-start">
+              <ItemMedia variant="icon">
+                <PolicyPointIcon icon={point.icon} />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle className="line-clamp-none">{point.title}</ItemTitle>
+                <ItemDescription className="line-clamp-none">
+                  {point.body}
+                </ItemDescription>
+              </ItemContent>
+            </Item>
+          ))}
+        </ItemGroup>
+      )}
+      <FieldLabel htmlFor="booking-agree">
+        <Field orientation="horizontal">
+          <Checkbox
+            id="booking-agree"
+            checked={agreed}
+            disabled={sending}
+            onCheckedChange={(on) => onAgreedChange(on === true)}
+          />
+          <FieldContent>
+            <FieldTitle className="block font-normal">
+              {sentence ? (
+                <>
+                  {m.booking.agreeTo} {sentence}
+                </>
+              ) : (
+                m.booking.agreeToThese
+              )}
+            </FieldTitle>
+          </FieldContent>
+        </Field>
+      </FieldLabel>
     </div>
   )
 }

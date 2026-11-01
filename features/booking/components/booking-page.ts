@@ -1,5 +1,6 @@
 import type { services, teamMembers } from "@/lib/db/schema"
 import { directionsUrl } from "@/lib/directions-url"
+import type { PolicyKind, PolicyPointIcon } from "@/lib/policy-rules"
 import { checkAddons } from "../utils/addons"
 
 type ServiceRow = typeof services.$inferSelect
@@ -50,6 +51,25 @@ export interface BookingPage {
   addonGroups: BookingAddonGroup[]
   // Whether the business sends WhatsApp booking messages (consent asked).
   whatsapp: boolean
+  policies: BookingPolicies
+}
+
+export interface BookingPolicyPoint {
+  id: string
+  icon: PolicyPointIcon
+  title: string
+  body: string
+}
+
+// What the customer agrees to in the last step: the key points as cards,
+// and the policies they link to. Both empty: no such step.
+export interface BookingPolicies {
+  documents: PolicyKind[]
+  points: BookingPolicyPoint[]
+}
+
+export function hasBookingPolicies(policies: BookingPolicies): boolean {
+  return policies.documents.length > 0 || policies.points.length > 0
 }
 
 export interface BookingSlot {
@@ -117,6 +137,8 @@ export function toBookingPage(data: {
   serviceTeams: Record<string, string[]>
   addonGroups: BookingAddonGroup[]
   whatsapp: boolean
+  policies: PolicyKind[]
+  policyPoints: BookingPolicyPoint[]
 }): BookingPage {
   return {
     slug: data.business.slug,
@@ -142,5 +164,6 @@ export function toBookingPage(data: {
     serviceTeams: data.serviceTeams,
     addonGroups: data.addonGroups,
     whatsapp: data.whatsapp,
+    policies: { documents: data.policies, points: data.policyPoints },
   }
 }

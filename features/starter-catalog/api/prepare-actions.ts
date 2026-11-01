@@ -14,7 +14,11 @@ import {
   hasCatalog,
   writeCatalog,
 } from "./fill-catalog"
-import { draftPoliciesFor, hasPolicies, writePolicies } from "./fill-policies"
+import {
+  draftPoliciesFor,
+  policyParts,
+  writeMissingPolicies,
+} from "./fill-policies"
 
 // The signed-in owner's own real business (never a demo copy), or null.
 // The id comes from the browser, so ownership is checked here.
@@ -67,9 +71,9 @@ export async function startStarterCatalog(
   }
 }
 
-// Right after sign-up: Muse writes the business's booking policy, terms
-// and privacy notice for its kind of business. A business that already has
-// policies is never changed. True when it has them now.
+// Right after sign-up: Muse writes the business's booking policy, terms,
+// privacy notice and their key points for its kind of business. Parts the
+// business already has are never changed. True when it has them all now.
 export async function startPolicies(
   businessId: string
 ): Promise<{ ok: boolean }> {
@@ -78,15 +82,16 @@ export async function startPolicies(
     return { ok: false }
   }
   const { business } = owned
-  if (await hasPolicies(business.id)) {
+  const before = await policyParts(business.id)
+  if (before.texts && before.points) {
     return { ok: true }
   }
   const policies = await draftPoliciesFor(business)
-  // The owner may have saved some while Muse was writing.
-  if (!policies || (await hasPolicies(business.id))) {
-    return { ok: Boolean(policies) }
+  if (!policies) {
+    return { ok: false }
   }
-  await writePolicies(business, policies)
+  // The owner may have saved some while Muse was writing.
+  await writeMissingPolicies(business, policies, await policyParts(business.id))
   revalidatePath("/b/" + business.slug)
   return { ok: true }
 }

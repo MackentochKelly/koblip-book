@@ -2,9 +2,13 @@
 
 import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { businessPolicies } from "@/lib/db/schema"
-import { isPolicyKind, POLICY_RULES } from "@/lib/policy-rules"
-import type { ActionResult } from "../types"
+import { businessPolicies, businessPolicyPoints } from "@/lib/db/schema"
+import {
+  isPolicyKind,
+  isPolicyPointIcon,
+  POLICY_RULES,
+} from "@/lib/policy-rules"
+import type { ActionResult, PolicyPointInput } from "../types"
 import { ownedBusiness, revalidateBusiness } from "./owned-business"
 
 // Saves one of the owner's policies. Empty text removes it, which hides it
@@ -45,5 +49,77 @@ export async function savePolicy(
       })
   }
   revalidateBusiness(business.slug)
+  return { ok: true }
+}
+
+// Adds a key point (pointId null, at the end) or changes one. Up to
+// POLICY_RULES.maxPoints; its Spanish follows on the next translation.
+export async function savePolicyPoint(
+  businessId: string,
+  pointId: string | null,
+  input: PolicyPointInput
+): Promise<ActionResult> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) {
+    return { ok: false, error: "not_found" }
+  }
+  const title = typeof input?.title === "string" ? input.title.trim() : ""
+  const body = typeof input?.body === "string" ? input.body.trim() : ""
+  if (
+    !isPolicyPointIcon(input?.icon) ||
+    title === "" ||
+    title.length > POLICY_RULES.maxPointTitle ||
+    body === "" ||
+    body.length > POLICY_RULES.maxPointBody
+  ) {
+    return { ok: false, error: "invalid" }
+  }
+  const { business } = owned
+  const points = await db
+    .select({ id: businessPolicyPoints.id, position: businessPolicyPoints.position })
+    .from(businessPolicyPoints)
+    .where(eq(businessPolicyPoints.businessId, business.id))
+  if (pointId === null) {
+    if (points.length >= POLICY_RULES.maxPoints) {
+      return { ok: false, error: "limit" }
+    }
+    await db.insert(businessPolicyPoints).values({
+      businessId: business.id,
+      icon: input.icon,
+      title,
+      body,
+      position: Math.max(-1, ...points.map((point) => point.position)) + 1,
+    })
+  } else {
+    if (!points.some((point) => point.id === pointId)) {
+      return { ok: false, error: "not_found" }
+    }
+    await db
+      .update(businessPolicyPoints)
+      .set({ icon: input.icon, title, body })
+      .where(eq(businessPolicyPoints.id, pointId))
+  }
+  revalidateBusiness(business.slug)
+  return { ok: true }
+}
+
+// Removes one key point for good.
+export async function removePolicyPoint(
+  businessId: string,
+  pointId: string
+): Promise<ActionResult> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) {
+    return { ok: false, error: "not_found" }
+  }
+  await db
+    .delete(businessPolicyPoints)
+    .where(
+      and(
+        eq(businessPolicyPoints.businessId, owned.business.id),
+        eq(businessPolicyPoints.id, pointId)
+      )
+    )
+  revalidateBusiness(owned.business.slug)
   return { ok: true }
 }

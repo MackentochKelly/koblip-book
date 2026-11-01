@@ -35,6 +35,7 @@ import { createBooking } from "../api/create-booking"
 import type { BookingConfirmation } from "../types"
 import {
   bookingTotals,
+  hasBookingPolicies,
   serviceAddonGroups,
   serviceTeam,
   type BookingPage,
@@ -49,18 +50,19 @@ import {
   type DetailsError,
   ExtrasStep,
   MemberStep,
+  PoliciesStep,
   priceLabel,
   ServiceStep,
   TimeStep,
 } from "./booking-steps"
 
-type Step = "service" | "extras" | "member" | "time" | "details"
+type Step = "service" | "extras" | "member" | "time" | "details" | "policies"
 
 const DETAILS_FORM = "booking-details"
 
 // Booking, like Fresha: a service, its extras when it has some, who does
-// it when the team has a choice, a free day and time, then a name and
-// phone. No sign-in. Each step is in the address, so the phone's back
+// it when the team has a choice, a free day and time, a name and phone,
+// then the business's policies to agree to when it has some. No sign-in. Each step is in the address, so the phone's back
 // gesture goes one step back.
 // On a computer it is a page of its own with the summary beside the steps;
 // on a phone it is the shared BottomPanel over the business page, and the
@@ -88,6 +90,8 @@ export function BookingFlow({
   // Confirm looks ready only once both are typed, like Continue before it.
   const detailsFilled = Boolean(details.name.trim() && details.phone.trim())
   const [detailsError, setDetailsError] = useState<DetailsError>(null)
+  const [agreed, setAgreed] = useState(false)
+  const withPolicies = hasBookingPolicies(page.policies)
   const [closing, setClosing] = useState(false)
 
   const language = params.get("lang")
@@ -98,6 +102,7 @@ export function BookingFlow({
     setClosing(false)
     setBooked(null)
     setSlot(null)
+    setAgreed(false)
   }
   const open = wanted && !closing
 
@@ -127,6 +132,7 @@ export function BookingFlow({
     ...(team.length > 1 ? (["member"] as const) : []),
     "time",
     "details",
+    ...(withPolicies ? (["policies"] as const) : []),
   ]
   // A service picked on the business page starts on the next step.
   const askedParam = params.get("step") as Step | null
@@ -144,9 +150,11 @@ export function BookingFlow({
       ? "extras"
       : steps.includes("member") && later("member") && !memberChoice
         ? "member"
-        : asked === "details" && !slot
+        : (asked === "details" || asked === "policies") && !slot
           ? "time"
-          : asked
+          : asked === "policies" && !detailsFilled
+            ? "details"
+            : asked
   const index = steps.indexOf(step)
   const title = m.booking.titles[step]
   // On the phone sheet the extras sit on top of the services.
@@ -198,17 +206,27 @@ export function BookingFlow({
     if (canContinue && index < steps.length - 1) go(steps[index + 1])
   }
 
-  const submit = async (details: { name: string; phone: string }) => {
+  // The name and phone, checked before they go on or are sent.
+  const checkDetails = (next: BookingDetails) => {
+    const error: DetailsError = !next.name
+      ? "name"
+      : !PHONE_PATTERN.test(next.phone)
+        ? "phone"
+        : null
+    setDetailsError(error)
+    return error === null
+  }
+  // With policies, the details go on to them; without, they book.
+  const submitDetails = (next: BookingDetails) => {
+    if (!checkDetails(next)) return
+    if (withPolicies) go("policies")
+    else void submit(next)
+  }
+
+  const submit = async (details: BookingDetails) => {
     if (sending || !service || !slot) return
-    if (!details.name) {
-      setDetailsError("name")
-      return
-    }
-    if (!PHONE_PATTERN.test(details.phone)) {
-      setDetailsError("phone")
-      return
-    }
-    setDetailsError(null)
+    if (!checkDetails(details)) return
+    if (withPolicies && !agreed) return
     setSending(true)
     const result = await createBooking({
       slug: page.slug,
@@ -219,6 +237,7 @@ export function BookingFlow({
       time: slot.time,
       name: details.name,
       phone: details.phone,
+      acceptedPolicies: withPolicies && agreed,
       language: m.locale.startsWith("es") ? "es" : "en",
     }).catch(() => ({ status: "failed" as const }))
     setSending(false)
@@ -234,21 +253,31 @@ export function BookingFlow({
       (result.field === "name" || result.field === "phone")
     ) {
       setDetailsError(result.field)
+      replaceUrl(href(withParam("step", "details")))
+    } else if (result.status === "invalid" && result.field === "policies") {
+      // The business added policies while this page was open.
+      toast.error(m.booking.failed)
+      router.refresh()
     } else {
       toast.error(m.booking.failed)
     }
   }
 
+  const confirm = (disabled: boolean, props: React.ComponentProps<typeof Button>) => (
+    <Button disabled={sending || disabled} {...props}>
+      {sending && <Spinner data-icon="inline-start" />}
+      {sending ? m.booking.sending : m.booking.confirm}
+    </Button>
+  )
   const action =
-    step === "details" ? (
-      <Button
-        type="submit"
-        form={DETAILS_FORM}
-        disabled={sending || !detailsFilled}
-      >
-        {sending && <Spinner data-icon="inline-start" />}
-        {sending ? m.booking.sending : m.booking.confirm}
+    step === "details" && withPolicies ? (
+      <Button type="submit" form={DETAILS_FORM} disabled={!detailsFilled}>
+        {m.booking.continue}
       </Button>
+    ) : step === "details" ? (
+      confirm(!detailsFilled, { type: "submit", form: DETAILS_FORM })
+    ) : step === "policies" ? (
+      confirm(!agreed, { type: "button", onClick: () => void submit(details) })
     ) : (
       <Button type="button" onClick={next} disabled={!canContinue}>
         {m.booking.continue}
@@ -342,9 +371,18 @@ export function BookingFlow({
             whatsappFrom={page.whatsapp ? page.name : null}
             details={details}
             onDetailsChange={setDetails}
-            onSubmit={(next) => void submit(next)}
+            onSubmit={submitDetails}
           />
         </>
+      )}
+      {step === "policies" && (
+        <PoliciesStep
+          slug={page.slug}
+          policies={page.policies}
+          agreed={agreed}
+          onAgreedChange={setAgreed}
+          sending={sending}
+        />
       )}
     </div>
   )

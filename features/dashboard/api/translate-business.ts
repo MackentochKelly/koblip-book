@@ -7,6 +7,7 @@ import {
   addonOptions,
   type businesses,
   businessPolicies,
+  businessPolicyPoints,
   services,
   teamMembers,
   translations,
@@ -24,7 +25,7 @@ import {
 export async function translateBusinessTexts(
   business: Pick<typeof businesses.$inferSelect, "id" | "description">
 ): Promise<{ ok: true; translated: number } | { ok: false; error: "failed" }> {
-  const [serviceRows, addonGroupRows, addonOptionRows, teamRows, policyRows] =
+  const [serviceRows, addonGroupRows, addonOptionRows, teamRows, policyRows, pointRows] =
     await Promise.all([
     db
       .select({
@@ -54,6 +55,14 @@ export async function translateBusinessTexts(
       .select({ id: businessPolicies.id, body: businessPolicies.body })
       .from(businessPolicies)
       .where(eq(businessPolicies.businessId, business.id)),
+    db
+      .select({
+        id: businessPolicyPoints.id,
+        title: businessPolicyPoints.title,
+        body: businessPolicyPoints.body,
+      })
+      .from(businessPolicyPoints)
+      .where(eq(businessPolicyPoints.businessId, business.id)),
   ])
   const existing = await db
     .select()
@@ -70,12 +79,13 @@ export async function translateBusinessTexts(
     serviceRows,
     { groups: addonGroupRows, options: addonOptionRows },
     teamRows,
-    policyRows
+    policyRows,
+    pointRows
   )
   const pending = pendingTranslations(all, existing)
 
   // Rows whose business, service, add-on group, add-on option, team
-  // member or policy no longer exists.
+  // member, policy or policy point no longer exists.
   const liveIds = new Set([
     business.id,
     ...serviceRows.map((service) => service.id),
@@ -83,6 +93,7 @@ export async function translateBusinessTexts(
     ...addonOptionRows.map((option) => option.id),
     ...teamRows.map((member) => member.id),
     ...policyRows.map((policy) => policy.id),
+    ...pointRows.map((point) => point.id),
   ])
   const orphanIds = existing
     .filter((row) => !liveIds.has(row.entityId))
