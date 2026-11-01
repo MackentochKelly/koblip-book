@@ -24,7 +24,7 @@ and faster. How to use this file: [Plans](README.md).
 | S3 | Sign-up errors say what went wrong, in the right place | S | | Working on: M Kelly B, 2026-11-01 |
 | S4 | "Getting your page ready" never looks stuck | M | | Done |
 | S5 | Check details says Continue | S | | Done |
-| S6 | Live screen has one "View page" | S | | To do |
+| S6 | Live screen has one "View page" | S | | Working on: M Kelly B, 2026-11-01 |
 | S7 | Live screen shows a useful category | S | | To do |
 | S8 | Search box hint fits at 375px | S | | To do |
 | S9 | Setup still finishes after a server restart | M | | Done |
