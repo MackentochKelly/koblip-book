@@ -90,89 +90,11 @@ function useSheetSize(
   return enabled ? size : null
 }
 
-// A long sheet rests at two heights, like iOS sheets: half the screen,
-// floating, and full, anchored to the screen's edges. A sheet up to LONG of
-// the screen just floats at its content's height.
-type Step = "half" | "full"
-const HALF = 0.5
-const LONG = 0.6
-// How far a finger moves the sheet to the other step.
-const DRAG_UP = 12
-const DRAG_DOWN = 48
-
-// Drags between the two steps, as on iOS: up from half grows it to full;
-// down from full (with its list at the top) brings it back to half. Base UI
-// keeps the touch for its own swipe and stops it reaching the sheet, so this
-// listens on the window first, and only watches. It runs before Base UI's
-// own swipe ends, so `from` keeps the step the drag started at.
-function useStepDrag(
-  enabled: boolean,
-  step: React.RefObject<Step>,
-  from: React.RefObject<Step | null>,
-  setStep: (step: Step) => void,
-  {
-    popup,
-    scroll,
-  }: {
-    popup: React.RefObject<HTMLDivElement | null>
-    scroll: React.RefObject<HTMLDivElement | null>
-  }
-) {
-  React.useEffect(() => {
-    if (!enabled) return
-    let start: { y: number; atTop: boolean } | null = null
-    let toHalf = false
-    const onStart = (event: TouchEvent) => {
-      toHalf = false
-      start =
-        event.touches.length === 1 &&
-        event.target instanceof Node &&
-        popup.current?.contains(event.target)
-          ? {
-              y: event.touches[0].clientY,
-              // Down on a list that is scrolled away is the list's own scroll.
-              atTop:
-                !scroll.current?.contains(event.target) ||
-                scroll.current.scrollTop <= 0,
-            }
-          : null
-      from.current = start ? step.current : null
-    }
-    const onMove = (event: TouchEvent) => {
-      if (!start) return
-      const moved = event.touches[0].clientY - start.y
-      if (step.current === "half" && moved < -DRAG_UP) {
-        setStep("full")
-        start = null
-      } else if (step.current === "full" && start.atTop && moved > DRAG_DOWN) {
-        toHalf = true
-      }
-    }
-    const onEnd = () => {
-      if (toHalf) setStep("half")
-      start = null
-      toHalf = false
-    }
-    const options = { capture: true, passive: true }
-    window.addEventListener("touchstart", onStart, options)
-    window.addEventListener("touchmove", onMove, options)
-    window.addEventListener("touchend", onEnd, options)
-    window.addEventListener("touchcancel", onEnd, options)
-    return () => {
-      window.removeEventListener("touchstart", onStart, options)
-      window.removeEventListener("touchmove", onMove, options)
-      window.removeEventListener("touchend", onEnd, options)
-      window.removeEventListener("touchcancel", onEnd, options)
-    }
-  }, [enabled, step, from, setStep, popup, scroll])
-}
-
-// A phone panel: the stock Drawer as a bottom sheet. A short one floats at
-// its content's height and slides to a new height when the content changes.
-// A long one opens at half the screen, floating; dragging up, tapping its
-// handle or typing in it grows it to full, edge to edge; dragging down goes
-// back to half, then closes. Keep it mounted and toggle `open` so it
-// animates.
+// The one phone panel: the stock Drawer as a bottom sheet. It always opens
+// at its content's height and slides to a new height when the content
+// changes. Content taller than the screen fills it, anchored to the screen's
+// edges like an iOS full sheet; anything shorter floats. Keep it mounted and
+// toggle `open` so it animates.
 export function BottomPanel({
   open,
   onClose,
@@ -194,49 +116,23 @@ export function BottomPanel({
   const popup = React.useRef<HTMLDivElement | null>(null)
   const scroll = React.useRef<HTMLDivElement | null>(null)
   const inner = React.useRef<HTMLDivElement | null>(null)
-  // Shown from opening until it has slid away, so its size and step hold
-  // while it closes.
+  // Shown from opening until it has slid away, so its size holds while it
+  // closes.
   const [shown, setShown] = React.useState(open)
   if (open && !shown) setShown(true)
   const size = useSheetSize(shown, { popup, scroll, inner })
-
-  const [step, setStepState] = React.useState<Step>("half")
-  const stepRef = React.useRef<Step>("half")
-  const setStep = React.useCallback((next: Step) => {
-    stepRef.current = next
-    setStepState(next)
-  }, [])
-
-  const long = !!size && size.fit > size.max * LONG
-  const full = long && step === "full"
-  const dragFrom = React.useRef<Step | null>(null)
-  useStepDrag(long, stepRef, dragFrom, setStep, { popup, scroll })
-  const height = !size
-    ? null
-    : !long
-      ? Math.min(size.fit, size.max)
-      : full
-        ? Math.min(size.fit, size.max)
-        : Math.round(size.max * HALF)
+  const full = !!size && size.fit >= size.max
+  const height = size ? Math.min(size.fit, size.max) : null
 
   return (
     <Drawer
       open={open}
-      onOpenChange={(next, details) => {
-        if (next) return
-        // Swiping down from full rests at half, as on iOS.
-        if (details.reason === "swipe" && long && dragFrom.current === "full") {
-          details.cancel()
-          setStep("half")
-          return
-        }
-        onClose()
+      onOpenChange={(next) => {
+        if (!next) onClose()
       }}
       onOpenChangeComplete={(next) => {
         if (next) return
         setShown(false)
-        // The next time it opens at half again.
-        setStep("half")
         onClosed?.()
       }}
       showSwipeHandle
@@ -245,21 +141,7 @@ export function BottomPanel({
       <DrawerPrimitive.VirtualKeyboardProvider>
         <DrawerContent
           ref={popup}
-          data-steps={long ? "" : undefined}
           data-full={full ? "" : undefined}
-          // Typing needs room: the sheet grows to full (and stays there if
-          // it only becomes long later).
-          onFocusCapture={(event) => {
-            if ((event.target as HTMLElement).matches("input, textarea, [contenteditable]")) {
-              setStep("full")
-            }
-          }}
-          // Tapping the handle moves to the other step.
-          onClick={(event) => {
-            if (long && (event.target as HTMLElement).closest('[data-slot="drawer-swipe-handle"]')) {
-              setStep(full ? "half" : "full")
-            }
-          }}
           style={
             height === null
               ? undefined
@@ -274,8 +156,9 @@ export function BottomPanel({
             "[--drawer-content-height:var(--drawer-height,var(--sheet-height,auto))]",
             // While the keyboard is open the sheet rises to its tallest.
             "min-h-[min(var(--drawer-content-max-height),calc(var(--drawer-keyboard-inset,0px)*1000))]",
-            // Between the steps its edges and corners slide with its height.
-            "data-steps:transition-[transform,height,opacity,filter,margin,border-radius]",
+            // When it grows to full its edges and corners slide with its
+            // height.
+            "transition-[transform,height,opacity,filter,margin,border-radius]",
             // Full: anchored to the screen's sides and bottom, round only at
             // the top.
             "data-full:rounded-b-none data-full:border-x-0 data-full:border-b-0 data-full:[--drawer-inset:0px]"
@@ -289,10 +172,7 @@ export function BottomPanel({
           <div
             ref={scroll}
             className={cn(
-              "min-h-0 flex-1 p-4",
-              // At half the list doesn't scroll: a drag on it grows the sheet
-              // first, as on iOS.
-              long && !full ? "overflow-hidden" : "overflow-y-auto",
+              "min-h-0 flex-1 overflow-y-auto p-4",
               // A line between the list and the buttons.
               footer && "border-b"
             )}
