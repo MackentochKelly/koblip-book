@@ -33,6 +33,8 @@ const messages: typeof en = {
     updateBusiness: "Guardando datos…",
     working: "Trabajando…",
     checking: "Revisando la respuesta…",
+    checked: "Respuesta revisada",
+    notChecked: "No se pudo revisar la respuesta",
   },
   loop: {
     invalidArgs: "esos argumentos no eran válidos, pide lo que falte",

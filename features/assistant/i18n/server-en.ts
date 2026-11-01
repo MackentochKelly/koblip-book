@@ -35,6 +35,8 @@ const messages = {
     updateBusiness: "Saving business details…",
     working: "Working…",
     checking: "Checking the answer…",
+    checked: "Answer checked",
+    notChecked: "Couldn't check the answer",
   },
   loop: {
     invalidArgs: "those arguments were not valid, ask for what is missing",

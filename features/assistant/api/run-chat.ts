@@ -484,7 +484,7 @@ export async function* runChat(
               : []
           ),
           answer: text,
-          label: t.steps.checking,
+          labels: { done: t.steps.checked, failed: t.steps.notChecked },
         })
         if ("error" in stored) {
           yield { type: "notice", kind: "unverified" }

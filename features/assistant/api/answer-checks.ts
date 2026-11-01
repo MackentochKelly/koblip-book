@@ -14,7 +14,8 @@ export interface PendingCheck {
   question: string
   toolResults: string[]
   answer: string
-  label: string // the step chip's words, in the owner's language
+  // The step chip's words once the check ends, in the owner's language.
+  labels: { done: string; failed: string }
   createdAt: number
 }
 
@@ -81,7 +82,7 @@ export async function* answerCheckEvents(
   yield {
     type: "step",
     id: check.id,
-    label: check.label,
+    label: verdict.ok === true ? check.labels.done : check.labels.failed,
     status: verdict.ok === true ? "done" : "failed",
   }
   if (verdict.ok !== true) {

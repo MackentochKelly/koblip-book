@@ -50,7 +50,7 @@ function store(ownerId = "u1", businessId = "b1") {
     question: "Which service?",
     toolResults: ['{"data":{"services":["Cut","Fade"]}}'],
     answer: "Which one?",
-    label: "Checking the answer…",
+    labels: { done: "Answer checked", failed: "Couldn't check the answer" },
   })
   if ("error" in stored) throw new Error("not stored")
   return stored.id
@@ -67,7 +67,7 @@ beforeEach(() => {
 test("runs the check once and streams its outcome, never buttons", async () => {
   const id = store()
   expect(await events(await POST(post({ businessId: "b1", id })))).toEqual([
-    { type: "step", id, label: "Checking the answer…", status: "done" },
+    { type: "step", id, label: "Answer checked", status: "done" },
     { type: "done" },
   ])
   // Single use.
@@ -81,7 +81,12 @@ test("a failed check marks the answer unchecked", async () => {
   vi.mocked(checkAnswer).mockResolvedValueOnce({ ok: "unknown" })
   const id = store()
   expect(await events(await POST(post({ businessId: "b1", id })))).toEqual([
-    { type: "step", id, label: "Checking the answer…", status: "failed" },
+    {
+      type: "step",
+      id,
+      label: "Couldn't check the answer",
+      status: "failed",
+    },
     { type: "notice", kind: "unverified" },
     { type: "done" },
   ])

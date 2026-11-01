@@ -146,8 +146,13 @@ const CHECK = {
 const CHECKED = {
   type: "step",
   id: expect.any(String),
-  label: "Checking the answer…",
+  label: "Answer checked",
   status: "done",
+}
+const NOT_CHECKED = {
+  ...CHECKED,
+  label: "Couldn't check the answer",
+  status: "failed",
 }
 
 test("plain answer sends one text event then done, with tools offered", async () => {
@@ -842,7 +847,7 @@ test("unknown judge verdict sends the answer marked unverified", async () => {
   )
   expect(answer).toContainEqual({ type: "text", delta: "2 bookings." })
   expect(check).toEqual([
-    { ...CHECKED, status: "failed" },
+    NOT_CHECKED,
     { type: "notice", kind: "unverified" },
     { type: "done" },
   ])
@@ -1210,7 +1215,7 @@ test("voice uses minimal reasoning and its answer is checked after", async () =>
     { type: "done" },
   ])
   expect(check).toEqual([
-    { ...CHECKED, status: "failed" },
+    NOT_CHECKED,
     { type: "notice", kind: "unverified" },
     { type: "done" },
   ])
@@ -1282,7 +1287,7 @@ test("typed failure sends sources and notice without another model turn", async 
     { type: "done" },
   ])
   expect(check).toEqual([
-    { ...CHECKED, status: "failed" },
+    NOT_CHECKED,
     { type: "notice", kind: "unverified" },
     { type: "done" },
   ])
