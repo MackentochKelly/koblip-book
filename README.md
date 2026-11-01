@@ -37,7 +37,22 @@ Koblip Book helps local businesses get online and take appointments. Customers b
 
 ## Built for the Meta Global AI Developer Hackathon
 
-Development in this repository began on **October 26, 2026**. The project combines Google Maps business setup, online booking and an owner assistant powered by Meta's models through the Meta Model API. Spoken replies use ElevenLabs.
+Everything in this repository was built during the Hackathon (October 26 – November 4, 2026). The first commit is dated **October 26, 2026**, and the [commit history](https://github.com/MackentochKelly/koblip-book/commits/main) shows each step since.
+
+### How Koblip Book uses Meta's models
+
+All calls go through the Meta Model API; the model names live in one place, [`lib/meta-ai.ts`](lib/meta-ai.ts).
+
+| Model | What it does in Koblip Book | Code |
+| --- | --- | --- |
+| **Muse Spark** (`muse-spark-1.3`) | The owner's assistant: reads and manages bookings, services and hours with 68 tools, by text or voice. Changes wait for the owner's approval on a confirm card | [`run-chat.ts`](features/assistant/api/run-chat.ts) |
+| **Muse Spark** | Checks each assistant answer against the tool results, so it never states a fact the data doesn't back | [`check-answer.ts`](features/assistant/api/check-answer.ts) |
+| **Muse Spark** | Writes a business's "About" text from its Google Maps details during setup | [`write-about.ts`](features/place-import/api/write-about.ts) |
+| **Muse Spark** | Suggests services and add-on groups for a new business | [`actions.ts`](features/dashboard/api/actions.ts), [`addon-actions.ts`](features/dashboard/api/addon-actions.ts) |
+| **Muse Spark** | Translates services and business details between English and Spanish | [`translate.ts`](features/dashboard/utils/translate.ts) |
+| **Muse Voice Transcribe** (`muse-voice-transcribe-1.0`) | Hears the owner live in talking mode, through Book's own voice relay | [`voice-relay.mjs`](server/voice-relay.mjs) |
+
+Spoken replies use ElevenLabs.
 
 [Explore the app](https://book.koblip.com) · [Assistant design notes](docs/assistant-plan.md)
 
