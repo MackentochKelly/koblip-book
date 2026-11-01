@@ -47,7 +47,7 @@ Two tabs on Integrations, like Services (`components/view-tabs.tsx`):
 | D1 | Tabs on the same page and address, not a new page | Matches Services; nothing moves for the owner | Owner, 2026-10-31 |
 | D2 | Connected opens first; Suggested is a group inside Connected, not a third tab | The owner sees what to add next right under what they use; one main action per screen | Owner, 2026-10-31 |
 | D3 | WhatsApp on Koblip's number counts as connected | K3 already sends from it for every owned, non-demo business, so WhatsApp works without the owner doing anything; Manage lets them switch to their own number | Owner, 2026-10-31 |
-| D4 | Koblip Chat's Manage opens the WhatsApp panel, not a panel of its own | Koblip Chat is how the business's own WhatsApp number connects, so the number is managed in one place | Claude, 2026-10-31 |
+| D4 | Koblip Chat's Manage opens the WhatsApp panel, not a panel of its own | Koblip Chat is how the business's own WhatsApp number connects, so the number is managed in one place | UI dev, 2026-10-31 |
 
 ## Done when
 
