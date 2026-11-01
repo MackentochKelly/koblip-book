@@ -6,7 +6,7 @@ const catalog = {
     save: "Save",
     more: "More",
     // Past the first few services or extras.
-    loadMore: (count: number) => `Load ${count} more`,
+    showMore: (count: number) => `Show ${count} more`,
     moveUp: "Move up",
     moveDown: "Move down",
     remove: "Remove",

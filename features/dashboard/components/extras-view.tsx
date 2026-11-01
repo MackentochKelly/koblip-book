@@ -71,7 +71,7 @@ import { CATALOG_FIRST_SHOWN } from "../utils/catalog-list"
 import { noAutofill } from "@/lib/no-autofill"
 import { useOwnerMessages } from "../i18n/provider"
 import { ConfirmRemove } from "./confirm-remove"
-import { ListFooter, LoadMore } from "./list-footer"
+import { ListFooter, ShowMore } from "./list-footer"
 
 const FORM = "extras-form"
 
@@ -109,7 +109,7 @@ export function ExtrasView({
   // The page's Add button opens a new group here.
   adding: boolean
   onAddClosed: () => void
-  // The phone's Suggest button, under the list with Load more.
+  // The phone's Suggest button, under the list with Show more.
   phoneSuggest?: React.ReactNode
 }) {
   const router = useRouter()
@@ -230,7 +230,7 @@ export function ExtrasView({
         </ItemGroup>
       )}
       <ListFooter
-        loadMore={first.hidden > 0 && <LoadMore label={c.loadMore(first.hidden)} onClick={first.showAll} />}
+        showMore={first.hidden > 0 && <ShowMore label={c.showMore(first.hidden)} onClick={first.showAll} />}
         suggest={phoneSuggest}
       />
 

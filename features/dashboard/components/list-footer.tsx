@@ -1,31 +1,31 @@
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-// Under a catalog list: Load more, then the phone's Suggest, close together
+// Under a catalog list: Show more, then the phone's Suggest, close together
 // and centred. Suggest is a phone's only (it hides itself on a computer),
-// so without Load more the footer hides there too.
+// so without Show more the footer hides there too.
 export function ListFooter({
-  loadMore,
+  showMore,
   suggest,
 }: {
-  loadMore: React.ReactNode
+  showMore: React.ReactNode
   suggest: React.ReactNode
 }) {
-  if (!loadMore && !suggest) return null
+  if (!showMore && !suggest) return null
   return (
     <div
       className={cn(
         "flex flex-col items-center gap-3",
-        !loadMore && "md:hidden"
+        !showMore && "md:hidden"
       )}
     >
-      {loadMore}
+      {showMore}
       {suggest}
     </div>
   )
 }
 
-export function LoadMore({
+export function ShowMore({
   label,
   onClick,
 }: {

@@ -84,7 +84,7 @@ import type { OwnerAddonGroup, ServiceInput } from "../types"
 import { CATALOG_FIRST_SHOWN } from "../utils/catalog-list"
 import { ConfirmRemove } from "./confirm-remove"
 import { ExtrasView } from "./extras-view"
-import { ListFooter, LoadMore } from "./list-footer"
+import { ListFooter, ShowMore } from "./list-footer"
 import { GoogleEventDot } from "./google-event-dot"
 import { PhotoField } from "./photo-upload"
 import { useTabBarAction } from "./tab-bar-action"
@@ -321,7 +321,7 @@ export function ServicesView({
 
       {view === "services" && (
         <ListFooter
-          loadMore={first.hidden > 0 && <LoadMore label={c.loadMore(first.hidden)} onClick={first.showAll} />}
+          showMore={first.hidden > 0 && <ShowMore label={c.showMore(first.hidden)} onClick={first.showAll} />}
           suggest={phoneSuggest}
         />
       )}
