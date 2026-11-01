@@ -128,11 +128,8 @@ export function DashboardShell({
               className={cn(assistantOpen && "max-md:hidden")}
             />
             <PageContent
-              className={cn(
-                "pb-28",
-                assistantOpen &&
-                  "flex min-h-0 max-w-none flex-1 flex-col p-0 pb-0 md:p-0"
-              )}
+              fill={assistantOpen}
+              className={cn(!assistantOpen && "pb-28")}
             >
               <TabBarActionContext value={setAction}>
                 {children}
