@@ -53,7 +53,8 @@ export function WhatsappFrame({
   const base = `/dashboard/${businessId}/automations`
   const hrefOf = (part: Part) => (part === "overview" ? base : `${base}/${part}`)
   const part = PARTS.find((item) => item === segment) ?? "overview"
-  const atOverview = part === "overview"
+  // Overview, Messages and Alerts show where each message stands themselves.
+  const showsStatus = part === "overview" || part === "messages" || part === "alerts"
   // The business's own workspace works; Koblip's number needs none.
   const ownUsable = !!connection && !connection.needsReconnect
   const usable = ownUsable || sender === "koblip"
@@ -110,10 +111,9 @@ export function WhatsappFrame({
       current={part}
       ariaLabel={t.partsLabel}
       notice={
-        // Overview shows where the messages stand itself.
         state &&
         state !== "ready" &&
-        !atOverview && (
+        !showsStatus && (
           <p className="text-sm text-muted-foreground">
             {m.integrations.koblipChat.messages[state]}
           </p>

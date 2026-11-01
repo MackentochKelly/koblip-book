@@ -128,7 +128,7 @@ const integrations = {
     messages: {
       noNumber: "Add a WhatsApp number in Koblip Chat to send messages.",
       settingUp: "Setting up your WhatsApp messages…",
-      notSubmitted: "Submit your WhatsApp messages to Meta in Notifications.",
+      notSubmitted: "Your WhatsApp messages aren't submitted to Meta yet.",
       waiting: "Your WhatsApp messages are waiting for Meta's approval.",
       rejected: "Meta didn't approve a WhatsApp message. Check it in Koblip Chat.",
     },

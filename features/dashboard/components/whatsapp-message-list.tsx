@@ -106,14 +106,15 @@ function MessageRow({
   }
 
   return (
-    <Item variant="outline">
-      {/* The text opens the editor; the switch is its own control. */}
+    <Item variant="outline" className="relative has-[[data-slot=item-content]_button:hover]:bg-muted">
+      {/* The whole card opens the editor: the button stretches over it with
+          ::after. The switch sits above it as its own control. */}
       <ItemContent className="min-w-0">
         <button
           type="button"
           onClick={onEdit}
           aria-label={t.edit(name)}
-          className="flex min-h-11 flex-col items-start justify-center gap-1 rounded-md text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="flex min-h-11 flex-col items-start justify-center gap-1 rounded-md text-left outline-none after:absolute after:inset-0 after:rounded-2xl focus-visible:after:ring-3 focus-visible:after:ring-ring/50"
         >
           <ItemTitle>{name}</ItemTitle>
           <ItemDescription>{t.about[item.message]}</ItemDescription>
@@ -122,7 +123,7 @@ function MessageRow({
           <MessageStatus on={on} review={review} labels={t} />
         </div>
       </ItemContent>
-      <ItemActions>
+      <ItemActions className="relative z-10">
         <Switch
           checked={on}
           disabled={pending}

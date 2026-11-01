@@ -129,7 +129,7 @@ const integrations: typeof en = {
     messages: {
       noNumber: "Añade un número de WhatsApp en Koblip Chat para enviar mensajes.",
       settingUp: "Preparando tus mensajes de WhatsApp…",
-      notSubmitted: "Envía tus mensajes de WhatsApp a Meta en Notificaciones.",
+      notSubmitted: "Tus mensajes de WhatsApp aún no se han enviado a Meta.",
       waiting: "Tus mensajes de WhatsApp esperan la aprobación de Meta.",
       rejected: "Meta no aprobó un mensaje de WhatsApp. Revísalo en Koblip Chat.",
     },
