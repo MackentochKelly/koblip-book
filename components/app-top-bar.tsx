@@ -22,8 +22,9 @@ export function AppTopBar({
     <header
       className={cn(
         // Clear of the notch when the page runs from the Home Screen (the
-        // inset is 0 elsewhere): the 56px bar sits below it.
-        "sticky top-0 z-30 flex h-[calc(--spacing(14)+env(safe-area-inset-top))] items-center gap-2 border-b bg-background px-4 pt-[env(safe-area-inset-top)]",
+        // inset is 0 elsewhere): the 56px bar sits below it. On a computer
+        // its bottom line is a hairline, like the sidebar's edge.
+        "sticky top-0 z-30 flex h-[calc(--spacing(14)+env(safe-area-inset-top))] items-center gap-2 border-b bg-background px-4 md:border-b-(length:--hairline) pt-[env(safe-area-inset-top)]",
         className
       )}
     >

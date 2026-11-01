@@ -242,6 +242,9 @@
     --card-shadow:
       0 1px 2px oklch(0 0 0 / 3%), 0 2px 6px -2px oklch(0 0 0 / 3%);
     --radius: 0.625rem;
+    /* The computer's frame lines (sidebar edge, top bar): half a pixel,
+       one real pixel on a sharp (2x) screen, like Apple's hairlines. */
+    --hairline: 0.5px;
     --sidebar: oklch(1 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.511 0.262 276.966);
@@ -333,6 +336,10 @@
   :root:not(.dark) [data-surface="app"] [data-slot="item"][data-variant="outline"],
   :root:not(.dark) [data-surface="app"] [data-slot="empty"] {
     @apply bg-card shadow-card;
+  }
+  /* The sidebar's edge on a computer is a hairline (--hairline). */
+  [data-slot="sidebar-container"][data-side="left"] {
+    border-right-width: var(--hairline);
   }
   /* Tabs tracks get a faint edge, drawn inside so a scrolling tab row
      cannot clip it. */
