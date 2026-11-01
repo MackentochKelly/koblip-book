@@ -11,7 +11,8 @@ export interface Stat {
   // The icon's colour; primary when left out.
   tone?: Tone
   label: string
-  value: string
+  // A number, or a part like Money for amounts.
+  value: React.ReactNode
   // One short line under the number: what it counts.
   hint?: string
   // Whole percent against the period before; null hides the badge.

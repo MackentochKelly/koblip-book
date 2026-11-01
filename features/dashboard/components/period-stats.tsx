@@ -7,7 +7,7 @@ import {
   CalendarX2Icon,
   UserPlusIcon,
 } from "@/components/ui/icons"
-import { formatMoneyShort } from "@/lib/format-price"
+import { Money } from "@/components/money"
 import { useOwnerMessages } from "../i18n/provider"
 import { type PeriodSummary, percentChange } from "../utils/analytics"
 
@@ -43,7 +43,13 @@ export function PeriodStats({
           tone: "success",
           label: a.revenue,
           hint: a.hints.revenue,
-          value: formatMoneyShort(summary.revenue.current, currency, m.locale),
+          value: (
+            <Money
+              priceMinor={summary.revenue.current}
+              currency={currency}
+              locale={m.locale}
+            />
+          ),
           change: percentChange(summary.revenue),
         },
         {
