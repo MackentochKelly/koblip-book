@@ -47,7 +47,7 @@ const widgets: typeof en = {
   installAdd: "Toca Añadir a pantalla de inicio",
   installConfirm: "Toca Añadir",
   installTitle: "Añadir a pantalla de inicio",
-  installHowTo: "Muéstrame cómo",
+  installHowTo: "Añadir a inicio",
   gotIt: "Entendido",
   playAgain: "Ver de nuevo",
   installCopy: "Copiar",

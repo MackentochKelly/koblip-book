@@ -49,7 +49,7 @@ const widgets = {
   installAdd: "Tap Add to Home Screen",
   installConfirm: "Tap Add",
   installTitle: "Add to Home Screen",
-  installHowTo: "Show me how",
+  installHowTo: "Add to home",
   gotIt: "Got it",
   playAgain: "Play again",
   // Sample words in the steps' picture of the iPhone.

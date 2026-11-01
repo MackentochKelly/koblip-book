@@ -5,7 +5,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DownloadIcon, PlayCircleIcon } from "@/components/ui/icons"
+import { DownloadIcon } from "@/components/ui/icons"
 import {
   Item,
   ItemContent,
@@ -53,7 +53,6 @@ export function InstallAppCard() {
         {way === "ios" && (
           <>
             <Button className="md:self-start" onClick={() => setSteps(true)}>
-              <PlayCircleIcon data-icon="inline-start" />
               {t.installHowTo}
             </Button>
             <InstallStepsPanel open={steps} onClose={() => setSteps(false)} />

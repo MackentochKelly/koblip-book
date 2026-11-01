@@ -95,7 +95,6 @@ import {
   UserPlus as MynaUserPlus,
   Download as MynaDownload,
   PlusSquare as MynaPlusSquare,
-  PlayCircle as MynaPlayCircle,
   Bookmark as MynaBookmark,
   Glasses as MynaGlasses,
 } from "@mynaui/icons-react"
@@ -264,7 +263,6 @@ export const PlusSquareIcon = icon(MynaPlusSquare as Icon, "PlusSquareIcon")
 export const PlusIcon = icon(MynaPlus as Icon, "PlusIcon")
 export const PuzzleIcon = icon(MynaPuzzle as Icon, "PuzzleIcon")
 export const GlassesIcon = icon(MynaGlasses as Icon, "GlassesIcon")
-export const PlayCircleIcon = icon(MynaPlayCircle as Icon, "PlayCircleIcon")
 export const RefreshIcon = icon(MynaRefresh as Icon, "RefreshIcon")
 export const TagIcon = icon(MynaTag as Icon, "TagIcon")
 export const SearchIcon = icon(MynaSearch as Icon, "SearchIcon")
