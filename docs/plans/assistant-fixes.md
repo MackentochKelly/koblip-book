@@ -1,6 +1,6 @@
 # Assistant fixes
 
-Nine fixes from the assistant audit (2026-10-31). The owner approved all of
+Fixes from the assistant audits (2026-10-31 and 2026-11-01). The owner approved all of
 them (2026-10-31). We build them one at a time, in order. How to use this
 file: [Plans](README.md).
 
@@ -26,6 +26,10 @@ file: [Plans](README.md).
 | A8 | Waiting cards survive a deploy | M | A1 | Done (2026-10-31) |
 | A9 | Chat bookings can include extras | M | A1 | Done (2026-10-31) |
 | A10 | Times, days and prices read and sound normal | M | | Done (2026-10-31) |
+| A11 | Money answers match the dashboard | M | | To do |
+| A12 | A refused action shows as failed | S | | To do |
+| A13 | Voice says one short line before lookups | S | | To do |
+| A14 | A check that can't run says so | S | | To do |
 
 ---
 
@@ -225,6 +229,88 @@ Markdown rule beat the voice "no lists" rule.
 
 **Files:** `app/api/assistant/tools.ts`, `features/assistant/utils/system-prompt.ts`, `features/assistant/utils/speak-client.ts`, `features/assistant/api/run-chat.ts` (+ tests).
 
+---
+
+Round 2, from the audit of 2026-11-01 (about 15 real questions, typed and
+voice). The owner approved A11–A14 (2026-11-01).
+
+### A11 · Money answers match the dashboard 🔴
+
+**Problem:** "How much did I make last week?" answers "Earned: Free" (in
+voice: "all freebies"). The app adds up money 3 ways:
+- Dashboard revenue (`periodSummary`): kept bookings up to today, minus
+  no-shows.
+- Customers spent (`customers.ts` SQL): completed bookings only.
+- Assistant stats (`bookingStats`): earned = completed only.
+
+Past bookings nobody marked completed count nowhere in the assistant. Totals
+also use `priceText`, which turns 0 into "Free".
+
+**Fix:**
+- One shared rule in `lib/booking-rules.ts`: a booking is earned when it is
+  confirmed or completed and has ended (`endAt <= now`). Expected stays
+  "confirmed and not ended".
+- `bookingStats`, `periodSummary` and the customers `spentMinor` SQL all use
+  that rule.
+- Money totals (`earnedText`, `expectedText`, `spentText`) use
+  `formatPrice`, so 0 reads "€0.00". A service that costs 0 still reads
+  "Free".
+
+**Files:** `lib/booking-rules.ts`, `app/api/assistant/booking-stats.ts`, `features/dashboard/utils/analytics.ts`, `features/dashboard/api/customers.ts`, `features/dashboard/types.ts`, `app/api/assistant/tools.ts`, the two dashboard pages that call `periodSummary` (+ tests).
+
+**Done when:** tests: a past confirmed booking counts as earned in all three
+places, a no-show and a cancelled one never do, a zero total reads "€0.00".
+Live: the assistant's "last week" money equals the dashboard's revenue.
+
+---
+
+### A12 · A refused action shows as failed
+
+**Problem:** "Mark it completed" on a future booking is refused, but its
+step row says "Updated booking ✓". A step fails only when the tool throws;
+refusals come back as `{ error }`.
+
+**Fix:** in `run-chat.ts`, a result with an `error` ends its step failed,
+with the running label.
+
+**Files:** `features/assistant/api/run-chat.ts` (+ test).
+
+**Done when:** a test: a tool that returns `{ error }` ends its step failed.
+
+---
+
+### A13 · Voice says one short line before lookups
+
+**Problem:** voice said "Got it… Checking extras info… Looking for open
+slots…" before the answer. The prompt allows one line, but at minimal
+reasoning the model ignores it.
+
+**Fix:** in voice, words stream until the first line is sent. After that,
+each turn holds its words like typed chat does, so a line written before
+another lookup is never said.
+
+**Files:** `features/assistant/api/run-chat.ts` (+ tests).
+
+**Done when:** tests: three turns (line + lookup, line + lookup, answer)
+say only the first line and the answer; a direct voice answer still streams
+at once.
+
+---
+
+### A14 · A check that can't run says so
+
+**Problem:** when the check request fails, or a chat reopens during a check,
+the row says "Checking the answer…" with a warning icon.
+
+**Fix:** the `check` event also carries `failedLabel` ("Couldn't check the
+answer", EN/ES). The reply keeps it on the check step and uses it whenever
+the check ends failed on the screen.
+
+**Files:** `features/assistant/types.ts`, `features/assistant/api/run-chat.ts`, `features/assistant/utils/chat-state.ts`, `features/assistant/hooks/use-assistant-chat.ts` (+ tests).
+
+**Done when:** tests: a failed check request and a reopened chat both end
+"Couldn't check the answer".
+
 ## Decisions
 
 | What | Why | Who, date |
@@ -233,3 +319,4 @@ Markdown rule beat the voice "no lists" rule.
 | Memory goes through the client, not a server store | No new table, works with saved chats, and tools already check the business | Dev, 2026-10-31 |
 | A failed voice check shows on screen and says one short line | The owner hears the warning without a long stop | Dev, 2026-10-31 |
 | The answer check runs after the reply, in its own request (A2) | The reply and picker never wait; A3 reuses it for voice | Owner, 2026-10-31 |
+| Money earned = every past booking not cancelled and not a no-show, marked completed or not, everywhere (A11) | Most owners never tap "completed"; one rule so the dashboard, customers and assistant agree | Owner, 2026-11-01 |
