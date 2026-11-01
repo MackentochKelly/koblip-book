@@ -1,21 +1,25 @@
 "use client"
 
-import { createContext, use, useEffect } from "react"
+import { createContext, use, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 
-import type { PageLanguage } from "@/lib/page-language"
+import { DEFAULT_LOCALES, type PageLanguage } from "@/lib/page-language"
 import { ownerMessagesFor } from "."
 import { OWNER_LANGUAGE_COOKIE, OWNER_LANGUAGE_MAX_AGE } from "./language"
 
 const LanguageContext = createContext<PageLanguage>("en")
+// How numbers, prices and dates read (see ./server getOwnerLocale).
+const LocaleContext = createContext<string>(DEFAULT_LOCALES.en)
 
 // The owner area's language, picked on the server (see ./server),
 // so the first paint is already in it.
 export function OwnerLanguageProvider({
   language,
+  locale,
   children,
 }: {
   language: PageLanguage
+  locale: string
   children: React.ReactNode
 }) {
   useEffect(() => {
@@ -25,11 +29,20 @@ export function OwnerLanguageProvider({
       document.documentElement.lang = before
     }
   }, [language])
-  return <LanguageContext value={language}>{children}</LanguageContext>
+  return (
+    <LanguageContext value={language}>
+      <LocaleContext value={locale}>{children}</LocaleContext>
+    </LanguageContext>
+  )
 }
 
 export function useOwnerMessages() {
-  return ownerMessagesFor(use(LanguageContext))
+  const language = use(LanguageContext)
+  const locale = use(LocaleContext)
+  return useMemo(
+    () => ({ ...ownerMessagesFor(language), locale }),
+    [language, locale]
+  )
 }
 
 // The language and a way to change it: remembered on this device, then the

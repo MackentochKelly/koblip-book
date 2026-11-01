@@ -4,7 +4,7 @@ import { cookies, headers } from "next/headers"
 
 import { ownerMessagesFor } from "."
 import { OWNER_LANGUAGE_COOKIE } from "./language"
-import { isPageLanguage, pickLanguage } from "@/lib/page-language"
+import { isPageLanguage, pickLanguage, pickLocale } from "@/lib/page-language"
 
 // The owner area's language: the one picked on this device, else the
 // phone's (Accept-Language), else English.
@@ -14,6 +14,19 @@ export async function getOwnerLanguage() {
   return pickLanguage(undefined, (await headers()).get("accept-language"))
 }
 
+// How numbers, prices and dates read: that language in the owner's own
+// region, from the browser (es-ES: "1234 €").
+export async function getOwnerLocale() {
+  return pickLocale(
+    await getOwnerLanguage(),
+    (await headers()).get("accept-language")
+  )
+}
+
 export async function getOwnerMessages() {
-  return ownerMessagesFor(await getOwnerLanguage())
+  const [language, locale] = await Promise.all([
+    getOwnerLanguage(),
+    getOwnerLocale(),
+  ])
+  return { ...ownerMessagesFor(language), locale }
 }

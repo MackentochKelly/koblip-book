@@ -20,6 +20,7 @@ vi.mock("next/navigation", () => ({
 }))
 vi.mock("sonner", () => ({ toast }))
 vi.mock("../api/actions", () => actions)
+vi.mock("../api/improve-details", () => ({ improveDetails: vi.fn() }))
 
 const { HoursForm } = await import("./hours-form")
 const { DetailsForm } = await import("./details-form")

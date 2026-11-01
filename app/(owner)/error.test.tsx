@@ -11,7 +11,7 @@ test("a failed owner page says so in the owner's language and can try again", ()
   vi.spyOn(console, "error").mockImplementation(() => {})
   const retry = vi.fn()
   render(
-    <OwnerLanguageProvider language="es">
+    <OwnerLanguageProvider language="es" locale="es-US">
       <OwnerError error={new Error("boom")} retry={retry} />
     </OwnerLanguageProvider>
   )

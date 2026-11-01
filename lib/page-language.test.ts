@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { isPageLanguage, pickLanguage } from "./page-language"
+import { isPageLanguage, pickLanguage, pickLocale } from "./page-language"
 
 describe("isPageLanguage", () => {
   it("accepts only en and es", () => {
@@ -50,5 +50,23 @@ describe("pickLanguage", () => {
     expect(pickLanguage(undefined, "fr")).toBe("en")
     expect(pickLanguage(undefined, "")).toBe("en")
     expect(pickLanguage(undefined, null)).toBe("en")
+  })
+})
+
+describe("pickLocale", () => {
+  it("uses the browser's own region for the language", () => {
+    expect(pickLocale("es", "es-ES,es;q=0.9,en;q=0.8")).toBe("es-ES")
+    expect(pickLocale("es", "en-US,es-MX;q=0.8")).toBe("es-MX")
+    expect(pickLocale("en", "en-GB")).toBe("en-GB")
+  })
+
+  it("keeps the browser's region when another language is picked", () => {
+    expect(pickLocale("en", "es-ES,es;q=0.9")).toBe("en-ES")
+  })
+
+  it("falls back to the language's default without a region", () => {
+    expect(pickLocale("es", "es")).toBe("es-US")
+    expect(pickLocale("en", null)).toBe("en-US")
+    expect(pickLocale("es", "not a tag,*")).toBe("es-US")
   })
 })
