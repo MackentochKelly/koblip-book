@@ -11,6 +11,7 @@ current.
 | [Google Calendar](google-calendar.md) | In progress |
 | [Assistant fixes](assistant-fixes.md) | To do |
 | [Integrations tabs](integrations.md) | Done |
+| [Message editing](message-editing.md) | To do |
 
 ## How to work with a plan
 
