@@ -127,6 +127,9 @@ export function BottomPanel({
   // closes.
   const [shown, setShown] = React.useState(open)
   if (open && !shown) setShown(true)
+  // Once it has slid in. Until then it takes its edges at once, so it rises
+  // already the right width.
+  const [settled, setSettled] = React.useState(false)
   const size = useSheetSize(shown, { popup, scroll, inner })
   const height = size ? Math.min(size.fit, size.max) : null
   // Taller than iOS's medium sheet (half the screen) it is a large sheet:
@@ -140,6 +143,7 @@ export function BottomPanel({
         if (!next) onClose()
       }}
       onOpenChangeComplete={(next) => {
+        setSettled(next)
         if (next) return
         setShown(false)
         onClosed?.()
@@ -170,7 +174,8 @@ export function BottomPanel({
             "min-h-[min(var(--drawer-content-max-height),calc(var(--drawer-keyboard-inset,0px)*1000))]",
             // When it grows to full its edges and corners slide with its
             // height.
-            "transition-[transform,height,opacity,filter,margin,border-radius]",
+            settled &&
+              "transition-[transform,height,opacity,filter,margin,border-radius]",
             // Full: anchored to the screen's sides and bottom, round only at
             // the top.
             "data-full:rounded-b-none data-full:border-x-0 data-full:border-b-0 data-full:[--drawer-inset:0px]"

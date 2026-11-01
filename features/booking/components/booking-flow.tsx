@@ -375,32 +375,32 @@ export function BookingFlow({
           }
         >
           {body}
-          {groups.length > 0 && (
-            <BottomPanel
-              open={open && stacked && !booked}
-              onClose={back}
-              title={title}
-              header={
-                <DrawerHeader>
-                  <DrawerDescription>
-                    {m.booking.stepOf(index + 1, steps.length)}
-                  </DrawerDescription>
-                  <DrawerTitle className="truncate">{title}</DrawerTitle>
-                </DrawerHeader>
-              }
-              footer={
-                <div className="flex items-center gap-2">
-                  <div className="me-4 min-w-0 flex-1">{total}</div>
-                  <Button type="button" variant="outline" onClick={back}>
-                    {m.booking.back}
-                  </Button>
-                  {action}
-                </div>
-              }
-            >
-              {extras}
-            </BottomPanel>
-          )}
+          {/* Mounted even before a service with extras is picked, so it
+              slides up when it opens rather than appearing in place. */}
+          <BottomPanel
+            open={open && stacked && !booked}
+            onClose={back}
+            title={title}
+            header={
+              <DrawerHeader>
+                <DrawerDescription>
+                  {m.booking.stepOf(index + 1, steps.length)}
+                </DrawerDescription>
+                <DrawerTitle className="truncate">{title}</DrawerTitle>
+              </DrawerHeader>
+            }
+            footer={
+              <div className="flex items-center gap-2">
+                <div className="me-4 min-w-0 flex-1">{total}</div>
+                <Button type="button" variant="outline" onClick={back}>
+                  {m.booking.back}
+                </Button>
+                {action}
+              </div>
+            }
+          >
+            {extras}
+          </BottomPanel>
         </BottomPanel>
         {booked && (
           <BookedPage
