@@ -23,7 +23,7 @@ and faster. How to use this file: [Plans](README.md).
 | S2 | Search shows businesses, not street addresses | S | S1 | Done |
 | S3 | Sign-up errors say what went wrong, in the right place | S | | Working on: M Kelly B, 2026-11-01 |
 | S4 | "Getting your page ready" never looks stuck | M | | Done |
-| S5 | Check details says Continue | S | | To do |
+| S5 | Check details says Continue | S | | Working on: M Kelly B, 2026-11-01 |
 | S6 | Live screen has one "View page" | S | | To do |
 | S7 | Live screen shows a useful category | S | | To do |
 | S8 | Search box hint fits at 375px | S | | To do |
