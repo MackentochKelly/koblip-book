@@ -94,7 +94,7 @@ export async function saveKoblipMessage(
 | U1 | UI | One shared editor: `features/dashboard/components/message-editor.tsx` moves to `components/message-editor.tsx` and takes its save, submit and words as props; the business page (`whatsapp-message-list.tsx`) looks and works the same | | Done (2026-10-31) |
 | U2 | UI | Two parts in the editor: **Normal message**, "Inside 24 hours · sends now", with the latest words; **Template**, "Outside 24 hours", with `MetaStatusBadge` and the approved words when they differ | U1 (B4 fills it) | Done (2026-10-31) |
 | U3 | UI | The admin's Koblip messages open the shared editor: edit, save as draft, Use default, Submit to Meta; Meta's refusal reason shown as Meta gives it; the admin Change log names `whatsapp.koblipWording.<message>.<language>` (Backend handoff) | U1, B2 | Done (2026-10-31) |
-| U4 | UI | One helper line on Koblip messages and on the business Messages list; anything longer in an ⓘ tooltip | U3 | To do |
+| U4 | UI | One helper line on Koblip messages and on the business Messages list; anything longer in an ⓘ tooltip | U3 | Working on (UI dev, 2026-10-31) |
 
 ## Decisions
 
