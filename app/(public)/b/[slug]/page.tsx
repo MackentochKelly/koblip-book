@@ -11,36 +11,25 @@ import { BottomBar } from "@/components/bottom-bar"
 import { Toaster } from "@/components/ui/sonner"
 import { getBusinessPage } from "@/features/business-page/api/get-business-page"
 import { AboutPreview } from "@/features/business-page/components/about-preview"
-import { BusinessAbout } from "@/features/business-page/components/business-about"
 import {
   BusinessActions,
   hasActions,
 } from "@/features/business-page/components/business-actions"
 import {
-  BusinessPhotos,
-  BusinessPortfolio,
-} from "@/features/business-page/components/business-photos"
-import { BusinessAmenities } from "@/features/business-page/components/business-amenities"
-import { ExternalLinkIcon } from "@/components/ui/icons"
-import { Button } from "@/components/ui/button"
+  BusinessDetails,
+  detailSections,
+} from "@/features/business-page/components/business-details"
+import { BusinessPhotos } from "@/features/business-page/components/business-photos"
 import { BusinessFooter } from "@/features/business-page/components/business-footer"
 import { LanguageMenu } from "@/components/language-menu"
-import { BusinessMap } from "@/features/business-page/components/business-map"
-import { BusinessReviews } from "@/features/business-page/components/business-reviews"
-import { Rating } from "@/components/rating"
 import { SectionTabs } from "@/features/business-page/components/section-tabs"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { PageSection } from "@/components/page-section"
 import { BusinessSideCard } from "@/features/business-page/components/business-side-card"
 import { BusinessSummary } from "@/features/business-page/components/business-summary"
-import { OpeningHours } from "@/features/business-page/components/opening-hours"
 import { ServiceList } from "@/features/business-page/components/service-list"
 import { OwnerBackButton } from "@/features/business-page/components/owner-back-button"
 import { ShareButton } from "@/features/business-page/components/share-button"
 import { TeamList } from "@/features/business-page/components/team-list"
-import { getWeekdayInTimeZone } from "@/features/business-page/utils/get-weekday-in-time-zone"
-import { groupHours } from "@/features/business-page/utils/group-hours"
 import { isOpenNow } from "@/features/business-page/utils/is-open-now"
 import { BookingFlow } from "@/features/booking/components/booking-flow"
 import { toBookingPage } from "@/features/booking/components/booking-page"
@@ -80,7 +69,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
   if (!data) {
     notFound()
   }
-  const { business, hours, services, team, photos, reviews, amenities } = data
+  const { business, hours, services, team, photos } = data
   // No hours saved: say nothing rather than "Closed now".
   const open = hours.length > 0 ? isOpenNow(hours, business.timezone) : null
   const whatsapp = await offersWhatsapp(data.business.id)
@@ -90,19 +79,11 @@ export default async function BusinessPage({ params, searchParams }: Props) {
     servicesCount: services.length,
     hoursCount: hours.length,
   })
-  const hasLocation = Boolean(
-    business.address || business.mapsUrl || business.latitude !== null
-  )
   const sections = [
-    services.length > 0 && { id: "services", label: m.sections.services },
-    team.length > 0 && { id: "team", label: m.sections.team },
-    { id: "reviews", label: m.sections.reviews },
-    photos.length > 0 && { id: "portfolio", label: m.sections.portfolio },
-    { id: "hours", label: m.sections.hours },
-    business.description && { id: "about", label: m.sections.about },
-    amenities.length > 0 && { id: "info", label: m.sections.info },
-    hasLocation && { id: "location", label: m.sections.location },
-  ].filter((section) => !!section)
+    ...(services.length > 0 ? [{ id: "services", label: m.sections.services }] : []),
+    ...(team.length > 0 ? [{ id: "team", label: m.sections.team }] : []),
+    ...detailSections(data, language),
+  ]
 
   return (
     <LanguageProvider language={language}>
@@ -141,103 +122,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
                 <Separator />
               </>
             )}
-            <PageSection
-              id="reviews"
-              title={m.sections.reviews}
-              action={
-                business.rating !== null ? (
-                  <Rating
-                    rating={business.rating}
-                    reviewCount={business.reviewCount}
-                    locale={m.locale}
-                    className="text-sm"
-                  />
-                ) : undefined
-              }
-            >
-              <BusinessReviews
-                reviews={reviews}
-                reviewCount={business.reviewCount}
-                mapsUrl={business.mapsUrl}
-              />
-            </PageSection>
-            <Separator />
-            {photos.length > 0 && (
-              <>
-                <PageSection
-                  id="portfolio"
-                  title={m.sections.portfolio}
-                  action={
-                    <Badge variant="outline" className="mr-auto">
-                      {photos.length}
-                    </Badge>
-                  }
-                >
-                  <BusinessPortfolio photos={photos} />
-                </PageSection>
-                <Separator />
-              </>
-            )}
-            <OpeningHours
-              days={groupHours(hours)}
-              todayWeekday={getWeekdayInTimeZone(business.timezone)}
-              language={language}
-            />
-            {business.description && (
-              <>
-                <Separator />
-                <BusinessAbout
-                  description={business.description}
-                  language={language}
-                />
-              </>
-            )}
-            {amenities.length > 0 && (
-              <>
-                <Separator />
-                <PageSection id="info" title={m.sections.info}>
-                  <BusinessAmenities
-                    amenities={amenities}
-                    language={language}
-                  />
-                </PageSection>
-              </>
-            )}
-            {hasLocation && (
-              <>
-                <Separator />
-                <PageSection id="location" title={m.sections.location}>
-                  {business.latitude !== null &&
-                    business.longitude !== null && (
-                      <BusinessMap
-                        name={business.name}
-                        latitude={business.latitude}
-                        longitude={business.longitude}
-                      />
-                    )}
-                  {business.address && (
-                    <p className="text-sm">{business.address}</p>
-                  )}
-                  {business.mapsUrl && (
-                    <Button
-                      variant="outline"
-                      className="self-start"
-                      nativeButton={false}
-                      render={
-                        <a
-                          href={business.mapsUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                        />
-                      }
-                    >
-                      {m.page.openInMaps}
-                      <ExternalLinkIcon data-icon="inline-end" />
-                    </Button>
-                  )}
-                </PageSection>
-              </>
-            )}
+            <BusinessDetails data={data} language={language} />
             <BusinessFooter
               name={business.name}
               slug={business.slug}

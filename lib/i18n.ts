@@ -84,7 +84,8 @@ const en = {
   teamProfile: {
     appointments: "Appointments completed",
     clients: "Clients served",
-    about: "About",
+    // Their first name: the business's own About follows.
+    about: (name: string) => `About ${name}`,
     languages: "Languages",
   },
   // The business's own policies, linked from its page's footer.
@@ -402,7 +403,7 @@ const es: Messages = {
   teamProfile: {
     appointments: "Citas completadas",
     clients: "Clientes atendidos",
-    about: "Sobre mí",
+    about: (name: string) => `Sobre ${name}`,
     languages: "Idiomas",
   },
   policies: {

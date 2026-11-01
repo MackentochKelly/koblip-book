@@ -8,17 +8,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftIcon } from "@/components/ui/icons"
+import { Separator } from "@/components/ui/separator"
 import { messagesFor } from "@/lib/i18n"
 import { initials } from "@/lib/initials"
 import type { PageLanguage } from "@/lib/page-language"
 import { languageName } from "@/lib/team-rules"
 import type { TeamProfilePage } from "../types/team-profile"
 import { BookButton } from "./book-button"
+import { BusinessActions, hasActions } from "./business-actions"
+import { BusinessDetails, detailSections } from "./business-details"
+import { BusinessFooter } from "./business-footer"
+import { SectionTabs } from "./section-tabs"
 import { ServiceList } from "./service-list"
 
 // A team member's own page, like Fresha's: their photo, name and job title,
-// what they have done here, about them, the languages they speak, and the
-// services they do, each bookable with them already picked.
+// what they have done here, about them, the languages they speak and the
+// services they do, each bookable with them already picked; then the
+// business's own reviews, photos, hours, About, info and location.
 export function TeamProfile({
   profile,
   language,
@@ -33,6 +39,10 @@ export function TeamProfile({
   const { data, member, services } = profile
   const { business } = data
   const number = new Intl.NumberFormat(m.locale)
+  const sections = [
+    ...(services.length > 0 ? [{ id: "services", label: m.sections.services }] : []),
+    ...detailSections(data, language),
+  ]
   return (
     <>
       <main
@@ -90,7 +100,7 @@ export function TeamProfile({
         )}
 
         {member.about && (
-          <PageSection id="about" title={t.about}>
+          <PageSection id="about-me" title={t.about(member.name.split(" ")[0] ?? member.name)}>
             <p className="whitespace-pre-line text-muted-foreground">{member.about}</p>
           </PageSection>
         )}
@@ -107,6 +117,7 @@ export function TeamProfile({
           </PageSection>
         )}
 
+        <SectionTabs sections={sections} />
         <ServiceList
           services={services}
           currency={business.currency}
@@ -115,10 +126,25 @@ export function TeamProfile({
           memberId={member.id}
           fromAway
         />
+        {services.length > 0 && <Separator />}
+        <BusinessDetails data={data} language={language} />
+        <BusinessFooter
+          name={business.name}
+          slug={business.slug}
+          policies={data.policies}
+          fromGoogle={business.googlePlaceId !== null}
+          language={language}
+        />
       </main>
-      {bookable && (
-        <BottomBar label={m.actions.bookNow} className="md:hidden">
-          <BookButton slug={business.slug} memberId={member.id} fromAway className="flex-1" />
+      {hasActions(business, bookable) && (
+        <BottomBar label={m.page.contact} className="md:hidden">
+          <BusinessActions
+            business={business}
+            layout="row"
+            bookable={bookable}
+            language={language}
+            memberId={member.id}
+          />
         </BottomBar>
       )}
     </>
