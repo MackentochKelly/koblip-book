@@ -95,7 +95,13 @@ export function TimePicker({
             className="grid w-full grid-cols-3 sm:grid-cols-4"
           >
             {group.times.map((value) => (
-              <ToggleGroupItem key={value} value={value}>
+              <ToggleGroupItem
+                key={value}
+                value={value}
+                // The chosen time is filled with the main colour, like a
+                // checked radio or switch, so the tap clearly took.
+                className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+              >
                 {formatClock(value, locale)}
               </ToggleGroupItem>
             ))}
