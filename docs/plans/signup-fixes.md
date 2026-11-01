@@ -1,6 +1,6 @@
 # Sign-up fixes
 
-Seven fixes from the sign-up audit (2026-11-01): home search → pick business →
+Nine fixes from the sign-up audit (2026-11-01): home search → pick business →
 create account → Google details → check details → getting ready → live,
 checked at 375px and 1280px. Every step works today; these make it clearer
 and faster. How to use this file: [Plans](README.md).
@@ -22,10 +22,12 @@ and faster. How to use this file: [Plans](README.md).
 | S1 | Search by kind and town finds businesses | M | | To do |
 | S2 | Search shows businesses, not street addresses | S | S1 | To do |
 | S3 | Sign-up errors say what went wrong, in the right place | S | | To do |
-| S4 | "Getting your page ready" never looks stuck | M | | To do |
+| S4 | "Getting your page ready" never looks stuck | M | | Done |
 | S5 | Check details says Continue | S | | To do |
 | S6 | Live screen has one "View page" | S | | To do |
 | S7 | Live screen shows a useful category | S | | To do |
+| S8 | Search box hint fits at 375px | S | | To do |
+| S9 | Setup still finishes after a server restart | M | | To do |
 
 ---
 
@@ -93,6 +95,11 @@ it takes about a minute.
 **Done when:** within 5 seconds more than one row is moving; the end
 result is the same as today.
 
+**Done (2026-11-01):** Muse starts the catalog, policies, team photos and
+Spanish on the server when the Google details screen opens
+(`features/starter-catalog/api/prepare-jobs.ts`); the preparing screen
+joins that work instead of starting it.
+
 ### S5 · Check details says Continue 🟡
 
 **Problem:** the setup step's button says "Save", like a settings page.
@@ -131,6 +138,36 @@ rule and log it below.
 
 **Done when:** that listing shows a photography category; a test covers
 the generic case.
+
+### S8 · Search box hint fits at 375px 🟡
+
+**Problem:** in the full-screen search panel at 375px the hint is cut off
+("Search your busi…").
+
+**Fix:** make the whole hint fit in English and Spanish: a shorter hint or
+the input's layout, as the UI rules call for. Not a smaller font.
+
+**Files:** `features/onboarding/i18n.ts`,
+`features/onboarding/components/search-area.tsx`.
+
+**Done when:** the whole hint shows at 375px in both languages.
+
+### S9 · Setup still finishes after a server restart 🟠
+
+**Problem:** since S4 the setup jobs live in the server's memory. If the
+server restarts between the Google details screen and "Getting your page
+ready", that screen skips its rows and goes straight to "You're live".
+Team photos or Spanish not yet made are never made.
+
+**Fix:** when the preparing screen finds no job, check what is saved for
+the business and start whatever is missing, so the rows run as before.
+
+**Files:** `features/starter-catalog/api/prepare-jobs.ts`,
+`features/starter-catalog/api/prepare-actions.ts`,
+`features/starter-catalog/components/preparing-card.tsx`.
+
+**Done when:** with the job store emptied mid-setup, the rows still run
+and the team photos and Spanish are made; a test covers it.
 
 ## Decisions log
 
