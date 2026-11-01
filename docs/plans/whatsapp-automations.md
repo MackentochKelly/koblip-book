@@ -29,8 +29,8 @@ automations can come later without new tables. Approved by the owner
 
 | Lane | Tasks | Files it owns |
 | --- | --- | --- |
-| Backend dev (Codex) | B1–B6 | `lib/db/schema.ts`, `drizzle/`, `features/dashboard/api/automation-*.ts` (new), `features/dashboard/api/chat-events.ts` (one hook only, B4), `features/dashboard/types/automations.ts` (new), `features/dashboard/utils/automation-*.ts` (new), `lib/platform-settings.ts` (new rules only), and their tests. Never a `.tsx` file, `components/`, `app/` or i18n. |
-| UI dev | U1–U5 | `components/**` (new shared parts), `features/dashboard/components/**`, `features/admin/components/**`, owner and admin i18n, `app/(owner)/dashboard/[businessId]/automations/**`, `app/(admin)/admin/**`. Never the Backend dev's files. |
+| Backend dev (Codex) | B1–B3 | `lib/db/schema.ts`, `drizzle/`, `features/dashboard/api/automation-*.ts` (new), `features/dashboard/api/chat-events.ts` (one hook only, B2), `features/dashboard/types/automations.ts` (new), `features/dashboard/utils/automation-*.ts` (new), `lib/platform-settings.ts` (new rules only), and their tests. Never a `.tsx` file, `components/`, `app/` or i18n. |
+| UI dev | U1–U3 | `components/**` (new shared parts), `features/dashboard/components/**`, `features/admin/components/**`, owner and admin i18n, `app/(owner)/dashboard/[businessId]/automations/**`, `app/(admin)/admin/**`. Never the Backend dev's files. |
 
 A change the other lane's files need goes to that lane's developer, never
 done for them.
@@ -118,22 +118,17 @@ export async function setAutomationOn(
 
 | # | Task | Needs | Status |
 | --- | --- | --- | --- |
-| B1 | Tables `automations`, `automationRuns`, `automationEvents` (event ids seen, D6), `automationPauses` (customer, until). Migration with drizzle-kit. One `welcome` row per business is made on first read with Book's default wording (no seed script). | — | To do |
-| B2 | `utils/automation-rules.ts`: one validator `automationProblem(input, rules)` for every limit in D7. Used by the save action and by the sender before each send. Unit tests for each limit. | B1 | To do |
-| B3 | Contract queries and actions. Every action: owner check first (`getOwnerBusiness`), then validate, then save in one transaction. `noOwnNumber` when the business has no usable own number (D2). | B1, B2 | To do |
-| B4 | In `applyChatEvent`, after the reply is stored: call `runAutomations(event)` from `automation-engine.ts`. Do not change anything else in that file. | B1 | To do |
-| B5 | `automation-engine.ts`: trigger match (D3), dedupe (D6), pause (D5), send through Chat's public `POST /api/whatsapp/send` with the same `Line`/`post` path the reminders use (button, `cta_url`, `list` interactive types), log every run. Button taps come back as `inbound` with `button.payload` = the button id. | B2, B4 | To do |
-| B6 | Tests: first message sends Welcome once; a repeated event sends nothing; a second message within D3's window sends nothing; each button's action; handoff pauses; Koblip's number sends nothing (D2); a Chat error logs `failed` and never throws out of the webhook. | B5 | To do |
+| B1 | **Data and limits.** Tables `automations`, `automationRuns`, `automationEvents` (event ids seen, D6), `automationPauses` (customer, until), with a drizzle-kit migration; a business's `welcome` row is made on first read with Book's default (no seed script). `utils/automation-rules.ts`: one checker `automationProblem(input, rules)` for every limit in D7, with a unit test per limit. | — | To do |
+| B2 | **Actions and hook.** The Contract's queries and actions (owner check, then `automationProblem`, then one transaction; `noOwnNumber` per D2). In `applyChatEvent`, after the reply is stored, one call to `runAutomations(event)`; nothing else in that file changes. | B1 | To do |
+| B3 | **Engine and tests.** `automation-engine.ts`: trigger (D3), dedupe (D6), pause (D5), send through Chat's `POST /api/whatsapp/send` with the reminders' `Line`/`post` path (`button`, `cta_url`, `list`), log every run. Taps come back as `inbound` with `button.payload` = the button id. Tests: Welcome sends once; a repeated event sends nothing; each action; handoff pauses; Koblip's number sends nothing; a Chat error logs `failed` and never throws out of the webhook. | B2 | To do |
 
 ### UI
 
 | # | Task | Needs | Status |
 | --- | --- | --- | --- |
-| U1 | New Automations tab **Flows** (D11): a list of automations (Welcome for now), each a card with its switch, like Messages. | Contract | To do |
-| U2 | Shared `components/flow-steps.tsx`: the flow as steps top to bottom (trigger → message → each button → what it does). Phone first. Built from shadcn parts only (Item, Card, Badge, Field). No canvas (D11). | Contract | To do |
-| U3 | Flow editor in a ResponsivePanel: every word, and the buttons (add, remove, reorder, rename, pick the action from the closed list) with an EN/ES switch on the first field's row, like the message editor. Preview with the shared `WhatsappPreview` at the bottom. Reset brings back Book's default. Errors from `AutomationProblem` under their field. | U2 | To do |
-| U4 | Activity: automation runs in the existing list, with an "Automations" filter. | B3 | To do |
-| U5 | Admin: every business's automations and runs, read-only (nothing hidden). | B3 | To do |
+| U1 | **Flows tab and steps.** New Automations tab **Flows** (D11) with Welcome as a card and its switch, like Messages. Shared `components/flow-steps.tsx`: trigger → message → each button → what it does, top to bottom, shadcn parts only. | Contract | To do |
+| U2 | **Editor.** ResponsivePanel: every word and the buttons (add, remove, reorder, rename, pick the action), EN/ES switch on the first field's row, `WhatsappPreview` at the bottom, Reset to Book's default, each `AutomationProblem` under its field. | U1 | To do |
+| U3 | **Activity and admin.** Runs in Activity with an "Automations" filter; the admin sees every business's automations and runs, read-only. | B2 | To do |
 
 ## Decisions
 
@@ -155,14 +150,16 @@ export async function setAutomationOn(
   `rules.handoffQuietHours` (default 24).
 - **D6 At least once.** Chat delivers events at least once: store each
   `eventId` before acting; a repeat does nothing.
-- **D7 Meta's limits** (rules, never literals in code): body ≤ 1024, reply
-  button label ≤ 20, at most 3 buttons, `cta_url` text ≤ 20, list row title
-  ≤ 24, at most 10 rows, header ≤ 60.
+- **D7 Meta's limits** (checked in Meta's docs 2026-10-31; rules, never
+  literals in code):
+  - Reply buttons: at most 3; label ≤ 20; id ≤ 256; body ≤ 1024; footer ≤ 60.
+  - Link button (`cta_url`): label ≤ 20; body ≤ 1024; header ≤ 60; footer ≤ 60.
+  - List: at most 10 rows in all; row title ≤ 24; row description ≤ 72;
+    row id ≤ 200; button ≤ 20; body ≤ 4096; header ≤ 60; footer ≤ 60.
 - **D8 Language.** Welcome goes in the business's page language; each
   button reply follows the same language (D11).
 - **D9 Webhook stays fast.** A send that fails is logged as `failed` with
   its reason; the webhook still answers 200 so Chat does not retry it.
-
 - **D10 Everything editable** (owner, 2026-10-31). Every word, every button
   label, how many buttons (1–3), their order and each one's action are the
   owner's. Book's default: "Book now" (bookingLink), "Our services"
@@ -171,6 +168,17 @@ export async function setAutomationOn(
 - **D11 Owner's answers** (2026-10-31): the tab is **Flows**; the editor is a
   step list, not a canvas; Welcome and its replies go in the business page's
   language.
+
+## Docs (read the ones your task needs, before coding)
+
+- Reply buttons: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-reply-buttons-messages
+- List: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-list-messages
+- Link button: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/interactive-cta-url-messages
+- Koblip Chat's API and events: `wapi-api/docs/api/oauth.md` ("App events",
+  `conversations` scope). Book uses only this public API.
+- Drizzle migrations: https://orm.drizzle.team/docs/migrations
+- Next.js server actions: `node_modules/next/dist/docs/` (search
+  "Server Actions") and `AGENTS.md`.
 
 ## Rules for the Backend dev (read before every task)
 
@@ -187,7 +195,7 @@ export async function setAutomationOn(
 5. Limits and timings come from rules (`lib/platform-settings.ts`), never a
    number in the code.
 6. No secrets in code or logs. Never log message text or phone numbers.
-7. Tests for every rule and branch in B6, with fake timers and a fake Chat.
+7. Tests for every rule and branch in B3, with fake timers and a fake Chat.
 8. Small steps. Before saying a task is done: `npm run typecheck`,
    `npm run lint`, `npm test`, `npm run build`, all green. Paste the output.
 9. Never commit or push; the owner does that. Update this file's task
