@@ -1,3 +1,4 @@
+import type { ButtonsProblem, WordingProblem } from "@/types/koblip-messages"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
@@ -182,7 +183,7 @@ export function defaultButtons(message: BookingMessage, language: TemplateLangua
 // line of plain text without fields, formatting or emoji (Meta refuses the
 // whole template otherwise: developers.facebook.com/docs/whatsapp/
 // business-management-api/message-templates/components#quick-reply-buttons).
-export type ButtonsProblem = "tooManyButtons" | "badButton" | "sameButton"
+export type { ButtonsProblem } from "@/types/koblip-messages"
 
 export function buttonsProblem(message: BookingMessage, buttons: MessageButton[]): ButtonsProblem | null {
   if (buttons.length > NOTIFICATION_RULES.maxButtons) return "tooManyButtons"
@@ -241,15 +242,7 @@ const FIELD = /\{(\w+)\}/g
 // whatsapp/business-management-api/message-templates); and enough words
 // around the fields (Meta's "Params Words Ratio Exceeds Limit", see
 // NOTIFICATION_RULES.minWordsPerField).
-export type WordingProblem =
-  | "empty"
-  | "tooLong"
-  | "unknownField"
-  | "fieldAtEdge"
-  | "fieldsTogether"
-  | "fieldInLine"
-  | "lineBreak"
-  | "fewWords"
+export type { WordingProblem } from "@/types/koblip-messages"
 
 export function wordingProblem(message: BookingMessage, wording: Wording): WordingProblem | null {
   const { header, body, footer } = wording

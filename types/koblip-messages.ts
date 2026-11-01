@@ -1,3 +1,15 @@
+export type ButtonsProblem = "tooManyButtons" | "badButton" | "sameButton"
+
+export type WordingProblem =
+  | "empty"
+  | "tooLong"
+  | "unknownField"
+  | "fieldAtEdge"
+  | "fieldsTogether"
+  | "fieldInLine"
+  | "lineBreak"
+  | "fewWords"
+
 // Koblip's ready-made WhatsApp messages as the admin reviews them (K2):
 // shared by the server code that reads them and the admin screen.
 
@@ -35,4 +47,9 @@ export type KoblipMessage = {
 
 export type KoblipSubmitResult =
   | { ok: true }
-  | { ok: false; error: "notConnected" | "noNumber" | "chat" | "not_found" }
+  | { ok: false; error: "notConnected" | "noNumber" | "not_found" }
+  | { ok: false; error: "chat"; reason: string | null }
+
+export type KoblipSaveResult =
+  | { ok: true }
+  | { ok: false; error: WordingProblem | ButtonsProblem | "not_found" | "invalid" }

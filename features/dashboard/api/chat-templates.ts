@@ -551,19 +551,20 @@ export async function submitKoblipTemplate(
   const [before] = await db.select().from(koblipChatTemplates).where(koblipRowKey(message, language))
   const chatTemplateId = await submitTo(koblipCall, number.wabaId, template)
   const row = { chatTemplateId, status: "pending", reason: null, submitted: snapshot(template) }
-  await db
-    .insert(koblipChatTemplates)
-    .values({ message, language, ...row })
-    .onConflictDoUpdate({
-      target: [koblipChatTemplates.message, koblipChatTemplates.language],
-      set: row,
-    })
-  await db.insert(platformSettingChanges).values({
-    key: `whatsapp.koblipSubmit.${message}.${language}`,
-    before: before?.submitted ?? null,
-    after: row.submitted,
-    changedBy: userId,
-  })
+  await saveAll([
+    db.insert(koblipChatTemplates)
+      .values({ message, language, ...row })
+      .onConflictDoUpdate({
+        target: [koblipChatTemplates.message, koblipChatTemplates.language],
+        set: row,
+      }),
+    db.insert(platformSettingChanges).values({
+      key: `whatsapp.koblipSubmit.${message}.${language}`,
+      before: before?.submitted ?? null,
+      after: row.submitted,
+      changedBy: userId,
+    }),
+  ])
   return null
 }
 
