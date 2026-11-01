@@ -1,11 +1,11 @@
 "use client"
 
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence, motion, type Variants } from "motion/react"
 import Image from "next/image"
-import { useRef, useState } from "react"
+import { useId, useRef, useState } from "react"
 
 import { BottomPanel } from "@/components/bottom-panel"
-import { Box, POP, Scene } from "@/components/feature-preview"
+import { Box, Scene } from "@/components/feature-preview"
 import { TapMark } from "@/components/step-preview"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -45,6 +45,39 @@ const WASH = {
   seed: 180,
 } as const
 
+// Every picture in order, to slide forward or back between them.
+const ORDER: Phase[] = [...STEPS, "home"]
+
+// A picture slides in from the side it comes from (forward: from the
+// right), softly blurred, like iOS moving between screens.
+const SLIDE: Variants = {
+  enter: (direction: number) => ({
+    opacity: 0,
+    x: direction * 32,
+    filter: "blur(4px)",
+  }),
+  center: { opacity: 1, x: 0, filter: "blur(0px)" },
+  exit: (direction: number) => ({
+    opacity: 0,
+    x: direction * -32,
+    filter: "blur(4px)",
+  }),
+}
+const SLIDE_TRANSITION = { duration: 0.3, ease: [0.32, 0.72, 0, 1] } as const
+
+// Safari's menus and share sheet: the rows come in one after another.
+const LIST: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.05, delayChildren: 0.1 } },
+}
+const ROW: Variants = {
+  hidden: { opacity: 0, y: 6 },
+  show: { opacity: 1, y: 0 },
+}
+
+// The lit step's background slides from step to step.
+const HIGHLIGHT = { type: "spring", bounce: 0.2, duration: 0.4 } as const
+
 type Words = ReturnType<typeof useOwnerMessages>["widgets"]
 
 // How to add Koblip Book to an iPhone's Home Screen, shown happening like
@@ -67,6 +100,16 @@ export function InstallStepsPanel({
   // The step the owner tapped: the story stops and shows it.
   const [chosen, setChosen] = useState<Step | null>(null)
   const shown = chosen ?? phase
+  const highlight = useId()
+
+  // Which way the picture slides: forward unless going back a step (React's
+  // "storing information from previous renders").
+  const [previous, setPrevious] = useState(shown)
+  const [direction, setDirection] = useState(1)
+  if (previous !== shown) {
+    setPrevious(shown)
+    setDirection(ORDER.indexOf(shown) >= ORDER.indexOf(previous) ? 1 : -1)
+  }
 
   const replay = useStoryLoop(
     box,
@@ -127,8 +170,20 @@ export function InstallStepsPanel({
             <div className="w-full max-w-80">
               <Box className="max-w-80">
                 <div className="flex min-h-40 flex-col justify-center px-(--card-spacing)">
-                  <AnimatePresence mode="wait" initial={false}>
-                    <motion.div key={shown} {...POP}>
+                  <AnimatePresence
+                    mode="wait"
+                    initial={false}
+                    custom={direction}
+                  >
+                    <motion.div
+                      key={shown}
+                      custom={direction}
+                      variants={SLIDE}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={SLIDE_TRANSITION}
+                    >
                       <Picture
                         phase={shown}
                         tapping={tapping && chosen === null}
@@ -147,7 +202,6 @@ export function InstallStepsPanel({
             <Item
               key={step}
               size="sm"
-              variant={shown === step ? "muted" : "default"}
               render={
                 <button
                   type="button"
@@ -155,12 +209,22 @@ export function InstallStepsPanel({
                   onClick={() => setChosen(step)}
                 />
               }
-              className="text-start"
+              className={cn(
+                "relative isolate text-start transition-colors",
+                shown !== step && "text-muted-foreground"
+              )}
             >
+              {shown === step && (
+                <motion.span
+                  layoutId={highlight}
+                  transition={HIGHLIGHT}
+                  className="absolute inset-0 -z-10 rounded-[inherit] bg-muted"
+                />
+              )}
               <ItemMedia>
                 <Badge
                   variant={shown === step ? "default" : "secondary"}
-                  className="tabular-nums"
+                  className="tabular-nums transition-colors"
                 >
                   {index + 1}
                 </Badge>
@@ -213,7 +277,7 @@ function Picture({
           <span className="truncate">book.koblip.com</span>
           <RefreshIcon className="shrink-0" />
         </span>
-        <Round lit>
+        <Round lit pressed={tapping}>
           <EllipsisIcon />
           {tap(true)}
         </Round>
@@ -237,14 +301,19 @@ function Picture({
   // The share sheet's round buttons; View More shows the full list.
   if (phase === "viewMore") {
     return (
-      <div className="grid grid-cols-4 gap-1 text-center text-xs leading-tight">
+      <motion.div
+        variants={LIST}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-4 gap-1 text-center text-xs leading-tight"
+      >
         <SheetButton icon={<CopyIcon />}>{t.installCopy}</SheetButton>
         <SheetButton icon={<BookmarkIcon />}>{t.installBookmark}</SheetButton>
         <SheetButton icon={<GlassesIcon />}>{t.installReadingList}</SheetButton>
         <SheetButton icon={<ChevronDownIcon />} tap={tap(true)}>
           {t.installViewMoreButton}
         </SheetButton>
-      </div>
+      </motion.div>
     )
   }
 
@@ -270,7 +339,12 @@ function Picture({
           <Round>
             <XIcon />
           </Round>
-          <span className="relative">
+          <span
+            className={cn(
+              "relative transition-transform duration-200",
+              tapping && "scale-90"
+            )}
+          >
             <Button size="xs" tabIndex={-1}>
               {t.installAddButton}
             </Button>
@@ -309,19 +383,23 @@ function Picture({
   )
 }
 
-// A round Safari button (back, •••); `lit` for the one tapped.
+// A round Safari button (back, •••); `lit` for the one tapped, `pressed`
+// while the tap lands.
 function Round({
   lit = false,
+  pressed = false,
   children,
 }: {
   lit?: boolean
+  pressed?: boolean
   children: React.ReactNode
 }) {
   return (
     <span
       className={cn(
-        "relative flex size-9 shrink-0 items-center justify-center rounded-full bg-muted",
-        lit && "text-primary"
+        "relative flex size-9 shrink-0 items-center justify-center rounded-full bg-muted transition-transform duration-200",
+        lit && "text-primary",
+        pressed && "scale-90"
       )}
     >
       {children}
@@ -330,7 +408,16 @@ function Round({
 }
 
 function MenuList({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-col gap-0.5 text-sm">{children}</div>
+  return (
+    <motion.div
+      variants={LIST}
+      initial="hidden"
+      animate="show"
+      className="flex flex-col gap-0.5 text-sm"
+    >
+      {children}
+    </motion.div>
+  )
 }
 
 // A row of a Safari menu: icon, then words. The row with `tap` is the one
@@ -346,16 +433,19 @@ function MenuRow({
 }) {
   const lit = tap !== undefined
   return (
-    <div
-      className={cn(
-        "relative flex items-center gap-2 rounded-lg px-2 py-1.5 [&_svg]:size-4 [&_svg]:shrink-0",
-        lit ? "bg-muted font-medium" : "text-muted-foreground"
-      )}
-    >
-      {icon}
-      <span className="truncate">{children}</span>
-      {tap}
-    </div>
+    <motion.div variants={ROW}>
+      <div
+        className={cn(
+          "relative flex items-center gap-2 rounded-lg px-2 py-1.5 transition-transform duration-200 [&_svg]:size-4 [&_svg]:shrink-0",
+          lit ? "bg-muted font-medium" : "text-muted-foreground",
+          Boolean(tap) && "scale-95"
+        )}
+      >
+        {icon}
+        <span className="truncate">{children}</span>
+        {tap}
+      </div>
+    </motion.div>
   )
 }
 
@@ -371,11 +461,15 @@ function SheetButton({
 }) {
   const lit = tap !== undefined
   return (
-    <div className="flex min-w-0 flex-col items-center gap-1">
+    <motion.div
+      variants={ROW}
+      className="flex min-w-0 flex-col items-center gap-1"
+    >
       <span
         className={cn(
-          "relative flex size-10 items-center justify-center rounded-full bg-muted [&_svg]:size-4",
-          lit && "text-primary"
+          "relative flex size-10 items-center justify-center rounded-full bg-muted transition-transform duration-200 [&_svg]:size-4",
+          lit && "text-primary",
+          Boolean(tap) && "scale-90"
         )}
       >
         {icon}
@@ -389,7 +483,7 @@ function SheetButton({
       >
         {children}
       </span>
-    </div>
+    </motion.div>
   )
 }
 
