@@ -143,7 +143,8 @@ export function BookingsView({
           </EmptyHeader>
           {emptyAdd && (
             <EmptyContent>
-              <Button onClick={panels.add}>
+              {/* Outline: the header's Add is the page's main action. */}
+              <Button variant="outline" onClick={panels.add}>
                 <PlusIcon data-icon="inline-start" />
                 {t.addBooking}
               </Button>
