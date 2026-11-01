@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { flushSync } from "react-dom"
 import { AnimatePresence, motion } from "motion/react"
 import { useRouter } from "next/navigation"
 import {
@@ -429,6 +430,7 @@ function FindBusiness({
   const [runningQuery, setRunningQuery] = useState<string | null>(null)
   // Bumped by each new search, so an older answer is dropped.
   const searchRun = useRef(0)
+  const listRef = useRef<HTMLDivElement>(null)
   const [area, setArea] = useState<SearchArea | null>(null)
   const [areaOpen, setAreaOpen] = useState(false)
   const [locating, setLocating] = useState(false)
@@ -503,7 +505,10 @@ function FindBusiness({
   }, [needle, area, sessionToken])
 
   // A suggested search ("photography studio near Brockton, MA, USA"):
-  // its businesses replace the list.
+  // its businesses replace the list. The tapped row goes with the old
+  // list, so focus moves to the first business (rendered first with
+  // flushSync: react.dev/reference/react-dom/flushSync), unless the
+  // owner has moved on to another control.
   const runQuery = (text: string) => {
     const run = ++searchRun.current
     setRunningQuery(text)
@@ -511,10 +516,21 @@ function FindBusiness({
       .catch(() => [])
       .then((found) => {
         if (run !== searchRun.current) return
-        setRunningQuery(null)
-        setResults(
-          found.map((business) => ({ kind: "business" as const, ...business }))
-        )
+        const active = document.activeElement
+        const inList =
+          !active ||
+          active === document.body ||
+          Boolean(listRef.current?.contains(active))
+        flushSync(() => {
+          setRunningQuery(null)
+          setResults(
+            found.map((business) => ({
+              kind: "business" as const,
+              ...business,
+            }))
+          )
+        })
+        if (inList) listRef.current?.querySelector("button")?.focus()
       })
   }
 
@@ -604,6 +620,7 @@ function FindBusiness({
         )}
         {results && results.length > 0 && (
           <SuggestionList
+            ref={listRef}
             items={results.map((result) =>
               result.kind === "query"
                 ? {

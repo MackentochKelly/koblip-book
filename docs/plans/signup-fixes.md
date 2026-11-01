@@ -28,7 +28,7 @@ and faster. How to use this file: [Plans](README.md).
 | S7 | Live screen shows a useful category | S | | To do |
 | S8 | Search box hint fits at 375px | S | | To do |
 | S9 | Setup still finishes after a server restart | M | | Working on: M Kelly B, 2026-11-01 |
-| S10 | Keyboard focus stays in the list after a suggested search | S | S1 | Working on: M Kelly B, 2026-11-01 |
+| S10 | Keyboard focus stays in the list after a suggested search | S | S1 | Done |
 
 ---
 
@@ -193,6 +193,11 @@ had dropped to the page.
 
 **Done when:** after a suggested search, Tab and Enter carry on from the
 first business; a test covers it.
+
+**Done (2026-11-01):** when a suggested search's businesses arrive, focus
+moves to the first one (React `flushSync`, then focus), unless the owner
+moved focus to another control meanwhile. `get-started.test.tsx` covers
+both cases.
 
 ## Decisions log
 

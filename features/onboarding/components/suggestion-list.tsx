@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from "react"
+import { Fragment, type ReactNode, type Ref } from "react"
 
 import {
   Item,
@@ -32,6 +32,7 @@ export function SuggestionList({
   icon,
   className,
   creditClassName = "self-end",
+  ref,
 }: {
   items: Suggestion[]
   busyId?: string | null
@@ -40,9 +41,10 @@ export function SuggestionList({
   icon: ReactNode
   className?: string
   creditClassName?: string
+  ref?: Ref<HTMLDivElement>
 }) {
   return (
-    <ItemGroup className={cn("gap-0", className)}>
+    <ItemGroup ref={ref} className={cn("gap-0", className)}>
       {items.map((item, index) => (
         <Fragment key={item.id}>
           {index > 0 && <ItemSeparator className="my-1" />}
