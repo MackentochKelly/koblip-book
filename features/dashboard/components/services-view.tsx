@@ -321,7 +321,7 @@ export function ServicesView({
 
       {view === "services" && (
         <ListFooter
-          loadMore={first.hidden > 0 && <LoadMore label={c.loadMore} onClick={first.showAll} />}
+          loadMore={first.hidden > 0 && <LoadMore label={c.loadMore(first.hidden)} onClick={first.showAll} />}
           suggest={phoneSuggest}
         />
       )}
