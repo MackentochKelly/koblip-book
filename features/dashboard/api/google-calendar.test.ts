@@ -65,6 +65,8 @@ const google = {
   otherBusy: {} as Record<string, { start: string; end: string }[]>,
   stopped: [] as string[],
   channelHours: 24 * 7,
+  // Calendars Google can't push changes for, such as a holiday calendar.
+  pushless: new Set<string>(),
 }
 
 function idToken(email: string) {
@@ -103,6 +105,9 @@ const fetchGoogle = vi.fn(async (input: string, init: RequestInit = {}) => {
   const watched = path.match(/^\/calendars\/([^/]+)\/events\/watch$/)
   if (method === "POST" && watched) {
     const calendar = decodeURIComponent(watched[1])
+    if (google.pushless.has(calendar)) {
+      return answer(400, { error: { errors: [{ reason: "pushNotSupportedForRequestedResource" }] } })
+    }
     const expiration = Date.now() + google.channelHours * hour
     google.channels.set(body.id, { token: body.token, expiration, calendar })
     return answer(200, { kind: "api#channel", id: body.id, resourceId: `res-${calendar}`, expiration: String(expiration) })
@@ -208,6 +213,7 @@ beforeEach(async () => {
   google.otherBusy = {}
   google.stopped = []
   google.channelHours = 24 * 7
+  google.pushless.clear()
   vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3100")
   google.scope = ALL_SCOPES
   google.email = "owner@gmail.com"
@@ -507,6 +513,25 @@ test("ticked calendars block bookings and each gets a push channel", async () =>
     { name: "Work", blocks: true },
     { name: "Home", blocks: false },
   ])
+})
+
+test("a calendar Google can't push for is read on the timer, never asked again", async () => {
+  live()
+  const { connectionId } = await connect()
+  google.pushless.add("family@group.calendar.google.com")
+  await db
+    .update(googleCalendarConnections)
+    .set({ busyCalendarIds: ["family@group.calendar.google.com", "work@group.calendar.google.com"] })
+    .where(eq(googleCalendarConnections.id, connectionId!))
+  const watches = () => google.calls.filter((call) => call.endsWith("/events/watch")).length
+  // The calendar after it still gets its channel.
+  await expect(ensureGoogleChannels(connectionId!)).resolves.toBe(false)
+  expect([...google.channels.values()].map((channel) => channel.calendar)).toEqual([
+    "work@group.calendar.google.com",
+  ])
+  const asked = watches()
+  await expect(ensureGoogleChannels(connectionId!)).resolves.toBe(false)
+  expect(watches()).toBe(asked)
 })
 
 test("a calendar that isn't the account's is refused", async () => {

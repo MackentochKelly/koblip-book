@@ -870,6 +870,10 @@ export const googleCalendarConnections = sqliteTable(
     // The Google calendars whose busy times block bookings, picked by the
     // owner (G4); null means the account's main calendar alone.
     busyCalendarIds: text({ mode: "json" }).$type<string[]>(),
+    // Busy calendars Google can't push changes for (such as a holiday
+    // calendar): their busy times are read on the timer alone, and Google
+    // is not asked to push them again (a 400 is permanent).
+    pushlessCalendarIds: text({ mode: "json" }).$type<string[]>(),
     // The timer's last sync of this connection, and its error, kept short.
     lastSyncAt: text(),
     lastError: text(),

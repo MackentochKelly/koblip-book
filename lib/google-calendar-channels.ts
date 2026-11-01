@@ -49,6 +49,7 @@ export async function ensureGoogleChannels(connectionId: string): Promise<boolea
       scopes: googleCalendarConnections.scopes,
       needsReconnect: googleCalendarConnections.needsReconnect,
       busyCalendarIds: googleCalendarConnections.busyCalendarIds,
+      pushlessCalendarIds: googleCalendarConnections.pushlessCalendarIds,
     })
     .from(googleCalendarConnections)
     .where(eq(googleCalendarConnections.id, connectionId))
@@ -65,8 +66,14 @@ export async function ensureGoogleChannels(connectionId: string): Promise<boolea
     connection.scopes.split(" ").includes(GOOGLE_SCOPES.freeBusy)
   const renewAt = Date.now() + GOOGLE_CALENDAR_RULES.renewChannelHours * 3_600_000
   const keep = new Set<string>()
+  const pushless = new Set(connection?.pushlessCalendarIds ?? [])
+  let learned = false
   if (watching && address && connection) {
     for (const calendarId of busyCalendarsOf(connection)) {
+      if (pushless.has(calendarId)) {
+        watching = false
+        continue
+      }
       const live = channels.find(
         (channel) => channel.calendarId === calendarId && Date.parse(channel.expiresAt) > renewAt
       )
@@ -90,6 +97,17 @@ export async function ensureGoogleChannels(connectionId: string): Promise<boolea
           watching = false
           continue
         }
+        // A calendar Google can't push for: read on the timer from now on.
+        if (
+          error instanceof GoogleCalendarError &&
+          error.status === 400 &&
+          error.reason === "pushNotSupportedForRequestedResource"
+        ) {
+          pushless.add(calendarId)
+          learned = true
+          watching = false
+          continue
+        }
         throw error
       }
       const expiresAt = Number(watch?.expiration)
@@ -106,6 +124,12 @@ export async function ensureGoogleChannels(connectionId: string): Promise<boolea
       })
       keep.add(id)
     }
+  }
+  if (learned) {
+    await db
+      .update(googleCalendarConnections)
+      .set({ pushlessCalendarIds: [...pushless] })
+      .where(eq(googleCalendarConnections.id, connectionId))
   }
   // Old channels end after the new one starts, so no change is missed.
   for (const channel of channels) {
