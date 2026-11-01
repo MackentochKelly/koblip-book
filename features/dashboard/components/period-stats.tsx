@@ -5,7 +5,7 @@ import {
   BanknoteIcon,
   CalendarIcon,
   CalendarX2Icon,
-  SmileIcon,
+  UserPlusIcon,
 } from "@/components/ui/icons"
 import { formatMoneyShort } from "@/lib/format-price"
 import { useOwnerMessages } from "../i18n/provider"
@@ -47,7 +47,7 @@ export function PeriodStats({
           change: percentChange(summary.revenue),
         },
         {
-          icon: <SmileIcon />,
+          icon: <UserPlusIcon />,
           tone: "info",
           label: a.newCustomers,
           hint: a.hints.newCustomers,

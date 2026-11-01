@@ -92,6 +92,7 @@ import {
   ZapSolid as MynaZapSolid,
   TrendingUp as MynaTrendingUp,
   UserX as MynaUserX,
+  UserPlus as MynaUserPlus,
 } from "@mynaui/icons-react"
 import {
   AudioLines as LucideAudioLines,
@@ -279,6 +280,7 @@ export const TrendingUpIcon = icon(
   MynaTrendingUp as Icon,
   "TrendingUpIcon"
 )
+export const UserPlusIcon = icon(MynaUserPlus as Icon, "UserPlusIcon")
 export const UserXIcon = icon(MynaUserX as Icon, "UserXIcon")
 export const UsersIcon = icon(MynaUsers as Icon, "UsersIcon")
 export const WrenchIcon = icon(MynaWrench as Icon, "WrenchIcon")
