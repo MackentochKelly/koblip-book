@@ -107,7 +107,7 @@ const SOURCE_ICONS: Record<SourceKind, typeof CalendarDaysIcon> = {
 }
 
 // What the answer was based on (AI Elements' Sources): one line per kind,
-// each opening the page with those records.
+// each opening the page with those records. Lines only: they go in a Trace.
 function SourceLines({
   sources,
   businessId,
@@ -118,7 +118,7 @@ function SourceLines({
   labels: AssistantMessages["sources"]
 }) {
   return (
-    <Trace>
+    <>
       {sources.map(({ kind, count }) => {
         const Icon = SOURCE_ICONS[kind]
         return (
@@ -138,7 +138,7 @@ function SourceLines({
           </Link>
         )
       })}
-    </Trace>
+    </>
   )
 }
 
@@ -166,7 +166,7 @@ function StepIcon({ status }: { status: ChatStep["status"] }) {
 // What the assistant did, as one line (AI Elements' Chain of Thought):
 // the step it is on while it works, "Checked 3 things" after. Open while
 // it works, then it folds away; a tap opens it again. `children` (what
-// the answer was based on) shows inside, under the steps.
+// the answer was based on) are more lines of the same list, under the steps.
 function WorkSteps({
   steps,
   labels,
@@ -214,8 +214,8 @@ function WorkSteps({
                 <TraceTitle>{step.label}</TraceTitle>
               </TraceLine>
             ))}
+            {children}
           </Trace>
-          {children}
         </TraceCollapsibleContent>
       </TraceCollapsible>
     </Trace>
@@ -398,11 +398,13 @@ export function MessageList({
                       )}
                       {/* No steps to fold them into: on their own. */}
                       {item.steps.length === 0 && item.sources.length > 0 && (
-                        <SourceLines
-                          sources={item.sources}
-                          businessId={businessId}
-                          labels={m.sources}
-                        />
+                        <Trace>
+                          <SourceLines
+                            sources={item.sources}
+                            businessId={businessId}
+                            labels={m.sources}
+                          />
+                        </Trace>
                       )}
                       {item.result && (
                         <ResultLine
