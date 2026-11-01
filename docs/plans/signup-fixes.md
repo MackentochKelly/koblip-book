@@ -24,7 +24,7 @@ and faster. How to use this file: [Plans](README.md).
 | S3 | Sign-up errors say what went wrong, in the right place | S | | Done |
 | S4 | "Getting your page ready" never looks stuck | M | | Done |
 | S5 | Check details says Continue | S | | Done |
-| S6 | Live screen has one "View page" | S | | Working on: M Kelly B, 2026-11-01 |
+| S6 | Live screen has one "View page" | S | | Done |
 | S7 | Live screen shows a useful category | S | | To do |
 | S8 | Search box hint fits at 375px | S | | To do |
 | S9 | Setup still finishes after a server restart | M | | Done |
@@ -144,6 +144,10 @@ the same thing. One main action per screen.
 `features/dashboard/components/top-bar.tsx`.
 
 **Done when:** the live screen shows one View page, on the card.
+
+**Done (2026-11-01):** the live screen turns off the top bar's View page
+(`viewPage={false}`), like the other setup screens; the card's View my
+page stays. The dashboard's top bar keeps its View page.
 
 ### S7 · Live screen shows a useful category ⚪
 

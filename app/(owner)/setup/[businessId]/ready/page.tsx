@@ -16,7 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // The step after "Check your details": the page is live, share it. Same
-// plain page and top bar as that step.
+// plain page and top bar as that step; the card's View my page is the one
+// way to the page, so the bar leaves its own out.
 export default async function ReadyPage({
   params,
 }: PageProps<"/setup/[businessId]/ready">) {
@@ -33,6 +34,7 @@ export default async function ReadyPage({
       )}
     >
       <TopBar
+        viewPage={false}
         business={business}
         owner={{ name: owner.name, email: owner.email, image: owner.image }}
       />

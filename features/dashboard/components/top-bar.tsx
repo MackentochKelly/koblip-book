@@ -15,8 +15,8 @@ import { AccountMenu } from "./account-menu"
 // is done), its public page and the account menu. Pinned, with a line under
 // it. In the dashboard it starts with ☰, which opens the menu (whose top
 // shows the name on a computer).
-// Before the details are checked the page isn't live yet, so View page can be
-// left out. `bell` sits beside the account menu on every screen (N-D11);
+// The setup screens leave View page out: before the details are checked the
+// page isn't live yet, and the live screen's card has its own. `bell` sits beside the account menu on every screen (N-D11);
 // a short line splits the bar's buttons from the account menu.
 export function TopBar({
   business,
