@@ -5,22 +5,27 @@ import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 
 vi.mock("server-only", () => ({}))
 
-const { autocompleteMock } = vi.hoisted(() => ({ autocompleteMock: vi.fn() }))
+const { autocompleteMock, textSearchMock } = vi.hoisted(() => ({
+  autocompleteMock: vi.fn(),
+  textSearchMock: vi.fn(),
+}))
 
 vi.mock("./places-autocomplete", () => ({ autocomplete: autocompleteMock }))
+vi.mock("./places-text-search", () => ({ textSearch: textSearchMock }))
 
-const { searchBusinesses, searchCities, cityCenter } =
+const { searchBusinesses, searchBusinessesByText, searchCities, cityCenter } =
   await import("./search-actions")
 
 const TOKEN = "123e4567-e89b-42d3-a456-426614174000"
 
 function prediction(placeId: string, mainText: string, secondary = "Addr") {
-  return { placeId, mainText, secondaryText: secondary }
+  return { kind: "place" as const, placeId, mainText, secondaryText: secondary }
 }
 
 beforeEach(() => {
   vi.stubEnv("GOOGLE_MAPS_PLATFORM_KEY", "test-key")
   autocompleteMock.mockReset()
+  textSearchMock.mockReset()
 })
 
 afterEach(() => {
@@ -32,20 +37,21 @@ afterEach(() => {
 test("searchBusinesses returns name + address suggestions", async () => {
   autocompleteMock.mockResolvedValue([
     prediction("ChIJ1", "Davida Salon", "123 Main St"),
-    { placeId: "ChIJ2", mainText: "Other", secondaryText: null },
+    { kind: "place", placeId: "ChIJ2", mainText: "Other", secondaryText: null },
   ])
 
   await expect(
     searchBusinesses({ input: "davida", sessionToken: TOKEN })
   ).resolves.toEqual([
-    { placeId: "ChIJ1", name: "Davida Salon", address: "123 Main St" },
-    { placeId: "ChIJ2", name: "Other", address: null },
+    { kind: "business", placeId: "ChIJ1", name: "Davida Salon", address: "123 Main St" },
+    { kind: "business", placeId: "ChIJ2", name: "Other", address: null },
   ])
   expect(autocompleteMock).toHaveBeenCalledTimes(1)
   expect(autocompleteMock).toHaveBeenCalledWith({
     input: "davida",
     sessionToken: TOKEN,
     languageCode: "en",
+    includeQueryPredictions: true,
   })
 })
 
@@ -61,6 +67,7 @@ test("searchBusinesses sends locationBias only with valid coordinates", async ()
     input: "davida",
     sessionToken: TOKEN,
     languageCode: "en",
+    includeQueryPredictions: true,
     locationBias: {
       circle: {
         center: { latitude: 18.47, longitude: -69.93 },
@@ -79,6 +86,7 @@ test("searchBusinesses sends locationBias only with valid coordinates", async ()
     input: "davida",
     sessionToken: TOKEN,
     languageCode: "en",
+    includeQueryPredictions: true,
   })
 })
 
@@ -203,4 +211,72 @@ test("cityCenter returns null on error", async () => {
   await expect(
     cityCenter({ placeId: "ChIJcityCenter01", sessionToken: "bad token!" })
   ).resolves.toBeNull()
+})
+
+test("searchBusinesses keeps Google's suggested searches, in order", async () => {
+  autocompleteMock.mockResolvedValue([
+    { kind: "query", text: "photography studio near Brockton, MA, USA" },
+    prediction("ChIJ1", "Lens Studio", "Brockton"),
+    { kind: "query", text: "photography studio near Brockton, ON, Canada" },
+  ])
+
+  await expect(
+    searchBusinesses({ input: "photography studio Brockton", sessionToken: TOKEN })
+  ).resolves.toEqual([
+    { kind: "query", text: "photography studio near Brockton, MA, USA" },
+    { kind: "business", placeId: "ChIJ1", name: "Lens Studio", address: "Brockton" },
+    { kind: "query", text: "photography studio near Brockton, ON, Canada" },
+  ])
+})
+
+test("searchCities leaves out suggested searches", async () => {
+  autocompleteMock.mockResolvedValue([
+    { kind: "query", text: "pizza near Boston" },
+    prediction("ChIJb", "Boston", "MA, USA"),
+  ])
+
+  await expect(
+    searchCities({ input: "boston", sessionToken: TOKEN })
+  ).resolves.toEqual([{ placeId: "ChIJb", name: "Boston", region: "MA, USA" }])
+})
+
+test("searchBusinessesByText runs one Text Search, near the area when given", async () => {
+  textSearchMock.mockResolvedValue([
+    { placeId: "ChIJ9", name: "Harley M Photography", address: "350 Spring St" },
+  ])
+
+  await expect(
+    searchBusinessesByText({
+      text: " photography studio near Brockton, MA, USA ",
+      near: { latitude: 42.08, longitude: -71.02 },
+    })
+  ).resolves.toEqual([
+    { placeId: "ChIJ9", name: "Harley M Photography", address: "350 Spring St" },
+  ])
+  expect(textSearchMock).toHaveBeenCalledTimes(1)
+  expect(textSearchMock).toHaveBeenCalledWith({
+    textQuery: "photography studio near Brockton, MA, USA",
+    languageCode: "en",
+    pageSize: ONBOARDING_RULES.maxResults,
+    locationBias: {
+      circle: {
+        center: { latitude: 42.08, longitude: -71.02 },
+        radius: ONBOARDING_RULES.biasRadiusMeters,
+      },
+    },
+  })
+})
+
+test("searchBusinessesByText rejects bad text and returns [] on Google errors", async () => {
+  for (const text of ["", "a", "x".repeat(ONBOARDING_RULES.maxInput + 1)]) {
+    await expect(searchBusinessesByText({ text })).resolves.toEqual([])
+  }
+  expect(textSearchMock).not.toHaveBeenCalled()
+
+  const error = vi.spyOn(console, "error").mockImplementation(() => {})
+  textSearchMock.mockRejectedValueOnce(new Error("quota exploded"))
+  await expect(
+    searchBusinessesByText({ text: "photography studio" })
+  ).resolves.toEqual([])
+  expect(error).toHaveBeenCalledWith("quota exploded")
 })

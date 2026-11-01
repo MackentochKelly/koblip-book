@@ -17,6 +17,8 @@ export interface Suggestion {
   id: string
   title: string
   description: string | null
+  // In place of the list's icon, for a row of another kind.
+  icon?: ReactNode
 }
 
 // Light tappable result rows (grey on touch), a line between each: icon,
@@ -34,6 +36,7 @@ export function SuggestionList({
   items: Suggestion[]
   busyId?: string | null
   onPick: (id: string) => void
+  // The default icon for every row.
   icon: ReactNode
   className?: string
   creditClassName?: string
@@ -49,7 +52,7 @@ export function SuggestionList({
             className="text-left hover:bg-muted"
           >
             <ItemMedia variant="icon">
-              {busyId === item.id ? <Spinner /> : icon}
+              {busyId === item.id ? <Spinner /> : (item.icon ?? icon)}
             </ItemMedia>
             <ItemContent>
               <ItemTitle>{item.title}</ItemTitle>

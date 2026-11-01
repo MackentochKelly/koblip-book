@@ -49,8 +49,15 @@ import {
   prepareBusiness,
   prepareBusinessFromLink,
 } from "../api/prepare-actions"
-import { searchBusinesses } from "../api/search-actions"
-import type { BusinessSuggestion, PreparedBusiness } from "../types"
+import {
+  searchBusinesses,
+  searchBusinessesByText,
+} from "../api/search-actions"
+import type {
+  BusinessSearchResult,
+  BusinessSuggestion,
+  PreparedBusiness,
+} from "../types"
 import { useDebounced } from "../utils/use-debounced"
 import { useSessionToken } from "../utils/use-session-token"
 import { SearchAreaPanel, type SearchArea } from "./search-area"
@@ -393,6 +400,9 @@ export function GetStarted({
 }
 
 // Search as you type, near the owner or a city they pick.
+// A suggested search's row id: kept apart from Google place ids.
+const queryId = (text: string) => `query:${text}`
+
 function FindBusiness({
   onChoose,
   expanded,
@@ -413,8 +423,12 @@ function FindBusiness({
     rest: t.businessName,
     paused: focused || query !== "",
   })
-  const [results, setResults] = useState<BusinessSuggestion[] | null>(null)
+  const [results, setResults] = useState<BusinessSearchResult[] | null>(null)
   const [searching, setSearching] = useState(false)
+  // The suggested search being run (its row shows a spinner).
+  const [runningQuery, setRunningQuery] = useState<string | null>(null)
+  // Bumped by each new search, so an older answer is dropped.
+  const searchRun = useRef(0)
   const [area, setArea] = useState<SearchArea | null>(null)
   const [areaOpen, setAreaOpen] = useState(false)
   const [locating, setLocating] = useState(false)
@@ -454,17 +468,24 @@ function FindBusiness({
 
   useEffect(() => {
     let current = true
+    // New words: a suggested search still running no longer applies.
+    searchRun.current += 1
     if (needle.length < ONBOARDING_RULES.minInput) {
       queueMicrotask(() => {
         if (!current) return
         setResults(null)
         setSearching(false)
+        setRunningQuery(null)
       })
       return () => {
         current = false
       }
     }
-    queueMicrotask(() => current && setSearching(true))
+    queueMicrotask(() => {
+      if (!current) return
+      setSearching(true)
+      setRunningQuery(null)
+    })
     void searchBusinesses({
       input: needle,
       sessionToken: sessionToken(),
@@ -480,6 +501,22 @@ function FindBusiness({
       current = false
     }
   }, [needle, area, sessionToken])
+
+  // A suggested search ("photography studio near Brockton, MA, USA"):
+  // its businesses replace the list.
+  const runQuery = (text: string) => {
+    const run = ++searchRun.current
+    setRunningQuery(text)
+    void searchBusinessesByText({ text, near: area?.center })
+      .catch(() => [])
+      .then((found) => {
+        if (run !== searchRun.current) return
+        setRunningQuery(null)
+        setResults(
+          found.map((business) => ({ kind: "business" as const, ...business }))
+        )
+      })
+  }
 
   const pick = (business: BusinessSuggestion) => {
     const token = sessionToken()
@@ -567,14 +604,30 @@ function FindBusiness({
         )}
         {results && results.length > 0 && (
           <SuggestionList
-            items={results.map((business) => ({
-              id: business.placeId,
-              title: business.name,
-              description: business.address,
-            }))}
+            items={results.map((result) =>
+              result.kind === "query"
+                ? {
+                    id: queryId(result.text),
+                    title: result.text,
+                    description: null,
+                    icon: <SearchIcon />,
+                  }
+                : {
+                    id: result.placeId,
+                    title: result.name,
+                    description: result.address,
+                  }
+            )}
+            busyId={runningQuery === null ? null : queryId(runningQuery)}
             onPick={(id) => {
-              const business = results.find((found) => found.placeId === id)
-              if (business) pick(business)
+              const result = results.find((found) =>
+                found.kind === "query"
+                  ? queryId(found.text) === id
+                  : found.placeId === id
+              )
+              if (!result) return
+              if (result.kind === "query") runQuery(result.text)
+              else pick(result)
             }}
             icon={<MapPinIcon />}
             // Full screen: the Google Maps logo sits at the bottom left.

@@ -2,7 +2,13 @@
 
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import { autocomplete } from "./places-autocomplete"
-import type { BusinessSuggestion, CitySuggestion, Coordinates } from "../types"
+import { textSearch } from "./places-text-search"
+import type {
+  BusinessSearchResult,
+  BusinessSuggestion,
+  CitySuggestion,
+  Coordinates,
+} from "../types"
 
 const PLACES_API = "https://places.googleapis.com/v1"
 
@@ -45,8 +51,25 @@ function validInput(input: unknown): input is string {
   )
 }
 
-// Business search for the home page box. Never throws: a Google failure
-// just shows no suggestions.
+function locationBias(near: unknown) {
+  if (!validCoordinates(near)) {
+    return {}
+  }
+  return {
+    locationBias: {
+      circle: {
+        center: { latitude: near.latitude, longitude: near.longitude },
+        radius: ONBOARDING_RULES.biasRadiusMeters,
+      },
+    },
+  }
+}
+
+// Business search for the home page box. Autocomplete matches business
+// names; for words like "photography studio Brockton" it also suggests
+// searches ("… near Brockton, MA, USA"), which searchBusinessesByText
+// runs when tapped (Google's documented pairing, so Text Search is billed
+// only on a tap). Never throws: a Google failure just shows no suggestions.
 export async function searchBusinesses({
   input,
   sessionToken,
@@ -55,32 +78,55 @@ export async function searchBusinesses({
   input: string
   sessionToken: string
   near?: Coordinates
-}): Promise<BusinessSuggestion[]> {
+}): Promise<BusinessSearchResult[]> {
   if (!validInput(input) || !validSessionToken(sessionToken)) {
     return []
   }
-  const body: Record<string, unknown> = {
-    input: input.trim(),
-    sessionToken,
-    languageCode: "en",
-  }
-  if (validCoordinates(near)) {
-    body.locationBias = {
-      circle: {
-        center: { latitude: near.latitude, longitude: near.longitude },
-        radius: ONBOARDING_RULES.biasRadiusMeters,
-      },
-    }
-  }
   try {
-    const predictions = await autocomplete(body)
+    const predictions = await autocomplete({
+      input: input.trim(),
+      sessionToken,
+      languageCode: "en",
+      includeQueryPredictions: true,
+      ...locationBias(near),
+    })
     return predictions
       .slice(0, ONBOARDING_RULES.maxResults)
-      .map((prediction) => ({
-        placeId: prediction.placeId,
-        name: prediction.mainText,
-        address: prediction.secondaryText,
-      }))
+      .map((prediction): BusinessSearchResult =>
+        prediction.kind === "query"
+          ? { kind: "query", text: prediction.text }
+          : {
+              kind: "business",
+              placeId: prediction.placeId,
+              name: prediction.mainText,
+              address: prediction.secondaryText,
+            }
+      )
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error))
+    return []
+  }
+}
+
+// The businesses for a search Autocomplete suggested. One Text Search
+// call per tap. Never throws: a Google failure just shows no businesses.
+export async function searchBusinessesByText({
+  text,
+  near,
+}: {
+  text: string
+  near?: Coordinates
+}): Promise<BusinessSuggestion[]> {
+  if (!validInput(text)) {
+    return []
+  }
+  try {
+    return await textSearch({
+      textQuery: text.trim(),
+      languageCode: "en",
+      pageSize: ONBOARDING_RULES.maxResults,
+      ...locationBias(near),
+    })
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
     return []
@@ -106,12 +152,18 @@ export async function searchCities({
       includedPrimaryTypes: ["(cities)"],
     })
     return predictions
+      .flatMap((prediction) =>
+        prediction.kind === "place"
+          ? [
+              {
+                placeId: prediction.placeId,
+                name: prediction.mainText,
+                region: prediction.secondaryText,
+              },
+            ]
+          : []
+      )
       .slice(0, ONBOARDING_RULES.maxResults)
-      .map((prediction) => ({
-        placeId: prediction.placeId,
-        name: prediction.mainText,
-        region: prediction.secondaryText,
-      }))
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
     return []

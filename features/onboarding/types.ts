@@ -4,6 +4,13 @@ export interface BusinessSuggestion {
   address: string | null
 }
 
+// One row of the business search, in Google's order: a business, or a
+// search Google suggests ("photography studio near Brockton, MA, USA")
+// that lists businesses when tapped.
+export type BusinessSearchResult =
+  | ({ kind: "business" } & BusinessSuggestion)
+  | { kind: "query"; text: string }
+
 export interface CitySuggestion {
   placeId: string
   name: string
