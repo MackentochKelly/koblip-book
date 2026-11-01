@@ -7,7 +7,7 @@ import { GoogleMapsCredit } from "@/components/google-maps-credit"
 import { useMessages } from "@/components/language-provider"
 import { Rating } from "@/components/rating"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Button, touchArea } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -71,9 +71,13 @@ function ReviewList({
                   href={review.author.uri}
                   target="_blank"
                   rel="noreferrer"
-                  className="block truncate text-sm font-medium hover:underline"
+                  className={cn(
+                    touchArea,
+                    "block text-sm font-medium hover:underline"
+                  )}
                 >
-                  {review.author.name}
+                  {/* Cut short inside, so the tap area isn't clipped. */}
+                  <span className="block truncate">{review.author.name}</span>
                 </a>
               ) : (
                 <p className="truncate text-sm font-medium">

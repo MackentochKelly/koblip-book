@@ -1,5 +1,7 @@
+import { touchArea } from "@/components/ui/button"
 import { MapPinIcon, WebsiteIcon } from "@/components/ui/icons"
 import { Item, ItemContent, ItemMedia } from "@/components/ui/item"
+import { cn } from "@/lib/utils"
 
 // Where the business is, on a soft chip with a pin.
 export function BusinessAddress({ children }: { children: React.ReactNode }) {
@@ -30,7 +32,10 @@ export function BusinessWebsite({
     <Item
       variant="muted"
       size="xs"
-      className="w-fit max-w-full flex-nowrap gap-2 px-2.5 py-1.5 text-xs md:hidden"
+      className={cn(
+        touchArea,
+        "w-fit max-w-full flex-nowrap gap-2 px-2.5 py-1.5 text-xs md:hidden"
+      )}
       render={<a href={url} target="_blank" rel="noreferrer" />}
     >
       <ItemMedia>
