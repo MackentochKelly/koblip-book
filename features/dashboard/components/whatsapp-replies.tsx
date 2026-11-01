@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
+import { FormActions } from "@/components/form-actions"
 import { PageSection } from "@/components/page-section"
 import { Button } from "@/components/ui/button"
 import {
@@ -93,10 +94,12 @@ export function WhatsappReplies({
         </FieldLabel>
       </PageSection>
 
-      <Button size="lg" onClick={save} disabled={pending}>
-        {pending && <Spinner data-icon="inline-start" />}
-        {t.saveSettings}
-      </Button>
+      <FormActions>
+        <Button size="lg" onClick={save} disabled={pending}>
+          {pending && <Spinner data-icon="inline-start" />}
+          {t.saveSettings}
+        </Button>
+      </FormActions>
     </div>
   )
 }

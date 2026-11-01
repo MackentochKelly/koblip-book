@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { FormActions } from "@/components/form-actions"
 import { PlusIcon, XIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
@@ -191,10 +192,12 @@ export function WhatsappTiming({
         </FieldLabel>
       </PageSection>
 
-      <Button size="lg" onClick={save} disabled={pending}>
-        {pending && <Spinner data-icon="inline-start" />}
-        {t.saveSettings}
-      </Button>
+      <FormActions>
+        <Button size="lg" onClick={save} disabled={pending}>
+          {pending && <Spinner data-icon="inline-start" />}
+          {t.saveSettings}
+        </Button>
+      </FormActions>
     </div>
   )
 }

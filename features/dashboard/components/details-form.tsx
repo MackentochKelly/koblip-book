@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
+import { FormActions } from "@/components/form-actions"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -197,10 +198,12 @@ export function DetailsForm({
       </FieldGroup>
       {/* Save is the big button at the end of the form, like the login card's.
           In Settings it waits for a change; right after sign-up it moves on. */}
-      <Button type="submit" size="lg" disabled={pending || (!next && !changed)}>
-        {pending && <Spinner data-icon="inline-start" />}
-        {m.settings.save}
-      </Button>
+      <FormActions>
+        <Button type="submit" size="lg" disabled={pending || (!next && !changed)}>
+          {pending && <Spinner data-icon="inline-start" />}
+          {m.settings.save}
+        </Button>
+      </FormActions>
     </form>
   )
 }

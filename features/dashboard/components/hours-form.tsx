@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { FormActions } from "@/components/form-actions"
 import { WeeklyHoursEditor } from "@/components/weekly-hours-editor"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -44,14 +45,16 @@ export function HoursForm({
         labels={t}
       />
       {/* Save waits for a change. */}
-      <Button
-        size="lg"
-        onClick={save}
-        disabled={pending || JSON.stringify(rows) === JSON.stringify(hours)}
-      >
-        {pending && <Spinner data-icon="inline-start" />}
-        {m.settings.save}
-      </Button>
+      <FormActions>
+        <Button
+          size="lg"
+          onClick={save}
+          disabled={pending || JSON.stringify(rows) === JSON.stringify(hours)}
+        >
+          {pending && <Spinner data-icon="inline-start" />}
+          {m.settings.save}
+        </Button>
+      </FormActions>
     </div>
   )
 }
