@@ -41,7 +41,11 @@ const widgets = {
     "Open this page on your phone to add it to your Home Screen.",
   installButton: "Install app",
   // The iPhone's own button names, in the order they're tapped.
+  installMore: "Tap •••",
+  // What screen readers say for the step above.
+  installMoreSpoken: "Tap More",
   installShare: "Tap Share",
+  installViewMore: "Tap View More",
   installAdd: "Tap Add to Home Screen",
   installConfirm: "Tap Add",
   installTitle: "Add to Home Screen",
@@ -50,7 +54,13 @@ const widgets = {
   playAgain: "Play again",
   // Sample words in the steps' picture of the iPhone.
   installCopy: "Copy",
+  installBookmark: "Add to Bookmarks",
+  installReadingList: "Add to Reading List",
+  installViewMoreButton: "View More",
+  installNewTab: "New Tab",
   installFavorite: "Add to Favorites",
+  installFind: "Find on Page",
+  installShareButton: "Share",
   installAddButton: "Add",
 }
 

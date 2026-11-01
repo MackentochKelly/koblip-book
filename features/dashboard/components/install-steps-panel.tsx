@@ -10,29 +10,34 @@ import { TapMark } from "@/components/step-preview"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
+  BookmarkIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
   CopyIcon,
+  EllipsisIcon,
+  GlassesIcon,
+  PlusIcon,
   PlusSquareIcon,
   RefreshIcon,
+  SearchIcon,
   ShareUpIcon,
   StarIcon,
+  XIcon,
 } from "@/components/ui/icons"
-import {
-  Item,
-  ItemContent,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
+import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useStoryLoop } from "@/hooks/use-story-loop"
-import { APP_NAME, APP_SHORT_NAME } from "@/lib/app-install"
+import { APP_SHORT_NAME } from "@/lib/app-install"
 import { SHOWCASE_LOOP } from "@/lib/showcase-rules"
 import { cn } from "@/lib/utils"
 import { useOwnerMessages } from "../i18n/provider"
 
-// The three taps, in order, then the icon on the Home Screen.
-type Phase = "share" | "sheet" | "add" | "home"
-const STEPS = ["share", "sheet", "add"] as const
+// Safari's taps on an iPhone, in order (iOS 26): ••• in the bottom bar,
+// Share in its menu, View More in the share sheet, Add to Home Screen in
+// the full list, Add in the last window. Then the icon on the Home Screen.
+const STEPS = ["more", "share", "viewMore", "addHome", "add"] as const
+type Step = (typeof STEPS)[number]
+type Phase = Step | "home"
 
 // The picture's colour wash, like the home page's "How it works".
 const WASH = {
@@ -40,11 +45,13 @@ const WASH = {
   seed: 180,
 } as const
 
+type Words = ReturnType<typeof useOwnerMessages>["widgets"]
+
 // How to add Koblip Book to an iPhone's Home Screen, shown happening like
-// the home page's pictures (useStoryLoop): Share taps, Add to Home Screen
-// taps, Add taps, and the icon lands on the Home Screen. The three steps sit
-// under it, the one playing lit; tap one to see it (Reduce Motion shows
-// the pictures only this way).
+// the home page's pictures (useStoryLoop): each tap in Safari plays in
+// turn, then the icon lands on the Home Screen. The steps sit under it, the
+// one playing lit; tap one to stop on it (Reduce Motion shows the pictures
+// only this way), Play again to start over.
 export function InstallStepsPanel({
   open,
   onClose,
@@ -55,15 +62,18 @@ export function InstallStepsPanel({
   const t = useOwnerMessages().widgets
   const time = SHOWCASE_LOOP.install
   const box = useRef<HTMLDivElement>(null)
-  const [phase, setPhase] = useState<Phase>("share")
+  const [phase, setPhase] = useState<Phase>("more")
   const [tapping, setTapping] = useState(false)
+  // The step the owner tapped: the story stops and shows it.
+  const [chosen, setChosen] = useState<Step | null>(null)
+  const shown = chosen ?? phase
 
   const replay = useStoryLoop(
     box,
     async (wait) => {
       for (const step of STEPS) {
         setPhase(step)
-        await wait(step === "share" ? time.beforeTap : time.sheetIn)
+        await wait(step === "more" ? time.beforeTap : time.sheetIn)
         setTapping(true)
         await wait(time.tap)
         setTapping(false)
@@ -73,13 +83,21 @@ export function InstallStepsPanel({
     },
     () => {
       setTapping(false)
-      setPhase("share")
-    }
+      setPhase("more")
+    },
+    chosen === null
   )
 
-  const labels = {
+  const playAgain = () => {
+    setChosen(null)
+    replay()
+  }
+
+  const labels: Record<Step, string> = {
+    more: t.installMore,
     share: t.installShare,
-    sheet: t.installAdd,
+    viewMore: t.installViewMore,
+    addHome: t.installAdd,
     add: t.installConfirm,
   }
 
@@ -91,7 +109,7 @@ export function InstallStepsPanel({
       footer={
         <div className="flex flex-col gap-2">
           <Button onClick={onClose}>{t.gotIt}</Button>
-          <Button variant="ghost" onClick={replay}>
+          <Button variant="ghost" onClick={playAgain}>
             <RefreshIcon data-icon="inline-start" />
             {t.playAgain}
           </Button>
@@ -105,114 +123,176 @@ export function InstallStepsPanel({
           className="aspect-4/3 overflow-hidden rounded-3xl bg-muted"
         >
           <Scene {...WASH}>
-            <Box>
-              <div className="flex min-h-36 flex-col justify-center px-(--card-spacing)">
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div key={phase} {...POP}>
-                    <Picture
-                      phase={phase}
-                      tapping={tapping}
-                      tapMs={time.tap}
-                      words={{
-                        add: t.installAdd,
-                        addButton: t.installAddButton,
-                        copy: t.installCopy,
-                        favorite: t.installFavorite,
-                      }}
-                    />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </Box>
+            {/* One width for every step, so the card doesn't jump. */}
+            <div className="w-full max-w-80">
+              <Box className="max-w-80">
+                <div className="flex min-h-40 flex-col justify-center px-(--card-spacing)">
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div key={shown} {...POP}>
+                      <Picture
+                        phase={shown}
+                        tapping={tapping && chosen === null}
+                        ms={time.tap}
+                        t={t}
+                      />
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </Box>
+            </div>
           </Scene>
         </div>
-        <ItemGroup className="gap-1">
+        <div className="flex flex-col gap-1">
           {STEPS.map((step, index) => (
             <Item
               key={step}
               size="sm"
-              variant={phase === step ? "muted" : "default"}
-              render={<button type="button" onClick={() => setPhase(step)} />}
+              variant={shown === step ? "muted" : "default"}
+              render={
+                <button
+                  type="button"
+                  aria-current={shown === step ? "step" : undefined}
+                  onClick={() => setChosen(step)}
+                />
+              }
               className="text-start"
             >
               <ItemMedia>
                 <Badge
-                  variant={phase === step ? "default" : "secondary"}
+                  variant={shown === step ? "default" : "secondary"}
                   className="tabular-nums"
                 >
                   {index + 1}
                 </Badge>
               </ItemMedia>
               <ItemContent>
-                <ItemTitle>{labels[step]}</ItemTitle>
+                <ItemTitle>
+                  {step === "more" ? (
+                    <>
+                      <span aria-hidden>{labels.more}</span>
+                      <span className="sr-only">{t.installMoreSpoken}</span>
+                    </>
+                  ) : (
+                    labels[step]
+                  )}
+                </ItemTitle>
               </ItemContent>
             </Item>
           ))}
-        </ItemGroup>
+        </div>
       </div>
     </BottomPanel>
   )
 }
 
-// One step's piece of the iPhone: Safari's bar, the Share menu, the Add
-// window, the Home Screen. `tapping` shows the tap on what is tapped.
+// One step's piece of Safari, the tapped part lit and, while `tapping`,
+// the tap circle on it.
 function Picture({
   phase,
   tapping,
-  tapMs,
-  words,
+  ms,
+  t,
 }: {
   phase: Phase
   tapping: boolean
-  tapMs: number
-  words: { add: string; addButton: string; copy: string; favorite: string }
+  ms: number
+  t: Words
 }) {
+  // Centred on a round button; on a row, near where a thumb lands.
+  const tap = (centred = false) =>
+    tapping && <TapMark ms={ms} className={centred ? "left-1/2" : undefined} />
+
+  // Safari's bottom bar: back, the address, •••.
+  if (phase === "more") {
+    return (
+      <div className="flex items-center gap-1.5 [&_svg]:size-4">
+        <Round>
+          <ChevronLeftIcon />
+        </Round>
+        <span className="flex h-9 min-w-0 flex-1 items-center justify-between gap-1 rounded-full bg-muted px-3 text-xs">
+          <span className="truncate">book.koblip.com</span>
+          <RefreshIcon className="shrink-0" />
+        </span>
+        <Round lit>
+          <EllipsisIcon />
+          {tap(true)}
+        </Round>
+      </div>
+    )
+  }
+
+  // ••• opens a menu; Share is on top.
   if (phase === "share") {
     return (
-      <div className="flex items-center gap-2">
-        <span className="flex h-9 min-w-0 flex-1 items-center rounded-full bg-muted px-3 text-xs text-muted-foreground">
-          <span className="truncate">koblip.com</span>
-        </span>
-        <span className="relative flex size-9 shrink-0 items-center justify-center text-primary">
-          <ShareUpIcon className="size-5" />
-          {tapping && <TapMark ms={tapMs} className="left-1/2" />}
-        </span>
-      </div>
-    )
-  }
-
-  if (phase === "sheet") {
-    return (
-      <div className="flex flex-col gap-1 text-sm">
-        <MenuRow icon={<CopyIcon />}>{words.copy}</MenuRow>
-        <MenuRow icon={<StarIcon />}>{words.favorite}</MenuRow>
-        <MenuRow
-          icon={<PlusSquareIcon />}
-          tap={tapping && <TapMark ms={tapMs} />}
-        >
-          {words.add}
+      <MenuList>
+        <MenuRow icon={<ShareUpIcon />} tap={tap()}>
+          {t.installShareButton}
         </MenuRow>
+        <MenuRow icon={<BookmarkIcon />}>{t.installBookmark}</MenuRow>
+        <MenuRow icon={<PlusIcon />}>{t.installNewTab}</MenuRow>
+      </MenuList>
+    )
+  }
+
+  // The share sheet's round buttons; View More shows the full list.
+  if (phase === "viewMore") {
+    return (
+      <div className="grid grid-cols-4 gap-1 text-center text-xs leading-tight">
+        <SheetButton icon={<CopyIcon />}>{t.installCopy}</SheetButton>
+        <SheetButton icon={<BookmarkIcon />}>{t.installBookmark}</SheetButton>
+        <SheetButton icon={<GlassesIcon />}>{t.installReadingList}</SheetButton>
+        <SheetButton icon={<ChevronDownIcon />} tap={tap(true)}>
+          {t.installViewMoreButton}
+        </SheetButton>
       </div>
     )
   }
 
+  // The full list, Add to Home Screen at its foot.
+  if (phase === "addHome") {
+    return (
+      <MenuList>
+        <MenuRow icon={<StarIcon />}>{t.installFavorite}</MenuRow>
+        <MenuRow icon={<SearchIcon />}>{t.installFind}</MenuRow>
+        <MenuRow icon={<PlusSquareIcon />} tap={tap()}>
+          {t.installTitle}
+        </MenuRow>
+      </MenuList>
+    )
+  }
+
+  // The Add to Home Screen window: close and Add on top, then the icon
+  // with the app's short name and address.
   if (phase === "add") {
     return (
-      <div className="flex items-center gap-3">
-        <AppIcon />
-        <span className="min-w-0 flex-1 truncate font-medium">{APP_NAME}</span>
-        <span className="relative">
-          <Button size="xs" tabIndex={-1}>
-            {words.addButton}
-          </Button>
-          {tapping && <TapMark ms={tapMs} className="left-1/2" />}
-        </span>
+      <div className="flex flex-col gap-3 [&_svg]:size-4">
+        <div className="flex items-center justify-between">
+          <Round>
+            <XIcon />
+          </Round>
+          <span className="relative">
+            <Button size="xs" tabIndex={-1}>
+              {t.installAddButton}
+            </Button>
+            {tap(true)}
+          </span>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl bg-muted p-2">
+          <AppIcon />
+          <div className="flex min-w-0 flex-col text-xs">
+            <span className="truncate font-medium">{APP_SHORT_NAME}</span>
+            <span className="truncate text-muted-foreground">
+              book.koblip.com
+            </span>
+          </div>
+        </div>
       </div>
     )
   }
 
+  // The Home Screen, Koblip's icon landing beside the others.
   return (
-    <div className="grid grid-cols-4 justify-items-center gap-3">
+    <div className="grid grid-cols-4 items-start justify-items-center gap-3">
       {[0, 1, 2].map((key) => (
         <Skeleton key={key} className="size-9 rounded-xl" />
       ))}
@@ -229,7 +309,32 @@ function Picture({
   )
 }
 
-// A row of the Share menu; the one with `tap` is lit (Add to Home Screen).
+// A round Safari button (back, •••); `lit` for the one tapped.
+function Round({
+  lit = false,
+  children,
+}: {
+  lit?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <span
+      className={cn(
+        "relative flex size-9 shrink-0 items-center justify-center rounded-full bg-muted",
+        lit && "text-primary"
+      )}
+    >
+      {children}
+    </span>
+  )
+}
+
+function MenuList({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-col gap-0.5 text-sm">{children}</div>
+}
+
+// A row of a Safari menu: icon, then words. The row with `tap` is the one
+// tapped, lit.
 function MenuRow({
   icon,
   tap,
@@ -243,13 +348,47 @@ function MenuRow({
   return (
     <div
       className={cn(
-        "relative flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 [&_svg]:size-4",
+        "relative flex items-center gap-2 rounded-lg px-2 py-1.5 [&_svg]:size-4 [&_svg]:shrink-0",
         lit ? "bg-muted font-medium" : "text-muted-foreground"
       )}
     >
-      <span className="truncate">{children}</span>
       {icon}
+      <span className="truncate">{children}</span>
       {tap}
+    </div>
+  )
+}
+
+// A round button of the share sheet, its name under it.
+function SheetButton({
+  icon,
+  tap,
+  children,
+}: {
+  icon: React.ReactNode
+  tap?: React.ReactNode
+  children: React.ReactNode
+}) {
+  const lit = tap !== undefined
+  return (
+    <div className="flex min-w-0 flex-col items-center gap-1">
+      <span
+        className={cn(
+          "relative flex size-10 items-center justify-center rounded-full bg-muted [&_svg]:size-4",
+          lit && "text-primary"
+        )}
+      >
+        {icon}
+        {tap}
+      </span>
+      <span
+        className={cn(
+          "text-balance",
+          lit ? "font-medium" : "text-muted-foreground"
+        )}
+      >
+        {children}
+      </span>
     </div>
   )
 }

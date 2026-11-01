@@ -39,7 +39,11 @@ const widgets: typeof en = {
   installElsewhere:
     "Abre esta página en tu teléfono para añadirla a tu pantalla de inicio.",
   installButton: "Instalar app",
+  installMore: "Toca •••",
+  // What screen readers say for the step above.
+  installMoreSpoken: "Toca Más",
   installShare: "Toca Compartir",
+  installViewMore: "Toca Ver más",
   installAdd: "Toca Añadir a pantalla de inicio",
   installConfirm: "Toca Añadir",
   installTitle: "Añadir a pantalla de inicio",
@@ -47,7 +51,13 @@ const widgets: typeof en = {
   gotIt: "Entendido",
   playAgain: "Ver de nuevo",
   installCopy: "Copiar",
-  installFavorite: "Añadir a Favoritos",
+  installBookmark: "Añadir a marcadores",
+  installReadingList: "Añadir a la lista de lectura",
+  installViewMoreButton: "Ver más",
+  installNewTab: "Nueva pestaña",
+  installFavorite: "Añadir a favoritos",
+  installFind: "Buscar en la página",
+  installShareButton: "Compartir",
   installAddButton: "Añadir",
 }
 

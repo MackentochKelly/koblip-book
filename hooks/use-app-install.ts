@@ -10,7 +10,8 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 // How this device installs the app: "prompt" = the browser's own Install
-// button (Chrome, Edge, Android), "ios" = Share then Add to Home Screen,
+// button (Chrome, Edge, Android), "ios" = Safari's Add to Home Screen steps
+// (shown in the dashboard's Get the app widget),
 // "other" = neither (open it on a phone instead), "installed" = it already
 // runs as the app. null while the page is still loading.
 export type AppInstallWay = "prompt" | "ios" | "other" | "installed"

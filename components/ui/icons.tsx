@@ -96,12 +96,15 @@ import {
   Download as MynaDownload,
   PlusSquare as MynaPlusSquare,
   PlayCircle as MynaPlayCircle,
+  Bookmark as MynaBookmark,
+  Glasses as MynaGlasses,
 } from "@mynaui/icons-react"
 import {
   AudioLines as LucideAudioLines,
   BadgeCheck as LucideBadgeCheck,
   Banknote as LucideBanknote,
   CarFront as LucideCarFront,
+  Ellipsis as LucideEllipsis,
   Compass as LucideCompass,
   Dumbbell as LucideDumbbell,
   HandHeart as LucideHandHeart,
@@ -178,6 +181,7 @@ export const FilterIcon = icon(MynaFilter as Icon, "FilterIcon")
 export const CalendarX2Icon = icon(MynaCalendarX as Icon, "CalendarX2Icon")
 export const CarFrontIcon = icon(LucideCarFront as Icon, "CarFrontIcon")
 export const CheckIcon = icon(MynaCheck as Icon, "CheckIcon")
+export const BookmarkIcon = icon(MynaBookmark as Icon, "BookmarkIcon")
 export const ChevronDownIcon = icon(MynaChevronDown as Icon, "ChevronDownIcon")
 export const ChevronLeftIcon = icon(MynaChevronLeft as Icon, "ChevronLeftIcon")
 export const ChevronRightIcon = icon(
@@ -199,6 +203,7 @@ export const CornerLeftUpIcon = icon(
   "CornerLeftUpIcon"
 )
 export const CreditCardIcon = icon(MynaCreditCard as Icon, "CreditCardIcon")
+export const EllipsisIcon = icon(LucideEllipsis as Icon, "EllipsisIcon")
 export const EllipsisVerticalIcon = icon(
   MynaDotsVertical as Icon,
   "EllipsisVerticalIcon"
@@ -258,6 +263,7 @@ export const PhoneIcon = icon(MynaTelephone as Icon, "PhoneIcon")
 export const PlusSquareIcon = icon(MynaPlusSquare as Icon, "PlusSquareIcon")
 export const PlusIcon = icon(MynaPlus as Icon, "PlusIcon")
 export const PuzzleIcon = icon(MynaPuzzle as Icon, "PuzzleIcon")
+export const GlassesIcon = icon(MynaGlasses as Icon, "GlassesIcon")
 export const PlayCircleIcon = icon(MynaPlayCircle as Icon, "PlayCircleIcon")
 export const RefreshIcon = icon(MynaRefresh as Icon, "RefreshIcon")
 export const TagIcon = icon(MynaTag as Icon, "TagIcon")

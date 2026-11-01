@@ -40,9 +40,16 @@ export type FeaturePreviewName = keyof typeof PREVIEWS
 
 // The sample's box: the white card in the glass frame, as on the home
 // search box, so it sits light on the colour wash.
-export function Box({ children }: { children: React.ReactNode }) {
+// `className` for a roomier box (e.g. max-w-80), where a picture needs it.
+export function Box({
+  className,
+  children,
+}: {
+  className?: string
+  children: React.ReactNode
+}) {
   return (
-    <div className={cn(glassFrameClassName, "max-w-60")}>
+    <div className={cn(glassFrameClassName, "max-w-60", className)}>
       <Card size="sm" className="w-full shadow-none ring-0">
         {children}
       </Card>
