@@ -64,26 +64,21 @@ export type ChatItem =
       cutOff?: string
     }
 
-type AssistantItem = Extract<ChatItem, { role: "assistant" }>
+export type AssistantItem = Extract<ChatItem, { role: "assistant" }>
 
-// The reply being written is the last item; a new one starts after the
-// owner's message. With `replyId`, that reply wherever it is (an answer's
-// check ends after the owner may have asked again); gone means no change.
+// The reply `replyId`, wherever it is (an answer's check ends after the
+// owner may have asked again); gone means no change. Never makes a reply:
+// the caller adds it once, before its answer starts, so a state update
+// stays pure and every event lands on the one reply on screen
+// (https://react.dev/reference/react/useState#updating-state-based-on-the-previous-state).
 function withReplyOf(
   items: ChatItem[],
   change: (reply: AssistantItem) => AssistantItem,
-  replyId?: string
+  replyId: string
 ): ChatItem[] {
-  if (replyId !== undefined) {
-    return items.map((item) =>
-      item.id === replyId && item.role === "assistant" ? change(item) : item
-    )
-  }
-  const last = items.at(-1)
-  if (last?.role === "assistant") {
-    return [...items.slice(0, -1), change(last)]
-  }
-  return [...items, change(newReply() as AssistantItem)]
+  return items.map((item) =>
+    item.id === replyId && item.role === "assistant" ? change(item) : item
+  )
 }
 
 // The owner cut off the reply being written or spoken. `heard` is what
@@ -112,7 +107,7 @@ export function withdrawLast(items: ChatItem[]): ChatItem[] {
 }
 
 // An empty reply, so what comes next starts a new message.
-export function newReply(): ChatItem {
+export function newReply(): AssistantItem {
   return {
     id: crypto.randomUUID(),
     role: "assistant",
@@ -128,11 +123,11 @@ export function newReply(): ChatItem {
   }
 }
 
-// `replyId` sends the event to that reply instead of the last one.
+// One event of a reply's answer, on the reply it belongs to.
 export function applyEvent(
   items: ChatItem[],
   event: AssistantStreamEvent,
-  replyId?: string
+  replyId: string
 ): ChatItem[] {
   const withReply = (change: (reply: AssistantItem) => AssistantItem) =>
     withReplyOf(items, change, replyId)
@@ -236,7 +231,7 @@ export function fromMessages(messages: AssistantMessage[]): ChatItem[] {
     message.role === "owner"
       ? { id: crypto.randomUUID(), role: "owner", text: message.text }
       : {
-          ...(newReply() as AssistantItem),
+          ...newReply(),
           text: message.text,
           memory: cleanMemory(message.memory) ?? [],
         }
