@@ -5,8 +5,20 @@ export const ONBOARDING_RULES = {
   minInput: 2,
   maxInput: 100,
   minPasswordLength: 8,
-  // How long each Google Maps detail takes to appear after sign-up (ms).
-  revealMs: 380,
+  // How long each Google Maps detail shows as working after sign-up (ms),
+  // one at a time: quick for a plain field, longer for more to look at.
+  revealMs: {
+    name: 1000,
+    category: 1300,
+    address: 1600,
+    phone: 1200,
+    hours: 2000,
+    photos: 2600,
+    rating: 1500,
+    about: 3200,
+  },
+  // After the last detail, before "Check your details" opens (ms).
+  revealDoneMs: 1200,
   // An import nobody owns and nobody confirmed older than this (hours) is
   // deleted on the next prepareBusiness call.
   unclaimedImportHours: 24,

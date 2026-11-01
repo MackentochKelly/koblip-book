@@ -12,7 +12,18 @@ export const STARTER_CATALOG_RULES = {
   // Each team photo; Muse Image bills per picture.
   imageTimeoutMs: 60_000,
   imageSize: "1024x1024",
-  // How long each finished row stays before the next one starts (ms), so
-  // the owner can see what was added.
-  revealMs: 450,
+  // The least time each "Getting your page ready" row shows as working
+  // (ms), one row at a time; a row whose real work takes longer waits for
+  // it. Longer for what Muse writes or draws more of.
+  revealMs: {
+    services: 3000,
+    extras: 2000,
+    prices: 1500,
+    team: 2000,
+    photos: 3500,
+    policies: 3000,
+    spanish: 2500,
+  },
+  // After the last row, before the success page opens (ms).
+  revealDoneMs: 1000,
 } as const

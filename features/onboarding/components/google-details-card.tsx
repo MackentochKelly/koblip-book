@@ -19,6 +19,7 @@ import {
   type Icon,
 } from "@/components/ui/icons"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
+import { pause } from "@/lib/pace"
 import type { PageLanguage } from "@/lib/page-language"
 import { onboardingWordsFor } from "../i18n"
 
@@ -48,8 +49,6 @@ const ICONS: Record<StepId, Icon> = {
   rating: StarIcon,
   about: InfoIcon,
 }
-
-const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Right after sign-up, before "Check your details": what the page took from
 // the business's Google Maps listing (saved when the business was picked),
@@ -105,21 +104,24 @@ export function GoogleDetailsCard({
   ].filter((row) => row.detail)
 
   const [shown, setShown] = useState(0)
-  const total = rows.length
+  // The shown rows' ids, joined so the effect sees a stable value.
+  const order = rows.map((row) => row.id).join(",")
 
   useEffect(() => {
     // One run per visit, also when React runs effects twice in development.
     if (started.current) return
     started.current = true
+    const ids = order.split(",") as StepId[]
     void (async () => {
-      for (let index = 1; index <= total; index++) {
-        await pause(ONBOARDING_RULES.revealMs)
-        setShown(index)
+      // One detail at a time, each working for its own moment.
+      for (const [index, id] of ids.entries()) {
+        await pause(ONBOARDING_RULES.revealMs[id])
+        setShown(index + 1)
       }
-      await pause(ONBOARDING_RULES.revealMs * 2)
+      await pause(ONBOARDING_RULES.revealDoneMs)
       router.replace(nextHref)
     })()
-  }, [nextHref, router, total])
+  }, [nextHref, order, router])
 
   const state = (index: number): StepRevealState =>
     index < shown ? "done" : index === shown ? "working" : "waiting"

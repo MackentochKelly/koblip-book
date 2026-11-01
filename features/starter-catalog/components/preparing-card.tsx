@@ -18,6 +18,7 @@ import {
 import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from "@/components/ui/avatar"
 import { formatPrice } from "@/lib/format-price"
 import { initials } from "@/lib/initials"
+import { atLeast, pause } from "@/lib/pace"
 import type { PageLanguage } from "@/lib/page-language"
 import { STARTER_CATALOG_RULES as RULES } from "@/lib/starter-catalog-rules"
 import {
@@ -47,8 +48,6 @@ const STEPS: Array<{ id: StepId; icon: Icon }> = [
   { id: "policies", icon: ShieldCheckIcon },
   { id: "spanish", icon: LanguagesIcon },
 ]
-
-const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Up to two names, then "+3".
 function shortList(names: string[], more: (count: number) => string): string {
@@ -101,25 +100,18 @@ export function PreparingCard({
       // ready by their row and saved before the Spanish step.
       const policies = startPolicies(businessId).catch(() => ({ ok: false }))
       try {
-        const result = await startStarterCatalog(businessId)
+        const result = await atLeast(
+          startStarterCatalog(businessId),
+          RULES.revealMs.services
+        )
         if (!result.ok || !result.summary.created) {
           await policies
           return
         }
         setSummary(result.summary)
-        // The catalog arrived in one answer; show it a row at a time.
-        for (const id of ["services", "extras", "prices", "team"] as const) {
-          mark(id, "done")
-          await pause(RULES.revealMs)
-        }
-        mark("photos", "working")
-        mark("policies", "working")
-        const policiesDone = policies.then((written) => {
-          setPoliciesReady(written.ok)
-          mark("policies", "done")
-        })
+        // The real work goes on underneath while the rows are shown.
         // One photo failing (or its request) never stops the others.
-        const photosDone = Promise.allSettled(
+        const photos = Promise.allSettled(
           result.summary.team.map(async (member) => {
             const photo = await drawTeamPhoto(businessId, member.id)
             if (!photo.ok) return
@@ -134,12 +126,29 @@ export function PreparingCard({
               }
             )
           })
-        ).then(() => mark("photos", "done"))
-        await Promise.all([photosDone, policiesDone])
+        )
+        // The Spanish version includes the policies, so it waits for them.
+        const spanish = policies.then(() => translate()).catch(() => null)
+
+        // One row at a time: each works for at least its own moment, and
+        // longer when its real work isn't finished yet.
+        mark("services", "done")
+        for (const id of ["extras", "prices", "team"] as const) {
+          mark(id, "working")
+          await pause(RULES.revealMs[id])
+          mark(id, "done")
+        }
+        mark("photos", "working")
+        await atLeast(photos, RULES.revealMs.photos)
+        mark("photos", "done")
+        mark("policies", "working")
+        const written = await atLeast(policies, RULES.revealMs.policies)
+        setPoliciesReady(written.ok)
+        mark("policies", "done")
         mark("spanish", "working")
-        await translate()
+        await atLeast(spanish, RULES.revealMs.spanish)
         mark("spanish", "done")
-        await pause(RULES.revealMs)
+        await pause(RULES.revealDoneMs)
       } catch {
         // Nothing here blocks the owner: the success page opens anyway.
       } finally {
