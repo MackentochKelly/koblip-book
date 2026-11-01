@@ -252,6 +252,7 @@ export function BookingsTable({
         <BookingList
           bookings={rows}
           now={now}
+          today={today}
           hasTeam={hasTeam}
           panels={panels}
           pages

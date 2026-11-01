@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  formatDayNear,
   formatDayRange,
   addDaysTo,
   dayFromDate,
@@ -43,5 +44,15 @@ describe("format-booking-time", () => {
 
   it("round-trips a calendar day", () => {
     expect(dayFromDate(dateFromDay("2026-03-08"))).toBe("2026-03-08")
+  })
+})
+
+describe("formatDayNear", () => {
+  it("names the days next to today in the page's language", () => {
+    expect(formatDayNear("2026-10-29", "2026-10-29")).toBe("Today")
+    expect(formatDayNear("2026-10-30", "2026-10-29")).toBe("Tomorrow")
+    expect(formatDayNear("2026-10-28", "2026-10-29")).toBe("Yesterday")
+    expect(formatDayNear("2026-10-29", "2026-10-29", "es-US")).toBe("Hoy")
+    expect(formatDayNear("2026-10-27", "2026-10-29")).toBe("Tue, Oct 27")
   })
 })

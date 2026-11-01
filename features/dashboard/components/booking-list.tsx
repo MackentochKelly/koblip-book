@@ -15,6 +15,7 @@ import {
 } from "@tanstack/react-table"
 
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -54,8 +55,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { formatClock, formatDayShort } from "@/lib/format-booking-time"
+import { formatClock, formatDayNear } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
+import { initials } from "@/lib/initials"
 import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import { bookingActions, bookingState } from "../utils/booking-filters"
@@ -79,13 +81,15 @@ const PHONE_STEP = 20
 type Panels = ReturnType<typeof useBookingPanels>
 
 // Bookings as a list, the same on Home and the Bookings page: a computer
-// gets a table sorted by its headers, a phone gets cards. Every row opens
+// gets a table sorted by its headers (who and what, when, with whom, how
+// it went and its price), a phone gets cards. Every row opens
 // the booking; its ⋯ menu moves, cancels or marks it. With `pages` the
 // table has pages and the cards a Show more; without, all are shown, or
 // only the first `phoneLimit` cards on a phone.
 export function BookingList({
   bookings,
   now,
+  today,
   hasTeam,
   panels,
   newestFirst = false,
@@ -95,6 +99,8 @@ export function BookingList({
   bookings: OwnerBooking[]
   // ISO time the page was loaded: what is upcoming and what can be done.
   now: string
+  // Today in the business's time zone ("YYYY-MM-DD"), for Today/Tomorrow.
+  today: string
   hasTeam: boolean
   panels: Panels
   newestFirst?: boolean
@@ -113,38 +119,53 @@ export function BookingList({
   }
 
   const columns = column.columns([
+    // Who and what: the name stands out, the service under it. The row
+    // opens on a click; the name is its button for the keyboard.
     column.accessor("customerName", {
       id: "customer",
       header: t.columns.customer,
       sortFn: "text",
-      // The name stands out; the phone is in the details. The row opens on
-      // a click; the name is its button for the keyboard.
       cell: ({ row }) => (
-        <Button
-          variant="link"
-          className="h-auto p-0 font-semibold text-foreground"
-          onClick={(event) => {
-            event.stopPropagation()
-            panels.open(row.original, Date.now())
-          }}
-        >
-          {row.original.customerName}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Avatar>
+            <AvatarFallback>
+              {initials(row.original.customerName) || "?"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex min-w-0 flex-col items-start">
+            <Button
+              variant="link"
+              className="h-auto p-0 font-semibold text-foreground"
+              onClick={(event) => {
+                event.stopPropagation()
+                panels.open(row.original, Date.now())
+              }}
+            >
+              {row.original.customerName}
+            </Button>
+            <span className="text-muted-foreground">
+              {row.original.serviceName}
+              {row.original.addons.length > 0 &&
+                ` ${t.extras(row.original.addons.length)}`}
+            </span>
+          </div>
+        </div>
       ),
     }),
-    column.accessor("serviceName", {
-      id: "service",
-      header: t.columns.service,
-      sortFn: "text",
+    // When, in one line: Today, Tomorrow, Yesterday or the day, then the
+    // start time; the end is in the details.
+    column.accessor("startAt", {
+      id: "date",
+      header: t.columns.date,
+      sortFn: "basic",
       cell: ({ row }) => (
-        <div className="flex flex-col">
-          <span>{row.original.serviceName}</span>
-          {row.original.addons.length > 0 && (
-            <span className="text-muted-foreground">
-              {t.extras(row.original.addons.length)}
-            </span>
-          )}
-        </div>
+        <span className="whitespace-nowrap tabular-nums">
+          {formatDayNear(row.original.date, today, m.locale)}
+          <span className="text-muted-foreground">
+            {" · "}
+            {formatClock(row.original.time, m.locale)}
+          </span>
+        </span>
       ),
     }),
     ...(hasTeam
@@ -153,47 +174,38 @@ export function BookingList({
             id: "team",
             header: t.columns.team,
             sortFn: "text",
+            cell: ({ row }) =>
+              row.original.teamMemberName ? (
+                <div className="flex items-center gap-2">
+                  <Avatar size="sm">
+                    <AvatarFallback>
+                      {initials(row.original.teamMemberName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {row.original.teamMemberName}
+                </div>
+              ) : null,
           }),
         ]
       : []),
-    column.accessor((booking) => booking.priceMinor ?? 0, {
-      id: "price",
-      header: t.columns.price,
-      sortFn: "basic",
-      cell: ({ row }) =>
-        row.original.priceMinor === null ? (
-          <span className="text-muted-foreground">—</span>
-        ) : (
-          <span className="tabular-nums">
-            {formatPrice(
-              row.original.priceMinor,
-              row.original.currency,
-              m.locale
-            )}
-          </span>
-        ),
-    }),
+    // How it went, then the price on the right.
     column.accessor((booking) => bookingState(booking, now), {
       id: "status",
       header: t.columns.status,
       sortFn: "text",
       cell: ({ row }) => (
-        <BookingStateBadge state={bookingState(row.original, now)} />
-      ),
-    }),
-    column.accessor("startAt", {
-      id: "date",
-      header: t.columns.date,
-      sortFn: "basic",
-      // One line, day then start time; the end is in the details.
-      cell: ({ row }) => (
-        <span className="whitespace-nowrap tabular-nums">
-          {formatDayShort(row.original.date, m.locale)}
-          <span className="text-muted-foreground">
-            {" · "}
-            {formatClock(row.original.time, m.locale)}
-          </span>
-        </span>
+        <div className="flex items-center justify-between gap-3">
+          <BookingStateBadge state={bookingState(row.original, now)} />
+          {row.original.priceMinor !== null && (
+            <span className="tabular-nums">
+              {formatPrice(
+                row.original.priceMinor,
+                row.original.currency,
+                m.locale
+              )}
+            </span>
+          )}
+        </div>
       ),
     }),
     column.display({
@@ -246,7 +258,7 @@ export function BookingList({
                     <BookingStateBadge state={bookingState(booking, now)} />
                   </ItemTitle>
                   <ItemDescription>
-                    {formatDayShort(booking.date, m.locale)} ·{" "}
+                    {formatDayNear(booking.date, today, m.locale)} ·{" "}
                     {formatClock(booking.time, m.locale)} ·{" "}
                     {booking.serviceName}
                     {booking.teamMemberName && ` · ${booking.teamMemberName}`}

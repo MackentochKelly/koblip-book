@@ -163,6 +163,7 @@ export function BookingsView({
             key={view}
             bookings={list}
             now={now}
+            today={addOptions.today}
             hasTeam={hasTeam}
             panels={panels}
             newestFirst={view === "past"}

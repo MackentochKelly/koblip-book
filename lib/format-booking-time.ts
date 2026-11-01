@@ -37,6 +37,23 @@ export function formatDayShort(date: string, locale = "en-US"): string {
   }).format(asUtc(date))
 }
 
+// "Today", "Tomorrow" or "Yesterday" next to `today` (both "YYYY-MM-DD" in
+// the business's time zone), in the page's language (Intl.RelativeTimeFormat);
+// any other day as "Tue, Oct 27".
+export function formatDayNear(
+  date: string,
+  today: string,
+  locale = "en-US"
+): string {
+  const days = Math.round((asUtc(date) - asUtc(today)) / 86_400_000)
+  if (Math.abs(days) > 1) return formatDayShort(date, locale)
+  const word = new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(
+    days,
+    "day"
+  )
+  return word.charAt(0).toLocaleUpperCase(locale) + word.slice(1)
+}
+
 // "2026-10-27" → "Oct 27".
 export function formatMonthDay(date: string, locale = "en-US"): string {
   return new Intl.DateTimeFormat(locale, {
