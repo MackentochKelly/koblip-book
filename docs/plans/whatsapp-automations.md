@@ -118,16 +118,16 @@ export async function setAutomationOn(
 
 | # | Task | Needs | Status |
 | --- | --- | --- | --- |
-| B1 | **Data and limits.** Tables `automations`, `automationRuns`, `automationEvents` (event ids seen, D6), `automationPauses` (customer, until), with a drizzle-kit migration; a business's `welcome` row is made on first read with Book's default (no seed script). `utils/automation-rules.ts`: one checker `automationProblem(input, rules)` for every limit in D7, with a unit test per limit. | — | To do |
-| B2 | **Actions and hook.** The Contract's queries and actions (owner check, then `automationProblem`, then one transaction; `noOwnNumber` per D2). In `applyChatEvent`, after the reply is stored, one call to `runAutomations(event)`; nothing else in that file changes. | B1 | To do |
-| B3 | **Engine and tests.** `automation-engine.ts`: trigger (D3), dedupe (D6), pause (D5), send through Chat's `POST /api/whatsapp/send` with the reminders' `Line`/`post` path (`button`, `cta_url`, `list`), log every run. Taps come back as `inbound` with `button.payload` = the button id. Tests: Welcome sends once; a repeated event sends nothing; each action; handoff pauses; Koblip's number sends nothing; a Chat error logs `failed` and never throws out of the webhook. | B2 | To do |
+| B1 | **Data and limits.** Tables `automations`, `automationRuns`, `automationEvents` (event ids seen, D6), `automationPauses` (customer, until), with a drizzle-kit migration; a business's `welcome` row is made on first read with Book's default (no seed script). `utils/automation-rules.ts`: one checker `automationProblem(input, rules)` for every limit in D7, with a unit test per limit. | — | Done (Backend dev, 2026-10-31; uncommitted) |
+| B2 | **Actions and hook.** The Contract's queries and actions (owner check, then `automationProblem`, then one transaction; `noOwnNumber` per D2). In `applyChatEvent`, after the reply is stored, one call to `runAutomations(event)`; nothing else in that file changes. | B1 | Done (Backend dev, 2026-10-31; uncommitted) |
+| B3 | **Engine and tests.** `automation-engine.ts`: trigger (D3), dedupe (D6), pause (D5), send through Chat's `POST /api/whatsapp/send` with the reminders' `Line`/`post` path (`button`, `cta_url`, `list`), log every run. Taps come back as `inbound` with `button.payload` = the button id. Tests: Welcome sends once; a repeated event sends nothing; each action; handoff pauses; Koblip's number sends nothing; a Chat error logs `failed` and never throws out of the webhook. | B2 | Done (Backend dev, 2026-10-31; uncommitted) |
 
 ### UI
 
 | # | Task | Needs | Status |
 | --- | --- | --- | --- |
-| U1 | **Flows tab and steps.** New Automations tab **Flows** (D11) with Welcome as a card and its switch, like Messages. Shared `components/flow-steps.tsx`: trigger → message → each button → what it does, top to bottom, shadcn parts only. | Contract | To do |
-| U2 | **Editor.** ResponsivePanel: every word and the buttons (add, remove, reorder, rename, pick the action), EN/ES switch on the first field's row, `WhatsappPreview` at the bottom, Reset to Book's default, each `AutomationProblem` under its field. | U1 | To do |
+| U1 | **Flows tab and steps.** New Automations tab **Flows** (D11) with Welcome as a card and its switch, like Messages. Shared `components/flow-steps.tsx`: trigger → message → each button → what it does, top to bottom, shadcn parts only. | Contract | Done (UI dev, 2026-10-31) |
+| U2 | **Editor.** ResponsivePanel: every word and the buttons (add, remove, reorder, rename, pick the action), EN/ES switch on the first field's row, `WhatsappPreview` at the bottom, Reset to Book's default, each `AutomationProblem` under its field. | U1 | Done (UI dev, 2026-10-31) |
 | U3 | **Activity and admin.** Runs in Activity with an "Automations" filter; the admin sees every business's automations and runs, read-only. | B2 | To do |
 
 ## Decisions
@@ -168,6 +168,97 @@ export async function setAutomationOn(
 - **D11 Owner's answers** (2026-10-31): the tab is **Flows**; the editor is a
   step list, not a canvas; Welcome and its replies go in the business page's
   language.
+
+- **D12 B1 data choices** (Backend dev, 2026-10-31). Welcome is stored
+  disabled until explicitly enabled, with a unique business/key constraint;
+  concurrent first reads never reset saved choices. `readAutomations` is an
+  internal server-only data read; B2 adds the authorized Contract queries.
+  Runs enforce the business/automation pair with a composite foreign key.
+  Event claims include business and source workspace; pauses also include
+  source number and customer, preventing unrelated customers or businesses
+  from suppressing each other.
+- **D13 B1 rule checks** (Backend dev, 2026-10-31). Automation settings use
+  `automation.<key>` in `platform_settings`, read by `automationRules` through
+  the same settings loader as `notificationRules`; booking-template rules
+  keep their existing values. The checker accepts the Contract's saved
+  wording/buttons and normalized rendered button/link/list content, so the
+  sender can check every D7 limit without another validator. Excess list
+  rows use the existing `tooManyButtons` count error and a `sections` field;
+  the Contract is unchanged. Limits cannot be raised beyond Meta's caps.
+
+- **D14 B2 hook boundary** (Owner, 2026-10-31). Read the customer's
+  previous reply time before updating `chatReplies`, then pass it to
+  `runAutomations` after the update. B2 supplies a no-op entry point explicitly
+  marked for B3; B3 implements the engine. The public Contract is unchanged.
+  This minimal webhook exception preserves the time D3 needs instead of
+  trying to recover it after the update has overwritten it.
+- **D15 B2 queries and saves** (Backend dev, 2026-10-31). Queries authorize
+  through `getOwnerBusiness`; Activity uses the existing `historySize` rule
+  with a cursor scoped to business and filters, ordered by time and id.
+  Actions authorize first and return `not_found` for a failed owner check;
+  validate saved content before one `saveAll` transaction. Storage failures
+  return the Contract's generic `invalid`, without logging private data.
+  Saved words and labels are trimmed; payload ids are preserved. Reset only
+  restores the built-in welcome's defaults and preserves its on/off choice.
+  Enabling requires the existing usable-connection check, saved number,
+  both tokens and conversations scope; Koblip's shared connection never
+  qualifies. Saving, resetting and disabling do not require a connection
+  (Owner correction, 2026-10-31).
+
+- **D16 B3 integration choices** (Owner, 2026-10-31). Welcome uses the
+  customer's latest booking language for this business, else English; action
+  replies keep the originating run's language. No new language setting.
+  Service replies currently link to the existing public `#services` section;
+  service preselection belongs to the UI lane later. Minimal integration
+  exceptions allow exporting/reusing reminders' `Line` and `post`, with
+  privacy-safe error handling, plus an outbound-only automation call in
+  `applyChatEvent`. The public Contract stays unchanged.
+- **D17 Engine transport and claims** (Backend dev, 2026-10-31). Welcome
+  sends stored reply-button choices; selecting Book now sends the separate
+  CTA URL message (Meta's interactive types cannot be mixed). Event claims
+  are persisted before acting; per-workspace serialization covers sending
+  and recording, so Book's outbound callbacks can identify its own sends.
+  The shared send path records own-number Chat record ids as namespaced
+  receipts in `automationEvents` before returning, and outbound processing
+  waits for in-flight sends. This also handles reminder callbacks arriving
+  before their notification row has received the send result.
+  Taps require a sent parent matching customer, business, workspace, number
+  and provider message id. Ambiguous inbound workspace/number routing does
+  not send. Chat outbound events omit a source number, so a manual outbound
+  pauses this customer on each own number connected to that workspace.
+  Failure reasons are stable codes, never provider wording or private data.
+  Chat currently truncates list bodies to its `maxBody` limit; longer list
+  bodies fail visibly before sending rather than being silently truncated.
+
+### B1 verification (2026-10-31)
+
+`npm run typecheck`, `npm run lint`, the current-app suite via `npm test`,
+and `npm run build` passed. Tests: 987 passed, 26 skipped.
+The test command excludes nested worktree copies, not current-app tests.
+Lint retains the existing unused `Geist` warning in `app/layout.tsx`.
+Migration `0040_legal_pepper_potts.sql` was generated with `npm run db:generate`
+and exercised against temporary test databases. No commit or push.
+
+### B2 verification (2026-10-31)
+
+`npm run typecheck`, `npm run lint`, `npm test -- --exclude '**/.claude/**' --maxWorkers=4`,
+and `npm run build` passed. Tests: 1,054 passed, 26 skipped. Lint retains the
+existing unused `Geist` warning. The excluded paths are nested worktree copies,
+not current-app tests. Queries, actions and the D14 webhook boundary are done;
+`runAutomations` remains the approved no-op stub for B3. Contract unchanged.
+No commit or push. Concurrent UI/widget changes were left untouched.
+
+### B3 verification (2026-10-31)
+
+`npm run typecheck`, `npm run lint`, `npm test -- --exclude '**/.claude/**' --maxWorkers=4`,
+and `npm run build` passed. Tests: 1,102 passed, 26 skipped. Lint retains the
+existing unused `Geist` warning. Engine tests use temporary migrated databases,
+fake Chat and a fake clock, including actual webhook failure handling and an
+early outbound-callback race. All B3 cases, D16 language/link choices, and the
+save/enable/off correction are covered. `runAutomations` contains failures,
+including a failed diagnostic write, without logging private data. Service
+preselection remains a UI follow-up; current links open `#services` as approved.
+The public Contract is unchanged. No commit, push or deployment.
 
 ## Docs (read the ones your task needs, before coding)
 

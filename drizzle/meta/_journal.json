@@ -281,6 +281,13 @@
       "when": 1793495255534,
       "tag": "0039_dizzy_tempest",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1793502432578,
+      "tag": "0040_legal_pepper_potts",
+      "breakpoints": true
     }
   ]
 }

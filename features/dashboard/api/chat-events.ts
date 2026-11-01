@@ -11,6 +11,7 @@ import {
   notificationSends,
 } from "@/lib/db/schema"
 import { notify } from "@/lib/in-app-notifications"
+import { runAutomations } from "./automation-engine"
 import {
   applyButtonReply,
   buttonAction,
@@ -128,6 +129,10 @@ async function applyStatus(event: StatusEvent) {
 // move forward, so a repeated or late event changes nothing, which is the
 // deduplication Chat asks receivers for.
 export async function applyChatEvent(event: unknown) {
+  if (event && typeof event === "object" && "type" in event && event.type === "outbound") {
+    await runAutomations(event, null)
+    return
+  }
   const delivery = status(event)
   if (delivery) return applyStatus(delivery)
   const reply = inbound(event)
@@ -161,6 +166,15 @@ export async function applyChatEvent(event: unknown) {
   ])
   if (!business && !koblip) return
 
+  const [previousReply] = await db
+    .select({ lastReplyAt: chatReplies.lastReplyAt })
+    .from(chatReplies)
+    .where(and(
+      eq(chatReplies.workspaceId, reply.workspaceId),
+      eq(chatReplies.phoneNumberId, reply.senderId),
+      eq(chatReplies.customerPhone, customerPhone)
+    ))
+    .limit(1)
   const lastReplyAt = at.toISOString()
   await db
     .insert(chatReplies)
@@ -174,6 +188,8 @@ export async function applyChatEvent(event: unknown) {
       target: [chatReplies.workspaceId, chatReplies.phoneNumberId, chatReplies.customerPhone],
       set: { lastReplyAt: sql`max(${chatReplies.lastReplyAt}, excluded.last_reply_at)` },
     })
+
+  await runAutomations(event, previousReply?.lastReplyAt ?? null)
 
   const action = buttonAction(reply.button?.payload)
   if (action && typeof reply.replyToMessageId === "string" && reply.replyToMessageId) {

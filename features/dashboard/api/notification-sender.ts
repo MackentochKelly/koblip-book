@@ -8,6 +8,7 @@ import { notification, notify } from "@/lib/in-app-notifications"
 import { koblipTemplatesSent, usageMonth } from "@/lib/koblip-usage"
 import {
   bookings,
+  automationEvents,
   businesses,
   chatConnections,
   chatReplies,
@@ -38,6 +39,7 @@ import {
   sendableTemplate,
 } from "./chat-templates"
 import { notificationSettingsFor } from "./notifications"
+import { bookSendReceipt, duringBookSend } from "./automation-state"
 
 // Book's WhatsApp booking messages (docs/koblip-chat-integration.md, step 3),
 // sent through Koblip Chat with its public API: the person as a contact
@@ -78,7 +80,7 @@ async function koblipConnection() {
 type ApiInit = Parameters<typeof chatApi>[2]
 
 // The number one business's messages go from, and how to reach Chat for it.
-type Line = {
+export type Line = {
   sender: Sender
   workspaceId: string
   phoneNumberId: string
@@ -723,12 +725,36 @@ type Recipient = { contact_id: string; whatsapp_phone_number_id: string }
 
 // The person as a contact in the line's Koblip Chat, then the message.
 // Chat keeps who opted out (D18): an opted-out contact gets nothing.
-async function post(
+export async function post(
+  line: Line,
+  digits: string,
+  contactName: string,
+  via: "text" | "template",
+  body: (recipient: Recipient) => Record<string, unknown>,
+  options: { logErrors?: boolean } = {}
+): Promise<Outcome> {
+  return duringBookSend(line.workspaceId, async () => {
+    const outcome = await postTo(line, digits, contactName, via, body, options)
+    if (line.sender === "own" && outcome.state === "sent" && outcome.chatRecordId) {
+      const connections = await db.select({ businessId: chatConnections.businessId })
+        .from(chatConnections).where(and(eq(chatConnections.workspaceId, line.workspaceId),
+          eq(chatConnections.phoneNumberId, line.phoneNumberId)))
+      if (connections.length) await db.insert(automationEvents).values(connections.map(({ businessId }) => ({
+        businessId, workspaceId: line.workspaceId, phoneNumberId: line.phoneNumberId,
+        eventId: bookSendReceipt(outcome.chatRecordId!), occurredAt: new Date().toISOString(),
+      }))).onConflictDoNothing()
+    }
+    return outcome
+  })
+}
+
+async function postTo(
   { sender, phoneNumberId, call }: Line,
   digits: string,
   contactName: string,
   via: "text" | "template",
-  body: (recipient: Recipient) => Record<string, unknown>
+  body: (recipient: Recipient) => Record<string, unknown>,
+  options: { logErrors?: boolean } = {}
 ): Promise<Outcome> {
   let contact: Contact
   try {
@@ -740,7 +766,7 @@ async function post(
     if (!(error instanceof ChatApiError)) throw error
     // A refused number will be refused again; anything else may pass later.
     if (error.status === 400) return { state: "failed", reason: "badPhone", sender }
-    console.error(error)
+    if (options.logErrors !== false) console.error(error)
     return { state: "pending" }
   }
   const contactId = contact.data?._id
@@ -755,7 +781,7 @@ async function post(
     return { state: "sent", via, chatRecordId: sent.data?.id ?? sent.data?._id ?? null, sender }
   } catch (error) {
     if (!(error instanceof ChatApiError)) throw error
-    console.error(error)
+    if (options.logErrors !== false) console.error(error)
     // It may have gone: never sent again.
     return { state: "failed", reason: error.code ?? "chat", sender }
   }

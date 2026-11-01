@@ -26,26 +26,65 @@ function usable(key: string, value: unknown): key is NotificationRuleKey {
   return isRuleKey(key) && NOTIFICATION_RULE_CHECKS[key](value)
 }
 
-function defaults(): NotificationRules {
-  return structuredClone(NOTIFICATION_RULES) as unknown as NotificationRules
+// Automation limits are separate from template limits (notably 20 vs 25
+// characters for button labels). Stored overrides use automation.<key>.
+export const AUTOMATION_RULES = {
+  maxBody: 1024,
+  maxButtons: 3,
+  maxButtonLabel: 20,
+  maxButtonId: 256,
+  maxHeader: 60,
+  maxFooter: 60,
+  maxListBody: 4096,
+  maxListRows: 10,
+  maxListRowTitle: 24,
+  maxListRowDescription: 72,
+  maxListRowId: 200,
+  maxListSectionTitle: 24,
+  welcomeAgainDays: 30,
+  handoffQuietHours: 24,
+} as const
+
+export type AutomationRules = { [K in keyof typeof AUTOMATION_RULES]: number }
+
+function automationRuleUsable(key: string, value: unknown): boolean {
+  if (!Object.hasOwn(AUTOMATION_RULES, key) || typeof value !== "number" || !Number.isSafeInteger(value)) return false
+  if (key === "welcomeAgainDays" || key === "handoffQuietHours") return value >= 0
+  return value >= 1 && value <= AUTOMATION_RULES[key as keyof AutomationRules]
+}
+
+// Both rule groups use the same stored-settings path. Only explicitly allowed
+// per-business overrides apply; automation limits currently apply to everyone.
+async function storedRules<T extends object>(
+  defaults: object,
+  accepts: (key: string, value: unknown) => boolean,
+  businessId?: string,
+  perBusiness: readonly string[] = [],
+  prefix = ""
+): Promise<T> {
+  const rules = structuredClone(defaults) as Record<string, unknown>
+  for (const row of await db.select().from(platformSettings)) {
+    if (!row.key.startsWith(prefix)) continue
+    const key = row.key.slice(prefix.length)
+    if (accepts(key, row.value)) rules[key] = row.value
+  }
+  if (businessId && perBusiness.length) {
+    const own = await db.select().from(businessSettings)
+      .where(eq(businessSettings.businessId, businessId))
+    for (const row of own) {
+      if (accepts(row.key, row.value) && perBusiness.includes(row.key)) rules[row.key] = row.value
+    }
+  }
+  return rules as T
 }
 
 // The rules for everyone, or for one business when its id is given.
 export async function notificationRules(businessId?: string): Promise<NotificationRules> {
-  const rules = defaults() as Record<NotificationRuleKey, unknown>
-  for (const row of await db.select().from(platformSettings)) {
-    if (usable(row.key, row.value)) rules[row.key] = row.value
-  }
-  if (businessId) {
-    const own = await db
-      .select()
-      .from(businessSettings)
-      .where(eq(businessSettings.businessId, businessId))
-    for (const row of own) {
-      if (usable(row.key, row.value) && BUSINESS_RULE_KEYS.includes(row.key)) rules[row.key] = row.value
-    }
-  }
-  return rules as NotificationRules
+  return storedRules<NotificationRules>(NOTIFICATION_RULES, usable, businessId, BUSINESS_RULE_KEYS)
+}
+
+export async function automationRules(): Promise<AutomationRules> {
+  return storedRules<AutomationRules>(AUTOMATION_RULES, automationRuleUsable, undefined, [], "automation.")
 }
 
 export type RuleChange = {

@@ -23,6 +23,7 @@ import type { Sender } from "../types/notifications"
 // is its own route below it (app/(owner)/dashboard/[businessId]/whatsapp/).
 const PARTS = [
   "overview",
+  "flows",
   "messages",
   "alerts",
   "timing",

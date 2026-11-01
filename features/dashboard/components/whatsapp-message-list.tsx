@@ -6,15 +6,8 @@ import { toast } from "sonner"
 
 import { HelperLine } from "@/components/helper-line"
 import { MessageStatus } from "@/components/message-status"
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemTitle,
-} from "@/components/ui/item"
-import { Switch } from "@/components/ui/switch"
+import { SwitchCard } from "@/components/switch-card"
+import { ItemGroup } from "@/components/ui/item"
 import { setMessageOn } from "../api/notification-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { NotificationMessage, TemplateReview } from "../types/notifications"
@@ -106,31 +99,17 @@ function MessageRow({
   }
 
   return (
-    <Item variant="outline" className="relative has-[[data-slot=item-content]_button:hover]:bg-muted">
-      {/* The whole card opens the editor: the button stretches over it with
-          ::after. The switch sits above it as its own control. */}
-      <ItemContent className="min-w-0">
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label={t.edit(name)}
-          className="flex min-h-11 flex-col items-start justify-center gap-1 rounded-md text-left outline-none after:absolute after:inset-0 after:rounded-2xl focus-visible:after:ring-3 focus-visible:after:ring-ring/50"
-        >
-          <ItemTitle>{name}</ItemTitle>
-          <ItemDescription>{t.about[item.message]}</ItemDescription>
-        </button>
-        <div className="mt-2">
-          <MessageStatus on={on} review={review} labels={t} />
-        </div>
-      </ItemContent>
-      <ItemActions className="relative z-10">
-        <Switch
-          checked={on}
-          disabled={pending}
-          onCheckedChange={toggle}
-          aria-label={t.turnOn(name)}
-        />
-      </ItemActions>
-    </Item>
+    <SwitchCard
+      title={name}
+      description={t.about[item.message]}
+      openLabel={t.edit(name)}
+      onOpen={onEdit}
+      on={on}
+      onCheckedChange={toggle}
+      switchLabel={t.turnOn(name)}
+      switchDisabled={pending}
+    >
+      <MessageStatus on={on} review={review} labels={t} />
+    </SwitchCard>
   )
 }

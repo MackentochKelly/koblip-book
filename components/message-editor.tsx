@@ -2,9 +2,10 @@
 
 import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { CircleCheckIcon, PlusIcon, XIcon } from "@/components/ui/icons"
+import { CircleCheckIcon, PlusIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
+import { AddButtonSelect, ButtonField } from "@/components/button-fields"
 import { MetaStatusBadge } from "@/components/meta-status-badge"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -20,19 +21,6 @@ import {
   FieldLegend,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from "@/components/ui/input-group"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
@@ -381,24 +369,27 @@ export function MessageEditor({
                   {draft.buttons.map((button, index) => (
                     <ButtonField
                       key={button.action}
-                      button={button}
-                      labels={t}
+                      id={`message-button-${button.action}`}
+                      value={button.label}
+                      kind={t.buttonKinds[button.action]}
                       maxLength={limits.maxButtonLabel}
-                      editable={editable}
                       onChange={(label) =>
                         setButtons(
                           draft.buttons.map((item, at) => (at === index ? { ...item, label } : item))
                         )
                       }
-                      onRemove={() =>
-                        setButtons(draft.buttons.filter((_, at) => at !== index))
+                      removeLabel={t.removeButton(button.label || t.buttonKinds[button.action])}
+                      onRemove={
+                        editable
+                          ? () => setButtons(draft.buttons.filter((_, at) => at !== index))
+                          : undefined
                       }
                     />
                   ))}
                   {editable && canAdd && (
-                    <AddButton
-                      actions={unused}
-                      labels={t}
+                    <AddButtonSelect
+                      items={unused.map((action) => ({ value: action, label: t.buttonKinds[action] }))}
+                      label={t.addButton}
                       onAdd={(action) =>
                         setButtons([...draft.buttons, { action, label: "" }])
                       }
@@ -450,85 +441,5 @@ function MessagePreview({
         label: button.label || labels.buttonKinds[button.action],
       }))}
     />
-  )
-}
-
-// One button: its text, what it does, and a way to remove it.
-function ButtonField({
-  button,
-  labels,
-  maxLength,
-  editable,
-  onChange,
-  onRemove,
-}: {
-  button: EditorButton
-  labels: MessageEditorLabels
-  maxLength: number
-  editable: boolean
-  onChange: (label: string) => void
-  onRemove: () => void
-}) {
-  const id = `message-button-${button.action}`
-  const kind = labels.buttonKinds[button.action]
-  return (
-    <Field>
-      <FieldLabel htmlFor={id} className="sr-only">
-        {kind}
-      </FieldLabel>
-      <InputGroup>
-        <InputGroupInput
-          id={id}
-          value={button.label}
-          maxLength={maxLength}
-          placeholder={kind}
-          onChange={(event) => onChange(event.target.value)}
-        />
-        {editable && (
-          <InputGroupAddon align="inline-end">
-            <InputGroupButton
-              size="icon-xs"
-              aria-label={labels.removeButton(button.label || kind)}
-              onClick={onRemove}
-            >
-              <XIcon />
-            </InputGroupButton>
-          </InputGroupAddon>
-        )}
-      </InputGroup>
-      <FieldDescription>{kind}</FieldDescription>
-    </Field>
-  )
-}
-
-// Adds one of the buttons this message may still take.
-function AddButton({
-  actions,
-  labels,
-  onAdd,
-}: {
-  actions: ButtonAction[]
-  labels: MessageEditorLabels
-  onAdd: (action: ButtonAction) => void
-}) {
-  const items = actions.map((action) => ({ value: action, label: labels.buttonKinds[action] }))
-  return (
-    <Select
-      items={items}
-      value={null}
-      onValueChange={(value) => value && onAdd(value as ButtonAction)}
-    >
-      <SelectTrigger aria-label={labels.addButton}>
-        <PlusIcon />
-        <SelectValue placeholder={labels.addButton} />
-      </SelectTrigger>
-      <SelectContent>
-        {items.map((item) => (
-          <SelectItem key={item.value} value={item.value}>
-            {item.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
   )
 }

@@ -1,5 +1,6 @@
 import {
   index,
+  foreignKey,
   integer,
   primaryKey,
   sqliteTable,
@@ -971,3 +972,80 @@ export const googleCalendarInvites = sqliteTable(
   },
   (table) => [index("google_calendar_invites_member").on(table.teamMemberId)]
 )
+
+
+// General automation data; a business's built-in welcome is one keyed row.
+export const automations = sqliteTable("automations", {
+  id: id(),
+  businessId: text().notNull().references(() => businesses.id, { onDelete: "cascade" }),
+  key: text().notNull(),
+  trigger: text({ enum: ["firstMessage"] }).notNull(),
+  on: integer({ mode: "boolean" }).notNull().default(false),
+  wording: text({ mode: "json" }).$type<Record<"en" | "es", {
+    body: string
+    handoffReply: string
+    servicesIntro: string
+  }>>().notNull(),
+  buttons: text({ mode: "json" }).$type<{
+    id: string
+    label: Record<"en" | "es", string>
+    action: { type: "bookingLink" } | { type: "servicesList" } | { type: "handoff" }
+  }[]>().notNull(),
+  isDefault: integer({ mode: "boolean" }).notNull().default(true),
+  ...timestamps(),
+}, (table) => [
+  uniqueIndex("automations_business_key").on(table.businessId, table.key),
+  uniqueIndex("automations_business_id").on(table.businessId, table.id),
+])
+
+export const automationRuns = sqliteTable("automation_runs", {
+  id: id(),
+  businessId: text().notNull().references(() => businesses.id, { onDelete: "cascade" }),
+  automationId: text().notNull(),
+  workspaceId: text().notNull(),
+  phoneNumberId: text().notNull(),
+  eventId: text(),
+  customerPhone: text().notNull(),
+  customerName: text(),
+  language: text({ enum: ["en", "es"] }).notNull(),
+  step: text({ enum: ["welcome", "bookingLink", "servicesList", "serviceLink", "handoff"] }).notNull(),
+  state: text({ enum: ["sent", "failed", "skipped"] }).notNull(),
+  reason: text(),
+  // Book's outgoing Chat record lets the engine distinguish its own outbound events.
+  chatRecordId: text(),
+  chatMessageId: text(),
+  at: text().notNull().$defaultFn(() => new Date().toISOString()),
+}, (table) => [
+  foreignKey({ columns: [table.businessId, table.automationId],
+    foreignColumns: [automations.businessId, automations.id] }).onDelete("cascade"),
+  index("automation_runs_business_at").on(table.businessId, table.at, table.id),
+  index("automation_runs_automation_at").on(table.businessId, table.automationId, table.at, table.id),
+  index("automation_runs_customer").on(table.businessId, table.workspaceId, table.phoneNumberId, table.customerPhone, table.at),
+  index("automation_runs_record").on(table.workspaceId, table.chatRecordId),
+])
+
+// Events are claimed before acting; the same business/workspace event is claimed once.
+export const automationEvents = sqliteTable("automation_events", {
+  businessId: text().notNull().references(() => businesses.id, { onDelete: "cascade" }),
+  workspaceId: text().notNull(),
+  phoneNumberId: text().notNull(),
+  eventId: text().notNull(),
+  occurredAt: text().notNull(),
+  createdAt: text().notNull().$defaultFn(() => new Date().toISOString()),
+}, (table) => [
+  primaryKey({ columns: [table.businessId, table.workspaceId, table.eventId] }),
+  index("automation_events_business").on(table.businessId, table.createdAt),
+])
+
+// A handoff silences all automations for this customer on this business's number.
+export const automationPauses = sqliteTable("automation_pauses", {
+  businessId: text().notNull().references(() => businesses.id, { onDelete: "cascade" }),
+  workspaceId: text().notNull(),
+  phoneNumberId: text().notNull(),
+  customerPhone: text().notNull(),
+  until: text().notNull(),
+  ...timestamps(),
+}, (table) => [
+  primaryKey({ columns: [table.businessId, table.workspaceId, table.phoneNumberId, table.customerPhone] }),
+  index("automation_pauses_until").on(table.until),
+])
