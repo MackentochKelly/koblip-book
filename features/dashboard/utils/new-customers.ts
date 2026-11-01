@@ -6,7 +6,7 @@ export function newCustomers(
   bookings: OwnerBooking[],
   firstVisit: Record<string, string>,
   limit: number
-): Array<{ key: string; name: string; date: string }> {
+): Array<{ key: string; name: string; phone: string | null; date: string }> {
   const seen = new Set<string>()
   return bookings
     .filter((booking) => firstVisit[booking.customerKey] === booking.date)
@@ -20,6 +20,7 @@ export function newCustomers(
     .map((booking) => ({
       key: booking.customerKey,
       name: booking.customerName,
+      phone: booking.customerPhone,
       date: booking.date,
     }))
 }

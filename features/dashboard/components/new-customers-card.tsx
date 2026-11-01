@@ -1,7 +1,14 @@
 "use client"
 
+import type { Route } from "next"
 import Link from "next/link"
-import { ChevronRightIcon } from "@/components/ui/icons"
+import {
+  ChevronRightIcon,
+  ContactIcon,
+  EllipsisVerticalIcon,
+  PhoneIcon,
+  WhatsAppIcon,
+} from "@/components/ui/icons"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -13,7 +20,15 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Item,
+  ItemActions,
   ItemContent,
   ItemDescription,
   ItemGroup,
@@ -22,15 +37,22 @@ import {
 } from "@/components/ui/item"
 import { formatDayShort } from "@/lib/format-booking-time"
 import { initials } from "@/lib/initials"
+import { phoneLinks } from "@/lib/phone-link"
 import { useOwnerMessages } from "../i18n/provider"
 
 // The New customers widget: who booked for the first time lately, newest
-// first, and View all for the Customers page.
+// first, each with a ⋮ menu (open them on the Customers page, call or
+// WhatsApp them), and View all for the Customers page.
 export function NewCustomersCard({
   customers,
   href,
 }: {
-  customers: Array<{ key: string; name: string; date: string }>
+  customers: Array<{
+    key: string
+    name: string
+    phone: string | null
+    date: string
+  }>
   href: string
 }) {
   const m = useOwnerMessages()
@@ -67,6 +89,12 @@ export function NewCustomersCard({
                     {t.firstVisit} · {formatDayShort(customer.date, m.locale)}
                   </ItemDescription>
                 </ItemContent>
+                <ItemActions>
+                  <CustomerMenu
+                    href={`${href}?customer=${encodeURIComponent(customer.key)}`}
+                    phone={customer.phone}
+                  />
+                </ItemActions>
               </Item>
             ))}
           </ItemGroup>
@@ -75,5 +103,45 @@ export function NewCustomersCard({
         )}
       </CardContent>
     </Card>
+  )
+}
+
+function CustomerMenu({ href, phone }: { href: string; phone: string | null }) {
+  const t = useOwnerMessages().bookings
+  const links = phone ? phoneLinks(phone) : null
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" size="icon-sm" aria-label={t.list.actions} />
+        }
+      >
+        <EllipsisVerticalIcon />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuGroup>
+          <DropdownMenuItem render={<Link href={href as Route} />}>
+            <ContactIcon />
+            {t.list.open}
+          </DropdownMenuItem>
+          {links && (
+            <>
+              <DropdownMenuItem render={<a href={links.tel} />}>
+                <PhoneIcon />
+                {t.contact.call}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                render={
+                  <a href={links.whatsapp} target="_blank" rel="noreferrer" />
+                }
+              >
+                <WhatsAppIcon />
+                {t.contact.whatsapp}
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
