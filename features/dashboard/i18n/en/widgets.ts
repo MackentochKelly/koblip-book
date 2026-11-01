@@ -3,7 +3,7 @@ const widgets = {
   title: "Widgets",
   names: {
     stats: "Numbers",
-    today: "Today",
+    today: "Assistant",
     bookings: "Bookings",
     next: "Next booking",
     chart: "Coming up",

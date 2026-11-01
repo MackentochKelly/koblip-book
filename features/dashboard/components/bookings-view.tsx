@@ -7,7 +7,8 @@ import { FloatingActionButton } from "@/components/floating-action-button"
 import { ViewAllLink } from "@/components/view-all-link"
 import { ViewTabs } from "@/components/view-tabs"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { HelperLine } from "@/components/helper-line"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Empty,
   EmptyContent,
@@ -104,24 +105,22 @@ export function BookingsView({
       ? `/dashboard/${businessId}/bookings`
       : `/dashboard/${businessId}/bookings?from=${last90.from}&to=${last90.to}`
 
-  // Today in one line, counted (no AI), then the way to ask.
-  const todayCard = (
+  // Today in one line, counted (no AI), under the greeting.
+  const briefLine =
+    brief.count === 0
+      ? t.brief.none
+      : `${t.brief.count(brief.count)} · ${
+          brief.next
+            ? t.brief.next(
+                formatClock(brief.next.time, m.locale),
+                brief.next.customerName
+              )
+            : t.brief.noneLeft
+        }`
+  // The Assistant widget: only the way to ask.
+  const assistantCard = assistant && (
     <Card>
-      <CardHeader>
-        <CardTitle>
-          {brief.count === 0
-            ? t.brief.none
-            : `${t.brief.count(brief.count)} · ${
-                brief.next
-                  ? t.brief.next(
-                      formatClock(brief.next.time, m.locale),
-                      brief.next.customerName
-                    )
-                  : t.brief.noneLeft
-              }`}
-        </CardTitle>
-      </CardHeader>
-      {assistant && <CardContent>{assistant}</CardContent>}
+      <CardContent>{assistant}</CardContent>
     </Card>
   )
   // Tabs to list: the same gap as between the list's rows.
@@ -191,7 +190,8 @@ export function BookingsView({
           so this header row only shows on a computer. */}
       <div className="flex items-center justify-between gap-3 max-md:contents">
         {/* The page's name sits small over the greeting (only for screen
-            readers on a phone, where the top bar names it). */}
+            readers on a phone, where the top bar names it), and today's
+            line under it. */}
         <div className="flex flex-col gap-1">
           {/* Home on a phone, like its tab; Dashboard on a computer. */}
           <h1 className="text-sm text-muted-foreground max-md:sr-only">
@@ -199,6 +199,7 @@ export function BookingsView({
             <span className="max-md:hidden">{m.shell.nav.dashboard}</span>
           </h1>
           <p className="text-2xl font-semibold tracking-tight">{greeting}</p>
+          <HelperLine>{briefLine}</HelperLine>
         </div>
         <Button
           className="max-md:hidden"
@@ -223,7 +224,7 @@ export function BookingsView({
                 href={`/dashboard/${businessId}/analytics`}
               />
             ),
-            today: todayCard,
+            today: assistantCard,
             bookings: bookingsList,
             next: (
               <NextBookingCard

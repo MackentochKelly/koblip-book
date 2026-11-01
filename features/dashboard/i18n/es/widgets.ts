@@ -4,7 +4,7 @@ const widgets: typeof en = {
   title: "Widgets",
   names: {
     stats: "Números",
-    today: "Hoy",
+    today: "Asistente",
     bookings: "Reservas",
     next: "Próxima reserva",
     chart: "Próximos días",
