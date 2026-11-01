@@ -6,6 +6,7 @@ const settings: typeof en = {
     details: "Datos",
     hours: "Horario",
     portfolio: "Portafolio",
+    policies: "Políticas",
     spanish: "Español",
     theme: "Tema",
     notifications: "Notificaciones",
@@ -72,6 +73,19 @@ const settings: typeof en = {
     toTranslate: (n: number) => `${n} por traducir`,
     translate: "Traducir",
     view: "Ver en español",
+  },
+  policies: {
+    title: "Políticas",
+    kinds: {
+      booking: "Política de reservas",
+      terms: "Términos del servicio",
+      privacy: "Aviso de privacidad",
+    },
+    shown: "En tu página",
+    hidden: "No está en tu página",
+    emptyHint: "Déjalo vacío para ocultarlo.",
+    view: "Ver en tu página",
+    saveFailed: "No se pudo guardar. Inténtalo de nuevo.",
   },
   theme: {
     title: "Tema",

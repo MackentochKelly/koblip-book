@@ -240,6 +240,8 @@ export default async function BusinessPage({ params, searchParams }: Props) {
             )}
             <BusinessFooter
               name={business.name}
+              slug={business.slug}
+              policies={data.policies}
               fromGoogle={business.googlePlaceId !== null}
               language={language}
             />

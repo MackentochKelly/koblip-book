@@ -10,6 +10,7 @@ import {
   ImageIcon,
   LanguagesIcon,
   PuzzleIcon,
+  ShieldCheckIcon,
   TagIcon,
   UsersIcon,
   type Icon,
@@ -19,11 +20,22 @@ import { formatPrice } from "@/lib/format-price"
 import { initials } from "@/lib/initials"
 import type { PageLanguage } from "@/lib/page-language"
 import { STARTER_CATALOG_RULES as RULES } from "@/lib/starter-catalog-rules"
-import { drawTeamPhoto, startStarterCatalog } from "../api/prepare-actions"
+import {
+  drawTeamPhoto,
+  startPolicies,
+  startStarterCatalog,
+} from "../api/prepare-actions"
 import { starterMessagesFor } from "../i18n"
 import type { StarterSummary } from "../types"
 
-type StepId = "services" | "extras" | "prices" | "team" | "photos" | "spanish"
+type StepId =
+  | "services"
+  | "extras"
+  | "prices"
+  | "team"
+  | "photos"
+  | "policies"
+  | "spanish"
 type StepState = StepRevealState
 
 const STEPS: Array<{ id: StepId; icon: Icon }> = [
@@ -32,6 +44,7 @@ const STEPS: Array<{ id: StepId; icon: Icon }> = [
   { id: "prices", icon: BanknoteIcon },
   { id: "team", icon: UsersIcon },
   { id: "photos", icon: ImageIcon },
+  { id: "policies", icon: ShieldCheckIcon },
   { id: "spanish", icon: LanguagesIcon },
 ]
 
@@ -44,7 +57,7 @@ function shortList(names: string[], more: (count: number) => string): string {
 }
 
 // Between "Check your details" and "Your page is live": Meta AI writes the
-// new page's services, extras, prices and team, Muse Image draws the team,
+// new page's services, extras, prices, team and policies, Muse Image draws the team,
 // and the page is translated. Each row turns from waiting to working to
 // done as the real work finishes, then the success page opens. A business
 // that already has services, or an AI that is off or fails, goes straight
@@ -70,9 +83,11 @@ export function PreparingCard({
     prices: "waiting",
     team: "waiting",
     photos: "waiting",
+    policies: "waiting",
     spanish: "waiting",
   })
   const [summary, setSummary] = useState<StarterSummary | null>(null)
+  const [policiesReady, setPoliciesReady] = useState(false)
 
   useEffect(() => {
     // One run per visit, also when React runs effects twice in development.
@@ -82,9 +97,15 @@ export function PreparingCard({
       setStates((current) => ({ ...current, [id]: state }))
 
     void (async () => {
+      // Muse writes the policies while the catalog is drafted, so they are
+      // ready by their row and saved before the Spanish step.
+      const policies = startPolicies(businessId).catch(() => ({ ok: false }))
       try {
         const result = await startStarterCatalog(businessId)
-        if (!result.ok || !result.summary.created) return
+        if (!result.ok || !result.summary.created) {
+          await policies
+          return
+        }
         setSummary(result.summary)
         // The catalog arrived in one answer; show it a row at a time.
         for (const id of ["services", "extras", "prices", "team"] as const) {
@@ -92,8 +113,13 @@ export function PreparingCard({
           await pause(RULES.revealMs)
         }
         mark("photos", "working")
+        mark("policies", "working")
+        const policiesDone = policies.then((written) => {
+          setPoliciesReady(written.ok)
+          mark("policies", "done")
+        })
         // One photo failing (or its request) never stops the others.
-        await Promise.allSettled(
+        const photosDone = Promise.allSettled(
           result.summary.team.map(async (member) => {
             const photo = await drawTeamPhoto(businessId, member.id)
             if (!photo.ok) return
@@ -108,8 +134,8 @@ export function PreparingCard({
               }
             )
           })
-        )
-        mark("photos", "done")
+        ).then(() => mark("photos", "done"))
+        await Promise.all([photosDone, policiesDone])
         mark("spanish", "working")
         await translate()
         mark("spanish", "done")
@@ -137,6 +163,7 @@ export function PreparingCard({
         : null,
     team: summary && shortList(summary.team.map((person) => person.name), t.more),
     photos: summary && t.photosDone(photosDone, summary.team.length),
+    policies: policiesReady && t.policiesDone,
     spanish: t.spanishDone,
   }
 

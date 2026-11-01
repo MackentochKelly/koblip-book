@@ -6,6 +6,7 @@ import {
   addonGroups,
   addonOptions,
   type businesses,
+  businessPolicies,
   services,
   teamMembers,
   translations,
@@ -23,7 +24,7 @@ import {
 export async function translateBusinessTexts(
   business: Pick<typeof businesses.$inferSelect, "id" | "description">
 ): Promise<{ ok: true; translated: number } | { ok: false; error: "failed" }> {
-  const [serviceRows, addonGroupRows, addonOptionRows, teamRows] =
+  const [serviceRows, addonGroupRows, addonOptionRows, teamRows, policyRows] =
     await Promise.all([
     db
       .select({
@@ -49,6 +50,10 @@ export async function translateBusinessTexts(
       .select({ id: teamMembers.id, description: teamMembers.description })
       .from(teamMembers)
       .where(eq(teamMembers.businessId, business.id)),
+    db
+      .select({ id: businessPolicies.id, body: businessPolicies.body })
+      .from(businessPolicies)
+      .where(eq(businessPolicies.businessId, business.id)),
   ])
   const existing = await db
     .select()
@@ -64,18 +69,20 @@ export async function translateBusinessTexts(
     business.description,
     serviceRows,
     { groups: addonGroupRows, options: addonOptionRows },
-    teamRows
+    teamRows,
+    policyRows
   )
   const pending = pendingTranslations(all, existing)
 
-  // Rows whose business, service, add-on group, add-on option or team
-  // member no longer exists.
+  // Rows whose business, service, add-on group, add-on option, team
+  // member or policy no longer exists.
   const liveIds = new Set([
     business.id,
     ...serviceRows.map((service) => service.id),
     ...addonGroupRows.map((group) => group.id),
     ...addonOptionRows.map((option) => option.id),
     ...teamRows.map((member) => member.id),
+    ...policyRows.map((policy) => policy.id),
   ])
   const orphanIds = existing
     .filter((row) => !liveIds.has(row.entityId))

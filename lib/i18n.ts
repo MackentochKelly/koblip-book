@@ -80,6 +80,14 @@ const en = {
     fromGoogle: "Photos, opening times and reviews from",
     builtBy: "Built by",
   },
+  // The business's own policies, linked from its page's footer.
+  policies: {
+    booking: "Booking policy",
+    terms: "Terms of service",
+    privacy: "Privacy notice",
+    backTo: (name: string) => `Back to ${name}`,
+    updated: "Last updated",
+  },
   booking: {
     titles: {
       service: "Select a service",
@@ -377,6 +385,13 @@ const es: Messages = {
     rights: "Todos los derechos reservados.",
     fromGoogle: "Fotos, horario y reseñas de",
     builtBy: "Hecho por",
+  },
+  policies: {
+    booking: "Política de reservas",
+    terms: "Términos del servicio",
+    privacy: "Aviso de privacidad",
+    backTo: (name: string) => `Volver a ${name}`,
+    updated: "Última actualización",
   },
   booking: {
     titles: {

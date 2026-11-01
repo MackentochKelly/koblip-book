@@ -14,6 +14,7 @@ const {
   collectTranslatableTexts,
   pendingTranslations,
   translateTexts,
+  translationBatches,
   translationId,
 } = await import("./translate")
 
@@ -183,4 +184,30 @@ test("pendingTranslations keeps only missing or out-of-date texts", () => {
   )
   const pending = pendingTranslations(all, existing)
   expect(pending.map((item) => item.field)).toEqual(["service.name"])
+})
+
+test("collectTranslatableTexts adds each policy that has text", () => {
+  const all = collectTranslatableTexts("biz-1", null, [], undefined, [], [
+    { id: "pol-1", body: "Cancel a day ahead." },
+    { id: "pol-2", body: "  " },
+  ])
+  expect(all).toEqual([
+    {
+      id: translationId("pol-1", "policy.body"),
+      entityId: "pol-1",
+      field: "policy.body",
+      text: "Cancel a day ahead.",
+    },
+  ])
+})
+
+test("translationBatches splits by count and by length, in order", () => {
+  const short = Array.from({ length: 45 }, (_, i) => ({ text: `t${i}` }))
+  expect(translationBatches(short).map((batch) => batch.length)).toEqual([40, 5])
+  const long = { text: "x".repeat(2500) }
+  const batches = translationBatches([{ text: "a" }, long, long, { text: "b" }])
+  expect(batches).toEqual([[{ text: "a" }, long], [long, { text: "b" }]])
+  // A text over the budget still goes, alone.
+  const huge = { text: "x".repeat(4000) }
+  expect(translationBatches([huge, { text: "c" }])).toEqual([[huge], [{ text: "c" }]])
 })

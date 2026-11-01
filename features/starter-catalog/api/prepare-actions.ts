@@ -14,6 +14,7 @@ import {
   hasCatalog,
   writeCatalog,
 } from "./fill-catalog"
+import { draftPoliciesFor, hasPolicies, writePolicies } from "./fill-policies"
 
 // The signed-in owner's own real business (never a demo copy), or null.
 // The id comes from the browser, so ownership is checked here.
@@ -64,6 +65,30 @@ export async function startStarterCatalog(
     ok: true,
     summary: await catalogSummary(business, catalog.team.role, true),
   }
+}
+
+// Right after sign-up: Muse writes the business's booking policy, terms
+// and privacy notice for its kind of business. A business that already has
+// policies is never changed. True when it has them now.
+export async function startPolicies(
+  businessId: string
+): Promise<{ ok: boolean }> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) {
+    return { ok: false }
+  }
+  const { business } = owned
+  if (await hasPolicies(business.id)) {
+    return { ok: true }
+  }
+  const policies = await draftPoliciesFor(business)
+  // The owner may have saved some while Muse was writing.
+  if (!policies || (await hasPolicies(business.id))) {
+    return { ok: Boolean(policies) }
+  }
+  await writePolicies(business, policies)
+  revalidatePath("/b/" + business.slug)
+  return { ok: true }
 }
 
 // Muse Image draws one team member's photo. Only for a member of the

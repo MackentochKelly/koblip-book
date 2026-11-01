@@ -1,5 +1,6 @@
 import "server-only"
 import { BOOKING_RULES } from "@/lib/booking-rules"
+import { POLICY_RULES } from "@/lib/policy-rules"
 import {
   getMetaAiClient,
   isMetaAiEnabled,
@@ -14,6 +15,7 @@ export type TranslationField =
   | "addon.name"
   | "addon.description"
   | "team_member.description"
+  | "policy.body"
 
 export interface AddonTranslatableRows {
   groups: { id: string; prompt: string }[]
@@ -51,7 +53,8 @@ export function collectTranslatableTexts(
   businessDescription: string | null,
   serviceRows: { id: string; name: string; description: string | null }[],
   addonRows: AddonTranslatableRows = { groups: [], options: [] },
-  teamRows: { id: string; description: string | null }[] = []
+  teamRows: { id: string; description: string | null }[] = [],
+  policyRows: { id: string; body: string }[] = []
 ): TranslatableText[] {
   const all: TranslatableText[] = []
   if (businessDescription && businessDescription.trim() !== "") {
@@ -112,6 +115,16 @@ export function collectTranslatableTexts(
       })
     }
   }
+  for (const policy of policyRows) {
+    if (policy.body.trim() !== "") {
+      all.push({
+        id: translationId(policy.id, "policy.body"),
+        entityId: policy.id,
+        field: "policy.body",
+        text: policy.body,
+      })
+    }
+  }
   return all
 }
 
@@ -155,6 +168,36 @@ const TRANSLATIONS_JSON_SCHEMA = {
 } as const
 
 const TRANSLATE_BATCH_SIZE = 40
+// English characters per call, so long texts (policies) never push a call
+// past its timeout. A longer text goes alone.
+const TRANSLATE_BATCH_CHARS = 3000
+
+// Splits texts into calls of at most TRANSLATE_BATCH_SIZE items and
+// TRANSLATE_BATCH_CHARS characters, keeping their order.
+export function translationBatches<T extends { text: string }>(
+  items: T[]
+): T[][] {
+  const batches: T[][] = []
+  let batch: T[] = []
+  let chars = 0
+  for (const item of items) {
+    if (
+      batch.length > 0 &&
+      (batch.length === TRANSLATE_BATCH_SIZE ||
+        chars + item.text.length > TRANSLATE_BATCH_CHARS)
+    ) {
+      batches.push(batch)
+      batch = []
+      chars = 0
+    }
+    batch.push(item)
+    chars += item.text.length
+  }
+  if (batch.length > 0) {
+    batches.push(batch)
+  }
+  return batches
+}
 
 function limitForId(id: string): number {
   const field = id.slice(id.lastIndexOf(":") + 1)
@@ -173,6 +216,10 @@ function limitForId(id: string): number {
   if (field === "addon_group.prompt") {
     return BOOKING_RULES.maxAddonPrompt
   }
+  if (field === "policy.body") {
+    // Spanish runs longer than English.
+    return Math.ceil(POLICY_RULES.maxLength * 1.5)
+  }
   return BOOKING_RULES.maxBusinessDescription
 }
 
@@ -183,8 +230,8 @@ function userMessage(batch: { id: string; text: string }[]): string {
   )
 }
 
-// Translates a batch of texts with Meta AI, at most 40 items per call.
-// Drops any returned item whose id was not asked, is empty, or is longer
+// Translates a batch of texts with Meta AI, in calls split by
+// translationBatches. Drops any returned item whose id was not asked, is empty, or is longer
 // than its limit; one bad item never fails the rest. A failed call stops
 // there and keeps what the calls before it got (the rest stay to be
 // translated next time); Meta AI off or a first call that fails gives an
@@ -204,8 +251,7 @@ export async function translateTexts(
     return translated
   }
   const asked = new Set(items.map((item) => item.id))
-  for (let start = 0; start < items.length; start += TRANSLATE_BATCH_SIZE) {
-    const batch = items.slice(start, start + TRANSLATE_BATCH_SIZE)
+  for (const batch of translationBatches(items)) {
     let returned: unknown
     try {
       const completion = await client.chat.completions.create(

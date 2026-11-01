@@ -7,6 +7,7 @@ import {
   addonOptions,
   businessHours,
   businessPhotos,
+  businessPolicies,
   businesses,
   serviceAddonGroups,
   services,
@@ -15,6 +16,7 @@ import {
   translations,
 } from "@/lib/db/schema"
 import { DEFAULT_LANGUAGE, type PageLanguage } from "@/lib/page-language"
+import { POLICY_KINDS } from "@/lib/policy-rules"
 import type { Amenity, BusinessPageData, PagePhoto, PageReview } from "../types"
 import { mapAmenities } from "../utils/map-amenities"
 
@@ -201,6 +203,7 @@ async function loadBusinessPage(
     addonGroupRows,
     addonOptionRows,
     addonLinkRows,
+    policyRows,
   ] = await Promise.all([
       db
         .select()
@@ -259,6 +262,10 @@ async function loadBusinessPage(
         .select()
         .from(serviceAddonGroups)
         .where(eq(serviceAddonGroups.businessId, business.id)),
+      db
+        .select({ kind: businessPolicies.kind })
+        .from(businessPolicies)
+        .where(eq(businessPolicies.businessId, business.id)),
     ])
 
   const extras = await getGoogleExtras(business.googlePlaceId, language)
@@ -418,6 +425,10 @@ async function loadBusinessPage(
     language,
     serviceTeams,
     addonGroups: pageAddonGroups,
+    // In POLICY_KINDS order, so the footer links never move.
+    policies: POLICY_KINDS.filter((kind) =>
+      policyRows.some((row) => row.kind === kind)
+    ),
   }
 }
 

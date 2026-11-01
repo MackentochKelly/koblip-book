@@ -5,6 +5,7 @@ const settings = {
     details: "Details",
     hours: "Hours",
     portfolio: "Portfolio",
+    policies: "Policies",
     spanish: "Spanish",
     theme: "Theme",
     notifications: "Notifications",
@@ -71,6 +72,19 @@ const settings = {
     toTranslate: (n: number) => `${n} to translate`,
     translate: "Translate",
     view: "View in Spanish",
+  },
+  policies: {
+    title: "Policies",
+    kinds: {
+      booking: "Booking policy",
+      terms: "Terms of service",
+      privacy: "Privacy notice",
+    },
+    shown: "On your page",
+    hidden: "Not on your page",
+    emptyHint: "Leave it empty to hide it.",
+    view: "View on your page",
+    saveFailed: "Could not save. Please try again.",
   },
   theme: {
     title: "Theme",
