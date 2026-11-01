@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { headers } from "next/headers"
 
 import { Button } from "@/components/ui/button"
-import { TeamCalendarPage } from "@/features/team-calendar/components/team-calendar-page"
+import { HeroCardPage } from "@/components/hero-card-page"
 import { teamCalendarWordsFor } from "@/features/team-calendar/i18n"
 import { readGoogleInvite } from "@/lib/google-calendar-invites"
 import { DEFAULT_LANGUAGE, isPageLanguage, PAGE_LANGUAGE_HEADER } from "@/lib/page-language"
@@ -24,13 +24,13 @@ export default async function TeamCalendarLinkPage({ params }: PageProps<"/team-
   const invite = await readGoogleInvite(token)
   if (!invite || invite.state !== "ready") {
     return (
-      <TeamCalendarPage language={lang} title={t.expired.title}>
+      <HeroCardPage language={lang} title={t.expired.title}>
         <p className="text-center text-sm text-muted-foreground">{t.expired.text}</p>
-      </TeamCalendarPage>
+      </HeroCardPage>
     )
   }
   return (
-    <TeamCalendarPage language={lang} title={t.title}>
+    <HeroCardPage language={lang} title={t.title}>
       <div className="flex flex-col gap-4">
         <p className="text-center text-sm text-muted-foreground">{t.intro(invite.businessName)}</p>
         {/* A route that leaves for Google, not a page: a plain link. */}
@@ -42,6 +42,6 @@ export default async function TeamCalendarLinkPage({ params }: PageProps<"/team-
           {t.connect}
         </Button>
       </div>
-    </TeamCalendarPage>
+    </HeroCardPage>
   )
 }

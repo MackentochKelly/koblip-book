@@ -53,6 +53,8 @@ const person = (name: string) => ({
   phone: null,
   email: null,
   description: null,
+  about: null,
+  languages: [],
 })
 const rows = [
   { weekday: 1, opensAt: "22:00", closesAt: "02:00" },
@@ -117,18 +119,22 @@ test("new member and hours save together", async () => {
   ).toBe(true)
 })
 
-test("phone, email and description are checked and saved", async () => {
+test("phone, email and profile are checked and saved", async () => {
   const details = {
     name: " Ana ",
     phone: " +1 809 555 0000 ",
     email: "ana@example.com",
     description: " Colour expert ",
+    about: " Ten years of colour. ",
+    languages: ["es", "en"],
   }
   for (const [field, value] of [
     ["name", ""],
     ["phone", "call me"],
     ["email", "ana@"],
     ["description", "x".repeat(121)],
+    ["about", "x".repeat(601)],
+    ["languages", ["klingon"]],
   ] as const) {
     expect(
       await saveTeamMemberWithHours("biz", "m", { ...details, [field]: value }, null)
@@ -144,10 +150,12 @@ test("phone, email and description are checked and saved", async () => {
     phone: "+1 809 555 0000",
     email: "ana@example.com",
     description: "Colour expert",
+    about: "Ten years of colour.",
+    languages: ["es", "en"],
   })
-  await saveTeamMemberWithHours("biz", "m", { ...details, phone: " ", email: "", description: "" }, null)
+  await saveTeamMemberWithHours("biz", "m", { ...details, phone: " ", email: "", description: "", about: "", languages: [] }, null)
   const [cleared] = await db.select().from(teamMembers).where(eq(teamMembers.id, "m"))
-  expect(cleared).toMatchObject({ phone: null, email: null, description: null })
+  expect(cleared).toMatchObject({ phone: null, email: null, description: null, about: null, languages: [] })
 })
 
 test("removing a member also removes their custom hours without relying on database cascades", async () => {

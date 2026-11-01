@@ -2,7 +2,10 @@ import "server-only"
 import { cache } from "react"
 import { headers } from "next/headers"
 import { notFound, redirect } from "next/navigation"
+import { asc, eq } from "drizzle-orm"
 import { auth } from "./auth"
+import { db } from "./db"
+import { businesses, teamMembers } from "./db/schema"
 
 export interface OwnerSession {
   userId: string
@@ -64,4 +67,65 @@ export async function requireAdmin(): Promise<OwnerSession> {
     notFound()
   }
   return session
+}
+
+export interface TeamSeat {
+  teamMemberId: string
+  name: string
+  photoUrl: string | null
+  business: {
+    id: string
+    slug: string
+    name: string
+    timezone: string
+    currency: string
+  }
+}
+
+// The team member seats this account joined (docs/plans/team-accounts.md),
+// one per business.
+export const getTeamSeats = cache(async (userId: string): Promise<TeamSeat[]> => {
+  const rows = await db
+    .select({
+      teamMemberId: teamMembers.id,
+      name: teamMembers.name,
+      photoUrl: teamMembers.photoUrl,
+      businessId: businesses.id,
+      slug: businesses.slug,
+      businessName: businesses.name,
+      timezone: businesses.timezone,
+      currency: businesses.currency,
+    })
+    .from(teamMembers)
+    .innerJoin(businesses, eq(businesses.id, teamMembers.businessId))
+    .where(eq(teamMembers.userId, userId))
+    .orderBy(asc(businesses.name))
+  return rows.map((row) => ({
+    teamMemberId: row.teamMemberId,
+    name: row.name,
+    photoUrl: row.photoUrl,
+    business: {
+      id: row.businessId,
+      slug: row.slug,
+      name: row.businessName,
+      timezone: row.timezone,
+      currency: row.currency,
+    },
+  }))
+})
+
+// A team member's own area: the signed-in account must be the one that
+// joined as this team member. Anyone else gets "not found", like the admin
+// area, so it doesn't show who is on which team.
+export async function requireTeamMember(
+  teamMemberId: string
+): Promise<OwnerSession & { seat: TeamSeat }> {
+  const session = await requireAccount(`/team/${teamMemberId}`)
+  const seat = (await getTeamSeats(session.userId)).find(
+    (item) => item.teamMemberId === teamMemberId
+  )
+  if (!seat) {
+    notFound()
+  }
+  return { ...session, seat }
 }

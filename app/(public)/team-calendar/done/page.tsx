@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { headers } from "next/headers"
 
-import { TeamCalendarPage } from "@/features/team-calendar/components/team-calendar-page"
+import { HeroCardPage } from "@/components/hero-card-page"
 import { teamCalendarWordsFor } from "@/features/team-calendar/i18n"
 import { DEFAULT_LANGUAGE, isPageLanguage, PAGE_LANGUAGE_HEADER } from "@/lib/page-language"
 
@@ -17,8 +17,8 @@ export default async function TeamCalendarDonePage({ searchParams }: PageProps<"
   const t = teamCalendarWordsFor(lang)
   const words = t[RESULTS.find((value) => value === result) ?? "failed"]
   return (
-    <TeamCalendarPage language={lang} title={words.title}>
+    <HeroCardPage language={lang} title={words.title}>
       <p className="text-center text-sm text-muted-foreground">{words.text}</p>
-    </TeamCalendarPage>
+    </HeroCardPage>
   )
 }

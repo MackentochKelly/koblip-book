@@ -11,11 +11,12 @@ import {
 } from "@/features/dashboard/i18n/server"
 import { LAST_BUSINESS_COOKIE } from "@/features/dashboard/last-business"
 import { GetStarted } from "@/features/onboarding/components/get-started"
-import { requireOwner } from "@/lib/dal"
+import { getTeamSeats, requireOwner } from "@/lib/dal"
 
 // Where every login lands: the business the owner last opened (else their
-// first), or, with none yet, one step only: find the business on Google
-// Maps (the home page's box).
+// first); a team member with no business of their own, their team area
+// (docs/plans/team-accounts.md); else one step only: find the business on
+// Google Maps (the home page's box).
 export default async function DashboardPage() {
   const owner = await requireOwner("/dashboard")
   const [businesses, cookieStore] = await Promise.all([
@@ -30,6 +31,10 @@ export default async function DashboardPage() {
   // A demo guest whose copy is gone has nothing here: back to the home page.
   if (owner.isGuest) {
     redirect("/")
+  }
+  const [seat] = await getTeamSeats(owner.userId)
+  if (seat) {
+    redirect(`/team/${seat.teamMemberId}`)
   }
   const firstName = owner.name.trim().split(/\s+/)[0]
   const t = (await getOwnerMessages()).shell.start

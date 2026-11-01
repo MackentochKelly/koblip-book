@@ -9,6 +9,7 @@ current.
 | [WhatsApp notifications v2](whatsapp-notifications.md) | In progress |
 | [In-app notifications](in-app-notifications.md) | In progress |
 | [Google Calendar](google-calendar.md) | In progress |
+| [Team accounts and profiles](team-accounts.md) | In progress |
 | [Assistant fixes](assistant-fixes.md) | To do |
 | [Integrations tabs](integrations.md) | Done |
 | [Message editing](message-editing.md) | To do |

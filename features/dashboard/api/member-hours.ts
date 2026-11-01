@@ -10,14 +10,16 @@ import {
   PHONE_PATTERN,
 } from "@/lib/booking-rules"
 import { validHours, type HoursRow } from "@/lib/hours-rules"
+import { checkTeamProfile, type TeamProfile } from "@/lib/team-rules"
 import type { ActionResult } from "../types"
 import { ownedBusiness, revalidateBusiness } from "./owned-business"
 
-export interface TeamMemberDetails {
+// Their profile (job title, about, languages) customers see on their page
+// and when they book.
+export interface TeamMemberDetails extends TeamProfile {
   name: string
   phone: string | null // owner only
   email: string | null // owner only
-  description: string | null // customers see it when they book
 }
 
 // Trimmed text, null when empty; undefined when it is not text at all.
@@ -44,14 +46,9 @@ function checkDetails(
       (email.length > BOOKING_RULES.maxEmail || !EMAIL_PATTERN.test(email)))
   )
     return { ok: false, error: "email" }
-  const description = optionalText(details.description)
-  if (
-    description === undefined ||
-    (description !== null &&
-      description.length > BOOKING_RULES.maxTeamDescription)
-  )
-    return { ok: false, error: "description" }
-  return { ok: true, values: { name, phone, email, description } }
+  const profile = checkTeamProfile(details)
+  if (!profile.ok) return profile
+  return { ok: true, values: { name, phone, email, ...profile.values } }
 }
 
 // Adds a person (memberId null) or saves one: their details and hours.

@@ -22,7 +22,7 @@ Koblip Book is a booking app for any local business: customers book appointments
 
 ## Structure
 
-- `app/` holds routes only. Route group `app/(public)` = customer pages, `app/(owner)` = owner area.
+- `app/` holds routes only. Route group `app/(public)` = customer pages, `app/(owner)` = owner area, `app/(team)` = a team member's own area, `app/(admin)` = app admin.
 - `features/<name>/` holds one feature's code (`components`, `hooks`, `api`, `types`, `utils` — only the folders it needs).
 - Shared code: `components/ui` (shadcn only, added with `npx shadcn@latest add`), `components/` (shared app parts), `hooks/`, `lib/`, `types/`.
 - Import direction: shared → features → app. A feature never imports another feature. No barrel `index.ts` files.

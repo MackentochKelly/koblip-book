@@ -5,7 +5,6 @@ import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import {
   ContactIcon,
-  filledIcon,
   LayoutDashboardIcon,
   PlusIcon,
   TagIcon,
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/icons"
 
 import { AppInset } from "@/components/app-inset"
+import { BottomTabBar, TabBarLink } from "@/components/bottom-tab-bar"
 import { PageContent } from "@/components/page-content"
 import { SpinSwap } from "@/components/spin-swap"
 import { Button } from "@/components/ui/button"
@@ -99,22 +99,14 @@ export function DashboardShell({
   const tab = (path: string) => {
     const item = items.find((found) => found.path === path)
     if (!item) return null
-    const active = item.active
-    const TabIcon = active ? filledIcon(item.icon) : item.icon
     return (
-      <Link
+      <TabBarLink
         key={item.href}
         href={item.href}
-        aria-current={active ? "page" : undefined}
-        className={cn(
-          "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-xs font-medium text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
-          active && "text-foreground"
-        )}
-      >
-        {/* As in Koblip Sales' BottomTabBar: the open tab's icon is filled. */}
-        <TabIcon className="size-5" />
-        <span className="max-w-full truncate">{item.label}</span>
-      </Link>
+        label={item.label}
+        icon={item.icon}
+        active={item.active}
+      />
     )
   }
   // On a phone the assistant is a full page of its own, with its own back
@@ -146,12 +138,9 @@ export function DashboardShell({
               </TabBarActionContext>
             </PageContent>
           </AppInset>
-          <nav
-            aria-label={m.owner}
-            className={cn(
-              "fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden",
-              assistantOpen && "hidden"
-            )}
+          <BottomTabBar
+            label={m.owner}
+            className={cn("grid-cols-5", assistantOpen && "hidden")}
           >
             {PHONE_LEFT.map((path) => tab(path))}
             <div className="relative flex min-h-14 items-center justify-center">
@@ -183,7 +172,7 @@ export function DashboardShell({
               </SpinSwap>
             </div>
             {PHONE_RIGHT.map((path) => tab(path))}
-          </nav>
+          </BottomTabBar>
         </SidebarProvider>
       </CommandMenuProvider>
     </TooltipProvider>

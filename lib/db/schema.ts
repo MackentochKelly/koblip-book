@@ -127,14 +127,50 @@ export const teamMembers = sqliteTable(
     // For the owner only, never shown to customers.
     phone: text(),
     email: text(),
-    // One short line customers see under the name when they book.
+    // One short line customers see under the name when they book: their
+    // job title ("Stylist").
     description: text(),
+    // Their profile on the public page (docs/plans/team-accounts.md): a few
+    // lines about them, and the languages they speak (ISO 639-1 codes).
+    about: text(),
+    languages: text({ mode: "json" }).$type<string[]>(),
+    // Their own account, once they join through an invite link; their team
+    // area (app/(team)) opens only to it. The business keeps its one owner.
+    userId: text().references(() => user.id, { onDelete: "set null" }),
     position: integer().notNull().default(0),
     ...timestamps(),
   },
   (table) => [
     index("team_members_business_idx").on(table.businessId, table.position),
+    // One seat per account in a business.
+    uniqueIndex("team_members_business_user_idx").on(
+      table.businessId,
+      table.userId
+    ),
+    index("team_members_user_idx").on(table.userId),
   ]
+)
+
+// A team member's link to join with their own account (lib/team-invites):
+// like googleCalendarInvites, only the token's hash is kept.
+export const teamInvites = sqliteTable(
+  "team_invites",
+  {
+    id: id(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    teamMemberId: text()
+      .notNull()
+      .references(() => teamMembers.id, { onDelete: "cascade" }),
+    tokenHash: text().notNull().unique(),
+    expiresAt: text().notNull(),
+    usedAt: text(),
+    // The owner who made it.
+    createdBy: text().references(() => user.id, { onDelete: "set null" }),
+    ...timestamps(),
+  },
+  (table) => [index("team_invites_member_idx").on(table.teamMemberId)]
 )
 
 export const teamMemberHours = sqliteTable(

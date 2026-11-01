@@ -8,8 +8,9 @@ import type { PageLanguage } from "@/lib/page-language"
 import { cn } from "@/lib/utils"
 
 // The look of the login page: one rounded panel on the moving gradient, a
-// title and one glass card. For a team member's calendar link (G5).
-export function TeamCalendarPage({
+// title and one glass card. For links a team member opens: their Google
+// Calendar link (G5) and their invite to join (docs/plans/team-accounts.md).
+export function HeroCardPage({
   language,
   title,
   children,

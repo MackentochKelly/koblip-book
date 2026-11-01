@@ -8,11 +8,14 @@ import {
   CalendarIcon,
   PlusIcon,
   Trash2Icon,
+  UserPlusIcon,
   UsersIcon,
+  UserXIcon,
 } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
+import { MultiPick } from "@/components/multi-pick"
 import { WeeklyHoursEditor } from "@/components/weekly-hours-editor"
 import { Switch } from "@/components/ui/switch"
 import { validHours, type HoursRow } from "@/lib/hours-rules"
@@ -46,6 +49,7 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Item,
   ItemActions,
@@ -71,6 +75,8 @@ import {
 import { useTabBarAction } from "./tab-bar-action"
 import { noAutofill } from "@/lib/no-autofill"
 import { shareLink } from "@/lib/share-link"
+import { languageName, TEAM_RULES } from "@/lib/team-rules"
+import { removeTeamAccess, sendTeamInvite } from "../api/team-access-actions"
 import {
   disconnectTeamCalendar,
   sendTeamCalendarLink,
@@ -87,6 +93,10 @@ interface MemberRow {
   phone: string | null
   email: string | null
   description: string | null
+  about: string | null
+  languages: string[] | null
+  // Set once they joined with their own account.
+  userId: string | null
 }
 
 type DetailsError = "name" | "phone" | "email"
@@ -117,6 +127,7 @@ export function TeamView({
   const [formKey, setFormKey] = useState(0)
   const [removing, setRemoving] = useState<MemberRow | null>(null)
   const [unlinking, setUnlinking] = useState<MemberRow | null>(null)
+  const [revoking, setRevoking] = useState<MemberRow | null>(null)
   const [removeEvents, setRemoveEvents] = useState(false)
   const [pending, startTransition] = useTransition()
   const [formError, setFormError] = useState<DetailsError | null>(null)
@@ -174,6 +185,37 @@ export function TeamView({
       })
       if (shared === "copied") toast.success(t.calendarLinkCopied)
     })
+  // A link for the person to open their own dashboard
+  // (docs/plans/team-accounts.md): emailed when they have an email, else
+  // the phone's share sheet (or copied).
+  const invite = (member: MemberRow) =>
+    startTransition(async () => {
+      const result = await sendTeamInvite(businessId, member.id).catch(() => null)
+      if (!result?.ok) {
+        toast.error(c.failed)
+        return
+      }
+      if (result.emailedTo) {
+        toast.success(t.inviteSent(result.emailedTo))
+        return
+      }
+      const shared = await shareLink({
+        title: t.inviteTitle,
+        text: t.inviteText(businessName),
+        url: result.url,
+      })
+      if (shared === "copied") toast.success(t.inviteCopied)
+    })
+  const revoke = (member: MemberRow) =>
+    startTransition(async () => {
+      const result = await removeTeamAccess(businessId, member.id).catch(() => null)
+      if (result?.ok) {
+        toast.success(t.accessRemoved)
+        router.refresh()
+      } else {
+        toast.error(c.failed)
+      }
+    })
   const unlinkCalendar = (member: MemberRow) =>
     startTransition(async () => {
       const result = await disconnectTeamCalendar(businessId, member.id, removeEvents).catch(() => null)
@@ -221,6 +263,7 @@ export function TeamView({
               </ItemMedia>
               <ItemContent>
                 <ItemTitle>{member.name}</ItemTitle>
+                {member.userId && <ItemDescription>{t.hasAccess}</ItemDescription>}
                 {calendars[member.id] && (
                   <ItemDescription>
                     {calendars[member.id].needsReconnect ? t.calendarStopped : t.calendarConnected}
@@ -256,6 +299,17 @@ export function TeamView({
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
+                      {member.userId ? (
+                        <DropdownMenuItem disabled={pending} onClick={() => setRevoking(member)}>
+                          <UserXIcon />
+                          {t.removeAccess}
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem disabled={pending} onClick={() => invite(member)}>
+                          <UserPlusIcon />
+                          {t.invite}
+                        </DropdownMenuItem>
+                      )}
                       {calendars[member.id] && !calendars[member.id].needsReconnect ? (
                         <DropdownMenuItem
                           disabled={pending}
@@ -305,6 +359,11 @@ export function TeamView({
       >
         <RemoveGoogleEvents checked={removeEvents} onCheckedChange={setRemoveEvents} />
       </ConfirmRemove>
+      <ConfirmRemove
+        name={revoking ? t.accessName(revoking.name) : null}
+        onClose={() => setRevoking(null)}
+        onConfirm={() => revoking && revoke(revoking)}
+      />
 
       <ResponsivePanel
         open={editing !== null}
@@ -407,12 +466,16 @@ function MemberForm({
   const [phone, setPhone] = useState(member?.phone ?? "")
   const [email, setEmail] = useState(member?.email ?? "")
   const [description, setDescription] = useState(member?.description ?? "")
+  const [about, setAbout] = useState(member?.about ?? "")
+  const [languages, setLanguages] = useState(member?.languages ?? [])
   const [newPhoto, setNewPhoto] = useState<File | null>(null)
   const changed =
     name !== (member?.name ?? "") ||
     phone !== (member?.phone ?? "") ||
     email !== (member?.email ?? "") ||
     description !== (member?.description ?? "") ||
+    about !== (member?.about ?? "") ||
+    languages.join() !== (member?.languages ?? []).join() ||
     same !== (memberHours.length === 0) ||
     (!same &&
       JSON.stringify(rows) !==
@@ -431,7 +494,7 @@ function MemberForm({
           return onError("email")
         if (!same && (!validHours(rows) || rows.length === 0)) { setHoursInvalid(true); return }
         onSave(
-          { name: name.trim(), phone, email, description },
+          { name: name.trim(), phone, email, description, about, languages },
           same ? null : rows,
           member ? null : newPhoto
         )
@@ -501,6 +564,30 @@ function MemberForm({
             onChange={(event) => setDescription(event.target.value)}
             maxLength={BOOKING_RULES.maxTeamDescription}
             placeholder={c.optional}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="member-about">{t.about}</FieldLabel>
+          <Textarea
+            id="member-about"
+            value={about}
+            onChange={(event) => setAbout(event.target.value)}
+            maxLength={TEAM_RULES.aboutMaxLength}
+            placeholder={c.optional}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="member-languages">{t.languages}</FieldLabel>
+          <MultiPick
+            id="member-languages"
+            items={TEAM_RULES.languages.map((code) => ({
+              value: code,
+              label: languageName(code, m.locale),
+            }))}
+            value={languages}
+            onChange={(next) => setLanguages(next.slice(0, TEAM_RULES.maxLanguages))}
+            placeholder={c.optional}
+            empty={t.noLanguage}
           />
         </Field>
         <FieldSet>

@@ -76,6 +76,7 @@ import {
   TagSolid as MynaTagSolid,
   CogSolid as MynaCogSolid,
   UsersSolid as MynaUsersSolid,
+  UserSolid as MynaUserSolid,
   Clock3Solid as MynaClock3Solid,
   HomeSolid as MynaHomeSolid,
   StoreSolid as MynaStoreSolid,
@@ -91,6 +92,7 @@ import {
   Zap as MynaZap,
   ZapSolid as MynaZapSolid,
   TrendingUp as MynaTrendingUp,
+  User as MynaUser,
   UserX as MynaUserX,
   UserPlus as MynaUserPlus,
   Download as MynaDownload,
@@ -293,6 +295,7 @@ export const TriangleAlertIcon = icon(
 )
 export const TrendingUpIcon = icon(MynaTrendingUp as Icon, "TrendingUpIcon")
 export const UserPlusIcon = icon(MynaUserPlus as Icon, "UserPlusIcon")
+export const UserIcon = icon(MynaUser as Icon, "UserIcon")
 export const UserXIcon = icon(MynaUserX as Icon, "UserXIcon")
 export const UsersIcon = icon(MynaUsers as Icon, "UsersIcon")
 export const WrenchIcon = icon(MynaWrench as Icon, "WrenchIcon")
@@ -347,6 +350,7 @@ const FILLED = new Map<Icon, Icon>([
   [TagIcon, icon(MynaTagSolid as Icon, "TagFilledIcon")],
   [SettingsIcon, icon(MynaCogSolid as Icon, "SettingsFilledIcon")],
   [UsersIcon, icon(MynaUsersSolid as Icon, "UsersFilledIcon")],
+  [UserIcon, icon(MynaUserSolid as Icon, "UserFilledIcon")],
   [ClockIcon, icon(MynaClock3Solid as Icon, "ClockFilledIcon")],
   [HouseIcon, icon(MynaHomeSolid as Icon, "HouseFilledIcon")],
   [StoreIcon, icon(MynaStoreSolid as Icon, "StoreFilledIcon")],

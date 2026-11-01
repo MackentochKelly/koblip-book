@@ -63,3 +63,35 @@ export function teamCalendarEmail(input: {
       `<p>${escapeHtml(words.note)}</p>`,
   }
 }
+
+// A team member's link to join their business with their own account
+// (docs/plans/team-accounts.md), in the owner's language. One link, no
+// images, no tracking.
+export function teamInviteEmail(input: {
+  businessName: string
+  url: string
+  days: number
+  language: "en" | "es"
+}): VerificationEmail {
+  const { businessName, url, days } = input
+  const words =
+    input.language === "es"
+      ? {
+          subject: `Únete a ${businessName} en Koblip Book`,
+          lead: `${businessName} te invita a tu propio espacio en Koblip Book: tus reservas, tu horario y tu perfil.`,
+          note: `El enlace funciona ${days} días y solo una vez.`,
+        }
+      : {
+          subject: `Join ${businessName} on Koblip Book`,
+          lead: `${businessName} invites you to your own space on Koblip Book: your bookings, your hours and your profile.`,
+          note: `The link works for ${days} days, once.`,
+        }
+  return {
+    subject: words.subject,
+    text: `${words.lead}\n\n${url}\n\n${words.note}`,
+    html:
+      `<p>${escapeHtml(words.lead)}</p>` +
+      `<p><a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>` +
+      `<p>${escapeHtml(words.note)}</p>`,
+  }
+}
