@@ -40,7 +40,9 @@ function useSheetSize(
     // While a sheet is open on top, this one is squeezed to its height;
     // measure again once it closes.
     if (sheet.hasAttribute("data-nested-drawer-open")) return
-    const padding = parseFloat(getComputedStyle(area).paddingTop) * 2
+    const style = getComputedStyle(area)
+    const padding =
+      parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
     // Everything that is not the scrolling middle: handle, title, buttons.
     const chrome = sheet.offsetHeight - area.clientHeight
     const max = parseFloat(getComputedStyle(sheet).maxHeight)
@@ -193,17 +195,17 @@ export function BottomPanel({
             ref={scroll}
             className={cn(
               "min-h-0 flex-1 overflow-y-auto p-4",
-              // A line between the list and the buttons.
-              footer && "border-b"
+              // A line between the list and the buttons, with room above it.
+              footer && "border-b pb-6"
             )}
           >
             <div ref={inner}>
-              <StackedContext.Provider value>{children}</StackedContext.Provider>
+              <StackedContext.Provider value>
+                {children}
+              </StackedContext.Provider>
             </div>
           </div>
-          {footer && (
-            <DrawerFooter className="pt-4">{footer}</DrawerFooter>
-          )}
+          {footer && <DrawerFooter className="pt-4">{footer}</DrawerFooter>}
         </DrawerContent>
       </DrawerPrimitive.VirtualKeyboardProvider>
     </Drawer>
