@@ -17,13 +17,15 @@ export function TeamList({
   }
   return (
     <PageSection id="team" title={messagesFor(language).sections.team}>
-      <div className="flex flex-wrap gap-4">
+      {/* One row that swipes sideways; on the phone it runs to the screen
+          edges (the page's px-4, taken back by a negative margin). */}
+      <div className="-mx-4 no-scrollbar flex scroll-fade-x gap-4 overflow-x-auto px-4 md:mx-0 md:px-0">
         {team.map((member) => (
           <div
             key={member.id}
-            className="flex w-24 flex-col items-center gap-2"
+            className="flex w-24 shrink-0 flex-col items-center gap-2"
           >
-            <Avatar className="size-20">
+            <Avatar className="size-24">
               {member.photoUrl && <AvatarImage src={member.photoUrl} alt="" />}
               <AvatarFallback className="text-xl">
                 {initials(member.name)}
