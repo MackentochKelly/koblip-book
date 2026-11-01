@@ -52,7 +52,11 @@ export function InstallAppCard() {
         )}
         {way === "ios" && (
           <>
-            <Button className="md:self-start" onClick={() => setSteps(true)}>
+            <Button
+              variant="soft"
+              className="md:self-start"
+              onClick={() => setSteps(true)}
+            >
               <PlayCircleIcon data-icon="inline-start" />
               {t.installHowTo}
             </Button>
