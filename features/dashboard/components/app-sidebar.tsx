@@ -52,7 +52,7 @@ export function AppSidebar({
     <Sidebar collapsible="icon">
       <SidebarHeader>
         {/* A search field when open; just the icon when folded. */}
-        <InputGroup className="bg-background group-data-[collapsible=icon]:hidden">
+        <InputGroup className="bg-muted group-data-[collapsible=icon]:hidden dark:bg-background">
           <InputGroupAddon>
             <SearchIcon />
           </InputGroupAddon>
