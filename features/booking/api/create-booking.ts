@@ -8,6 +8,7 @@ import { db } from "@/lib/db"
 import { googleBusyTimes } from "@/lib/google-calendar-busy"
 import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
+import { offersWhatsapp } from "@/lib/whatsapp-offer"
 import { notification } from "@/lib/in-app-notifications"
 import {
   bookingAddons,
@@ -64,6 +65,7 @@ export async function createBooking(
     if (!business) {
       return { status: "failed" }
     }
+    const whatsapp = await offersWhatsapp(business.id)
 
     const [serviceRows, hourRows, teamRows, linkRows, memberHourRows] =
       await Promise.all([
@@ -229,7 +231,9 @@ export async function createBooking(
           customerName: name,
           customerPhone: phone,
           customerKey: customerKey(phone, name),
-          whatsappOptIn: input.whatsappOptIn === true,
+          // The booking page names the business in the ⓘ on Phone whenever
+          // it sends WhatsApp booking messages: booking is the yes.
+          whatsappOptIn: whatsapp,
           language: input.language === "es" ? "es" : "en",
         }),
         ...(addonCheck.options.length > 0

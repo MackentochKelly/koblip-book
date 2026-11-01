@@ -105,7 +105,11 @@ const en = {
     phone: "Phone",
     addName: "Add your name",
     checkPhone: "Check your phone number",
-    whatsappOptIn: "Send me booking updates on WhatsApp",
+    // Meta's opt-in: the business's name and that messages come (the ⓘ on
+    // Phone); booking is the customer's yes.
+    whatsappNotice: (business: string) =>
+      `By booking, you'll get WhatsApp messages from ${business} about this booking.`,
+    whatsappAbout: "About WhatsApp messages",
     total: "Total",
     with: (name: string) => `with ${name}`,
     free: "Free",
@@ -398,7 +402,9 @@ const es: Messages = {
     phone: "Teléfono",
     addName: "Escribe tu nombre",
     checkPhone: "Revisa tu número de teléfono",
-    whatsappOptIn: "Envíame avisos de la reserva por WhatsApp",
+    whatsappNotice: (business: string) =>
+      `Al reservar, recibirás mensajes de WhatsApp de ${business} sobre esta reserva.`,
+    whatsappAbout: "Sobre los mensajes de WhatsApp",
     total: "Total",
     with: (name: string) => `con ${name}`,
     free: "Gratis",

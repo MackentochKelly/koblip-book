@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { CalendarX2Icon, UsersIcon } from "@/components/ui/icons"
 
+import { InfoTip } from "@/components/info-tip"
 import { useMessages } from "@/components/language-provider"
 import { TimePicker } from "@/components/time-picker"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -358,27 +359,27 @@ export function DetailsStep({
   formId,
   sending,
   error,
-  whatsapp,
+  whatsappFrom,
   onSubmit,
 }: {
   formId: string
   sending: boolean
   error: DetailsError
-  // The business sends WhatsApp booking messages: ask, unticked (Meta opt-in).
-  whatsapp: boolean
-  onSubmit: (details: { name: string; phone: string; whatsappOptIn: boolean }) => void
+  // The business's name when it sends WhatsApp booking messages: the ⓘ on
+  // Phone says so (Meta opt-in), and booking is the customer's yes.
+  whatsappFrom: string | null
+  onSubmit: (details: { name: string; phone: string }) => void
 }) {
   const m = useMessages()
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
-  const [whatsappOptIn, setWhatsappOptIn] = useState(false)
   return (
     <form
       id={formId}
       noValidate
       onSubmit={(event) => {
         event.preventDefault()
-        onSubmit({ name: name.trim(), phone: phone.trim(), whatsappOptIn: whatsapp && whatsappOptIn })
+        onSubmit({ name: name.trim(), phone: phone.trim() })
       }}
     >
       <FieldGroup>
@@ -396,7 +397,14 @@ export function DetailsStep({
           {error === "name" && <FieldError>{m.booking.addName}</FieldError>}
         </Field>
         <Field data-invalid={error === "phone" || undefined}>
-          <FieldLabel htmlFor="booking-phone">{m.booking.phone}</FieldLabel>
+          <div className="flex items-center gap-1">
+            <FieldLabel htmlFor="booking-phone">{m.booking.phone}</FieldLabel>
+            {whatsappFrom && (
+              <InfoTip label={m.booking.whatsappAbout}>
+                {m.booking.whatsappNotice(whatsappFrom)}
+              </InfoTip>
+            )}
+          </div>
           <Input
             {...noAutofill("booking_phone")}
             id="booking-phone"
@@ -410,19 +418,6 @@ export function DetailsStep({
           />
           {error === "phone" && <FieldError>{m.booking.checkPhone}</FieldError>}
         </Field>
-        {whatsapp && (
-          <Field orientation="horizontal">
-            <Checkbox
-              id="booking-whatsapp"
-              checked={whatsappOptIn}
-              disabled={sending}
-              onCheckedChange={(on) => setWhatsappOptIn(on === true)}
-            />
-            <FieldLabel htmlFor="booking-whatsapp" className="font-normal">
-              {m.booking.whatsappOptIn}
-            </FieldLabel>
-          </Field>
-        )}
       </FieldGroup>
     </form>
   )
