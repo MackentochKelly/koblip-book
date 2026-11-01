@@ -91,6 +91,7 @@ import {
   Wrench as MynaWrench,
   Zap as MynaZap,
   ZapSolid as MynaZapSolid,
+  CheckCircleSolid as MynaCheckCircleSolid,
   TrendingUp as MynaTrendingUp,
   User as MynaUser,
   UserX as MynaUserX,
@@ -197,6 +198,11 @@ export const ChevronsUpDownIcon = icon(
 )
 export const CircleAlertIcon = icon(MynaDangerCircle as Icon, "CircleAlertIcon")
 export const CircleCheckIcon = icon(MynaCheckCircle as Icon, "CircleCheckIcon")
+// Filled, for a "done" mark that stays sharp at small sizes.
+export const CircleCheckFilledIcon = icon(
+  MynaCheckCircleSolid as Icon,
+  "CircleCheckFilledIcon"
+)
 export const ClockIcon = icon(MynaClock3 as Icon, "ClockIcon")
 export const ContactIcon = icon(MynaUserSquare as Icon, "ContactIcon")
 export const CopyIcon = icon(MynaCopy as Icon, "CopyIcon")

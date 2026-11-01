@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
-import { CircleCheckIcon, type Icon } from "@/components/ui/icons"
+import { CircleCheckFilledIcon, type Icon } from "@/components/ui/icons"
 import {
   Item,
   ItemContent,
@@ -90,7 +90,7 @@ export function StepReveal({
             <span className="flex size-6 items-center justify-center text-muted-foreground">
               {state === "working" && <Spinner aria-label={labels.working} />}
               {state === "done" && (
-                <CircleCheckIcon className="size-5 text-primary" aria-label={labels.done} />
+                <CircleCheckFilledIcon className="size-5 text-success" aria-label={labels.done} />
               )}
               {state === "waiting" && <span className="sr-only">{labels.waiting}</span>}
             </span>
