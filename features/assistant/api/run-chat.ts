@@ -370,13 +370,10 @@ export async function* runChat(
         rows: [...memory.values()].slice(-ASSISTANT_RULES.maxMemoryRows),
       }
     }
-    // Typed answers hold a turn's first words (typedHoldChars, ending a
-    // sentence) before streaming: a turn that calls a tool instead (a
-    // lookup, a card, the buttons) shows none of them, as the prompt asks
-    // ("write nothing before"). Talking mode says its short line before a
-    // lookup on purpose, so it streams everything.
-    const holds = context.voice !== true
     for (let turn = 0; turn < ASSISTANT_RULES.maxSteps; turn += 1) {
+      // Typed answers hold each turn's first words. Talking streams its
+      // first line at once, then holds later turns the same way.
+      const holding = context.voice !== true || textSent
       const stream = await modelCall()
       // Keep the full turn for history while sending each delta immediately.
       let text = ""
@@ -421,7 +418,7 @@ export async function* runChat(
         }
         if (delta.content) {
           text += delta.content
-          if (!holds || shown !== "") {
+          if (!holding || shown !== "") {
             yield* show(delta.content)
           } else if (calls.length === 0) {
             held += delta.content

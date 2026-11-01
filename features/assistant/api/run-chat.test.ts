@@ -219,10 +219,39 @@ test("talking streams its line before a lookup and separates later text", async 
     [
       { type: "text", delta: "Checking." },
       { type: "text", delta: "\n\n" },
-      { type: "text", delta: "Two" },
-      { type: "text", delta: " bookings." },
+      { type: "text", delta: "Two bookings." },
     ]
   )
+})
+
+test("talking says only its first line before lookups", async () => {
+  scriptedClient([
+    [textChunk("On it."), toolChunk(0, "a", "probe", "{}")],
+    [textChunk("Checking extras."), toolChunk(0, "b", "probe", "{}")],
+    [textChunk("Two bookings.")],
+  ])
+  const events = await collect(
+    runChat(MESSAGES, { ...CONTEXT, voice: true }, [probe(async () => ({}))])
+  )
+  expect(events.filter((e) => (e as { type: string }).type === "text")).toEqual(
+    [
+      { type: "text", delta: "On it." },
+      { type: "text", delta: "\n\n" },
+      { type: "text", delta: "Two bookings." },
+    ]
+  )
+})
+
+test("talking streams a direct answer chunk by chunk", async () => {
+  scriptedClient([[textChunk("Two"), textChunk(" bookings.")]])
+  const events = await collect(
+    runChat(MESSAGES, { ...CONTEXT, voice: true }, [])
+  )
+  expect(events).toEqual([
+    { type: "text", delta: "Two" },
+    { type: "text", delta: " bookings." },
+    { type: "done" },
+  ])
 })
 
 test("typed: words written before a tool call never show", async () => {

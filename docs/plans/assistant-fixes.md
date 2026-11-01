@@ -28,7 +28,7 @@ file: [Plans](README.md).
 | A10 | Times, days and prices read and sound normal | M | | Done (2026-10-31) |
 | A11 | Money answers match the dashboard | M | | Done (2026-11-01) |
 | A12 | A refused action shows as failed | S | | Done (2026-11-01) |
-| A13 | Voice says one short line before lookups | S | | Working on: M Kelly B, 2026-11-01 |
+| A13 | Voice says one short line before lookups | S | | Done (2026-11-01) |
 | A14 | A check that can't run says so | S | | To do |
 
 ---
