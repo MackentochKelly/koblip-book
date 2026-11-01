@@ -1,6 +1,6 @@
 # Sign-up fixes
 
-Nine fixes from the sign-up audit (2026-11-01): home search → pick business →
+Ten fixes from the sign-up audit (2026-11-01): home search → pick business →
 create account → Google details → check details → getting ready → live,
 checked at 375px and 1280px. Every step works today; these make it clearer
 and faster. How to use this file: [Plans](README.md).
@@ -28,6 +28,7 @@ and faster. How to use this file: [Plans](README.md).
 | S7 | Live screen shows a useful category | S | | To do |
 | S8 | Search box hint fits at 375px | S | | To do |
 | S9 | Setup still finishes after a server restart | M | | Working on: M Kelly B, 2026-11-01 |
+| S10 | Keyboard focus stays in the list after a suggested search | S | S1 | Working on: M Kelly B, 2026-11-01 |
 
 ---
 
@@ -175,6 +176,23 @@ the business and start whatever is missing, so the rows run as before.
 
 **Done when:** with the job store emptied mid-setup, the rows still run
 and the team photos and Spanish are made; a test covers it.
+
+### S10 · Keyboard focus stays in the list after a suggested search 🟡
+
+**Problem:** tapping a suggested search ("photography studio near
+Brockton, MA, USA") replaces the list with businesses. The tapped row is
+gone, so keyboard focus drops to the page and keyboard and screen reader
+users lose their place.
+
+**Fix:** when the businesses arrive, move focus to the first business
+(React's `flushSync`, then focus), only when focus was in the list or
+had dropped to the page.
+
+**Files:** `features/onboarding/components/get-started.tsx`,
+`features/onboarding/components/suggestion-list.tsx`.
+
+**Done when:** after a suggested search, Tab and Enter carry on from the
+first business; a test covers it.
 
 ## Decisions log
 
