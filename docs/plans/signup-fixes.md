@@ -20,7 +20,7 @@ and faster. How to use this file: [Plans](README.md).
 | Task | What | Size | Needs | Status |
 | --- | --- | --- | --- | --- |
 | S1 | Search by kind and town finds businesses | M | | Done |
-| S2 | Search shows businesses, not street addresses | S | S1 | Working on: M Kelly B, 2026-11-01 |
+| S2 | Search shows businesses, not street addresses | S | S1 | Done |
 | S3 | Sign-up errors say what went wrong, in the right place | S | | Working on: M Kelly B, 2026-11-01 |
 | S4 | "Getting your page ready" never looks stuck | M | | Done |
 | S5 | Check details says Continue | S | | To do |
@@ -70,6 +70,10 @@ filtering text afterwards.
 
 **Done when:** no plain street or route shows in the list; a test covers
 the filter.
+
+**Done (2026-11-01):** business search asks Autocomplete (New) for
+`includedPrimaryTypes: ["establishment"]` (place types Table B), so
+street addresses no longer show. City search is unchanged.
 
 ### S3 · Sign-up errors say what went wrong, in the right place 🟠
 
@@ -210,3 +214,4 @@ both cases.
 | --- | --- | --- | --- |
 | S9: setup state is saved on the business (`setupFinishedAt`), not kept in server memory | A restart or the 15-minute job expiry lost what was left to do; a saved column is the smallest safe fix. A saved jobs queue with a worker was left for later (more parts, risk of paying twice for AI calls) | M Kelly B | 2026-11-01 |
 | S9: backfill demo copies and owned businesses with at least one service or team member with the migration time; all others stay null | Finished listings skip setup; unclaimed imports and owned listings without services or team can still prepare their catalog. Ownership claims keep the saved finish time. | M Kelly B | 2026-11-01 |
+| S2: business-only filter goes in the Autocomplete request, not on the results | Owners mostly search by their business name, which now lists only businesses. Trade-off: with no location set, kind-plus-town suggestions point at places inside the town and the right town can rank lower ("Brockton, MA" rows 4–5); filtering the results instead would leave an empty list whenever Google returns only addresses. | M Kelly B | 2026-11-01 |

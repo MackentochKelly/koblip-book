@@ -69,7 +69,9 @@ function locationBias(near: unknown) {
 // names; for words like "photography studio Brockton" it also suggests
 // searches ("… near Brockton, MA, USA"), which searchBusinessesByText
 // runs when tapped (Google's documented pairing, so Text Search is billed
-// only on a tap). Never throws: a Google failure just shows no suggestions.
+// only on a tap). Only businesses: "establishment" (place types Table B)
+// keeps out street addresses, which can't become a booking page.
+// Never throws: a Google failure just shows no suggestions.
 export async function searchBusinesses({
   input,
   sessionToken,
@@ -88,6 +90,7 @@ export async function searchBusinesses({
       sessionToken,
       languageCode: "en",
       includeQueryPredictions: true,
+      includedPrimaryTypes: ["establishment"],
       ...locationBias(near),
     })
     return predictions

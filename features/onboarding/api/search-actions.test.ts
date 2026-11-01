@@ -52,7 +52,18 @@ test("searchBusinesses returns name + address suggestions", async () => {
     sessionToken: TOKEN,
     languageCode: "en",
     includeQueryPredictions: true,
+    includedPrimaryTypes: ["establishment"],
   })
+})
+
+test("searchBusinesses asks Google for businesses only, not addresses", async () => {
+  autocompleteMock.mockResolvedValue([])
+
+  await searchBusinesses({ input: "Studio 7 Photography Boston", sessionToken: TOKEN })
+
+  expect(autocompleteMock).toHaveBeenCalledWith(
+    expect.objectContaining({ includedPrimaryTypes: ["establishment"] })
+  )
 })
 
 test("searchBusinesses sends locationBias only with valid coordinates", async () => {
@@ -68,6 +79,7 @@ test("searchBusinesses sends locationBias only with valid coordinates", async ()
     sessionToken: TOKEN,
     languageCode: "en",
     includeQueryPredictions: true,
+    includedPrimaryTypes: ["establishment"],
     locationBias: {
       circle: {
         center: { latitude: 18.47, longitude: -69.93 },
@@ -87,6 +99,7 @@ test("searchBusinesses sends locationBias only with valid coordinates", async ()
     sessionToken: TOKEN,
     languageCode: "en",
     includeQueryPredictions: true,
+    includedPrimaryTypes: ["establishment"],
   })
 })
 
