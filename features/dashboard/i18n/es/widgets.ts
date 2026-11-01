@@ -1,0 +1,39 @@
+import type en from "../en/widgets"
+
+const widgets: typeof en = {
+  title: "Widgets",
+  names: {
+    stats: "Números",
+    today: "Hoy",
+    bookings: "Reservas",
+    next: "Próxima reserva",
+    chart: "Próximos días",
+    newCustomers: "Clientes nuevos",
+    share: "Comparte tu página",
+  },
+  edit: "Editar widgets",
+  done: "Listo",
+  add: "Añadir widget",
+  remove: (name: string) => `Quitar ${name}`,
+  move: (name: string) => `Mover ${name}`,
+  show: (name: string) => `Mostrar ${name} en Inicio`,
+  noneShown: "No hay widgets en Inicio",
+  savedFor: "Diseño guardado para",
+  everyDevice: "Todos tus dispositivos",
+  thisDevice: "Solo este dispositivo",
+  failed: "No se pudo guardar. Inténtalo de nuevo.",
+  instructions:
+    "Para mover un widget, pulsa Espacio. Usa las flechas para moverlo, Espacio para soltarlo o Escape para cancelar.",
+  picked: (name: string) => `${name} seleccionado.`,
+  movedTo: (name: string, position: number, total: number) =>
+    `${name} movido a la posición ${position} de ${total}.`,
+  dropped: (name: string, position: number, total: number) =>
+    `${name} soltado en la posición ${position} de ${total}.`,
+  cancelled: (name: string) => `Se canceló mover ${name}.`,
+  noNext: "No hay reservas próximas",
+  noNewCustomers: "No hay clientes nuevos esta semana",
+  firstVisit: "Primera visita",
+  viewAll: "Ver todo",
+}
+
+export default widgets

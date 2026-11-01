@@ -3,6 +3,7 @@ import {
   ChartColumnIcon,
   ContactIcon,
   LayoutDashboardIcon,
+  LayoutGridIcon,
   PuzzleIcon,
   SettingsIcon,
   SparklesIcon,
@@ -38,6 +39,7 @@ export const NAV_GROUPS = [
   {
     key: "workspace",
     items: [
+      { path: "/widgets", key: "widgets", icon: LayoutGridIcon },
       { path: "/integrations", key: "integrations", icon: PuzzleIcon },
       { path: "/settings", key: "settings", icon: SettingsIcon },
     ],

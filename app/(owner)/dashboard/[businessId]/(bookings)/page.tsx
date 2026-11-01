@@ -1,10 +1,13 @@
 import type { Metadata } from "next"
 import { getFirstVisits } from "@/features/dashboard/api/customers"
 import {
+  getBookingCounts,
   getBookings,
   getBookingsBetween,
   getOwnerBusiness,
 } from "@/features/dashboard/api/queries"
+import { getWidgetLayout } from "@/features/dashboard/api/widgets"
+import { WIDGET_LIST_LIMIT } from "@/features/dashboard/widgets"
 import { getAddonGroups } from "@/features/dashboard/api/addon-queries"
 import { getServiceTeams } from "@/features/dashboard/api/team-service-queries"
 import {
@@ -14,6 +17,8 @@ import {
 import { AskCard } from "@/features/assistant/components/ask-card"
 import { BookingsView } from "@/features/dashboard/components/bookings-view"
 import { periodSummary } from "@/features/dashboard/utils/analytics"
+import { bookingsPerDay } from "@/features/dashboard/utils/bookings-per-day"
+import { newCustomers } from "@/features/dashboard/utils/new-customers"
 import { ConfirmDetailsCard } from "@/features/dashboard/components/confirm-details-card"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import { moveOwnerBooking } from "@/features/booking/api/move-owner-booking"
@@ -39,16 +44,26 @@ export default async function BookingsPage({ params }: Props) {
   const owner = await getOwnerBusiness(businessId)
   const { business } = owner
   const today = todayIn(business.timezone)
-  const [upcoming, past, lastDays, serviceTeams, addonGroups, whatsapp] =
-    await Promise.all([
-      getBookings(businessId, "upcoming"),
-      getBookings(businessId, "past"),
-      // The last 7 days and the 7 before, for the numbers on top.
-      getBookingsBetween(businessId, addDaysTo(today, -13), today),
-      getServiceTeams(businessId),
-      getAddonGroups(businessId),
-      offersWhatsapp(businessId),
-    ])
+  const [
+    upcoming,
+    past,
+    lastDays,
+    serviceTeams,
+    addonGroups,
+    whatsapp,
+    counts,
+    widgetLayout,
+  ] = await Promise.all([
+    getBookings(businessId, "upcoming"),
+    getBookings(businessId, "past"),
+    // The last 7 days and the 7 before, for the numbers on top.
+    getBookingsBetween(businessId, addDaysTo(today, -13), today),
+    getServiceTeams(businessId),
+    getAddonGroups(businessId),
+    offersWhatsapp(businessId),
+    getBookingCounts(businessId),
+    getWidgetLayout(business),
+  ])
   const firstVisits = await getFirstVisits(
     businessId,
     lastDays.map((booking) => booking.customerKey)
@@ -69,6 +84,21 @@ export default async function BookingsPage({ params }: Props) {
           />
         }
         summary={periodSummary(lastDays, firstVisits, today, 7)}
+        widgets={{
+          ...widgetLayout,
+          comingUp: {
+            today: counts.today,
+            upcoming: counts.upcoming,
+            days: bookingsPerDay(upcoming, today, BOOKING_RULES.chartDays),
+          },
+          // First visits in the last 7 days, like the numbers on top.
+          newCustomers: newCustomers(
+            lastDays.filter((booking) => booking.date > addDaysTo(today, -7)),
+            firstVisits,
+            WIDGET_LIST_LIMIT
+          ),
+          page: { slug: business.slug, name: business.name },
+        }}
         currency={business.currency}
         addOptions={{
           services: owner.services.map(({ id, name, durationMinutes }) => ({

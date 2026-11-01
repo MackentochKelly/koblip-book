@@ -12,6 +12,7 @@ const shell: typeof en = {
     team: "Equipo",
     hours: "Horario",
     automations: "Automatizaciones",
+    widgets: "Widgets",
     integrations: "Integraciones",
     settings: "Ajustes",
     assistant: "Asistente",

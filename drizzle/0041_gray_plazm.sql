@@ -1,0 +1,1 @@
+ALTER TABLE `businesses` ADD `dashboard_widgets` text;

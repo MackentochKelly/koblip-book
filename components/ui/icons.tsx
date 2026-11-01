@@ -36,6 +36,8 @@ import {
   ExternalLink as MynaExternalLink,
   Filter as MynaFilter,
   Globe as MynaGlobe,
+  Grid as MynaGrid,
+  GripVertical as MynaGripVertical,
   Home as MynaHome,
   Image as MynaImage,
   Info as MynaInfo,
@@ -88,6 +90,7 @@ import {
   Wrench as MynaWrench,
   Zap as MynaZap,
   ZapSolid as MynaZapSolid,
+  TrendingUp as MynaTrendingUp,
 } from "@mynaui/icons-react"
 import {
   AudioLines as LucideAudioLines,
@@ -210,11 +213,16 @@ export const GraduationCapIcon = icon(
   "GraduationCapIcon"
 )
 export const HandHeartIcon = icon(LucideHandHeart as Icon, "HandHeartIcon")
+export const GripVerticalIcon = icon(
+  MynaGripVertical as Icon,
+  "GripVerticalIcon"
+)
 export const HouseIcon = icon(MynaHome as Icon, "HouseIcon")
 export const ImageIcon = icon(MynaImage as Icon, "ImageIcon")
 export const InfoIcon = icon(MynaInfo as Icon, "InfoIcon")
 export const InfoCircleIcon = icon(MynaInfoCircle as Icon, "InfoCircleIcon")
 export const LanguagesIcon = icon(LucideLanguages as Icon, "LanguagesIcon")
+export const LayoutGridIcon = icon(MynaGrid as Icon, "LayoutGridIcon")
 export const LayoutDashboardIcon = icon(
   MynaLayoutDashboard as Icon,
   "LayoutDashboardIcon"
@@ -265,6 +273,10 @@ export const Trash2Icon = icon(MynaTrash as Icon, "Trash2Icon")
 export const TriangleAlertIcon = icon(
   MynaDangerTriangle as Icon,
   "TriangleAlertIcon"
+)
+export const TrendingUpIcon = icon(
+  MynaTrendingUp as Icon,
+  "TrendingUpIcon"
 )
 export const UsersIcon = icon(MynaUsers as Icon, "UsersIcon")
 export const WrenchIcon = icon(MynaWrench as Icon, "WrenchIcon")

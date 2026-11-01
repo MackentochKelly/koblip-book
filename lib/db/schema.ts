@@ -52,6 +52,12 @@ export const businesses = sqliteTable(
     ownerId: text().references(() => user.id, { onDelete: "set null" }),
     detailsConfirmedAt: integer(),
     seats: integer().notNull().default(1),
+    // Home's widgets for every device (features/dashboard/widgets.ts);
+    // null until the owner changes them. Read through normalizeLayout.
+    dashboardWidgets: text({ mode: "json" }).$type<{
+      order: string[]
+      hidden: string[]
+    }>(),
     // A visitor's copy of the home page demo (features/demo): never listed
     // in the admin area or to real owners, never indexed, deleted after
     // DEMO_RULES.keepHours.

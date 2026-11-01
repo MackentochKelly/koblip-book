@@ -5,12 +5,14 @@ import enIntegrations from "./en/integrations"
 import enSettings from "./en/settings"
 import enShell from "./en/shell"
 import enWhatsapp from "./en/whatsapp"
+import enWidgets from "./en/widgets"
 import esBookings from "./es/bookings"
 import esCatalog from "./es/catalog"
 import esIntegrations from "./es/integrations"
 import esSettings from "./es/settings"
 import esShell from "./es/shell"
 import esWhatsapp from "./es/whatsapp"
+import esWidgets from "./es/widgets"
 
 // The owner area's words, one file per area in each language. Spanish is
 // typed against English, so a missing word fails the typecheck.
@@ -22,6 +24,7 @@ const en = {
   integrations: enIntegrations,
   settings: enSettings,
   whatsapp: enWhatsapp,
+  widgets: enWidgets,
 }
 
 export type OwnerMessages = typeof en
@@ -34,6 +37,7 @@ const es: OwnerMessages = {
   integrations: esIntegrations,
   settings: esSettings,
   whatsapp: esWhatsapp,
+  widgets: esWidgets,
 }
 
 const MESSAGES: Record<PageLanguage, OwnerMessages> = { en, es }
