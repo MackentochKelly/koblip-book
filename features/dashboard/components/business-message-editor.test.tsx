@@ -28,6 +28,7 @@ const text = (language: "en" | "es", review: Message["texts"]["en"]["review"]) =
   isDefault: false,
   review,
   reason: null,
+  approved: null,
 })
 
 const reminder = (review: Message["texts"]["en"]["review"]): Message => ({

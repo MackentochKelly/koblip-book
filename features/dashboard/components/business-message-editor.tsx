@@ -42,12 +42,17 @@ export function BusinessMessageEditor({
     buttonActions: messageButtonActions(item.message),
     texts: Object.fromEntries(
       TEMPLATE_LANGUAGES.map((language) => {
-        const text = item.texts[language]
+        const { approved, ...text } = item.texts[language]
         return [
           language,
           {
             ...text,
             wording: { ...text.wording, body: fieldsForOwner(text.wording.body, fields) },
+            // The words Meta approved, in the owner's words like the rest.
+            approved: approved && {
+              wording: { ...approved.wording, body: fieldsForOwner(approved.wording.body, fields) },
+              buttons: approved.buttons,
+            },
           },
         ]
       })
