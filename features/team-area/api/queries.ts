@@ -11,7 +11,7 @@ import {
 } from "@/lib/db/schema"
 import type { TeamSeat } from "@/lib/dal"
 import type { HoursRow } from "@/lib/hours-rules"
-import type { TeamProfile } from "@/lib/team-rules"
+import type { StartingCounts, TeamProfile } from "@/lib/team-rules"
 import type { MyBooking } from "../types"
 
 // How many bookings one list shows.
@@ -72,12 +72,16 @@ export async function getMyHours(seat: TeamSeat): Promise<HoursRow[]> {
 }
 
 // What customers see on their public profile.
-export async function getMyProfile(seat: TeamSeat): Promise<TeamProfile> {
+export async function getMyProfile(
+  seat: TeamSeat
+): Promise<TeamProfile & StartingCounts> {
   const [row] = await db
     .select({
       description: teamMembers.description,
       about: teamMembers.about,
       languages: teamMembers.languages,
+      pastAppointments: teamMembers.pastAppointments,
+      pastClients: teamMembers.pastClients,
     })
     .from(teamMembers)
     .where(eq(teamMembers.id, seat.teamMemberId))
@@ -86,5 +90,7 @@ export async function getMyProfile(seat: TeamSeat): Promise<TeamProfile> {
     description: row?.description ?? null,
     about: row?.about ?? null,
     languages: row?.languages ?? [],
+    pastAppointments: row?.pastAppointments ?? 0,
+    pastClients: row?.pastClients ?? 0,
   }
 }

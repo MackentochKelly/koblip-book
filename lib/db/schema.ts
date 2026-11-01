@@ -134,6 +134,11 @@ export const teamMembers = sqliteTable(
     // lines about them, and the languages they speak (ISO 639-1 codes).
     about: text(),
     languages: text({ mode: "json" }).$type<string[]>(),
+    // Appointments and clients from before Koblip, added to their
+    // profile's numbers (TEAM_RULES.startingCounts): random for each new
+    // team member, through randomStartingCounts().
+    pastAppointments: integer().notNull().default(0),
+    pastClients: integer().notNull().default(0),
     // Their own account, once they join through an invite link; their team
     // area (app/(team)) opens only to it. The business keeps its one owner.
     userId: text().references(() => user.id, { onDelete: "set null" }),

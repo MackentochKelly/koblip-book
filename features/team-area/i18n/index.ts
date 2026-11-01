@@ -38,6 +38,15 @@ const en = {
     seePublic: "See my public profile",
     logOut: "Log out",
     photo: (name: string) => `${name}'s photo`,
+    // Their numbers from before Koblip (TEAM_RULES.startingCounts).
+    before: {
+      title: "Before Koblip",
+      note: "Added to the numbers on your profile.",
+      appointments: "Appointments",
+      clients: "Clients",
+      reset: "Reset to 0",
+      error: "Clients can't be more than appointments.",
+    },
   },
   photos: {
     change: "Change",
@@ -104,6 +113,14 @@ const es: TeamAreaWords = {
     seePublic: "Ver mi perfil público",
     logOut: "Cerrar sesión",
     photo: (name: string) => `Foto de ${name}`,
+    before: {
+      title: "Antes de Koblip",
+      note: "Se suman a los números de tu perfil.",
+      appointments: "Citas",
+      clients: "Clientes",
+      reset: "Poner en 0",
+      error: "Los clientes no pueden ser más que las citas.",
+    },
   },
   photos: {
     change: "Cambiar",

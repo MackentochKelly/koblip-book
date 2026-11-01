@@ -12,6 +12,7 @@ import {
   teamMembers,
 } from "@/lib/db/schema"
 import { deletePhoto } from "@/lib/uploads"
+import { randomStartingCounts } from "@/lib/team-rules"
 import type { StarterSummary } from "../types"
 import type { CheckedCatalog } from "../utils/check-catalog"
 import { draftCatalog } from "./draft-catalog"
@@ -131,6 +132,7 @@ function catalogInserts(business: Business, catalog: CheckedCatalog) {
         name: member.name,
         description: member.description || null,
         position,
+        ...randomStartingCounts(),
       }))
     ),
   ]

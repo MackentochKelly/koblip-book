@@ -330,6 +330,13 @@
       "when": 1793528530849,
       "tag": "0046_policy_points",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "6",
+      "when": 1793531108388,
+      "tag": "0047_team_starting_counts",
+      "breakpoints": true
     }
   ]
 }

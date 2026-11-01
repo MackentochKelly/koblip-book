@@ -8,23 +8,31 @@ import { getSession, requireTeamMember } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { teamMembers } from "@/lib/db/schema"
 import { joinWithTeamInvite } from "@/lib/team-invites"
-import { checkTeamProfile, type TeamProfile } from "@/lib/team-rules"
+import {
+  checkStartingCounts,
+  checkTeamProfile,
+  type StartingCounts,
+  type TeamProfile,
+} from "@/lib/team-rules"
 import { deletePhoto, savePhoto } from "@/lib/uploads"
 import type { PhotoResult } from "@/types/photo"
 
-// A team member saves their own profile: job title, about and languages.
-// Their name, services and prices stay the owner's.
+// A team member saves their own profile: job title, about, languages and
+// their numbers from before Koblip. Their name, services and prices stay
+// the owner's.
 export async function saveMyProfile(
   teamMemberId: string,
-  profile: TeamProfile
+  profile: TeamProfile & StartingCounts
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (typeof teamMemberId !== "string") return { ok: false, error: "not_found" }
   const { seat } = await requireTeamMember(teamMemberId)
   const checked = checkTeamProfile(profile)
   if (!checked.ok) return checked
+  const counts = checkStartingCounts(profile)
+  if (!counts.ok) return counts
   await db
     .update(teamMembers)
-    .set(checked.values)
+    .set({ ...checked.values, ...counts.values })
     .where(eq(teamMembers.id, seat.teamMemberId))
   revalidatePath(`/b/${seat.business.slug}`, "layout")
   revalidatePath(`/team/${seat.teamMemberId}`, "layout")

@@ -24,6 +24,7 @@ import {
   teamMembers,
 } from "@/lib/db/schema"
 import { DEMO_RULES } from "@/lib/demo-rules"
+import { randomStartingCounts } from "@/lib/team-rules"
 import { DEMO_SAMPLE } from "../sample"
 
 export interface DemoCopy {
@@ -143,6 +144,7 @@ export async function createDemoCopy(
         description: member.description,
         photoUrl: member.photoUrl,
         position: index,
+        ...randomStartingCounts(),
       }))
     ),
     db.insert(addonGroups).values(

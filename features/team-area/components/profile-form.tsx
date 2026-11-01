@@ -9,20 +9,34 @@ import { toast } from "sonner"
 import { MultiPick } from "@/components/multi-pick"
 import { PhotoField } from "@/components/photo-upload"
 import { Button } from "@/components/ui/button"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { authClient } from "@/lib/auth-client"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { initials } from "@/lib/initials"
-import { languageName, TEAM_RULES, type TeamProfile } from "@/lib/team-rules"
+import {
+  checkStartingCounts,
+  languageName,
+  TEAM_RULES,
+  type StartingCounts,
+  type TeamProfile,
+} from "@/lib/team-rules"
 import { removeMyPhoto, saveMyProfile, setMyPhoto } from "../api/actions"
 import { useTeamAreaWords } from "../i18n/provider"
 
 // What customers see on the team member's public profile, which they keep
-// up themselves: their photo, job title, about and languages. Their name
-// is the owner's.
+// up themselves: their photo, job title, about, languages and their
+// numbers from before Koblip. Their name is the owner's.
 export function ProfileForm({
   teamMemberId,
   name,
@@ -34,7 +48,7 @@ export function ProfileForm({
   name: string
   photoUrl: string | null
   publicHref: string
-  profile: TeamProfile
+  profile: TeamProfile & StartingCounts
 }) {
   const t = useTeamAreaWords()
   const p = t.profile
@@ -43,10 +57,20 @@ export function ProfileForm({
   const [description, setDescription] = useState(profile.description ?? "")
   const [about, setAbout] = useState(profile.about ?? "")
   const [languages, setLanguages] = useState(profile.languages)
+  // Kept as typed; empty counts as 0.
+  const [pastAppointments, setPastAppointments] = useState(String(profile.pastAppointments))
+  const [pastClients, setPastClients] = useState(String(profile.pastClients))
+  const counts = {
+    pastAppointments: Number(pastAppointments || 0),
+    pastClients: Number(pastClients || 0),
+  }
+  const countsOk = checkStartingCounts(counts).ok
   const changed =
     description !== (profile.description ?? "") ||
     about !== (profile.about ?? "") ||
-    languages.join() !== profile.languages.join()
+    languages.join() !== profile.languages.join() ||
+    counts.pastAppointments !== profile.pastAppointments ||
+    counts.pastClients !== profile.pastClients
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col items-start gap-4">
@@ -79,6 +103,7 @@ export function ProfileForm({
               description,
               about,
               languages,
+              ...counts,
             }).catch(() => null)
             if (result?.ok) {
               toast.success(p.saved)
@@ -125,7 +150,50 @@ export function ProfileForm({
               empty={p.noLanguage}
             />
           </Field>
-          <Button type="submit" size="lg" disabled={pending || !changed}>
+          <FieldSet>
+            <FieldLegend variant="label">{p.before.title}</FieldLegend>
+            <FieldDescription>{p.before.note}</FieldDescription>
+            <div className="grid grid-cols-2 gap-3">
+              <Field data-invalid={!countsOk || undefined}>
+                <FieldLabel htmlFor="my-past-appointments">{p.before.appointments}</FieldLabel>
+                <Input
+                  id="my-past-appointments"
+                  className="min-h-11 md:min-h-9"
+                  inputMode="numeric"
+                  maxLength={String(TEAM_RULES.startingCounts.highest).length}
+                  value={pastAppointments}
+                  onChange={(event) => setPastAppointments(event.target.value.replace(/\D/g, ""))}
+                  aria-invalid={!countsOk || undefined}
+                />
+              </Field>
+              <Field data-invalid={!countsOk || undefined}>
+                <FieldLabel htmlFor="my-past-clients">{p.before.clients}</FieldLabel>
+                <Input
+                  id="my-past-clients"
+                  className="min-h-11 md:min-h-9"
+                  inputMode="numeric"
+                  maxLength={String(TEAM_RULES.startingCounts.highest).length}
+                  value={pastClients}
+                  onChange={(event) => setPastClients(event.target.value.replace(/\D/g, ""))}
+                  aria-invalid={!countsOk || undefined}
+                />
+              </Field>
+            </div>
+            {!countsOk && <FieldError>{p.before.error}</FieldError>}
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 self-start md:min-h-9"
+              disabled={counts.pastAppointments === 0 && counts.pastClients === 0}
+              onClick={() => {
+                setPastAppointments("0")
+                setPastClients("0")
+              }}
+            >
+              {p.before.reset}
+            </Button>
+          </FieldSet>
+          <Button type="submit" size="lg" disabled={pending || !changed || !countsOk}>
             {pending && <Spinner data-icon="inline-start" />}
             {p.save}
           </Button>

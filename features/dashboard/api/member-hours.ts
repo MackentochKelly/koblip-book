@@ -10,7 +10,7 @@ import {
   PHONE_PATTERN,
 } from "@/lib/booking-rules"
 import { validHours, type HoursRow } from "@/lib/hours-rules"
-import { checkTeamProfile, type TeamProfile } from "@/lib/team-rules"
+import { checkTeamProfile, randomStartingCounts, type TeamProfile } from "@/lib/team-rules"
 import type { ActionResult } from "../types"
 import { ownedBusiness, revalidateBusiness } from "./owned-business"
 
@@ -84,6 +84,7 @@ export async function saveTeamMemberWithHours(
           businessId: owned.business.id,
           ...values,
           position: members.length,
+          ...randomStartingCounts(),
         })
       : db
           .update(teamMembers)

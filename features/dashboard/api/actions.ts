@@ -33,6 +33,7 @@ import { claimBusinessForUser } from "./claim"
 import { ownedBusiness, revalidateBusiness } from "./owned-business"
 
 import { validHours } from "@/lib/hours-rules"
+import { randomStartingCounts } from "@/lib/team-rules"
 
 function invalid(): { ok: false; error: string } {
   return { ok: false, error: "invalid" }
@@ -340,6 +341,7 @@ export async function createTeamMember(
     businessId: owned.business.id,
     name: normalized,
     position: existing.length,
+    ...randomStartingCounts(),
   })
   revalidateBusiness(owned.business.slug)
   return { ok: true, id }

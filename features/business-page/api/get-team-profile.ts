@@ -25,7 +25,12 @@ async function loadTeamProfile(
   const now = new Date().toISOString()
   const [[profile], [done], [aboutEs], ownHours] = await Promise.all([
     db
-      .select({ about: teamMembers.about, languages: teamMembers.languages })
+      .select({
+        about: teamMembers.about,
+        languages: teamMembers.languages,
+        pastAppointments: teamMembers.pastAppointments,
+        pastClients: teamMembers.pastClients,
+      })
       .from(teamMembers)
       .where(eq(teamMembers.id, member.id))
       .limit(1),
@@ -82,8 +87,9 @@ async function loadTeamProfile(
     services: data.services.filter(
       (service) => data.serviceTeams[service.id]?.includes(member.id) ?? true
     ),
-    appointments: done?.appointments ?? 0,
-    clients: done?.clients ?? 0,
+    // Plus their numbers from before Koblip (TEAM_RULES.startingCounts).
+    appointments: (done?.appointments ?? 0) + (profile?.pastAppointments ?? 0),
+    clients: (done?.clients ?? 0) + (profile?.pastClients ?? 0),
     hours: ownHours.length > 0 ? ownHours : data.hours,
   }
 }
