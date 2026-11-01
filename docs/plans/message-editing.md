@@ -92,7 +92,7 @@ export async function saveKoblipMessage(
 | B4 | Backend | Fill the Contract's `approved` (the approved version's submitted words) on `KoblipText` and `NotificationText`, and `isDefault` on `KoblipText`; tests | B1 | Working on (Backend dev, 2026-10-31) |
 | U1 | UI | One shared editor: `features/dashboard/components/message-editor.tsx` moves to `components/message-editor.tsx` and takes its save, submit and words as props; the business page (`whatsapp-message-list.tsx`) looks and works the same | | Done (2026-10-31) |
 | U2 | UI | Two parts in the editor: **Normal message**, "Inside 24 hours · sends now", with the latest words; **Template**, "Outside 24 hours", with `MetaStatusBadge` and the approved words when they differ | U1 (B4 fills it) | Blocked: editor done; the business wrapper passes `approved` once B4 adds it (UI dev) |
-| U3 | UI | The admin's Koblip messages open the shared editor: edit, save as draft, Use default, Submit to Meta; Meta's refusal reason shown as Meta gives it; the admin Change log names `whatsapp.koblipWording.<message>.<language>` (Backend handoff) | U1, B2 | To do |
+| U3 | UI | The admin's Koblip messages open the shared editor: edit, save as draft, Use default, Submit to Meta; Meta's refusal reason shown as Meta gives it; the admin Change log names `whatsapp.koblipWording.<message>.<language>` (Backend handoff) | U1, B2 | Working on (UI dev, 2026-10-31) |
 | U4 | UI | One helper line on Koblip messages and on the business Messages list; anything longer in an ⓘ tooltip | U3 | To do |
 
 ## Decisions
@@ -111,11 +111,16 @@ export async function saveKoblipMessage(
 | D9 | The new wording key is written by B2; its human-readable Change log label belongs to U3 in the UI lane. | The renderer and translations are UI-owned files; backend completion does not claim that UI label is finished. | Backend dev, 2026-10-31 |
 | D11 | Keep the latest submission, live approved snapshot and retired cleanup records separately; serialize Koblip submit/refresh operations. Refresh switches the saved live copy before remote cleanup. A changed pending copy and a missing/deleted copy advance to another version; unchanged submit requests are audited without a remote edit. | [Meta permits editing only APPROVED, REJECTED or PAUSED templates](https://developers.facebook.com/documentation/business-messaging/whatsapp/templates/template-management.md); an already approved copy must keep sending and a deleted name can remain blocked. | Backend dev, 2026-10-31 |
 | D12 | Defer deleting a retired name until neither language uses it as its latest or live copy. Retain failed cleanup records, restoring a lost Chat copy through meta-list/sync before retrying. | [Meta name deletion removes all languages](https://developers.facebook.com/documentation/business-messaging/whatsapp/templates/template-management.md#delete-template-by-name). Chat's public DELETE falls back to name deletion and removes its local copy even if Meta deletion fails (`wapi-api/controllers/template.controller.js`, deleteTemplate). | Backend dev, 2026-10-31 |
+| D13 | `approved` exposes a recorded submitted snapshot, never the newest draft. Legacy rows with no recorded wording retain their existing sender fallback but return null for the approved preview; Koblip live snapshots mark that distinction. Saved wording without a recorded submitted copy is a draft, so it can be explicitly submitted. Contract-consuming `.ts` test fixtures gain `approved: null`. | Book cannot prove the actual Meta wording from an old status/id alone; reconstructed defaults must not be shown as a verified submitted copy. | Backend dev, 2026-10-31 |
 
 ### Backend handoff
 
 U3 needs the UI lane to name `whatsapp.koblipWording.<message>.<language>`
 in the admin Change log, alongside the existing submit key.
+
+B4's required fields are now implemented. U2 can pass each text's `approved`
+to the shared editor. Its `.tsx` test fixtures also need `approved: null`;
+the backend lane does not edit them.
 
 
 ## Done when
