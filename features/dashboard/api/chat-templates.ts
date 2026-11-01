@@ -9,6 +9,7 @@ import {
   chatTemplates,
   koblipChatConnection,
   koblipChatTemplates,
+  koblipNotificationTexts,
   notificationTexts,
   platformSettingChanges,
 } from "@/lib/db/schema"
@@ -18,8 +19,6 @@ import {
   BOOKING_MESSAGES,
   TEMPLATE_LANGUAGES,
   bookingTemplate,
-  defaultButtons,
-  defaultWording,
   koblipTemplate,
   withExamples,
   type BookingMessage,
@@ -425,7 +424,7 @@ export async function ownTemplatesApproved(businessId: string, messages: Booking
 // The same as sendableTemplate, from Koblip's ready-made set in Koblip's own
 // workspace, for a business sending from Koblip's number.
 export async function koblipSendableTemplate(message: BookingMessage, language: TemplateLanguage) {
-  const template = koblipTemplate(message, language)
+  const template = await savedKoblipTemplate(message, language)
   const [row] = await db
     .select()
     .from(koblipChatTemplates)
@@ -445,10 +444,20 @@ export async function koblipSendableTemplate(message: BookingMessage, language: 
 
 // Koblip's ready-made set (K2): Book's wording and buttons, the same for
 // every business, in Koblip's own workspace.
-function koblipTemplates(): BookingTemplate[] {
+async function koblipTemplates(): Promise<BookingTemplate[]> {
+  const texts = await db.select().from(koblipNotificationTexts)
   return TEMPLATE_LANGUAGES.flatMap((language) =>
-    BOOKING_MESSAGES.map((message) => koblipTemplate(message, language))
+    BOOKING_MESSAGES.map((message) => {
+      const row = texts.find((item) => item.message === message && item.language === language)
+      return koblipTemplate(message, language, row, row?.buttons ?? undefined)
+    })
   )
+}
+
+async function savedKoblipTemplate(message: BookingMessage, language: TemplateLanguage) {
+  return (await koblipTemplates()).find(
+    (template) => template.message === message && template.language === language
+  )!
 }
 
 function koblipRowKey(message: BookingMessage, language: TemplateLanguage) {
@@ -486,7 +495,7 @@ async function refreshKoblip() {
   // As for a business: Chat's copy wins, one Chat no longer has is forgotten.
   const list = await listTemplates(koblipCall, number.wabaId)
   await Promise.all(
-    koblipTemplates().map(async (template) => {
+    (await koblipTemplates()).map(async (template) => {
       const found = findTemplate(list, template)
       if (!found) {
         await db.delete(koblipChatTemplates).where(koblipRowKey(template.message, template.language))
@@ -538,7 +547,7 @@ export async function submitKoblipTemplate(
   const number = await koblipNumber()
   if (!number) return "noNumber"
 
-  const template = koblipTemplate(message, language)
+  const template = await savedKoblipTemplate(message, language)
   const [before] = await db.select().from(koblipChatTemplates).where(koblipRowKey(message, language))
   const chatTemplateId = await submitTo(koblipCall, number.wabaId, template)
   const row = { chatTemplateId, status: "pending", reason: null, submitted: snapshot(template) }
@@ -563,16 +572,18 @@ export async function submitKoblipTemplate(
 // saved. A message whose wording changed since it was submitted is a draft.
 export async function koblipMessages(): Promise<KoblipMessage[]> {
   const rows = await db.select().from(koblipChatTemplates)
+  const templates = await koblipTemplates()
   return BOOKING_MESSAGES.map((message) => ({
     message,
     texts: Object.fromEntries(
       TEMPLATE_LANGUAGES.map((language) => {
-        const wording = defaultWording(message, language)
-        const buttons = defaultButtons(message, language)
+        const template = templates.find((item) => item.message === message && item.language === language)!
+        const { header, body, footer, buttons } = template
+        const wording = { header, body, footer }
         const row = rows.find((item) => item.message === message && item.language === language)
         const changed =
           !!row?.submitted &&
-          JSON.stringify(row.submitted) !== JSON.stringify(snapshot(koblipTemplate(message, language)))
+          JSON.stringify(row.submitted) !== JSON.stringify(snapshot(template))
         const review: KoblipReview =
           !row || changed
             ? "draft"

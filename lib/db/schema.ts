@@ -614,6 +614,33 @@ export const notificationTexts = sqliteTable(
   (table) => [primaryKey({ columns: [table.businessId, table.message, table.language] })]
 )
 
+// Admin wording for Koblip's shared messages; no row means Book's defaults.
+export const koblipNotificationTexts = sqliteTable(
+  "koblip_notification_texts",
+  {
+    message: text({
+      enum: [
+        "confirmed",
+        "reminder",
+        "changed",
+        "cancelled",
+        "ownerNewBooking",
+        "ownerCantCome",
+        "ownerCancelled",
+        "ownerFailed",
+      ],
+    }).notNull(),
+    language: text({ enum: ["en", "es"] }).notNull(),
+    header: text().notNull(),
+    body: text().notNull(),
+    footer: text().notNull(),
+    // The owner's buttons; none means Book's default buttons.
+    buttons: text({ mode: "json" }).$type<{ action: "confirm" | "cantCome" | "ok"; label: string }[]>(),
+    ...timestamps(),
+  },
+  (table) => [primaryKey({ columns: [table.message, table.language] })]
+)
+
 // Every WhatsApp booking message Book plans for a booking, and what became of
 // it: one row per booking, message and reminder time, so nothing goes twice.
 export const notificationSends = sqliteTable(

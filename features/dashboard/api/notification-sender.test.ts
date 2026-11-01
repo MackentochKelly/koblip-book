@@ -16,6 +16,7 @@ import {
   inAppNotifications,
   koblipChatConnection,
   koblipChatTemplates,
+  koblipNotificationTexts,
   notificationSends,
   notificationSettings,
   notificationTexts,
@@ -128,6 +129,7 @@ beforeEach(async () => {
   await db.delete(koblipChatConnection)
   await db.delete(businessSettings)
   await db.delete(koblipChatTemplates)
+  await db.delete(koblipNotificationTexts)
   await db.delete(inAppNotifications)
   await db.insert(chatConnections).values({
     businessId: "biz",
@@ -852,31 +854,84 @@ test("the window on the own number closed: Koblip's number sends the template", 
 })
 
 test("the owner's bell hears once a month when Koblip's limit is near (N2)", async () => {
-  await db.delete(chatConnections)
-  await connectKoblip()
-  await db.insert(businessSettings).values({ businessId: "biz", key: "koblipMonthlyTemplates", value: 5 })
-  await book("b0")
-  await db.insert(notificationSends).values(
-    [1440, 60, 30].map((reminderMinutes) => ({
-      businessId: "biz",
-      bookingId: "b0",
-      message: "reminder" as const,
-      reminderMinutes,
-      dueAt: later(-60).toISOString(),
-      state: "sent" as const,
-      via: "template" as const,
-      sender: "koblip" as const,
-      sentAt: later(-60).toISOString(),
-    }))
-  )
-  // The fourth of five is 80%: near.
-  await book("b1")
-  await runNotifications(NOW)
-  await book("b2")
-  await runNotifications(later(1))
-  expect(await bell()).toEqual([["koblipLimitNear", { sent: 4, limit: 5 }]])
+  vi.useFakeTimers({ toFake: ["Date"] })
+  vi.setSystemTime(NOW)
+  try {
+    await db.delete(chatConnections)
+    await connectKoblip()
+    await db.insert(businessSettings).values({ businessId: "biz", key: "koblipMonthlyTemplates", value: 5 })
+    await book("b0", { createdAt: "2025-12-01T00:00:00.000Z" })
+    await db.insert(notificationSends).values(
+      [1440, 60, 30].map((reminderMinutes) => ({
+        businessId: "biz",
+        bookingId: "b0",
+        message: "reminder" as const,
+        reminderMinutes,
+        dueAt: later(-60).toISOString(),
+        state: "sent" as const,
+        via: "template" as const,
+        sender: "koblip" as const,
+        sentAt: later(-60).toISOString(),
+      }))
+    )
+    // The fourth of five is 80%: near.
+    await book("b1")
+    await runNotifications(NOW)
+    await book("b2")
+    await runNotifications(later(1))
+    expect(await bell()).toEqual([["koblipLimitNear", { sent: 4, limit: 5 }]])
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 async function bell() {
   return (await db.select().from(inAppNotifications)).map(({ kind, data }) => [kind, data])
 }
+
+
+test("Koblip's monthly limit keeps edited long-button wording free inside the window and approved wording outside it", async () => {
+  await db.delete(chatConnections)
+  await connectKoblip()
+  await db.insert(businessSettings).values({ businessId: "biz", key: "koblipMonthlyTemplates", value: 1 })
+  await book("b0", { createdAt: "2025-12-01T00:00:00.000Z" })
+  await db.insert(notificationSends).values({
+    businessId: "biz",
+    bookingId: "b0",
+    message: "confirmed",
+    dueAt: later(-60).toISOString(),
+    state: "sent",
+    via: "template",
+    sender: "koblip",
+    sentAt: later(-60).toISOString(),
+  })
+  const approvedWording = defaultWording("confirmed", "es")
+  await db.update(koblipChatTemplates).set({ submitted: { ...approvedWording, buttons: [] } }).where(
+    and(eq(koblipChatTemplates.message, "confirmed"), eq(koblipChatTemplates.language, "es"))
+  )
+  await db.insert(koblipNotificationTexts).values({
+    message: "confirmed",
+    language: "es",
+    header: "Reserva actualizada",
+    body: "Nueva redacción para {name}: {service} en {business} el {date} a las {time}.",
+    footer: "Gracias",
+    buttons: [{ action: "confirm", label: "Confirm this appointment" }],
+  })
+  await wroteTo("wk", "pk")
+  await book("b1")
+  await runNotifications(NOW)
+  expect(sent).toHaveLength(1)
+  expect(sent[0]).toMatchObject({ messageType: "text", messageText: expect.stringContaining("Nueva redacción para Ana") })
+  expect(sent[0]).not.toHaveProperty("buttonParams")
+  expect((await sends("b1")).find(([message]) => message === "confirmed")).toEqual(["confirmed", 0, "sent", "text"])
+
+  await db.update(businessSettings).set({ value: 5 })
+  await book("b2", { customerPhone: "+1 809 555 0102" })
+  await runNotifications(NOW)
+  expect(sent.at(-1)).toMatchObject({
+    messageType: "template",
+    template_id: "k-confirmed-es",
+    templateName: "koblip_booking_confirmed_v2",
+    templateVariables: { "1": "Ana", "2": "Haircut", "3": "Shop", "4": "miércoles, 4 de noviembre", "5": "3:00 p.m." },
+  })
+})

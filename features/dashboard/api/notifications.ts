@@ -6,6 +6,7 @@ import {
   chatConnections,
   chatTemplates,
   koblipChatTemplates,
+  koblipNotificationTexts,
   notificationSettings,
   notificationTexts,
 } from "@/lib/db/schema"
@@ -80,11 +81,12 @@ function review(
 // own the business sends Koblip's ready-made set, Book's wording, which only
 // turns on or off (K4, D26), and Meta's review is that of Koblip's set (D36).
 export async function notificationMessagesFor(businessId: string): Promise<NotificationMessage[]> {
-  const [settings, texts, made, koblipMade, [connection]] = await Promise.all([
+  const [settings, texts, made, koblipMade, koblipTexts, [connection]] = await Promise.all([
     notificationSettingsFor(businessId),
     db.select().from(notificationTexts).where(eq(notificationTexts.businessId, businessId)),
     db.select().from(chatTemplates).where(eq(chatTemplates.businessId, businessId)),
     db.select().from(koblipChatTemplates),
+    db.select().from(koblipNotificationTexts),
     db
       .select({ needsReconnect: chatConnections.needsReconnect, scopes: chatConnections.scopes })
       .from(chatConnections)
@@ -92,7 +94,7 @@ export async function notificationMessagesFor(businessId: string): Promise<Notif
       .limit(1),
   ])
   const editable = !!connection && chatConnectionUsable(connection)
-  const own = editable ? texts : []
+  const own = editable ? texts : koblipTexts
   const templates = editable ? made : koblipMade
   return BOOKING_MESSAGES.map((message) => ({
     message,

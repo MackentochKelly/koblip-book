@@ -86,7 +86,7 @@ export async function saveKoblipMessage(
 
 | Task | Lane | What | Needs | Status |
 | --- | --- | --- | --- | --- |
-| B1 | Backend | Koblip's wording saved in Book: `koblip_notification_texts` (like `notification_texts`, without the business) and its migration (`npm run db:generate`); `koblipTemplate` uses the saved wording and buttons, else Book's default; `koblipSendableTemplate` sends normal messages with the saved words (D1); `koblipMessages` shows a draft when the saved words differ from what was submitted; tests | | Working on (Backend dev, 2026-10-31) |
+| B1 | Backend | Koblip's wording saved in Book: `koblip_notification_texts` (like `notification_texts`, without the business) and its migration (`npm run db:generate`); `koblipTemplate` uses the saved wording and buttons, else Book's default; `koblipSendableTemplate` sends normal messages with the saved words (D1); `koblipMessages` shows a draft when the saved words differ from what was submitted; tests | | Done (2026-10-31, this completion commit) |
 | B2 | Backend | `saveKoblipMessage` as in the Contract: admin check, values trimmed like `saveMessageWording`, `wordingProblem` and `buttonsProblem`, change log `whatsapp.koblipWording.<message>.<language>` (before and after) saved with the change, `null` back to default; `submitKoblipMessage` returns Meta's reason; the admin Change log names the new key; tests | B1 | To do |
 | B3 | Backend | No gap while Meta reviews an edit of Koblip's set (D5): submitting a change to an approved Koblip template creates the next version (`koblip_<message>_v3`, then `_v4`, …) instead of editing it; the approved version keeps sending until the new one is approved, then Book switches to it and removes the old one in Chat and at Meta; a refused new version leaves the old one live. Book keeps both: the live version and the one in review. Tests: switch, refusal, Chat lost a template (`submitTo`'s copy-back), the refresh path | B1, B2 | To do |
 | B4 | Backend | Fill the Contract's `approved` (the approved version's submitted words) on `KoblipText` and `NotificationText`, and `isDefault` on `KoblipText`; tests | B1 | To do |
@@ -105,6 +105,13 @@ export async function saveKoblipMessage(
 | D4 | Meta limits edits: "Approved templates can be edited up to 10 times in a 30-day window, or 1 time in a 24-hour window" ([template management](https://developers.facebook.com/documentation/business-messaging/whatsapp/templates/template-management.md)). Book doesn't count edits itself; it shows Meta's refusal reason as Meta gives it | Meta's answer is the source of truth; a copy of the limit in Book could drift from Meta's | UI dev, 2026-10-31 |
 | D5 | An edit of an approved template in Koblip's set goes as a new version, not an in-place edit. A business's own copies keep editing in place (D8 in WhatsApp notifications) | Meta re-reviews an edited template (PENDING, "undergoing template review") and states only APPROVED templates as sendable ([status webhook](https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/message_template_status_update.md)). Book sends only approved templates, so an in-place edit would stop Koblip's templates during review, and Koblip's number has no fallback. A new version keeps the approved one sending and doesn't spend Meta's edit limit. A business already falls back to Koblip's number during its review (K3, D22, D34), so nothing is lost there | UI dev, 2026-10-31 |
 | D6 | Two lanes, Backend dev and UI dev, each with its own files and the written Contract | Both work at the same time without touching each other's files | Owner, 2026-10-31 |
+| D7 | Keep `koblipTemplate` synchronous and pure; server reads apply saved wording and null-button defaults before calling it. The business read-only message list also reads the saved Koblip wording. | Database reads belong in server code; previews and normal sends must agree. | Backend dev, 2026-10-31 |
+
+### Backend handoff
+
+B2 needs the UI lane to name `whatsapp.koblipWording.<message>.<language>`
+in the admin Change log, alongside the existing submit key.
+
 
 ## Done when
 

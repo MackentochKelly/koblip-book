@@ -12,10 +12,12 @@ import {
   inAppNotifications,
   koblipChatConnection,
   koblipChatTemplates,
+  koblipNotificationTexts,
   platformSettingChanges,
   user,
 } from "@/lib/db/schema"
 import { seal } from "@/lib/secret-box"
+import { defaultButtons, defaultWording } from "../utils/booking-templates"
 
 vi.mock("server-only", () => ({}))
 
@@ -30,6 +32,7 @@ const {
   submitChatTemplate,
   submitKoblipTemplate,
 } = await import("./chat-templates")
+const { notificationMessagesFor } = await import("./notifications")
 
 let dir: string
 let closeDb: () => void
@@ -144,6 +147,8 @@ beforeEach(async () => {
   chat.mockClear()
   await db.delete(chatTemplates)
   await db.delete(koblipChatTemplates)
+  await db.delete(koblipNotificationTexts)
+  await db.delete(platformSettingChanges)
   await db.delete(koblipChatConnection)
   await db.delete(inAppNotifications)
   await connect()
@@ -404,4 +409,50 @@ test("removing the first templates lists them per WhatsApp account and keeps app
   expect(await removeOldChatTemplates({ names, remove: true, log })).toEqual({ deleted: 1, failed: 0 })
   expect(removed).toEqual([{ id: "old1", body: { delete_from_meta: true } }])
   expect(stored.map((row) => row._id)).toEqual(["old2", "new1"])
+})
+
+
+test("saved Koblip wording and buttons send normally while the approved submitted copy stays unchanged", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  await submitKoblipTemplate("reminder", "en", "u1")
+  stored[0].status = "APPROVED"
+  await refreshKoblipTemplates()
+  const approvedBefore = (await koblipSendableTemplate("reminder", "en")).approved
+  const wording = { ...defaultWording("reminder", "en"), body: "Hello {name}, your {service} at {business} is on {date} at {time}." }
+  const buttons = [{ action: "confirm" as const, label: "Count me in" }]
+  await db.insert(koblipNotificationTexts).values({ message: "reminder", language: "en", ...wording, buttons })
+
+  const sendable = await koblipSendableTemplate("reminder", "en")
+  expect(sendable.template).toMatchObject({ ...wording, buttons })
+  expect(sendable.approved).toEqual(approvedBefore)
+  const reminder = (await koblipMessages()).find((row) => row.message === "reminder")!
+  expect(reminder.texts.en).toMatchObject({ wording, buttons, review: "draft" })
+  expect(reminder.texts.en.preview).toContain("Hello Alex")
+  expect(created).toHaveLength(1)
+  expect(edited).toEqual([])
+})
+
+test("Koblip wording is independent in each language and null buttons use each language's defaults", async () => {
+  const en = { ...defaultWording("reminder", "en"), header: "Your upcoming appointment" }
+  const es = { ...defaultWording("reminder", "es"), header: "Tu próxima cita" }
+  await db.insert(koblipNotificationTexts).values([
+    { message: "reminder", language: "en", ...en, buttons: null },
+    { message: "reminder", language: "es", ...es, buttons: [] },
+  ])
+  expect((await koblipSendableTemplate("reminder", "en")).template).toMatchObject({ ...en, buttons: defaultButtons("reminder", "en") })
+  expect((await koblipSendableTemplate("reminder", "es")).template).toMatchObject({ ...es, buttons: [] })
+  const reminder = (await koblipMessages()).find((row) => row.message === "reminder")!
+  expect(reminder.texts.en).toMatchObject({ wording: en, buttons: defaultButtons("reminder", "en"), review: "draft" })
+  expect(reminder.texts.es).toMatchObject({ wording: es, buttons: [], review: "draft" })
+})
+
+test("a business using Koblip's number sees the saved Koblip wording and default buttons", async () => {
+  await db.delete(chatConnections)
+  const wording = { ...defaultWording("reminder", "es"), header: "Tu próxima cita" }
+  await db.insert(koblipNotificationTexts).values({ message: "reminder", language: "es", ...wording, buttons: null })
+  const reminder = (await notificationMessagesFor("biz")).find((row) => row.message === "reminder")!
+  expect(reminder.editable).toBe(false)
+  expect(reminder.texts.es).toMatchObject({ wording, buttons: defaultButtons("reminder", "es"), review: "draft" })
+  expect(reminder.texts.en.wording).toEqual(defaultWording("reminder", "en"))
 })
