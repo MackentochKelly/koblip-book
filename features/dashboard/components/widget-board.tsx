@@ -28,9 +28,10 @@ import { reorderShown, setShown, shownWidgets } from "../utils/widget-layout"
 import { WIDGETS, type WidgetId, type WidgetLayout } from "../widgets"
 
 // One column on a phone; on a wide screen two, so "half" widgets sit side
-// by side. Roomier gaps on a computer. Each widget's box is a grid too, so
+// by side. On a computer more room between rows than between the two
+// cards of a row, so each row reads as one section. Each widget's box is a grid too, so
 // cards side by side stretch to the same height.
-const GRID = "grid gap-6 md:gap-10 lg:grid-cols-2"
+const GRID = "grid gap-6 md:gap-y-10 lg:grid-cols-2"
 const FULL = "lg:col-span-2"
 
 const span = (id: WidgetId) =>
