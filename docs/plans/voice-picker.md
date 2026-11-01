@@ -21,7 +21,7 @@ order. How to use this file: [Plans](README.md).
 | Task | What | Size | Needs | Status |
 | --- | --- | --- | --- | --- |
 | V1 | Voices list and each owner's saved voice | M | | Done: 2026-11-01 |
-| V2 | Picker in the talk dialog and Settings → Account | M | V1 | To do |
+| V2 | Picker in the talk dialog and Settings → Account | M | V1 | Working on: M Kelly B, 2026-11-01 |
 | V3 | Add the 4 most used voices, live check | S | V2 | To do |
 
 ---
