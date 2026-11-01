@@ -35,6 +35,12 @@ export type KoblipText = {
   buttons: { action: KoblipButtonAction; label: string }[]
   // The text with sample values, as a customer reads it.
   preview: string
+  isDefault: boolean
+  approved: {
+    wording: { header: string; body: string; footer: string }
+    buttons: { action: KoblipButtonAction; label: string }[]
+    preview: string
+  } | null
   review: KoblipReview
   // Meta's reason when it refused, in Meta's words.
   reason: string | null

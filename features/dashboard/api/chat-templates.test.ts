@@ -729,3 +729,23 @@ test("a missing template advances the version instead of reusing a deleted Meta 
   expect(edited).toEqual([])
   expect((await koblipSendableTemplate("reminder", "en")).approved).toBeNull()
 })
+
+
+test("refreshing an imported legacy approval never calls a newer saved draft its approved wording", async () => {
+  await connectKoblip()
+  numbers = [{ id: "wabak", phone_numbers: [{ id: "pk" }] }]
+  stored = [{ _id: "legacy", template_name: "koblip_booking_reminder_v2", language: "en", status: "APPROVED" }]
+  const draft = await changeKoblipReminder()
+  await refreshKoblipTemplates()
+  const text = (await koblipMessages()).find((row) => row.message === "reminder")!.texts.en
+  expect(text).toMatchObject({ wording: draft, isDefault: false, review: "draft", approved: null })
+  const sendable = await koblipSendableTemplate("reminder", "en")
+  expect(sendable.template.header).toBe(draft.header)
+  expect(sendable.approved?.template.header).toBe(defaultWording("reminder", "en").header)
+  await submitKoblipTemplate("reminder", "en", "u1")
+  expect(created[0].template_name).toBe("koblip_booking_reminder_v3")
+  expect((await koblipMessages()).find((row) => row.message === "reminder")!.texts.en.approved).toBeNull()
+  stored.find((row) => row.template_name === "koblip_booking_reminder_v3")!.status = "APPROVED"
+  await refreshKoblipTemplates()
+  expect((await koblipMessages()).find((row) => row.message === "reminder")!.texts.en.approved?.wording).toEqual(draft)
+})

@@ -44,6 +44,11 @@ export type NotificationText = {
   wording: Wording
   buttons: MessageButton[]
   isDefault: boolean
+  approved: {
+    wording: { header: string; body: string; footer: string }
+    buttons: MessageButton[]
+    preview: string
+  } | null
   review: TemplateReview
   // Meta's reason when it refused, in Meta's words.
   reason: string | null

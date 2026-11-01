@@ -5,8 +5,6 @@ import { db } from "@/lib/db"
 import {
   chatConnections,
   chatTemplates,
-  koblipChatTemplates,
-  koblipNotificationTexts,
   notificationSettings,
   notificationTexts,
 } from "@/lib/db/schema"
@@ -25,8 +23,10 @@ import {
   TEMPLATE_LANGUAGES,
   defaultButtons,
   defaultWording,
+  withExamples,
   type TemplateLanguage,
 } from "../utils/booking-templates"
+import { koblipMessages } from "./chat-templates"
 import { chatConnectionUsable } from "./chat-oauth"
 
 // The business's WhatsApp notification settings, or the defaults as the
@@ -81,12 +81,11 @@ function review(
 // own the business sends Koblip's ready-made set, Book's wording, which only
 // turns on or off (K4, D26), and Meta's review is that of Koblip's set (D36).
 export async function notificationMessagesFor(businessId: string): Promise<NotificationMessage[]> {
-  const [settings, texts, made, koblipMade, koblipTexts, [connection]] = await Promise.all([
+  const [settings, texts, made, koblip, [connection]] = await Promise.all([
     notificationSettingsFor(businessId),
     db.select().from(notificationTexts).where(eq(notificationTexts.businessId, businessId)),
     db.select().from(chatTemplates).where(eq(chatTemplates.businessId, businessId)),
-    db.select().from(koblipChatTemplates),
-    db.select().from(koblipNotificationTexts),
+    koblipMessages(),
     db
       .select({ needsReconnect: chatConnections.needsReconnect, scopes: chatConnections.scopes })
       .from(chatConnections)
@@ -94,28 +93,42 @@ export async function notificationMessagesFor(businessId: string): Promise<Notif
       .limit(1),
   ])
   const editable = !!connection && chatConnectionUsable(connection)
-  const own = editable ? texts : koblipTexts
-  const templates = editable ? made : koblipMade
   return BOOKING_MESSAGES.map((message) => ({
     message,
     on: !settings.turnedOff.includes(message),
     editable,
     texts: Object.fromEntries(
       TEMPLATE_LANGUAGES.map((language): [TemplateLanguage, NotificationText] => {
-        const mine = own.find((row) => row.message === message && row.language === language)
-        const template = templates.find((row) => row.message === message && row.language === language)
+        if (!editable) {
+          const text = koblip.find((row) => row.message === message)!.texts[language]
+          return [language, {
+            wording: text.wording,
+            buttons: text.buttons,
+            isDefault: text.isDefault,
+            approved: text.approved,
+            review: text.review,
+            reason: text.reason,
+          }]
+        }
+        const mine = texts.find((row) => row.message === message && row.language === language)
+        const template = made.find((row) => row.message === message && row.language === language)
         const text = {
           wording: mine
             ? { header: mine.header, body: mine.body, footer: mine.footer }
             : defaultWording(message, language),
           buttons: mine?.buttons ?? defaultButtons(message, language),
         }
-        const state = review(template?.status, template?.submitted, text)
+        const state = mine && !template?.submitted ? "draft" : review(template?.status, template?.submitted, text)
         return [
           language,
           {
             ...text,
             isDefault: !mine,
+            approved: template?.status === "approved" && template.submitted ? {
+              wording: { header: template.submitted.header, body: template.submitted.body, footer: template.submitted.footer },
+              buttons: template.submitted.buttons,
+              preview: withExamples(template.submitted.body, language),
+            } : null,
             review: state,
             reason: state === "rejected" ? template?.reason ?? null : null,
           },

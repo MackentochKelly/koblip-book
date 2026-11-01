@@ -15,6 +15,7 @@ function text(review: TemplateReview, isDefault = true): NotificationText {
     wording: { header: "Hi", body: "Text", footer: "" },
     buttons: [],
     isDefault,
+    approved: null,
     review,
     reason: null,
   }

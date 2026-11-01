@@ -445,8 +445,8 @@ export async function koblipSendableTemplate(message: BookingMessage, language: 
 
 // Koblip's ready-made set (K2): Book's wording and buttons, the same for
 // every business, in Koblip's own workspace.
-async function koblipTemplates(): Promise<BookingTemplate[]> {
-  const texts = await db.select().from(koblipNotificationTexts)
+async function koblipTemplates(saved?: (typeof koblipNotificationTexts.$inferSelect)[]): Promise<BookingTemplate[]> {
+  const texts = saved ?? await db.select().from(koblipNotificationTexts)
   return TEMPLATE_LANGUAGES.flatMap((language) =>
     BOOKING_MESSAGES.map((message) => {
       const row = texts.find((item) => item.message === message && item.language === language)
@@ -497,6 +497,7 @@ function liveKoblipTemplate(
   return {
     chatTemplateId: row.chatTemplateId,
     name: versionName(message, language, row.version),
+    snapshotKnown: row.submitted !== null,
     submitted: row.submitted ?? { ...defaultWording(message, language), buttons: defaultButtons(message, language) },
   }
 }
@@ -597,6 +598,7 @@ async function refreshKoblip() {
       live = {
         chatTemplateId: found._id,
         name,
+        snapshotKnown: before?.submitted != null,
         submitted: before?.submitted ?? { ...defaultWording(template.message, template.language), buttons: defaultButtons(template.message, template.language) },
       }
     } else if (live?.name === name) {
@@ -704,8 +706,11 @@ export async function submitKoblipTemplate(
 // business gets on Koblip's number, and Meta's review, from what Book last
 // saved. A message whose wording changed since it was submitted is a draft.
 export async function koblipMessages(): Promise<KoblipMessage[]> {
-  const rows = await db.select().from(koblipChatTemplates)
-  const templates = await koblipTemplates()
+  const [rows, saved] = await Promise.all([
+    db.select().from(koblipChatTemplates),
+    db.select().from(koblipNotificationTexts),
+  ])
+  const templates = await koblipTemplates(saved)
   return BOOKING_MESSAGES.map((message) => ({
     message,
     texts: Object.fromEntries(
@@ -714,9 +719,16 @@ export async function koblipMessages(): Promise<KoblipMessage[]> {
         const { header, body, footer, buttons } = template
         const wording = { header, body, footer }
         const row = rows.find((item) => item.message === message && item.language === language)
-        const changed =
-          !!row?.submitted &&
-          JSON.stringify(row.submitted) !== JSON.stringify(snapshot(template))
+        const live = liveKoblipTemplate(row, message, language)
+        const approved = live && live.snapshotKnown !== false ? {
+          wording: { header: live.submitted.header, body: live.submitted.body, footer: live.submitted.footer },
+          buttons: live.submitted.buttons,
+          preview: withExamples(live.submitted.body, language),
+        } : null
+        const isDefault = !saved.some((item) => item.message === message && item.language === language)
+        const changed = row?.submitted
+          ? JSON.stringify(row.submitted) !== JSON.stringify(snapshot(template))
+          : !isDefault
         const review: KoblipReview =
           !row || row.status === "missing" || changed
             ? "draft"
@@ -731,6 +743,8 @@ export async function koblipMessages(): Promise<KoblipMessage[]> {
             wording,
             buttons,
             preview: withExamples(wording.body, language),
+            isDefault,
+            approved,
             review,
             reason: review === "rejected" ? row?.reason ?? null : null,
           },

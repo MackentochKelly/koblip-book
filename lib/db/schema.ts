@@ -545,6 +545,8 @@ export const koblipChatTemplates = sqliteTable(
     live: text({ mode: "json" }).$type<{
       chatTemplateId: string
       name: string
+      // False for legacy rows whose submitted words were never recorded.
+      snapshotKnown?: boolean
       submitted: {
         header: string
         body: string
