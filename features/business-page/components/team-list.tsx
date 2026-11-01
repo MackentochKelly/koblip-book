@@ -21,13 +21,15 @@ export function TeamList({
         {team.map((member) => (
           <div
             key={member.id}
-            className="flex w-16 flex-col items-center gap-1.5"
+            className="flex w-24 flex-col items-center gap-2"
           >
-            <Avatar size="lg" className="size-12">
+            <Avatar className="size-20">
               {member.photoUrl && <AvatarImage src={member.photoUrl} alt="" />}
-              <AvatarFallback>{initials(member.name)}</AvatarFallback>
+              <AvatarFallback className="text-xl">
+                {initials(member.name)}
+              </AvatarFallback>
             </Avatar>
-            <span className="line-clamp-2 text-center text-xs leading-tight">
+            <span className="line-clamp-2 text-center text-sm leading-tight">
               {member.name}
             </span>
           </div>
