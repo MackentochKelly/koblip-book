@@ -43,6 +43,7 @@ import {
 import {
   ANYONE,
   BookingSummary,
+  type BookingDetails,
   BookingTotal,
   DetailsStep,
   type DetailsError,
@@ -80,6 +81,12 @@ export function BookingFlow({
   const [timesKey, setTimesKey] = useState(0)
   const [booked, setBooked] = useState<BookingConfirmation | null>(null)
   const [sending, setSending] = useState(false)
+  const [details, setDetails] = useState<BookingDetails>({
+    name: "",
+    phone: "",
+  })
+  // Confirm looks ready only once both are typed, like Continue before it.
+  const detailsFilled = Boolean(details.name.trim() && details.phone.trim())
   const [detailsError, setDetailsError] = useState<DetailsError>(null)
   const [closing, setClosing] = useState(false)
 
@@ -234,7 +241,11 @@ export function BookingFlow({
 
   const action =
     step === "details" ? (
-      <Button type="submit" form={DETAILS_FORM} disabled={sending}>
+      <Button
+        type="submit"
+        form={DETAILS_FORM}
+        disabled={sending || !detailsFilled}
+      >
         {sending && <Spinner data-icon="inline-start" />}
         {sending ? m.booking.sending : m.booking.confirm}
       </Button>
@@ -329,7 +340,9 @@ export function BookingFlow({
             sending={sending}
             error={detailsError}
             whatsappFrom={page.whatsapp ? page.name : null}
-            onSubmit={(details) => void submit(details)}
+            details={details}
+            onDetailsChange={setDetails}
+            onSubmit={(next) => void submit(next)}
           />
         </>
       )}

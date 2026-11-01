@@ -41,11 +41,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
-import {
-  formatClock,
-  formatDay,
-  todayIn,
-} from "@/lib/format-booking-time"
+import { formatClock, formatDay, todayIn } from "@/lib/format-booking-time"
 import type { Messages } from "@/lib/i18n"
 import { initials } from "@/lib/initials"
 import type { Availability } from "../types"
@@ -354,12 +350,17 @@ export function TimeStep({
 
 export type DetailsError = "name" | "phone" | null
 
-// Last step: a name and a phone, nothing else.
+export type BookingDetails = { name: string; phone: string }
+
+// Last step: a name and a phone, nothing else. The flow holds them, so its
+// Confirm button knows when both are filled.
 export function DetailsStep({
   formId,
   sending,
   error,
   whatsappFrom,
+  details,
+  onDetailsChange,
   onSubmit,
 }: {
   formId: string
@@ -368,11 +369,14 @@ export function DetailsStep({
   // The business's name when it sends WhatsApp booking messages: the ⓘ on
   // Phone says so (Meta opt-in), and booking is the customer's yes.
   whatsappFrom: string | null
-  onSubmit: (details: { name: string; phone: string }) => void
+  details: BookingDetails
+  onDetailsChange: (details: BookingDetails) => void
+  onSubmit: (details: BookingDetails) => void
 }) {
   const m = useMessages()
-  const [name, setName] = useState("")
-  const [phone, setPhone] = useState("")
+  const { name, phone } = details
+  const setName = (next: string) => onDetailsChange({ name: next, phone })
+  const setPhone = (next: string) => onDetailsChange({ name, phone: next })
   return (
     <form
       id={formId}
