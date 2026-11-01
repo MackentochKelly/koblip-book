@@ -3,6 +3,7 @@ import {
   ChartColumnIcon,
   ClockIcon,
   ContactIcon,
+  DownloadIcon,
   ShareIcon,
   SparklesIcon,
   TrendingUpIcon,
@@ -20,6 +21,7 @@ export const WIDGETS = [
   { id: "chart", icon: ChartColumnIcon, shown: false },
   { id: "newCustomers", icon: ContactIcon, shown: false },
   { id: "share", icon: ShareIcon, shown: false },
+  { id: "install", icon: DownloadIcon, shown: true },
 ] as const
 
 export type WidgetId = (typeof WIDGETS)[number]["id"]

@@ -9,6 +9,7 @@ const widgets = {
     chart: "Coming up",
     newCustomers: "New customers",
     share: "Share your page",
+    install: "Get the app",
   },
   edit: "Edit widgets",
   done: "Done",
@@ -35,6 +36,13 @@ const widgets = {
   noNewCustomers: "No new customers this week",
   firstVisit: "First visit",
   viewAll: "View all",
+  installLead: "Open your bookings in one tap from your Home Screen.",
+  installElsewhere:
+    "Open this page on your phone to add it to your Home Screen.",
+  installButton: "Install app",
+  // The iPhone's own button names, in the order they're tapped.
+  installShare: "Tap Share",
+  installAdd: "Tap Add to Home Screen",
 }
 
 export default widgets

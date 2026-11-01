@@ -10,6 +10,7 @@ const widgets: typeof en = {
     chart: "Próximos días",
     newCustomers: "Clientes nuevos",
     share: "Comparte tu página",
+    install: "Obtén la app",
   },
   edit: "Editar widgets",
   done: "Listo",
@@ -34,6 +35,12 @@ const widgets: typeof en = {
   noNewCustomers: "No hay clientes nuevos esta semana",
   firstVisit: "Primera visita",
   viewAll: "Ver todo",
+  installLead: "Abre tus reservas con un toque desde tu pantalla de inicio.",
+  installElsewhere:
+    "Abre esta página en tu teléfono para añadirla a tu pantalla de inicio.",
+  installButton: "Instalar app",
+  installShare: "Toca Compartir",
+  installAdd: "Toca Añadir a pantalla de inicio",
 }
 
 export default widgets

@@ -12,7 +12,12 @@ describe("normalizeLayout", () => {
   it("starts a new business with the default", () => {
     expect(normalizeLayout(null)).toEqual(DEFAULT_LAYOUT)
     expect(normalizeLayout("bad")).toEqual(DEFAULT_LAYOUT)
-    expect(shownWidgets(DEFAULT_LAYOUT)).toEqual(["stats", "today", "bookings"])
+    expect(shownWidgets(DEFAULT_LAYOUT)).toEqual([
+      "stats",
+      "today",
+      "bookings",
+      "install",
+    ])
   })
 
   it("keeps the owner's order and drops unknown or repeated widgets", () => {
@@ -30,7 +35,12 @@ describe("normalizeLayout", () => {
     const layout = normalizeLayout({ order: ["today", "stats"], hidden: [] })
     expect(layout.order.slice(0, 2)).toEqual(["today", "stats"])
     expect(layout.hidden).toEqual(["next", "chart", "newCustomers", "share"])
-    expect(shownWidgets(layout)).toEqual(["today", "stats", "bookings"])
+    expect(shownWidgets(layout)).toEqual([
+      "today",
+      "stats",
+      "bookings",
+      "install",
+    ])
   })
 })
 
@@ -49,11 +59,12 @@ describe("reorderShown and setShown", () => {
 
   it("takes a widget off and puts it back", () => {
     const off = setShown(DEFAULT_LAYOUT, "stats", false)
-    expect(shownWidgets(off)).toEqual(["today", "bookings"])
+    expect(shownWidgets(off)).toEqual(["today", "bookings", "install"])
     expect(shownWidgets(setShown(off, "stats", true))).toEqual([
       "stats",
       "today",
       "bookings",
+      "install",
     ])
   })
 })

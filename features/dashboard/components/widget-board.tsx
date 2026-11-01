@@ -2,7 +2,12 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { LayoutGridIcon, PlusIcon, SquarePenIcon, XIcon } from "@/components/ui/icons"
+import {
+  LayoutGridIcon,
+  PlusIcon,
+  SquarePenIcon,
+  XIcon,
+} from "@/components/ui/icons"
 
 import { SortableList } from "@/components/sortable-list"
 import { Button } from "@/components/ui/button"
@@ -18,11 +23,7 @@ import {
   useWidgetLayout,
 } from "../hooks/use-widget-layout"
 import { useOwnerMessages } from "../i18n/provider"
-import {
-  reorderShown,
-  setShown,
-  shownWidgets,
-} from "../utils/widget-layout"
+import { reorderShown, setShown, shownWidgets } from "../utils/widget-layout"
 import type { WidgetId, WidgetLayout } from "../widgets"
 
 // The space between widgets: roomier on a computer.
@@ -79,7 +80,11 @@ export function WidgetBoard({
     return (
       <div className={STACK}>
         {shown.map((id) => (
-          <section key={id} aria-label={t.names[id]} className="min-w-0">
+          <section
+            key={id}
+            aria-label={t.names[id]}
+            className="min-w-0 empty:hidden"
+          >
             {widgets[id]}
           </section>
         ))}

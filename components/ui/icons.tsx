@@ -93,6 +93,8 @@ import {
   TrendingUp as MynaTrendingUp,
   UserX as MynaUserX,
   UserPlus as MynaUserPlus,
+  Download as MynaDownload,
+  PlusSquare as MynaPlusSquare,
 } from "@mynaui/icons-react"
 import {
   AudioLines as LucideAudioLines,
@@ -108,6 +110,7 @@ import {
   Nfc as LucideNfc,
   OctagonX as LucideOctagonX,
   PawPrint as LucidePawPrint,
+  Share as LucideShare,
   Stethoscope as LucideStethoscope,
   Toilet as LucideToilet,
 } from "lucide-react"
@@ -199,6 +202,7 @@ export const EllipsisVerticalIcon = icon(
   MynaDotsVertical as Icon,
   "EllipsisVerticalIcon"
 )
+export const DownloadIcon = icon(MynaDownload as Icon, "DownloadIcon")
 export const DumbbellIcon = icon(LucideDumbbell as Icon, "DumbbellIcon")
 export const ExternalLinkIcon = icon(
   MynaExternalLink as Icon,
@@ -250,6 +254,10 @@ export const PanelLeftIcon = icon(MynaSidebar as Icon, "PanelLeftIcon")
 export const PawPrintIcon = icon(LucidePawPrint as Icon, "PawPrintIcon")
 export const PhoneCallIcon = icon(MynaTelephoneCall as Icon, "PhoneCallIcon")
 export const PhoneIcon = icon(MynaTelephone as Icon, "PhoneIcon")
+export const PlusSquareIcon = icon(
+  MynaPlusSquare as Icon,
+  "PlusSquareIcon"
+)
 export const PlusIcon = icon(MynaPlus as Icon, "PlusIcon")
 export const PuzzleIcon = icon(MynaPuzzle as Icon, "PuzzleIcon")
 export const RefreshIcon = icon(MynaRefresh as Icon, "RefreshIcon")
@@ -258,6 +266,8 @@ export const SearchIcon = icon(MynaSearch as Icon, "SearchIcon")
 export const SearchXIcon = icon(MynaSearchX as Icon, "SearchXIcon")
 export const SettingsIcon = icon(MynaCog as Icon, "SettingsIcon")
 export const ShareIcon = icon(MynaShare as Icon, "ShareIcon")
+// The iPhone's Share button (a box with an arrow up), for "tap Share" steps.
+export const ShareUpIcon = icon(LucideShare as Icon, "ShareUpIcon")
 export const ShieldCheckIcon = icon(MynaShieldCheck as Icon, "ShieldCheckIcon")
 export const SparklesIcon = icon(MynaSparkles as Icon, "SparklesIcon")
 export const SmileIcon = icon(MynaSmile as Icon, "SmileIcon")

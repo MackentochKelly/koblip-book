@@ -27,6 +27,7 @@ import { ComingUpCard } from "./coming-up-card"
 import { NewCustomersCard } from "./new-customers-card"
 import { NextBookingCard } from "./next-booking-card"
 import { PeriodStats } from "./period-stats"
+import { InstallAppCard } from "./install-app-card"
 import { SharePageCard } from "./share-page-card"
 import { WidgetBoard } from "./widget-board"
 import type { WidgetId, WidgetLayout } from "../widgets"
@@ -229,6 +230,7 @@ export function BookingsView({
               />
             ),
             share: <SharePageCard {...widgets.page} />,
+            install: <InstallAppCard />,
           } satisfies Record<WidgetId, React.ReactNode>
         }
       />
