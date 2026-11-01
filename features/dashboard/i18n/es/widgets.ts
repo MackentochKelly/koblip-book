@@ -59,6 +59,7 @@ const widgets: typeof en = {
   installFind: "Buscar en la página",
   installShareButton: "Compartir",
   installAddButton: "Añadir",
+  installWebApp: "Abrir como app web",
 }
 
 export default widgets

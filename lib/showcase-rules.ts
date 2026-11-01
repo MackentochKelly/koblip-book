@@ -43,10 +43,10 @@ export const SHOWCASE_LOOP = {
   // Get the app's steps (dashboard): Share, Add to Home Screen, Add, and
   // the icon on the Home Screen.
   install: {
-    beforeTap: 1300,
-    tap: 700,
-    sheetIn: 900,
-    home: 2600,
+    beforeTap: 2200,
+    tap: 1000,
+    sheetIn: 2000,
+    home: 3800,
   },
   // "Get booked": today's list, and a new booking coming in on top.
   booked: {

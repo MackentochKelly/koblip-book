@@ -62,6 +62,7 @@ const widgets = {
   installFind: "Find on Page",
   installShareButton: "Share",
   installAddButton: "Add",
+  installWebApp: "Open as Web App",
 }
 
 export default widgets

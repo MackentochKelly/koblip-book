@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/icons"
 import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Switch } from "@/components/ui/switch"
 import { useStoryLoop } from "@/hooks/use-story-loop"
 import { APP_SHORT_NAME } from "@/lib/app-install"
 import { SHOWCASE_LOOP } from "@/lib/showcase-rules"
@@ -63,20 +64,24 @@ const SLIDE: Variants = {
     filter: "blur(4px)",
   }),
 }
-const SLIDE_TRANSITION = { duration: 0.3, ease: [0.32, 0.72, 0, 1] } as const
+const SLIDE_TRANSITION = { duration: 0.6, ease: [0.32, 0.72, 0, 1] } as const
 
 // Safari's menus and share sheet: the rows come in one after another.
 const LIST: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.05, delayChildren: 0.1 } },
+  show: { transition: { staggerChildren: 0.12, delayChildren: 0.25 } },
 }
 const ROW: Variants = {
   hidden: { opacity: 0, y: 6 },
-  show: { opacity: 1, y: 0 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.32, 0.72, 0, 1] },
+  },
 }
 
 // The lit step's background slides from step to step.
-const HIGHLIGHT = { type: "spring", bounce: 0.2, duration: 0.4 } as const
+const HIGHLIGHT = { type: "spring", bounce: 0.15, duration: 0.7 } as const
 
 type Words = ReturnType<typeof useOwnerMessages>["widgets"]
 
@@ -330,18 +335,22 @@ function Picture({
     )
   }
 
-  // The Add to Home Screen window: close and Add on top, then the icon
-  // with the app's short name and address.
+  // The Add to Home Screen window: close, its title and Add on top, the
+  // icon with the app's short name and address, and Open as Web App on
+  // (Safari's default; it opens full screen like an app).
   if (phase === "add") {
     return (
       <div className="flex flex-col gap-3 [&_svg]:size-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
           <Round>
             <XIcon />
           </Round>
+          <span className="min-w-0 flex-1 truncate text-center text-xs font-medium">
+            {t.installTitle}
+          </span>
           <span
             className={cn(
-              "relative transition-transform duration-200",
+              "relative transition-transform duration-300",
               tapping && "scale-90"
             )}
           >
@@ -360,6 +369,10 @@ function Picture({
             </span>
           </div>
         </div>
+        <div className="flex items-center justify-between gap-2 rounded-xl bg-muted p-2 text-xs">
+          <span className="truncate">{t.installWebApp}</span>
+          <Switch size="sm" checked readOnly tabIndex={-1} />
+        </div>
       </div>
     )
   }
@@ -373,7 +386,7 @@ function Picture({
       <motion.div
         initial={{ opacity: 0, scale: 0.4 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", bounce: 0.5, delay: 0.2 }}
+        transition={{ type: "spring", bounce: 0.4, duration: 0.9, delay: 0.4 }}
         className="flex flex-col items-center gap-1"
       >
         <AppIcon />
@@ -397,7 +410,7 @@ function Round({
   return (
     <span
       className={cn(
-        "relative flex size-9 shrink-0 items-center justify-center rounded-full bg-muted transition-transform duration-200",
+        "relative flex size-9 shrink-0 items-center justify-center rounded-full bg-muted transition-transform duration-300",
         lit && "text-primary",
         pressed && "scale-90"
       )}
@@ -436,7 +449,7 @@ function MenuRow({
     <motion.div variants={ROW}>
       <div
         className={cn(
-          "relative flex items-center gap-2 rounded-lg px-2 py-1.5 transition-transform duration-200 [&_svg]:size-4 [&_svg]:shrink-0",
+          "relative flex items-center gap-2 rounded-lg px-2 py-1.5 transition-transform duration-300 [&_svg]:size-4 [&_svg]:shrink-0",
           lit ? "bg-muted font-medium" : "text-muted-foreground",
           Boolean(tap) && "scale-95"
         )}
@@ -467,7 +480,7 @@ function SheetButton({
     >
       <span
         className={cn(
-          "relative flex size-10 items-center justify-center rounded-full bg-muted transition-transform duration-200 [&_svg]:size-4",
+          "relative flex size-10 items-center justify-center rounded-full bg-muted transition-transform duration-300 [&_svg]:size-4",
           lit && "text-primary",
           Boolean(tap) && "scale-90"
         )}
