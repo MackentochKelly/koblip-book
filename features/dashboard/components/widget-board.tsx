@@ -18,16 +18,23 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { cn } from "@/lib/utils"
 import {
   useWidgetAnnouncements,
   useWidgetLayout,
 } from "../hooks/use-widget-layout"
 import { useOwnerMessages } from "../i18n/provider"
 import { reorderShown, setShown, shownWidgets } from "../utils/widget-layout"
-import type { WidgetId, WidgetLayout } from "../widgets"
+import { WIDGETS, type WidgetId, type WidgetLayout } from "../widgets"
 
-// The space between widgets: roomier on a computer.
-const STACK = "flex flex-col gap-6 md:gap-10"
+// One column on a phone; on a wide screen two, so "half" widgets sit side
+// by side. Roomier gaps on a computer. Each widget's box is a grid too, so
+// cards side by side stretch to the same height.
+const GRID = "grid gap-6 md:gap-10 lg:grid-cols-2"
+const FULL = "lg:col-span-2"
+
+const span = (id: WidgetId) =>
+  WIDGETS.find((widget) => widget.id === id)?.size === "full" ? FULL : undefined
 
 // Home's widgets in the owner's order. Edit widgets (at the foot, like the
 // iPhone's widget list) lets each one be dragged by its handle or taken off
@@ -78,19 +85,19 @@ export function WidgetBoard({
 
   if (!editing) {
     return (
-      <div className={STACK}>
+      <div className={GRID}>
         {shown.map((id) => (
           <section
             key={id}
             aria-label={t.names[id]}
-            className="min-w-0 empty:hidden"
+            className={cn("grid min-w-0 empty:hidden", span(id))}
           >
             {widgets[id]}
           </section>
         ))}
         <Button
           variant="ghost"
-          className="self-center"
+          className={cn("justify-self-center", FULL)}
           onClick={() => setEditing(true)}
         >
           <SquarePenIcon data-icon="inline-start" />
@@ -101,21 +108,25 @@ export function WidgetBoard({
   }
 
   return (
-    <div className={STACK}>
+    <div className="flex flex-col gap-6 md:gap-10">
       <SortableList
         ids={shown}
         onReorder={(next) => save(reorderShown(layout, next))}
         handleLabel={(id) => t.move(t.names[id])}
         announcements={announcements}
         instructions={instructions}
-        className={STACK}
+        layout="grid"
+        className={GRID}
+        rowClassName={span}
       >
         {(id, handle) => (
           <section
             aria-label={t.names[id]}
-            className="relative min-w-0 rounded-4xl outline-2 outline-offset-4 outline-border outline-dashed"
+            className="relative grid h-full min-w-0 rounded-4xl outline-2 outline-offset-4 outline-border outline-dashed"
           >
-            <div inert>{widgets[id]}</div>
+            <div inert className="grid">
+              {widgets[id]}
+            </div>
             <div className="absolute top-2 right-2 flex gap-1 rounded-full border bg-background p-1">
               {handle}
               <Button

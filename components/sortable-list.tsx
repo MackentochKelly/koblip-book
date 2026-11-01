@@ -16,6 +16,7 @@ import {
 } from "@dnd-kit/modifiers"
 import {
   arrayMove,
+  rectSortingStrategy,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
@@ -33,14 +34,17 @@ import { cn } from "@/lib/utils"
 // finger or the keyboard (Space to pick up, arrows to move, Space to drop,
 // Esc to cancel), each step read out to screen readers. Built on dnd-kit's
 // sortable preset, as shadcn's dashboard block is
-// (docs.dndkit.com/presets/sortable).
+// (docs.dndkit.com/presets/sortable). A "grid" moves rows in any direction,
+// for rows side by side.
 export function SortableList<Id extends string>({
   ids,
   onReorder,
   handleLabel,
   announcements,
   instructions,
+  layout = "list",
   className,
+  rowClassName,
   children,
 }: {
   ids: Id[]
@@ -50,7 +54,10 @@ export function SortableList<Id extends string>({
   // What screen readers hear while a row moves, in the page's language.
   announcements: Announcements
   instructions: string
+  layout?: "list" | "grid"
   className?: string
+  // Each row's own classes, e.g. how many grid columns it takes.
+  rowClassName?: (id: Id) => string | undefined
   // Each row, given its drag handle to place.
   children: (id: Id, handle: React.ReactNode) => React.ReactNode
 }) {
@@ -75,17 +82,31 @@ export function SortableList<Id extends string>({
       id={id}
       sensors={sensors}
       collisionDetection={closestCenter}
-      modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+      modifiers={
+        layout === "grid"
+          ? [restrictToParentElement]
+          : [restrictToVerticalAxis, restrictToParentElement]
+      }
       accessibility={{
         announcements,
         screenReaderInstructions: { draggable: instructions },
       }}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+      <SortableContext
+        items={ids}
+        strategy={
+          layout === "grid" ? rectSortingStrategy : verticalListSortingStrategy
+        }
+      >
         <div className={className}>
           {ids.map((item) => (
-            <SortableRow key={item} id={item} label={handleLabel(item)}>
+            <SortableRow
+              key={item}
+              id={item}
+              label={handleLabel(item)}
+              className={rowClassName?.(item)}
+            >
               {(handle) => children(item, handle)}
             </SortableRow>
           ))}
@@ -98,10 +119,12 @@ export function SortableList<Id extends string>({
 function SortableRow({
   id,
   label,
+  className,
   children,
 }: {
   id: string
   label: string
+  className?: string
   children: (handle: React.ReactNode) => React.ReactNode
 }) {
   // Reduce Motion: rows jump into place instead of sliding.
@@ -123,7 +146,7 @@ function SortableRow({
         transform: CSS.Translate.toString(transform),
         transition,
       }}
-      className={cn("relative", isDragging && "z-10 opacity-80")}
+      className={cn("relative", className, isDragging && "z-10 opacity-80")}
     >
       {children(
         // The row is picked up here (it also takes keyboard focus).

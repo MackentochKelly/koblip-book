@@ -12,16 +12,17 @@ import {
 // Every widget the owner can put on Home, in its first order. The Widgets
 // page and Home both read it; a new widget goes here (with its words in
 // i18n/<lang>/widgets.ts names and its part in Home). `shown` is
-// whether a new business starts with it on Home.
+// whether a new business starts with it on Home. A "half" widget sits beside
+// another on a computer; a "full" one takes the whole width.
 export const WIDGETS = [
-  { id: "stats", icon: TrendingUpIcon, shown: true },
-  { id: "today", icon: SparklesIcon, shown: true },
-  { id: "bookings", icon: CalendarDaysIcon, shown: true },
-  { id: "next", icon: ClockIcon, shown: false },
-  { id: "chart", icon: ChartColumnIcon, shown: false },
-  { id: "newCustomers", icon: ContactIcon, shown: false },
-  { id: "share", icon: ShareIcon, shown: false },
-  { id: "install", icon: DownloadIcon, shown: true },
+  { id: "stats", icon: TrendingUpIcon, shown: true, size: "full" },
+  { id: "today", icon: SparklesIcon, shown: true, size: "full" },
+  { id: "bookings", icon: CalendarDaysIcon, shown: true, size: "full" },
+  { id: "next", icon: ClockIcon, shown: false, size: "half" },
+  { id: "chart", icon: ChartColumnIcon, shown: false, size: "full" },
+  { id: "newCustomers", icon: ContactIcon, shown: false, size: "half" },
+  { id: "share", icon: ShareIcon, shown: false, size: "half" },
+  { id: "install", icon: DownloadIcon, shown: true, size: "half" },
 ] as const
 
 export type WidgetId = (typeof WIDGETS)[number]["id"]
