@@ -21,7 +21,6 @@ const integrations: typeof en = {
     name: "WhatsApp",
     description:
       "WhatsApp Business oficial, directo de Meta. Envía recordatorios de reservas y difusiones desde el número de tu negocio.",
-    connected: "Conectado",
     manage: "Gestionar",
     useOwnNumber: "Usar tu propio número",
     disconnect: "Desconectar",
@@ -61,7 +60,6 @@ const integrations: typeof en = {
     description:
       "Tus reservas en tu Google Calendar, al día con cada cambio.",
     connect: "Conectar",
-    connected: "Conectado",
     disconnect: "Desconectar",
     disconnected: "Google Calendar desconectado.",
     account: (email: string) => `Conectado a ${email}`,
@@ -118,7 +116,6 @@ const integrations: typeof en = {
     description:
       "Recordatorios y difusiones por WhatsApp con Koblip Chat, que tiene tu conexión oficial con Meta. Las respuestas llegan a tu bandeja de Koblip Chat.",
     connect: "Conectar",
-    connected: "Conectado",
     manage: "Gestionar",
     disconnected: "Koblip Chat desconectado.",
     workspace: (name: string) => `Conectado a ${name}`,

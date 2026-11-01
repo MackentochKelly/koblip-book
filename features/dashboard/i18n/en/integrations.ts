@@ -20,7 +20,6 @@ const integrations = {
     name: "WhatsApp",
     description:
       "Official WhatsApp Business, straight from Meta. Send booking reminders and broadcasts from your own business number.",
-    connected: "Connected",
     manage: "Manage",
     useOwnNumber: "Use your own number",
     disconnect: "Disconnect",
@@ -60,7 +59,6 @@ const integrations = {
     description:
       "Your bookings in your Google Calendar, kept up to date as they change.",
     connect: "Connect",
-    connected: "Connected",
     disconnect: "Disconnect",
     disconnected: "Google Calendar disconnected.",
     account: (email: string) => `Connected to ${email}`,
@@ -117,7 +115,6 @@ const integrations = {
     description:
       "WhatsApp reminders and broadcasts through Koblip Chat, which holds your official Meta connection. Replies arrive in your Koblip Chat inbox.",
     connect: "Connect",
-    connected: "Connected",
     manage: "Manage",
     disconnected: "Koblip Chat disconnected.",
     workspace: (name: string) => `Connected to ${name}`,

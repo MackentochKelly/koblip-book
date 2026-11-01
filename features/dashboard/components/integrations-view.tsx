@@ -172,16 +172,13 @@ export function IntegrationsView({
       }
       action={
         connection && !connection.needsReconnect ? (
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="max-md:hidden">{t.koblipChat.connected}</Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setManagingWhatsapp(true)}
-            >
-              {t.koblipChat.manage}
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setManagingWhatsapp(true)}
+          >
+            {t.koblipChat.manage}
+          </Button>
         ) : (
           <Button
             variant="outline"
@@ -214,16 +211,13 @@ export function IntegrationsView({
       }
       action={
         googleUsable ? (
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="max-md:hidden">{t.googleCalendar.connected}</Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setManagingGoogle(true)}
-            >
-              {t.googleCalendar.manage}
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setManagingGoogle(true)}
+          >
+            {t.googleCalendar.manage}
+          </Button>
         ) : (
           <Button
             variant="outline"
@@ -252,12 +246,9 @@ export function IntegrationsView({
       name={t.whatsapp.name}
       description={m.whatsapp.sendingFrom[sender]}
       action={
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="max-md:hidden">{t.whatsapp.connected}</Badge>
-          <Button variant="outline" size="sm" onClick={() => setManagingWhatsapp(true)}>
-            {t.whatsapp.manage}
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" onClick={() => setManagingWhatsapp(true)}>
+          {t.whatsapp.manage}
+        </Button>
       }
     />
   )
