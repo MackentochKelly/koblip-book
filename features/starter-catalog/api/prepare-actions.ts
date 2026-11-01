@@ -5,20 +5,9 @@ import { revalidatePath } from "next/cache"
 import { requireAccount } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { businesses } from "@/lib/db/schema"
-import { isMetaAiEnabled } from "@/lib/meta-ai"
 import type { StarterResult } from "../types"
-import {
-  catalogSummary,
-  draftFor,
-  drawMemberPhoto,
-  hasCatalog,
-  writeCatalog,
-} from "./fill-catalog"
-import {
-  draftPoliciesFor,
-  policyParts,
-  writeMissingPolicies,
-} from "./fill-policies"
+import { drawMemberPhoto } from "./fill-catalog"
+import { catalogJob, policiesJob } from "./prepare-jobs"
 
 // The signed-in owner's own real business (never a demo copy), or null.
 // The id comes from the browser, so ownership is checked here.
@@ -41,6 +30,8 @@ async function ownedBusiness(businessId: unknown) {
 // Right after sign-up: Meta AI writes the business's services, extras,
 // prices and team from its Google details, and they go live at once. A
 // business that already has services or team is never changed.
+// The job usually started on the Google details screen, so this mostly
+// waits for work already under way (./prepare-jobs).
 export async function startStarterCatalog(
   businessId: string
 ): Promise<StarterResult> {
@@ -48,27 +39,11 @@ export async function startStarterCatalog(
   if (!owned) {
     return { ok: false, error: "not_found" }
   }
-  const { business } = owned
-  if (await hasCatalog(business.id)) {
-    return { ok: true, summary: await catalogSummary(business, null, false) }
+  const result = await catalogJob(owned.business)
+  if (result.ok && result.summary.created) {
+    revalidatePath("/b/" + owned.business.slug)
   }
-  if (!isMetaAiEnabled()) {
-    return { ok: false, error: "ai_off" }
-  }
-  const catalog = await draftFor(business)
-  if (!catalog) {
-    return { ok: false, error: "failed" }
-  }
-  // The owner may have added something while Meta AI was writing.
-  if (await hasCatalog(business.id)) {
-    return { ok: true, summary: await catalogSummary(business, null, false) }
-  }
-  await writeCatalog(business, catalog)
-  revalidatePath("/b/" + business.slug)
-  return {
-    ok: true,
-    summary: await catalogSummary(business, catalog.team.role, true),
-  }
+  return result
 }
 
 // Right after sign-up: Muse writes the business's booking policy, terms,
@@ -81,19 +56,11 @@ export async function startPolicies(
   if (!owned) {
     return { ok: false }
   }
-  const { business } = owned
-  const before = await policyParts(business.id)
-  if (before.texts && before.points) {
-    return { ok: true }
+  const result = await policiesJob(owned.business)
+  if (result.ok) {
+    revalidatePath("/b/" + owned.business.slug)
   }
-  const policies = await draftPoliciesFor(business)
-  if (!policies) {
-    return { ok: false }
-  }
-  // The owner may have saved some while Muse was writing.
-  await writeMissingPolicies(business, policies, await policyParts(business.id))
-  revalidatePath("/b/" + business.slug)
-  return { ok: true }
+  return result
 }
 
 // Muse Image draws one team member's photo. Only for a member of the

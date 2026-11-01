@@ -17,6 +17,7 @@ import {
   translations,
 } from "@/lib/db/schema"
 import { DEFAULT_LANGUAGE, type PageLanguage } from "@/lib/page-language"
+import { placePhotoUrl } from "@/lib/place-photo"
 import { POLICY_KINDS } from "@/lib/policy-rules"
 import type { Amenity, BusinessPageData, PagePhoto, PageReview } from "../types"
 import { mapAmenities } from "../utils/map-amenities"
@@ -128,7 +129,7 @@ async function getGoogleExtras(
         const credit = photo.authorAttributions?.[0]
         return {
           id: photo.name as string,
-          url: `/api/place-photo?name=${encodeURIComponent(photo.name as string)}`,
+          url: placePhotoUrl(photo.name as string),
           credit: credit?.displayName
             ? { name: credit.displayName, uri: credit.uri ?? null }
             : null,

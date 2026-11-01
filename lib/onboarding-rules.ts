@@ -13,7 +13,7 @@ export const ONBOARDING_RULES = {
     address: 1600,
     phone: 1200,
     hours: 2000,
-    photos: 2600,
+    photos: 5000,
     rating: 1500,
     about: 3200,
   },

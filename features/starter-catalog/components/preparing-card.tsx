@@ -96,14 +96,13 @@ export function PreparingCard({
       setStates((current) => ({ ...current, [id]: state }))
 
     void (async () => {
-      // Muse writes the policies while the catalog is drafted, so they are
-      // ready by their row and saved before the Spanish step.
+      // Both usually started on the Google details screen; these wait for
+      // them. Next.js sends one action at a time, so the catalog goes first:
+      // the services row needs it soonest.
+      const catalog = startStarterCatalog(businessId)
       const policies = startPolicies(businessId).catch(() => ({ ok: false }))
       try {
-        const result = await atLeast(
-          startStarterCatalog(businessId),
-          RULES.revealMs.services
-        )
+        const result = await atLeast(catalog, RULES.revealMs.services)
         if (!result.ok || !result.summary.created) {
           await policies
           return

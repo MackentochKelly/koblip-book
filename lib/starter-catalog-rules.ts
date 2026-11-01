@@ -26,4 +26,6 @@ export const STARTER_CATALOG_RULES = {
   },
   // After the last row, before the success page opens (ms).
   revealDoneMs: 1000,
+  // How long a finished setup job's result is kept for the setup screen (ms).
+  jobKeepMs: 15 * 60_000,
 } as const

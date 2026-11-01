@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { after } from "next/server"
 
 import { GlassCard } from "@/components/glass-frame"
 import { getBusinessPage } from "@/features/business-page/api/get-business-page"
@@ -7,8 +8,10 @@ import { TopBar } from "@/features/dashboard/components/top-bar"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { GoogleDetailsCard } from "@/features/onboarding/components/google-details-card"
 import { onboardingWordsFor } from "@/features/onboarding/i18n"
+import { startPreparing } from "@/features/starter-catalog/api/prepare-jobs"
 import { requireAccount } from "@/lib/dal"
 import { fontDisplay } from "@/lib/fonts"
+import { thumbnailUrl } from "@/lib/place-photo"
 import { cn } from "@/lib/utils"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,6 +29,10 @@ export default async function GoogleDetailsPage({
   const { business } = await getOwnerBusiness(businessId)
   const language = await getOwnerLanguage()
   const page = await getBusinessPage(business.slug)
+  // Muse starts the page's services and policies now, while the owner
+  // reads this screen and checks the details, so they are nearly ready by
+  // "Getting your page ready".
+  after(() => startPreparing(business))
   return (
     <div
       className={cn(
@@ -49,7 +56,9 @@ export default async function GoogleDetailsPage({
               address: business.address,
               phone: business.phone,
               openDays: new Set(page?.hours.map((hour) => hour.weekday)).size,
-              photoUrls: (page?.photos ?? []).slice(0, 3).map((photo) => photo.url),
+              photoUrls: (page?.photos ?? [])
+                .slice(0, 3)
+                .map((photo) => thumbnailUrl(photo.url)),
               photoCount: page?.photos.length ?? 0,
               rating: page?.business.rating ?? null,
               reviewCount: page?.business.reviewCount ?? null,

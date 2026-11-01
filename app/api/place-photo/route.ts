@@ -1,5 +1,7 @@
 import type { NextRequest } from "next/server"
 
+import { PLACE_PHOTO_PX, placePhotoSize } from "@/lib/place-photo"
+
 const PHOTO_NAME_PATTERN = /^places\/[^/]+\/photos\/[^/]+$/
 
 // Proxies one Google place photo: the photo name is never stored (it can
@@ -14,10 +16,15 @@ export async function GET(request: NextRequest) {
   if (!key) {
     return Response.json({ error: "Photo unavailable" }, { status: 502 })
   }
+  const size = placePhotoSize(request.nextUrl.searchParams.get("size"))
+  const px = PLACE_PHOTO_PX[size]
+  // A thumbnail fits a square box, so a tall photo comes small too.
+  const box =
+    size === "full" ? `maxWidthPx=${px}` : `maxWidthPx=${px}&maxHeightPx=${px}`
   let res: Response
   try {
     res = await fetch(
-      `https://places.googleapis.com/v1/${name}/media?maxWidthPx=1600`,
+      `https://places.googleapis.com/v1/${name}/media?${box}`,
       {
         headers: { "X-Goog-Api-Key": key },
         cache: "no-store",
