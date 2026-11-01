@@ -118,11 +118,12 @@ export type MessageEditorLabels = {
 // or refused. While Meta reviews, or once it approved, there is nothing to send.
 const SUBMITTABLE: readonly TemplateReview[] = ["missing", "draft", "rejected"]
 
-// One message's two ways out on tabs at the top, each with its own status and
-// preview: the normal message (inside 24 hours, the saved words at once) and
-// the template (outside 24 hours, with Meta's review and the words Meta
-// approved while a change waits). One set of words, English and Spanish on
-// tabs, is edited below for both.
+// One message's two ways out on tabs at the top, each with its own status:
+// the normal message (inside 24 hours, the saved words at once) and the
+// template (outside 24 hours, with Meta's review). One set of words is edited
+// below for both, its language switched on the first field's row, and the
+// preview comes last (for the template, the words Meta approved while a
+// change waits).
 // Saving keeps a draft; "Submit to Meta" sends what is saved for review
 // (D8 in docs/plans/whatsapp-notifications.md). The same editor serves a
 // business's own messages and the admin's Koblip messages
@@ -279,66 +280,61 @@ export function MessageEditor({
               </TabsList>
             </Tabs>
 
-            {part === "normal" ? (
-              <Field>
-                <div className="flex flex-wrap items-center gap-2">
+            {/* Where this way stands: its status and when it goes. */}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {part === "normal" ? (
                   <Badge variant="secondary">
                     <CircleCheckIcon data-icon="inline-start" className="text-success" />
                     {t.sending}
                   </Badge>
-                  <FieldDescription>{t.normalHint}</FieldDescription>
-                </div>
-                <MessagePreview draft={draft} language={language} preview={preview} labels={t} />
-              </Field>
-            ) : (
-              <Field>
-                <div className="flex flex-wrap items-center gap-2">
-                  {editable && <MetaStatusBadge review={text.review} labels={t.review} />}
-                  <FieldDescription>{t.templateHint}</FieldDescription>
-                </div>
-                {editable && text.review === "rejected" && text.reason && (
-                  <Alert variant="destructive">
-                    <AlertTitle>{t.metaReason}</AlertTitle>
-                    <AlertDescription>{text.reason}</AlertDescription>
-                  </Alert>
+                ) : (
+                  editable && <MetaStatusBadge review={text.review} labels={t.review} />
                 )}
-                {/* While a change waits, the words Meta approved still go. */}
-                <MessagePreview
-                  draft={approved ?? draft}
-                  language={language}
-                  preview={preview}
-                  labels={t}
-                />
-                {approved && <FieldDescription>{t.approvedNow}</FieldDescription>}
-              </Field>
-            )}
-
-            <Tabs
-              value={language}
-              onValueChange={(value) => {
-                setLanguage(value as EditorLanguage)
-                setProblem(null)
-              }}
-            >
-              <TabsList variant="line">
-                <TabsTrigger value="en">{t.english}</TabsTrigger>
-                <TabsTrigger value="es">{t.spanish}</TabsTrigger>
-              </TabsList>
-            </Tabs>
+                <FieldDescription>
+                  {part === "normal" ? t.normalHint : t.templateHint}
+                </FieldDescription>
+              </div>
+              {part === "template" && editable && text.review === "rejected" && text.reason && (
+                <Alert variant="destructive">
+                  <AlertTitle>{t.metaReason}</AlertTitle>
+                  <AlertDescription>{text.reason}</AlertDescription>
+                </Alert>
+              )}
+            </div>
 
             {!editable && <FieldDescription>{t.readOnly}</FieldDescription>}
 
+            <Field>
+              {/* The words below are in this language: a small switch on
+                  the first field's row, not a second row of tabs. It sits
+                  outside the read-only fieldset, so it always switches. */}
+              <div className="flex items-center justify-between gap-2">
+                <FieldLabel htmlFor="message-header">{t.title}</FieldLabel>
+                <Tabs
+                  value={language}
+                  onValueChange={(value) => {
+                    setLanguage(value as EditorLanguage)
+                    setProblem(null)
+                  }}
+                >
+                  <TabsList>
+                    <TabsTrigger value="en">{t.english}</TabsTrigger>
+                    <TabsTrigger value="es">{t.spanish}</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+              <Input
+                id="message-header"
+                value={draft.wording.header}
+                maxLength={limits.maxHeader}
+                disabled={!editable || pending}
+                onChange={(event) => setWording({ header: event.target.value })}
+              />
+            </Field>
+
             {/* A message the reader can't change is read-only. */}
             <fieldset disabled={!editable || pending} className="contents">
-              <Field>
-                <FieldLabel htmlFor="message-header">{t.title}</FieldLabel>
-                <Input
-                  id="message-header"
-                  value={draft.wording.header}
-                  maxLength={limits.maxHeader}
-                  onChange={(event) => setWording({ header: event.target.value })}
-                />
-              </Field>
               <Field data-invalid={problem ? true : undefined}>
                 <FieldLabel htmlFor="message-body">{t.text}</FieldLabel>
                 <Textarea
@@ -411,6 +407,20 @@ export function MessageEditor({
                 </FieldSet>
               )}
             </fieldset>
+
+            {/* Last: the message as the customer reads it. On After 24h,
+                while a change waits, the words Meta approved still go. */}
+            <Field>
+              <MessagePreview
+                draft={part === "template" ? (approved ?? draft) : draft}
+                language={language}
+                preview={preview}
+                labels={t}
+              />
+              {part === "template" && approved && (
+                <FieldDescription>{t.approvedNow}</FieldDescription>
+              )}
+            </Field>
           </FieldGroup>
         </form>
       )}

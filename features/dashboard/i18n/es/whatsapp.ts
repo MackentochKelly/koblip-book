@@ -118,16 +118,16 @@ const whatsapp: typeof en = {
     phone: "telefono",
   },
   // Las dos formas en que sale un mensaje, separadas en el editor.
-  normalMessage: "Mensaje normal",
+  normalMessage: "Dentro de 24 h",
   sending: "Se envía",
   off: "Apagado",
-  normalHint: "Dentro de 24 horas · se envía al guardar",
+  normalHint: "Te escribieron en las últimas 24 horas. Se envía al momento.",
   listHint: "Toca un mensaje para cambiar su texto.",
   listMore:
     "Dentro de 24 horas desde el último mensaje de la persona, tu texto guardado se envía al instante. Fuera de 24 horas, la plantilla se envía cuando Meta la aprueba.",
   moreInfo: "Más información",
-  template: "Plantilla",
-  templateHint: "Fuera de 24 horas · se envía cuando Meta la aprueba",
+  template: "Después de 24 h",
+  templateHint: "Meta lo revisa primero y luego se envía.",
   approvedNow: "Se envía ahora, hasta que Meta apruebe tu cambio",
   // Los botones bajo un mensaje, y qué hace cada uno.
   buttons: "Botones",
