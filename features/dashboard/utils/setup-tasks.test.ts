@@ -14,7 +14,9 @@ test("a new business has every step to do, each with its page", () => {
   const steps = setupTasks(none, "/dashboard/b1", "/b/shop")
   expect(steps.map((step) => step.id)).toEqual([...SETUP_TASKS])
   expect(steps.every((step) => !step.done)).toBe(true)
-  expect(steps.find((step) => step.id === "services")?.href).toBe("/dashboard/b1/services")
+  expect(steps.find((step) => step.id === "services")?.href).toBe(
+    "/dashboard/b1/services"
+  )
   expect(steps.find((step) => step.id === "booking")?.href).toBe("/b/shop")
 })
 
@@ -25,9 +27,18 @@ test("steps are done from the business's own data", () => {
     "/b/shop"
   )
   expect(steps.filter((step) => step.done).map((step) => step.id)).toEqual([
-    "details",
     "hours",
     "services",
     "photos",
   ])
+})
+
+test("details confirmed at sign-up: the step is not shown at all", () => {
+  const ids = (detailsConfirmed: boolean) =>
+    setupTasks({ ...none, detailsConfirmed }, "/dashboard/b1", "/b/shop").map(
+      (step) => step.id
+    )
+  expect(ids(false)).toContain("details")
+  expect(ids(true)).not.toContain("details")
+  expect(ids(true)).toHaveLength(SETUP_TASKS.length - 1)
 })

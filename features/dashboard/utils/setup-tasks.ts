@@ -24,7 +24,9 @@ export type SetupFacts = {
 export type SetupTaskState = { id: SetupTask; done: boolean; href: string }
 
 // Each step with whether it is done and where to do it. `base` is the
-// business's dashboard path, `pagePath` its booking page.
+// business's dashboard path, `pagePath` its booking page. Details shows
+// only while they are not confirmed: owners who saved Check your details
+// at sign-up never see it.
 export function setupTasks(
   facts: SetupFacts,
   base: string,
@@ -38,5 +40,7 @@ export function setupTasks(
     photos: { done: facts.photos > 0, href: `${base}/settings/portfolio` },
     booking: { done: facts.bookings > 0, href: pagePath },
   }
-  return SETUP_TASKS.map((id) => ({ id, ...steps[id] }))
+  return SETUP_TASKS.filter(
+    (id) => id !== "details" || !facts.detailsConfirmed
+  ).map((id) => ({ id, ...steps[id] }))
 }
