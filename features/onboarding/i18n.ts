@@ -23,7 +23,7 @@ const en = {
   businessName: "Your business name",
   // Typed one after another in the empty search box, then businessName.
   businessNameExamples: [
-    "Search your business name",
+    "Search your business",
     "Lumen Studio",
     "Your salon, clinic or shop",
   ],
@@ -82,7 +82,7 @@ const es: OnboardingWords = {
   closeSearch: "Cerrar búsqueda",
   businessName: "Nombre de tu negocio",
   businessNameExamples: [
-    "Busca el nombre de tu negocio",
+    "Busca tu negocio",
     "Lumen Studio",
     "Tu salón, clínica o tienda",
   ],

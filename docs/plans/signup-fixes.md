@@ -26,7 +26,7 @@ and faster. How to use this file: [Plans](README.md).
 | S5 | Check details says Continue | S | | Done |
 | S6 | Live screen has one "View page" | S | | Done |
 | S7 | Live screen shows a useful category | M | | Done |
-| S8 | Search box hint fits at 375px | S | | Working on: M Kelly B, 2026-11-01 |
+| S8 | Search box hint fits at 375px | S | | Done |
 | S9 | Setup still finishes after a server restart | M | | Done |
 | S10 | Keyboard focus stays in the list after a suggested search | S | S1 | Done |
 | S11 | The category shows in Spanish on Spanish pages | S | S7 | To do |
@@ -186,6 +186,11 @@ the input's layout, as the UI rules call for. Not a smaller font.
 `features/onboarding/components/search-area.tsx`.
 
 **Done when:** the whole hint shows at 375px in both languages.
+
+**Done (2026-11-01):** the first typed hint is shorter in English and
+Spanish. All example lines and the resting hint have a shared
+`ONBOARDING_RULES.maxHintLength` guard (26 characters), based on the home
+box's measured 219px text width at 375px. Layout and typing stay the same.
 
 ### S9 · Setup still finishes after a server restart 🟠
 

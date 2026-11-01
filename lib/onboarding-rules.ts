@@ -4,6 +4,10 @@ export const ONBOARDING_RULES = {
   biasRadiusMeters: 50_000,
   minInput: 2,
   maxInput: 100,
+  // Home search text width at 375px: 219px in Inter 16px. A measured
+  // 26-character sample fits; 27 does not. A stand-in for width, since
+  // tests cannot measure pixels; wider letters still need a browser check.
+  maxHintLength: 26,
   minPasswordLength: 8,
   // Better Auth's default maximum, set explicitly so the form's words match.
   maxPasswordLength: 128,
