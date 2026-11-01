@@ -117,42 +117,34 @@ export function BookingList({
       id: "date",
       header: t.columns.date,
       sortFn: "basic",
+      // One line, day then start time; the end is in the details.
       cell: ({ row }) => (
-        <div className="flex flex-col">
-          <span className="font-medium">
-            {formatDayShort(row.original.date, m.locale)}
+        <span className="whitespace-nowrap tabular-nums">
+          {formatDayShort(row.original.date, m.locale)}
+          <span className="text-muted-foreground">
+            {" · "}
+            {formatClock(row.original.time, m.locale)}
           </span>
-          <span className="text-muted-foreground tabular-nums">
-            {formatClock(row.original.time, m.locale)} –{" "}
-            {formatClock(row.original.endTime, m.locale)}
-          </span>
-        </div>
+        </span>
       ),
     }),
     column.accessor("customerName", {
       id: "customer",
       header: t.columns.customer,
       sortFn: "text",
+      // The name stands out; the phone is in the details. The row opens on
+      // a click; the name is its button for the keyboard.
       cell: ({ row }) => (
-        <div className="flex flex-col items-start">
-          {/* The row opens on a click; the name is its button for the
-              keyboard. */}
-          <Button
-            variant="link"
-            className="h-auto p-0 font-medium text-foreground"
-            onClick={(event) => {
-              event.stopPropagation()
-              panels.open(row.original, Date.now())
-            }}
-          >
-            {row.original.customerName}
-          </Button>
-          {row.original.customerPhone && (
-            <span className="text-muted-foreground tabular-nums">
-              {row.original.customerPhone}
-            </span>
-          )}
-        </div>
+        <Button
+          variant="link"
+          className="h-auto p-0 font-semibold text-foreground"
+          onClick={(event) => {
+            event.stopPropagation()
+            panels.open(row.original, Date.now())
+          }}
+        >
+          {row.original.customerName}
+        </Button>
       ),
     }),
     column.accessor("serviceName", {
