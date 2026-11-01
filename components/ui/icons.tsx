@@ -112,6 +112,7 @@ import {
   LocateFixed as LucideLocateFixed,
   Nfc as LucideNfc,
   OctagonX as LucideOctagonX,
+  Palette as LucidePalette,
   PawPrint as LucidePawPrint,
   Share as LucideShare,
   Stethoscope as LucideStethoscope,
@@ -255,6 +256,7 @@ export const MoonIcon = icon(MynaMoon as Icon, "MoonIcon")
 export const NavigationIcon = icon(MynaNavigation as Icon, "NavigationIcon")
 export const NfcIcon = icon(LucideNfc as Icon, "NfcIcon")
 export const OctagonXIcon = icon(LucideOctagonX as Icon, "OctagonXIcon")
+export const PaletteIcon = icon(LucidePalette as Icon, "PaletteIcon")
 export const PanelLeftIcon = icon(MynaSidebar as Icon, "PanelLeftIcon")
 export const PawPrintIcon = icon(LucidePawPrint as Icon, "PawPrintIcon")
 export const PhoneCallIcon = icon(MynaTelephoneCall as Icon, "PhoneCallIcon")

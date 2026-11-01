@@ -1,0 +1,1 @@
+ALTER TABLE `businesses` ADD `theme` text DEFAULT 'luma' NOT NULL;

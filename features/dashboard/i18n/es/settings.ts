@@ -7,6 +7,7 @@ const settings: typeof en = {
     hours: "Horario",
     portfolio: "Portafolio",
     spanish: "Español",
+    theme: "Tema",
     notifications: "Notificaciones",
   },
   partsLabel: "Partes de ajustes",
@@ -63,6 +64,13 @@ const settings: typeof en = {
     toTranslate: (n: number) => `${n} por traducir`,
     translate: "Traducir",
     view: "Ver en español",
+  },
+  theme: {
+    title: "Tema",
+    active: "Activo",
+    activate: "Activar",
+    activated: "Tema activado",
+    comingSoon: "Próximamente",
   },
   confirm: {
     title: "Revisa tus datos",

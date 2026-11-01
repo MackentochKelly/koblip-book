@@ -6,6 +6,7 @@ const settings = {
     hours: "Hours",
     portfolio: "Portfolio",
     spanish: "Spanish",
+    theme: "Theme",
     notifications: "Notifications",
   },
   partsLabel: "Settings parts",
@@ -62,6 +63,13 @@ const settings = {
     toTranslate: (n: number) => `${n} to translate`,
     translate: "Translate",
     view: "View in Spanish",
+  },
+  theme: {
+    title: "Theme",
+    active: "Active",
+    activate: "Activate",
+    activated: "Theme activated",
+    comingSoon: "Coming soon",
   },
   confirm: {
     title: "Check your details",

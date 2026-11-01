@@ -11,6 +11,7 @@ const PARTS = [
   "hours",
   "portfolio",
   "spanish",
+  "theme",
   "notifications",
 ] as const
 
