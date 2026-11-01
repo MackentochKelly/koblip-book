@@ -82,10 +82,11 @@ const en = {
   },
   // A team member's public profile (docs/plans/team-accounts.md).
   teamProfile: {
-    appointments: "Appointments completed",
-    clients: "Clients served",
+    appointments: "Appointments",
+    clients: "Clients",
     // Their first name: the business's own About follows.
     about: (name: string) => `About ${name}`,
+    hours: (name: string) => `${name}'s hours`,
     languages: "Languages",
   },
   // The business's own policies, linked from its page's footer.
@@ -401,9 +402,10 @@ const es: Messages = {
     builtBy: "Hecho por",
   },
   teamProfile: {
-    appointments: "Citas completadas",
-    clients: "Clientes atendidos",
+    appointments: "Citas",
+    clients: "Clientes",
     about: (name: string) => `Sobre ${name}`,
+    hours: (name: string) => `Horario de ${name}`,
     languages: "Idiomas",
   },
   policies: {

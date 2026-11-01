@@ -23,19 +23,22 @@ function dayTime(day: DayHours, m: Messages): string {
     .join(", ")
 }
 
-// The week's hours, today picked out.
+// The week's hours, today picked out. The title is the business's
+// opening times unless given (a team member's own hours).
 export function OpeningHours({
   days,
   todayWeekday,
   language,
+  title,
 }: {
   days: DayHours[]
   todayWeekday: number
   language: PageLanguage
+  title?: string
 }) {
   const m = messagesFor(language)
   return (
-    <PageSection id="hours" title={m.sections.hours}>
+    <PageSection id="hours" title={title ?? m.sections.hours}>
       <dl className="flex flex-col gap-2.5 text-sm">
         {days.map((day) => {
           const isToday = day.weekday === todayWeekday

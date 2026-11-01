@@ -4,7 +4,7 @@ import { cache } from "react"
 import { and, countDistinct, count, eq, lt, notInArray, sql } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { bookings, teamMembers, translations } from "@/lib/db/schema"
+import { bookings, teamMemberHours, teamMembers, translations } from "@/lib/db/schema"
 import type { PageLanguage } from "@/lib/page-language"
 import type { TeamProfilePage } from "../types/team-profile"
 import { getBusinessPage } from "./get-business-page"
@@ -23,7 +23,7 @@ async function loadTeamProfile(
   const member = data?.team.find((person) => person.id === memberId)
   if (!data || !member) return null
   const now = new Date().toISOString()
-  const [[profile], [done], [aboutEs]] = await Promise.all([
+  const [[profile], [done], [aboutEs], ownHours] = await Promise.all([
     db
       .select({ about: teamMembers.about, languages: teamMembers.languages })
       .from(teamMembers)
@@ -60,6 +60,14 @@ async function loadTeamProfile(
           )
           .limit(1)
       : [],
+    db
+      .select({
+        weekday: teamMemberHours.weekday,
+        opensAt: teamMemberHours.opensAt,
+        closesAt: teamMemberHours.closesAt,
+      })
+      .from(teamMemberHours)
+      .where(eq(teamMemberHours.teamMemberId, member.id)),
   ])
   const about = profile?.about ?? null
   // A translation counts only while its source is the current English.
@@ -76,6 +84,7 @@ async function loadTeamProfile(
     ),
     appointments: done?.appointments ?? 0,
     clients: done?.clients ?? 0,
+    hours: ownHours.length > 0 ? ownHours : data.hours,
   }
 }
 

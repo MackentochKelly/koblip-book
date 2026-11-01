@@ -9,7 +9,7 @@ import { messagesFor } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
 import type { BusinessPageData } from "../types"
 import { getWeekdayInTimeZone } from "../utils/get-weekday-in-time-zone"
-import { groupHours } from "../utils/group-hours"
+import { groupHours, type HourRow } from "../utils/group-hours"
 import { BusinessAbout } from "./business-about"
 import { BusinessAmenities } from "./business-amenities"
 import { BusinessMap } from "./business-map"
@@ -21,16 +21,18 @@ function hasLocation({ business }: BusinessPageData): boolean {
   return Boolean(business.address || business.mapsUrl || business.latitude !== null)
 }
 
-// The section tabs for what BusinessDetails shows, in its order.
+// The section tabs for what BusinessDetails shows, in its order; the
+// hours tab takes the same title as its section.
 export function detailSections(
   data: BusinessPageData,
-  language: PageLanguage
+  language: PageLanguage,
+  hoursTitle?: string
 ): ViewTab<string>[] {
   const m = messagesFor(language)
   return [
     { id: "reviews", label: m.sections.reviews },
     data.photos.length > 0 && { id: "portfolio", label: m.sections.portfolio },
-    { id: "hours", label: m.sections.hours },
+    { id: "hours", label: hoursTitle ?? m.sections.hours },
     data.business.description && { id: "about", label: m.sections.about },
     data.amenities.length > 0 && { id: "info", label: m.sections.info },
     hasLocation(data) && { id: "location", label: m.sections.location },
@@ -38,16 +40,19 @@ export function detailSections(
 }
 
 // The business's reviews, portfolio, opening times, About, extra info and
-// location: the same on its page and on each team member's profile.
+// location: the same on its page and on each team member's profile, where
+// `hours` are that person's own.
 export function BusinessDetails({
   data,
   language,
+  hours,
 }: {
   data: BusinessPageData
   language: PageLanguage
+  hours?: { rows: HourRow[]; title: string }
 }) {
   const m = messagesFor(language)
-  const { business, hours, photos, reviews, amenities } = data
+  const { business, photos, reviews, amenities } = data
   return (
     <>
       <PageSection
@@ -88,9 +93,10 @@ export function BusinessDetails({
         </>
       )}
       <OpeningHours
-        days={groupHours(hours)}
+        days={groupHours(hours?.rows ?? data.hours)}
         todayWeekday={getWeekdayInTimeZone(business.timezone)}
         language={language}
+        title={hours?.title}
       />
       {business.description && (
         <>

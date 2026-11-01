@@ -1,30 +1,32 @@
+import Image from "next/image"
 import Link from "next/link"
 
 import { BottomBar } from "@/components/bottom-bar"
 import { LanguageMenu } from "@/components/language-menu"
 import { PageSection } from "@/components/page-section"
+import { Rating } from "@/components/rating"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftIcon } from "@/components/ui/icons"
-import { Separator } from "@/components/ui/separator"
 import { messagesFor } from "@/lib/i18n"
 import { initials } from "@/lib/initials"
 import type { PageLanguage } from "@/lib/page-language"
 import { languageName } from "@/lib/team-rules"
 import type { TeamProfilePage } from "../types/team-profile"
 import { BookButton } from "./book-button"
-import { BusinessActions, hasActions } from "./business-actions"
 import { BusinessDetails, detailSections } from "./business-details"
 import { BusinessFooter } from "./business-footer"
 import { SectionTabs } from "./section-tabs"
 import { ServiceList } from "./service-list"
+import { ShareButton } from "./share-button"
 
-// A team member's own page, like Fresha's: their photo, name and job title,
-// what they have done here, about them, the languages they speak and the
-// services they do, each bookable with them already picked; then the
-// business's own reviews, photos, hours, About, info and location.
+// A team member's own page, like Fresha: their photo over the business's
+// cover, name, job title and the business's rating, what they have done
+// here, about them, the languages they speak and the services they do,
+// each bookable with them already picked; then their own hours and the
+// business's reviews, photos, About, info and location.
 export function TeamProfile({
   profile,
   language,
@@ -39,9 +41,12 @@ export function TeamProfile({
   const { data, member, services } = profile
   const { business } = data
   const number = new Intl.NumberFormat(m.locale)
+  const firstName = member.name.split(" ")[0] || member.name
+  const cover = data.photos[0]
+  const hoursTitle = t.hours(firstName)
   const sections = [
     ...(services.length > 0 ? [{ id: "services", label: m.sections.services }] : []),
-    ...detailSections(data, language),
+    ...detailSections(data, language, hoursTitle),
   ]
   return (
     <>
@@ -63,19 +68,63 @@ export function TeamProfile({
           <div className="flex shrink-0 gap-2">
             <ThemeToggle />
             <LanguageMenu />
+            <ShareButton title={`${member.name} · ${business.name}`} />
           </div>
         </div>
 
         <div className="flex flex-col items-center gap-3 text-center">
-          <Avatar className="size-32">
+          {/* The business's first photo as a cover, their photo over its
+              lower edge. */}
+          <div className="relative aspect-3/1 w-full overflow-hidden rounded-2xl bg-muted">
+            {cover && (
+              <Image
+                src={cover.url}
+                alt=""
+                fill
+                unoptimized
+                priority
+                sizes="(max-width: 768px) 100vw, 40rem"
+                className="object-cover"
+              />
+            )}
+          </div>
+          <Avatar className="-mt-16 size-28 ring-4 ring-background">
             {member.photoUrl && <AvatarImage src={member.photoUrl} alt="" />}
-            <AvatarFallback className="text-4xl">{initials(member.name)}</AvatarFallback>
+            <AvatarFallback className="text-3xl">{initials(member.name)}</AvatarFallback>
           </Avatar>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col items-center gap-1">
             <h1 className="text-2xl font-semibold tracking-tight text-balance">{member.name}</h1>
             {member.description && <p className="text-muted-foreground">{member.description}</p>}
-            <p className="text-sm text-muted-foreground">{business.name}</p>
+            <p className="flex flex-wrap items-center justify-center gap-x-2 text-sm text-muted-foreground">
+              {business.name}
+              {business.rating !== null && (
+                <Rating
+                  rating={business.rating}
+                  reviewCount={business.reviewCount}
+                  locale={m.locale}
+                />
+              )}
+            </p>
           </div>
+          {/* What they have done here: two small numbers, side by side. */}
+          {profile.appointments > 0 && (
+            <dl className="flex items-center justify-center">
+              {[
+                { label: t.appointments, value: profile.appointments },
+                { label: t.clients, value: profile.clients },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="flex flex-col items-center px-5 not-first:border-l"
+                >
+                  <dt className="text-xs text-muted-foreground">{stat.label}</dt>
+                  <dd className="order-first text-lg font-semibold tabular-nums">
+                    {number.format(stat.value)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
           {bookable && (
             <BookButton
               slug={business.slug}
@@ -86,21 +135,8 @@ export function TeamProfile({
           )}
         </div>
 
-        {profile.appointments > 0 && (
-          <dl className="flex flex-col gap-3">
-            <div className="flex justify-between gap-4">
-              <dt>{t.appointments}</dt>
-              <dd className="text-muted-foreground">{number.format(profile.appointments)}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt>{t.clients}</dt>
-              <dd className="text-muted-foreground">{number.format(profile.clients)}</dd>
-            </div>
-          </dl>
-        )}
-
         {member.about && (
-          <PageSection id="about-me" title={t.about(member.name.split(" ")[0] ?? member.name)}>
+          <PageSection id="about-me" title={t.about(firstName)}>
             <p className="whitespace-pre-line text-muted-foreground">{member.about}</p>
           </PageSection>
         )}
@@ -126,8 +162,11 @@ export function TeamProfile({
           memberId={member.id}
           fromAway
         />
-        {services.length > 0 && <Separator />}
-        <BusinessDetails data={data} language={language} />
+        <BusinessDetails
+          data={data}
+          language={language}
+          hours={{ rows: profile.hours, title: hoursTitle }}
+        />
         <BusinessFooter
           name={business.name}
           slug={business.slug}
@@ -136,15 +175,9 @@ export function TeamProfile({
           language={language}
         />
       </main>
-      {hasActions(business, bookable) && (
-        <BottomBar label={m.page.contact} className="md:hidden">
-          <BusinessActions
-            business={business}
-            layout="row"
-            bookable={bookable}
-            language={language}
-            memberId={member.id}
-          />
+      {bookable && (
+        <BottomBar label={m.actions.bookNow} className="md:hidden">
+          <BookButton slug={business.slug} memberId={member.id} fromAway className="flex-1" />
         </BottomBar>
       )}
     </>

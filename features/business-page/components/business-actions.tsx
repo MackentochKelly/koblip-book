@@ -11,20 +11,17 @@ import { BookButton } from "./book-button"
 // Book now (when bookable), directions, call and website: only what the
 // business has. A row on the phone bar, stacked in the side card. With
 // booking on, Book now is the one main button and, on the phone bar,
-// directions and call shrink to icons. With memberId (a team member's
-// profile), Book now books with that person.
+// directions and call shrink to icons.
 export function BusinessActions({
   business,
   layout,
   bookable = false,
   language,
-  memberId,
 }: {
   business: Business
   layout: "row" | "stack"
   bookable?: boolean
   language: PageLanguage
-  memberId?: string
 }) {
   const m = messagesFor(language).actions
   const directions = directionsUrl(business)
@@ -37,8 +34,6 @@ export function BusinessActions({
         <BookButton
           slug={business.slug}
           label={m.bookNow}
-          memberId={memberId}
-          fromAway={memberId !== undefined}
           className={cn(wide, icons && "order-last")}
         />
       )}

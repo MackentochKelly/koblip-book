@@ -18,7 +18,10 @@ const DAY_LABELS = [
 
 const MONDAY_FIRST = [1, 2, 3, 4, 5, 6, 0]
 
-export function groupHours(hours: BusinessHour[]): DayHours[] {
+// A business's or a team member's hours, one row per open stretch.
+export type HourRow = Pick<BusinessHour, "weekday" | "opensAt" | "closesAt">
+
+export function groupHours(hours: HourRow[]): DayHours[] {
   return MONDAY_FIRST.map((weekday) => ({
     weekday,
     label: DAY_LABELS[weekday],

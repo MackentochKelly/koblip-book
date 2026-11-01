@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { headers } from "next/headers"
 import { notFound } from "next/navigation"
 import { LanguageProvider } from "@/components/language-provider"
+import { Toaster } from "@/components/ui/sonner"
 import { getTeamProfile } from "@/features/business-page/api/get-team-profile"
 import { TeamProfile } from "@/features/business-page/components/team-profile"
 import { isBookable } from "@/features/booking/utils/is-bookable"
@@ -48,6 +49,7 @@ export default async function TeamProfilePage(props: Props) {
   return (
     <LanguageProvider language={language}>
       <TeamProfile profile={profile} language={language} bookable={bookable} />
+      <Toaster />
     </LanguageProvider>
   )
 }
