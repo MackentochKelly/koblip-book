@@ -122,7 +122,8 @@ export function BookingsView({
         </CardHeader>
         {assistant && <CardContent>{assistant}</CardContent>}
       </Card>
-      <div className="flex min-w-0 flex-col gap-6">
+      {/* Tabs to list: the same gap as between the list's rows. */}
+      <div className="flex min-w-0 flex-col gap-3 md:gap-6">
         <ViewTabs
           views={views}
           value={view}
