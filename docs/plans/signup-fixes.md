@@ -27,7 +27,7 @@ and faster. How to use this file: [Plans](README.md).
 | S6 | Live screen has one "View page" | S | | To do |
 | S7 | Live screen shows a useful category | S | | To do |
 | S8 | Search box hint fits at 375px | S | | To do |
-| S9 | Setup still finishes after a server restart | M | | To do |
+| S9 | Setup still finishes after a server restart | M | | Working on: M Kelly B, 2026-11-01 |
 
 ---
 
@@ -173,3 +173,4 @@ and the team photos and Spanish are made; a test covers it.
 
 | What | Why | Who | Date |
 | --- | --- | --- | --- |
+| S9: setup state is saved on the business (`setupFinishedAt`), not kept in server memory | A restart or the 15-minute job expiry lost what was left to do; a saved column is the smallest safe fix. A saved jobs queue with a worker was left for later (more parts, risk of paying twice for AI calls) | M Kelly B | 2026-11-01 |
