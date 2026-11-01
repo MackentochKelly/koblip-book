@@ -237,6 +237,32 @@ test("updateBusinessDetails saves a new name and address, slug unchanged", async
   })
 })
 
+test("updateBusinessDetails changes the currency, and keeps it when left out", async () => {
+  const { actions, db } = await freshActions()
+  const currencyOf = async () =>
+    (
+      await db
+        .select({ currency: businesses.currency })
+        .from(businesses)
+        .where(eq(businesses.id, "biz-mine"))
+    )[0]?.currency
+
+  await expect(
+    actions.updateBusinessDetails("biz-mine", details({ currency: "DOP" }))
+  ).resolves.toEqual({ ok: true })
+  expect(await currencyOf()).toBe("DOP")
+  await expect(
+    actions.updateBusinessDetails("biz-mine", details())
+  ).resolves.toEqual({ ok: true })
+  expect(await currencyOf()).toBe("DOP")
+  for (const currency of ["", "dop", "XYZ1", "NOTACODE"]) {
+    await expect(
+      actions.updateBusinessDetails("biz-mine", details({ currency }))
+    ).resolves.toEqual({ ok: false, error: "invalid" })
+  }
+  expect(await currencyOf()).toBe("DOP")
+})
+
 test("updateBusinessDetails refuses a bad name and saves nothing", async () => {
   const { actions, db } = await freshActions()
   const before = await businessRow(db, "biz-mine")

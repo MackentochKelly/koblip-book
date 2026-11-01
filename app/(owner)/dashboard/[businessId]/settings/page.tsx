@@ -29,6 +29,7 @@ export default async function SettingsPage({ params }: Props) {
         phone: business.phone,
         website: business.website,
         seats: business.seats,
+        currency: business.currency,
       }}
     />
   )

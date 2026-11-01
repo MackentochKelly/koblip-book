@@ -88,6 +88,14 @@ export async function updateBusinessDetails(
   ) {
     return invalid()
   }
+  // Any ISO 4217 currency Intl knows. Prices keep their numbers; nothing
+  // is converted, and past bookings keep their own currency.
+  if (
+    input.currency !== undefined &&
+    !Intl.supportedValuesOf("currency").includes(input.currency)
+  ) {
+    return invalid()
+  }
   await db
     .update(businesses)
     .set({
@@ -97,6 +105,7 @@ export async function updateBusinessDetails(
       phone,
       website,
       seats: input.seats,
+      ...(input.currency !== undefined && { currency: input.currency }),
       detailsConfirmedAt: Date.now(),
     })
     .where(eq(businesses.id, owned.business.id))

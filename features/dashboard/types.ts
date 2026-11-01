@@ -35,4 +35,5 @@ export interface ServiceInput { name: string; description: string | null; durati
 export interface ServiceSuggestion { name: string; description: string | null; durationMinutes: number }
 export interface AddonOptionSuggestion { name: string; description: string | null; durationMinutes: number }
 export interface AddonGroupSuggestion { name: string; prompt: string; minSelect: number; maxSelect: number | null; serviceIds: string[]; options: AddonOptionSuggestion[] }
-export interface BusinessDetailsInput { name: string; address: string | null; description: string | null; phone: string | null; website: string | null; seats: number }
+// `currency` (ISO 4217) is left out where the form has none (right after sign-up).
+export interface BusinessDetailsInput { name: string; address: string | null; description: string | null; phone: string | null; website: string | null; seats: number; currency?: string }

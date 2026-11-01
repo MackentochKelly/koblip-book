@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
+import { CurrencyPicker } from "@/components/currency-picker"
 import { FormActions } from "@/components/form-actions"
 import { Button } from "@/components/ui/button"
 import {
@@ -57,6 +58,7 @@ export function DetailsForm({
   const [phone, setPhone] = useState(details.phone ?? "")
   const [website, setWebsite] = useState(details.website ?? "")
   const [seats, setSeats] = useState(String(details.seats))
+  const [currency, setCurrency] = useState(details.currency)
   const [invalid, setInvalid] = useState<Invalid>(null)
   const changed =
     name !== details.name ||
@@ -64,7 +66,8 @@ export function DetailsForm({
     description !== (details.description ?? "") ||
     phone !== (details.phone ?? "") ||
     website !== (details.website ?? "") ||
-    seats !== String(details.seats)
+    seats !== String(details.seats) ||
+    currency !== details.currency
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -91,6 +94,7 @@ export function DetailsForm({
         phone: phone.trim() || null,
         website: website.trim() || null,
         seats: seatsValue,
+        currency,
       }).catch(() => null)
       if (result?.ok && next) {
         router.push(next)
@@ -241,6 +245,20 @@ export function DetailsForm({
             {invalid === "seats" && (
               <FieldError>{t.seatsRange(BOOKING_RULES.maxSeats)}</FieldError>
             )}
+          </Field>
+        )}
+        {/* Settings only; sign-up keeps the currency from the country. */}
+        {currency !== undefined && !next && (
+          <Field>
+            <FieldLabel htmlFor="details-currency">{t.currency}</FieldLabel>
+            <CurrencyPicker
+              id="details-currency"
+              value={currency}
+              onChange={setCurrency}
+              locale={m.locale}
+              empty={t.noCurrency}
+            />
+            <FieldDescription>{t.currencyHint}</FieldDescription>
           </Field>
         )}
       </FieldGroup>
