@@ -149,7 +149,9 @@ export async function POST(request: Request) {
           send({
             type: "step",
             id: stepId,
-            label: tool?.label ?? t.steps.working,
+            label: outcome.ok
+              ? (tool?.doneLabel ?? t.stepsDone.working)
+              : (tool?.label ?? t.steps.working),
             status: outcome.ok ? "done" : "failed",
           })
         )

@@ -1093,6 +1093,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.overview,
+      doneLabel: t.stepsDone.overview,
       run: async () => {
         const [{ business, hours }, counts, photos, spanish] =
           await Promise.all([
@@ -1133,6 +1134,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.services,
+      doneLabel: t.stepsDone.services,
       run: async () => {
         const [{ business, services }, teams, groups] = await Promise.all([
           getOwnerBusiness(businessId),
@@ -1169,6 +1171,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.addons,
+      doneLabel: t.stepsDone.addons,
       run: async () => {
         const [groups, { business }] = await Promise.all([
           getAddonGroups(businessId),
@@ -1207,6 +1210,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.team,
+      doneLabel: t.stepsDone.team,
       run: async () => {
         const [{ team, memberHours }, teams] = await Promise.all([
           getOwnerBusiness(businessId),
@@ -1268,6 +1272,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.bookings,
+      doneLabel: t.stepsDone.bookings,
       run: async (args: unknown) => {
         const a = { ...((args ?? {}) as Record<string, unknown>) }
         if (a.day !== undefined) {
@@ -1406,6 +1411,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.customer,
+      doneLabel: t.stepsDone.customer,
       run: async (args: unknown) => {
         const query = (args as Record<string, unknown> | null)?.query
         if (
@@ -1482,6 +1488,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.stats,
+      doneLabel: t.stepsDone.stats,
       run: async (args: unknown) => {
         const a = asRecord(args) ?? {}
         if (typeof a.from !== "string" || !isRealDate(a.from)) {
@@ -1536,6 +1543,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.customers,
+      doneLabel: t.stepsDone.customers,
       run: async (args: unknown) => {
         const a = asRecord(args) ?? {}
         const sorts = [
@@ -1643,6 +1651,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.createService,
+      doneLabel: t.stepsDone.createService,
       run: async (args: unknown) => {
         const a = asRecord(args)
         const name = a && validName(a.name, BOOKING_RULES.maxServiceName)
@@ -1714,6 +1723,7 @@ export function buildAssistantTools(
         resultKind: "services",
       },
       label: t.steps.updateService,
+      doneLabel: t.stepsDone.updateService,
       run: async () => ({ error: t.tapFirst.updateService }),
       confirm: {
         describe: async (args: unknown) => {
@@ -1800,6 +1810,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.renameMember,
+      doneLabel: t.stepsDone.renameMember,
       run: async (args: unknown) => {
         const a = asRecord(args)
         if (!a || typeof a.memberId !== "string" || a.memberId === "") {
@@ -1837,6 +1848,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.setBookingStatus,
+      doneLabel: t.stepsDone.setBookingStatus,
       run: async (args: unknown) => {
         const a = asRecord(args)
         if (!a || typeof a.bookingId !== "string" || a.bookingId === "") {
@@ -1881,6 +1893,7 @@ export function buildAssistantTools(
         resultKind: "bookings",
       },
       label: t.steps.cancelBooking,
+      doneLabel: t.stepsDone.cancelBooking,
       run: async () => ({ error: t.tapFirst.cancel }),
       confirm: {
         describe: async (args: unknown) => {
@@ -1950,6 +1963,7 @@ export function buildAssistantTools(
         resultKind: "services",
       },
       label: t.steps.deleteService,
+      doneLabel: t.stepsDone.deleteService,
       run: async () => ({ error: t.tapFirst.deleteService }),
       confirm: {
         describe: async (args: unknown) => {
@@ -1999,6 +2013,7 @@ export function buildAssistantTools(
         resultKind: "team",
       },
       label: t.steps.deleteMember,
+      doneLabel: t.stepsDone.deleteMember,
       run: async () => ({ error: t.tapFirst.deleteMember }),
       confirm: {
         describe: async (args: unknown) => {
@@ -2046,6 +2061,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.createMember,
+      doneLabel: t.stepsDone.createMember,
       run: async (args: unknown) => {
         const a = asRecord(args)
         const name = a && validName(a.name, BOOKING_RULES.maxTeamName)
@@ -2085,6 +2101,7 @@ export function buildAssistantTools(
         resultKind: "services",
       },
       label: t.steps.serviceTeam,
+      doneLabel: t.stepsDone.serviceTeam,
       run: async () => ({ error: t.tapFirst.serviceTeam }),
       confirm: {
         describe: async (args: unknown) => {
@@ -2151,6 +2168,7 @@ export function buildAssistantTools(
         resultKind: "team",
       },
       label: t.steps.memberServices,
+      doneLabel: t.stepsDone.memberServices,
       run: async () => ({ error: t.tapFirst.memberServices }),
       confirm: {
         describe: async (args: unknown) => {
@@ -2233,6 +2251,7 @@ export function buildAssistantTools(
         resultKind: "services",
       },
       label: t.steps.createAddon,
+      doneLabel: t.stepsDone.createAddon,
       run: async () => ({ error: t.tapFirst.createAddon }),
       confirm: {
         describe: async (args: unknown) => {
@@ -2305,6 +2324,7 @@ export function buildAssistantTools(
         resultKind: "services",
       },
       label: t.steps.updateAddon,
+      doneLabel: t.stepsDone.updateAddon,
       run: async () => ({ error: t.tapFirst.updateAddon }),
       confirm: {
         describe: async (args: unknown) => {
@@ -2414,6 +2434,7 @@ export function buildAssistantTools(
         resultKind: "services",
       },
       label: t.steps.deleteAddon,
+      doneLabel: t.stepsDone.deleteAddon,
       run: async () => ({ error: t.tapFirst.deleteAddon }),
       confirm: {
         describe: async (args: unknown) => {
@@ -2467,6 +2488,7 @@ export function buildAssistantTools(
         resultKind: "settings",
       },
       label: t.steps.updateBusiness,
+      doneLabel: t.stepsDone.updateBusiness,
       run: async () => ({ error: t.tapFirst.updateBusiness }),
       confirm: {
         describe: async (args: unknown) => {
@@ -2555,6 +2577,7 @@ export function buildAssistantTools(
         resultKind: "hours",
       },
       label: t.steps.hours,
+      doneLabel: t.stepsDone.hours,
       run: async () => ({
         error: t.tapFirst.hours,
       }),
@@ -2619,6 +2642,7 @@ export function buildAssistantTools(
         needsConfirm: false,
       },
       label: t.steps.freeTimes,
+      doneLabel: t.stepsDone.freeTimes,
       run: async (args: unknown) => {
         const a = asRecord(args)
         const serviceWanted = a?.service ?? a?.serviceId
@@ -2740,6 +2764,7 @@ export function buildAssistantTools(
         resultKind: "bookings",
       },
       label: t.steps.booking,
+      doneLabel: t.stepsDone.booking,
       run: async () => ({ error: t.tapFirst.booking }),
       confirm: {
         describe: async (args: unknown) => {

@@ -105,7 +105,8 @@ export interface AssistantToolDefinition {
 // step chip, and a run function closed over the checked businessId.
 export interface AssistantTool {
   definition: AssistantToolDefinition
-  label: string
+  label: string // while it runs
+  doneLabel: string // once it ran well
   run: (args: unknown) => Promise<unknown>
   // Present when definition.needsConfirm is true. The loop never calls
   // run for these: describe builds the card from database data, execute

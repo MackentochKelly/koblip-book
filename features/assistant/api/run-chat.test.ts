@@ -42,6 +42,7 @@ function probe(run: (args: unknown) => Promise<unknown>, name = "probe") {
       needsConfirm: false,
     },
     label: "Probing…",
+    doneLabel: "Probed",
     run,
   }
 }
@@ -190,9 +191,9 @@ test("tool call then final answer, ids matched in order", async () => {
   const events = await collect(runChat(MESSAGES, CONTEXT, [probe(run)]))
   expect(events).toEqual([
     { type: "step", id: "call-A", label: "Probing…", status: "running" },
-    { type: "step", id: "call-A", label: "Probing…", status: "done" },
+    { type: "step", id: "call-A", label: "Probed", status: "done" },
     { type: "step", id: "call-B", label: "Probing…", status: "running" },
-    { type: "step", id: "call-B", label: "Probing…", status: "done" },
+    { type: "step", id: "call-B", label: "Probed", status: "done" },
     { type: "text", delta: "Done." },
     CHECK,
     { type: "done" },
@@ -384,6 +385,7 @@ function risky(describe: (args: unknown) => Promise<unknown>) {
       needsConfirm: true,
     },
     label: "Cancelling…",
+    doneLabel: "Cancelled",
     run: async () => ({ error: "needs tap" }),
     confirm: {
       describe: describe as (args: unknown) => Promise<
@@ -682,6 +684,7 @@ test("no key, phone, or provider text ever reaches the console", async () => {
             needsConfirm: false,
           },
           label: "X",
+          doneLabel: "X",
           run: async () => {
             throw new Error(`${secret} ${phone}`)
           },
@@ -789,7 +792,7 @@ test("a supported answer ends at once, and its check passes after", async () => 
   )
   expect(answer).toEqual([
     { type: "step", id: "call-A", label: "Probing…", status: "running" },
-    { type: "step", id: "call-A", label: "Probing…", status: "done" },
+    { type: "step", id: "call-A", label: "Probed", status: "done" },
     { type: "text", delta: "You have 2 bookings." },
     CHECK,
     { type: "done" },
@@ -891,7 +894,7 @@ test("ask_owner sends the question and its buttons at once, with no check", asyn
   )
   expect(events).toEqual([
     { type: "step", id: "call-A", label: "Probing…", status: "running" },
-    { type: "step", id: "call-A", label: "Probing…", status: "done" },
+    { type: "step", id: "call-A", label: "Probed", status: "done" },
     { type: "text", delta: "Which service?" },
     { type: "choices", options: ["Classic Haircut", "Skin Fade"] },
     { type: "done" },

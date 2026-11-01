@@ -627,7 +627,9 @@ export async function* runChat(
         yield {
           type: "step",
           id: stepId,
-          label: tool?.label ?? t.steps.working,
+          label: ok
+            ? (tool?.doneLabel ?? t.stepsDone.working)
+            : (tool?.label ?? t.steps.working),
           status: ok ? "done" : "failed",
         }
       }

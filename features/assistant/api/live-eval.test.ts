@@ -82,6 +82,7 @@ function immediate(
       needsConfirm: false,
     },
     label: `${name}…`,
+    doneLabel: name,
     run: async (args: unknown) => {
       calls.push({ tool: name, args })
       return run(args)
@@ -101,6 +102,7 @@ function confirmable(
       needsConfirm: true,
     },
     label: `${name}…`,
+    doneLabel: name,
     run: async () => ({ error: "needs tap" }),
     confirm: {
       describe: async () => card,
