@@ -90,10 +90,13 @@ function useSheetSize(
   return enabled ? size : null
 }
 
+// iOS's medium sheet: half the screen.
+const MEDIUM = 0.5
+
 // The one phone panel: the stock Drawer as a bottom sheet. It always opens
 // at its content's height and slides to a new height when the content
-// changes. Content taller than the screen fills it, anchored to the screen's
-// edges like an iOS full sheet; anything shorter floats. Keep it mounted and
+// changes. Up to half the screen it floats; taller, it is anchored to the
+// screen's sides and bottom like an iOS large sheet. Keep it mounted and
 // toggle `open` so it animates.
 export function BottomPanel({
   open,
@@ -121,8 +124,10 @@ export function BottomPanel({
   const [shown, setShown] = React.useState(open)
   if (open && !shown) setShown(true)
   const size = useSheetSize(shown, { popup, scroll, inner })
-  const full = !!size && size.fit >= size.max
   const height = size ? Math.min(size.fit, size.max) : null
+  // Taller than iOS's medium sheet (half the screen) it is a large sheet:
+  // anchored to the screen's edges.
+  const full = !!size && height !== null && height > size.max * MEDIUM
 
   return (
     <Drawer
