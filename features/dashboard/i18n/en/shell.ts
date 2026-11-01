@@ -48,6 +48,7 @@ const shell = {
     add: "Add business",
     addTitle: "Add a business",
     addHint: "Find it on Google Maps to build its booking page.",
+    yours: "Your businesses",
     back: "Back",
   },
   titles: {

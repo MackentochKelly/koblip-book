@@ -1,5 +1,5 @@
 import "server-only"
-import { and, asc, desc, eq, gte, lt } from "drizzle-orm"
+import { and, asc, desc, eq, gte, lt, sql } from "drizzle-orm"
 import { notFound } from "next/navigation"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { requireOwner } from "@/lib/dal"
@@ -7,6 +7,7 @@ import { db } from "@/lib/db"
 import {
   bookings,
   businessHours,
+  businessPhotos,
   businesses,
   services,
   teamMembers,
@@ -126,6 +127,8 @@ export async function getMyBusinesses(): Promise<OwnedBusiness[]> {
       name: businesses.name,
       address: businesses.address,
       category: businesses.category,
+      // The first portfolio photo, as on the business page.
+      photoUrl: sql<string | null>`(select ${businessPhotos.url} from ${businessPhotos} where ${businessPhotos.businessId} = ${businesses.id} order by ${businessPhotos.position} limit 1)`,
     })
     .from(businesses)
     // A real owner's list never shows a demo copy; a guest owns only theirs.

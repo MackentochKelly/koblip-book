@@ -48,6 +48,7 @@ const shell: typeof en = {
     add: "Añadir negocio",
     addTitle: "Añade un negocio",
     addHint: "Encuéntralo en Google Maps para crear su página de reservas.",
+    yours: "Tus negocios",
     back: "Volver",
   },
   titles: {

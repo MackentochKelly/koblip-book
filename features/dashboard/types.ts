@@ -1,7 +1,7 @@
 import type { CancelReason } from "@/lib/booking-rules"
 import type { GoogleEventColor } from "@/lib/google-calendar-colors"
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string }
-export interface OwnedBusiness { id: string; slug: string; name: string; address: string | null; category: string | null }
+export interface OwnedBusiness { id: string; slug: string; name: string; address: string | null; category: string | null; photoUrl: string | null }
 export type BookingStatus = "confirmed" | "cancelled" | "completed" | "no_show"
 export interface OwnerBooking {
   id: string; date: string; time: string; endTime: string // business time zone
