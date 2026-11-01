@@ -20,7 +20,7 @@ export const WIDGETS = [
   { id: "bookings", icon: CalendarDaysIcon, shown: true, size: "full" },
   { id: "next", icon: ClockIcon, shown: false, size: "half" },
   { id: "chart", icon: ChartColumnIcon, shown: false, size: "full" },
-  { id: "newCustomers", icon: ContactIcon, shown: false, size: "half" },
+  { id: "newCustomers", icon: ContactIcon, shown: false, size: "full" },
   { id: "share", icon: ShareIcon, shown: false, size: "half" },
   { id: "install", icon: DownloadIcon, shown: true, size: "half" },
 ] as const
