@@ -21,7 +21,7 @@ and faster. How to use this file: [Plans](README.md).
 | --- | --- | --- | --- | --- |
 | S1 | Search by kind and town finds businesses | M | | Done |
 | S2 | Search shows businesses, not street addresses | S | S1 | Working on: M Kelly B, 2026-11-01 |
-| S3 | Sign-up errors say what went wrong, in the right place | S | | To do |
+| S3 | Sign-up errors say what went wrong, in the right place | S | | Working on: M Kelly B, 2026-11-01 |
 | S4 | "Getting your page ready" never looks stuck | M | | Done |
 | S5 | Check details says Continue | S | | To do |
 | S6 | Live screen has one "View page" | S | | To do |
