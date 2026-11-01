@@ -11,7 +11,8 @@ import { WHATSAPP_ADMIN_RULES } from "@/lib/whatsapp-admin-rules"
 import type { WhatsappOverview as Overview } from "../api/whatsapp-overview"
 import type { AdminMessages } from "../i18n"
 import { formatAgo } from "@/lib/format-ago"
-import { StatCards } from "@/components/stat-cards"
+import { StatStrip } from "@/components/stat-strip"
+import { ClockIcon, OctagonXIcon } from "@/components/ui/icons"
 
 // The admin's WhatsApp Overview (A2): what waits and failed, whether the
 // timer runs, whether Koblip Chat answers, and which server settings are set.
@@ -24,15 +25,22 @@ export function WhatsappOverview({
 }) {
   const t = m.whatsapp.overview
   const { timer, chat } = overview
+  const number = new Intl.NumberFormat(m.locale)
   return (
     <div className="flex flex-col gap-6">
-      <StatCards
-        locale={m.locale}
+      <StatStrip
         stats={[
-          { label: t.waiting, value: overview.waiting },
           {
+            icon: <ClockIcon />,
+            tone: "warning",
+            label: t.waiting,
+            value: number.format(overview.waiting),
+          },
+          {
+            icon: <OctagonXIcon />,
+            tone: "destructive",
             label: t.failed(WHATSAPP_ADMIN_RULES.failedDays),
-            value: overview.failed,
+            value: number.format(overview.failed),
           },
         ]}
       />

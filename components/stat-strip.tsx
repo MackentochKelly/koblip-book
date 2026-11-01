@@ -30,68 +30,86 @@ export interface Stat {
   change?: number | null
   // False for numbers that should go down, like no-shows.
   upIsGood?: boolean
+  // The page this number opens, when it opens its own (else the strip's).
+  href?: string
 }
+
+// As many columns as numbers on a computer, up to four.
+const COLUMNS = [
+  "lg:grid-cols-1",
+  "lg:grid-cols-2",
+  "lg:grid-cols-3",
+  "lg:grid-cols-4",
+]
 
 // Key numbers in one card, split by thin lines: two across on a phone, four
 // on a computer. Each has its icon on a soft coloured circle beside its
 // label (a little smaller on a phone, so the label fits), then the number with how it moved against the period before
 // beside it (green when it went the right way), and a short line saying what
-// it counts. With an `href` each number opens that page, and each box
-// lights up on its own under the mouse.
+// it counts. With an `href` (the strip's, or a number's own) the number
+// opens that page, and each box lights up on its own under the mouse.
 export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
   return (
     <Card className="gap-0 py-0">
       {/* The lines between numbers match the card's own edge. */}
-      <dl className="grid grid-cols-2 gap-px bg-foreground/5 lg:grid-cols-4 dark:bg-foreground/10">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className={cn(
-              "flex flex-col gap-3 bg-card px-3 py-4 md:p-5",
-              href &&
-                "relative transition-colors hover:bg-muted has-[a:focus-visible]:bg-muted has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50 has-[a:focus-visible]:ring-inset"
-            )}
-          >
-            <dt className="flex items-center gap-2 font-medium md:gap-2.5">
-              <span
-                aria-hidden
-                className={cn(
-                  "flex size-8 shrink-0 items-center justify-center rounded-full [&_svg]:size-5",
-                  TONES[stat.tone ?? "primary"]
-                )}
-              >
-                {stat.icon}
-              </span>
-              {href ? (
-                // The label is the box's link; it covers the whole box.
-                <Link
-                  href={href}
-                  className="min-w-0 truncate outline-none after:absolute after:inset-0 max-md:text-sm"
-                >
-                  {stat.label}
-                </Link>
-              ) : (
-                <span className="min-w-0 truncate max-md:text-sm">
-                  {stat.label}
-                </span>
+      <dl
+        className={cn(
+          "grid grid-cols-2 gap-px bg-foreground/5 dark:bg-foreground/10",
+          COLUMNS[Math.min(stats.length, 4) - 1]
+        )}
+      >
+        {stats.map((stat) => {
+          const link = stat.href ?? href
+          return (
+            <div
+              key={stat.label}
+              className={cn(
+                "flex flex-col gap-3 bg-card px-3 py-4 md:p-5",
+                link &&
+                  "relative transition-colors hover:bg-muted has-[a:focus-visible]:bg-muted has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50 has-[a:focus-visible]:ring-inset"
               )}
-            </dt>
-            <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="text-3xl font-semibold tracking-tight tabular-nums">
-                {stat.value}
-              </span>
-              <Change
-                change={stat.change ?? null}
-                upIsGood={stat.upIsGood ?? true}
-              />
-            </dd>
-            {stat.hint && (
-              <dd className="-mt-2 truncate text-sm text-muted-foreground">
-                {stat.hint}
+            >
+              <dt className="flex items-center gap-2 font-medium md:gap-2.5">
+                <span
+                  aria-hidden
+                  className={cn(
+                    "flex size-8 shrink-0 items-center justify-center rounded-full [&_svg]:size-5",
+                    TONES[stat.tone ?? "primary"]
+                  )}
+                >
+                  {stat.icon}
+                </span>
+                {link ? (
+                  // The label is the box's link; it covers the whole box.
+                  <Link
+                    href={link}
+                    className="min-w-0 truncate outline-none after:absolute after:inset-0 max-md:text-sm"
+                  >
+                    {stat.label}
+                  </Link>
+                ) : (
+                  <span className="min-w-0 truncate max-md:text-sm">
+                    {stat.label}
+                  </span>
+                )}
+              </dt>
+              <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="text-3xl font-semibold tracking-tight tabular-nums">
+                  {stat.value}
+                </span>
+                <Change
+                  change={stat.change ?? null}
+                  upIsGood={stat.upIsGood ?? true}
+                />
               </dd>
-            )}
-          </div>
-        ))}
+              {stat.hint && (
+                <dd className="-mt-2 truncate text-sm text-muted-foreground">
+                  {stat.hint}
+                </dd>
+              )}
+            </div>
+          )
+        })}
       </dl>
     </Card>
   )

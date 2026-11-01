@@ -1,6 +1,12 @@
 import type { AdminOverview } from "../api/queries"
 import type { AdminMessages } from "../i18n"
-import { StatCards } from "@/components/stat-cards"
+import { StatStrip } from "@/components/stat-strip"
+import {
+  CalendarIcon,
+  SparklesIcon,
+  StoreIcon,
+  UsersIcon,
+} from "@/components/ui/icons"
 
 // The four app-wide counts.
 export function OverviewCards({
@@ -10,14 +16,34 @@ export function OverviewCards({
   overview: AdminOverview
   m: AdminMessages
 }) {
+  const number = new Intl.NumberFormat(m.locale)
   return (
-    <StatCards
-      locale={m.locale}
+    <StatStrip
       stats={[
-        { label: m.overview.businesses, value: overview.businesses },
-        { label: m.overview.owners, value: overview.owners },
-        { label: m.overview.bookings, value: overview.bookings },
-        { label: m.overview.newOwners, value: overview.newOwners },
+        {
+          icon: <StoreIcon />,
+          tone: "primary",
+          label: m.overview.businesses,
+          value: number.format(overview.businesses),
+        },
+        {
+          icon: <UsersIcon />,
+          tone: "info",
+          label: m.overview.owners,
+          value: number.format(overview.owners),
+        },
+        {
+          icon: <CalendarIcon />,
+          tone: "success",
+          label: m.overview.bookings,
+          value: number.format(overview.bookings),
+        },
+        {
+          icon: <SparklesIcon />,
+          tone: "warning",
+          label: m.overview.newOwners,
+          value: number.format(overview.newOwners),
+        },
       ]}
     />
   )

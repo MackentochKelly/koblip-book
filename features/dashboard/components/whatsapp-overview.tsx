@@ -7,7 +7,7 @@ import { toast } from "sonner"
 
 import { PageSection } from "@/components/page-section"
 import { SetupSteps } from "@/components/setup-steps"
-import { StatCards } from "@/components/stat-cards"
+import { type Stat, StatStrip } from "@/components/stat-strip"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { InfoTip } from "@/components/info-tip"
 import { Badge } from "@/components/ui/badge"
@@ -22,9 +22,13 @@ import {
 } from "@/components/ui/card"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import {
+  CheckIcon,
   CircleAlertIcon,
   CircleCheckIcon,
   ClockIcon,
+  CornerLeftUpIcon,
+  MessageCircleIcon,
+  OctagonXIcon,
 } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import {
@@ -73,6 +77,14 @@ const STEP_PLACES: Record<Exclude<NextStep, "submit">, "integrations" | "message
   turnOn: "messages",
 }
 
+// Each count's icon and colour.
+const STAT_LOOKS: Record<"sent" | "read" | "replied" | "failed", Pick<Stat, "icon" | "tone">> = {
+  sent: { icon: <MessageCircleIcon />, tone: "primary" },
+  read: { icon: <CheckIcon />, tone: "info" },
+  replied: { icon: <CornerLeftUpIcon />, tone: "success" },
+  failed: { icon: <OctagonXIcon />, tone: "destructive" },
+}
+
 // The Notifications Overview (D36), top to bottom: one status with the next
 // step, the own number's setup (folded away once live), the last days'
 // numbers and a test to the owner's own phone. The messages themselves are
@@ -108,6 +120,7 @@ export function WhatsappOverview({
       languages: TEMPLATE_LANGUAGES.filter((language) => item.texts[language].review === "draft"),
     }))
     .filter((item) => item.languages.length > 0)
+  const number = new Intl.NumberFormat(m.locale)
   const base = `/dashboard/${businessId}/automations`
   const activity = (state: "sent" | "read" | "replied" | "failed") =>
     `${base}/activity${activityQuery({ state })}`
@@ -147,11 +160,11 @@ export function WhatsappOverview({
       )}
 
       <PageSection id="stats" title={t.statsTitle(statsDays)}>
-        <StatCards
-          locale={m.locale}
+        <StatStrip
           stats={(["sent", "read", "replied", "failed"] as const).map((key) => ({
+            ...STAT_LOOKS[key],
             label: t.stats[key],
-            value: stats[key],
+            value: number.format(stats[key]),
             href: activity(key),
           }))}
         />
