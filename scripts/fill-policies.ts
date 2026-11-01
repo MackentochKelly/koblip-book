@@ -50,9 +50,16 @@ for (const business of targets) {
     console.log(`✗ ${business.slug}: no policies written`)
     continue
   }
-  await writeMissingPolicies(business, policies, parts)
-  const spanish = await translateBusinessTexts(business)
-  console.log(`✓ ${business.slug}: policies written, Spanish ${spanish.ok ? "done" : "failed"}`)
+  // Muse takes a while: the owner may have saved policies, or deleted the
+  // business, meanwhile. One business failing never stops the others.
+  try {
+    await writeMissingPolicies(business, policies, await policyParts(business.id))
+    const spanish = await translateBusinessTexts(business)
+    console.log(`✓ ${business.slug}: policies written, Spanish ${spanish.ok ? "done" : "failed"}`)
+  } catch (error) {
+    failed += 1
+    console.log(`✗ ${business.slug}: could not save (${error instanceof Error ? error.message : "error"})`)
+  }
 }
 console.log(
   `${targets.length - failed - skipped} written, ${skipped} already had them, ${failed} failed`
