@@ -28,6 +28,10 @@ const settings: typeof en = {
     seatsHint: "Con un equipo, cada persona toma una.",
     seatsRange: (max: number) => `De 1 a ${max}`,
     saveFailed: "No se pudo guardar. Revisa los campos.",
+    improve: "Mejorar con Muse",
+    improved: "Nombre y descripción mejorados. Guarda para conservarlos.",
+    undo: "Deshacer",
+    improveFailed: "Muse no pudo ayudar ahora. Inténtalo de nuevo.",
   },
   hours: {
     closed: "Cerrado",

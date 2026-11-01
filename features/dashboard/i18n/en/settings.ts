@@ -27,6 +27,10 @@ const settings = {
     seatsHint: "With a team, each person takes one.",
     seatsRange: (max: number) => `From 1 to ${max}`,
     saveFailed: "Could not save. Check the fields.",
+    improve: "Improve with Muse",
+    improved: "Name and About improved. Save to keep them.",
+    undo: "Undo",
+    improveFailed: "Muse could not help just now. Try again.",
   },
   hours: {
     closed: "Closed",

@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
+import { StepReveal, type StepRevealState } from "@/components/step-reveal"
 import {
   BanknoteIcon,
-  CircleCheckIcon,
   ImageIcon,
   LanguagesIcon,
   PuzzleIcon,
@@ -16,26 +15,16 @@ import {
   type Icon,
 } from "@/components/ui/icons"
 import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from "@/components/ui/avatar"
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
-import { Spinner } from "@/components/ui/spinner"
 import { formatPrice } from "@/lib/format-price"
 import { initials } from "@/lib/initials"
 import type { PageLanguage } from "@/lib/page-language"
 import { STARTER_CATALOG_RULES as RULES } from "@/lib/starter-catalog-rules"
-import { cn } from "@/lib/utils"
 import { drawTeamPhoto, startStarterCatalog } from "../api/prepare-actions"
 import { starterMessagesFor } from "../i18n"
 import type { StarterSummary } from "../types"
 
 type StepId = "services" | "extras" | "prices" | "team" | "photos" | "spanish"
-type StepState = "waiting" | "working" | "done"
+type StepState = StepRevealState
 
 const STEPS: Array<{ id: StepId; icon: Icon }> = [
   { id: "services", icon: TagIcon },
@@ -74,7 +63,6 @@ export function PreparingCard({
 }) {
   const t = starterMessagesFor(language)
   const router = useRouter()
-  const reduceMotion = useReducedMotion()
   const started = useRef(false)
   const [states, setStates] = useState<Record<StepId, StepState>>({
     services: "working",
@@ -153,70 +141,34 @@ export function PreparingCard({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-muted">
+    <StepReveal
+      media={
+        <>
           {/* Meta's symbol, in each theme's own version. */}
           <Image src="/brands/meta-symbol.png" alt="" width={24} height={24} className="size-6 object-contain dark:hidden" />
           <Image src="/brands/meta-symbol-white.png" alt="" width={24} height={24} className="hidden size-6 object-contain dark:block" />
-        </span>
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-balance">{t.title}</h1>
-          <p className="text-muted-foreground">{t.helper}</p>
-        </div>
-      </div>
-
-      <ItemGroup role="list" aria-live="polite">
-        {STEPS.map(({ id, icon: StepIcon }) => {
-          const state = states[id]
-          return (
-            <Item
-              key={id}
-              role="listitem"
-              size="sm"
-              className={cn(
-                "transition-opacity duration-300",
-                state === "waiting" && "opacity-50"
-              )}
-            >
-              <ItemMedia variant="icon">
-                <StepIcon />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>{t.steps[id]}</ItemTitle>
-                <AnimatePresence initial={false}>
-                  {state === "done" && detail[id] && (
-                    <motion.div
-                      initial={{ opacity: 0, y: reduceMotion ? 0 : 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ItemDescription>{detail[id]}</ItemDescription>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </ItemContent>
-              {id === "photos" && summary && state !== "waiting" && (
-                <AvatarGroup>
-                  {summary.team.map((person) => (
-                    <Avatar key={person.id}>
-                      {person.photoUrl && <AvatarImage src={person.photoUrl} alt="" />}
-                      <AvatarFallback>{initials(person.name)}</AvatarFallback>
-                    </Avatar>
-                  ))}
-                </AvatarGroup>
-              )}
-              <span className="flex size-6 items-center justify-center text-muted-foreground">
-                {state === "working" && <Spinner aria-label={t.working} />}
-                {state === "done" && (
-                  <CircleCheckIcon className="size-5 text-primary" aria-label={t.done} />
-                )}
-                {state === "waiting" && <span className="sr-only">{t.waiting}</span>}
-              </span>
-            </Item>
-          )
-        })}
-      </ItemGroup>
-    </div>
+        </>
+      }
+      title={t.title}
+      helper={t.helper}
+      labels={{ working: t.working, done: t.done, waiting: t.waiting }}
+      steps={STEPS.map(({ id, icon }) => ({
+        id,
+        icon,
+        title: t.steps[id],
+        state: states[id],
+        detail: detail[id],
+        aside: id === "photos" && summary && (
+          <AvatarGroup>
+            {summary.team.map((person) => (
+              <Avatar key={person.id}>
+                {person.photoUrl && <AvatarImage src={person.photoUrl} alt="" />}
+                <AvatarFallback>{initials(person.name)}</AvatarFallback>
+              </Avatar>
+            ))}
+          </AvatarGroup>
+        ),
+      }))}
+    />
   )
 }

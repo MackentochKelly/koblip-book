@@ -1,12 +1,14 @@
 import type { Metadata } from "next"
 
 import { GlassCard } from "@/components/glass-frame"
+import { Toaster } from "@/components/ui/sonner"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { DetailsForm } from "@/features/dashboard/components/details-form"
 import { TopBar } from "@/features/dashboard/components/top-bar"
 import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { requireAccount } from "@/lib/dal"
 import { fontDisplay } from "@/lib/fonts"
+import { isMetaAiEnabled } from "@/lib/meta-ai"
 import { cn } from "@/lib/utils"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -42,6 +44,7 @@ export default async function SetupPage({
             hasTeam={team.length > 0}
             title={m.shell.titles.checkDetails}
             next={`/setup/${businessId}/preparing`}
+            canImprove={isMetaAiEnabled()}
             details={{
               name: business.name,
               address: business.address,
@@ -53,6 +56,7 @@ export default async function SetupPage({
           />
         </GlassCard>
       </main>
+      <Toaster />
     </div>
   )
 }

@@ -36,6 +36,28 @@ const en = {
     useLocation: "Use my location",
     city: "City",
   },
+  // Right after sign-up: the page's details from Google Maps, row by row.
+  found: {
+    title: "Your Google Maps details",
+    helper: "What we took from your listing",
+    steps: {
+      name: "Name",
+      category: "Category",
+      address: "Address",
+      phone: "Phone",
+      hours: "Opening hours",
+      photos: "Photos",
+      rating: "Rating",
+      about: "About",
+    },
+    openDays: (days: number) => (days === 7 ? "Open every day" : `Open ${days} days a week`),
+    photoCount: (count: number) => `${count} photos`,
+    rating: (rating: number, reviews: number) => `${rating.toFixed(1)} · ${reviews} reviews`,
+    aboutByMuse: "Written by Muse",
+    working: "Loading",
+    done: "Done",
+    waiting: "Next",
+  },
 }
 
 export type OnboardingWords = typeof en
@@ -72,6 +94,27 @@ const es: OnboardingWords = {
     title: "Buscar cerca de",
     useLocation: "Usar mi ubicación",
     city: "Ciudad",
+  },
+  found: {
+    title: "Tus datos de Google Maps",
+    helper: "Lo que tomamos de tu ficha",
+    steps: {
+      name: "Nombre",
+      category: "Categoría",
+      address: "Dirección",
+      phone: "Teléfono",
+      hours: "Horario",
+      photos: "Fotos",
+      rating: "Valoración",
+      about: "Descripción",
+    },
+    openDays: (days) => (days === 7 ? "Abierto todos los días" : `Abierto ${days} días a la semana`),
+    photoCount: (count) => `${count} fotos`,
+    rating: (rating, reviews) => `${rating.toFixed(1)} · ${reviews} reseñas`,
+    aboutByMuse: "Escrita por Muse",
+    working: "Cargando",
+    done: "Listo",
+    waiting: "Siguiente",
   },
 }
 

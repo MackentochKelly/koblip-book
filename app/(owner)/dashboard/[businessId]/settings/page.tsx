@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { DetailsForm } from "@/features/dashboard/components/details-form"
 import { getOwnerMessages } from "@/features/dashboard/i18n/server"
+import { isMetaAiEnabled } from "@/lib/meta-ai"
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getOwnerMessages()).shell.nav.settings }
@@ -20,6 +21,7 @@ export default async function SettingsPage({ params }: Props) {
       businessId={businessId}
       hasTeam={team.length > 0}
       title={null}
+      canImprove={isMetaAiEnabled()}
       details={{
         name: business.name,
         address: business.address,

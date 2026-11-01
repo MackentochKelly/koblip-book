@@ -133,7 +133,7 @@ export function GetStarted({
       .then((claimed) => {
         if (!current) return
         if (claimed?.ok) {
-          router.replace(`/setup/${claimed.businessId}`)
+          router.replace(`/setup/${claimed.businessId}/google`)
           return
         }
         setResuming(false)
@@ -211,7 +211,7 @@ export function GetStarted({
       setFinishing(false)
       return
     }
-    router.push(`/setup/${claimed.businessId}`)
+    router.push(`/setup/${claimed.businessId}/google`)
   }
 
   const back = () => {

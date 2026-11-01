@@ -17,7 +17,9 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
+import { SparklesIcon } from "@/components/ui/icons"
 import { updateBusinessDetails } from "../api/actions"
+import { improveDetails } from "../api/improve-details"
 import type { BusinessDetailsInput } from "../types"
 import { noAutofill } from "@/lib/no-autofill"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
@@ -26,13 +28,15 @@ type Invalid = "name" | "phone" | "website" | "seats" | null
 
 // The business's name, address, About, phone and website, and how many people can be booked at
 // the same time when there is no team. In Settings, and right after sign-up
-// (with `next`: where Save goes).
+// (with `next`: where Save goes). With Meta AI on, Muse can tidy the name
+// and rewrite the About in the form; nothing is saved until Save.
 export function DetailsForm({
   businessId,
   details,
   hasTeam,
   title,
   next,
+  canImprove = false,
 }: {
   businessId: string
   details: BusinessDetailsInput
@@ -40,11 +44,13 @@ export function DetailsForm({
   // null: no heading (Settings' frame gives it).
   title?: string | null
   next?: string
+  canImprove?: boolean
 }) {
   const m = useOwnerMessages()
   const t = m.settings.details
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const [improving, startImproving] = useTransition()
   const [name, setName] = useState(details.name)
   const [address, setAddress] = useState(details.address ?? "")
   const [description, setDescription] = useState(details.description ?? "")
@@ -98,6 +104,32 @@ export function DetailsForm({
     })
   }
 
+  const improve = () => {
+    if (!name.trim()) return setInvalid("name")
+    startImproving(async () => {
+      const before = { name, description }
+      const result = await improveDetails(businessId, {
+        name: name.trim(),
+        description: description.trim() || null,
+      }).catch(() => null)
+      if (!result?.ok) {
+        toast.error(t.improveFailed)
+        return
+      }
+      setName(result.name)
+      setDescription(result.description)
+      toast.success(t.improved, {
+        action: {
+          label: t.undo,
+          onClick: () => {
+            setName(before.name)
+            setDescription(before.description)
+          },
+        },
+      })
+    })
+  }
+
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6">
       {title !== null && (
@@ -112,6 +144,22 @@ export function DetailsForm({
         >
           {title ?? m.shell.nav.settings}
         </h1>
+      )}
+      {canImprove && (
+        <Button
+          type="button"
+          variant="outline"
+          className="self-start"
+          onClick={improve}
+          disabled={improving || pending}
+        >
+          {improving ? (
+            <Spinner data-icon="inline-start" />
+          ) : (
+            <SparklesIcon data-icon="inline-start" />
+          )}
+          {t.improve}
+        </Button>
       )}
       <FieldGroup>
         <Field data-invalid={invalid === "name" || undefined}>
