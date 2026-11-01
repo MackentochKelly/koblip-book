@@ -1,16 +1,17 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
 
-import { ResponsivePanel } from "@/components/responsive-panel"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+  MessageEditor,
+  type EditorLimits,
+  type EditorResult,
+  type MessageEditorItem,
+} from "@/components/message-editor"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { WhatsAppIcon } from "@/components/ui/icons"
 import {
   Item,
@@ -19,14 +20,14 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import { Spinner } from "@/components/ui/spinner"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { WhatsappPreview } from "@/components/whatsapp-preview"
+import { fieldsFromLabels, fieldsToLabels, fillFields } from "@/lib/message-fields"
+import type { ButtonAction } from "@/types/whatsapp"
 import type {
   KoblipLanguage,
   KoblipMessage,
   KoblipMessageName,
   KoblipReview,
+  KoblipSaveResult,
   KoblipSubmitResult,
 } from "@/types/koblip-messages"
 import { useAdminMessages } from "../i18n/provider"
@@ -41,18 +42,38 @@ function reviewOf(item: KoblipMessage): KoblipReview {
   return "approved"
 }
 
+// What the editor needs of one message, worked out by the page from Book's
+// templates: its fields, the buttons it may take, and sample values.
+export type KoblipEditorInfo = {
+  fields: string[]
+  buttonActions: ButtonAction[]
+  examples: Record<KoblipLanguage, Record<string, string>>
+}
+
 // WhatsApp → Koblip messages (K2): Koblip's ready-made messages, the same for
-// every business on Koblip's number. The admin reads each one in English and
-// Spanish, then submits it to Meta from Koblip's own workspace.
+// every business on Koblip's number. The admin edits each one in English and
+// Spanish in the shared editor (docs/plans/message-editing.md, U3), then
+// submits it to Meta from Koblip's own workspace.
 export function WhatsappKoblipMessages({
   messages,
   connected,
+  info,
+  limits,
+  save,
   submit,
 }: {
   messages: KoblipMessage[]
   // Koblip's own connection works (K1).
   connected: boolean
-  // Passed in by the page (it lives with the Chat template code).
+  info: Record<KoblipMessageName, KoblipEditorInfo>
+  limits: EditorLimits
+  // Passed in by the page (they live with the Chat template code).
+  save: (
+    message: KoblipMessageName,
+    language: KoblipLanguage,
+    wording: { header: string; body: string; footer: string } | null,
+    buttons: { action: ButtonAction; label: string }[] | null
+  ) => Promise<KoblipSaveResult>
   submit: (message: KoblipMessageName, language: KoblipLanguage) => Promise<KoblipSubmitResult>
 }) {
   const m = useAdminMessages().whatsapp
@@ -104,10 +125,13 @@ export function WhatsappKoblipMessages({
           )
         })}
       </ItemGroup>
-      <MessagePanel
-        // A fresh panel per message, so it opens in English each time.
+      <KoblipMessageEditor
+        // A fresh editor per message, so it opens in English each time.
         key={open ?? "none"}
         item={messages.find((item) => item.message === open) ?? null}
+        info={info}
+        limits={limits}
+        save={save}
         submit={submit}
         onClose={() => setOpen(null)}
       />
@@ -115,85 +139,86 @@ export function WhatsappKoblipMessages({
   )
 }
 
-function MessagePanel({
+// One of Koblip's messages in the shared editor, fields in the admin's words.
+function KoblipMessageEditor({
   item,
+  info,
+  limits,
+  save,
   submit,
   onClose,
 }: {
   item: KoblipMessage | null
-  submit: (message: KoblipMessageName, language: KoblipLanguage) => Promise<KoblipSubmitResult>
+  info: Record<KoblipMessageName, KoblipEditorInfo>
+  limits: EditorLimits
+  save: Parameters<typeof WhatsappKoblipMessages>[0]["save"]
+  submit: Parameters<typeof WhatsappKoblipMessages>[0]["submit"]
   onClose: () => void
 }) {
   const m = useAdminMessages().whatsapp
   const t = m.koblipMessages
-  const router = useRouter()
-  const [language, setLanguage] = useState<KoblipLanguage>("en")
-  const [pending, startTransition] = useTransition()
-  const text = item?.texts[language]
-  // Only what Meta has nothing current of can be submitted.
-  const submittable = text?.review === "draft" || text?.review === "rejected"
+  const labels = t.fields as Record<string, string>
+  const about = item ? info[item.message] : null
+  const words = (wording: { header: string; body: string; footer: string }) => ({
+    ...wording,
+    body: fieldsToLabels(wording.body, labels),
+  })
 
-  function send() {
-    if (!item) return
-    startTransition(async () => {
-      const result = await submit(item.message, language).catch(() => null)
-      if (result?.ok) {
-        router.refresh()
-        toast.success(t.submitted)
-      } else {
-        toast.error(t.errors[result?.error ?? "not_found"])
-      }
-    })
+  const editorItem: MessageEditorItem | null =
+    item && about
+      ? {
+          name: m.messages[item.message],
+          editable: true,
+          fields: about.fields.map((field) => labels[field] ?? field),
+          buttonActions: about.buttonActions,
+          texts: {
+            en: textOf(item, "en"),
+            es: textOf(item, "es"),
+          },
+        }
+      : null
+  function textOf(message: KoblipMessage, language: KoblipLanguage) {
+    const text = message.texts[language]
+    return {
+      wording: words(text.wording),
+      buttons: text.buttons,
+      isDefault: text.isDefault,
+      review: text.review,
+      reason: text.reason,
+      approved: text.approved && { wording: words(text.approved.wording), buttons: text.approved.buttons },
+    }
   }
+  const problem = (error: string) => t.problems[error] ?? t.errors[error as keyof typeof t.errors] ?? t.failed
 
   return (
-    <ResponsivePanel
-      open={!!item}
-      onClose={onClose}
-      title={item ? t.open(m.messages[item.message]) : ""}
-      footer={
-        submittable && (
-          <Button disabled={pending} onClick={send}>
-            {pending && <Spinner data-icon="inline-start" />}
-            {t.submit}
-          </Button>
-        )
+    <MessageEditor
+      item={editorItem}
+      labels={{ ...t, review: m.review, readOnly: t.hint }}
+      limits={limits}
+      preview={(body, language) =>
+        fillFields(fieldsFromLabels(body, labels), about?.examples[language] ?? {})
       }
-    >
-      {item && text && (
-        <FieldGroup>
-          <Tabs value={language} onValueChange={(value) => setLanguage(value as KoblipLanguage)}>
-            <TabsList className="w-full">
-              <TabsTrigger value="en">{t.english}</TabsTrigger>
-              <TabsTrigger value="es">{t.spanish}</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{t.meta}</span>
-            <Badge variant={text.review === "rejected" ? "destructive" : "secondary"}>
-              {m.review[text.review]}
-            </Badge>
-          </div>
-          {text.review === "rejected" && text.reason && (
-            <Alert variant="destructive">
-              <AlertTitle>{t.metaReason}</AlertTitle>
-              <AlertDescription>{text.reason}</AlertDescription>
-            </Alert>
-          )}
-
-          <Field>
-            <FieldLabel>{t.preview}</FieldLabel>
-            <WhatsappPreview
-              header={text.wording.header}
-              body={text.preview}
-              footer={text.wording.footer}
-              buttons={text.buttons.map((button) => ({ key: button.action, label: button.label }))}
-            />
-            <FieldDescription>{t.hint}</FieldDescription>
-          </Field>
-        </FieldGroup>
-      )}
-    </ResponsivePanel>
+      onSave={async (language, draft): Promise<EditorResult> => {
+        if (!item) return { ok: false, problem: null }
+        const result = await save(
+          item.message,
+          language,
+          draft && { ...draft.wording, body: fieldsFromLabels(draft.wording.body, labels) },
+          draft && draft.buttons
+        )
+        return result.ok ? result : { ok: false, problem: problem(result.error) }
+      }}
+      onSubmit={async (language): Promise<EditorResult> => {
+        if (!item) return { ok: false, problem: null }
+        const result = await submit(item.message, language)
+        if (result.ok) return result
+        // Meta refused: its own words when Chat passed them on.
+        return {
+          ok: false,
+          problem: result.error === "chat" && result.reason ? result.reason : problem(result.error),
+        }
+      }}
+      onClose={onClose}
+    />
   )
 }

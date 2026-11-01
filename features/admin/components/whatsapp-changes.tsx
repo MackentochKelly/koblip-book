@@ -66,6 +66,14 @@ function describe(change: WhatsappChange, m: AdminMessages) {
       detail: null,
     }
   }
+  if (change.key.startsWith("whatsapp.koblipWording.")) {
+    const [message, language] = change.key.slice("whatsapp.koblipWording.".length).split(".")
+    const k = m.whatsapp.koblipMessages
+    return {
+      title: t.koblipWording(messageName(message)),
+      detail: language === "es" ? k.spanish : language === "en" ? k.english : null,
+    }
+  }
   if (change.key.startsWith("whatsapp.koblipSubmit.")) {
     const [message, language] = change.key.slice("whatsapp.koblipSubmit.".length).split(".")
     const k = m.whatsapp.koblipMessages
