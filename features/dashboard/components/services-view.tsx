@@ -48,7 +48,6 @@ import {
   ItemActions,
   ItemContent,
   ItemDescription,
-  ItemMedia,
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
@@ -307,22 +306,13 @@ export function ServicesView({
       )}
 
       {/* A phone's Suggest: after the last item, where the owner thinks of
-          what else to add. Extras need a service first. */}
+          what else to add; the computer's outline button, centred and as
+          wide as its words. Extras need a service first. */}
       {!(view === "extras" && services.length === 0) && (
-        <Item
-          variant="muted"
-          className="md:hidden"
-          render={<button type="button" onClick={suggest} />}
-        >
-          <ItemMedia variant="icon">
-            <SparklesIcon />
-          </ItemMedia>
-          <ItemContent>
-            <ItemTitle>
-              {view === "services" ? t.suggestServices : t.suggestExtras}
-            </ItemTitle>
-          </ItemContent>
-        </Item>
+        <Button variant="outline" className="self-center md:hidden" onClick={suggest}>
+          <SparklesIcon data-icon="inline-start" />
+          {view === "services" ? t.suggestServices : t.suggestExtras}
+        </Button>
       )}
 
       <ConfirmRemove
