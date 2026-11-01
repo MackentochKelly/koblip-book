@@ -376,3 +376,13 @@
     font-size: clamp(100%, 0.75rem + 0.3125vw, 112.5%);
     }
 }
+
+/* The owner area's gray page: choice cards (a FieldLabel around a Field) are
+   white cards too, like outline rows. In the utilities layer, as shadcn's own
+   fill for a checked card is a utility; hover keeps its tint. Dark mode is
+   unchanged. */
+@layer utilities {
+  :root:not(.dark) [data-surface="app"] [data-slot="field-label"]:has(> [data-slot="field"]):not(:hover) {
+    @apply bg-card;
+  }
+}
