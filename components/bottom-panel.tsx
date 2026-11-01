@@ -93,6 +93,9 @@ function useSheetSize(
 // iOS's medium sheet: half the screen.
 const MEDIUM = 0.5
 
+// Whether this panel opens on top of another one.
+const StackedContext = React.createContext(false)
+
 // The one phone panel: the stock Drawer as a bottom sheet. It always opens
 // at its content's height and slides to a new height when the content
 // changes. Up to half the screen it floats; taller, it is anchored to the
@@ -119,6 +122,7 @@ export function BottomPanel({
   const popup = React.useRef<HTMLDivElement | null>(null)
   const scroll = React.useRef<HTMLDivElement | null>(null)
   const inner = React.useRef<HTMLDivElement | null>(null)
+  const stacked = React.useContext(StackedContext)
   // Shown from opening until it has slid away, so its size holds while it
   // closes.
   const [shown, setShown] = React.useState(open)
@@ -156,7 +160,10 @@ export function BottomPanel({
             "pb-[max(var(--drawer-keyboard-inset,0px),env(safe-area-inset-bottom))]",
             // Its tallest: just under the status bar. The same variant as the
             // stock rule, plus the slot, so this one wins.
-            "data-[slot=drawer-popup]:data-[swipe-axis=y]:[--drawer-content-max-height:calc(100dvh-env(safe-area-inset-top)-(--spacing(2)))]",
+            "data-[slot=drawer-popup]:data-[swipe-axis=y]:[--drawer-content-max-height:calc(100dvh-env(safe-area-inset-top)-(--spacing(2))-var(--sheet-stack-gap,0px))]",
+            // On top of another panel it stops a peek lower, so the one
+            // behind keeps its place under the status bar, like iOS.
+            stacked && "[--sheet-stack-gap:var(--peek)]",
             // Base UI's own height (while a sheet is open on top) still wins.
             "[--drawer-content-height:var(--drawer-height,var(--sheet-height,auto))]",
             // While the keyboard is open the sheet rises to its tallest.
@@ -182,7 +189,9 @@ export function BottomPanel({
               footer && "border-b"
             )}
           >
-            <div ref={inner}>{children}</div>
+            <div ref={inner}>
+              <StackedContext.Provider value>{children}</StackedContext.Provider>
+            </div>
           </div>
           {footer && (
             <DrawerFooter className="pt-4">{footer}</DrawerFooter>
