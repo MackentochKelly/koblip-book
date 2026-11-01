@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+
 import { PageSection } from "@/components/page-section"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,6 +14,7 @@ import {
   Item,
   ItemContent,
   ItemDescription,
+  ItemActions,
   ItemGroup,
   ItemMedia,
   ItemTitle,
@@ -25,6 +28,8 @@ export type SetupStepItem = {
   // What to do, shown on the current step only.
   hint: string
   done: boolean
+  // Where to do it, as a button on the current step.
+  action?: { label: string; href: string }
 }
 
 export type SetupStepsLabels = {
@@ -102,6 +107,17 @@ export function SetupSteps({
                   <ItemDescription className="line-clamp-none">{step.hint}</ItemDescription>
                 )}
               </ItemContent>
+              {isCurrent && step.action && (
+                <ItemActions>
+                  <Button
+                    size="sm"
+                    nativeButton={false}
+                    render={<Link href={step.action.href} />}
+                  >
+                    {step.action.label}
+                  </Button>
+                </ItemActions>
+              )}
             </Item>
           )
         })}

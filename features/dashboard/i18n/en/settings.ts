@@ -86,16 +86,38 @@ const settings = {
     loginAgain: "Log in again to delete your account.",
     logIn: "Log in",
   },
-  confirm: {
-    title: "Check your details",
-    description: "From Google Maps. Is this right?",
-    edit: "Edit",
-    looksRight: "Looks right",
-    confirmed: "Details confirmed",
-    failed: "Could not confirm. Try again.",
-    noHours: "No opening hours",
-    openDays: (n: number): string =>
-      n === 1 ? "Open 1 day a week" : `Open ${n} days a week`,
+  // The home page's first steps for a new owner (utils/setup-tasks).
+  setup: {
+    title: "Get set up",
+    progress: (done: number, total: number): string => `${done} of ${total} done`,
+    allDone: "Setup done",
+    done: "Done",
+    now: "Now",
+    toDo: "To do",
+    steps: {
+      details: "Check your details",
+      hours: "Set your opening hours",
+      services: "Add your services",
+      team: "Add your team",
+      photos: "Add photos",
+      booking: "Get your first booking",
+    },
+    hints: {
+      details: "Make sure your name, phone and address are right.",
+      hours: "Customers can only book when you are open.",
+      services: "What customers can book, with times and prices.",
+      team: "Who does the work, so customers can pick.",
+      photos: "Show your place on your booking page.",
+      booking: "Share your page link with your customers.",
+    },
+    actions: {
+      details: "Check",
+      hours: "Set hours",
+      services: "Add",
+      team: "Add",
+      photos: "Add",
+      booking: "View page",
+    },
   },
   share: {
     linkCopied: "Link copied",

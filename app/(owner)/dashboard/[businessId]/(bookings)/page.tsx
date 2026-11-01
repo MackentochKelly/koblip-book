@@ -9,7 +9,10 @@ import {
 import { getWidgetLayout } from "@/features/dashboard/api/widgets"
 import { WIDGET_LIST_LIMIT } from "@/features/dashboard/widgets"
 import { getAddonGroups } from "@/features/dashboard/api/addon-queries"
-import { getServiceTeams } from "@/features/dashboard/api/team-service-queries"
+import {
+  getBusinessPhotos,
+  getServiceTeams,
+} from "@/features/dashboard/api/team-service-queries"
 import {
   getOwnerLanguage,
   getOwnerMessages,
@@ -19,7 +22,8 @@ import { BookingsView } from "@/features/dashboard/components/bookings-view"
 import { periodSummary } from "@/features/dashboard/utils/analytics"
 import { bookingsPerDay } from "@/features/dashboard/utils/bookings-per-day"
 import { newCustomers } from "@/features/dashboard/utils/new-customers"
-import { ConfirmDetailsCard } from "@/features/dashboard/components/confirm-details-card"
+import { SetupList } from "@/features/dashboard/components/setup-list"
+import { setupTasks } from "@/features/dashboard/utils/setup-tasks"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import { moveOwnerBooking } from "@/features/booking/api/move-owner-booking"
 import {
@@ -53,6 +57,7 @@ export default async function BookingsPage({ params }: Props) {
     whatsapp,
     counts,
     widgetLayout,
+    photos,
   ] = await Promise.all([
     getBookings(businessId, "upcoming"),
     getBookings(businessId, "past"),
@@ -63,6 +68,7 @@ export default async function BookingsPage({ params }: Props) {
     offersWhatsapp(businessId),
     getBookingCounts(businessId),
     getWidgetLayout(business),
+    getBusinessPhotos(businessId),
   ])
   const firstVisits = await getFirstVisits(
     businessId,
@@ -119,21 +125,27 @@ export default async function BookingsPage({ params }: Props) {
       />
     </>
   )
-  if (business.detailsConfirmedAt !== null) return bookings
-  // Until the owner confirms what came from Google Maps, that comes first.
+  const openDays = new Set(owner.hours.map((hour) => hour.weekday)).size
+  const confirmed = business.detailsConfirmedAt !== null
+  const steps = setupTasks(
+    {
+      detailsConfirmed: confirmed,
+      openDays,
+      services: owner.services.length,
+      team: owner.team.length,
+      photos: photos.length,
+      bookings: upcoming.length + past.length,
+    },
+    `/dashboard/${businessId}`,
+    `/b/${business.slug}`
+  )
+  const settingUp = steps.some((step) => !step.done)
+  if (!settingUp) return bookings
+  // The first steps come first until they are all done. (Sign-up's Check
+  // your details step confirms what came from Google Maps.)
   return (
     <div className="flex flex-col gap-6">
-      <ConfirmDetailsCard
-        businessId={businessId}
-        details={{
-          name: business.name,
-          category: business.category,
-          phone: business.phone,
-          address: business.address,
-          website: business.website,
-          openDays: new Set(owner.hours.map((hour) => hour.weekday)).size,
-        }}
-      />
+      {settingUp && <SetupList steps={steps} />}
       {bookings}
     </div>
   )
