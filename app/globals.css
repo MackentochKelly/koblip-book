@@ -40,6 +40,8 @@
 }
 
 @theme inline {
+    /* Cards' lift (shadow-card): see --card-shadow. */
+    --shadow-card: var(--card-shadow);
     /* Motion curves (Material 3, docs/ui-rules/motion.md): ease-standard
        for most moves, ease-enter for things coming in, ease-exit for
        things leaving. */
@@ -235,6 +237,10 @@
     --glass-frame-edge: color-mix(in oklab, var(--foreground) 8%, transparent);
     /* How solid the frosted menus are; same as Koblip Sales. */
     --menu-glass: 40%;
+    /* Cards sit just above the page: a hairline contact shadow and a soft,
+       wide one, faint enough to feel rather than see. */
+    --card-shadow:
+      0 1px 2px oklch(0 0 0 / 4%), 0 4px 12px -4px oklch(0 0 0 / 6%);
     --radius: 0.625rem;
     --sidebar: oklch(1 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
@@ -304,6 +310,8 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+    /* A shadow can't show on a dark page; the card's ring draws the edge. */
+    --card-shadow: 0 0 transparent;
 }
 
 /* Reduce Transparency on: every glass piece and frosted menu turns solid,
@@ -320,10 +328,11 @@
 @layer base {
   /* The owner area's gray page (data-surface="app" on its frame): outline
      rows and empty states are filled like cards, so they read as white
-     cards on the gray. Dark mode is unchanged (they stay clear). */
+     cards on the gray, with the cards' lift. Dark mode is unchanged (they
+     stay clear). */
   :root:not(.dark) [data-surface="app"] [data-slot="item"][data-variant="outline"],
   :root:not(.dark) [data-surface="app"] [data-slot="empty"] {
-    @apply bg-card;
+    @apply bg-card shadow-card;
   }
   /* Tabs tracks get a faint edge, drawn inside so a scrolling tab row
      cannot clip it. */
