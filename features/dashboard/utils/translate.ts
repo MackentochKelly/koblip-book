@@ -1,6 +1,7 @@
 import "server-only"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { POLICY_RULES } from "@/lib/policy-rules"
+import { TEAM_RULES } from "@/lib/team-rules"
 import {
   getMetaAiClient,
   isMetaAiEnabled,
@@ -15,6 +16,7 @@ export type TranslationField =
   | "addon.name"
   | "addon.description"
   | "team_member.description"
+  | "team_member.about"
   | "policy.body"
   | "policy_point.title"
   | "policy_point.body"
@@ -49,13 +51,13 @@ export function translationId(
 // Every text that needs a Spanish translation: About (if any) + every
 // service name + every service description (if any) + every add-on group
 // prompt + every add-on option name + every add-on option description
-// (if any) + every team member's short description (if any).
+// (if any) + every team member's job title and About (if any).
 export function collectTranslatableTexts(
   businessId: string,
   businessDescription: string | null,
   serviceRows: { id: string; name: string; description: string | null }[],
   addonRows: AddonTranslatableRows = { groups: [], options: [] },
-  teamRows: { id: string; description: string | null }[] = [],
+  teamRows: { id: string; description: string | null; about?: string | null }[] = [],
   policyRows: { id: string; body: string }[] = [],
   pointRows: { id: string; title: string; body: string }[] = []
 ): TranslatableText[] {
@@ -115,6 +117,14 @@ export function collectTranslatableTexts(
         entityId: member.id,
         field: "team_member.description",
         text: member.description,
+      })
+    }
+    if (member.about && member.about.trim() !== "") {
+      all.push({
+        id: translationId(member.id, "team_member.about"),
+        entityId: member.id,
+        field: "team_member.about",
+        text: member.about,
       })
     }
   }
@@ -231,6 +241,9 @@ function limitForId(id: string): number {
     return BOOKING_RULES.maxAddonPrompt
   }
   // Spanish runs longer than English.
+  if (field === "team_member.about") {
+    return Math.ceil(TEAM_RULES.aboutMaxLength * 1.5)
+  }
   if (field === "policy_point.title") {
     return Math.ceil(POLICY_RULES.maxPointTitle * 1.5)
   }

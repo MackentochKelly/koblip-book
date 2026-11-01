@@ -163,6 +163,25 @@ test("collectTranslatableTexts skips a missing About", () => {
   ).toEqual(["service.name"])
 })
 
+test("collectTranslatableTexts counts each team member's job title and About", () => {
+  const all = collectTranslatableTexts(
+    "biz-1",
+    null,
+    [],
+    undefined,
+    [
+      { id: "tm-1", description: "Barber", about: "Ten years of fades." },
+      { id: "tm-2", description: null, about: " " },
+      { id: "tm-3", description: null, about: "Color expert." },
+    ]
+  )
+  expect(all.map((item) => [item.entityId, item.field])).toEqual([
+    ["tm-1", "team_member.description"],
+    ["tm-1", "team_member.about"],
+    ["tm-3", "team_member.about"],
+  ])
+})
+
 test("pendingTranslations keeps only missing or out-of-date texts", () => {
   const all = collectTranslatableTexts(
     "biz-1",

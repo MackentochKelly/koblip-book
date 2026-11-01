@@ -37,6 +37,19 @@ const en = {
     failed: "Couldn't save. Try again.",
     seePublic: "See my public profile",
     logOut: "Log out",
+    photo: (name: string) => `${name}'s photo`,
+  },
+  photos: {
+    change: "Change",
+    addPhoto: "Add photo",
+    remove: "Remove",
+    errors: {
+      not_found: "That did not work. Please try again.",
+      missing: "Pick a photo.",
+      too_big: "That photo is too big.",
+      wrong_type: "Use a JPEG, PNG or WebP photo.",
+      limit: "That's too many photos.",
+    },
   },
   join: {
     title: (business: string) => `Join ${business}`,
@@ -90,6 +103,19 @@ const es: TeamAreaWords = {
     failed: "No se pudo guardar. Inténtalo de nuevo.",
     seePublic: "Ver mi perfil público",
     logOut: "Cerrar sesión",
+    photo: (name: string) => `Foto de ${name}`,
+  },
+  photos: {
+    change: "Cambiar",
+    addPhoto: "Añadir foto",
+    remove: "Quitar",
+    errors: {
+      not_found: "No funcionó. Inténtalo de nuevo.",
+      missing: "Elige una foto.",
+      too_big: "Esa foto es demasiado grande.",
+      wrong_type: "Usa una foto JPEG, PNG o WebP.",
+      limit: "Son demasiadas fotos.",
+    },
   },
   join: {
     title: (business: string) => `Únete a ${business}`,

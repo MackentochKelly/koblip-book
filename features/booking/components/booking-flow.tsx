@@ -106,8 +106,19 @@ export function BookingFlow({
   }
   const open = wanted && !closing
 
+  // Booked from a team member's profile (?with=): only the services they
+  // do, and they are the professional, so that step is left out.
+  const pinned = page.team.find((item) => item.id === params.get("with")) ?? null
+  const shownPage = pinned
+    ? {
+        ...page,
+        services: page.services.filter((item) =>
+          serviceTeam(page, item.id).some((person) => person.id === pinned.id)
+        ),
+      }
+    : page
   const service =
-    page.services.find((item) => item.id === params.get("service")) ?? null
+    shownPage.services.find((item) => item.id === params.get("service")) ?? null
   const groups = serviceAddonGroups(page, service?.id ?? null)
   const known = new Set(
     groups.flatMap((group) => group.options.map((option) => option.id))
@@ -119,7 +130,8 @@ export function BookingFlow({
     ? bookingTotals(service, groups, addonIds).valid
     : false
   const team = serviceTeam(page, service?.id ?? null)
-  const memberParam = params.get("member")
+  const pinnedHere = pinned && team.some((item) => item.id === pinned.id)
+  const memberParam = pinnedHere ? pinned.id : params.get("member")
   const member = team.find((item) => item.id === memberParam) ?? null
   const memberChoice = member
     ? member.id
@@ -129,7 +141,7 @@ export function BookingFlow({
   const steps: Step[] = [
     "service",
     ...(groups.length > 0 ? (["extras"] as const) : []),
-    ...(team.length > 1 ? (["member"] as const) : []),
+    ...(team.length > 1 && !pinnedHere ? (["member"] as const) : []),
     "time",
     "details",
     ...(withPolicies ? (["policies"] as const) : []),
@@ -305,7 +317,7 @@ export function BookingFlow({
   )
   const services = (
     <ServiceStep
-      page={page}
+      page={shownPage}
       value={service?.id ?? ""}
       onChange={(id) => {
         setSlot(null)

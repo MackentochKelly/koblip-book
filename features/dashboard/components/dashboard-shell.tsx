@@ -16,11 +16,13 @@ import {
 import { AppInset } from "@/components/app-inset"
 import { BottomTabBar, TabBarLink } from "@/components/bottom-tab-bar"
 import { PageContent } from "@/components/page-content"
+import { PhotoWordsProvider } from "@/components/photo-upload"
 import { SpinSwap } from "@/components/spin-swap"
 import { Button } from "@/components/ui/button"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
+import { UPLOAD_RULES } from "@/lib/upload-rules"
 import { cn } from "@/lib/utils"
 import {
   LAST_BUSINESS_COOKIE,
@@ -134,7 +136,22 @@ export function DashboardShell({
               className={cn(!assistantOpen && "pb-28")}
             >
               <TabBarActionContext value={setAction}>
-                {children}
+                <PhotoWordsProvider
+                  words={{
+                    change: messages.settings.photos.change,
+                    addPhoto: messages.settings.photos.addPhoto,
+                    remove: messages.settings.photos.remove,
+                    errors: {
+                      not_found: messages.settings.tryAgain,
+                      missing: messages.settings.photos.pick,
+                      too_big: messages.settings.photos.tooBig,
+                      wrong_type: messages.settings.photos.wrongType,
+                      limit: messages.settings.photos.limit(UPLOAD_RULES.maxBusinessPhotos),
+                    },
+                  }}
+                >
+                  {children}
+                </PhotoWordsProvider>
               </TabBarActionContext>
             </PageContent>
           </AppInset>

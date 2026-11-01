@@ -9,6 +9,8 @@ import { db } from "@/lib/db"
 import { teamMembers } from "@/lib/db/schema"
 import { joinWithTeamInvite } from "@/lib/team-invites"
 import { checkTeamProfile, type TeamProfile } from "@/lib/team-rules"
+import { deletePhoto, savePhoto } from "@/lib/uploads"
+import type { PhotoResult } from "@/types/photo"
 
 // A team member saves their own profile: job title, about and languages.
 // Their name, services and prices stay the owner's.
@@ -40,4 +42,43 @@ export async function joinTeam(
   const result = await joinWithTeamInvite(token, session.userId)
   if (!result.ok) return result
   redirect(`/team/${result.teamMemberId}`)
+}
+
+// A team member changes their own photo; the old file goes once the new
+// one is saved.
+export async function setMyPhoto(
+  teamMemberId: string,
+  formData: FormData
+): Promise<PhotoResult<{ photoUrl: string }>> {
+  if (typeof teamMemberId !== "string") return { ok: false, error: "not_found" }
+  const { seat } = await requireTeamMember(teamMemberId)
+  const saved = await savePhoto(formData.get("file") as File)
+  if (!saved.ok) return { ok: false, error: saved.error }
+  try {
+    await db
+      .update(teamMembers)
+      .set({ photoUrl: saved.url })
+      .where(eq(teamMembers.id, seat.teamMemberId))
+  } catch (error) {
+    await deletePhoto(saved.url)
+    throw error
+  }
+  await deletePhoto(seat.photoUrl)
+  revalidatePath(`/b/${seat.business.slug}`, "layout")
+  revalidatePath(`/team/${seat.teamMemberId}`, "layout")
+  return { ok: true, photoUrl: saved.url }
+}
+
+// A team member takes their own photo off.
+export async function removeMyPhoto(teamMemberId: string): Promise<PhotoResult> {
+  if (typeof teamMemberId !== "string") return { ok: false, error: "not_found" }
+  const { seat } = await requireTeamMember(teamMemberId)
+  await db
+    .update(teamMembers)
+    .set({ photoUrl: null })
+    .where(eq(teamMembers.id, seat.teamMemberId))
+  await deletePhoto(seat.photoUrl)
+  revalidatePath(`/b/${seat.business.slug}`, "layout")
+  revalidatePath(`/team/${seat.teamMemberId}`, "layout")
+  return { ok: true }
 }

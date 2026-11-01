@@ -4,15 +4,16 @@ import { cache } from "react"
 import { and, countDistinct, count, eq, lt, notInArray, sql } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { bookings, teamMembers } from "@/lib/db/schema"
+import { bookings, teamMembers, translations } from "@/lib/db/schema"
 import type { PageLanguage } from "@/lib/page-language"
 import type { TeamProfilePage } from "../types/team-profile"
 import { getBusinessPage } from "./get-business-page"
 
 // A team member's public profile (docs/plans/team-accounts.md): the
 // business page's data (its translated services, who does what), their
-// About and languages, and what they have done here. Null when the
-// business or the person doesn't exist.
+// About (in Spanish when its translation is up to date) and languages,
+// and what they have done here. Null when the business or the person
+// doesn't exist.
 async function loadTeamProfile(
   slug: string,
   memberId: string,
@@ -22,7 +23,7 @@ async function loadTeamProfile(
   const member = data?.team.find((person) => person.id === memberId)
   if (!data || !member) return null
   const now = new Date().toISOString()
-  const [[profile], [done]] = await Promise.all([
+  const [[profile], [done], [aboutEs]] = await Promise.all([
     db
       .select({ about: teamMembers.about, languages: teamMembers.languages })
       .from(teamMembers)
@@ -46,12 +47,27 @@ async function loadTeamProfile(
           notInArray(bookings.status, ["cancelled", "no_show"])
         )
       ),
+    language === "es"
+      ? db
+          .select({ sourceText: translations.sourceText, text: translations.text })
+          .from(translations)
+          .where(
+            and(
+              eq(translations.entityId, member.id),
+              eq(translations.field, "team_member.about"),
+              eq(translations.language, "es")
+            )
+          )
+          .limit(1)
+      : [],
   ])
+  const about = profile?.about ?? null
+  // A translation counts only while its source is the current English.
   return {
     data,
     member: {
       ...member,
-      about: profile?.about ?? null,
+      about: about && aboutEs?.sourceText === about ? aboutEs.text : about,
       languages: profile?.languages ?? [],
     },
     // The services they do: a service with no team list is everyone's.

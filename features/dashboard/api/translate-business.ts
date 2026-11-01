@@ -48,7 +48,11 @@ export async function translateBusinessTexts(
       .from(addonOptions)
       .where(eq(addonOptions.businessId, business.id)),
     db
-      .select({ id: teamMembers.id, description: teamMembers.description })
+      .select({
+        id: teamMembers.id,
+        description: teamMembers.description,
+        about: teamMembers.about,
+      })
       .from(teamMembers)
       .where(eq(teamMembers.businessId, business.id)),
     db

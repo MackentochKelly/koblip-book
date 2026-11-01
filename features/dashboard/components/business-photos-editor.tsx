@@ -37,7 +37,7 @@ import {
   uploadBusinessPhoto,
 } from "../api/photo-actions"
 import type { OwnerPhoto } from "../media-types"
-import { usePhotoUpload } from "./photo-upload"
+import { usePhotoUpload } from "@/components/photo-upload"
 
 // The page's own photos, shown before Google's. The first one leads.
 export function BusinessPhotosEditor({

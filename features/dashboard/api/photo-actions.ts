@@ -11,7 +11,8 @@ import {
   teamMembers,
 } from "@/lib/db/schema"
 import { ownedBusiness, revalidateBusiness } from "./owned-business"
-import type { OwnerPhoto, PhotoResult } from "../media-types"
+import type { PhotoResult } from "@/types/photo"
+import type { OwnerPhoto } from "../media-types"
 
 function fileFrom(formData: FormData): File {
   return formData.get("file") as File

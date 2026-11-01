@@ -9,6 +9,7 @@ import {
   SparklesIcon,
   WhatsAppIcon,
   StoreIcon,
+  UsersIcon,
 } from "@/components/ui/icons"
 
 import { AppInset } from "@/components/app-inset"
@@ -30,6 +31,7 @@ const NAV = [
   { path: "", key: "overview", icon: LayoutDashboardIcon },
   { path: "/businesses", key: "businesses", icon: StoreIcon },
   { path: "/owners", key: "owners", icon: ContactIcon },
+  { path: "/team", key: "team", icon: UsersIcon },
   { path: "/bookings", key: "bookings", icon: CalendarDaysIcon },
   { path: "/whatsapp", key: "whatsapp", icon: WhatsAppIcon },
   { path: "/notifications", key: "notifications", icon: BellIcon },

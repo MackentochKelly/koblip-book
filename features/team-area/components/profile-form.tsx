@@ -7,7 +7,7 @@ import { ExternalLinkIcon, LogOutIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { MultiPick } from "@/components/multi-pick"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { PhotoField } from "@/components/photo-upload"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -17,11 +17,12 @@ import { authClient } from "@/lib/auth-client"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { initials } from "@/lib/initials"
 import { languageName, TEAM_RULES, type TeamProfile } from "@/lib/team-rules"
-import { saveMyProfile } from "../api/actions"
+import { removeMyPhoto, saveMyProfile, setMyPhoto } from "../api/actions"
 import { useTeamAreaWords } from "../i18n/provider"
 
 // What customers see on the team member's public profile, which they keep
-// up themselves. Their name and photo are the owner's.
+// up themselves: their photo, job title, about and languages. Their name
+// is the owner's.
 export function ProfileForm({
   teamMemberId,
   name,
@@ -48,11 +49,7 @@ export function ProfileForm({
     languages.join() !== profile.languages.join()
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center gap-4">
-        <Avatar className="size-16">
-          {photoUrl && <AvatarImage src={photoUrl} alt="" />}
-          <AvatarFallback className="text-lg">{initials(name)}</AvatarFallback>
-        </Avatar>
+      <div className="flex flex-col items-start gap-4">
         <div className="flex min-w-0 flex-col items-start gap-1">
           <p className="truncate text-lg font-semibold">{name}</p>
           <Button
@@ -65,6 +62,13 @@ export function ProfileForm({
             <ExternalLinkIcon data-icon="inline-end" />
           </Button>
         </div>
+        <PhotoField
+          label={p.photo(name)}
+          photoUrl={photoUrl}
+          fallback={initials(name)}
+          upload={(formData) => setMyPhoto(teamMemberId, formData)}
+          remove={() => removeMyPhoto(teamMemberId)}
+        />
       </div>
       <form
         noValidate

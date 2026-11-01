@@ -1,9 +1,9 @@
 import "server-only"
 
-import { and, asc, count, desc, eq, gte, sql } from "drizzle-orm"
+import { and, asc, count, desc, eq, gt, gte, isNotNull, isNull, sql } from "drizzle-orm"
 import { requireAdmin } from "@/lib/dal"
 import { db } from "@/lib/db"
-import { bookings, businesses, customers, teamMembers, teamMemberHours, user } from "@/lib/db/schema"
+import { bookings, businesses, customers, teamInvites, teamMembers, teamMemberHours, user } from "@/lib/db/schema"
 
 // Every list stops here; the newest come first.
 const MAX_ROWS = 200
@@ -156,4 +156,64 @@ export async function getBookings(): Promise<AdminBooking[]> {
     .where(realBusiness)
     .orderBy(desc(bookings.createdAt))
     .limit(MAX_ROWS)
+}
+
+export interface AdminTeamAccount {
+  teamMemberId: string
+  memberName: string
+  businessName: string
+  slug: string
+  email: string
+}
+
+export interface AdminTeamInvite {
+  id: string
+  memberName: string
+  businessName: string
+  expiresAt: string
+}
+
+// Team members who joined with their own account, and the invite links
+// still open (docs/plans/team-accounts.md). Demo copies are left out.
+export async function getTeamAccounts(): Promise<{
+  joined: AdminTeamAccount[]
+  invites: AdminTeamInvite[]
+}> {
+  await requireAdmin()
+  const [joined, invites] = await Promise.all([
+    db
+      .select({
+        teamMemberId: teamMembers.id,
+        memberName: teamMembers.name,
+        businessName: businesses.name,
+        slug: businesses.slug,
+        email: user.email,
+      })
+      .from(teamMembers)
+      .innerJoin(businesses, eq(businesses.id, teamMembers.businessId))
+      .innerJoin(user, eq(user.id, teamMembers.userId))
+      .where(and(realBusiness, isNotNull(teamMembers.userId)))
+      .orderBy(asc(businesses.name), asc(teamMembers.position))
+      .limit(MAX_ROWS),
+    db
+      .select({
+        id: teamInvites.id,
+        memberName: teamMembers.name,
+        businessName: businesses.name,
+        expiresAt: teamInvites.expiresAt,
+      })
+      .from(teamInvites)
+      .innerJoin(businesses, eq(businesses.id, teamInvites.businessId))
+      .innerJoin(teamMembers, eq(teamMembers.id, teamInvites.teamMemberId))
+      .where(
+        and(
+          realBusiness,
+          isNull(teamInvites.usedAt),
+          gt(teamInvites.expiresAt, new Date().toISOString())
+        )
+      )
+      .orderBy(desc(teamInvites.createdAt))
+      .limit(MAX_ROWS),
+  ])
+  return { joined, invites }
 }

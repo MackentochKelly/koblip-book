@@ -11,6 +11,7 @@ const en = {
     overview: "Overview",
     businesses: "Businesses",
     owners: "Owners",
+    team: "Team accounts",
     bookings: "Bookings",
     whatsapp: "WhatsApp",
     notifications: "Notifications",
@@ -416,6 +417,15 @@ const en = {
     bookings: (n: number) => (n === 1 ? "1 booking" : `${n} bookings`),
     open: (name: string) => `Open ${name}'s page`,
   },
+  // Team members with their own account, and their open invite links
+  // (docs/plans/team-accounts.md).
+  team: {
+    none: "No team accounts or invite links yet",
+    joined: "Joined",
+    invites: "Open invite links",
+    at: (business: string) => `at ${business}`,
+    expires: (date: string) => `Works until ${date}`,
+  },
   owners: {
     none: "No owners yet",
     you: "You",
@@ -520,6 +530,7 @@ const es: AdminMessages = {
     overview: "Resumen",
     businesses: "Negocios",
     owners: "Dueños",
+    team: "Cuentas del equipo",
     bookings: "Reservas",
     whatsapp: "WhatsApp",
     notifications: "Notificaciones",
@@ -924,6 +935,13 @@ const es: AdminMessages = {
     addedCustomers: "Clientes agregados",
     bookings: (n: number) => (n === 1 ? "1 reserva" : `${n} reservas`),
     open: (name: string) => `Abrir la página de ${name}`,
+  },
+  team: {
+    none: "Aún no hay cuentas del equipo ni enlaces de invitación",
+    joined: "Se unieron",
+    invites: "Enlaces de invitación abiertos",
+    at: (business: string) => `en ${business}`,
+    expires: (date: string) => `Funciona hasta el ${date}`,
   },
   owners: {
     none: "Aún no hay dueños",

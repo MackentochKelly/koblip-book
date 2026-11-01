@@ -12,6 +12,7 @@ import { AppTopBar } from "@/components/app-top-bar"
 import { BottomTabBar, TabBarLink } from "@/components/bottom-tab-bar"
 import { NavMain } from "@/components/nav-main"
 import { PageContent } from "@/components/page-content"
+import { PhotoWordsProvider } from "@/components/photo-upload"
 import {
   Sidebar,
   SidebarContent,
@@ -62,7 +63,9 @@ export function TeamShell({
             title={items.find((item) => item.active)?.label ?? businessName}
             menuLabel={t.menu}
           />
-          <PageContent className="pb-28">{children}</PageContent>
+          <PageContent className="pb-28">
+            <PhotoWordsProvider words={t.photos}>{children}</PhotoWordsProvider>
+          </PageContent>
         </AppInset>
         <BottomTabBar label={businessName} className="grid-cols-3">
           {items.map((item) => (

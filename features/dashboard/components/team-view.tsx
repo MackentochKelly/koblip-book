@@ -71,7 +71,7 @@ import {
   PhotoField,
   PickedPhotoField,
   useUploadPickedPhoto,
-} from "./photo-upload"
+} from "@/components/photo-upload"
 import { useTabBarAction } from "./tab-bar-action"
 import { noAutofill } from "@/lib/no-autofill"
 import { shareLink } from "@/lib/share-link"
