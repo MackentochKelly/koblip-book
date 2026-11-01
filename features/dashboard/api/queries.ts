@@ -125,6 +125,7 @@ export async function getMyBusinesses(): Promise<OwnedBusiness[]> {
       slug: businesses.slug,
       name: businesses.name,
       address: businesses.address,
+      category: businesses.category,
     })
     .from(businesses)
     // A real owner's list never shows a demo copy; a guest owns only theirs.

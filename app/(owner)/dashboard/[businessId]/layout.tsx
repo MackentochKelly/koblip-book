@@ -1,7 +1,10 @@
 import { Suspense } from "react"
 
 import { Toaster } from "@/components/ui/sonner"
-import { getOwnerBusiness } from "@/features/dashboard/api/queries"
+import {
+  getMyBusinesses,
+  getOwnerBusiness,
+} from "@/features/dashboard/api/queries"
 import { DashboardShell } from "@/features/dashboard/components/dashboard-shell"
 import {
   getOwnerLanguage,
@@ -22,11 +25,12 @@ export default async function BusinessDashboardLayout({
   const { businessId } = await params
   const owner = await requireOwner(`/dashboard/${businessId}`)
   const { business } = await getOwnerBusiness(businessId)
-  const [verify, language, unread, rules] = await Promise.all([
+  const [verify, language, unread, rules, businesses] = await Promise.all([
     getOwnerMessages().then((m) => m.settings.verify),
     getOwnerLanguage(),
     getUnreadCount(),
     notificationRules(),
+    getMyBusinesses(),
   ])
   // One bell state for the page; the first count is rendered here, then the
   // bell keeps it current (docs/plans/in-app-notifications.md, N-D3).
@@ -39,6 +43,7 @@ export default async function BusinessDashboardLayout({
     >
       <DashboardShell
         business={{ id: business.id, slug: business.slug, name: business.name }}
+        businesses={businesses}
         owner={{ name: owner.name, email: owner.email, image: owner.image }}
         bell={<NotificationBell />}
       >

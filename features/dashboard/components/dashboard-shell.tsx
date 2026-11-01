@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import {
   ContactIcon,
@@ -22,6 +22,11 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { cn } from "@/lib/utils"
+import {
+  LAST_BUSINESS_COOKIE,
+  LAST_BUSINESS_MAX_AGE,
+} from "../last-business"
+import type { OwnedBusiness } from "../types"
 import { AppSidebar } from "./app-sidebar"
 import { CommandMenuProvider } from "./command-menu"
 import { type TabBarAction, TabBarActionContext } from "./tab-bar-action"
@@ -52,17 +57,23 @@ const ADD_PAGES = ["/customers", "/services", "/team"]
 // notifications bell, in the top bar beside the account menu.
 export function DashboardShell({
   business,
+  businesses,
   owner,
   bell,
   children,
 }: {
   business: { id: string; slug: string; name: string }
+  businesses: OwnedBusiness[]
   owner: { name: string; email: string; image: string | null }
   bell?: React.ReactNode
   children: React.ReactNode
 }) {
   const pathname = usePathname()
   const [action, setAction] = useState<TabBarAction | null>(null)
+  // The next login opens this business again (/dashboard reads it).
+  useEffect(() => {
+    document.cookie = `${LAST_BUSINESS_COOKIE}=${business.id}; path=/; max-age=${LAST_BUSINESS_MAX_AGE}; samesite=lax`
+  }, [business.id])
   const messages = useOwnerMessages()
   const m = messages.shell.nav
   const base = `/dashboard/${business.id}`
@@ -113,7 +124,11 @@ export function DashboardShell({
     <TooltipProvider>
       <CommandMenuProvider business={business}>
         <SidebarProvider>
-          <AppSidebar businessId={business.id} owner={owner} />
+          <AppSidebar
+            business={business}
+            businesses={businesses}
+            owner={owner}
+          />
           <AppInset className={cn(assistantOpen && "md:h-dvh")}>
             <TopBar
               business={business}

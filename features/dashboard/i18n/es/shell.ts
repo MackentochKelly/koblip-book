@@ -41,6 +41,15 @@ const shell: typeof en = {
     title: "Encuentra tu negocio",
     hint: "Elígelo en Google Maps para crear tu página de reservas.",
   },
+  // The menu's business switcher and the Add business page.
+  businesses: {
+    title: "Negocios",
+    switch: "Cambiar de negocio",
+    add: "Añadir negocio",
+    addTitle: "Añade un negocio",
+    addHint: "Encuéntralo en Google Maps para crear su página de reservas.",
+    back: "Volver",
+  },
   titles: {
     checkDetails: "Revisa tus datos",
     live: "Ya estás en línea",

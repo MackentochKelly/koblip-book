@@ -121,19 +121,21 @@ export function AccountMenu({
 }
 
 // What the account menu holds; the top bar's photo and the menu's footer
-// (NavUser) both open it.
+// (NavUser) both open it. `className` sets its width: a fixed one under the
+// top bar's small photo, the footer button's own width in the menu.
 export function AccountMenuContent({
   owner,
   settingsHref,
   side,
   align,
   sideOffset,
+  className = "w-64",
 }: {
   owner: Owner
   settingsHref?: string
 } & Pick<
   React.ComponentProps<typeof DropdownMenuContent>,
-  "side" | "align" | "sideOffset"
+  "side" | "align" | "sideOffset" | "className"
 >) {
   const { theme, setTheme } = useTheme()
   const m = useOwnerMessages().shell
@@ -146,7 +148,7 @@ export function AccountMenuContent({
       side={side}
       align={align}
       sideOffset={sideOffset}
-      className="w-64"
+      className={className}
     >
       <DropdownMenuGroup>
         <DropdownMenuLabel className="flex items-center gap-2 font-normal">

@@ -15,7 +15,8 @@ import {
 import { AccountMenuContent, OwnerAvatar, type Owner } from "./account-menu"
 
 // The menu's footer, as in Koblip Sales' NavUser: who is logged in, opening
-// the same account menu as the top bar's photo.
+// the same account menu as the top bar's photo, as wide as the button and
+// placed like the business switcher at the top (shadcn sidebar-07).
 export function NavUser({
   owner,
   settingsHref,
@@ -51,7 +52,8 @@ export function NavUser({
             settingsHref={settingsHref}
             side={isMobile ? "bottom" : "right"}
             align="end"
-            sideOffset={16}
+            sideOffset={4}
+            className="min-w-56"
           />
         </DropdownMenu>
       </SidebarMenuItem>

@@ -41,6 +41,15 @@ const shell = {
     title: "Find your business",
     hint: "Pick it on Google Maps to build your booking page.",
   },
+  // The menu's business switcher and the Add business page.
+  businesses: {
+    title: "Businesses",
+    switch: "Switch business",
+    add: "Add business",
+    addTitle: "Add a business",
+    addHint: "Find it on Google Maps to build its booking page.",
+    back: "Back",
+  },
   titles: {
     checkDetails: "Check your details",
     live: "You're live",

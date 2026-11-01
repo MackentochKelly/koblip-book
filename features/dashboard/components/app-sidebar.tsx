@@ -22,27 +22,32 @@ import {
 } from "@/components/ui/sidebar"
 import { useOwnerMessages } from "../i18n/provider"
 import { NAV_GROUPS } from "../navigation"
+import type { OwnedBusiness } from "../types"
 import type { Owner } from "./account-menu"
+import { BusinessSwitcher } from "./business-switcher"
 import { useCommandMenu } from "./command-menu"
 import { NAV_ICON_SIZE, NavMain } from "@/components/nav-main"
 import { NavUser } from "./nav-user"
 
 // The owner area's menu, built like Koblip Sales' AppSidebar (shadcn
-// sidebar-07): Search on top, the pages in groups, the account at the foot.
+// sidebar-07): the business switcher and Search on top, the pages in
+// groups, the account at the foot.
 // On a computer it folds to icons (the top bar's ☰ or the rail); on a phone
 // it is the drawer from the left.
 export function AppSidebar({
-  businessId,
+  business,
+  businesses,
   owner,
 }: {
-  businessId: string
+  business: { id: string; name: string }
+  businesses: OwnedBusiness[]
   owner: Owner
 }) {
   const pathname = usePathname()
   const m = useOwnerMessages().shell
   const { isMobile, setOpenMobile } = useSidebar()
   const openCommandMenu = useCommandMenu()
-  const base = `/dashboard/${businessId}`
+  const base = `/dashboard/${business.id}`
   const openSearch = () => {
     if (isMobile) setOpenMobile(false)
     openCommandMenu(true)
@@ -51,6 +56,7 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
+        <BusinessSwitcher current={business} businesses={businesses} />
         {/* A search field when open; just the icon when folded. */}
         <InputGroup className="group-data-[collapsible=icon]:hidden">
           <InputGroupAddon>
