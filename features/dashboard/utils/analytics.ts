@@ -1,3 +1,4 @@
+import { isEarned } from "@/lib/booking-rules"
 import { addDaysTo } from "@/lib/format-booking-time"
 import type { OwnerBooking } from "../types"
 
@@ -19,12 +20,13 @@ export interface Trend {
 // `days` before. `bookings` must cover both stretches; cancelled ones count
 // nowhere. `firstVisit` maps a customer to the day they first booked, so a
 // booking on that day is a new customer's. Revenue is the price of every
-// kept booking except no-shows.
+// confirmed or completed booking that has ended by `now` (ISO string).
 export function periodSummary(
   bookings: OwnerBooking[],
   firstVisit: Record<string, string>,
   today: string,
-  days: number
+  days: number,
+  now: string
 ) {
   const start = addDaysTo(today, 1 - days)
   const previousStart = addDaysTo(start, -days)
@@ -78,7 +80,7 @@ export function periodSummary(
     bookings: trend((rows) => rows.length),
     revenue: trend((rows) =>
       rows
-        .filter((booking) => booking.status !== "no_show")
+        .filter((booking) => isEarned(booking, now))
         .reduce((sum, booking) => sum + (booking.priceMinor ?? 0), 0)
     ),
     // Customers whose first booking ever falls in the period.

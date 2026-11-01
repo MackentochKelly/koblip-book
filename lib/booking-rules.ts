@@ -56,3 +56,16 @@ export type CancelReason = (typeof CANCEL_REASONS)[number]
 export function isCancelReason(value: unknown): value is CancelReason {
   return CANCEL_REASONS.some((reason) => reason === value)
 }
+
+export const EARNING_STATUSES = ["confirmed", "completed"] as const
+
+// Confirmed or completed bookings earn money once they have ended.
+export function isEarned(
+  booking: { status: string; endAt: string },
+  now: string
+): boolean {
+  return (
+    EARNING_STATUSES.some((status) => status === booking.status) &&
+    booking.endAt <= now
+  )
+}

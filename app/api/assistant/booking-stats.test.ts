@@ -50,7 +50,7 @@ test("totals count every status", () => {
   })
 })
 
-test("earned counts only completed, expected only future confirmed", () => {
+test("earned counts ended confirmed and completed, expected only future confirmed", () => {
   const stats = bookingStats(
     [
       booking({
@@ -77,7 +77,7 @@ test("earned counts only completed, expected only future confirmed", () => {
     NOW,
     "DOP"
   )
-  expect(stats.earnedMinor).toBe(1000)
+  expect(stats.earnedMinor).toBe(4000)
   expect(stats.expectedMinor).toBe(2000)
   expect(stats.currency).toBe("DOP")
 })
@@ -156,4 +156,20 @@ test("an empty range returns the business currency with zero counts", () => {
   expect(stats.expectedMinor).toBe(0)
   expect(stats.noShowRate).toBeNull()
   expect(stats.byWeekday).toEqual([])
+})
+
+test.each([
+  ["confirmed", "2026-10-28T11:59:59.000Z", 1000, 0],
+  ["confirmed", NOW, 1000, 0],
+  ["confirmed", "2026-10-28T12:00:01.000Z", 0, 1000],
+  ["completed", NOW, 1000, 0],
+  ["completed", "2026-10-28T12:00:01.000Z", 0, 0],
+  ["no_show", "2026-10-28T11:59:59.000Z", 0, 0],
+  ["no_show", "2026-10-28T12:00:01.000Z", 0, 0],
+  ["cancelled", "2026-10-28T11:59:59.000Z", 0, 0],
+  ["cancelled", "2026-10-28T12:00:01.000Z", 0, 0],
+])("%s ending at %s earns %i and expects %i", (status, endAt, earned, expected) => {
+  const stats = bookingStats([booking({ status, endAt })], NOW, "DOP")
+  expect(stats.earnedMinor).toBe(earned)
+  expect(stats.expectedMinor).toBe(expected)
 })

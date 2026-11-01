@@ -74,6 +74,7 @@ export default async function BookingsPage({ params }: Props) {
     businessId,
     lastDays.map((booking) => booking.customerKey)
   )
+  const now = new Date().toISOString()
   const bookings = (
     <>
       {/* New bookings (from the booking page) show up by themselves. */}
@@ -82,14 +83,14 @@ export default async function BookingsPage({ params }: Props) {
         businessId={businessId}
         upcoming={upcoming}
         past={past}
-        now={new Date().toISOString()}
+        now={now}
         assistant={
           <AskCard
             businessId={businessId}
             language={await getOwnerLanguage()}
           />
         }
-        summary={periodSummary(lastDays, firstVisits, today, 7)}
+        summary={periodSummary(lastDays, firstVisits, today, 7, now)}
         widgets={{
           ...widgetLayout,
           comingUp: {

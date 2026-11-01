@@ -2,6 +2,7 @@ import "server-only"
 
 import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm"
 import { notFound } from "next/navigation"
+import { EARNING_STATUSES } from "@/lib/booking-rules"
 import { customerKey } from "@/lib/customer-key"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
@@ -138,7 +139,7 @@ export async function getCustomers(
       >`max(case when ${status} = 'completed' then ${startAt} end)`,
       firstStart: sql<string>`min(${startAt})`,
       nextStart,
-      spentMinor: sql<number>`coalesce(sum(case when ${status} = 'completed' then ${bookings.priceMinor} end), 0)`,
+      spentMinor: sql<number>`coalesce(sum(case when ${inArray(status, [...EARNING_STATUSES])} and ${bookings.endAt} <= ${now} then ${bookings.priceMinor} end), 0)`,
     })
     .from(bookings)
     .where(

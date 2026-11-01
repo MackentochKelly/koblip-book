@@ -813,6 +813,20 @@ test("booking_stats returns the stats with from, to and the business currency", 
   )
 })
 
+test("booking_stats formats zero money totals as currency", async () => {
+  vi.mocked(getBookingsBetween).mockResolvedValue([])
+  const result = await byName("booking_stats").run({
+    from: "2026-10-28",
+    to: "2026-10-28",
+  })
+  expect(result).toMatchObject({
+    earnedMinor: 0,
+    earnedText: "€0.00",
+    expectedMinor: 0,
+    expectedText: "€0.00",
+  })
+})
+
 const CUSTOMER_ROWS = [
   {
     key: "n:ana",
@@ -868,6 +882,26 @@ test("list_customers sorts newest first by default with nulls last", async () =>
   expect(result.customers.map((c) => c.name)).toEqual(["Cy", "Ana", "Bo"])
   expect(result.total).toBe(3)
   expect(result.truncated).toBe(false)
+})
+
+test("list_customers formats spent totals in the owner's locale", async () => {
+  vi.mocked(getCustomers).mockResolvedValue(CUSTOMER_ROWS as never)
+  const result = (await byName("list_customers").run({})) as {
+    customers: { name: string; spentText: string }[]
+  }
+  expect(result.customers).toEqual([
+    expect.objectContaining({ name: "Cy", spentText: "€120.00" }),
+    expect.objectContaining({ name: "Ana", spentText: "€80.00" }),
+    expect.objectContaining({ name: "Bo", spentText: "€0.00" }),
+  ])
+  const es = (await byNameLang("list_customers", "es").run({})) as {
+    customers: { spentText: string }[]
+  }
+  expect(es.customers.map((c) => c.spentText)).toEqual([
+    "EUR\u00a0120.00",
+    "EUR\u00a080.00",
+    "EUR\u00a00.00",
+  ])
 })
 
 test("list_customers sorts by bookings, spent and firstBooking", async () => {

@@ -248,3 +248,21 @@ test("one customer's bookings, newest first, no one else's", async () => {
     "2020-03-01T14:00:00.000Z",
   ])
 })
+
+test.each([
+  ["confirmed", "2026-06-01T11:59:59.000Z", 1000],
+  ["confirmed", "2026-06-01T12:00:00.000Z", 1000],
+  ["confirmed", "2026-06-01T12:00:01.000Z", 0],
+  ["completed", "2026-06-01T12:00:00.000Z", 1000],
+  ["completed", "2026-06-01T12:00:01.000Z", 0],
+  ["no_show", "2026-06-01T11:59:59.000Z", 0],
+  ["cancelled", "2026-06-01T11:59:59.000Z", 0],
+])("spentMinor for %s ending at %s is %i", async (status, endAt, spentMinor) => {
+  await book("Luis", null, status, "2026-06-01T11:00:00.000Z")
+  const { db } = await import("@/lib/db")
+  await db.update(bookings).set({ endAt })
+
+  const [luis] = await getCustomers("b1")
+
+  expect(luis.spentMinor).toBe(spentMinor)
+})

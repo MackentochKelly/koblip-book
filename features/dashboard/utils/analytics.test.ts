@@ -2,13 +2,22 @@ import { expect, test } from "vitest"
 import type { OwnerBooking } from "../types"
 import { percentChange, periodSummary } from "./analytics"
 
+const NOW = "2026-10-31T12:00:00.000Z"
+
 const booking = (
   date: string,
   status: OwnerBooking["status"],
   customerKey = "p:1",
   serviceName = "Cut",
   priceMinor: number | null = 1000
-) => ({ date, status, customerKey, serviceName, priceMinor }) as OwnerBooking
+) => ({
+  date,
+  endAt: `${date}T10:30:00.000Z`,
+  status,
+  customerKey,
+  serviceName,
+  priceMinor,
+}) as OwnerBooking
 
 const rows = [
   booking("2026-10-31", "confirmed", "p:new"),
@@ -22,7 +31,7 @@ const rows = [
 const firstVisit = { "p:new": "2026-10-31", "p:1": "2026-09-01", "p:3": "2026-10-18" }
 
 test("the last 7 days against the 7 before, cancelled and future left out", () => {
-  const summary = periodSummary(rows, firstVisit, "2026-10-31", 7)
+  const summary = periodSummary(rows, firstVisit, "2026-10-31", 7, NOW)
   expect(summary.bookings).toEqual({ current: 2, previous: 2 })
   expect(summary.revenue).toEqual({ current: 1000, previous: 500 })
   expect(summary.noShows).toEqual({ current: 1, previous: 0 })
@@ -44,7 +53,7 @@ test("the last 7 days against the 7 before, cancelled and future left out", () =
 })
 
 test("a longer period takes in more and names the top services", () => {
-  const summary = periodSummary(rows, firstVisit, "2026-10-31", 30)
+  const summary = periodSummary(rows, firstVisit, "2026-10-31", 30, NOW)
   expect(summary.bookings.current).toBe(5)
   expect(summary.topServices).toEqual([
     { name: "Cut", count: 3 },
@@ -56,7 +65,7 @@ test("services past the top five are grouped as one", () => {
   const many = ["A", "B", "C", "D", "E", "F", "G"].map((name) =>
     booking("2026-10-31", "confirmed", "p:1", name)
   )
-  const { topServices } = periodSummary(many, {}, "2026-10-31", 7)
+  const { topServices } = periodSummary(many, {}, "2026-10-31", 7, NOW)
   expect(topServices).toHaveLength(6)
   expect(topServices.at(-1)).toEqual({ name: null, count: 2 })
 })
@@ -65,4 +74,19 @@ test("percent change, with nothing to compare against as null", () => {
   expect(percentChange({ current: 12, previous: 10 })).toBe(20)
   expect(percentChange({ current: 5, previous: 10 })).toBe(-50)
   expect(percentChange({ current: 3, previous: 0 })).toBeNull()
+})
+
+test.each([
+  ["confirmed", "2026-10-31T11:59:59.000Z", 1000],
+  ["confirmed", NOW, 1000],
+  ["confirmed", "2026-10-31T12:00:01.000Z", 0],
+  ["completed", NOW, 1000],
+  ["completed", "2026-10-31T12:00:01.000Z", 0],
+  ["no_show", "2026-10-31T11:59:59.000Z", 0],
+  ["cancelled", "2026-10-31T11:59:59.000Z", 0],
+] as const)("revenue for %s ending at %s is %i", (status, endAt, earned) => {
+  const row = { ...booking("2026-10-31", status), endAt }
+  const summary = periodSummary([row], {}, "2026-10-31", 7, NOW)
+  expect(summary.revenue).toEqual({ current: earned, previous: 0 })
+  expect(summary.bookings.current).toBe(status === "cancelled" ? 0 : 1)
 })

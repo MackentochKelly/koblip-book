@@ -39,8 +39,12 @@ export default async function AnalyticsPage({
     businessId,
     past.map((booking) => booking.customerKey)
   )
+  const now = new Date().toISOString()
   const periods = Object.fromEntries(
-    PERIODS.map((days) => [days, periodSummary(past, firstVisits, today, days)])
+    PERIODS.map((days) => [
+      days,
+      periodSummary(past, firstVisits, today, days, now),
+    ])
   ) as Record<Period, PeriodSummary>
   return (
     <AnalyticsView

@@ -1,3 +1,4 @@
+import { isEarned } from "@/lib/booking-rules"
 import type { OwnerBooking } from "@/features/dashboard/types"
 
 export interface BookingStats {
@@ -38,10 +39,10 @@ export function bookingStats(
   const members = new Map<string, number>()
   for (const b of rows) {
     byStatus[b.status] += 1
-    if (b.status === "completed") {
+    if (isEarned(b, now)) {
       earnedMinor += b.priceMinor ?? 0
     }
-    if (b.status === "confirmed" && b.endAt >= now) {
+    if (b.status === "confirmed" && b.endAt > now) {
       expectedMinor += b.priceMinor ?? 0
     }
     if (b.status === "cancelled") {

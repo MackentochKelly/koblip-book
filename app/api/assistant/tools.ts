@@ -1448,7 +1448,7 @@ export function buildAssistantTools(
               nextBookingText: dayText(t, c.nextBooking),
               firstBookingText: dayText(t, c.firstBooking),
               spentMinor: c.spentMinor,
-              spentText: priceText(t, c.spentMinor, c.currency),
+              spentText: formatPrice(c.spentMinor, c.currency, t.locale),
               recent: recent.slice(0, 3).map((b) => ({
                 date: b.date,
                 time: b.time,
@@ -1508,8 +1508,8 @@ export function buildAssistantTools(
         const stats = bookingStats(rows, now, business.currency)
         return {
           ...stats,
-          earnedText: priceText(t, stats.earnedMinor, stats.currency),
-          expectedText: priceText(t, stats.expectedMinor, stats.currency),
+          earnedText: formatPrice(stats.earnedMinor, stats.currency, t.locale),
+          expectedText: formatPrice(stats.expectedMinor, stats.currency, t.locale),
           byWeekday: stats.byWeekday.map((row) => ({
             ...row,
             weekdayText: formatWeekday(row.weekday, t.locale),
@@ -1613,7 +1613,7 @@ export function buildAssistantTools(
           nextBookingText: dayText(t, c.nextBooking),
           spentMinor: c.spentMinor,
           currency: c.currency,
-          spentText: priceText(t, c.spentMinor, c.currency),
+          spentText: formatPrice(c.spentMinor, c.currency, t.locale),
         }))
         return {
           customers: capped,

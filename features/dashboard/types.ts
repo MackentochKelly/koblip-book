@@ -28,7 +28,7 @@ export interface OwnerCustomer {
   lastVisit: string | null // "YYYY-MM-DD" of the latest completed booking, business time zone
   firstBooking: string | null // "YYYY-MM-DD" of the earliest booking of any status, business time zone
   nextBooking: string | null // "YYYY-MM-DD" of the next confirmed booking that has not started
-  spentMinor: number // sum of priceMinor of completed bookings
+  spentMinor: number // sum of priceMinor of ended confirmed or completed bookings
   currency: string
 }
 export interface HoursRow { weekday: number; opensAt: string; closesAt: string }
