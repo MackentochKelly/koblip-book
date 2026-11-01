@@ -13,8 +13,10 @@ vi.mock("openai", () => ({ default: OpenAiMock }))
 const SYSTEM_MESSAGE =
   "You write the About text for a local business's booking page, as the business speaking to a new customer. Two short sentences, at most 280 characters, warm, friendly and plain English. Say what kind of place it is and where (name only the neighbourhood or city, never the street address or postal code), then invite people in or to book. Use only the facts given. Never invent prices, years, awards, staff, products or claims. Do not list the opening days. No emojis, no hashtags, no quotes."
 
-function reply(about: unknown) {
-  return { choices: [{ message: { content: JSON.stringify({ about }) } }] }
+function reply(about: unknown, category?: unknown) {
+  return {
+    choices: [{ message: { content: JSON.stringify({ about, category }) } }],
+  }
 }
 
 async function loadFresh() {
@@ -46,7 +48,10 @@ test("sends the system message and schema, returns the trimmed text", async () =
       openingDays: ["Mon", "Tue"],
       amenities: ["wheelchair"],
     })
-  ).resolves.toBe("A warm little shop. Walk-ins welcome.")
+  ).resolves.toEqual({
+    about: "A warm little shop. Walk-ins welcome.",
+    category: null,
+  })
 
   expect(createMock).toHaveBeenCalledTimes(1)
   const [params] = createMock.mock.calls[0] as [Record<string, unknown>]
@@ -66,6 +71,45 @@ test("sends the system message and schema, returns the trimmed text", async () =
       },
     },
   })
+})
+
+test("with nameCategory, asks for a category too and checks it", async () => {
+  const { writeAbout } = await loadFresh()
+  const facts = {
+    name: "Boston Photo Studio",
+    placeTypes: [],
+    website: "https://www.bostonphotostudio.com/book",
+    nameCategory: true,
+  }
+  createMock.mockResolvedValueOnce(
+    reply("A photo studio in Boston. Book a session.", " photography  studio ")
+  )
+
+  await expect(writeAbout(facts)).resolves.toEqual({
+    about: "A photo studio in Boston. Book a session.",
+    category: "Photography studio",
+  })
+  const [params] = createMock.mock.calls[0] as [Record<string, unknown>]
+  expect(params.messages).toMatchObject([
+    { role: "system", content: expect.stringContaining('"category"') },
+    {
+      role: "user",
+      content: expect.stringContaining("Website: bostonphotostudio.com"),
+    },
+  ])
+  expect(params.response_format).toMatchObject({
+    json_schema: { schema: { required: ["about", "category"] } },
+  })
+
+  // A catch-all, too many words or odd characters: the About stays, no
+  // category.
+  for (const bad of ["Services", "A very nice photo studio", "Photo #1", ""]) {
+    createMock.mockResolvedValueOnce(reply("A photo studio in Boston.", bad))
+    await expect(writeAbout(facts)).resolves.toEqual({
+      about: "A photo studio in Boston.",
+      category: null,
+    })
+  }
 })
 
 test("returns null on error, empty text and too-long text", async () => {

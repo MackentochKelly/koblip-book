@@ -30,6 +30,10 @@ export interface GooglePlace {
   formattedAddress?: string
   internationalPhoneNumber?: string
   websiteUri?: string
+  // Google's type codes ("barber_shop"); the primary one can be a
+  // catch-all like "service" (see map-place.ts).
+  primaryType?: string
+  types?: string[]
   primaryTypeDisplayName?: { text: string }
   regularOpeningHours?: { periods?: GooglePlacePeriod[] }
   timeZone?: { id: string }
@@ -40,8 +44,11 @@ export interface GooglePlace {
 
 const PLACES_API = "https://places.googleapis.com/v1"
 
+// primaryType and types cost nothing more: phone and hours already make
+// this a Place Details Enterprise call (developers.google.com/maps/
+// documentation/places/web-service/data-fields).
 const FIELD_MASK =
-  "id,displayName,formattedAddress,internationalPhoneNumber,websiteUri,primaryTypeDisplayName,regularOpeningHours,timeZone,businessStatus,addressComponents"
+  "id,displayName,formattedAddress,internationalPhoneNumber,websiteUri,primaryType,types,primaryTypeDisplayName,regularOpeningHours,timeZone,businessStatus,addressComponents"
 
 function apiKey(): string {
   const key = process.env.GOOGLE_MAPS_PLATFORM_KEY

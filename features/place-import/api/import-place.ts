@@ -3,23 +3,31 @@ import { eq, like } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { businessHours, businesses } from "@/lib/db/schema"
-import { writeAbout } from "./write-about"
-import { fetchPlace } from "./fetch-place"
+import { writeAbout, type AboutWords } from "./write-about"
+import { fetchPlace, type GooglePlace } from "./fetch-place"
 import { findPlaceId } from "./find-place-id"
-import { mapPlace, slugBase, uniqueSlug } from "../utils/map-place"
+import {
+  mapPlace,
+  slugBase,
+  specificTypes,
+  uniqueSlug,
+} from "../utils/map-place"
 
 const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-// Meta AI writes a new business's About text from our own facts only.
-// Null when the AI is off or fails.
-async function aiDescription(
+// Meta AI writes a new business's About text from our own facts only,
+// and names its category when Google gave only a catch-all. Null when the
+// AI is off or fails.
+async function aiWords(
+  place: GooglePlace,
   business: {
     name: string
     category?: string | null
     address?: string | null
+    website?: string | null
   },
   hours: Array<{ weekday: number }>
-): Promise<string | null> {
+): Promise<AboutWords | null> {
   const openingDays = [...new Set(hours.map((row) => row.weekday))]
     .sort((a, b) => a - b)
     .map((weekday) => WEEKDAY_SHORT[weekday])
@@ -28,6 +36,9 @@ async function aiDescription(
     category: business.category ?? null,
     address: business.address ?? null,
     openingDays,
+    placeTypes: specificTypes(place),
+    website: business.website ?? null,
+    nameCategory: !business.category,
   })
 }
 
@@ -60,7 +71,8 @@ function hoursInsert(businessId: string, hours: MappedPlace["hours"]) {
 // that is already saved is never written again: its owner's name, phone,
 // hours and everything else stay as they are, and neither Google nor Meta
 // AI is asked. The About text comes from Meta AI (Google's
-// editorialSummary is never stored).
+// editorialSummary is never stored), and so does the category when
+// Google's is only a catch-all like "Services".
 //
 // Saves go through saveAll (see lib/db/save-all.ts). Two imports at the
 // same moment: the unique slug and googlePlaceId columns decide who wins;
@@ -75,8 +87,14 @@ export async function importPlaceById(
   }
 
   const place = await fetchPlace(placeId, sessionToken)
-  const { business, hours } = mapPlace(place)
-  const description = (await aiDescription(business, hours)) || null
+  const mapped = mapPlace(place)
+  const hours = mapped.hours
+  const words = await aiWords(place, mapped.business, hours)
+  const description = words?.about || null
+  const business = {
+    ...mapped.business,
+    category: mapped.business.category ?? words?.category ?? null,
+  }
 
   const base = slugBase(business.name, business.category ?? null)
   const conflicts = await db

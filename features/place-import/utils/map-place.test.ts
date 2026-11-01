@@ -1,6 +1,12 @@
 import { expect, test } from "vitest"
 import type { GooglePlace } from "../api/fetch-place"
-import { mapPlace, slugBase, slugify, uniqueSlug } from "./map-place"
+import {
+  mapPlace,
+  slugBase,
+  slugify,
+  specificTypes,
+  uniqueSlug,
+} from "./map-place"
 
 function place(overrides: Partial<GooglePlace> = {}): GooglePlace {
   return {
@@ -138,4 +144,29 @@ test("builds slugs and appends -2, -3 when taken", () => {
   const taken = new Set(["shop", "shop-2"])
   expect(uniqueSlug("barbershop", () => false)).toBe("barbershop")
   expect(uniqueSlug("shop", (slug) => taken.has(slug))).toBe("shop-3")
+})
+
+test("a catch-all primary type gives no category", () => {
+  for (const primaryType of ["service", "store", "point_of_interest"]) {
+    const { business } = mapPlace(
+      place({
+        primaryType,
+        primaryTypeDisplayName: { text: "Services" },
+        types: ["point_of_interest", "service", "establishment"],
+      })
+    )
+    expect(business.category).toBeNull()
+  }
+  expect(
+    mapPlace(place({ primaryType: "barber_shop" })).business.category
+  ).toBe("Barber shop")
+})
+
+test("specific types leave out the catch-alls, in words", () => {
+  expect(
+    specificTypes(
+      place({ types: ["hair_care", "point_of_interest", "barber_shop", "service"] })
+    )
+  ).toEqual(["hair care", "barber shop"])
+  expect(specificTypes(place({ types: undefined }))).toEqual([])
 })

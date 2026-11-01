@@ -1,6 +1,6 @@
 # Sign-up fixes
 
-Ten fixes from the sign-up audit (2026-11-01): home search → pick business →
+Eleven fixes from the sign-up audit (2026-11-01): home search → pick business →
 create account → Google details → check details → getting ready → live,
 checked at 375px and 1280px. Every step works today; these make it clearer
 and faster. How to use this file: [Plans](README.md).
@@ -25,10 +25,11 @@ and faster. How to use this file: [Plans](README.md).
 | S4 | "Getting your page ready" never looks stuck | M | | Done |
 | S5 | Check details says Continue | S | | Done |
 | S6 | Live screen has one "View page" | S | | Done |
-| S7 | Live screen shows a useful category | S | | Working on: M Kelly B, 2026-11-01 |
+| S7 | Live screen shows a useful category | M | | Done |
 | S8 | Search box hint fits at 375px | S | | Working on: M Kelly B, 2026-11-01 |
 | S9 | Setup still finishes after a server restart | M | | Done |
 | S10 | Keyboard focus stays in the list after a suggested search | S | S1 | Done |
+| S11 | The category shows in Spanish on Spanish pages | S | S7 | To do |
 
 ---
 
@@ -164,6 +165,15 @@ rule and log it below.
 **Done when:** that listing shows a photography category; a test covers
 the generic case.
 
+**Done (2026-11-01):** Google has no photography type: these studios are
+only `service`, a catch-all. The import now asks Google for `primaryType`
+and `types` (no extra cost: the call is already Enterprise). When the
+primary type is a catch-all, no category is saved from Google and the
+import's one Muse call (the one that writes the About) also names it,
+e.g. "Photography studio". AI off: no category, never "Services".
+Businesses saved before: `npm run category:fix` (dry run; `--apply`
+saves) on the server.
+
 ### S8 · Search box hint fits at 375px 🟡
 
 **Problem:** in the full-screen search panel at 375px the hint is cut off
@@ -221,6 +231,21 @@ moves to the first one (React `flushSync`, then focus), unless the owner
 moved focus to another control meanwhile. `get-started.test.tsx` covers
 both cases.
 
+### S11 · The category shows in Spanish on Spanish pages 🟡
+
+**Problem:** the category is saved in English only (Google is asked in
+English, and Muse names it in English), so Spanish pages show "Barber
+shop" or "Photography studio" in English.
+
+**Fix:** translate the category with the business's other texts, and show
+the page language's version wherever the category shows.
+
+**Files:** `features/dashboard/api/translate-business.ts`, the places that
+show the category.
+
+**Done when:** a Spanish page shows the category in Spanish; a test covers
+it.
+
 ## Decisions log
 
 | What | Why | Who | Date |
@@ -229,3 +254,4 @@ both cases.
 | S9: backfill demo copies and owned businesses with at least one service or team member with the migration time; all others stay null | Finished listings skip setup; unclaimed imports and owned listings without services or team can still prepare their catalog. Ownership claims keep the saved finish time. | M Kelly B | 2026-11-01 |
 | S3: existing email on sign-up switches to log in instead of an error | Keep the email, clear the password and explain the next step with a calm hint. | M Kelly B | 2026-11-01 |
 | S2: business-only filter goes in the Autocomplete request, not on the results | Owners mostly search by their business name, which now lists only businesses. Trade-off: with no location set, kind-plus-town suggestions point at places inside the town and the right town can rank lower ("Brockton, MA" rows 4–5); filtering the results instead would leave an empty list whenever Google returns only addresses. | M Kelly B | 2026-11-01 |
+| S7: a catch-all Google type ("service", "store", "establishment", "point_of_interest", "food", "health", "finance") is never saved as the category; Muse names it in the import's About call | Google has no type for many businesses (photographers are only "service"), so other types can't help. Naming it at import gives every screen and every later Muse step (catalog, policies, team photos) the real category from the start. | M Kelly B | 2026-11-01 |

@@ -16,15 +16,21 @@ const places = new Map<string, GooglePlace>()
 let release: () => void = () => {}
 let gate = Promise.resolve()
 const fetchPlace = vi.fn(async (placeId: string) => places.get(placeId))
-const writeAbout = vi.fn(async () => {
+const writeAbout = vi.fn(async (facts: { nameCategory?: boolean }): Promise<{
+  about: string
+  category: string | null
+} | null> => {
   await gate
-  return "About text"
+  return {
+    about: "About text",
+    category: facts.nameCategory ? "Photography studio" : null,
+  }
 })
 vi.mock("./fetch-place", () => ({
   fetchPlace: (placeId: string) => fetchPlace(placeId),
 }))
 vi.mock("./write-about", () => ({
-  writeAbout: () => writeAbout(),
+  writeAbout: (facts: { nameCategory?: boolean }) => writeAbout(facts),
 }))
 // A pasted link or text always points at place p1 here.
 vi.mock("./find-place-id", () => ({
@@ -98,6 +104,52 @@ test("a name with no Latin letters gets the business type as its slug", async ()
 
   expect(await importPlaceById("p1")).toBe("barber-shop")
   expect(await importPlaceById("p2")).toBe("barber-shop-2")
+})
+
+test("Google's catch-all category is replaced by the one Muse names", async () => {
+  places.set("p1", {
+    ...place("p1", "Boston Photo Studio"),
+    primaryType: "service",
+    primaryTypeDisplayName: { text: "Services" },
+    types: ["point_of_interest", "service", "establishment"],
+  })
+  places.set("p2", { ...place("p2", "Barbarock"), primaryType: "barber_shop" })
+
+  await importPlaceById("p1")
+  await importPlaceById("p2")
+
+  const { db } = await import("@/lib/db")
+  const rows = await db
+    .select({ name: businesses.name, category: businesses.category })
+    .from(businesses)
+  expect(rows).toEqual(
+    expect.arrayContaining([
+      { name: "Boston Photo Studio", category: "Photography studio" },
+      { name: "Barbarock", category: "Barber shop" },
+    ])
+  )
+  expect(writeAbout).toHaveBeenCalledWith(
+    expect.objectContaining({ nameCategory: true })
+  )
+  expect(writeAbout).toHaveBeenCalledWith(
+    expect.objectContaining({ nameCategory: false })
+  )
+})
+
+test("with the AI off a catch-all saves no category, never Services", async () => {
+  places.set("p1", {
+    ...place("p1", "Boston Photo Studio"),
+    primaryType: "service",
+    primaryTypeDisplayName: { text: "Services" },
+  })
+  writeAbout.mockResolvedValueOnce(null)
+
+  await importPlaceById("p1")
+
+  const { db } = await import("@/lib/db")
+  const [row] = await db.select().from(businesses)
+  expect(row.category).toBeNull()
+  expect(row.description).toBeNull()
 })
 
 test("two places with the same name imported at once get different slugs", async () => {

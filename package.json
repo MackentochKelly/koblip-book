@@ -18,7 +18,8 @@
     "customers:backfill": "tsx --conditions=react-server scripts/backfill-customer-keys.ts",
     "templates:remove-old": "tsx --conditions=react-server scripts/remove-old-templates.ts",
     "catalog:refill": "tsx --conditions=react-server scripts/refill-starter-catalogs.ts",
-    "policies:fill": "tsx --conditions=react-server scripts/fill-policies.ts"
+    "policies:fill": "tsx --conditions=react-server scripts/fill-policies.ts",
+    "category:fix": "tsx --conditions=react-server scripts/fix-categories.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

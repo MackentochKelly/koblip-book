@@ -39,6 +39,36 @@ function countryCode(place: GooglePlace): string | null {
   return component?.shortText ?? null
 }
 
+// Google's catch-all types: "service" and "store" from Table A, the rest
+// from Table B (developers.google.com/maps/documentation/places/
+// web-service/place-types). As a primary type they say nothing about the
+// business (a photo studio is just "service"), so Muse names it instead.
+export const CATCH_ALL_PLACE_TYPES: ReadonlySet<string> = new Set([
+  "service",
+  "store",
+  "establishment",
+  "point_of_interest",
+  "food",
+  "health",
+  "finance",
+])
+
+// Google's own category name, or null when its primary type is a
+// catch-all or it has none.
+export function googleCategory(place: GooglePlace): string | null {
+  if (place.primaryType && CATCH_ALL_PLACE_TYPES.has(place.primaryType)) {
+    return null
+  }
+  return place.primaryTypeDisplayName?.text ?? null
+}
+
+// The place's specific types in words ("hair care"), for Muse to go on.
+export function specificTypes(place: GooglePlace): string[] {
+  return (place.types ?? [])
+    .filter((type) => !CATCH_ALL_PLACE_TYPES.has(type))
+    .map((type) => type.replaceAll("_", " "))
+}
+
 // Google place → the businesses row (without id/slug) plus the hours rows.
 // Pure: no fetch, no database.
 export function mapPlace(place: GooglePlace): MappedPlace {
@@ -64,7 +94,7 @@ export function mapPlace(place: GooglePlace): MappedPlace {
       address: place.formattedAddress ?? null,
       timezone: place.timeZone?.id ?? "UTC",
       currency: currencyByCountry(countryCode(place)),
-      category: place.primaryTypeDisplayName?.text ?? null,
+      category: googleCategory(place),
       website: place.websiteUri ?? null,
       status: mapStatus(place.businessStatus),
     },

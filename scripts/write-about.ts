@@ -41,12 +41,14 @@ const openingDays = [...new Set(hours.map((row) => row.weekday))]
   .sort((a, b) => a - b)
   .map((weekday) => WEEKDAY_SHORT[weekday])
 
-const about = await writeAbout({
-  name: business.name,
-  category: business.category,
-  address: business.address,
-  openingDays,
-})
+const about = (
+  await writeAbout({
+    name: business.name,
+    category: business.category,
+    address: business.address,
+    openingDays,
+  })
+)?.about
 
 if (!about) {
   console.log("No About written")
