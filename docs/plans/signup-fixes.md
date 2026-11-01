@@ -19,7 +19,7 @@ and faster. How to use this file: [Plans](README.md).
 
 | Task | What | Size | Needs | Status |
 | --- | --- | --- | --- | --- |
-| S1 | Search by kind and town finds businesses | M | | To do |
+| S1 | Search by kind and town finds businesses | M | | Done |
 | S2 | Search shows businesses, not street addresses | S | S1 | To do |
 | S3 | Sign-up errors say what went wrong, in the right place | S | | To do |
 | S4 | "Getting your page ready" never looks stuck | M | | Done |
@@ -47,6 +47,13 @@ the server action aborting: the browser showed the POST as
 
 **Done when:** "photography studio Brockton" lists photo studios in
 Brockton; a test covers the request it sends.
+
+**Done (2026-11-01, 514f568):** Autocomplete only matches names and
+addresses, so the search now also asks Google for suggested searches
+(`includeQueryPredictions`). They show as rows with a search icon
+("photography studio near Brockton, MA, USA"); tapping one runs Text
+Search (New) (`features/onboarding/api/places-text-search.ts`) and lists
+the businesses. Text Search is billed only on a tap.
 
 ### S2 · Search shows businesses, not street addresses 🟠
 
