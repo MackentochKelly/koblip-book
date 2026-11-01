@@ -1,8 +1,8 @@
+import Image from "next/image"
 import Link from "next/link"
 import { ChevronRightIcon, StoreIcon } from "@/components/ui/icons"
 
 import { GlassCard } from "@/components/glass-frame"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Item,
   ItemActions,
@@ -32,22 +32,25 @@ export function MyBusinessesCard({
         >
           {labels.title}
         </h2>
-        <ItemGroup className="gap-1">
+        {/* Rows reach the card's edges; their text lines up with the title. */}
+        <ItemGroup className="-mx-4 gap-1">
           {businesses.map((business) => (
             <Item
               key={business.id}
-              size="sm"
               render={<Link href={`/dashboard/${business.id}`} />}
             >
-              <ItemMedia>
-                <Avatar className="size-10 rounded-lg">
-                  {business.photoUrl && (
-                    <AvatarImage src={business.photoUrl} alt="" />
-                  )}
-                  <AvatarFallback className="rounded-lg">
-                    <StoreIcon />
-                  </AvatarFallback>
-                </Avatar>
+              <ItemMedia variant="image" className="bg-muted">
+                {business.photoUrl ? (
+                  <Image
+                    src={business.photoUrl}
+                    alt=""
+                    width={40}
+                    height={40}
+                    unoptimized
+                  />
+                ) : (
+                  <StoreIcon className="text-muted-foreground" />
+                )}
               </ItemMedia>
               <ItemContent className="min-w-0">
                 <ItemTitle className="max-w-full">
