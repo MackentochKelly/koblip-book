@@ -1,7 +1,8 @@
 import { moneyShortParts } from "@/lib/format-price"
 
-// A big money number with its currency sign drawn smaller, so the amount
-// reads first ("DOP 4,000", "4000 €"). Inherits the number's own size.
+// A big money number: the amount first, then the currency sign small at its
+// top right, in every language ("4,000 DOP", "185 €"). Inherits the
+// number's own size.
 export function Money({
   priceMinor,
   currency,
@@ -11,16 +12,18 @@ export function Money({
   currency: string
   locale: string
 }) {
+  const parts = moneyShortParts(priceMinor, currency, locale)
+  const amount = parts
+    .filter((part) => !part.isCurrency)
+    .map((part) => part.text)
+    .join("")
+    .trim()
+  const sign = parts.find((part) => part.isCurrency)?.text
   return (
     <span>
-      {moneyShortParts(priceMinor, currency, locale).map((part, index) =>
-        part.isCurrency ? (
-          <span key={index} className="text-xl font-medium">
-            {part.text}
-          </span>
-        ) : (
-          part.text
-        )
+      {amount}
+      {sign && (
+        <span className="ml-1 align-top text-sm font-medium">{sign}</span>
       )}
     </span>
   )
