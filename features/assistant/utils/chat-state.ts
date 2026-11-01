@@ -12,6 +12,18 @@ export interface ChatStep {
   id: string
   label: string
   status: "running" | "done" | "failed"
+  // An answer's check only: its words if the screen must end it unchecked
+  // (the check could not answer, or the page closed during it).
+  failedLabel?: string
+}
+
+// A step the screen ends without its outcome: failed, in its failed words.
+export function endFailed(step: ChatStep): ChatStep {
+  return {
+    id: step.id,
+    label: step.failedLabel ?? step.label,
+    status: "failed",
+  }
 }
 
 export interface ChatConfirm {
@@ -173,7 +185,12 @@ export function applyEvent(
         ...reply,
         steps: [
           ...reply.steps,
-          { id: event.id, label: event.label, status: "running" },
+          {
+            id: event.id,
+            label: event.label,
+            status: "running",
+            failedLabel: event.failedLabel,
+          },
         ],
       }))
     case "choices":
@@ -271,7 +288,7 @@ export function toMessages(
 // Saved chats carry this number. Raise it whenever ChatItem changes:
 // a chat saved by another version starts fresh instead of breaking the
 // screen.
-export const CHAT_STORAGE_VERSION = 7
+export const CHAT_STORAGE_VERSION = 8
 
 const isText = (value: unknown): value is string => typeof value === "string"
 
@@ -341,9 +358,7 @@ export function restoreChat(saved: string | null): ChatItem[] {
         ? {
             ...item,
             steps: item.steps.map((step) =>
-              step.status === "running"
-                ? { ...step, status: "failed" as const }
-                : step
+              step.status === "running" ? endFailed(step) : step
             ),
           }
         : item

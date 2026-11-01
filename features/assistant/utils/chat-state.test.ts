@@ -30,18 +30,26 @@ test("text events build one reply after the owner's message", () => {
 
 test("a step updates in place by id", () => {
   let items: ChatItem[] = [owner, replyTo()]
-  items = applyEvent(items, {
-    type: "step",
-    id: "s1",
-    label: "Finding bookings…",
-    status: "running",
-  }, R)
-  items = applyEvent(items, {
-    type: "step",
-    id: "s1",
-    label: "Found bookings",
-    status: "done",
-  }, R)
+  items = applyEvent(
+    items,
+    {
+      type: "step",
+      id: "s1",
+      label: "Finding bookings…",
+      status: "running",
+    },
+    R
+  )
+  items = applyEvent(
+    items,
+    {
+      type: "step",
+      id: "s1",
+      label: "Found bookings",
+      status: "done",
+    },
+    R
+  )
   const reply = items[1]
   expect(reply.role === "assistant" && reply.steps).toEqual([
     { id: "s1", label: "Found bookings", status: "done" },
@@ -50,14 +58,18 @@ test("a step updates in place by id", () => {
 
 test("a confirm starts pending and can be resolved", () => {
   let items: ChatItem[] = [owner, replyTo()]
-  items = applyEvent(items, {
-    type: "confirm",
-    id: "c1",
-    title: "Cancel booking",
-    summary: "Ana, 3pm",
-    destructive: true,
-    action: "Cancel booking",
-  }, R)
+  items = applyEvent(
+    items,
+    {
+      type: "confirm",
+      id: "c1",
+      title: "Cancel booking",
+      summary: "Ana, 3pm",
+      destructive: true,
+      action: "Cancel booking",
+    },
+    R
+  )
   items = resolveConfirm(items, "c1", "accepted")
   const reply = items[1]
   expect(reply.role === "assistant" && reply.confirms[0].state).toBe("accepted")
@@ -66,7 +78,9 @@ test("a confirm starts pending and can be resolved", () => {
 test("done and error leave the items alone", () => {
   const items: ChatItem[] = [owner, replyTo()]
   expect(applyEvent(items, { type: "done" }, R)).toBe(items)
-  expect(applyEvent(items, { type: "error", code: "unavailable" }, R)).toBe(items)
+  expect(applyEvent(items, { type: "error", code: "unavailable" }, R)).toBe(
+    items
+  )
 })
 
 test("toMessages skips empty replies and keeps the newest", () => {
@@ -97,10 +111,14 @@ test("toMessages skips empty replies and keeps the newest", () => {
 test("choices land on the reply and are not sent back as words", () => {
   let items: ChatItem[] = [owner, replyTo()]
   items = applyEvent(items, { type: "text", delta: "Which one?" }, R)
-  items = applyEvent(items, {
-    type: "choices",
-    options: ["Classic Haircut", "Buzz Cut"],
-  }, R)
+  items = applyEvent(
+    items,
+    {
+      type: "choices",
+      options: ["Classic Haircut", "Buzz Cut"],
+    },
+    R
+  )
   const reply = items[1]
   expect(reply.role === "assistant" && reply.choices).toEqual([
     "Classic Haircut",
@@ -147,12 +165,16 @@ test("an older or broken saved chat starts fresh instead of breaking", () => {
 
 test("a tapped action's result lands on the reply and goes back as words", () => {
   let items: ChatItem[] = [owner, replyTo()]
-  items = applyEvent(items, {
-    type: "result",
-    ok: true,
-    text: "Cancelled the booking.",
-    kind: "bookings",
-  }, R)
+  items = applyEvent(
+    items,
+    {
+      type: "result",
+      ok: true,
+      text: "Cancelled the booking.",
+      kind: "bookings",
+    },
+    R
+  )
   const reply = items[1]
   expect(reply.role === "assistant" && reply.result).toEqual({
     ok: true,
@@ -169,10 +191,14 @@ test("a tapped action's result lands on the reply and goes back as words", () =>
 test("sources and the unverified notice land on the reply, not in its words", () => {
   let items: ChatItem[] = [owner, replyTo()]
   items = applyEvent(items, { type: "text", delta: "3 today." }, R)
-  items = applyEvent(items, {
-    type: "sources",
-    items: [{ kind: "bookings", count: 3 }],
-  }, R)
+  items = applyEvent(
+    items,
+    {
+      type: "sources",
+      items: [{ kind: "bookings", count: 3 }],
+    },
+    R
+  )
   items = applyEvent(items, { type: "notice", kind: "unverified" }, R)
   const reply = items[1]
   expect(reply.role === "assistant" && reply.sources).toEqual([
@@ -197,14 +223,22 @@ test("a saved chat's words come back as items with their words", () => {
 })
 
 test("a cut-off reply keeps what the owner got; the first mark wins", () => {
-  const items = applyEvent([owner, replyTo()], { type: "text", delta: "You have 2 today" }, R)
+  const items = applyEvent(
+    [owner, replyTo()],
+    { type: "text", delta: "You have 2 today" },
+    R
+  )
   const heard = markCutOff(items, "You have")
   expect(heard.at(-1)).toMatchObject({ cutOff: "You have" })
   expect(markCutOff(heard).at(-1)).toMatchObject({ cutOff: "You have" })
   // Typed: what was on screen.
   expect(markCutOff(items).at(-1)).toMatchObject({ cutOff: "You have 2 today" })
   // Heard to the end (Markdown aside): not a cut-off.
-  const bold = applyEvent([owner, replyTo()], { type: "text", delta: "**Sofia** at 11." }, R)
+  const bold = applyEvent(
+    [owner, replyTo()],
+    { type: "text", delta: "**Sofia** at 11." },
+    R
+  )
   expect(markCutOff(bold, "Sofia at 11.")).toEqual(bold)
   // No reply yet: nothing to mark.
   expect(markCutOff([owner])).toEqual([owner])
@@ -221,7 +255,11 @@ test("a cut-off reply keeps what the owner got; the first mark wins", () => {
 
 test("withdrawLast takes the last question and its reply off", () => {
   const first: ChatItem = { id: "o0", role: "owner", text: "Earlier" }
-  const replied = applyEvent([first, owner, replyTo()], { type: "text", delta: "Hm" }, R)
+  const replied = applyEvent(
+    [first, owner, replyTo()],
+    { type: "text", delta: "Hm" },
+    R
+  )
   expect(withdrawLast(replied)).toEqual([first])
   expect(withdrawLast([first, owner])).toEqual([first])
 })
@@ -235,7 +273,8 @@ test("free times land on the reply and come back from storage", () => {
   }
   const items = applyEvent(
     [{ id: "o", role: "owner", text: "Book" }, replyTo()],
-    { type: "times", ...times }, R
+    { type: "times", ...times },
+    R
   )
   const reply = items[items.length - 1]
   expect(reply.role === "assistant" && reply.times).toEqual(times)
@@ -245,7 +284,11 @@ test("free times land on the reply and come back from storage", () => {
 test("an answer's check shows as a chip and ends on its own reply", () => {
   let items: ChatItem[] = [owner, replyTo()]
   items = applyEvent(items, { type: "text", delta: "2 bookings." }, R)
-  items = applyEvent(items, { type: "check", id: "c1", label: "Checking…" }, R)
+  items = applyEvent(
+    items,
+    { type: "check", id: "c1", label: "Checking…", failedLabel: "Not checked" },
+    R
+  )
   const replyId = items[1].id
   // The owner asks again before the check ends.
   items = [
@@ -274,7 +317,7 @@ test("an answer's check shows as a chip and ends on its own reply", () => {
 test("an event never makes a reply: one with no reply on screen changes nothing", () => {
   const events: AssistantStreamEvent[] = [
     { type: "text", delta: "Hi" },
-    { type: "check", id: "c1", label: "Checking…" },
+    { type: "check", id: "c1", label: "Checking…", failedLabel: "Not checked" },
     { type: "choices", options: ["A", "B"] },
   ]
   for (const event of events) {
@@ -285,9 +328,13 @@ test("an event never makes a reply: one with no reply on screen changes nothing"
 test("a check left running when the page closed comes back ended", () => {
   let items: ChatItem[] = [owner, replyTo()]
   items = applyEvent(items, { type: "text", delta: "2 bookings." }, R)
-  items = applyEvent(items, { type: "check", id: "c1", label: "Checking…" }, R)
+  items = applyEvent(
+    items,
+    { type: "check", id: "c1", label: "Checking…", failedLabel: "Not checked" },
+    R
+  )
   expect(restoreChat(saveChat(items))[1]).toMatchObject({
-    steps: [{ id: "c1", status: "failed" }],
+    steps: [{ id: "c1", label: "Not checked", status: "failed" }],
   })
 })
 

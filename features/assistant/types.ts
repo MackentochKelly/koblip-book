@@ -25,7 +25,7 @@ export type AssistantStreamEvent =
       destructive: boolean
       action: string // the button's word, e.g. "Book", "Delete"
     } // card with the action button and Cancel
-  | { type: "check"; id: string; label: string } // the answer's check runs next: POST /api/assistant/check with this id; label = its step chip
+  | { type: "check"; id: string; label: string; failedLabel: string } // the answer's check runs next: POST /api/assistant/check with this id; label = its step chip, failedLabel = its words if the screen must end it unchecked
   | { type: "memory"; rows: MemoryRow[] } // records this answer looked up, sent back with it next time
   | { type: "choices"; options: string[] } // quick answers; a tap sends one
   | {

@@ -143,6 +143,7 @@ const CHECK = {
   type: "check",
   id: expect.any(String),
   label: "Checking the answer…",
+  failedLabel: "Couldn't check the answer",
 }
 const CHECKED = {
   type: "step",

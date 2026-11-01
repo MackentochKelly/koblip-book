@@ -116,7 +116,7 @@ export function useAssistantChat(
   // again. A check that fails to answer marks the reply unchecked, and
   // `listen` hears it (talking mode says so).
   const runCheck = async (
-    { id, label }: { id: string; label: string },
+    { id, failedLabel }: { id: string; failedLabel: string },
     replyId: string,
     listen?: AnswerListener
   ) => {
@@ -134,7 +134,7 @@ export function useAssistantChat(
       // Same as no answer: marked unchecked below.
     }
     if (!ended) {
-      apply({ type: "step", id, label, status: "failed" })
+      apply({ type: "step", id, label: failedLabel, status: "failed" })
       apply({ type: "notice", kind: "unverified" })
       listen?.onUnchecked?.()
     }
@@ -154,7 +154,7 @@ export function useAssistantChat(
     setError(null)
     unsaved.current = true
     let latest = start
-    let check: { id: string; label: string } | null = null
+    let check: { id: string; failedLabel: string } | null = null
     try {
       for await (const event of stream) {
         if (event.type === "check") check = event

@@ -486,7 +486,12 @@ export async function* runChat(
         if ("error" in stored) {
           yield { type: "notice", kind: "unverified" }
         } else {
-          yield { type: "check", id: stored.id, label: t.steps.checking }
+          yield {
+            type: "check",
+            id: stored.id,
+            label: t.steps.checking,
+            failedLabel: t.steps.notChecked,
+          }
         }
         if (items.length > 0) yield { type: "sources", items }
         // The picker shows at once, unchecked: it is the tool's own data.
