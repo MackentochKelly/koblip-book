@@ -23,6 +23,7 @@ import type { PageLanguage } from "@/lib/page-language"
 import { STARTER_CATALOG_RULES as RULES } from "@/lib/starter-catalog-rules"
 import {
   drawTeamPhoto,
+  finishSetup,
   startPolicies,
   startStarterCatalog,
 } from "../api/prepare-actions"
@@ -59,7 +60,7 @@ function shortList(names: string[], more: (count: number) => string): string {
 // new page's services, extras, prices, team and policies, Muse Image draws the team,
 // and the page is translated. Each row turns from waiting to working to
 // done as the real work finishes, then the success page opens. A business
-// that already has services, or an AI that is off or fails, goes straight
+// whose setup is finished, or an AI that is off or fails, goes straight
 // on: the page works without them.
 export function PreparingCard({
   businessId,
@@ -111,7 +112,7 @@ export function PreparingCard({
         // The real work goes on underneath while the rows are shown.
         // One photo failing (or its request) never stops the others.
         const photos = Promise.allSettled(
-          result.summary.team.map(async (member) => {
+          result.summary.team.filter((member) => !member.photoUrl).map(async (member) => {
             const photo = await drawTeamPhoto(businessId, member.id)
             if (!photo.ok) return
             setSummary((current) =>
@@ -151,6 +152,7 @@ export function PreparingCard({
       } catch {
         // Nothing here blocks the owner: the success page opens anyway.
       } finally {
+        await finishSetup(businessId).catch(() => null)
         router.replace(readyHref)
       }
     })()

@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { redirect } from "next/navigation"
 
 import { GlassCard } from "@/components/glass-frame"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
@@ -25,6 +26,9 @@ export default async function PreparingPage({
   const { businessId } = await params
   const owner = await requireAccount(`/setup/${businessId}/preparing`)
   const { business } = await getOwnerBusiness(businessId)
+  if (business.setupFinishedAt !== null) {
+    redirect(`/setup/${businessId}/ready`)
+  }
   const language = await getOwnerLanguage()
   return (
     <div

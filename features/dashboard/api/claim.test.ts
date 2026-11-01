@@ -34,6 +34,7 @@ beforeAll(async () => {
       currency: "DOP",
       ownerId: "user-a",
       detailsConfirmedAt: 1700000000000,
+      setupFinishedAt: 1700000000000,
     },
     {
       id: "biz-mine",
@@ -43,6 +44,7 @@ beforeAll(async () => {
       currency: "DOP",
       ownerId: "user-b",
       detailsConfirmedAt: 1700000000000,
+      setupFinishedAt: 1700000000000,
     },
   ])
 })
@@ -100,4 +102,11 @@ test("unknown slug returns not_found", async () => {
   await expect(
     claimBusinessForUser("user-b", "no-such-shop")
   ).resolves.toEqual({ ok: false, error: "not_found" })
+})
+
+test("taking over a finished business never restarts setup", async () => {
+  const { db } = await import("@/lib/db")
+  await claimBusinessForUser("user-a", "taken-shop")
+  const [row] = await db.select().from(businesses).where(eq(businesses.id, "biz-taken"))
+  expect(row.setupFinishedAt).toBe(1700000000000)
 })

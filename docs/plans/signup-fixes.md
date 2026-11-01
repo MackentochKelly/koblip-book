@@ -27,7 +27,7 @@ and faster. How to use this file: [Plans](README.md).
 | S6 | Live screen has one "View page" | S | | To do |
 | S7 | Live screen shows a useful category | S | | To do |
 | S8 | Search box hint fits at 375px | S | | To do |
-| S9 | Setup still finishes after a server restart | M | | Working on: M Kelly B, 2026-11-01 |
+| S9 | Setup still finishes after a server restart | M | | Done |
 | S10 | Keyboard focus stays in the list after a suggested search | S | S1 | Done |
 
 ---
@@ -177,6 +177,11 @@ the business and start whatever is missing, so the rows run as before.
 **Done when:** with the job store emptied mid-setup, the rows still run
 and the team photos and Spanish are made; a test covers it.
 
+**Done (2026-11-01):** Setup uses the saved `setupFinishedAt` value,
+so a lost job resumes the rows, missing team photos and Spanish without
+replacing services or team. An owner-checked action finishes setup, also
+when AI is off or the catalog fails. Finished businesses skip the work.
+
 ### S10 · Keyboard focus stays in the list after a suggested search 🟡
 
 **Problem:** tapping a suggested search ("photography studio near
@@ -204,3 +209,4 @@ both cases.
 | What | Why | Who | Date |
 | --- | --- | --- | --- |
 | S9: setup state is saved on the business (`setupFinishedAt`), not kept in server memory | A restart or the 15-minute job expiry lost what was left to do; a saved column is the smallest safe fix. A saved jobs queue with a worker was left for later (more parts, risk of paying twice for AI calls) | M Kelly B | 2026-11-01 |
+| S9: backfill demo copies and owned businesses with at least one service or team member with the migration time; all others stay null | Finished listings skip setup; unclaimed imports and owned listings without services or team can still prepare their catalog. Ownership claims keep the saved finish time. | M Kelly B | 2026-11-01 |

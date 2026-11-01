@@ -1,6 +1,6 @@
 "use server"
 
-import { eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { requireAccount } from "@/lib/dal"
 import { db } from "@/lib/db"
@@ -52,7 +52,7 @@ export async function startPolicies(
   businessId: string
 ): Promise<{ ok: boolean }> {
   const owned = await ownedBusiness(businessId)
-  if (!owned) {
+  if (!owned || owned.business.setupFinishedAt !== null) {
     return { ok: false }
   }
   const result = await policiesJob(owned.business)
@@ -71,7 +71,7 @@ export async function drawTeamPhoto(
   memberId: string
 ): Promise<{ ok: true; photoUrl: string } | { ok: false }> {
   const owned = await ownedBusiness(businessId)
-  if (!owned || typeof memberId !== "string") {
+  if (!owned || owned.business.setupFinishedAt !== null || typeof memberId !== "string") {
     return { ok: false }
   }
   const result = await photoJob(owned.business, memberId)
@@ -79,4 +79,23 @@ export async function drawTeamPhoto(
     revalidatePath("/b/" + owned.business.slug)
   }
   return result
+}
+
+// Setup is finished even when AI is off or fails: the page works without
+// it. Only the current owner may finish it, never a demo or another owner.
+export async function finishSetup(businessId: string): Promise<{ ok: boolean }> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) return { ok: false }
+  if (owned.business.setupFinishedAt !== null) return { ok: true }
+  const saved = await db
+    .update(businesses)
+    .set({ setupFinishedAt: Date.now() })
+    .where(and(
+      eq(businesses.id, businessId),
+      eq(businesses.ownerId, owned.userId),
+      eq(businesses.isDemo, false),
+      isNull(businesses.setupFinishedAt)
+    ))
+    .returning({ id: businesses.id })
+  return { ok: saved.length > 0 }
 }

@@ -54,6 +54,8 @@ export const businesses = sqliteTable(
     status: text(),
     ownerId: text().references(() => user.id, { onDelete: "set null" }),
     detailsConfirmedAt: integer(),
+    // Null until the owner finishes setup, even across server restarts.
+    setupFinishedAt: integer(),
     seats: integer().notNull().default(1),
     // Home's widgets for every device (features/dashboard/widgets.ts);
     // null until the owner changes them. Read through normalizeLayout.

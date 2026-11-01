@@ -337,6 +337,13 @@
       "when": 1793531108388,
       "tag": "0047_team_starting_counts",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "6",
+      "when": 1793553812207,
+      "tag": "0048_short_gorgon",
+      "breakpoints": true
     }
   ]
 }

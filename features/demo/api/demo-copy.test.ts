@@ -81,6 +81,7 @@ test("a copy is the full sample, owned by the guest and marked demo", async () =
     ownerId: "guest",
     isDemo: true,
   })
+  expect(row.setupFinishedAt).toEqual(expect.any(Number))
   expect(copy.slug.startsWith(DEMO_SAMPLE.slugPrefix)).toBe(true)
   const count = async (table: typeof services | typeof teamMembers) =>
     (await db.select().from(table).where(eq(table.businessId, copy.id))).length

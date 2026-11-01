@@ -89,7 +89,7 @@ export async function importPlaceById(
     const slug = uniqueSlug(base, (candidate) => taken.has(candidate))
     try {
       await saveAll([
-        db.insert(businesses).values({ ...business, description, id, slug }),
+        db.insert(businesses).values({ ...business, description, id, slug, setupFinishedAt: null }),
         ...hoursInsert(id, hours),
       ])
       return slug

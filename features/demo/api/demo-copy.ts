@@ -117,6 +117,7 @@ export async function createDemoCopy(
       ownerId,
       // Its details are the sample's own: nothing for the guest to confirm.
       detailsConfirmedAt: now,
+      setupFinishedAt: now,
       seats: sample.seats,
       isDemo: true,
     }),

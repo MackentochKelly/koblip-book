@@ -34,12 +34,12 @@ type Business = typeof businesses.$inferSelect
 const store = globalThis as typeof globalThis & {
   koblipPrepareJobs?: Map<string, Promise<unknown>>
 }
-const jobs = (store.koblipPrepareJobs ??= new Map())
 
 function once<T extends { ok: boolean }>(
   key: string,
   work: () => Promise<T>
 ): Promise<T> {
+  const jobs = (store.koblipPrepareJobs ??= new Map())
   const running = jobs.get(key) as Promise<T> | undefined
   if (running) return running
   const job = work()
@@ -60,9 +60,12 @@ function once<T extends { ok: boolean }>(
 // Meta AI writes the services, extras, prices and team from the Google
 // details. A business that already has services or team is never changed.
 export function catalogJob(business: Business): Promise<StarterResult> {
+  if (business.setupFinishedAt !== null || business.isDemo) {
+    return catalogSummary(business, null, false).then((summary) => ({ ok: true, summary }))
+  }
   return once(`catalog:${business.id}`, async (): Promise<StarterResult> => {
     if (await hasCatalog(business.id)) {
-      return { ok: true, summary: await catalogSummary(business, null, false) }
+      return { ok: true, summary: await catalogSummary(business, null, true) }
     }
     if (!isMetaAiEnabled()) {
       return { ok: false, error: "ai_off" }
@@ -73,7 +76,7 @@ export function catalogJob(business: Business): Promise<StarterResult> {
     }
     // The owner may have added something while Meta AI was writing.
     if (await hasCatalog(business.id)) {
-      return { ok: true, summary: await catalogSummary(business, null, false) }
+      return { ok: true, summary: await catalogSummary(business, null, true) }
     }
     await writeCatalog(business, catalog)
     return {
@@ -122,14 +125,16 @@ export async function startPreparing(
   business: Business,
   translate: () => Promise<unknown>
 ): Promise<void> {
-  if (business.isDemo) return
+  if (business.isDemo || business.setupFinishedAt !== null) return
   const catalog = catalogJob(business).then((result) => {
     if (result.ok && result.summary.created) {
       for (const member of result.summary.team) {
-        void photoJob(business, member.id).catch(() => null)
+        if (!member.photoUrl) {
+          void photoJob(business, member.id).catch(() => null)
+        }
       }
     }
   })
   await Promise.allSettled([catalog, policiesJob(business)])
-  await translate().catch(() => null)
+  await Promise.resolve().then(translate).catch(() => null)
 }

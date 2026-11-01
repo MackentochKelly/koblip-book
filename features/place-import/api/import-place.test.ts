@@ -124,6 +124,7 @@ test("the same place imported twice at once is saved once", async () => {
   const { db } = await import("@/lib/db")
   const rows = await db.select().from(businesses)
   expect(rows).toHaveLength(1)
+  expect(rows[0].setupFinishedAt).toBeNull()
   const hours = await db
     .select()
     .from(businessHours)

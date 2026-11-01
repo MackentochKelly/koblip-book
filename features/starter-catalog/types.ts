@@ -33,8 +33,8 @@ export interface StarterSummary {
   extras: string[]
   team: Array<{ id: string; name: string; photoUrl: string | null }>
   role: string | null
-  // True when this run wrote the catalog; false when the business already
-  // had services or team (nothing is changed then).
+  // True while setup is unfinished and the catalog is saved: the rows
+  // still run after a server restart. Existing services and team stay.
   created: boolean
 }
 

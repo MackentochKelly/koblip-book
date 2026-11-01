@@ -35,7 +35,7 @@ const { catalogJob, photoJob, policiesJob, startPreparing } = await import(
 type Business = Parameters<typeof catalogJob>[0]
 let count = 0
 const business = () =>
-  ({ id: `biz-${++count}`, isDemo: false, ownerId: "owner-1" }) as Business
+  ({ id: `biz-${++count}`, isDemo: false, setupFinishedAt: null, ownerId: "owner-1" }) as Business
 
 beforeEach(() => {
   for (const mock of Object.values(mocks)) mock.mockReset()
@@ -50,7 +50,7 @@ test("a second caller joins the running catalog job and keeps its result", async
   const second = catalogJob(biz)
   expect(second).toBe(first)
   await expect(first).resolves.toEqual({ ok: true, summary: { created: true } })
-  // Later, the setup screen still sees that it was just made.
+  // Later, the setup screen still knows setup is unfinished.
   mocks.hasCatalog.mockResolvedValue(true)
   await expect(catalogJob(biz)).resolves.toEqual({ ok: true, summary: { created: true } })
   expect(mocks.draftFor).toHaveBeenCalledTimes(1)
@@ -128,4 +128,47 @@ test("startPreparing leaves demo copies alone", async () => {
   await startPreparing({ ...business(), isDemo: true } as Business, translate)
   expect(translate).not.toHaveBeenCalled()
   expect(mocks.draftFor).not.toHaveBeenCalled()
+})
+
+test("saved setup resumes its rows, missing photos and Spanish after the store is cleared", async () => {
+  const biz = business()
+  mocks.draftFor.mockResolvedValue({ team: { role: "Photographer" } })
+  mocks.catalogSummary.mockImplementation(async (_b, _role, created) => ({
+    created,
+    team: [{ id: "tm-1", photoUrl: null }, { id: "tm-2", photoUrl: "/photos/existing.webp" }],
+  }))
+  await catalogJob(biz)
+  ;(globalThis as typeof globalThis & { koblipPrepareJobs?: Map<string, Promise<unknown>> }).koblipPrepareJobs?.clear()
+  mocks.hasCatalog.mockResolvedValue(true)
+  mocks.policyParts.mockResolvedValue({ texts: true, points: true })
+  mocks.drawMemberPhoto.mockResolvedValue("/photos/a.webp")
+  const translate = vi.fn(async () => {})
+
+  await expect(catalogJob(biz)).resolves.toMatchObject({ ok: true, summary: { created: true } })
+  await startPreparing(biz, translate)
+
+  expect(mocks.writeCatalog).toHaveBeenCalledTimes(1)
+  expect(mocks.draftFor).toHaveBeenCalledTimes(1)
+  expect(mocks.drawMemberPhoto).toHaveBeenCalledExactlyOnceWith(biz, "tm-1", "owner-1")
+  expect(translate).toHaveBeenCalledTimes(1)
+})
+
+test("finished setup ignores even a cached unfinished catalog and starts nothing", async () => {
+  const biz = business()
+  mocks.draftFor.mockResolvedValue({ team: { role: "Photographer" } })
+  await catalogJob(biz)
+  const finished = { ...biz, setupFinishedAt: 123 }
+  const translate = vi.fn()
+  await expect(catalogJob(finished)).resolves.toMatchObject({ ok: true, summary: { created: false } })
+  await startPreparing(finished, translate)
+  expect(mocks.draftFor).toHaveBeenCalledTimes(1)
+  expect(mocks.drawMemberPhoto).not.toHaveBeenCalled()
+  expect(mocks.policyParts).not.toHaveBeenCalled()
+  expect(translate).not.toHaveBeenCalled()
+})
+
+test("failed background work and translation never throw", async () => {
+  mocks.draftFor.mockRejectedValue(new Error("catalog"))
+  mocks.policyParts.mockRejectedValue(new Error("policies"))
+  await expect(startPreparing(business(), async () => { throw new Error("Spanish") })).resolves.toBeUndefined()
 })
