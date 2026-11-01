@@ -178,7 +178,10 @@ export function BottomPanel({
               "transition-[transform,height,opacity,filter,margin,border-radius]",
             // Full: anchored to the screen's sides and bottom, round only at
             // the top.
-            "data-full:rounded-b-none data-full:border-x-0 data-full:border-b-0 data-full:[--drawer-inset:0px]"
+            "data-full:rounded-b-none data-full:border-x-0 data-full:border-b-0 data-full:[--drawer-inset:0px]",
+            // Pulled up past where it rests, the strip under it is the
+            // sheet's colour, so no gap opens at the bottom.
+            "data-full:[--drawer-bleed-background:var(--color-popover)]"
           )}
         >
           {header ?? (
