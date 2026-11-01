@@ -31,6 +31,7 @@ const en = {
     verified: "Verified",
     seeAll: "See all",
     theme: "Light or dark mode",
+    backToDashboard: "Back to dashboard",
   },
   status: {
     temporarilyClosed: "Temporarily closed",
@@ -328,6 +329,7 @@ const es: Messages = {
     verified: "Verificado",
     seeAll: "Ver todo",
     theme: "Modo claro u oscuro",
+    backToDashboard: "Volver al panel",
   },
   status: {
     temporarilyClosed: "Cerrado temporalmente",

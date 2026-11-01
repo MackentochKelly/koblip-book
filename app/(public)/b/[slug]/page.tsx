@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { headers } from "next/headers"
 import { notFound } from "next/navigation"
 import { LanguageProvider } from "@/components/language-provider"
+import { getSession } from "@/lib/dal"
 import { messagesFor } from "@/lib/i18n"
 import { pickLanguage } from "@/lib/page-language"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
@@ -35,6 +36,7 @@ import { BusinessSideCard } from "@/features/business-page/components/business-s
 import { BusinessSummary } from "@/features/business-page/components/business-summary"
 import { OpeningHours } from "@/features/business-page/components/opening-hours"
 import { ServiceList } from "@/features/business-page/components/service-list"
+import { OwnerBackButton } from "@/features/business-page/components/owner-back-button"
 import { ShareButton } from "@/features/business-page/components/share-button"
 import { TeamList } from "@/features/business-page/components/team-list"
 import { getWeekdayInTimeZone } from "@/features/business-page/utils/get-weekday-in-time-zone"
@@ -82,6 +84,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
   // No hours saved: say nothing rather than "Closed now".
   const open = hours.length > 0 ? isOpenNow(hours, business.timezone) : null
   const whatsapp = await offersWhatsapp(data.business.id)
+  const isOwner = (await getSession())?.userId === business.ownerId
   const bookable = isBookable({
     status: business.status,
     servicesCount: services.length,
@@ -262,6 +265,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
         </BottomBar>
       )}
       {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp })} mode="drawer" />}
+      {isOwner && <OwnerBackButton businessId={business.id} />}
       <Toaster />
     </LanguageProvider>
   )
