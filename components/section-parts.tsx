@@ -58,12 +58,12 @@ export function SectionParts<T extends string>({
       </div>
 
       {/* On a phone: first, edge to edge (undoing the page's padding) and
-          pinned just under the app's top bar (AppTopBar's height), a
-          little taller with bigger words: 44px, Apple's tap height. */}
-      <div className="max-md:sticky max-md:top-[calc(--spacing(14)+env(safe-area-inset-top))] max-md:z-20 max-md:order-first max-md:-mx-4 max-md:-mt-4 max-md:bg-background">
+          pinned just under the app's top bar (AppTopBar's height), with a
+          little room above the tabs. */}
+      <div className="max-md:sticky max-md:top-[calc(--spacing(14)+env(safe-area-inset-top))] max-md:z-20 max-md:order-first max-md:-mx-4 max-md:-mt-4 max-md:bg-background max-md:pt-2">
         <ViewTabs
           variant="line"
-          listClassName="max-md:px-4 max-md:group-data-horizontal/tabs:h-11 max-md:**:data-[slot=tabs-trigger]:text-base"
+          listClassName="max-md:px-4"
           ariaLabel={ariaLabel}
           views={parts.map((part) => ({ id: part.id, label: part.label }))}
           value={current}
