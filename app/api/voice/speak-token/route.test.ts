@@ -2,6 +2,7 @@
 import { beforeEach, expect, test, vi } from "vitest"
 
 vi.mock("server-only", () => ({}))
+vi.mock("@/lib/account-voices", () => ({ getOwnerVoiceId: vi.fn() }))
 vi.mock("@/lib/dal", () => ({ getSession: vi.fn() }))
 vi.mock("@/features/dashboard/api/owned-business", () => ({
   ownedBusiness: vi.fn(),
@@ -10,6 +11,7 @@ vi.mock("@/features/assistant/api/rate-limit", () => ({
   checkAssistantRateLimit: vi.fn(() => true),
 }))
 
+const { getOwnerVoiceId } = await import("@/lib/account-voices")
 const { getSession } = await import("@/lib/dal")
 const { ownedBusiness } =
   await import("@/features/dashboard/api/owned-business")
@@ -26,6 +28,7 @@ function get(headers: Record<string, string> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(getOwnerVoiceId).mockResolvedValue("saved-voice")
   vi.mocked(checkAssistantRateLimit).mockReturnValue(true)
   vi.mocked(getSession).mockResolvedValue(OWNER as never)
   vi.mocked(ownedBusiness).mockImplementation(async (businessId: string) =>
@@ -109,7 +112,7 @@ test("200 mints with the proven type and returns url plus voiceId", async () => 
       `&output_format=${VOICE_RULES.speakOutputFormat}` +
       `&sync_alignment=${VOICE_RULES.speakSyncAlignment}` +
       `&single_use_token=tok`,
-    voiceId: VOICE_RULES.speakVoiceId,
+    voiceId: "saved-voice",
   })
   expect(VOICE_RULES.speakSyncAlignment).toBe(true)
   expect(VOICE_RULES.speakSampleRate).toBe(24000)
@@ -126,4 +129,29 @@ test("a token needing encoding round-trips through the URL", async () => {
   expect(res.status).toBe(200)
   const body = await res.json()
   expect(new URL(body.url).searchParams.get("single_use_token")).toBe("a+b/c=")
+})
+
+test("409 without a chosen voice, with no token minted", async () => {
+  vi.mocked(getOwnerVoiceId).mockResolvedValue(null)
+  const res = await GET(get())
+  expect(res.status).toBe(409)
+  expect(await res.json()).toEqual({ error: "no_voice" })
+  expect(fetch).not.toHaveBeenCalled()
+  expect(getOwnerVoiceId).toHaveBeenCalledExactlyOnceWith(OWNER.userId)
+})
+
+test("the browser's voice id is ignored in favor of the owner's choice", async () => {
+  const res = await GET(new Request(ROUTE_URL + "&voiceId=browser-voice"))
+  expect(res.status).toBe(200)
+  expect(await res.json()).toMatchObject({ voiceId: "saved-voice" })
+  expect(getOwnerVoiceId).toHaveBeenCalledExactlyOnceWith(OWNER.userId)
+})
+
+test("demo guests use their own saved voice too", async () => {
+  vi.mocked(getSession).mockResolvedValue({ ...OWNER, userId: "guest", isGuest: true } as never)
+  vi.mocked(getOwnerVoiceId).mockResolvedValue("guest-voice")
+  const res = await GET(get())
+  expect(res.status).toBe(200)
+  expect(await res.json()).toMatchObject({ voiceId: "guest-voice" })
+  expect(getOwnerVoiceId).toHaveBeenCalledWith("guest")
 })

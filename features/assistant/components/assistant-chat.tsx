@@ -17,7 +17,6 @@ import { ViewTabs } from "@/components/view-tabs"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useVisualViewport } from "@/hooks/use-visual-viewport"
 import type { PageLanguage } from "@/lib/page-language"
-import { VOICE_RULES } from "@/lib/voice-rules"
 import { assistantMessagesFor } from "../i18n"
 import { useAssistantChat } from "../hooks/use-assistant-chat"
 import { useLiveVoice } from "../hooks/use-live-voice"
@@ -51,7 +50,6 @@ export function AssistantChat({
   // Talking live, owned here so the chat's buttons can speak into it.
   const live = useLiveVoice({
     businessId,
-    voiceId: VOICE_RULES.speakVoiceId,
     busy: chat.busy,
     send: chat.send,
     stopAnswer: chat.stop,

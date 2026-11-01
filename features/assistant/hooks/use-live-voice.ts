@@ -58,7 +58,6 @@ export type LiveVoice = ReturnType<typeof useLiveVoice>
 // microphone through the capture worklet to our relay, and the speaker.
 export function useLiveVoice({
   businessId,
-  voiceId,
   busy,
   send,
   stopAnswer,
@@ -72,7 +71,6 @@ export function useLiveVoice({
   onError,
 }: {
   businessId: string
-  voiceId: string
   busy: boolean
   send: (
     text: string,
@@ -121,7 +119,6 @@ export function useLiveVoice({
     cutIns,
     greeting,
     onError,
-    voiceId,
   })
   useEffect(() => {
     latest.current = {
@@ -136,7 +133,6 @@ export function useLiveVoice({
       cutIns,
       greeting,
       onError,
-      voiceId,
     }
   })
   // After the screen has caught up with a finished answer, a turn that
@@ -186,7 +182,6 @@ export function useLiveVoice({
       openSpeech: ({ onAudio, onDone, onError }) =>
         openSpeech({
           businessId,
-          voiceId: latest.current.voiceId,
           onAudio: (chunk, words) => {
             speaker.play(chunk, words)
             onAudio()

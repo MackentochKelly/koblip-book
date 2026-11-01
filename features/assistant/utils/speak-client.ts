@@ -50,13 +50,11 @@ export interface SpeechStream {
 
 export function openSpeech({
   businessId,
-  voiceId,
   onAudio,
   onDone,
   onError,
 }: {
   businessId: string
-  voiceId: string
   // One base64 PCM chunk (VOICE_RULES.speakOutputFormat) and the words it
   // says ("" when the chunk carries none).
   onAudio: (base64: string, words: string) => void
@@ -69,8 +67,8 @@ export function openSpeech({
   let socket: WebSocket | null = null
   let keepAlive: ReturnType<typeof setInterval> | undefined
   // Messages written before the socket is open go out on open.
-  const pending: object[] = []
-  let tokenVoiceId = voiceId
+  const pending: (() => object)[] = []
+  let tokenVoiceId: string
 
   const stop = (callback?: () => void) => {
     if (stopped) return
@@ -78,17 +76,17 @@ export function openSpeech({
     clearInterval(keepAlive)
     callback?.()
   }
-  const send = (message: object) => {
+  const send = (message: () => object) => {
     if (stopped) return
     if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(message))
+      socket.send(JSON.stringify(message()))
     } else {
       pending.push(message)
     }
   }
 
   void (async () => {
-    const query = new URLSearchParams({ businessId, voiceId })
+    const query = new URLSearchParams({ businessId })
     let url: string
     try {
       const response = await fetch(`/api/voice/speak-token?${query}`)
@@ -105,9 +103,12 @@ export function openSpeech({
     socket.onopen = () => {
       socket?.send(JSON.stringify({ voices: [tokenVoiceId] }))
       for (const message of pending.splice(0)) {
-        socket?.send(JSON.stringify(message))
+        socket?.send(JSON.stringify(message()))
       }
-      keepAlive = setInterval(() => send({ keep_alive: true }), KEEP_ALIVE_MS)
+      keepAlive = setInterval(
+        () => send(() => ({ keep_alive: true })),
+        KEEP_ALIVE_MS
+      )
     }
     socket.onmessage = (event) => {
       if (stopped || typeof event.data !== "string") return
@@ -133,15 +134,14 @@ export function openSpeech({
     say: (text) => {
       const spoken = speakableText(text)
       if (!spoken || finished) return
-      // The voice id is the one the token was made for (set on open; the
-      // same as asked for).
-      send({ inputs: [{ text: `${spoken} `, voice_id: tokenVoiceId }] })
-      send({ flush: true })
+      // Queued words use the voice returned by the server once connected.
+      send(() => ({ inputs: [{ text: `${spoken} `, voice_id: tokenVoiceId }] }))
+      send(() => ({ flush: true }))
     },
     finish: () => {
       if (finished) return
       finished = true
-      send({ close_socket: true })
+      send(() => ({ close_socket: true }))
     },
     cancel: () => {
       stop()

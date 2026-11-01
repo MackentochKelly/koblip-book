@@ -5,8 +5,10 @@ export const VOICE_RULES = {
   // TTD socket base; the route adds model_id, output_format and the token.
   speakSocketUrl: "wss://api.elevenlabs.io/v1/text-to-dialogue/stream-input",
   speakModel: "eleven_v4_turbo",
-  // Savvy, warm and steady, English and Spanish. A picker comes later.
-  speakVoiceId: "ogwqBH5bbF03DSbNiRNN",
+  // How long the account's voice list is kept before it is read again.
+  accountVoicesCacheSeconds: 60 * 60,
+  // Longest voice id a save accepts; ElevenLabs ids are 20 characters.
+  maxVoiceIdLength: 64,
   // https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket
   speakSyncAlignment: true,
   speakOutputFormat: "pcm_24000",

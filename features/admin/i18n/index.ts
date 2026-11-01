@@ -428,6 +428,8 @@ const en = {
   },
   owners: {
     none: "No owners yet",
+    voice: "Voice",
+    noVoice: "None chosen",
     you: "You",
     admin: "Admin",
     blocked: "Blocked",
@@ -945,6 +947,8 @@ const es: AdminMessages = {
   },
   owners: {
     none: "Aún no hay dueños",
+    voice: "Voz",
+    noVoice: "Sin elegir",
     you: "Tú",
     admin: "Admin",
     blocked: "Bloqueado",

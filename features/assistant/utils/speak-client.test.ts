@@ -69,7 +69,6 @@ function stubToken() {
 function open(handlers: Partial<Parameters<typeof openSpeech>[0]> = {}) {
   return openSpeech({
     businessId: "b1",
-    voiceId: "voice-1",
     onAudio: vi.fn(),
     onDone: vi.fn(),
     onError: vi.fn(),
@@ -85,7 +84,7 @@ test("sentences said before the socket opens go out on open, each flushed", asyn
   speech.say("Let me check your **bookings**.")
   await vi.waitFor(() => expect(FakeSocket.last).toBeDefined())
   expect(fetchMock).toHaveBeenCalledWith(
-    "/api/voice/speak-token?businessId=b1&voiceId=voice-1"
+    "/api/voice/speak-token?businessId=b1"
   )
   const socket = FakeSocket.last!
   socket.open()

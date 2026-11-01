@@ -37,6 +37,15 @@ function id() {
     .$defaultFn(() => crypto.randomUUID())
 }
 
+// Each owner chooses their own live-speaking voice, across businesses.
+export const ownerVoices = sqliteTable("owner_voices", {
+  ownerId: text()
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  voiceId: text().notNull(),
+  updatedAt: timestamps().updatedAt,
+})
+
 export const businesses = sqliteTable(
   "businesses",
   {

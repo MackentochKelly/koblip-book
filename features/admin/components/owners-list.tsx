@@ -50,6 +50,9 @@ export function OwnersList({
               <ItemDescription className="truncate">
                 {`${owner.email} · ${t.businesses(owner.businesses)}`}
               </ItemDescription>
+              <ItemDescription className="truncate" title={owner.voice?.voiceId}>
+                {`${t.voice}: ${owner.voice?.name ?? owner.voice?.voiceId ?? t.noVoice}`}
+              </ItemDescription>
             </ItemContent>
             {!self && (
               <ItemActions>

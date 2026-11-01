@@ -1,9 +1,10 @@
 import "server-only"
 
 import { and, asc, count, desc, eq, gt, gte, isNotNull, isNull, sql } from "drizzle-orm"
+import { getAccountVoices } from "@/lib/account-voices"
 import { requireAdmin } from "@/lib/dal"
 import { db } from "@/lib/db"
-import { bookings, businesses, customers, teamInvites, teamMembers, teamMemberHours, user } from "@/lib/db/schema"
+import { bookings, businesses, customers, teamInvites, teamMembers, teamMemberHours, ownerVoices, user } from "@/lib/db/schema"
 
 // Every list stops here; the newest come first.
 const MAX_ROWS = 200
@@ -97,6 +98,7 @@ export interface AdminOwner {
   banned: boolean
   createdAt: string
   businesses: number
+  voice: { voiceId: string; name: string | null } | null
 }
 
 export async function getOwners(): Promise<AdminOwner[]> {
@@ -114,16 +116,21 @@ export async function getOwners(): Promise<AdminOwner[]> {
       email: user.email,
       image: user.image,
       banned: user.banned,
+      voiceId: ownerVoices.voiceId,
       createdAt: user.createdAt,
       businesses: sql<number>`coalesce(${owned.n}, 0)`,
     })
     .from(user)
     .leftJoin(owned, eq(owned.ownerId, user.id))
+    .leftJoin(ownerVoices, eq(ownerVoices.ownerId, user.id))
     .where(realUser)
     .orderBy(desc(user.createdAt))
     .limit(MAX_ROWS)
-  return rows.map((row) => ({
+  const voices = await getAccountVoices()
+  const names = new Map(voices?.map((voice) => [voice.voiceId, voice.name]))
+  return rows.map(({ voiceId, ...row }) => ({
     ...row,
+    voice: voiceId === null ? null : { voiceId, name: names.get(voiceId) ?? null },
     banned: row.banned === true,
     createdAt: row.createdAt.toISOString(),
   }))

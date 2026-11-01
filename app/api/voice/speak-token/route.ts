@@ -2,6 +2,7 @@ import "server-only"
 
 import { checkAssistantRateLimit } from "@/features/assistant/api/rate-limit"
 import { isCrossSiteRequest } from "@/features/assistant/api/request-guard"
+import { getOwnerVoiceId } from "@/lib/account-voices"
 import { ownedBusiness } from "@/features/dashboard/api/owned-business"
 import { getSession } from "@/lib/dal"
 import { VOICE_RULES } from "@/lib/voice-rules"
@@ -40,6 +41,11 @@ export async function GET(request: Request) {
     return Response.json({ error: "not_found" }, { status: 404 })
   }
 
+  const voiceId = await getOwnerVoiceId(session.userId)
+  if (voiceId === null) {
+    return Response.json({ error: "no_voice" }, { status: 409 })
+  }
+
   // 4. Mint the token server-side. The type below opens the TTD socket
   // (proven live; the token docs page does not list it yet).
   const apiKey = process.env.ELEVENLABS_API_KEY
@@ -69,6 +75,6 @@ export async function GET(request: Request) {
   url.searchParams.set("single_use_token", token)
   return Response.json({
     url: url.toString(),
-    voiceId: VOICE_RULES.speakVoiceId,
+    voiceId,
   })
 }
