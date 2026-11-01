@@ -13,6 +13,7 @@ import {
 
 import { AppTopBar } from "@/components/app-top-bar"
 import { NavMain } from "@/components/nav-main"
+import { PageContent } from "@/components/page-content"
 import {
   Sidebar,
   SidebarContent,
@@ -59,9 +60,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </Sidebar>
         <SidebarInset className="min-w-0">
           <AppTopBar title={m.admin} menuLabel={m.admin} />
-          <div className="mx-auto w-full max-w-page p-4 md:p-8">
-            {children}
-          </div>
+          <PageContent>{children}</PageContent>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

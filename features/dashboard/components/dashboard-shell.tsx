@@ -14,6 +14,7 @@ import {
   UsersIcon,
 } from "@/components/ui/icons"
 
+import { PageContent } from "@/components/page-content"
 import { SpinSwap } from "@/components/spin-swap"
 import { Button } from "@/components/ui/button"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
@@ -32,10 +33,6 @@ const NAV = [
   { path: "/team", key: "team", icon: UsersIcon },
   { path: "/settings", key: "settings", icon: SettingsIcon },
 ] as const
-
-// Form pages stay a narrow column on a computer, like big apps' settings;
-// lists and the home page use the wider frame.
-const FORM_PAGES = ["/automations", "/integrations", "/settings"]
 
 // The phone has room for four tabs with the assistant between them (a +
 // instead on a page that adds something, see tab-bar-action.tsx);
@@ -70,7 +67,6 @@ export function DashboardShell({
   const base = `/dashboard/${business.id}`
   const assistantHref = `${base}/assistant`
   const assistantOpen = pathname.startsWith(assistantHref)
-  const formPage = FORM_PAGES.some((path) => pathname.startsWith(base + path))
   const addPage = ADD_PAGES.find((path) => pathname.startsWith(base + path))
   // Until the page gives its own, the + is named for the page and waits.
   const addLabel =
@@ -131,10 +127,9 @@ export function DashboardShell({
               bell={bell}
               className={cn(assistantOpen && "max-md:hidden")}
             />
-            <div
+            <PageContent
               className={cn(
-                "mx-auto w-full max-w-3xl p-4 pb-28 md:p-8",
-                !formPage && !assistantOpen && "lg:max-w-page",
+                "pb-28",
                 assistantOpen &&
                   "flex min-h-0 max-w-none flex-1 flex-col p-0 pb-0 md:p-0"
               )}
@@ -142,7 +137,7 @@ export function DashboardShell({
               <TabBarActionContext value={setAction}>
                 {children}
               </TabBarActionContext>
-            </div>
+            </PageContent>
           </SidebarInset>
           <nav
             aria-label={m.owner}
