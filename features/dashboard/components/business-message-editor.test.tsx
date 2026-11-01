@@ -81,6 +81,7 @@ test("a refused save shows the problem under the text", async () => {
 test("Submit to Meta shows Meta's own reason when it refuses", async () => {
   actions.submitMessageToMeta.mockResolvedValue({ ok: false, error: "chat", reason: "Too promotional" })
   open(reminder("draft"))
+  fireEvent.click(screen.getByRole("tab", { name: "Template" }))
   fireEvent.click(screen.getByRole("button", { name: "Submit to Meta" }))
   expect(await screen.findByText("Too promotional")).toBeTruthy()
   expect(actions.submitMessageToMeta).toHaveBeenCalledWith("b1", "reminder", "en")

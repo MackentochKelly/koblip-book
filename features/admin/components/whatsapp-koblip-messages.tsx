@@ -10,13 +10,12 @@ import {
   type MessageEditorItem,
 } from "@/components/message-editor"
 import { HelperLine } from "@/components/helper-line"
-import { Badge } from "@/components/ui/badge"
+import { MessageStatus } from "@/components/message-status"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { WhatsAppIcon } from "@/components/ui/icons"
 import {
   Item,
-  ItemActions,
   ItemContent,
   ItemGroup,
   ItemTitle,
@@ -119,12 +118,10 @@ export function WhatsappKoblipMessages({
                 >
                   <ItemTitle>{name}</ItemTitle>
                 </button>
+                <div className="mt-2">
+                  <MessageStatus review={review} labels={{ ...t, review: m.review }} />
+                </div>
               </ItemContent>
-              <ItemActions>
-                <Badge variant={review === "rejected" ? "destructive" : "secondary"}>
-                  {m.review[review]}
-                </Badge>
-              </ItemActions>
             </Item>
           )
         })}

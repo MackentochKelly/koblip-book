@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, expect, test, vi } from "vitest"
 
 vi.mock("next/navigation", () => ({
@@ -18,7 +18,9 @@ const t = {
   template: "Template",
   templateHint: "Outside 24 hours",
   approvedNow: "Sending now",
+  sending: "Sending",
 }
+const openTemplate = () => fireEvent.click(screen.getByRole("tab", { name: t.template }))
 const labels: import("./message-editor").MessageEditorLabels = {
   ...t,
   edit: (name) => `Edit ${name}`,
@@ -72,20 +74,24 @@ function open(value: Item) {
   )
 }
 
-test("shows the normal message and the template apart", () => {
+test("shows the normal message and the template apart, on tabs", () => {
   open(item(saved))
-  expect(screen.getByText(t.normalMessage)).toBeTruthy()
   expect(screen.getByText(t.normalHint)).toBeTruthy()
-  expect(screen.getByText(t.template)).toBeTruthy()
+  expect(screen.getByText("Sending")).toBeTruthy()
+  expect(screen.queryByText(t.templateHint)).toBeNull()
+  openTemplate()
   expect(screen.getByText(t.templateHint)).toBeTruthy()
-  // Same words as approved: one preview, no "sending now" line.
-  expect(screen.getAllByText("See you Ana tomorrow")).toHaveLength(1)
+  expect(screen.getByText("Approved")).toBeTruthy()
+  // Same words as approved: no "sending now" line.
+  expect(screen.getByText("See you Ana tomorrow")).toBeTruthy()
   expect(screen.queryByText(t.approvedNow)).toBeNull()
 })
 
 test("while a change waits for Meta, the template shows the approved words", () => {
   open(item({ ...saved, wording: { ...saved.wording, body: "Bye {name}" } }))
+  // The normal message has the saved words; the template the approved ones.
   expect(screen.getByText("See you Ana tomorrow")).toBeTruthy()
+  openTemplate()
   expect(screen.getByText("Bye Ana")).toBeTruthy()
   expect(screen.getByText(t.approvedNow)).toBeTruthy()
 })

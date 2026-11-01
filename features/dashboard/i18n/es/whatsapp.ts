@@ -119,6 +119,8 @@ const whatsapp: typeof en = {
   },
   // Las dos formas en que sale un mensaje, separadas en el editor.
   normalMessage: "Mensaje normal",
+  sending: "Se envía",
+  off: "Apagado",
   normalHint: "Dentro de 24 horas · se envía al guardar",
   listHint: "Toca un mensaje para cambiar su texto.",
   listMore:

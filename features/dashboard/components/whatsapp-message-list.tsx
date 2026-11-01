@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { HelperLine } from "@/components/helper-line"
-import { MetaStatusBadge } from "@/components/meta-status-badge"
+import { MessageStatus } from "@/components/message-status"
 import {
   Item,
   ItemActions,
@@ -118,7 +118,9 @@ function MessageRow({
           <ItemTitle>{name}</ItemTitle>
           <ItemDescription>{t.about[item.message]}</ItemDescription>
         </button>
-        <MetaStatusBadge review={review} labels={t.review} className="mt-1" />
+        <div className="mt-2">
+          <MessageStatus on={on} review={review} labels={t} />
+        </div>
       </ItemContent>
       <ItemActions>
         <Switch

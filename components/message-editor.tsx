@@ -2,12 +2,13 @@
 
 import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { PlusIcon, XIcon } from "@/components/ui/icons"
+import { CircleCheckIcon, PlusIcon, XIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { MetaStatusBadge } from "@/components/meta-status-badge"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -41,6 +42,8 @@ import type { ButtonAction, TemplateReview } from "@/types/whatsapp"
 
 const EDITOR_FORM = "message-editor"
 const LANGUAGES = ["en", "es"] as const
+// The message's two ways out, each on its own tab.
+type Part = "normal" | "template"
 
 export type EditorLanguage = (typeof LANGUAGES)[number]
 
@@ -98,6 +101,8 @@ export type MessageEditorLabels = {
   removeButton: (label: string) => string
   normalMessage: string
   normalHint: string
+  // The normal message's status: it goes out as soon as it is saved.
+  sending: string
   template: string
   templateHint: string
   approvedNow: string
@@ -113,10 +118,11 @@ export type MessageEditorLabels = {
 // or refused. While Meta reviews, or once it approved, there is nothing to send.
 const SUBMITTABLE: readonly TemplateReview[] = ["missing", "draft", "rejected"]
 
-// One message's wording and buttons, English and Spanish on tabs, and its two
-// ways out shown apart: the normal message (inside 24 hours, the saved words
-// at once) and the template (outside 24 hours, with Meta's review and the
-// words Meta approved while a change waits).
+// One message's two ways out on tabs at the top, each with its own status and
+// preview: the normal message (inside 24 hours, the saved words at once) and
+// the template (outside 24 hours, with Meta's review and the words Meta
+// approved while a change waits). One set of words, English and Spanish on
+// tabs, is edited below for both.
 // Saving keeps a draft; "Submit to Meta" sends what is saved for review
 // (D8 in docs/plans/whatsapp-notifications.md). The same editor serves a
 // business's own messages and the admin's Koblip messages
@@ -143,6 +149,7 @@ export function MessageEditor({
 }) {
   const t = labels
   const router = useRouter()
+  const [part, setPart] = useState<Part>("normal")
   const [language, setLanguage] = useState<EditorLanguage>("en")
   const draftOf = (lang: EditorLanguage): EditorDraft | null =>
     item ? { wording: item.texts[lang].wording, buttons: item.texts[lang].buttons } : null
@@ -222,9 +229,10 @@ export function MessageEditor({
     run(() => onSave(language, next), t.saved, next ? undefined : onClose)
   const submit = () => run(() => onSubmit(language), t.submitted)
 
-  // One main action: Save while something changed, else Submit to Meta when
-  // Meta has nothing current to review.
-  const main = !editable ? null : changed ? "save" : submittable ? "submit" : "save"
+  // One main action: Save while something changed; on the Template tab,
+  // Submit to Meta when Meta has nothing current to review.
+  const main =
+    !editable ? null : !changed && part === "template" && submittable ? "submit" : "save"
 
   return (
     <ResponsivePanel
@@ -264,6 +272,47 @@ export function MessageEditor({
           }}
         >
           <FieldGroup>
+            <Tabs value={part} onValueChange={(value) => setPart(value as Part)}>
+              <TabsList className="w-full">
+                <TabsTrigger value="normal">{t.normalMessage}</TabsTrigger>
+                <TabsTrigger value="template">{t.template}</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {part === "normal" ? (
+              <Field>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary">
+                    <CircleCheckIcon data-icon="inline-start" className="text-success" />
+                    {t.sending}
+                  </Badge>
+                  <FieldDescription>{t.normalHint}</FieldDescription>
+                </div>
+                <MessagePreview draft={draft} language={language} preview={preview} labels={t} />
+              </Field>
+            ) : (
+              <Field>
+                <div className="flex flex-wrap items-center gap-2">
+                  {editable && <MetaStatusBadge review={text.review} labels={t.review} />}
+                  <FieldDescription>{t.templateHint}</FieldDescription>
+                </div>
+                {editable && text.review === "rejected" && text.reason && (
+                  <Alert variant="destructive">
+                    <AlertTitle>{t.metaReason}</AlertTitle>
+                    <AlertDescription>{text.reason}</AlertDescription>
+                  </Alert>
+                )}
+                {/* While a change waits, the words Meta approved still go. */}
+                <MessagePreview
+                  draft={approved ?? draft}
+                  language={language}
+                  preview={preview}
+                  labels={t}
+                />
+                {approved && <FieldDescription>{t.approvedNow}</FieldDescription>}
+              </Field>
+            )}
+
             <Tabs
               value={language}
               onValueChange={(value) => {
@@ -271,7 +320,7 @@ export function MessageEditor({
                 setProblem(null)
               }}
             >
-              <TabsList className="w-full">
+              <TabsList variant="line">
                 <TabsTrigger value="en">{t.english}</TabsTrigger>
                 <TabsTrigger value="es">{t.spanish}</TabsTrigger>
               </TabsList>
@@ -362,32 +411,6 @@ export function MessageEditor({
                 </FieldSet>
               )}
             </fieldset>
-
-            <FieldSet>
-              <FieldLegend variant="label">{t.normalMessage}</FieldLegend>
-              <FieldDescription>{t.normalHint}</FieldDescription>
-              <MessagePreview draft={draft} language={language} preview={preview} labels={t} />
-            </FieldSet>
-
-            <FieldSet>
-              <FieldLegend variant="label" className="flex items-center gap-2">
-                {t.template}
-                {editable && <MetaStatusBadge review={text.review} labels={t.review} />}
-              </FieldLegend>
-              <FieldDescription>{t.templateHint}</FieldDescription>
-              {editable && text.review === "rejected" && text.reason && (
-                <Alert variant="destructive">
-                  <AlertTitle>{t.metaReason}</AlertTitle>
-                  <AlertDescription>{text.reason}</AlertDescription>
-                </Alert>
-              )}
-              {approved && (
-                <>
-                  <MessagePreview draft={approved} language={language} preview={preview} labels={t} />
-                  <FieldDescription>{t.approvedNow}</FieldDescription>
-                </>
-              )}
-            </FieldSet>
           </FieldGroup>
         </form>
       )}
