@@ -67,6 +67,8 @@ const google = {
   channelHours: 24 * 7,
   // Calendars Google can't push changes for, such as a holiday calendar.
   pushless: new Set<string>(),
+  // Calendars whose watch Google answers with a 503 for now.
+  down: new Set<string>(),
 }
 
 function idToken(email: string) {
@@ -105,6 +107,9 @@ const fetchGoogle = vi.fn(async (input: string, init: RequestInit = {}) => {
   const watched = path.match(/^\/calendars\/([^/]+)\/events\/watch$/)
   if (method === "POST" && watched) {
     const calendar = decodeURIComponent(watched[1])
+    if (google.down.has(calendar)) {
+      return answer(503, { error: { errors: [{ reason: "backendError" }] } })
+    }
     if (google.pushless.has(calendar)) {
       return answer(400, { error: { errors: [{ reason: "pushNotSupportedForRequestedResource" }] } })
     }
@@ -214,6 +219,7 @@ beforeEach(async () => {
   google.stopped = []
   google.channelHours = 24 * 7
   google.pushless.clear()
+  google.down.clear()
   vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3100")
   google.scope = ALL_SCOPES
   google.email = "owner@gmail.com"
@@ -532,6 +538,33 @@ test("a calendar Google can't push for is read on the timer, never asked again",
   const asked = watches()
   await expect(ensureGoogleChannels(connectionId!)).resolves.toBe(false)
   expect(watches()).toBe(asked)
+})
+
+test("Google down for one calendar keeps its old channel and still watches the others", async () => {
+  live()
+  google.channelHours = 2
+  const { connectionId } = await connect()
+  const calendars = ["family@group.calendar.google.com", "work@group.calendar.google.com"]
+  await db
+    .update(googleCalendarConnections)
+    .set({ busyCalendarIds: calendars })
+    .where(eq(googleCalendarConnections.id, connectionId!))
+  await ensureGoogleChannels(connectionId!)
+  const [familyChannel] = [...google.channels].find(([, channel]) => channel.calendar === calendars[0])!
+  // Both are about to end; renewing the first fails for now.
+  google.channelHours = 24 * 7
+  google.down.add(calendars[0])
+  const errors = vi.spyOn(console, "error").mockImplementation(() => {})
+  await expect(ensureGoogleChannels(connectionId!)).resolves.toBe(false)
+  errors.mockRestore()
+  // The old one is kept; the other calendar's is renewed.
+  expect(google.stopped).not.toContain(familyChannel)
+  expect(google.stopped).toHaveLength(1)
+  expect([...google.channels.values()].map((channel) => channel.calendar).sort()).toEqual(calendars)
+  // Back up: the next pass renews it.
+  google.down.clear()
+  await expect(ensureGoogleChannels(connectionId!)).resolves.toBe(true)
+  expect(google.stopped).toContain(familyChannel)
 })
 
 test("a calendar that isn't the account's is refused", async () => {

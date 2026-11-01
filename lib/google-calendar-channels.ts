@@ -108,6 +108,18 @@ export async function ensureGoogleChannels(connectionId: string): Promise<boolea
           watching = false
           continue
         }
+        // Anything else from Google (down, too many calls, …) is tried again
+        // on the next pass. Meanwhile this calendar keeps its channel while
+        // it lasts and is read on the timer, and the other calendars still
+        // get theirs.
+        if (error instanceof GoogleCalendarError) {
+          console.error(error)
+          for (const channel of channels) {
+            if (channel.calendarId === calendarId) keep.add(channel.id)
+          }
+          watching = false
+          continue
+        }
         throw error
       }
       const expiresAt = Number(watch?.expiration)
