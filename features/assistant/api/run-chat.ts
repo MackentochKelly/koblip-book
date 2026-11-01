@@ -590,7 +590,17 @@ export async function* runChat(
           }
           const parsedArgs = JSON.parse(call.function.arguments)
           toolsRan = true
-          result = { data: await tool.run(parsedArgs) }
+          const data = await tool.run(parsedArgs)
+          result = { data }
+          // A refusal ({ error }, like a booking that can't be marked yet)
+          // fails the step too; the model still reads why.
+          if (
+            typeof data === "object" &&
+            data !== null &&
+            typeof (data as { error?: unknown }).error === "string"
+          ) {
+            ok = false
+          }
           // The newest lookup wins, also when it found nothing.
           if (call.function.name === "find_free_times") {
             freeTimes = freeTimesOf((result as { data: unknown }).data)

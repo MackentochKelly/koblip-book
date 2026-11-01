@@ -338,6 +338,30 @@ test("throwing tool fails the step without leaking", async () => {
   expect(JSON.stringify(events)).not.toContain("secret db detail")
 })
 
+test("a tool that refuses fails the step, and the model reads why", async () => {
+  const { create } = scriptedClient(
+    [[toolChunk(0, "call-A", "probe", "{}")], [textChunk("Can't yet.")]],
+    [judgeOk()]
+  )
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [
+      probe(async () => ({ error: "that booking hasn't happened yet" })),
+    ])
+  )
+  expect(events).toContainEqual({
+    type: "step",
+    id: "call-A",
+    label: "Probing…",
+    status: "failed",
+  })
+  const second = create.mock.calls[1][0] as {
+    messages: { role: string; content: unknown }[]
+  }
+  expect(
+    second.messages.find((m) => m.role === "tool")?.content
+  ).toContain("that booking hasn't happened yet")
+})
+
 test("unknown tool name fails the step", async () => {
   scriptedClient([[toolChunk(0, "call-A", "nope", "{}")], [textChunk("ok")]])
   const events = await collect(
