@@ -164,27 +164,6 @@ async function confirmedValue(
   return row?.detailsConfirmedAt ?? null
 }
 
-test("confirmBusinessDetails stamps the owner's business only", async () => {
-  const { actions, db } = await freshActions()
-  const before = Date.now()
-
-  await expect(confirmedValue(db, "biz-mine")).resolves.toBeNull()
-  await expect(actions.confirmBusinessDetails("biz-mine")).resolves.toEqual({
-    ok: true,
-  })
-  const stamped = await confirmedValue(db, "biz-mine")
-  expect(typeof stamped).toBe("number")
-  expect(stamped as number).toBeGreaterThanOrEqual(before)
-
-  await expect(actions.confirmBusinessDetails("biz-theirs")).resolves.toEqual(
-    { ok: false, error: "not_found" }
-  )
-  await expect(confirmedValue(db, "biz-theirs")).resolves.toBeNull()
-  await expect(actions.confirmBusinessDetails("no-such-biz")).resolves.toEqual(
-    { ok: false, error: "not_found" }
-  )
-})
-
 test("saving details or hours also confirms them", async () => {
   const { actions, db } = await freshActions()
   const before = Date.now()

@@ -104,24 +104,6 @@ export async function updateBusinessDetails(
   return { ok: true }
 }
 
-// The owner confirms the imported details are theirs. From then on the
-// name, phone, address, website, category, status, timezone and hours are
-// the owner's own details, not Google's.
-export async function confirmBusinessDetails(
-  businessId: string
-): Promise<ActionResult> {
-  const owned = await ownedBusiness(businessId)
-  if (!owned) {
-    return { ok: false, error: "not_found" }
-  }
-  await db
-    .update(businesses)
-    .set({ detailsConfirmedAt: Date.now() })
-    .where(eq(businesses.id, owned.business.id))
-  revalidateBusiness(owned.business.slug)
-  return { ok: true }
-}
-
 export async function saveHours(
   businessId: string,
   rows: HoursRow[]

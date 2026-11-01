@@ -10,7 +10,6 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest"
 const { actions, toast } = vi.hoisted(() => ({
   actions: {
     saveHours: vi.fn(),
-    confirmBusinessDetails: vi.fn(),
     updateBusinessDetails: vi.fn(),
   },
   toast: { success: vi.fn(), error: vi.fn() },
@@ -23,7 +22,6 @@ vi.mock("sonner", () => ({ toast }))
 vi.mock("../api/actions", () => actions)
 
 const { HoursForm } = await import("./hours-form")
-const { ConfirmDetailsCard } = await import("./confirm-details-card")
 const { DetailsForm } = await import("./details-form")
 
 const details = {
@@ -79,19 +77,6 @@ test("hours: a refused save still says check the times", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Save" }))
   await waitFor(() =>
     expect(toast.error).toHaveBeenCalledWith("Could not save. Check the times.")
-  )
-})
-
-test("confirm details: a save with no answer says it could not confirm", async () => {
-  render(
-    <ConfirmDetailsCard
-      businessId="b1"
-      details={{ category: null, phone: null, website: null, openDays: 0 }}
-    />
-  )
-  fireEvent.click(screen.getByRole("button", { name: "Looks right" }))
-  await waitFor(() =>
-    expect(toast.error).toHaveBeenCalledWith("Could not confirm. Try again.")
   )
 })
 
