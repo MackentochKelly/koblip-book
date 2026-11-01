@@ -1,14 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import {
-  CalendarDaysIcon,
-  ChevronRightIcon,
-  PlusIcon,
-} from "@/components/ui/icons"
+import { CalendarDaysIcon, PlusIcon } from "@/components/ui/icons"
 
 import { FloatingActionButton } from "@/components/floating-action-button"
+import { ViewAllLink } from "@/components/view-all-link"
 import { ViewTabs } from "@/components/view-tabs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -124,13 +120,21 @@ export function BookingsView({
   // Tabs to list: the same gap as between the list's rows.
   const bookingsList = (
     <div className="flex min-w-0 flex-col gap-3 md:gap-6">
-      <ViewTabs
-        views={views}
-        value={view}
-        onChange={setView}
-        ariaLabel={t.title}
-        listClassName="w-full md:w-fit"
-      />
+      {/* The tabs, and View all at the top right when there are more. */}
+      <div className="flex items-center justify-between gap-3">
+        <ViewTabs
+          views={views}
+          value={view}
+          onChange={setView}
+          ariaLabel={t.title}
+          className="min-w-0 flex-1 md:flex-none"
+          listClassName="w-full md:w-fit"
+        />
+        {/* With only one or two bookings, they are all here already. */}
+        {list.length >= HOME_PHONE_LIMIT && (
+          <ViewAllLink href={viewAll} label={t.viewAll} />
+        )}
+      </div>
       {list.length === 0 ? (
         <Empty className="border">
           <EmptyHeader>
@@ -169,18 +173,6 @@ export function BookingsView({
             newestFirst={view === "past"}
             phoneLimit={HOME_PHONE_LIMIT}
           />
-          {/* With only one or two bookings, they are all here already. */}
-          {list.length >= HOME_PHONE_LIMIT && (
-            <Button
-              variant="outline"
-              className="self-center"
-              render={<Link href={viewAll} />}
-              nativeButton={false}
-            >
-              {t.viewAll}
-              <ChevronRightIcon data-icon="inline-end" />
-            </Button>
-          )}
         </div>
       )}
     </div>

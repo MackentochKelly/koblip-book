@@ -174,17 +174,6 @@ export function BookingList({
             id: "team",
             header: t.columns.team,
             sortFn: "text",
-            cell: ({ row }) =>
-              row.original.teamMemberName ? (
-                <div className="flex items-center gap-2">
-                  <Avatar size="sm">
-                    <AvatarFallback>
-                      {initials(row.original.teamMemberName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  {row.original.teamMemberName}
-                </div>
-              ) : null,
           }),
         ]
       : []),

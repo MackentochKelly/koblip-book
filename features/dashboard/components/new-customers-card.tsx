@@ -3,16 +3,11 @@
 import type { Route } from "next"
 import Link from "next/link"
 import { Fragment } from "react"
-import {
-  ChevronRightIcon,
-  ContactIcon,
-  PhoneIcon,
-  WhatsAppIcon,
-} from "@/components/ui/icons"
+import { ContactIcon, PhoneIcon, WhatsAppIcon } from "@/components/ui/icons"
 
+import { ViewAllLink } from "@/components/view-all-link"
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardAction,
@@ -63,15 +58,7 @@ export function NewCustomersCard({
       <CardHeader>
         <CardTitle>{t.names.newCustomers}</CardTitle>
         <CardAction>
-          <Button
-            variant="ghost"
-            size="sm"
-            nativeButton={false}
-            render={<Link href={href} />}
-          >
-            {t.viewAll}
-            <ChevronRightIcon data-icon="inline-end" />
-          </Button>
+          <ViewAllLink href={href} label={t.viewAll} />
         </CardAction>
       </CardHeader>
       <CardContent>
