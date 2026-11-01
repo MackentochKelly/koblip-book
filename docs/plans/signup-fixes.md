@@ -26,7 +26,7 @@ and faster. How to use this file: [Plans](README.md).
 | S5 | Check details says Continue | S | | Done |
 | S6 | Live screen has one "View page" | S | | Done |
 | S7 | Live screen shows a useful category | S | | To do |
-| S8 | Search box hint fits at 375px | S | | To do |
+| S8 | Search box hint fits at 375px | S | | Working on: M Kelly B, 2026-11-01 |
 | S9 | Setup still finishes after a server restart | M | | Done |
 | S10 | Keyboard focus stays in the list after a suggested search | S | S1 | Done |
 
