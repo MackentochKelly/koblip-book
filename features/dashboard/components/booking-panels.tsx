@@ -17,7 +17,10 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { CANCEL_REASONS, type CancelReason } from "@/lib/booking-rules"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
+import { TOUCH_AREA } from "@/lib/touch-area"
 import type {
   OwnerBookingInput,
   OwnerBookingResult,
@@ -64,6 +67,8 @@ export function useBookingPanels({
   const [adding, setAdding] = useState(false)
   const [moving, setMoving] = useState(false)
   const [cancelling, setCancelling] = useState<OwnerBooking | null>(null)
+  // The quick answer to "Why?", picked in the cancel question (optional).
+  const [reason, setReason] = useState<CancelReason | null>(null)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
   const m = useOwnerMessages()
@@ -96,6 +101,7 @@ export function useBookingPanels({
       setDetailsOpen(false)
       setMoving(true)
     } else if (action === "cancel") {
+      setReason(null)
       setCancelling(booking)
     } else if (action === "undo") {
       run(
@@ -188,6 +194,33 @@ export function useBookingPanels({
                 )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="flex flex-col gap-2">
+            <p id="cancel-why" className="text-sm font-medium">
+              {t.cancel.why}
+            </p>
+            <ToggleGroup
+              variant="outline"
+              aria-labelledby="cancel-why"
+              className="flex-wrap"
+              value={reason ? [reason] : []}
+              onValueChange={(next) =>
+                setReason(
+                  CANCEL_REASONS.find((item) => item === next[0]) ?? null
+                )
+              }
+            >
+              {CANCEL_REASONS.map((item) => (
+                <ToggleGroupItem
+                  key={item}
+                  value={item}
+                  disabled={pending}
+                  className={TOUCH_AREA}
+                >
+                  {t.cancel.reasons[item]}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>
               {t.cancel.keep}
@@ -198,7 +231,7 @@ export function useBookingPanels({
               onClick={() =>
                 cancelling &&
                 run(
-                  () => cancelBooking(businessId, cancelling.id),
+                  () => cancelBooking(businessId, cancelling.id, reason),
                   t.cancel.done
                 )
               }

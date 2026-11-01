@@ -1,7 +1,12 @@
 "use server"
 
 import { and, eq, gte } from "drizzle-orm"
-import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
+import {
+  BOOKING_RULES,
+  type CancelReason,
+  isCancelReason,
+  PHONE_PATTERN,
+} from "@/lib/booking-rules"
 import { requireAccount } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { isGoogleEventColor } from "@/lib/google-calendar-colors"
@@ -460,11 +465,15 @@ export async function reorderTeam(
 
 export async function cancelBooking(
   businessId: string,
-  bookingId: string
+  bookingId: string,
+  reason: CancelReason | null = null
 ): Promise<ActionResult> {
   const owned = await ownedBusiness(businessId)
   if (!owned) {
     return { ok: false, error: "not_found" }
+  }
+  if (reason !== null && !isCancelReason(reason)) {
+    return invalid()
   }
   const [booking] = await db
     .select({ id: bookings.id })
@@ -481,7 +490,7 @@ export async function cancelBooking(
   }
   await db
     .update(bookings)
-    .set({ status: "cancelled" })
+    .set({ status: "cancelled", cancelReason: reason })
     .where(eq(bookings.id, booking.id))
   revalidateBusiness(owned.business.slug)
   // Google Calendar hears of it now.

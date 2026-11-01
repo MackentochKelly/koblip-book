@@ -302,6 +302,13 @@
       "when": 1793521244565,
       "tag": "0042_business_theme",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "6",
+      "when": 1793523477264,
+      "tag": "0043_booking_cancel_reason",
+      "breakpoints": true
     }
   ]
 }

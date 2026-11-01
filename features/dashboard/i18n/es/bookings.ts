@@ -25,6 +25,15 @@ const bookings: typeof en = {
     keep: "Dejarla",
     confirm: "Cancelar reserva",
     done: "Reserva cancelada",
+    why: "¿Por qué?",
+    reasons: {
+      customerAsked: "Lo pidió el cliente",
+      sick: "Enfermedad",
+      staffAway: "Falta personal",
+      closed: "Cerrado",
+      doubleBooked: "Reserva doble",
+      other: "Otro",
+    },
   },
   move: {
     open: "Mover",
@@ -52,6 +61,7 @@ const bookings: typeof en = {
   details: {
     free: "Gratis",
     with: (name: string) => `con ${name}`,
+    reason: (reason: string) => `Cancelada: ${reason}`,
   },
   contact: {
     call: "Llamar",

@@ -24,6 +24,15 @@ const bookings = {
     keep: "Keep it",
     confirm: "Cancel booking",
     done: "Booking cancelled",
+    why: "Why?",
+    reasons: {
+      customerAsked: "Customer asked",
+      sick: "Sick",
+      staffAway: "Staff away",
+      closed: "Closed",
+      doubleBooked: "Double booked",
+      other: "Other",
+    },
   },
   move: {
     open: "Move",
@@ -51,6 +60,7 @@ const bookings = {
   details: {
     free: "Free",
     with: (name: string) => `with ${name}`,
+    reason: (reason: string) => `Cancelled: ${reason}`,
   },
   contact: {
     call: "Call",

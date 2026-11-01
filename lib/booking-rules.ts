@@ -40,3 +40,19 @@ export const PHONE_PATTERN = /^\+?[\d\s().-]{7,25}$/
 
 // One address: something@something.something, no spaces.
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+// Quick answers to "Why?" when the owner cancels a booking, kept with it.
+export const CANCEL_REASONS = [
+  "customerAsked",
+  "sick",
+  "staffAway",
+  "closed",
+  "doubleBooked",
+  "other",
+] as const
+
+export type CancelReason = (typeof CANCEL_REASONS)[number]
+
+export function isCancelReason(value: unknown): value is CancelReason {
+  return CANCEL_REASONS.some((reason) => reason === value)
+}

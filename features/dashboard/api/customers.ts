@@ -59,6 +59,7 @@ export function toOwnerBooking(
     status: row.status as OwnerBooking["status"],
     source: row.source as OwnerBooking["source"],
     note: row.note,
+    cancelReason: row.cancelReason,
     addons,
   }
 }

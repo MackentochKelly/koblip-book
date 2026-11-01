@@ -17,8 +17,8 @@ function price(
   return priceMinor === 0 ? free : formatPrice(priceMinor, currency, locale)
 }
 
-// One booking: when, what with its extras, the total, the owner's note and
-// quick ways to reach the customer.
+// One booking: when (and why, once cancelled), what with its extras, the
+// total, the owner's note and quick ways to reach the customer.
 export function BookingDetails({ booking }: { booking: OwnerBooking }) {
   const m = useOwnerMessages()
   const t = m.bookings.details
@@ -33,6 +33,11 @@ export function BookingDetails({ booking }: { booking: OwnerBooking }) {
         </p>
         <BookingStatusBadge status={booking.status} />
       </div>
+      {booking.status === "cancelled" && booking.cancelReason && (
+        <p className="text-muted-foreground">
+          {t.reason(m.bookings.cancel.reasons[booking.cancelReason])}
+        </p>
+      )}
       <div className="flex flex-col gap-2">
         <p>{booking.serviceName}</p>
         {booking.addons.map((addon, index) => (
