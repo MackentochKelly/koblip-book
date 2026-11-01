@@ -1,6 +1,11 @@
 "use client"
 
-import { AnimatePresence, motion, type Variants } from "motion/react"
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  type Variants,
+} from "motion/react"
 import Image from "next/image"
 import { useId, useRef, useState } from "react"
 
@@ -27,6 +32,7 @@ import {
 import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
+import { useElementHeight } from "@/hooks/use-element-height"
 import { useStoryLoop } from "@/hooks/use-story-loop"
 import { APP_SHORT_NAME } from "@/lib/app-install"
 import { SHOWCASE_LOOP } from "@/lib/showcase-rules"
@@ -106,6 +112,10 @@ export function InstallStepsPanel({
   const [chosen, setChosen] = useState<Step | null>(null)
   const shown = chosen ?? phase
   const highlight = useId()
+  // The card grows or shrinks to each step's picture at the slide's pace;
+  // Reduce Motion: straight to its size.
+  const [measure, contentHeight] = useElementHeight()
+  const still = useReducedMotion()
 
   // Which way the picture slides: forward unless going back a step (React's
   // "storing information from previous renders").
@@ -174,30 +184,40 @@ export function InstallStepsPanel({
             {/* One width for every step, so the card doesn't jump. */}
             <div className="w-full max-w-80">
               <Box className="max-w-80">
-                <div className="flex min-h-40 flex-col justify-center px-(--card-spacing)">
-                  <AnimatePresence
-                    mode="wait"
-                    initial={false}
-                    custom={direction}
+                <motion.div
+                  initial={false}
+                  animate={{ height: contentHeight ?? "auto" }}
+                  transition={still ? { duration: 0 } : SLIDE_TRANSITION}
+                  className="overflow-hidden"
+                >
+                  <div
+                    ref={measure}
+                    className="flex flex-col justify-center px-(--card-spacing) py-2"
                   >
-                    <motion.div
-                      key={shown}
+                    <AnimatePresence
+                      mode="wait"
+                      initial={false}
                       custom={direction}
-                      variants={SLIDE}
-                      initial="enter"
-                      animate="center"
-                      exit="exit"
-                      transition={SLIDE_TRANSITION}
                     >
-                      <Picture
-                        phase={shown}
-                        tapping={tapping && chosen === null}
-                        ms={time.tap}
-                        t={t}
-                      />
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
+                      <motion.div
+                        key={shown}
+                        custom={direction}
+                        variants={SLIDE}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={SLIDE_TRANSITION}
+                      >
+                        <Picture
+                          phase={shown}
+                          tapping={tapping && chosen === null}
+                          ms={time.tap}
+                          t={t}
+                        />
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
               </Box>
             </div>
           </Scene>
