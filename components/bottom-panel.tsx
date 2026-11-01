@@ -196,7 +196,7 @@ export function BottomPanel({
             className={cn(
               "min-h-0 flex-1 overflow-y-auto p-4",
               // A line between the list and the buttons, with room above it.
-              footer && "border-b pb-6"
+              footer && "border-b pb-10"
             )}
           >
             <div ref={inner}>
