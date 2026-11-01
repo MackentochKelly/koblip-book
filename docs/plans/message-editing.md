@@ -90,9 +90,9 @@ export async function saveKoblipMessage(
 | B2 | Backend | `saveKoblipMessage` as in the Contract: admin check, values trimmed like `saveMessageWording`, `wordingProblem` and `buttonsProblem`, change log `whatsapp.koblipWording.<message>.<language>` (before and after) saved with the change, `null` back to default; `submitKoblipMessage` returns Meta's reason; the admin Change log names the new key; tests | B1 | Working on (Backend dev, 2026-10-31) |
 | B3 | Backend | No gap while Meta reviews an edit of Koblip's set (D5): submitting a change to an approved Koblip template creates the next version (`koblip_<message>_v3`, then `_v4`, …) instead of editing it; the approved version keeps sending until the new one is approved, then Book switches to it and removes the old one in Chat and at Meta; a refused new version leaves the old one live. Book keeps both: the live version and the one in review. Tests: switch, refusal, Chat lost a template (`submitTo`'s copy-back), the refresh path | B1, B2 | To do |
 | B4 | Backend | Fill the Contract's `approved` (the approved version's submitted words) on `KoblipText` and `NotificationText`, and `isDefault` on `KoblipText`; tests | B1 | To do |
-| U1 | UI | One shared editor: `features/dashboard/components/message-editor.tsx` moves to `components/message-editor.tsx` and takes its save, submit and words as props; the business page (`whatsapp-message-list.tsx`) looks and works the same | | Working on (UI dev, 2026-10-31) |
+| U1 | UI | One shared editor: `features/dashboard/components/message-editor.tsx` moves to `components/message-editor.tsx` and takes its save, submit and words as props; the business page (`whatsapp-message-list.tsx`) looks and works the same | | Done (2026-10-31) |
 | U2 | UI | Two parts in the editor: **Normal message**, "Inside 24 hours · sends now", with the latest words; **Template**, "Outside 24 hours", with `MetaStatusBadge` and the approved words when they differ | U1 (B4 fills it) | To do |
-| U3 | UI | The admin's Koblip messages open the shared editor: edit, save as draft, Use default, Submit to Meta; Meta's refusal reason shown as Meta gives it | U1, B2 | To do |
+| U3 | UI | The admin's Koblip messages open the shared editor: edit, save as draft, Use default, Submit to Meta; Meta's refusal reason shown as Meta gives it; the admin Change log names `whatsapp.koblipWording.<message>.<language>` (Backend handoff) | U1, B2 | To do |
 | U4 | UI | One helper line on Koblip messages and on the business Messages list; anything longer in an ⓘ tooltip | U3 | To do |
 
 ## Decisions
@@ -106,10 +106,14 @@ export async function saveKoblipMessage(
 | D5 | An edit of an approved template in Koblip's set goes as a new version, not an in-place edit. A business's own copies keep editing in place (D8 in WhatsApp notifications) | Meta re-reviews an edited template (PENDING, "undergoing template review") and states only APPROVED templates as sendable ([status webhook](https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/message_template_status_update.md)). Book sends only approved templates, so an in-place edit would stop Koblip's templates during review, and Koblip's number has no fallback. A new version keeps the approved one sending and doesn't spend Meta's edit limit. A business already falls back to Koblip's number during its review (K3, D22, D34), so nothing is lost there | UI dev, 2026-10-31 |
 | D6 | Two lanes, Backend dev and UI dev, each with its own files and the written Contract | Both work at the same time without touching each other's files | Owner, 2026-10-31 |
 | D7 | Keep `koblipTemplate` synchronous and pure; server reads apply saved wording and null-button defaults before calling it. The business read-only message list also reads the saved Koblip wording. | Database reads belong in server code; previews and normal sends must agree. | Backend dev, 2026-10-31 |
+| D8 | Admin wording saves and submits batch their database write with the audit entry; wording saves serialize per message and language so audit before/after follows save order. Validation error types live in the shared contract and are re-exported by the template utility. | No saved change can lack its change-log entry, and shared types never import a feature. | Backend dev, 2026-10-31 |
+| D10 | The shared editor (`components/message-editor.tsx`) knows no feature: it takes the message, its words, the field buttons, a preview and the save and submit actions as props. Each page gives it a thin wrapper of its own: the business's `features/dashboard/components/business-message-editor.tsx`, the admin's in U3 | Shared parts never import a feature; each wrapper keeps its own actions, words and field names | UI dev, 2026-10-31 |
+
+| D9 | The new wording key is written by B2; its human-readable Change log label belongs to U3 in the UI lane. | The renderer and translations are UI-owned files; backend completion does not claim that UI label is finished. | Backend dev, 2026-10-31 |
 
 ### Backend handoff
 
-B2 needs the UI lane to name `whatsapp.koblipWording.<message>.<language>`
+U3 needs the UI lane to name `whatsapp.koblipWording.<message>.<language>`
 in the admin Change log, alongside the existing submit key.
 
 

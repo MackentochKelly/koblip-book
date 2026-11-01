@@ -77,7 +77,7 @@ import {
   type OverviewState,
 } from "../utils/notification-status"
 import { SETUP_STEPS } from "../utils/setup-steps"
-import type { EditorLimits } from "./message-editor"
+import type { EditorLimits } from "@/components/message-editor"
 import { WhatsappMessageList } from "./whatsapp-message-list"
 
 // Where each next step is done: in the business's Koblip Chat connection

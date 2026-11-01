@@ -1,7 +1,7 @@
 "use client"
 
 import type { NotificationMessage } from "../types/notifications"
-import type { EditorLimits } from "./message-editor"
+import type { EditorLimits } from "@/components/message-editor"
 import { isCustomerMessage } from "../utils/customer-messages"
 import { WhatsappMessageList } from "./whatsapp-message-list"
 

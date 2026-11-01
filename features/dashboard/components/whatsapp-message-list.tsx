@@ -18,7 +18,8 @@ import { setMessageOn } from "../api/notification-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { NotificationMessage, TemplateReview } from "../types/notifications"
 import type { BookingMessage } from "../utils/booking-templates"
-import { MessageEditor, type EditorLimits } from "./message-editor"
+import type { EditorLimits } from "@/components/message-editor"
+import { BusinessMessageEditor } from "./business-message-editor"
 
 // A list of messages, each with a switch, that opens to edit its wording.
 // Customer messages and Your alerts both show their messages with it.
@@ -50,7 +51,7 @@ export function WhatsappMessageList({
           />
         ))}
       </ItemGroup>
-      <MessageEditor
+      <BusinessMessageEditor
         key={editorKey}
         businessId={businessId}
         item={messages.find((item) => item.message === editing) ?? null}

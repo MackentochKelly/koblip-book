@@ -18,7 +18,7 @@ import { PHONE_PATTERN } from "@/lib/booking-rules"
 import { saveNotificationSettings } from "../api/notification-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type { NotificationMessage, NotificationSettings } from "../types/notifications"
-import type { EditorLimits } from "./message-editor"
+import type { EditorLimits } from "@/components/message-editor"
 import { isCustomerMessage } from "../utils/customer-messages"
 import { WhatsappMessageList } from "./whatsapp-message-list"
 
