@@ -4,11 +4,20 @@ import { cookies, headers } from "next/headers"
 
 import { ownerMessagesFor } from "."
 import { OWNER_LANGUAGE_COOKIE } from "./language"
-import { isPageLanguage, pickLanguage, pickLocale } from "@/lib/page-language"
+import {
+  isPageLanguage,
+  languageParam,
+  pickLanguage,
+  pickLocale,
+} from "@/lib/page-language"
 
-// The owner area's language: the one picked on this device, else the
-// phone's (Accept-Language), else English.
-export async function getOwnerLanguage() {
+// The owner area's language: the one a link from a public page names
+// (`linked`, its ?lang=, so the login page keeps the home page's), else the
+// one picked on this device, else the phone's (Accept-Language), else
+// English.
+export async function getOwnerLanguage(linked?: string | string[]) {
+  const fromLink = languageParam(linked)
+  if (fromLink) return fromLink
   const picked = (await cookies()).get(OWNER_LANGUAGE_COOKIE)?.value
   if (isPageLanguage(picked)) return picked
   return pickLanguage(undefined, (await headers()).get("accept-language"))

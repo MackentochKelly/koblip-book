@@ -25,7 +25,8 @@ import { safeNext } from "@/lib/safe-next"
 export async function generateMetadata({
   searchParams,
 }: PageProps<"/login">): Promise<Metadata> {
-  const words = authWordsFor(await getOwnerLanguage())
+  const { lang } = await searchParams
+  const words = authWordsFor(await getOwnerLanguage(lang))
   return {
     title: readSignUpLink(await searchParams) ? words.signUp : words.logIn,
   }
@@ -49,7 +50,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   if (signedIn && !finish) {
     redirect(target)
   }
-  const language = await getOwnerLanguage()
+  // A link from the home page names its language: the page keeps it.
+  const language = await getOwnerLanguage(params.lang)
   const words = authWordsFor(language)
   const googleError = typeof error === "string" ? error : null
   return (

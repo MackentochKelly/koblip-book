@@ -1,9 +1,11 @@
+import type { PageLanguage } from "@/lib/page-language"
 import type { FoundBusiness } from "../types"
 
 // The sign-up page: /login carrying the picked business, so the home page
 // can hand the owner over to it and the page can start building theirs.
 // Google sign-in comes back to it too (`finish`): the card then makes the
-// business the owner's and opens its setup.
+// business the owner's and opens its setup. It keeps the home page's
+// language (?lang=).
 const SIGN_UP_PATH = "/login"
 
 const PARAMS = {
@@ -13,6 +15,7 @@ const PARAMS = {
   sessionToken: "token",
   slug: "business",
   finish: "finish",
+  language: "lang",
 } as const
 
 // Long enough for any real name or address, short enough for a link.
@@ -20,7 +23,10 @@ const MAX_TEXT = 300
 
 export function signUpHref(
   found: FoundBusiness,
-  { finish = false }: { finish?: boolean } = {}
+  {
+    finish = false,
+    language,
+  }: { finish?: boolean; language?: PageLanguage } = {}
 ): string {
   const params = new URLSearchParams({ [PARAMS.name]: found.name })
   if (found.address) params.set(PARAMS.address, found.address)
@@ -31,6 +37,7 @@ export function signUpHref(
     params.set(PARAMS.sessionToken, found.sessionToken)
   }
   if (finish) params.set(PARAMS.finish, "1")
+  if (language) params.set(PARAMS.language, language)
   return `${SIGN_UP_PATH}?${params}`
 }
 

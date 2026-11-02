@@ -79,7 +79,11 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                 variant="outline"
                 className={headerButtonClassName}
                 nativeButton={false}
-                render={<Link href={signedIn ? "/dashboard" : "/login"} />}
+                render={
+                  <Link
+                    href={signedIn ? "/dashboard" : `/login?lang=${language}`}
+                  />
+                }
               >
                 {signedIn ? t.dashboard : t.logIn}
               </Button>
