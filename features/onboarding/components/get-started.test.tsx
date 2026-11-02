@@ -84,3 +84,21 @@ test("focus stays where the owner moved it while the search ran", async () => {
   await screen.findByRole("button", { name: /Kreative Photography/ })
   expect(document.activeElement).toBe(area)
 })
+
+test("a broken page stream ends the wait with an error, not a spinner", async () => {
+  // React rejects a server promise when the page's stream breaks.
+  const prepared = Promise.reject(new Error("Connection closed."))
+  render(
+    <GetStarted
+      signedIn={false}
+      claim={vi.fn()}
+      hint={false}
+      start={{ name: "Kreative Photography", address: "Brockton", prepared }}
+      language="en"
+    />
+  )
+  expect(
+    await screen.findByText("That did not work. Please try again.")
+  ).toBeTruthy()
+  expect(document.querySelector('[role="status"]')).toBeNull()
+})
