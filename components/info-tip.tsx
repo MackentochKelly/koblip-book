@@ -19,7 +19,7 @@ export function InfoTip({
   children: React.ReactNode
   // The ⓘ button's name for screen readers.
   label?: string
-  // For the ⓘ button, e.g. to keep it from making a line taller.
+  // For the ⓘ button, e.g. a smaller one inside a line of text.
   className?: string
 }) {
   return (

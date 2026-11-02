@@ -246,7 +246,7 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
                             {more && (
                               <InfoTip
                                 label={`${t.more}: ${title}`}
-                                className="-my-2"
+                                className="size-6"
                               >
                                 <MoreAbout
                                   title={title}
