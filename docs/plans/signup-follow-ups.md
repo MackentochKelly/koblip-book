@@ -16,7 +16,7 @@ Three problems found while doing [Sign-up fixes](signup-fixes.md)
 | Task | What | Size | Needs | Status |
 | --- | --- | --- | --- | --- |
 | F1 | The Spanish settings count matches what Translate does | S | | Done |
-| F2 | A deploy lets running setup work finish | S | | To do |
+| F2 | A deploy lets running setup work finish | S | | Working on: M Kelly B, 2026-11-02 |
 | F3 | Sign-in works on every address the app runs on | S | | To do |
 
 ---
