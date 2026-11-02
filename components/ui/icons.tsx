@@ -124,6 +124,8 @@ import {
   Toilet as LucideToilet,
 } from "lucide-react"
 
+import { cn } from "@/lib/utils"
+
 // The app's one icon set, as in Koblip Sales: every icon on screen comes
 // from this file, so the look is decided once. mynaui's thin, rounded
 // outlines, with a Lucide icon at the same line weight wherever mynaui has no
@@ -142,7 +144,11 @@ export type IconProps = ComponentProps<"svg"> & {
 // Any icon from this file; use it where a prop or a config takes an icon.
 export type Icon = ComponentType<IconProps>
 
-function icon(Source: ComponentType<IconProps>, name: string): Icon {
+function icon(
+  Source: ComponentType<IconProps>,
+  name: string,
+  baseClassName?: string
+): Icon {
   // Decorative unless it is given a name of its own, as Lucide does.
   const Component = forwardRef<SVGSVGElement, IconProps>((props, ref) => {
     const named =
@@ -157,6 +163,7 @@ function icon(Source: ComponentType<IconProps>, name: string): Icon {
         strokeWidth={ICON_STROKE_WIDTH}
         aria-hidden={named ? undefined : true}
         {...props}
+        className={cn(baseClassName, props.className)}
       >
         {Children.toArray(props.children)}
       </Source>
@@ -345,29 +352,34 @@ export const WhatsAppIcon: Icon = forwardRef<SVGSVGElement, IconProps>(
 // Filled twins of outline icons: the open page's icon shows filled, in the
 // phone tab bar and the sidebar alike, as iPhone and Android apps do. An
 // icon without a twin stays as it is.
+// Its colour: the text colour softened to a dark grey (not pure black), so
+// the solid shape sits with its label instead of standing out.
+const filled = (Source: ComponentType<IconProps>, name: string) =>
+  icon(Source, name, "text-foreground/80")
+
 const FILLED = new Map<Icon, Icon>([
   [
     LayoutDashboardIcon,
-    icon(MynaLayoutDashboardSolid as Icon, "LayoutDashboardFilledIcon"),
+    filled(MynaLayoutDashboardSolid as Icon, "LayoutDashboardFilledIcon"),
   ],
   [
     ChartColumnIcon,
-    icon(MynaChartColumnIncreasingSolid as Icon, "ChartColumnFilledIcon"),
+    filled(MynaChartColumnIncreasingSolid as Icon, "ChartColumnFilledIcon"),
   ],
-  [CalendarDaysIcon, icon(MynaCalendarSolid as Icon, "CalendarDaysFilledIcon")],
-  [CalendarIcon, icon(MynaCalendarSolid as Icon, "CalendarFilledIcon")],
-  [ContactIcon, icon(MynaUserSquareSolid as Icon, "ContactFilledIcon")],
-  [TagIcon, icon(MynaTagSolid as Icon, "TagFilledIcon")],
-  [SettingsIcon, icon(MynaCogSolid as Icon, "SettingsFilledIcon")],
-  [UsersIcon, icon(MynaUsersSolid as Icon, "UsersFilledIcon")],
-  [UserIcon, icon(MynaUserSolid as Icon, "UserFilledIcon")],
-  [ClockIcon, icon(MynaClock3Solid as Icon, "ClockFilledIcon")],
-  [HouseIcon, icon(MynaHomeSolid as Icon, "HouseFilledIcon")],
-  [StoreIcon, icon(MynaStoreSolid as Icon, "StoreFilledIcon")],
-  [MessageCircleIcon, icon(MynaChatSolid as Icon, "MessageCircleFilledIcon")],
-  [PuzzleIcon, icon(MynaPuzzleSolid as Icon, "PuzzleFilledIcon")],
-  [SparklesIcon, icon(MynaSparklesSolid as Icon, "SparklesFilledIcon")],
-  [ZapIcon, icon(MynaZapSolid as Icon, "ZapFilledIcon")],
+  [CalendarDaysIcon, filled(MynaCalendarSolid as Icon, "CalendarDaysFilledIcon")],
+  [CalendarIcon, filled(MynaCalendarSolid as Icon, "CalendarFilledIcon")],
+  [ContactIcon, filled(MynaUserSquareSolid as Icon, "ContactFilledIcon")],
+  [TagIcon, filled(MynaTagSolid as Icon, "TagFilledIcon")],
+  [SettingsIcon, filled(MynaCogSolid as Icon, "SettingsFilledIcon")],
+  [UsersIcon, filled(MynaUsersSolid as Icon, "UsersFilledIcon")],
+  [UserIcon, filled(MynaUserSolid as Icon, "UserFilledIcon")],
+  [ClockIcon, filled(MynaClock3Solid as Icon, "ClockFilledIcon")],
+  [HouseIcon, filled(MynaHomeSolid as Icon, "HouseFilledIcon")],
+  [StoreIcon, filled(MynaStoreSolid as Icon, "StoreFilledIcon")],
+  [MessageCircleIcon, filled(MynaChatSolid as Icon, "MessageCircleFilledIcon")],
+  [PuzzleIcon, filled(MynaPuzzleSolid as Icon, "PuzzleFilledIcon")],
+  [SparklesIcon, filled(MynaSparklesSolid as Icon, "SparklesFilledIcon")],
+  [ZapIcon, filled(MynaZapSolid as Icon, "ZapFilledIcon")],
 ])
 
 export function filledIcon(outline: Icon): Icon {
