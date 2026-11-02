@@ -10,13 +10,13 @@ import {
   ShowcasePicture,
 } from "@/components/showcase-row"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import {
   Card,
   CardAction,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -35,9 +35,9 @@ const WASHES = {
 
 // The home page's two plans (adapted from shadcn Space's pricing-01 block,
 // in the "What you get" cards' style): the price in the glass box on a
-// colour wash, with what the plan does for you under it. Free is the one
-// action: the same search as the last call to action. Pro can't be bought
-// yet, so it has "Soon" and no button.
+// colour wash, with what the plan does for you under it. Each plan's button
+// sits right under its name: Free's is the same search as the last call to
+// action; Pro can't be bought yet, so its button says "Soon" and is off.
 export function HomePricing({
   words,
   locale,
@@ -59,20 +59,20 @@ export function HomePricing({
           priceMinor={PRICING_RULES.freePriceMinor}
           perMonth={t.perMonth}
           locale={locale}
+          action={
+            // A thin ring a shade lighter than the button, not the glass
+            // ring, on the white card.
+            <FindBusinessButton className="h-11 w-full text-base ring-1 ring-primary/30">
+              {words.cta.button}
+            </FindBusinessButton>
+          }
           sample={
             <>
               <CheckIcon className="size-5 shrink-0 stroke-[2.25] text-success" />
               {words.features.sample.done}
             </>
           }
-        >
-          <CardFooter className="mt-auto">
-            {/* Full width and a full 44px tall: the card's one action. */}
-            <FindBusinessButton className="h-11 w-full text-base">
-              {words.cta.button}
-            </FindBusinessButton>
-          </CardFooter>
-        </PlanCard>
+        />
         <PlanCard
           plan={t.pro}
           wash={WASHES.pro}
@@ -80,6 +80,15 @@ export function HomePricing({
           perMonth={t.perMonth}
           locale={locale}
           badge={words.soon}
+          action={
+            <Button
+              variant="outline"
+              disabled
+              className="h-11 w-full text-base"
+            >
+              {words.soon}
+            </Button>
+          }
           sample={
             <>
               <Image
@@ -107,7 +116,7 @@ function PlanCard({
   locale,
   badge,
   sample,
-  children,
+  action,
 }: {
   plan: Plan
   wash: (typeof WASHES)[keyof typeof WASHES]
@@ -116,7 +125,8 @@ function PlanCard({
   locale: string
   badge?: string
   sample: React.ReactNode
-  children?: React.ReactNode
+  // The plan's button, right under its name, before the list.
+  action: React.ReactNode
 }) {
   // "$19", in the visitor's language's own order.
   const price = moneyShortParts(priceMinor, PRICING_RULES.currency, locale)
@@ -156,6 +166,7 @@ function PlanCard({
           </CardAction>
         )}
       </CardHeader>
+      <CardContent>{action}</CardContent>
       <CardContent>
         <ul className="flex flex-col gap-3 text-base">
           {plan.features.map((feature) => (
@@ -168,7 +179,6 @@ function PlanCard({
           ))}
         </ul>
       </CardContent>
-      {children}
     </Card>
   )
 }
