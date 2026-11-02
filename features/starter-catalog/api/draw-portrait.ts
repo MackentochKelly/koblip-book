@@ -2,19 +2,22 @@ import "server-only"
 import { getMetaAiClient, META_IMAGE_MODEL } from "@/lib/meta-ai"
 import { STARTER_CATALOG_RULES as RULES } from "@/lib/starter-catalog-rules"
 import { savePhoto } from "@/lib/uploads"
+import { portraitLook } from "../utils/portrait-look"
 
 export interface PortraitFacts {
   name: string
   // Their one line on the booking page: what they are good at.
   description: string | null
   category: string | null
+  // Their place in the team list, which picks their look.
+  position: number
 }
 
 // Built from saved facts only, never from text the browser sends.
-function prompt(facts: PortraitFacts): string {
+export function portraitPrompt(facts: PortraitFacts): string {
   const work = facts.category?.toLowerCase() ?? "local business"
   const skill = facts.description ? ` (${facts.description})` : ""
-  return `A friendly, natural headshot photo of ${facts.name}, who works at a ${work}${skill}. Head and shoulders, centred, looking at the camera with a warm smile, dressed for work, soft daylight, softly blurred workplace behind. Realistic photo, no text, no logos.`
+  return `A friendly, natural headshot photo of ${facts.name}, ${portraitLook(facts.position)}, who works at a ${work}${skill}. Head and shoulders, centred, looking at the camera with a warm smile, wearing what people wear to work at a ${work}, soft daylight, softly blurred ${work} behind. Realistic photo, no text, no logos.`
 }
 
 // Draws one team member's photo with Muse Image and saves it like an
@@ -32,7 +35,7 @@ export async function drawPortrait(
     const response = await client.images.generate(
       {
         model: META_IMAGE_MODEL,
-        prompt: prompt(facts),
+        prompt: portraitPrompt(facts),
         n: 1,
         size: RULES.imageSize,
         output_format: "webp",
