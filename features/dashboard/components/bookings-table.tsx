@@ -110,7 +110,8 @@ export function BookingsTable({
       {/* A computer: search, dates and filters in one row. A phone: search
           and one Filters button for a sheet with the rest. */}
       <div className="flex items-center gap-2 md:flex-wrap">
-        <InputGroup className="min-w-0 flex-1 md:w-80 md:flex-none">
+        {/* The outline look of the date and filter buttons beside it. */}
+        <InputGroup className="min-w-0 flex-1 border-border bg-background md:w-80 md:flex-none dark:bg-transparent">
           <InputGroupAddon>
             <SearchIcon />
           </InputGroupAddon>
