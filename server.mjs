@@ -12,6 +12,7 @@ import { relayVoice } from "./server/voice-relay.mjs"
 import { handleVoiceUpgrade } from "./server/voice-upgrade.mjs"
 import { createVoiceSlots } from "./server/voice-slots.mjs"
 import { createShutdownHandler } from "./server/shutdown.mjs"
+import { redirectDevAddress } from "./server/dev-address.mjs"
 
 const port = parseInt(process.env.PORT || "3000", 10)
 const hostname = process.env.HOSTNAME || "localhost"
@@ -48,7 +49,10 @@ function startVoiceUpgrade(request, socket, head) {
   })
 }
 
-const server = createServer((req, res) => handle(req, res))
+const server = createServer((req, res) => {
+  if (dev && redirectDevAddress(req, res, dev, process.env.BETTER_AUTH_URL)) return
+  return handle(req, res)
+})
 server.on("upgrade", (request, socket, head) => {
   const url = new URL(request.url || "/", "http://x")
   if (url.pathname === "/api/voice/listen") {

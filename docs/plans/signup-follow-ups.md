@@ -110,6 +110,11 @@ change.
 **Done when:** opening `127.0.0.1:<port>` lands on the `BETTER_AUTH_URL`
 address and sign-up works there; a production build never redirects.
 
+**Built (2026-11-02), live dev check still to do:** the custom server
+redirects dev GET and HEAD requests to the canonical loopback address
+before Next.js, with the same port and path + query. HTTP tests cover it;
+the shared dev server needs its owner's restart before the live check.
+
 ## Decisions log
 
 | What | Why | Who | Date |
