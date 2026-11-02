@@ -71,22 +71,13 @@ export function AssistantFloat({
           key={key}
           className={cn(
             "group/idea relative transition-[opacity,visibility] ease-linear",
-            showIdeas ? "animate-in fade-in" : "invisible opacity-0"
+            !showIdeas && "invisible opacity-0"
           )}
-          // They come out of the globe, nearest first, and leave towards it,
-          // farthest first.
-          style={
-            showIdeas
-              ? {
-                  animationDuration: `${ASSISTANT_RULES.floatIdeasFadeInMs}ms`,
-                  animationDelay: `${(ideas.length - 1 - order) * ASSISTANT_RULES.floatIdeasFadeInGapMs}ms`,
-                  animationFillMode: "backwards",
-                }
-              : {
-                  transitionDuration: `${ASSISTANT_RULES.floatIdeasFadeOutMs}ms`,
-                  transitionDelay: `${order * ASSISTANT_RULES.floatIdeasFadeOutGapMs}ms`,
-                }
-          }
+          // They leave one by one, farthest from the globe first.
+          style={{
+            transitionDuration: `${ASSISTANT_RULES.floatIdeasFadeOutMs}ms`,
+            transitionDelay: `${order * ASSISTANT_RULES.floatIdeasFadeOutGapMs}ms`,
+          }}
         >
           <Card className="gap-0 p-0">
             <Button
