@@ -11,6 +11,17 @@ export function isPageLanguage(value: unknown): value is PageLanguage {
   return value === "en" || value === "es"
 }
 
+// The language a ?lang= value names ("en" or "es", the first one if
+// repeated), or null when it names none.
+export function languageParam(
+  param: string | string[] | undefined
+): PageLanguage | null {
+  if (typeof param === "string") {
+    return isPageLanguage(param) ? param : null
+  }
+  return param?.find(isPageLanguage) ?? null
+}
+
 // The ?lang= value wins ("en" or "es", any other value is ignored); else the
 // first Accept-Language entry (by q order) that is en or es (es-MX → es);
 // else "en".
@@ -18,15 +29,9 @@ export function pickLanguage(
   param: string | string[] | undefined,
   acceptLanguage: string | null
 ): PageLanguage {
-  if (typeof param === "string" && isPageLanguage(param)) {
-    return param
-  }
-  if (Array.isArray(param)) {
-    for (const value of param) {
-      if (isPageLanguage(value)) {
-        return value
-      }
-    }
+  const linked = languageParam(param)
+  if (linked) {
+    return linked
   }
   for (const tag of rankedTags(acceptLanguage)) {
     // Primary subtag only: es-MX → es.

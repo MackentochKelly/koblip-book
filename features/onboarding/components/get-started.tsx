@@ -231,7 +231,7 @@ export function GetStarted({
     // Signed out on the home page: the sign-up page takes over (a route
     // change, so React runs it as a view transition).
     if (handOver && !signedIn) {
-      startHandOver(() => router.push(signUpHref(found)))
+      startHandOver(() => router.push(signUpHref(found, { language })))
       return
     }
     const next = {
@@ -470,8 +470,12 @@ export function GetStarted({
           <AuthForm
             onSignedIn={() => finish()}
             disabled={finishing}
-            googleNext={saved ? signUpHref(saved, { finish: true }) : undefined}
-            googleErrorNext={saved ? signUpHref(saved) : undefined}
+            googleNext={
+              saved ? signUpHref(saved, { finish: true, language }) : undefined
+            }
+            googleErrorNext={
+              saved ? signUpHref(saved, { language }) : undefined
+            }
             googleError={googleError}
             googleReady={Boolean(ready)}
             emailLater
