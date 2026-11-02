@@ -686,7 +686,7 @@ const es: Messages = {
     description: "Tu página de reservas en un minuto.",
     logIn: "Iniciar sesión",
     dashboard: "Panel",
-    titleStart: "Ten tu página de reservas en un",
+    titleStart: "Tu página de reservas en un",
     titleEnd: "minuto",
     findOn: "Busca tu negocio en",
     maps: "Google Maps.",
