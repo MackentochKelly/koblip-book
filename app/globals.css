@@ -101,9 +101,10 @@
     --color-hero-foreground: var(--hero-foreground);
     --color-hero-marker-foreground: var(--hero-marker-foreground);
     --font-serif: var(--font-serif);
-    /* The home title on phones: grows with the screen, as big as fits on
-       two lines (36px at the smallest, 48px at most). */
-    --text-hero: clamp(2.25rem, 11vw, 3rem);
+    /* The home title on phones: grows with the screen, as big as still fits
+       on two lines in English and Spanish (28px at the smallest, 48px at
+       most). */
+    --text-hero: clamp(1.75rem, 8.5vw, 3rem);
     --text-hero--line-height: 1.1;
     /* The width of a whole page's content (home sections, header, footer,
        business page, booking, dashboard): max-w-page. */
