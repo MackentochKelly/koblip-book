@@ -1,11 +1,15 @@
 "use client"
 
+import Image from "next/image"
+
+import { Box, Scene } from "@/components/feature-preview"
+import { HOME_SECTION_IDS } from "@/components/home-section-title"
 import {
-  HOME_SECTION_IDS,
-  homeSectionTitleClassName,
-} from "@/components/home-section-title"
-import { Money } from "@/components/money"
+  showcaseCardClassName,
+  ShowcasePicture,
+} from "@/components/showcase-row"
 import { Badge } from "@/components/ui/badge"
+import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -17,15 +21,24 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { CheckIcon, SearchIcon } from "@/components/ui/icons"
-import { Separator } from "@/components/ui/separator"
 import { useFindBusiness } from "@/hooks/use-find-business"
+import { moneyShortParts } from "@/lib/format-price"
 import type { Messages } from "@/lib/i18n"
 import { PRICING_RULES } from "@/lib/pricing-rules"
-import { cn } from "@/lib/utils"
 
-// The home page's two plans, side by side (adapted from shadcn Space's
-// pricing-01 block). Free is the one action: the same search as the last
-// call to action. Pro can't be bought yet, so it has "Soon" and no button.
+type Plan = Messages["home"]["pricing"]["free"]
+
+// Each plan's picture: a still colour wash, as on the "What you get" cards.
+const WASHES = {
+  free: { colors: ["--background", "--hero-accent", "--chart-1"], seed: 40 },
+  pro: { colors: ["--background", "--verified", "--chart-2"], seed: 80 },
+} as const
+
+// The home page's two plans (adapted from shadcn Space's pricing-01 block,
+// in the "What you get" cards' style): the price in the glass box on a
+// colour wash, with what the plan does for you under it. Free is the one
+// action: the same search as the last call to action. Pro can't be bought
+// yet, so it has "Soon" and no button.
 export function HomePricing({
   words,
   locale,
@@ -40,13 +53,28 @@ export function HomePricing({
       id={HOME_SECTION_IDS.pricing}
       className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 pt-12 pb-12 sm:px-4 sm:pt-24"
     >
-      <h2 className={cn(homeSectionTitleClassName, "px-2")}>{t.title}</h2>
+      <div className="mb-4 flex flex-col items-center gap-2 px-2 text-center">
+        <h2 className="font-display text-3xl font-medium tracking-tight text-balance sm:text-4xl">
+          {t.titleStart}{" "}
+          <span className="font-serif font-normal tracking-normal italic">
+            {t.titleEnd}
+          </span>
+        </h2>
+        <p className="text-balance text-muted-foreground">{t.subtitle}</p>
+      </div>
       <div className="grid gap-3 md:grid-cols-2">
         <PlanCard
           plan={t.free}
+          wash={WASHES.free}
           priceMinor={PRICING_RULES.freePriceMinor}
           perMonth={t.perMonth}
           locale={locale}
+          sample={
+            <>
+              <CheckIcon className="size-4 shrink-0 text-success" />
+              {words.features.sample.done}
+            </>
+          }
         >
           <CardFooter className="mt-auto">
             <Button size="lg" className="w-full" onClick={findBusiness}>
@@ -57,10 +85,24 @@ export function HomePricing({
         </PlanCard>
         <PlanCard
           plan={t.pro}
+          wash={WASHES.pro}
           priceMinor={PRICING_RULES.proPriceMinor}
           perMonth={t.perMonth}
           locale={locale}
           badge={words.soon}
+          sample={
+            <>
+              <Image
+                src="/brands/whatsapp-glyph-green.svg"
+                alt=""
+                width={16}
+                height={16}
+                unoptimized
+                className="size-4 shrink-0 object-contain"
+              />
+              {t.proSample}
+            </>
+          }
         />
       </div>
     </section>
@@ -69,21 +111,49 @@ export function HomePricing({
 
 function PlanCard({
   plan,
+  wash,
   priceMinor,
   perMonth,
   locale,
   badge,
+  sample,
   children,
 }: {
-  plan: Messages["home"]["pricing"]["free"]
+  plan: Plan
+  wash: (typeof WASHES)[keyof typeof WASHES]
   priceMinor: number
   perMonth: string
   locale: string
   badge?: string
+  sample: React.ReactNode
   children?: React.ReactNode
 }) {
+  // "$19", in the visitor's language's own order.
+  const price = moneyShortParts(priceMinor, PRICING_RULES.currency, locale)
+    .map((part) => part.text)
+    .join("")
   return (
-    <Card>
+    <Card className={showcaseCardClassName}>
+      {/* Taller on phones: the box and the message both fit on the wash. */}
+      <ShowcasePicture className="max-sm:aspect-4/3">
+        <Scene {...wash}>
+          <div className="flex flex-col items-center gap-2">
+            <Box className="w-fit">
+              <p className="flex items-baseline gap-1 px-(--card-spacing) font-display text-5xl font-medium tracking-tight">
+                {price}
+                <span className="text-base font-normal tracking-normal text-muted-foreground">
+                  {perMonth}
+                </span>
+              </p>
+            </Box>
+            <Bubble variant="outline">
+              <BubbleContent className="flex items-center gap-2 bg-card">
+                {sample}
+              </BubbleContent>
+            </Bubble>
+          </div>
+        </Scene>
+      </ShowcasePicture>
       <CardHeader>
         <CardTitle className="font-display text-2xl tracking-tight">
           {plan.name}
@@ -95,25 +165,13 @@ function PlanCard({
           </CardAction>
         )}
       </CardHeader>
-      <CardContent className="flex flex-col gap-6">
-        <p className="flex items-baseline gap-1 font-display text-5xl font-medium tracking-tight">
-          <Money
-            priceMinor={priceMinor}
-            currency={PRICING_RULES.currency}
-            locale={locale}
-          />
-          <span className="text-base font-normal tracking-normal text-muted-foreground">
-            {perMonth}
-          </span>
-        </p>
-        <Separator />
+      <CardContent>
         <ul className="flex flex-col gap-3 text-base">
           {plan.features.map((feature) => (
             <li key={feature} className="flex items-start gap-3">
-              <CheckIcon
-                aria-hidden="true"
-                className="mt-1 size-4 shrink-0 text-muted-foreground"
-              />
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/25 dark:text-primary-foreground">
+                <CheckIcon aria-hidden="true" className="size-4" />
+              </span>
               {feature}
             </li>
           ))}

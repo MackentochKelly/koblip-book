@@ -119,6 +119,30 @@ export function ShowcaseGrid({
   )
 }
 
+// A card with a picture on top: room for the picture, the plain edge.
+export const showcaseCardClassName =
+  "group h-full pt-2 shadow-none ring-border dark:ring-border"
+
+// The picture inset on top of a card.
+export function ShowcasePicture({
+  className,
+  children,
+}: {
+  className?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      className={cn(
+        "relative mx-2 aspect-video overflow-hidden rounded-t-[calc(var(--radius-4xl)-(--spacing(2)))] rounded-b-lg bg-muted after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/5 dark:after:inset-ring-foreground/10",
+        className
+      )}
+    >
+      {children}
+    </div>
+  )
+}
+
 // One card: the picture inset on top, then its title and line.
 function ShowcaseCard({
   item,
@@ -128,8 +152,8 @@ function ShowcaseCard({
   zoom?: boolean
 }) {
   return (
-    <Card className="group h-full pt-2 shadow-none ring-border dark:ring-border">
-      <div className="relative mx-2 aspect-video overflow-hidden rounded-t-[calc(var(--radius-4xl)-(--spacing(2)))] rounded-b-lg bg-muted after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/5 dark:after:inset-ring-foreground/10">
+    <Card className={showcaseCardClassName}>
+      <ShowcasePicture>
         <div
           className={cn(
             "size-full",
@@ -139,7 +163,7 @@ function ShowcaseCard({
         >
           {item.picture}
         </div>
-      </div>
+      </ShowcasePicture>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {item.step !== undefined && (

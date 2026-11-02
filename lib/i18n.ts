@@ -216,7 +216,11 @@ const en = {
     },
     pricing: {
       title: "Pricing",
+      titleStart: "Start for",
+      titleEnd: "free",
+      subtitle: "No card needed. Pro is coming soon.",
       perMonth: "/month",
+      proSample: "See you tomorrow at 3 pm",
       free: {
         name: "Free",
         note: "Free for now. No card needed.",
@@ -551,7 +555,11 @@ const es: Messages = {
     },
     pricing: {
       title: "Precios",
+      titleStart: "Empieza",
+      titleEnd: "gratis",
+      subtitle: "Sin tarjeta. Pro llegará pronto.",
       perMonth: "/mes",
+      proSample: "Te esperamos mañana a las 3 pm",
       free: {
         name: "Gratis",
         note: "Gratis por ahora. Sin tarjeta.",
