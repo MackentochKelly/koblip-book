@@ -22,7 +22,9 @@ import { SpinSwap } from "@/components/spin-swap"
 import { Button } from "@/components/ui/button"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { VoiceGlobe } from "@/components/voice-globe"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
+import { useIsDesktop } from "@/hooks/use-is-desktop"
 import { UPLOAD_RULES } from "@/lib/upload-rules"
 import { cn } from "@/lib/utils"
 import {
@@ -82,6 +84,7 @@ export function DashboardShell({
   const base = `/dashboard/${business.id}`
   const assistantHref = `${base}/assistant`
   const assistantOpen = pathname.startsWith(assistantHref)
+  const desktop = useIsDesktop()
   const addPage = ADD_PAGES.find((path) => pathname.startsWith(base + path))
   // Until the page gives its own, the + is named for the page and waits.
   const addLabel =
@@ -192,14 +195,14 @@ export function DashboardShell({
             {PHONE_RIGHT.map((path) => tab(path))}
           </BottomTabBar>
           {/* The phone has the tab bar's middle button for this. */}
-          {!assistantOpen && (
+          {desktop && !assistantOpen && (
             <FloatingLink
               id="assistant"
               href={assistantHref}
               label={m.assistant}
-              className="max-md:hidden"
+              bare
             >
-              <SparklesIcon />
+              <VoiceGlobe className="size-full" />
             </FloatingLink>
           )}
         </SidebarProvider>

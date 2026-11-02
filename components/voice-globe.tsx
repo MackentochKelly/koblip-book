@@ -8,13 +8,13 @@ import { cn } from "@/lib/utils"
 
 // How much the globe grows at full volume, and how fast it follows.
 const PULSE = { maxGrow: 0.1, smoothing: 0.2 } as const
-// The colours inside move a little faster than the hero's 0.3.
-const GLOBE_SPEED = 0.45
 
-// The voice globe: the hero's colour wash in a ball, lit like a sphere
-// (no outline): a soft shine on the top left, light along that edge, the
-// bottom right in shade, and a faint glow under it in the brand colour. While
-// talking live it swells a little with the owner's voice and the answer.
+// The voice globe: a moving colour wash in a ball, lit like a real sphere (no
+// outline): a small bright shine on the top left, the far side in shade, a
+// little light bounced back on the bottom right, a thin rim of light all round
+// and a faint glow under it in the brand colour. All of it is sized from the
+// ball itself, so it looks the same at any size. While talking live it swells
+// a little with the owner's voice and the answer.
 export function VoiceGlobe({
   getInputVolume,
   getOutputVolume,
@@ -42,20 +42,17 @@ export function VoiceGlobe({
   }, [still, getInputVolume, getOutputVolume])
 
   return (
-    <div
-      ref={ball}
-      aria-hidden
-      className={cn(
-        "relative isolate aspect-square overflow-hidden rounded-full shadow-[0_1.25rem_2.5rem_-1rem_color-mix(in_oklch,var(--primary)_35%,transparent)]",
-        className
-      )}
-    >
-      <HeroGradient speed={GLOBE_SPEED} veiled={false} />
-      {/* Shine and edge light from the top left (the near-white
-          --primary-foreground, the same in light and dark), shade on the
-          bottom right (--primary), and a soft rim of light all round its
-          edge, like glass, so the ball looks round. */}
-      <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_24%,color-mix(in_oklch,var(--primary-foreground)_75%,transparent),transparent_28%)] shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--primary-foreground)_35%,transparent),inset_0_0_0.6rem_color-mix(in_oklch,var(--primary-foreground)_20%,transparent),inset_0.35rem_0.45rem_0.9rem_color-mix(in_oklch,var(--primary-foreground)_45%,transparent),inset_-1rem_-1.4rem_2.2rem_color-mix(in_oklch,var(--primary)_30%,transparent)]" />
+    <div aria-hidden className={cn("@container aspect-square", className)}>
+      <div
+        ref={ball}
+        className="relative isolate size-full overflow-hidden rounded-full shadow-[0_16cqw_31cqw_-12cqw_color-mix(in_oklch,var(--primary)_35%,transparent)]"
+      >
+        <HeroGradient look="globe" />
+        {/* From the top layer down: the shine, the bounced light, the rim
+            (all the near-white --primary-foreground, the same in light and
+            dark), then the shade (--primary). */}
+        <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_32%_26%,color-mix(in_oklch,var(--primary-foreground)_85%,transparent),transparent_20%),radial-gradient(circle_at_70%_80%,color-mix(in_oklch,var(--primary-foreground)_30%,transparent),transparent_24%),radial-gradient(circle_closest-side,transparent_90%,color-mix(in_oklch,var(--primary-foreground)_45%,transparent)_100%),radial-gradient(circle_at_42%_38%,transparent_50%,color-mix(in_oklch,var(--primary)_35%,transparent)_80%)]" />
+      </div>
     </div>
   )
 }

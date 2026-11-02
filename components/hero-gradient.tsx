@@ -5,28 +5,33 @@ import { MeshGradient } from "@paper-design/shaders-react"
 import { useReducedMotion, useThemeColors } from "@/hooks/use-theme-colors"
 
 // Paper's Mesh Gradient (https://shaders.paper.design/mesh-gradient): a
-// slow fluid colour wash, set up once for the app. The colours are theme
-// tokens from globals.css, read in the browser so a new theme recolours it.
-const HERO_GRADIENT = {
-  colorTokens: ["--background", "--hero-1", "--hero-2", "--hero-3"],
-  distortion: 0.4,
-  swirl: 0.1,
-  speed: 0.3,
+// fluid colour wash, set up once for the app. The colours are theme tokens
+// from globals.css, read in the browser so a new theme recolours it.
+const LOOKS = {
+  // Slow and pale behind words, with a thin wash of the page colour over it so
+  // they read more easily.
+  hero: {
+    colorTokens: ["--background", "--hero-1", "--hero-2", "--hero-3"],
+    distortion: 0.4,
+    swirl: 0.1,
+    speed: 0.3,
+    veiled: true,
+  },
+  // The voice globe has no words and is small: light colours that stand apart
+  // and move fast enough to see.
+  globe: {
+    colorTokens: ["--chart-1", "--hero-accent", "--chart-2", "--hero-accent"],
+    distortion: 0.9,
+    swirl: 0.6,
+    speed: 1.8,
+    veiled: false,
+  },
 } as const
 
-// Fills its `relative isolate` parent, behind the content. `speed` lets a
-// smaller use (the voice globe) move a little faster than the hero.
-// `veiled`: a thin wash of the page colour over it, calming the colours so
-// the words on top read more easily. On for every panel with words on it;
-// off for the voice globe, which has none.
-export function HeroGradient({
-  speed = HERO_GRADIENT.speed,
-  veiled = true,
-}: {
-  speed?: number
-  veiled?: boolean
-}) {
-  const colors = useThemeColors(HERO_GRADIENT.colorTokens)
+// Fills its `relative isolate` parent, behind the content.
+export function HeroGradient({ look = "hero" }: { look?: keyof typeof LOOKS }) {
+  const { colorTokens, distortion, swirl, speed, veiled } = LOOKS[look]
+  const colors = useThemeColors(colorTokens)
   const still = useReducedMotion()
 
   return (
@@ -41,8 +46,8 @@ export function HeroGradient({
       {colors && (
         <MeshGradient
           colors={colors}
-          distortion={HERO_GRADIENT.distortion}
-          swirl={HERO_GRADIENT.swirl}
+          distortion={distortion}
+          swirl={swirl}
           speed={still ? 0 : speed}
           // Fades in over the plain page colour instead of popping in.
           className="size-full duration-700 motion-safe:animate-in motion-safe:fade-in"

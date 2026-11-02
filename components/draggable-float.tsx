@@ -4,7 +4,6 @@ import { animate, motion, useMotionValue, type PanInfo } from "motion/react"
 import { useLayoutEffect, useRef } from "react"
 
 import { DRAG_RULES } from "@/lib/drag-rules"
-import { cn } from "@/lib/utils"
 
 // The screen corner the button rests in.
 interface Corner {
@@ -45,12 +44,10 @@ function project(velocity: number) {
 // as a tap; a drag never counts as one (motion.dev/docs/react-drag).
 export function DraggableFloat({
   id,
-  className,
   children,
 }: {
   // Names the corner this button keeps in the browser.
   id: string
-  className?: string
   children: React.ReactNode
 }) {
   const areaRef = useRef<HTMLDivElement>(null)
@@ -116,10 +113,7 @@ export function DraggableFloat({
   return (
     <div
       ref={areaRef}
-      className={cn(
-        "pointer-events-none fixed top-[max(--spacing(4),env(safe-area-inset-top))] right-[max(--spacing(4),env(safe-area-inset-right))] bottom-[calc(--spacing(20)+env(safe-area-inset-bottom))] left-[max(--spacing(4),env(safe-area-inset-left))] z-30 md:bottom-[max(--spacing(6),env(safe-area-inset-bottom))]",
-        className
-      )}
+      className="pointer-events-none fixed top-[max(--spacing(4),env(safe-area-inset-top))] right-[max(--spacing(4),env(safe-area-inset-right))] bottom-[calc(--spacing(20)+env(safe-area-inset-bottom))] left-[max(--spacing(4),env(safe-area-inset-left))] z-30 md:bottom-[max(--spacing(6),env(safe-area-inset-bottom))]"
     >
       <motion.div
         ref={itemRef}
