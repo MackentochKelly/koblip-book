@@ -24,8 +24,7 @@ export function HomeFaq({ words }: { words: Messages["home"]["faq"] }) {
     <section
       id={HOME_SECTION_IDS.faq}
       className={cn(
-        // Extra room above, set apart from the demo before it.
-        "mx-auto flex w-full max-w-page flex-col gap-4 px-2 pt-12 pb-12 sm:px-4 sm:pt-24",
+        "mx-auto flex w-full max-w-page flex-col gap-4 px-2 sm:px-4",
         sideBySide && "md:grid md:grid-cols-[1fr_2fr] md:gap-12"
       )}
     >

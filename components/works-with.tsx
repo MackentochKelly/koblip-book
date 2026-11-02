@@ -34,7 +34,7 @@ export function WorksWith({ language }: { language: PageLanguage }) {
     },
   ]
   return (
-    <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6 px-4 py-12">
+    <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6 px-4">
       <HomeRowLabel>{t.worksWith}</HomeRowLabel>
       <ul className="flex flex-wrap justify-center gap-x-8 gap-y-4">
         {services.map(({ logo, logoDark, name }) => (

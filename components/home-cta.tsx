@@ -1,6 +1,7 @@
 "use client"
 
 import { heroEdgeClassName } from "@/components/glass-frame"
+import { homeGroupSpaceClassName } from "@/components/home-band"
 import { HeroGradient } from "@/components/hero-gradient"
 import { useHomeLook } from "@/components/home-look"
 import { Button } from "@/components/ui/button"
@@ -30,8 +31,12 @@ export function HomeCta({
         "mx-auto w-full",
         bands
           ? "max-w-3xl px-2 py-16 sm:px-4 sm:py-24"
-          : // Room above and below: the last call to action stands alone.
-            "max-w-page px-2 pt-12 pb-16 sm:px-4 sm:pt-24 sm:pb-24"
+          : // A group's room above and below: the last call to action
+            // stands alone.
+            cn(
+              "max-w-page px-2 pb-24 sm:px-4 sm:pb-36",
+              homeGroupSpaceClassName
+            )
       )}
     >
       <div

@@ -196,7 +196,7 @@ export function SeeItInAction({
     <section
       ref={box}
       id={HOME_SECTION_IDS.action}
-      className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 pb-12 sm:px-4"
+      className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 sm:px-4"
     >
       <HomeBigTitle
         start={words.titleStart}

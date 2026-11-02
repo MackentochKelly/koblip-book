@@ -38,7 +38,6 @@ export function ShowcaseRow({
   previous,
   next,
   items,
-  className,
 }: {
   // For links to this row (the footer's).
   id: string
@@ -46,15 +45,11 @@ export function ShowcaseRow({
   previous: string
   next: string
   items: ShowcaseItem[]
-  className?: string
 }) {
   // Two-finger trackpad swipes move the cards too (Embla only drags).
   const [wheel] = useState(() => WheelGesturesPlugin())
   return (
-    <section
-      id={id}
-      className={cn("mx-auto w-full max-w-page px-2 pb-12 sm:px-4", className)}
-    >
+    <section id={id} className="mx-auto w-full max-w-page px-2 sm:px-4">
       {/* On phones the cards slide on to the screen's edge instead of being
           cut at the row's edge: the carousel doesn't clip, the page does (its
           overflow-x-clip). Computers show whole cards only: the row clips. */}
@@ -103,7 +98,7 @@ export function ShowcaseGrid({
   items: ShowcaseItem[]
 }) {
   return (
-    <section id={id} className="mx-auto w-full max-w-page px-2 pb-12 sm:px-4">
+    <section id={id} className="mx-auto w-full max-w-page px-2 sm:px-4">
       <div className="mb-6 flex flex-col gap-1 px-2 md:flex-row md:items-end md:justify-between md:gap-8">
         <h2 className={homeSectionTitleClassName}>{title}</h2>
         <p className="text-balance text-muted-foreground md:max-w-sm md:text-right">

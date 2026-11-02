@@ -133,28 +133,28 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
             </div>
           </main>
         </section>
-        <HomeBand tone="plain">
+        <HomeBand tone="plain" space="row">
           <WorksWith language={language} />
           <MadeFor language={language} />
         </HomeBand>
-        <HomeBand tone="muted" dots>
+        <HomeBand tone="muted" space="group" dots>
           <HowItWorks words={t} />
         </HomeBand>
-        <HomeBand tone="plain">
+        <HomeBand tone="plain" space="row">
           <HomeFeatures words={t} />
           <HomeEverything words={t} />
         </HomeBand>
-        <HomeBand tone="brand">
+        <HomeBand tone="brand" space="row">
           <SeeItInAction
             words={t.action}
             findBusinessLabel={t.cta.button}
             language={language}
           />
         </HomeBand>
-        <HomeBand tone="plain">
+        <HomeBand tone="plain" space="group">
           <HomePricing words={t} locale={messagesFor(language).locale} />
         </HomeBand>
-        <HomeBand tone="muted">
+        <HomeBand tone="muted" space="group">
           <HomeFaq words={t.faq} />
         </HomeBand>
         <HomeCta

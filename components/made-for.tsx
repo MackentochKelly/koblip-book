@@ -57,7 +57,7 @@ export function MadeFor({ language }: { language: PageLanguage }) {
     </Badge>
   ))
   return (
-    <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6 pb-12">
+    <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6">
       <HomeRowLabel>{t.title}</HomeRowLabel>
       <ul className="sr-only">
         {KINDS.map(([kind]) => (

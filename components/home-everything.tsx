@@ -59,7 +59,7 @@ export function HomeEverything({ words }: { words: Home }) {
   return (
     <section
       id={HOME_SECTION_IDS.everything}
-      className="mx-auto w-full max-w-page px-2 pb-12 sm:px-4"
+      className="mx-auto w-full max-w-page px-2 sm:px-4"
     >
       <HomeBigTitle start={t.titleStart} end={t.titleEnd} line={t.subtitle} />
       <AppsCard words={t} soon={words.soon} />

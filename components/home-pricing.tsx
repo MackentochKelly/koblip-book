@@ -51,7 +51,7 @@ export function HomePricing({
   return (
     <section
       id={HOME_SECTION_IDS.pricing}
-      className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 pt-12 pb-12 sm:px-4 sm:pt-24"
+      className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 sm:px-4"
     >
       <HomeBigTitle start={t.titleStart} end={t.titleEnd} line={t.subtitle} />
       <div className="grid gap-3 md:grid-cols-2">
