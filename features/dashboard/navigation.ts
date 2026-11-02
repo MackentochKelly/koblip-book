@@ -15,6 +15,10 @@ import {
 // The owner area's pages, in the menu's groups (like Koblip Sales'
 // config/navigation). The ☰ menu and the search list both read it; a new
 // page goes in a group here. Paths follow /dashboard/[businessId].
+// The assistant stays listed for search and the top bar's title, but not in
+// the ☰ menu: its own round button opens it (dashboard-shell.tsx).
+export const NOT_IN_MENU: readonly string[] = ["assistant"]
+
 export const NAV_GROUPS = [
   // What the owner opens every day: first, with no title.
   {

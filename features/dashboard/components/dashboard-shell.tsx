@@ -15,6 +15,7 @@ import {
 
 import { AppInset } from "@/components/app-inset"
 import { BottomTabBar, TabBarLink } from "@/components/bottom-tab-bar"
+import { FloatingLink } from "@/components/floating-link"
 import { PageContent } from "@/components/page-content"
 import { PhotoWordsProvider } from "@/components/photo-upload"
 import { SpinSwap } from "@/components/spin-swap"
@@ -190,6 +191,17 @@ export function DashboardShell({
             </div>
             {PHONE_RIGHT.map((path) => tab(path))}
           </BottomTabBar>
+          {/* The phone has the tab bar's middle button for this. */}
+          {!assistantOpen && (
+            <FloatingLink
+              id="assistant"
+              href={assistantHref}
+              label={m.assistant}
+              className="max-md:hidden"
+            >
+              <SparklesIcon />
+            </FloatingLink>
+          )}
         </SidebarProvider>
       </CommandMenuProvider>
     </TooltipProvider>

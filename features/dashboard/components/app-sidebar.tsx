@@ -21,7 +21,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useOwnerMessages } from "../i18n/provider"
-import { NAV_GROUPS } from "../navigation"
+import { NAV_GROUPS, NOT_IN_MENU } from "../navigation"
 import type { OwnedBusiness } from "../types"
 import type { Owner } from "./account-menu"
 import { BusinessSwitcher } from "./business-switcher"
@@ -99,22 +99,24 @@ export function AppSidebar({
           <NavMain
             key={group.key}
             title={group.key === "main" ? undefined : m.groups[group.key]}
-            items={group.items.map((item) => {
-              const href = base + item.path
-              return {
-                href,
-                // Home is Dashboard on a computer; the phone's menu keeps
-                // Home, like its tab.
-                label:
-                  item.key === "home" && !isMobile
-                    ? m.nav.dashboard
-                    : m.nav[item.key],
-                icon: item.icon,
-                active: item.path
-                  ? pathname.startsWith(href)
-                  : pathname === base,
-              }
-            })}
+            items={group.items
+              .filter((item) => !NOT_IN_MENU.includes(item.key))
+              .map((item) => {
+                const href = base + item.path
+                return {
+                  href,
+                  // Home is Dashboard on a computer; the phone's menu keeps
+                  // Home, like its tab.
+                  label:
+                    item.key === "home" && !isMobile
+                      ? m.nav.dashboard
+                      : m.nav[item.key],
+                  icon: item.icon,
+                  active: item.path
+                    ? pathname.startsWith(href)
+                    : pathname === base,
+                }
+              })}
           />
         ))}
       </SidebarContent>

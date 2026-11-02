@@ -4,6 +4,7 @@ import { animate, motion, useMotionValue, type PanInfo } from "motion/react"
 import { useLayoutEffect, useRef } from "react"
 
 import { DRAG_RULES } from "@/lib/drag-rules"
+import { cn } from "@/lib/utils"
 
 // The screen corner the button rests in.
 interface Corner {
@@ -40,14 +41,16 @@ function project(velocity: number) {
 // Next.js dev button: let go (or flick it) and it glides into the nearest
 // corner, and it comes back to that corner next time. It starts at the
 // bottom right, clear of the phone's bottom bar, and never leaves the
-// screen's safe area. A tap still works as a tap; a drag never counts as
-// one (motion.dev/docs/react-drag).
+// screen's safe area, even when the window changes size. A tap still works
+// as a tap; a drag never counts as one (motion.dev/docs/react-drag).
 export function DraggableFloat({
   id,
+  className,
   children,
 }: {
   // Names the corner this button keeps in the browser.
   id: string
+  className?: string
   children: React.ReactNode
 }) {
   const areaRef = useRef<HTMLDivElement>(null)
@@ -70,15 +73,24 @@ export function DraggableFloat({
     }
   }
 
-  // Put the button back in its last corner, before it is drawn.
+  // Put the button back in its last corner, before it is drawn and whenever
+  // the window changes size.
   useLayoutEffect(() => {
-    const corner = readCorner(key)
-    const space = room()
-    if (!corner || !space) {
-      return
+    const place = () => {
+      const corner = readCorner(key)
+      const space = room()
+      if (!corner || !space) {
+        return
+      }
+      x.set(corner.side === "left" ? -space.across : 0)
+      y.set(corner.edge === "top" ? -space.up : 0)
     }
-    x.set(corner.side === "left" ? -space.across : 0)
-    y.set(corner.edge === "top" ? -space.up : 0)
+    place()
+    const observer = new ResizeObserver(place)
+    if (areaRef.current) {
+      observer.observe(areaRef.current)
+    }
+    return () => observer.disconnect()
   }, [key, x, y])
 
   function handleDragEnd(_: PointerEvent, info: PanInfo) {
@@ -104,7 +116,10 @@ export function DraggableFloat({
   return (
     <div
       ref={areaRef}
-      className="pointer-events-none fixed top-[max(--spacing(4),env(safe-area-inset-top))] right-[max(--spacing(4),env(safe-area-inset-right))] bottom-[calc(--spacing(20)+env(safe-area-inset-bottom))] left-[max(--spacing(4),env(safe-area-inset-left))] z-30 md:bottom-[max(--spacing(6),env(safe-area-inset-bottom))]"
+      className={cn(
+        "pointer-events-none fixed top-[max(--spacing(4),env(safe-area-inset-top))] right-[max(--spacing(4),env(safe-area-inset-right))] bottom-[calc(--spacing(20)+env(safe-area-inset-bottom))] left-[max(--spacing(4),env(safe-area-inset-left))] z-30 md:bottom-[max(--spacing(6),env(safe-area-inset-bottom))]",
+        className
+      )}
     >
       <motion.div
         ref={itemRef}
