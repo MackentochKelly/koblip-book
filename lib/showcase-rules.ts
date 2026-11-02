@@ -24,6 +24,7 @@ export const SHOWCASE_LOOP = {
     nameIn: 700,
     hoursIn: 700,
     serviceIn: 700,
+    teamIn: 700,
     beforeReady: 600,
     ready: 2800,
   },

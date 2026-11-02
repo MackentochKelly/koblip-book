@@ -1,20 +1,25 @@
 "use client"
 
 import { AnimatePresence, motion } from "motion/react"
+import Image from "next/image"
 import { useRef, useState } from "react"
 
 import { Box, burstFrom, POP, RISE, Scene } from "@/components/feature-preview"
 import { GoogleMark, googleButtonClassName } from "@/components/google-mark"
 import { Rating } from "@/components/rating"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarImage,
+} from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import {
   CalendarDaysIcon,
   CheckIcon,
   MapPinIcon,
   SearchIcon,
-  StoreIcon,
 } from "@/components/ui/icons"
 import {
   InputGroup,
@@ -184,7 +189,7 @@ export function TapMark({ ms, className }: { ms: number; className?: string }) {
   )
 }
 
-type CheckPhase = "building" | "photos" | "name" | "hours" | "services"
+type CheckPhase = "building" | "photos" | "name" | "hours" | "services" | "team"
 
 const CHECK_ORDER: CheckPhase[] = [
   "building",
@@ -192,16 +197,26 @@ const CHECK_ORDER: CheckPhase[] = [
   "name",
   "hours",
   "services",
+  "team",
 ]
 
-// A small copy of the page building itself (useStoryLoop): placeholders,
-// then the business's avatar, the name and rating, today's hours and the services one
-// by one, then "Ready". Rests on the finished page; tap the picture to play
-// it again.
+// The sample business's own pictures (the demo's Lumen Studio, in
+// public/demo/lumen): a photo of the place and its team.
+const CHECK_PHOTO = "/demo/lumen/01.jpg"
+const CHECK_TEAM = [
+  "/demo/lumen/team-01.webp",
+  "/demo/lumen/team-02.webp",
+  "/demo/lumen/team-03.webp",
+]
+
+// A small copy of the page building itself (useStoryLoop) while Muse, the
+// AI, works: placeholders, then the business's photo, the name and
+// rating, today's hours, the services one by one and the team, then
+// "Ready". Rests on the finished page; tap the picture to play it again.
 function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
   const services = words.services
   const box = useRef<HTMLDivElement>(null)
-  const [phase, setPhase] = useState<CheckPhase>("services")
+  const [phase, setPhase] = useState<CheckPhase>("team")
   const [shown, setShown] = useState(services.length)
   const [ready, setReady] = useState(true)
   const time = SHOWCASE_LOOP.check
@@ -223,12 +238,14 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
         setShown(count)
         await wait(time.serviceIn)
       }
+      setPhase("team")
+      await wait(time.teamIn)
       await wait(time.beforeReady)
       setReady(true)
       await wait(time.ready)
     },
     () => {
-      setPhase("services")
+      setPhase("team")
       setShown(services.length)
       setReady(true)
     }
@@ -250,14 +267,17 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
         <Box>
           <div className="flex flex-col gap-3 px-(--card-spacing)">
             <div className="flex items-center gap-3">
-              {/* The business's avatar, as on the real page and the "Is this
-                  your business?" card. */}
+              {/* The business's photo, as on the real page. */}
               {reached("photos") ? (
                 <motion.div {...POP} className="flex shrink-0">
                   <Avatar size="lg">
-                    <AvatarFallback>
-                      <StoreIcon />
-                    </AvatarFallback>
+                    <Image
+                      src={CHECK_PHOTO}
+                      alt=""
+                      width={40}
+                      height={40}
+                      className="size-full rounded-full object-cover"
+                    />
                   </Avatar>
                 </motion.div>
               ) : (
@@ -291,7 +311,7 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
             </div>
             <div className="flex flex-col gap-1.5 text-xs">
               {services.map((service, index) =>
-                phase === "services" && index < shown ? (
+                reached("services") && index < shown ? (
                   <motion.div
                     key={service.name}
                     {...RISE}
@@ -307,19 +327,68 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
                 )
               )}
             </div>
+            {/* The team, with their photos. */}
+            {reached("team") ? (
+              <motion.div
+                {...RISE}
+                className="flex h-6 items-center justify-between gap-2 text-xs"
+              >
+                <span>{words.team}</span>
+                <AvatarGroup>
+                  {CHECK_TEAM.map((photo) => (
+                    <Avatar key={photo} size="sm">
+                      <Image
+                        src={photo}
+                        alt=""
+                        width={24}
+                        height={24}
+                        className="size-full rounded-full object-cover"
+                      />
+                    </Avatar>
+                  ))}
+                </AvatarGroup>
+              </motion.div>
+            ) : (
+              <Skeleton className="h-6 w-full" />
+            )}
           </div>
         </Box>
-        {/* "Ready", stuck on the box's corner so nothing moves under it. */}
-        <AnimatePresence>
-          {ready && (
-            <motion.span {...POP} className="absolute -top-2 -right-2">
-              <Badge className="bg-success text-success-foreground">
-                <CheckIcon />
-                {words.ready}
-              </Badge>
-            </motion.span>
-          )}
-        </AnimatePresence>
+        {/* On the box's corner so nothing moves under it: Muse while it
+            builds, then "Ready". */}
+        <span className="absolute -top-2 -right-2">
+          <AnimatePresence mode="wait" initial={false}>
+            {ready ? (
+              <motion.span key="ready" {...POP} className="flex">
+                <Badge className="bg-success text-success-foreground">
+                  <CheckIcon />
+                  {words.ready}
+                </Badge>
+              </motion.span>
+            ) : (
+              <motion.span key="muse" {...POP} className="flex">
+                <Badge variant="secondary">
+                  <Image
+                    src="/brands/meta-symbol.png"
+                    alt=""
+                    width={12}
+                    height={12}
+                    data-icon="inline-start"
+                    className="dark:hidden"
+                  />
+                  <Image
+                    src="/brands/meta-symbol-white.png"
+                    alt=""
+                    width={12}
+                    height={12}
+                    data-icon="inline-start"
+                    className="hidden dark:block"
+                  />
+                  {words.building}
+                </Badge>
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </span>
       </div>
     </>
   )

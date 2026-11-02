@@ -331,7 +331,7 @@ const en = {
       signIn: "Sign in with Google",
       signInText: "One tap. Free.",
       check: "AI builds your page",
-      checkText: "Services, prices, hours.",
+      checkText: "Services, prices, photos, team.",
       share: "Get booked",
       shareText: "Share your link. Bookings come in.",
       // The sample shown in the step pictures.
@@ -350,6 +350,8 @@ const en = {
         copied: "Copied",
         replay: "Play again",
         ready: "Ready",
+        building: "Muse",
+        team: "Team",
         openToday: "Open today",
         share: "Share",
         // People in the share row; the third is the one who books.
@@ -722,7 +724,7 @@ const es: Messages = {
       signIn: "Entra con Google",
       signInText: "Un toque. Gratis.",
       check: "La IA crea tu página",
-      checkText: "Servicios, precios, horarios.",
+      checkText: "Servicios, precios, fotos, equipo.",
       share: "Recibe reservas",
       shareText: "Comparte tu enlace. Llegan las reservas.",
       sample: {
@@ -740,6 +742,8 @@ const es: Messages = {
         copied: "Copiado",
         replay: "Reproducir de nuevo",
         ready: "Lista",
+        building: "Muse",
+        team: "Equipo",
         openToday: "Abierto hoy",
         share: "Compartir",
         // People in the share row; the third is the one who books.
