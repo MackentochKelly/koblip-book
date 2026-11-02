@@ -11,9 +11,6 @@ import {
 } from "@/components/showcase-row"
 import type { Messages } from "@/lib/i18n"
 
-// The pictures here hold whole lists, so they need the height on any width.
-const PICTURE_CLASS_NAME = "aspect-auto h-72"
-
 // What an owner gets. Each picture is a small preview of the app.
 export function HomeFeatures({ words }: { words: Messages["home"] }) {
   const t = words.features
@@ -50,7 +47,6 @@ export function HomeFeatures({ words }: { words: Messages["home"] }) {
         id={HOME_SECTION_IDS.features}
         title={t.title}
         subtitle={t.subtitle}
-        pictureClassName={PICTURE_CLASS_NAME}
         items={[
           ...main,
           {
@@ -70,7 +66,6 @@ export function HomeFeatures({ words }: { words: Messages["home"] }) {
       title={t.title}
       previous={t.previous}
       next={t.next}
-      pictureClassName={PICTURE_CLASS_NAME}
       items={[...main, ...day]}
     />
   )

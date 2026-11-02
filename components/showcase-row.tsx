@@ -39,7 +39,6 @@ export function ShowcaseRow({
   next,
   items,
   className,
-  pictureClassName,
 }: {
   // For links to this row (the footer's).
   id: string
@@ -48,7 +47,6 @@ export function ShowcaseRow({
   next: string
   items: ShowcaseItem[]
   className?: string
-  pictureClassName?: string
 }) {
   // Two-finger trackpad swipes move the cards too (Embla only drags).
   const [wheel] = useState(() => WheelGesturesPlugin())
@@ -81,7 +79,7 @@ export function ShowcaseRow({
         <CarouselContent className="p-px">
           {items.map((item) => (
             <CarouselItem key={item.key} className="basis-[85%] md:basis-1/3">
-              <ShowcaseCard item={item} pictureClassName={pictureClassName} />
+              <ShowcaseCard item={item} />
             </CarouselItem>
           ))}
         </CarouselContent>
@@ -98,13 +96,11 @@ export function ShowcaseGrid({
   title,
   subtitle,
   items,
-  pictureClassName,
 }: {
   id: string
   title: string
   subtitle: string
   items: ShowcaseItem[]
-  pictureClassName?: string
 }) {
   return (
     <section id={id} className="mx-auto w-full max-w-page px-2 pb-12 sm:px-4">
@@ -116,12 +112,7 @@ export function ShowcaseGrid({
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         {items.map((item) => (
-          <ShowcaseCard
-            key={item.key}
-            item={item}
-            zoom
-            pictureClassName={pictureClassName}
-          />
+          <ShowcaseCard key={item.key} item={item} zoom />
         ))}
       </div>
     </section>
@@ -156,15 +147,13 @@ export function ShowcasePicture({
 function ShowcaseCard({
   item,
   zoom = false,
-  pictureClassName,
 }: {
   item: ShowcaseItem
   zoom?: boolean
-  pictureClassName?: string
 }) {
   return (
     <Card className={showcaseCardClassName}>
-      <ShowcasePicture className={pictureClassName}>
+      <ShowcasePicture>
         <div
           className={cn(
             "size-full",

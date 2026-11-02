@@ -7,11 +7,11 @@ import {
   BookingRow,
   Box,
   firstName,
+  POP,
   RISE,
   Scene,
 } from "@/components/feature-preview"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
 import { CheckIcon } from "@/components/ui/icons"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
@@ -76,27 +76,18 @@ export function DayPreview({
 
 // The day's bookings, with a new one landing on top.
 function BookingsPicture({ words, steps }: { words: Words; steps: Steps }) {
-  const [haircut, colour] = steps.services
-  const rows = [
-    { person: 0, service: haircut.name, time: "10:00" },
-    { person: 1, service: colour.name, time: "11:30" },
-  ]
   return (
     <Box>
       <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <span className="font-medium">{steps.today}</span>
         <BookingRow
           icon
           title={steps.newBooking}
           detail={`${firstName(steps.people[2])} · ${steps.bookingService} · ${formatClock(steps.bookingTime, words.sample.locale)}`}
         />
-        {rows.map((row) => (
-          <BookingRow
-            key={row.person}
-            title={steps.people[row.person]}
-            detail={`${row.service} · ${formatClock(row.time, words.sample.locale)}`}
-          />
-        ))}
+        <BookingRow
+          title={steps.people[1]}
+          detail={`${steps.services[1].name} · ${formatClock("11:30", words.sample.locale)}`}
+        />
       </div>
     </Box>
   )
@@ -106,7 +97,6 @@ function CustomersPicture({ words, steps }: { words: Words; steps: Steps }) {
   const people = [
     { name: steps.people[2], visits: 12 },
     { name: steps.people[1], visits: 8 },
-    { name: steps.people[4], visits: 3 },
   ]
   return (
     <Box>
@@ -168,44 +158,43 @@ function TeamPicture({ words, steps }: { words: Words; steps: Steps }) {
   )
 }
 
-// A WhatsApp reminder with its reply button: tap it and the client's answer
-// comes in. Tap the answer to start over.
+// A WhatsApp reminder with its reply button: tap it and it turns to the
+// client's answer. Tap again to start over.
 function AutomationsPicture({ words, done }: { words: Words; done: string }) {
   const [answered, setAnswered] = useState(false)
   return (
-    <div className="flex w-full max-w-60 flex-col gap-2">
-      <Box>
-        <div className="flex flex-col gap-3 px-(--card-spacing)">
-          <div className="flex items-start gap-2">
-            <Logo
-              src="/brands/whatsapp-glyph-green.svg"
-              className="mt-0.5 size-4 shrink-0 object-contain"
-            />
-            <span>{words.sample.reminder}</span>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            aria-pressed={answered}
-            onClick={() => setAnswered(!answered)}
-          >
-            {words.sample.confirm}
-          </Button>
+    <Box>
+      <div className="flex flex-col gap-3 px-(--card-spacing)">
+        <div className="flex items-start gap-2">
+          <Logo
+            src="/brands/whatsapp-glyph-green.svg"
+            className="mt-0.5 size-4 shrink-0 object-contain"
+          />
+          <span>{words.sample.reminder}</span>
         </div>
-      </Box>
-      <AnimatePresence>
-        {answered && (
-          <motion.div {...RISE} role="status">
-            <Bubble align="end">
-              <BubbleContent className="flex items-center gap-1.5">
-                <CheckIcon className="size-4 shrink-0" />
-                {done}
-              </BubbleContent>
-            </Bubble>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+        <Button
+          size="sm"
+          variant="outline"
+          aria-pressed={answered}
+          onClick={() => setAnswered(!answered)}
+          className={cn(
+            answered &&
+              "border-transparent bg-success text-success-foreground hover:bg-success/90 hover:text-success-foreground"
+          )}
+        >
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={answered ? "done" : "confirm"}
+              {...POP}
+              className="flex items-center gap-1"
+            >
+              {answered && <CheckIcon />}
+              {answered ? done : words.sample.confirm}
+            </motion.span>
+          </AnimatePresence>
+        </Button>
+      </div>
+    </Box>
   )
 }
 
@@ -216,26 +205,34 @@ function ReportsPicture({ words, steps }: { words: Words; steps: Steps }) {
   const { total, shares } = REPORT[period]
   return (
     <Box>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <ToggleGroup
-          variant="outline"
-          size="sm"
-          value={[period]}
-          onValueChange={(value) => {
-            if (value[0]) setPeriod(value[0] as keyof typeof REPORT)
-          }}
-        >
-          <ToggleGroupItem value="week">{words.sample.week}</ToggleGroupItem>
-          <ToggleGroupItem value="month">{words.sample.month}</ToggleGroupItem>
-        </ToggleGroup>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={period} {...RISE} className="flex flex-col gap-2">
-            <span className="font-display text-3xl font-medium tracking-tight">
-              {total}
-              <span className="ml-1 text-xs font-normal tracking-normal text-muted-foreground">
+      <div className="flex flex-col gap-2 px-(--card-spacing)">
+        <div className="flex items-center justify-between gap-2">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={period} {...RISE} className="flex flex-col">
+              <span className="font-display text-2xl font-medium tracking-tight">
+                {total}
+              </span>
+              <span className="text-xs text-muted-foreground">
                 {words.sample.bookings}
               </span>
-            </span>
+            </motion.div>
+          </AnimatePresence>
+          <ToggleGroup
+            variant="outline"
+            size="sm"
+            value={[period]}
+            onValueChange={(value) => {
+              if (value[0]) setPeriod(value[0] as keyof typeof REPORT)
+            }}
+          >
+            <ToggleGroupItem value="week">{words.sample.week}</ToggleGroupItem>
+            <ToggleGroupItem value="month">
+              {words.sample.month}
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={period} {...RISE} className="flex flex-col gap-2">
             <div className="flex h-2 gap-0.5 overflow-hidden rounded-full">
               {shares.map((share, index) => (
                 <div
