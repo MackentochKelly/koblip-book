@@ -222,6 +222,7 @@ export function BookingsView({
                 summary={summary}
                 currency={currency}
                 href={`/dashboard/${businessId}/analytics`}
+                bookingsHref={`/dashboard/${businessId}/bookings`}
               />
             ),
             today: assistantCard,

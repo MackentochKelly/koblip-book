@@ -18,10 +18,13 @@ export function PeriodStats({
   summary,
   currency,
   href,
+  bookingsHref,
 }: {
   summary: PeriodSummary
   currency: string
   href?: string
+  // Where the Bookings number opens instead (Home: the Bookings page).
+  bookingsHref?: string
 }) {
   const m = useOwnerMessages()
   const a = m.bookings.analytics
@@ -34,6 +37,7 @@ export function PeriodStats({
           icon: <CalendarIcon />,
           tone: "primary",
           label: a.bookings,
+          href: bookingsHref,
           hint: a.hints.bookings,
           value: number.format(summary.bookings.current),
           change: percentChange(summary.bookings),
