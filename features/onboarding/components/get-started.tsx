@@ -37,13 +37,6 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useVisualViewport } from "@/hooks/use-visual-viewport"
@@ -404,27 +397,46 @@ export function GetStarted({
 
   const ready = prepared?.ok ? prepared : null
   const blocked = Boolean(error)
+  const facts = ready
+    ? [
+        ready.category,
+        ready.openDays > 0 ? t.found.openDays(ready.openDays) : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : ""
   return box(
     <div className="flex flex-col gap-5">
-      <Item variant="muted" size="sm">
-        <ItemMedia>
-          {/* Avatar: the same bordered photo as team members. */}
-          <Avatar size="lg">
-            {ready?.photoUrl && <AvatarImage src={ready.photoUrl} alt="" />}
-            <AvatarFallback>
-              {prepared ? <StoreIcon /> : <Spinner />}
-            </AvatarFallback>
-          </Avatar>
-        </ItemMedia>
-        <ItemContent>
-          <ItemTitle>{picked.name}</ItemTitle>
-          {picked.address && (
-            <ItemDescription className="line-clamp-1">
-              {picked.address}
-            </ItemDescription>
+      {/* The business, centered: its photo (the same bordered Avatar as
+          team members, larger), name, address and, once its page is
+          built, what it is and when it opens. */}
+      <div className="flex flex-col items-center gap-3 text-center">
+        <Avatar className="size-20">
+          {ready?.photoUrl && (
+            <AvatarImage
+              src={ready.photoUrl}
+              alt=""
+              className="animate-in duration-300 fade-in"
+            />
           )}
-        </ItemContent>
-      </Item>
+          <AvatarFallback>
+            {prepared ? <StoreIcon className="size-6" /> : <Spinner />}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col gap-1">
+          <p className="font-heading text-lg font-medium">{picked.name}</p>
+          {picked.address && (
+            <p className="line-clamp-2 text-sm text-balance text-muted-foreground">
+              {picked.address}
+            </p>
+          )}
+          {facts && (
+            <p className="animate-in text-sm text-muted-foreground duration-300 fade-in">
+              {facts}
+            </p>
+          )}
+        </div>
+      </div>
       {blocked ? (
         <Field data-invalid>
           <FieldError>{error}</FieldError>
@@ -445,6 +457,7 @@ export function GetStarted({
             disabled={finishing}
             googleNext={ready ? `/?claim=${ready.slug}` : undefined}
             googleReady={Boolean(ready)}
+            emailLater
             language={language}
           />
           <Button variant="ghost" onClick={back} disabled={finishing}>

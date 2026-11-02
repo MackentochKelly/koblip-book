@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { motion } from "motion/react"
 import { useRouter } from "next/navigation"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -17,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
+import { LAYOUT_MOVE } from "@/lib/motion-tokens"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import type { PageLanguage } from "@/lib/page-language"
 import { emailStatus } from "../api/email-status"
@@ -32,7 +34,8 @@ type Step = "email" | "password" | "create"
 // for a name and a new password. One form for both, no sign-up page.
 // After it, `onSignedIn` runs, or the screen opens `next`. Google first:
 // it leaves the page and comes back to `googleNext` (default `next`).
-// `language` picks its words.
+// `language` picks its words. `emailLater`: Google alone at first, the email
+// form unfolds under it when asked for.
 export function AuthForm({
   next = "/dashboard",
   googleNext = next,
@@ -40,6 +43,7 @@ export function AuthForm({
   googleError = null,
   onSignedIn,
   disabled = false,
+  emailLater = false,
   language = "en",
 }: {
   next?: string
@@ -49,6 +53,7 @@ export function AuthForm({
   googleError?: string | null
   onSignedIn?: () => Promise<void>
   disabled?: boolean
+  emailLater?: boolean
   language?: PageLanguage
 }) {
   const t = authWordsFor(language)
@@ -60,6 +65,7 @@ export function AuthForm({
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<AuthError | null>(null)
   const busy = sending || disabled
+  const [emailOpen, setEmailOpen] = useState(!emailLater)
 
   const checkEmail = async () => {
     const status = await emailStatus(email).catch(() => null)
@@ -127,21 +133,12 @@ export function AuthForm({
     setError(null)
   }
 
-  return (
-    <form onSubmit={(event) => void submit(event)} noValidate>
-      <FieldGroup>
+  const emailPart = (
+    <>
         {step === "email" && (
-          <>
-            {googleError && <GoogleError code={googleError} language={language} />}
-            <GoogleButton
-              callbackURL={googleNext}
-              disabled={busy || !googleReady}
-              language={language}
-            />
-            <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-              {t.or}
-            </FieldSeparator>
-          </>
+          <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
+            {t.or}
+          </FieldSeparator>
         )}
         <Field data-invalid={error?.field === "email" || undefined}>
           <FieldLabel htmlFor="auth-email">{t.email}</FieldLabel>
@@ -158,6 +155,8 @@ export function AuthForm({
             onChange={(event) => setEmail(event.target.value)}
             readOnly={step !== "email"}
             disabled={busy}
+            // Just asked for: the owner types straight away.
+            autoFocus={emailLater}
             aria-invalid={error?.field === "email" || undefined}
           />
           {step !== "email" && (
@@ -226,6 +225,45 @@ export function AuthForm({
               ? t.createAccount
               : t.logIn}
         </Button>
+    </>
+  )
+
+  return (
+    <form onSubmit={(event) => void submit(event)} noValidate>
+      <FieldGroup>
+        {step === "email" && (
+          <>
+            {googleError && <GoogleError code={googleError} language={language} />}
+            <GoogleButton
+              callbackURL={googleNext}
+              disabled={busy || !googleReady}
+              language={language}
+            />
+          </>
+        )}
+        {!emailOpen ? (
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={busy}
+            onClick={() => setEmailOpen(true)}
+          >
+            {t.useEmail}
+          </Button>
+        ) : emailLater ? (
+          // Unfolds under the Google button. The padding keeps the fields'
+          // focus rings inside the clipped area.
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            transition={LAYOUT_MOVE}
+            className="-m-1 overflow-hidden p-1"
+          >
+            <FieldGroup>{emailPart}</FieldGroup>
+          </motion.div>
+        ) : (
+          emailPart
+        )}
       </FieldGroup>
     </form>
   )
