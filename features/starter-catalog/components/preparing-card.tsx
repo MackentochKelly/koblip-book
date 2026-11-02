@@ -8,7 +8,6 @@ import { StepReveal, type StepRevealState } from "@/components/step-reveal"
 import {
   BanknoteIcon,
   ImageIcon,
-  LanguagesIcon,
   PuzzleIcon,
   ShieldCheckIcon,
   TagIcon,
@@ -37,7 +36,6 @@ type StepId =
   | "team"
   | "photos"
   | "policies"
-  | "spanish"
 type StepState = StepRevealState
 
 const STEPS: Array<{ id: StepId; icon: Icon }> = [
@@ -47,7 +45,6 @@ const STEPS: Array<{ id: StepId; icon: Icon }> = [
   { id: "team", icon: UsersIcon },
   { id: "photos", icon: ImageIcon },
   { id: "policies", icon: ShieldCheckIcon },
-  { id: "spanish", icon: LanguagesIcon },
 ]
 
 // Up to two names, then "+3".
@@ -57,8 +54,10 @@ function shortList(names: string[], more: (count: number) => string): string {
 }
 
 // Between "Check your details" and "Your page is live": Meta AI writes the
-// new page's services, extras, prices, team and policies, Muse Image draws the team,
-// and the page is translated. Each row turns from waiting to working to
+// new page's services, extras, prices, team and policies, and Muse Image
+// draws the team. The Spanish version is made on the server meanwhile
+// (the page starts it), without a row: it is for customers, and nobody
+// waits for it. Each row turns from waiting to working to
 // done as the real work finishes, then the success page opens. A business
 // whose setup is finished, or an AI that is off or fails, goes straight
 // on: the page works without them.
@@ -66,13 +65,10 @@ export function PreparingCard({
   businessId,
   language,
   readyHref,
-  translate,
 }: {
   businessId: string
   language: PageLanguage
   readyHref: string
-  // The dashboard's translate action, bound to this business by the page.
-  translate: () => Promise<unknown>
 }) {
   const t = starterMessagesFor(language)
   const router = useRouter()
@@ -84,7 +80,6 @@ export function PreparingCard({
     team: "waiting",
     photos: "waiting",
     policies: "waiting",
-    spanish: "waiting",
   })
   const [summary, setSummary] = useState<StarterSummary | null>(null)
   const [policiesReady, setPoliciesReady] = useState(false)
@@ -127,9 +122,6 @@ export function PreparingCard({
             )
           })
         )
-        // The Spanish version includes the policies, so it waits for them.
-        const spanish = policies.then(() => translate()).catch(() => null)
-
         // One row at a time: each works for at least its own moment, and
         // longer when its real work isn't finished yet.
         mark("services", "done")
@@ -145,9 +137,6 @@ export function PreparingCard({
         const written = await atLeast(policies, RULES.revealMs.policies)
         setPoliciesReady(written.ok)
         mark("policies", "done")
-        mark("spanish", "working")
-        await atLeast(spanish, RULES.revealMs.spanish)
-        mark("spanish", "done")
         await pause(RULES.revealDoneMs)
       } catch {
         // Nothing here blocks the owner: the success page opens anyway.
@@ -156,7 +145,7 @@ export function PreparingCard({
         router.replace(readyHref)
       }
     })()
-  }, [businessId, readyHref, router, translate])
+  }, [businessId, readyHref, router])
 
   const locale = language === "es" ? "es" : "en-US"
   const prices = (summary?.services ?? [])
@@ -174,7 +163,6 @@ export function PreparingCard({
     team: summary && shortList(summary.team.map((person) => person.name), t.more),
     photos: summary && t.photosDone(photosDone, summary.team.length),
     policies: policiesReady && t.policiesDone,
-    spanish: t.spanishDone,
   }
 
   return (
