@@ -5,7 +5,6 @@ import { useState } from "react"
 import { Scene } from "@/components/feature-preview"
 import { HOME_SECTION_IDS, HomeBigTitle } from "@/components/home-section-title"
 import { marqueeRowClassName } from "@/components/made-for"
-import { ResponsivePanel } from "@/components/responsive-panel"
 import {
   showcaseCardClassName,
   ShowcasePicture,
@@ -16,6 +15,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Marquee } from "@/components/ui/marquee"
 import { Logo } from "@/components/works-with"
 import type { AppKey } from "@/lib/app-words"
@@ -146,16 +152,18 @@ function AppsCard({ words, soon }: { words: Words; soon: string }) {
         <CardTitle>{words.items.apps.title}</CardTitle>
         <CardDescription>{words.items.apps.text}</CardDescription>
       </CardHeader>
-      <ResponsivePanel
-        open={open}
-        onClose={() => setOpen(false)}
-        title={details.name}
-        icon={<AppLogo app={shown} className="size-12" />}
-      >
-        <p className="text-center text-balance text-muted-foreground">
-          {details.description}
-        </p>
-      </ResponsivePanel>
+      {/* In the middle on every screen, with its X. */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader className="items-center text-center">
+            <AppLogo app={shown} className="size-12" />
+            <DialogTitle>{details.name}</DialogTitle>
+            <DialogDescription className="text-balance">
+              {details.description}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
@@ -163,6 +171,11 @@ function AppsCard({ words, soon }: { words: Words; soon: string }) {
 // A white pill on the wash.
 const appChipClassName =
   "flex h-12 items-center gap-2 rounded-full bg-card px-4 font-medium text-card-foreground ring-1 ring-foreground/5"
+
+// A pill you can tap: under the mouse it turns muted with a brand edge, and
+// it presses in.
+const appChipHoverClassName =
+  "cursor-pointer transition-[background-color,box-shadow,scale] hover:bg-muted hover:ring-2 hover:ring-primary/40 active:scale-95"
 
 // The app's logo, with its dark-mode version where it has one.
 function AppLogo({ app, className }: { app: App; className: string }) {
@@ -202,7 +215,7 @@ function AppChip({
       type="button"
       tabIndex={-1}
       onClick={onClick}
-      className={cn(appChipClassName, "cursor-pointer")}
+      className={cn(appChipClassName, appChipHoverClassName)}
     >
       <AppLogo app={app} className="size-5" />
       {app.name}
