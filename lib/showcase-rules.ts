@@ -55,10 +55,11 @@ export const SHOWCASE_LOOP = {
     sheetIn: 2000,
     home: 3800,
   },
-  // "Sign in with Google": the button is tapped, then signed in.
+  // "Sign in with Google": the button is tapped, loads, then signed in.
   signIn: {
     beforeTap: 1200,
     tap: 700,
+    loading: 1400,
     done: 3200,
   },
 } as const

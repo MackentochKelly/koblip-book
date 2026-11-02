@@ -28,6 +28,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
 import { formatClock } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
 import { initials } from "@/lib/initials"
@@ -552,10 +553,10 @@ function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
   )
 }
 
-type SignInPhase = "button" | "tap" | "done"
+type SignInPhase = "button" | "tap" | "loading" | "done"
 
-// Signing in (useStoryLoop): "Continue with Google" is tapped and the
-// owner is in, free. Rests on the button; the button plays it again.
+// Signing in (useStoryLoop): "Continue with Google" is tapped, loads (the
+// real button's spinner) and the owner is in, free. Rests on the button; the button plays it again.
 function SignInPreview({ words }: { words: Words }) {
   const box = useRef<HTMLDivElement>(null)
   const [phase, setPhase] = useState<SignInPhase>("button")
@@ -567,6 +568,8 @@ function SignInPreview({ words }: { words: Words }) {
       await wait(time.beforeTap)
       setPhase("tap")
       await wait(time.tap)
+      setPhase("loading")
+      await wait(time.loading)
       setPhase("done")
       await wait(time.done)
     },
@@ -604,7 +607,11 @@ function SignInPreview({ words }: { words: Words }) {
                   onClick={replay}
                   className={cn("relative w-full", googleButtonClassName)}
                 >
-                  <GoogleMark />
+                  {phase === "loading" ? (
+                    <Spinner data-icon="inline-start" />
+                  ) : (
+                    <GoogleMark />
+                  )}
                   {words.google}
                   {phase === "tap" && (
                     <TapMark ms={time.tap} className="left-1/2" />
