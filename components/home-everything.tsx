@@ -98,7 +98,8 @@ export function HomeEverything({ words }: { words: Home }) {
   )
 }
 
-// The apps: the ones working today slide one way, the ones coming the other,
+// The apps: the ones working today slide one way, the ones coming the other
+// (marked "Coming soon" only in the list of every app),
 // and keep sliding under the mouse. Tap one to see what Koblip does with it.
 function AppsCard({ words, soon }: { words: Words; soon: string }) {
   const [open, setOpen] = useState(false)
@@ -112,7 +113,8 @@ function AppsCard({ words, soon }: { words: Words; soon: string }) {
   const details = words.appDetails[shown.key]
   return (
     <Card className={showcaseCardClassName}>
-      <ShowcasePicture className="aspect-auto h-56">
+      {/* No edge line here: the wash fills the picture to its edge. */}
+      <ShowcasePicture className="aspect-auto h-56 after:hidden">
         <Scene {...WASH}>
           {/* For the keyboard and screen readers: the moving rows repeat
               each app, so they get this list, one button each, shown as a
@@ -142,12 +144,7 @@ function AppsCard({ words, soon }: { words: Words; soon: string }) {
             </Marquee>
             <Marquee reverse className={marqueeRowClassName}>
               {APPS_SOON.map((app) => (
-                <AppChip
-                  key={app.key}
-                  app={app}
-                  soon={soon}
-                  onClick={() => show(app)}
-                />
+                <AppChip key={app.key} app={app} onClick={() => show(app)} />
               ))}
             </Marquee>
           </div>
@@ -227,15 +224,7 @@ function AppLogo({ app, className }: { app: App; className: string }) {
 
 // One app in the sliding rows. Mouse and touch only: the moving rows are
 // hidden from the keyboard (see the list above).
-function AppChip({
-  app,
-  soon,
-  onClick,
-}: {
-  app: App
-  soon?: string
-  onClick: () => void
-}) {
+function AppChip({ app, onClick }: { app: App; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -245,7 +234,6 @@ function AppChip({
     >
       <AppLogo app={app} className="size-5" />
       {app.name}
-      {soon && <span className="text-xs text-muted-foreground">{soon}</span>}
     </button>
   )
 }
