@@ -12,6 +12,7 @@ import {
 import { HeroGradient } from "@/components/hero-gradient"
 import { useHomeLook } from "@/components/home-look"
 import { HOME_SECTION_IDS, HomeBigTitle } from "@/components/home-section-title"
+import { TipBubble } from "@/components/tip-bubble"
 import { PHONE_STATUS_BAR, PhoneMockup } from "@/components/phone-mockup"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useFindBusiness } from "@/hooks/use-find-business"
+import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { DEMO_VIEWS, type DemoPaths, type DemoView } from "@/lib/demo-rules"
 import type { Messages } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
@@ -47,6 +49,9 @@ type Demo =
 // same demo as the full app in a new tab.
 const STEPS = [...DEMO_VIEWS, "try"] as const
 type Step = (typeof STEPS)[number]
+
+// Phones: the tip over the demo, once hidden, stays hidden on this device.
+const TIPS_HIDDEN_KEY = "home-demo-tips-hidden"
 
 // The phone's height: short enough that the whole panel fits on the
 // screen.
@@ -85,6 +90,13 @@ export function SeeItInAction({
   const [opened, setOpened] = useState<DemoView[]>(["page"])
   // Phones: the screen out of the phone, filling the window.
   const [expanded, setExpanded] = useState(false)
+  // Phones: what to do on the open screen, as a tip pointing at its tab.
+  const [tipsHidden, hideTips] = useStoredFlag(TIPS_HIDDEN_KEY)
+  const tabRow = useRef<HTMLDivElement>(null)
+  const activeTab = useCallback(
+    () => tabRow.current?.querySelector("[data-active]") ?? null,
+    []
+  )
 
   const open = useCallback(async () => {
     setDemo({ state: "opening" })
@@ -269,8 +281,14 @@ export function SeeItInAction({
         {problem ?? (
           <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 lg:grid lg:grid-cols-2 lg:gap-16">
             {/* Phones: the steps, and a button that takes the screen full
-                screen, with the step's line under them. */}
-            <div className="flex max-w-full items-center gap-2 lg:hidden">
+                screen, with the step's line as a tip pointing at its tab,
+                over the phone (read out from the line kept for screen
+                readers). It shows once the demo is open, so a tip hidden
+                before never flashes in. */}
+            <div
+              ref={tabRow}
+              className="relative flex max-w-full items-center gap-2 lg:hidden"
+            >
               {tabs}
               <Button
                 variant="outline"
@@ -280,13 +298,16 @@ export function SeeItInAction({
               >
                 <MaximizeIcon />
               </Button>
-            </div>
-            <p
-              className={cn(
-                "text-center text-balance lg:hidden",
-                calm ? "text-muted-foreground" : "text-hero-foreground"
+              {demo.state === "ready" && !tipsHidden && !expanded && (
+                <TipBubble
+                  anchor={activeTab}
+                  text={words.hints[tab]}
+                  closeLabel={words.hideTips}
+                  onClose={hideTips}
+                />
               )}
-            >
+            </div>
+            <p className="sr-only lg:hidden" aria-live="polite">
               {words.hints[tab]}
             </p>
             <div

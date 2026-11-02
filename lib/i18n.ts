@@ -338,6 +338,7 @@ const en = {
       failed: "The demo didn't open.",
       retry: "Try again",
       expand: "Full screen",
+      hideTips: "Hide tips",
       shrink: "Exit full screen",
     },
     steps: {
@@ -743,6 +744,7 @@ const es: Messages = {
       failed: "La demo no se abrió.",
       retry: "Reintentar",
       expand: "Pantalla completa",
+      hideTips: "Ocultar consejos",
       shrink: "Salir de pantalla completa",
     },
     steps: {
