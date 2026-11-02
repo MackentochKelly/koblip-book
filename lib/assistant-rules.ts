@@ -58,9 +58,15 @@ export const ASSISTANT_RULES = {
   // one starts the next does.
   floatIdeasFadeOutMs: 2600,
   floatIdeasFadeOutGapMs: 1300,
-  // The floating globe opening the Assistant: how long it grows over the screen
-  // and fades away, and how long it waits at most for the page behind it.
-  globeOpenGrowMs: 950,
-  globeOpenFadeMs: 600,
-  globeOpenWaitMs: 8000,
+  // The floating globe opening the Assistant, short enough to enjoy every time:
+  // it starts at once and settles softly (the screen is covered at
+  // globeOpenCoveredMs, when the page behind it changes), turns into the page's
+  // own colour, then fades away. It waits at most globeOpenWaitMs for the page.
+  globeOpenGrowMs: 750,
+  globeOpenGrowEase: "cubic-bezier(0.4, 0, 0.2, 1)",
+  globeOpenCoveredMs: 500,
+  globeOpenWashDelayMs: 380,
+  globeOpenWashMs: 340,
+  globeOpenFadeMs: 400,
+  globeOpenWaitMs: 3000,
 } as const

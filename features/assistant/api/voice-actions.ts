@@ -1,5 +1,7 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
+
 import { getSession } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { ownerVoices } from "@/lib/db/schema"
@@ -30,5 +32,7 @@ export async function saveOwnerVoice(
       target: ownerVoices.ownerId,
       set: { voiceId, updatedAt: new Date().toISOString() },
     })
+  // The floating globe loads the Assistant ahead, with the old choice in it.
+  revalidatePath("/dashboard", "layout")
   return { ok: true }
 }

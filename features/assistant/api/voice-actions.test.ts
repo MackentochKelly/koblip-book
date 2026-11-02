@@ -8,8 +8,10 @@ import { ownerVoices, user } from "@/lib/db/schema"
 import { VOICE_RULES } from "@/lib/voice-rules"
 
 vi.mock("server-only", () => ({}))
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 vi.mock("@/lib/dal", () => ({ getSession: vi.fn() }))
 vi.mock("@/lib/account-voices", () => ({ isAccountVoice: vi.fn() }))
+const { revalidatePath } = await import("next/cache")
 const { getSession } = await import("@/lib/dal")
 const { isAccountVoice } = await import("@/lib/account-voices")
 const { saveOwnerVoice } = await import("./voice-actions")
@@ -101,4 +103,9 @@ test("demo guests can save their own choice without changing another owner's", a
   )
   await db.delete(user).where(eq(user.id, "u2"))
   expect(await db.select().from(ownerVoices)).toHaveLength(1)
+})
+
+test("a saved choice clears the Assistant page the browser loaded ahead", async () => {
+  await saveOwnerVoice("v1")
+  expect(revalidatePath).toHaveBeenCalledWith("/dashboard", "layout")
 })

@@ -60,6 +60,7 @@ export function AssistantFloat({
   const [opening, setOpening] = useState(false)
   const still = useReducedMotion()
   const globe = useRef<HTMLDivElement>(null)
+  const wash = useRef<HTMLDivElement>(null)
   const href = `/dashboard/${businessId}/assistant`
   const pathname = usePathname()
   const assistantOpen = pathname.startsWith(href)
@@ -87,13 +88,15 @@ export function AssistantFloat({
       router.push(href)
     })
 
-  // The globe grows past the screen's edges. Only then does the page change,
-  // hidden behind it, and the globe fades away to show the Assistant.
+  // The globe grows past the screen's edges and turns into the page's own
+  // colour. The page changes hidden behind it, then it all fades away to show
+  // the Assistant.
   const open = async () => {
     const ball = globe.current
+    const colour = wash.current
     if (opening) return
     // Someone asked for less motion: it just opens.
-    if (!ball || still) {
+    if (!ball || !colour || still) {
       router.push(href)
       return
     }
@@ -110,12 +113,22 @@ export function AssistantFloat({
       [{ transform: "scale(1)" }, { transform: `scale(${scale})` }],
       {
         duration: ASSISTANT_RULES.globeOpenGrowMs,
-        easing: "cubic-bezier(0.6, 0, 0.2, 1)",
+        easing: ASSISTANT_RULES.globeOpenGrowEase,
         fill: "forwards",
       }
     )
-    await grow.finished
+    const turn = colour.animate([{ opacity: 0 }, { opacity: 1 }], {
+      delay: ASSISTANT_RULES.globeOpenWashDelayMs,
+      duration: ASSISTANT_RULES.globeOpenWashMs,
+      easing: "ease-in-out",
+      fill: "both",
+    })
+    await grow.ready
+    await new Promise((covered) =>
+      setTimeout(covered, ASSISTANT_RULES.globeOpenCoveredMs)
+    )
     await arrive()
+    await turn.finished
     const fade = ball.animate([{ opacity: 1 }, { opacity: 0 }], {
       duration: ASSISTANT_RULES.globeOpenFadeMs,
       easing: "ease-out",
@@ -123,6 +136,7 @@ export function AssistantFloat({
     })
     await fade.finished
     grow.cancel()
+    turn.cancel()
     fade.cancel()
     setOpening(false)
   }
@@ -138,6 +152,7 @@ export function AssistantFloat({
       href={href}
       label={messages.title}
       bare
+      prefetch
       onClick={(event) => {
         // A new tab or window opens as any link does.
         if (event.metaKey || event.ctrlKey || event.shiftKey) return
@@ -184,8 +199,15 @@ export function AssistantFloat({
         </div>
       ))}
     >
-      <div ref={globe} className="size-full">
+      <div
+        ref={globe}
+        className={cn("relative size-full", opening && "will-change-transform")}
+      >
         <VoiceGlobe className="size-full" />
+        <div
+          ref={wash}
+          className="absolute inset-0 rounded-full bg-background opacity-0"
+        />
       </div>
     </FloatingLink>
   )

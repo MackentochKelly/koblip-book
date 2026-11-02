@@ -9,13 +9,15 @@ import { cn } from "@/lib/utils"
 // A round frosted-glass icon that links somewhere and floats over the page,
 // which people can drag out of the way (see DraggableFloat). `bare` leaves the
 // glass out, for a child that is a round thing of its own. `attached` rests
-// next to it and moves with it.
+// next to it and moves with it. `prefetch` loads the whole page ahead, for a
+// link people expect to open at once.
 export function FloatingLink({
   id,
   href,
   label,
   bare = false,
   attached,
+  prefetch,
   onClick,
   children,
 }: {
@@ -25,6 +27,7 @@ export function FloatingLink({
   label: string
   bare?: boolean
   attached?: React.ReactNode
+  prefetch?: boolean
   onClick?: React.MouseEventHandler<HTMLElement>
   children: React.ReactNode
 }) {
@@ -36,7 +39,7 @@ export function FloatingLink({
         aria-label={label}
         title={label}
         nativeButton={false}
-        render={<Link href={href} draggable={false} />}
+        render={<Link href={href} prefetch={prefetch} draggable={false} />}
         onClick={onClick}
         className={cn(
           "size-12 rounded-full",
