@@ -109,7 +109,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                   </span>
                 </h1>
                 {/* One sentence per line, quieter than the title. */}
-                <p className="font-display text-base/snug text-balance text-hero-foreground *:block sm:text-xl/snug">
+                <p className="font-sans text-base/snug text-balance text-hero-foreground *:block sm:text-xl/snug">
                   {/* Magic UI's marker, its words kept above the drawn mark. The
                   mark is see-through so the moving gradient shows in it. */}
                   <span className="[&_.rough-annotation]:opacity-80">
