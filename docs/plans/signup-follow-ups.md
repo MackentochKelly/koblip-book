@@ -58,16 +58,28 @@ So a deploy kills setup work (catalog, team photos, Spanish) mid-way.
 Since S9 setup resumes on the next visit, but the work starts over and
 costs AI calls twice.
 
-**Fix:** keep the PM2 setup in the repo as an ecosystem file
-(`ecosystem.config.cjs`) with `kill_timeout: 30000`, the top of Next.js'
-recommended range, and start Book from it on the server. Update the
-deploy steps to use it. Confirm in the PM2 docs whether `reload` or
-`restart` is right for a single instance.
+**Root cause (audit, 2026-11-02):** a longer PM2 timeout alone changes
+nothing. Book runs a custom `server.mjs`, and Next.js' signal handling
+lives only in `next start` (`next/dist/server/lib/start-server.js`), so
+`server.mjs` exits at once on SIGINT. PM2 also runs it through `npm start`,
+which puts npm and a shell between PM2 and the server. Team photo jobs in
+`startPreparing` are not awaited, so `after()` doesn't wait for them either.
 
-**Files:** `ecosystem.config.cjs` (new), the deploy notes in `docs/`.
+**Fix:**
+1. `server.mjs` shuts down the way `start-server.js` does: stop accepting
+   requests, finish the ones running, then `app.close()`, which waits for
+   `after()` work. Open voice sessions are closed first. A 28 s limit always
+   ends the process before PM2's SIGKILL.
+2. `startPreparing` awaits the team photos.
+3. Keep the PM2 setup in the repo (`ecosystem.config.cjs`): runs
+   `server.mjs` directly, `kill_timeout: 30000`. Update the deploy steps.
 
-**Done when:** a deploy waits for running setup work (up to 30 s) before
-the old server stops; checked once on the server with the owner's
+**Files:** `server.mjs`, `server/shutdown.mjs` (new) and its test,
+`features/starter-catalog/api/prepare-jobs.ts`, `ecosystem.config.cjs`
+(new), `docs/deploy.md` (new).
+
+**Done when:** a stop signal waits for running setup work (up to 28 s) and
+then exits; tests cover it; checked once on the server with the owner's
 go-ahead.
 
 ### F3 · Sign-in works on every address the app runs on 🟡
@@ -94,3 +106,4 @@ the production list holds only the production URL.
 | What | Why | Who | Date |
 | --- | --- | --- | --- |
 | F2: 30 s PM2 kill timeout, kept in a repo ecosystem file | The top of Next.js' recommended 10–30 s drain; in the repo it is reviewed and can't drift from what's on the server. Longer AI work still resumes through S9. | M Kelly B | 2026-11-01 |
+| F2: keep one instance and `pm2 restart`; no cluster mode | PM2's code shows `reload` in fork mode is just a restart, so no zero-downtime that way. Cluster mode would split the in-memory setup jobs and voice session limits across processes. Trade-off: a deploy while long work runs can take the site down for up to 30 s; an idle server stops at once. | M Kelly B | 2026-11-02 |
