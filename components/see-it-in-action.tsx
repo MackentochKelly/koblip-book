@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { Box, RISE } from "@/components/feature-preview"
+import { Box } from "@/components/feature-preview"
 
 import {
   glassButtonClassName,
@@ -34,6 +34,7 @@ import { useFindBusiness } from "@/hooks/use-find-business"
 import { DEMO_VIEWS, type DemoPaths, type DemoView } from "@/lib/demo-rules"
 import type { Messages } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
+import { LAYOUT_MOVE, SMALL_FADE } from "@/lib/motion-tokens"
 import { cn } from "@/lib/utils"
 
 type Words = Messages["home"]["action"]
@@ -297,54 +298,80 @@ export function SeeItInAction({
               aria-label={words.tabsLabel}
               className="hidden w-full max-w-md flex-col gap-2 justify-self-end lg:flex"
             >
-              {STEPS.map((view, index) =>
-                view === step ? (
-                  <Box key={view} className="max-w-none">
-                    <AnimatePresence mode="wait" initial={false}>
+              {/* Changing step: the other steps slide to their new places
+                  while the one opening fades in as the white card and the
+                  one closing fades back to a row. Only transform and
+                  opacity move (docs/ui-rules/motion.md); Reduce Motion
+                  keeps the fades. */}
+              {STEPS.map((view, index) => (
+                <motion.div
+                  key={view}
+                  layout="position"
+                  transition={LAYOUT_MOVE}
+                  // popLayout lifts the closing look out against this box.
+                  className="relative"
+                >
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    {view === step ? (
                       <motion.div
-                        key={view}
-                        {...RISE}
-                        aria-current="step"
-                        className="flex flex-col gap-4 px-(--card-spacing)"
+                        key="open"
+                        initial={{ opacity: 0, scale: 0.97 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, transition: SMALL_FADE }}
+                        transition={LAYOUT_MOVE}
                       >
-                        <div className="flex flex-col gap-2">
-                          <Badge>{index + 1}</Badge>
-                          <h3 className="font-display text-2xl font-medium tracking-tight">
-                            {words.steps[view]}
-                          </h3>
-                          <p className="text-base text-muted-foreground">
-                            {words.hints[view]}
-                          </p>
-                        </div>
-                        {nextButton}
+                        <Box className="max-w-none">
+                          <div
+                            aria-current="step"
+                            className="flex flex-col gap-4 px-(--card-spacing)"
+                          >
+                            <div className="flex flex-col gap-2">
+                              <Badge>{index + 1}</Badge>
+                              <h3 className="font-display text-2xl font-medium tracking-tight">
+                                {words.steps[view]}
+                              </h3>
+                              <p className="text-base text-muted-foreground">
+                                {words.hints[view]}
+                              </p>
+                            </div>
+                            {nextButton}
+                          </div>
+                        </Box>
                       </motion.div>
-                    </AnimatePresence>
-                  </Box>
-                ) : (
-                  <Item
-                    key={view}
-                    render={<button type="button" />}
-                    onClick={() => choose(view)}
-                    className={cn(
-                      "text-left",
-                      calm
-                        ? look === "bands"
-                          ? "hover:bg-foreground/5"
-                          : "hover:bg-background/60"
-                        : cn("text-hero-foreground", glassButtonClassName)
+                    ) : (
+                      <motion.div
+                        key="closed"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={SMALL_FADE}
+                      >
+                        <Item
+                          render={<button type="button" />}
+                          onClick={() => choose(view)}
+                          className={cn(
+                            "text-left",
+                            calm
+                              ? look === "bands"
+                                ? "hover:bg-foreground/5"
+                                : "hover:bg-background/60"
+                              : cn("text-hero-foreground", glassButtonClassName)
+                          )}
+                        >
+                          <ItemMedia>
+                            <Badge variant="secondary">{index + 1}</Badge>
+                          </ItemMedia>
+                          <ItemContent>
+                            <ItemTitle className="text-base">
+                              {words.steps[view]}
+                            </ItemTitle>
+                          </ItemContent>
+                        </Item>
+                      </motion.div>
                     )}
-                  >
-                    <ItemMedia>
-                      <Badge variant="secondary">{index + 1}</Badge>
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle className="text-base">
-                        {words.steps[view]}
-                      </ItemTitle>
-                    </ItemContent>
-                  </Item>
-                )
-              )}
+                  </AnimatePresence>
+                </motion.div>
+              ))}
             </div>
             <div className="relative isolate lg:justify-self-start">
               {/* On the indigo band, a soft glow of the brand colour behind

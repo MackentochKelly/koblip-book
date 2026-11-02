@@ -10,6 +10,7 @@ import { useRef, useState } from "react"
 
 import { frostedGlassClassName } from "@/components/glass-frame"
 import { useIsFullScreen } from "@/hooks/use-full-screen"
+import { LAYOUT_MOVE } from "@/lib/motion-tokens"
 import { cn } from "@/lib/utils"
 
 // How far the page scrolls before the header turns into its pill, and
@@ -19,10 +20,6 @@ const HIDE_AFTER = 160
 // How far the page must keep going one way before the header hides or
 // comes back, so a finger's small wobble doesn't make it flicker.
 const SCROLL_INTENT = 8
-
-// The header's change of size: 350ms on the standard curve
-// (docs/ui-rules/motion.md, the ease-standard token).
-const LAYOUT_TRANSITION = { duration: 0.35, ease: [0.2, 0, 0, 1] } as const
 
 // Keeps the header (a SiteHeader) on top of the public pages while they
 // scroll. At the top it sits clear on the page, as if part of it; once
@@ -90,7 +87,7 @@ export function StickyHeader({ children }: { children: React.ReactNode }) {
           <motion.div
             aria-hidden
             layout
-            transition={LAYOUT_TRANSITION}
+            transition={LAYOUT_MOVE}
             style={{ borderRadius: 9999 }}
             className={cn(
               "pointer-events-none absolute inset-0 -z-10 origin-top transition-[scale,opacity] motion-reduce:scale-100",
@@ -126,7 +123,7 @@ export function StickyHeader({ children }: { children: React.ReactNode }) {
 // when the header changes size, keeping its own size.
 export function StickyHeaderItem({ children }: { children: React.ReactNode }) {
   return (
-    <motion.div layout="position" transition={LAYOUT_TRANSITION}>
+    <motion.div layout="position" transition={LAYOUT_MOVE}>
       {children}
     </motion.div>
   )
