@@ -145,14 +145,17 @@ test("draws a team photo once, from saved facts", async () => {
   const businessId = await seedBusiness()
   const [member] = await db
     .insert(teamMembers)
-    .values({ businessId, name: "Ana", description: "Classic cuts." })
+    .values({ businessId, name: "Ana", description: "Classic cuts.", position: 1 })
     .returning()
   generateMock.mockResolvedValue({ data: [{ b64_json: Buffer.from("img").toString("base64") }] })
   savePhotoMock.mockResolvedValue({ ok: true, url: "/uploads/ana.webp" })
 
   expect(await drawTeamPhoto(businessId, member.id)).toEqual({ ok: true, photoUrl: "/uploads/ana.webp" })
   expect(generateMock.mock.calls[0][0]).toMatchObject({ model: "muse-image-1.0", reasoning_strength: "low" })
-  expect(generateMock.mock.calls[0][0].prompt).toContain("Ana, who works at a barber shop (Classic cuts.)")
+  const { portraitLook } = await import("../utils/portrait-look")
+  expect(generateMock.mock.calls[0][0].prompt).toContain(
+    `Ana, ${portraitLook(1)}, who works at a barber shop (Classic cuts.)`
+  )
 
   // The setup screen asking again gets the same photo, never a second one.
   expect(await drawTeamPhoto(businessId, member.id)).toEqual({ ok: true, photoUrl: "/uploads/ana.webp" })

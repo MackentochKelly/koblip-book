@@ -172,6 +172,7 @@ export async function drawMemberPhoto(
       name: member.name,
       description: member.description,
       category: business.category,
+      position: member.position,
     },
     userId
   )
