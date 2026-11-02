@@ -60,10 +60,17 @@ export function Box({
 }) {
   return (
     <div className={cn(glassFrameClassName, "max-w-60", className)}>
-      <Card size="sm" className="w-full shadow-none ring-0">
-        {children}
-      </Card>
+      <BoxCard>{children}</BoxCard>
     </div>
+  )
+}
+
+// The white card inside a Box, for a frame drawn around it some other way.
+export function BoxCard({ children }: { children: React.ReactNode }) {
+  return (
+    <Card size="sm" className="w-full shadow-none ring-0">
+      {children}
+    </Card>
   )
 }
 

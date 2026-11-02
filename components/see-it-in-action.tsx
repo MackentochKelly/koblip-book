@@ -3,10 +3,12 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { Box } from "@/components/feature-preview"
+import { BoxCard } from "@/components/feature-preview"
 
 import {
   glassButtonClassName,
+  glassFrameRoundClassName,
+  glassFrameSkinClassName,
   heroEdgeClassName,
 } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
@@ -303,7 +305,7 @@ export function SeeItInAction({
                   unfolds into the white card while the one closing folds
                   back to a row, and the rows between follow. */}
               {STEPS.map((view, index) => (
-                <StepFold key={view}>
+                <StepFold key={view} open={view === step}>
                   <AnimatePresence mode="popLayout" initial={false}>
                     {view === step ? (
                       <motion.div
@@ -313,7 +315,7 @@ export function SeeItInAction({
                         exit={{ opacity: 0, transition: SMALL_FADE }}
                         transition={FADE_IN}
                       >
-                        <Box className="max-w-none">
+                        <BoxCard>
                           <div
                             aria-current="step"
                             className="flex flex-col gap-4 px-(--card-spacing)"
@@ -329,7 +331,7 @@ export function SeeItInAction({
                             </div>
                             {nextButton}
                           </div>
-                        </Box>
+                        </BoxCard>
                       </motion.div>
                     ) : (
                       <motion.div
@@ -416,10 +418,19 @@ export function SeeItInAction({
 // One step on computers, growing or shrinking to its content at a large
 // change's pace (the install guide's way: the height follows the measured
 // content), so a step unfolds in place and the steps under it move with
-// it. The look inside crossfades: the old one is lifted out (popLayout)
-// and fades while the new one fades in. It clips only while moving, so a
-// row's focus ring shows. Reduce Motion: straight to size.
-function StepFold({ children }: { children: React.ReactNode }) {
+// it. Open, it is itself the card's glass frame (a Box), so the round
+// shape and its edge stay whole while it grows, and what it hides is cut
+// by its round corners, never a flat line. The look inside crossfades: the
+// old one is lifted out (popLayout) and fades while the new one fades in.
+// It clips only while moving, so a row's focus ring shows. Reduce Motion:
+// straight to size.
+function StepFold({
+  open,
+  children,
+}: {
+  open: boolean
+  children: React.ReactNode
+}) {
   const [measure, height] = useElementHeight()
   const still = useReducedMotion()
   const [moving, setMoving] = useState(false)
@@ -430,9 +441,14 @@ function StepFold({ children }: { children: React.ReactNode }) {
       transition={still ? { duration: 0 } : LARGE_MOVE}
       onAnimationStart={() => setMoving(true)}
       onAnimationComplete={() => setMoving(false)}
-      className={cn(moving && "overflow-hidden")}
+      className={cn(
+        glassFrameRoundClassName,
+        "transition-shadow duration-300",
+        open && glassFrameSkinClassName,
+        moving && "overflow-hidden"
+      )}
     >
-      <div ref={measure} className="relative">
+      <div ref={measure} className={cn("relative", open && "p-1.5")}>
         {children}
       </div>
     </motion.div>

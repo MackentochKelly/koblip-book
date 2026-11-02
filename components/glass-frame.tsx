@@ -37,12 +37,22 @@ export const glassButtonClassName = cn(
 export const heroEdgeClassName =
   "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:p-px after:inset-ring after:inset-ring-glass-frame-edge after:backdrop-blur-md after:backdrop-saturate-(--glass-saturate) after:[mask:linear-gradient(#000_0_0)_content-box_exclude,linear-gradient(#000_0_0)]"
 
+// The glass frame's round: the card's, plus the frame's room around it.
+export const glassFrameRoundClassName =
+  "rounded-[calc(var(--radius-4xl)+--spacing(1.5))]"
+
+// The frame's look alone (its round, edge and blur), with no size or room
+// inside: for a frame that grows around its card, which holds the room.
+export const glassFrameSkinClassName = cn(
+  glassFrameRoundClassName,
+  "inset-ring-6 inset-ring-glass-frame-edge backdrop-blur-md backdrop-saturate-(--glass-saturate)"
+)
+
 // A frosted glass frame around a card on the moving gradient, like
 // Fresha's: it blurs the gradient behind it and draws a faint edge; no drop
 // shadow. Shared by the home box and the login card; its thick edge is
 // `glass-frame-edge`, set for light and dark in globals.css.
-export const glassFrameClassName =
-  "w-full rounded-[calc(var(--radius-4xl)+--spacing(1.5))] p-1.5 inset-ring-6 inset-ring-glass-frame-edge backdrop-blur-md backdrop-saturate-(--glass-saturate)"
+export const glassFrameClassName = cn("w-full p-1.5", glassFrameSkinClassName)
 
 export function GlassCard({
   className,
