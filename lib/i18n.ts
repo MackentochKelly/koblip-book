@@ -304,6 +304,14 @@ const en = {
       title: "Get your booking page today",
       button: "Find your business",
     },
+    // The small card in the corner (components/support-box.tsx).
+    support: {
+      title: "Enjoying Koblip Book?",
+      text: "A star on GitHub helps a lot. Thank you, your support matters.",
+      star: "Star on GitHub",
+      demo: "Try the demo",
+      close: "Close",
+    },
     // "See it in action": the real app on the visitor's own demo copy.
     action: {
       title: "See it in action",
@@ -821,6 +829,13 @@ const es: Messages = {
     cta: {
       title: "Consigue hoy tu página de reservas",
       button: "Busca tu negocio",
+    },
+    support: {
+      title: "¿Te gusta Koblip Book?",
+      text: "Una estrella en GitHub ayuda mucho. Gracias, tu apoyo cuenta.",
+      star: "Estrella en GitHub",
+      demo: "Probar la demo",
+      close: "Cerrar",
     },
     action: {
       title: "Míralo en acción",

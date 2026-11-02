@@ -23,6 +23,7 @@ import { LanguageMenu } from "@/components/language-menu"
 import { LanguageProvider } from "@/components/language-provider"
 import { HackathonBadge } from "@/components/hackathon-badge"
 import { SiteFooter } from "@/components/site-footer"
+import { SupportBox } from "@/components/support-box"
 import { headerButtonClassName, SiteHeader } from "@/components/site-header"
 import { WorksWith } from "@/components/works-with"
 import { Button } from "@/components/ui/button"
@@ -138,6 +139,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
             </div>
           </main>
         </section>
+        <SupportBox words={t.support} />
         <HomeBand tone="plain" space="row">
           <WorksWith language={language} />
           <MadeFor language={language} />

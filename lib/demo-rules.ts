@@ -16,3 +16,9 @@ export type DemoView = (typeof DEMO_VIEWS)[number]
 
 // Each screen's address in the real app, for the visitor's own copy.
 export type DemoPaths = Record<DemoView, string>
+
+// A screen's address: opens the visitor's own copy there
+// (app/(public)/demo/[view]/route.ts).
+export function demoHref(view: DemoView): string {
+  return `/demo/${view}`
+}
