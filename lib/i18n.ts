@@ -282,6 +282,12 @@ const en = {
       },
       // Each app's name and what Koblip does with it, opened from the apps.
       appDetails: appWordsFor("en"),
+      allApps: {
+        button: "See all apps",
+        title: "All apps",
+        ready: "Works today",
+        soon: "Coming soon",
+      },
       // The sample shown in the pictures.
       sample: {
         locale: "en-US",
@@ -676,6 +682,12 @@ const es: Messages = {
         },
       },
       appDetails: appWordsFor("es"),
+      allApps: {
+        button: "Ver todas las apps",
+        title: "Todas las apps",
+        ready: "Funciona hoy",
+        soon: "Próximamente",
+      },
       // The sample shown in the pictures.
       sample: {
         locale: "es-ES",

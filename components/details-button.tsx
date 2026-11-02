@@ -42,15 +42,41 @@ export function DetailsButton({
       >
         <InfoCircleIcon />
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader className="items-center gap-3 text-center">
-            {media}
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription className="text-pretty">{text}</DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
+      <DetailsDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={title}
+        text={text}
+        media={media}
+      />
     </>
+  )
+}
+
+// What a row is about, in a dialog in the middle of every screen (with its
+// X): `media` (a logo) above `title` and the whole `text`.
+export function DetailsDialog({
+  open,
+  onOpenChange,
+  title,
+  text,
+  media,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  text: string
+  media?: React.ReactNode
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader className="items-center gap-3 text-center">
+          {media}
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className="text-pretty">{text}</DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -4,7 +4,10 @@ import { useState } from "react"
 
 import { Scene } from "@/components/feature-preview"
 import { HOME_SECTION_IDS, HomeBigTitle } from "@/components/home-section-title"
+import { DetailsDialog } from "@/components/details-button"
 import { marqueeRowClassName } from "@/components/made-for"
+import { ResponsivePanel } from "@/components/responsive-panel"
+import { Button } from "@/components/ui/button"
 import {
   showcaseCardClassName,
   ShowcasePicture,
@@ -12,16 +15,17 @@ import {
 import {
   Card,
   CardDescription,
+  CardAction,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import { Marquee } from "@/components/ui/marquee"
 import { Logo } from "@/components/works-with"
 import type { AppKey } from "@/lib/app-words"
@@ -98,6 +102,7 @@ export function HomeEverything({ words }: { words: Home }) {
 // and keep sliding under the mouse. Tap one to see what Koblip does with it.
 function AppsCard({ words, soon }: { words: Words; soon: string }) {
   const [open, setOpen] = useState(false)
+  const [allOpen, setAllOpen] = useState(false)
   // Kept while the panel slides away, so its words stay.
   const [shown, setShown] = useState<App>(APPS_WORKING[0])
   const show = (app: App) => {
@@ -151,19 +156,40 @@ function AppsCard({ words, soon }: { words: Words; soon: string }) {
       <CardHeader>
         <CardTitle>{words.items.apps.title}</CardTitle>
         <CardDescription>{words.items.apps.text}</CardDescription>
+        <CardAction className="self-center">
+          <Button variant="outline" onClick={() => setAllOpen(true)}>
+            {words.allApps.button}
+          </Button>
+        </CardAction>
       </CardHeader>
-      {/* In the middle on every screen, with its X. */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader className="items-center text-center">
-            <AppLogo app={shown} className="size-12" />
-            <DialogTitle>{details.name}</DialogTitle>
-            <DialogDescription className="text-balance">
-              {details.description}
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
+      <DetailsDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={details.name}
+        text={details.description}
+        media={<AppLogo app={shown} className="size-12" />}
+      />
+      {/* Every app: a large dialog on a computer, a sheet that scrolls on a
+          phone. */}
+      <ResponsivePanel
+        open={allOpen}
+        onClose={() => setAllOpen(false)}
+        title={words.allApps.title}
+        wide
+      >
+        <div className="flex flex-col gap-6">
+          <AppList
+            title={words.allApps.ready}
+            apps={APPS_WORKING}
+            details={words.appDetails}
+          />
+          <AppList
+            title={words.allApps.soon}
+            apps={APPS_SOON}
+            details={words.appDetails}
+          />
+        </div>
+      </ResponsivePanel>
     </Card>
   )
 }
@@ -221,5 +247,41 @@ function AppChip({
       {app.name}
       {soon && <span className="text-xs text-muted-foreground">{soon}</span>}
     </button>
+  )
+}
+
+// One group in the list of every app: its title, then each app with its
+// logo, name and what Koblip does with it.
+function AppList({
+  title,
+  apps,
+  details,
+}: {
+  title: string
+  apps: App[]
+  details: Words["appDetails"]
+}) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {apps.map((app) => (
+          <li key={app.key} className="flex">
+            <Item variant="outline" className="w-full">
+              <ItemMedia>
+                <AppLogo app={app} className="size-10" />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>{details[app.key].name}</ItemTitle>
+                {/* The whole text: this list is where it is read. */}
+                <ItemDescription className="line-clamp-none">
+                  {details[app.key].description}
+                </ItemDescription>
+              </ItemContent>
+            </Item>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
