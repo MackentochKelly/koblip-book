@@ -1,6 +1,9 @@
 "use client"
 
+import { AnimatePresence, motion } from "motion/react"
 import { useCallback, useEffect, useRef, useState } from "react"
+
+import { Box, RISE } from "@/components/feature-preview"
 
 import {
   glassButtonClassName,
@@ -8,10 +11,7 @@ import {
 } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
 import { useHomeLook } from "@/components/home-look"
-import {
-  HOME_SECTION_IDS,
-  homeSectionTitleClassName,
-} from "@/components/home-section-title"
+import { HOME_SECTION_IDS, HomeBigTitle } from "@/components/home-section-title"
 import { PHONE_STATUS_BAR, PhoneMockup } from "@/components/phone-mockup"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
@@ -22,15 +22,15 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
-import { MaximizeIcon, MinimizeIcon } from "@/components/ui/icons"
+  ArrowRightIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  SearchIcon,
+} from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useFindBusiness } from "@/hooks/use-find-business"
 import { DEMO_VIEWS, type DemoPaths, type DemoView } from "@/lib/demo-rules"
 import type { Messages } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
@@ -51,16 +51,22 @@ const SCREEN = "h-[min(44rem,72dvh)]"
 // near, so all three screens are the same guest's). 1, the booking page;
 // 2, the dashboard, where that booking arrives; 3, the AI assistant.
 // Like the feature demos of big apps: one panel on the hero's colour wash,
-// one screen at a time. Computers pick the step from the list beside it;
-// phones from the shared tab row above it. Each screen opens on first use
-// and is kept, so a booking started there survives switching steps.
+// one screen at a time. Computers follow the steps beside the phone: the
+// step you're on opens as the page's white card in its glass frame, with a
+// button to the next one, and the last ends on the search. Phones pick from
+// the shared tab row above it, with the step's line under it and the same
+// button below. Each screen opens on first use and is kept, so a booking
+// started there survives switching steps.
 export function SeeItInAction({
   words,
+  findBusinessLabel,
   language,
 }: {
   words: Words
+  findBusinessLabel: string
   language: PageLanguage
 }) {
+  const findBusiness = useFindBusiness()
   const box = useRef<HTMLElement>(null)
   const look = useHomeLook()
   const calm = look !== "colour"
@@ -147,6 +153,27 @@ export function SeeItInAction({
     />
   )
 
+  const nextView = DEMO_VIEWS[DEMO_VIEWS.indexOf(tab) + 1]
+  const nextButton = (
+    <Button
+      size="lg"
+      className="w-full"
+      onClick={() => (nextView ? choose(nextView) : findBusiness())}
+    >
+      {nextView ? (
+        <>
+          {words.steps[nextView]}
+          <ArrowRightIcon data-icon="inline-end" />
+        </>
+      ) : (
+        <>
+          <SearchIcon data-icon="inline-start" />
+          {findBusinessLabel}
+        </>
+      )}
+    </Button>
+  )
+
   const problem =
     demo.state === "failed" || demo.state === "tooMany" ? (
       <Empty>
@@ -173,12 +200,11 @@ export function SeeItInAction({
       // breathe (a band's own padding replaces it in the bands look).
       className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 pt-12 pb-12 sm:px-4 sm:pt-24"
     >
-      {/* Centred with a line under it, unlike the other sections: the real
-          app running here is the page's second big moment. */}
-      <div className="mb-4 flex flex-col items-center gap-1 px-2 text-center">
-        <h2 className={homeSectionTitleClassName}>{words.title}</h2>
-        <p className="text-balance text-muted-foreground">{words.subtitle}</p>
-      </div>
+      <HomeBigTitle
+        start={words.titleStart}
+        end={words.titleEnd}
+        line={words.subtitle}
+      />
       <div
         className={cn(
           "relative isolate rounded-4xl p-3 sm:p-6 lg:p-10",
@@ -195,9 +221,9 @@ export function SeeItInAction({
       >
         {!calm && <HeroGradient />}
         {problem ?? (
-          <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 lg:flex-row lg:items-center lg:justify-center lg:gap-12">
+          <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 lg:grid lg:grid-cols-2 lg:gap-16">
             {/* Phones: the steps, and a button that takes the screen full
-                screen. */}
+                screen, with the step's line under them. */}
             <div className="flex max-w-full items-center gap-2 lg:hidden">
               {tabs}
               <Button
@@ -209,54 +235,69 @@ export function SeeItInAction({
                 <MaximizeIcon />
               </Button>
             </div>
+            <p
+              className={cn(
+                "text-center text-balance lg:hidden",
+                calm ? "text-muted-foreground" : "text-hero-foreground"
+              )}
+            >
+              {words.hints[tab]}
+            </p>
             <div
               role="group"
               aria-label={words.tabsLabel}
-              className="hidden w-80 flex-col gap-2 lg:flex"
+              className="hidden w-full max-w-md flex-col gap-2 justify-self-end lg:flex"
             >
-              {DEMO_VIEWS.map((view, index) => (
-                <Item
-                  key={view}
-                  render={<button type="button" />}
-                  aria-pressed={view === tab}
-                  onClick={() => choose(view)}
-                  className={cn(
-                    "text-left",
-                    calm
-                      ? view === tab
+              {DEMO_VIEWS.map((view, index) =>
+                view === tab ? (
+                  <Box key={view} className="max-w-none">
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={view}
+                        {...RISE}
+                        aria-current="step"
+                        className="flex flex-col gap-4 px-(--card-spacing)"
+                      >
+                        <div className="flex flex-col gap-2">
+                          <Badge>{index + 1}</Badge>
+                          <h3 className="font-display text-2xl font-medium tracking-tight">
+                            {words.steps[view]}
+                          </h3>
+                          <p className="text-base text-muted-foreground">
+                            {words.hints[view]}
+                          </p>
+                        </div>
+                        {nextButton}
+                      </motion.div>
+                    </AnimatePresence>
+                  </Box>
+                ) : (
+                  <Item
+                    key={view}
+                    render={<button type="button" />}
+                    onClick={() => choose(view)}
+                    className={cn(
+                      "text-left",
+                      calm
                         ? look === "bands"
-                          ? "border-foreground/15 bg-foreground/10"
-                          : "border-border bg-background"
-                        : look === "bands"
                           ? "hover:bg-foreground/5"
                           : "hover:bg-background/60"
-                      : cn(
-                          "text-hero-foreground",
-                          view === tab
-                            ? glassButtonClassName
-                            : "hover:bg-glass dark:hover:bg-glass"
-                        )
-                  )}
-                >
-                  <ItemMedia>
-                    <Badge variant={view === tab ? "default" : "secondary"}>
-                      {index + 1}
-                    </Badge>
-                  </ItemMedia>
-                  <ItemContent>
-                    <ItemTitle className="text-base">
-                      {words.steps[view]}
-                    </ItemTitle>
-                    <ItemDescription
-                      className={cn(!calm && "text-hero-foreground/80")}
-                    >
-                      {words.hints[view]}
-                    </ItemDescription>
-                  </ItemContent>
-                </Item>
-              ))}
+                        : cn("text-hero-foreground", glassButtonClassName)
+                    )}
+                  >
+                    <ItemMedia>
+                      <Badge variant="secondary">{index + 1}</Badge>
+                    </ItemMedia>
+                    <ItemContent>
+                      <ItemTitle className="text-base">
+                        {words.steps[view]}
+                      </ItemTitle>
+                    </ItemContent>
+                  </Item>
+                )
+              )}
             </div>
-            <div className="relative isolate">
+            <div className="relative isolate lg:justify-self-start">
               {/* On the indigo band, a soft glow of the brand colour behind
                   the phone. */}
               {look === "bands" && (
@@ -311,6 +352,7 @@ export function SeeItInAction({
                 )}
               </PhoneMockup>
             </div>
+            <div className="w-full max-w-md lg:hidden">{nextButton}</div>
           </div>
         )}
       </div>

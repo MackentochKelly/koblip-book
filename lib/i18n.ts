@@ -296,6 +296,8 @@ const en = {
     // "See it in action": the real app on the visitor's own demo copy.
     action: {
       title: "See it in action",
+      titleStart: "See it",
+      titleEnd: "in action",
       subtitle: "This is the real app. Book, and watch it arrive.",
       steps: {
         page: "Book",
@@ -681,6 +683,8 @@ const es: Messages = {
     },
     action: {
       title: "Míralo en acción",
+      titleStart: "Míralo",
+      titleEnd: "en acción",
       subtitle: "Es la app real. Reserva y mira cómo llega.",
       steps: {
         page: "Reserva",

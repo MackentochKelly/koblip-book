@@ -145,7 +145,11 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           <HomeEverything words={t} />
         </HomeBand>
         <HomeBand tone="brand">
-          <SeeItInAction words={t.action} language={language} />
+          <SeeItInAction
+            words={t.action}
+            findBusinessLabel={t.cta.button}
+            language={language}
+          />
         </HomeBand>
         <HomeBand tone="plain">
           <HomePricing words={t} locale={messagesFor(language).locale} />
