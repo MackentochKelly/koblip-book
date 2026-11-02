@@ -1,11 +1,13 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
+import { after } from "next/server"
 
 import { GlassCard } from "@/components/glass-frame"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
-import { translateBusiness } from "@/features/dashboard/api/translation-actions"
+import { translateBusinessTexts } from "@/features/dashboard/api/translate-business"
 import { TopBar } from "@/features/dashboard/components/top-bar"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
+import { startPreparing } from "@/features/starter-catalog/api/prepare-jobs"
 import { PreparingCard } from "@/features/starter-catalog/components/preparing-card"
 import { starterMessagesFor } from "@/features/starter-catalog/i18n"
 import { requireAccount } from "@/lib/dal"
@@ -17,8 +19,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // Between "Check your details" and "Your page is live": Meta AI fills the
-// new page (services, extras, prices, team and their photos, Spanish), then
-// the success page opens by itself. Same plain page and top bar as the
+// new page (services, extras, prices, team and their photos), then the
+// success page opens by itself. Same plain page and top bar as the
 // steps around it.
 export default async function PreparingPage({
   params,
@@ -29,6 +31,12 @@ export default async function PreparingPage({
   if (business.setupFinishedAt !== null) {
     redirect(`/setup/${businessId}/ready`)
   }
+  // The Spanish version, on the server, nobody waiting: it joins the work
+  // started on the Google details screen, and translates what the owner
+  // changed on "Check your details" since.
+  after(() =>
+    startPreparing(business, () => translateBusinessTexts(business))
+  )
   const language = await getOwnerLanguage()
   return (
     <div
@@ -48,7 +56,6 @@ export default async function PreparingPage({
             businessId={businessId}
             language={language}
             readyHref={`/setup/${businessId}/ready`}
-            translate={translateBusiness.bind(null, businessId)}
           />
         </GlassCard>
       </main>

@@ -22,7 +22,6 @@ export const STARTER_CATALOG_RULES = {
     team: 2000,
     photos: 3500,
     policies: 3000,
-    spanish: 2500,
   },
   // After the last row, before the success page opens (ms).
   revealDoneMs: 1000,

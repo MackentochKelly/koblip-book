@@ -31,7 +31,7 @@ beforeEach(() => {
   mocks.finish.mockResolvedValue({ ok: true })
 })
 
-test("saved setup draws only missing photos, translates after policies and finishes before ready", async () => {
+test("saved setup draws only missing photos and finishes before ready, without waiting for Spanish", async () => {
   mocks.catalog.mockResolvedValue({ ok: true, summary: {
     created: true, currency: "USD", services: [], extras: [], role: null,
     team: [{ id: "missing", name: "Ana", photoUrl: null }, { id: "saved", name: "Luis", photoUrl: "/saved.webp" }],
@@ -40,52 +40,26 @@ test("saved setup draws only missing photos, translates after policies and finis
   mocks.policies.mockImplementation(async () => { order.push("policies"); return { ok: true } })
   mocks.finish.mockImplementation(async () => { order.push("finish"); return { ok: true } })
   mocks.replace.mockImplementation(() => { order.push("ready") })
-  const translate = vi.fn(async () => { order.push("spanish") })
-  render(<PreparingCard businessId="biz" language="en" readyHref="/ready" translate={translate} />)
+  render(<PreparingCard businessId="biz" language="en" readyHref="/ready" />)
   await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/ready"))
   expect(mocks.photo).toHaveBeenCalledExactlyOnceWith("biz", "missing")
-  expect(order).toEqual(["policies", "spanish", "finish", "ready"])
+  expect(order).toEqual(["policies", "finish", "ready"])
 })
 
 for (const error of ["ai_off", "failed"]) {
   test(`${error} still finishes setup before continuing`, async () => {
     mocks.catalog.mockResolvedValue({ ok: false, error })
-    const translate = vi.fn()
-    render(<PreparingCard businessId="biz" language="en" readyHref="/ready" translate={translate} />)
+    render(<PreparingCard businessId="biz" language="en" readyHref="/ready" />)
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/ready"))
     expect(mocks.finish).toHaveBeenCalledExactlyOnceWith("biz")
     expect(mocks.photo).not.toHaveBeenCalled()
-    expect(translate).not.toHaveBeenCalled()
   })
 }
 
 test("a finished business skips the rows", async () => {
   mocks.catalog.mockResolvedValue({ ok: true, summary: { created: false } })
-  const translate = vi.fn()
-  render(<PreparingCard businessId="biz" language="en" readyHref="/ready" translate={translate} />)
+  render(<PreparingCard businessId="biz" language="en" readyHref="/ready" />)
   await waitFor(() => expect(mocks.replace).toHaveBeenCalled())
   expect(mocks.photo).not.toHaveBeenCalled()
-  expect(translate).not.toHaveBeenCalled()
 })
 
-test("Spanish starts after policies while team photos are still drawing", async () => {
-  mocks.catalog.mockResolvedValue({ ok: true, summary: {
-    created: true, currency: "USD", services: [], extras: [], role: null,
-    team: [{ id: "missing", name: "Ana", photoUrl: null }],
-  } })
-  let finishPhoto!: () => void
-  const photo = new Promise<void>((resolve) => { finishPhoto = resolve })
-  mocks.photo.mockImplementation(async () => {
-    await photo
-    return { ok: true, photoUrl: "/photo.webp" }
-  })
-  const translate = vi.fn(async () => {})
-  render(<PreparingCard businessId="biz" language="en" readyHref="/ready" translate={translate} />)
-  try {
-    await waitFor(() => expect(translate).toHaveBeenCalledTimes(1))
-    expect(mocks.finish).not.toHaveBeenCalled()
-  } finally {
-    finishPhoto()
-  }
-  await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/ready"))
-})
