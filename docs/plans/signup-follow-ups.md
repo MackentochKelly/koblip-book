@@ -76,7 +76,7 @@ which puts npm and a shell between PM2 and the server. Team photo jobs in
 
 **Files:** `server.mjs`, `server/shutdown.mjs` (new) and its test,
 `features/starter-catalog/api/prepare-jobs.ts`, `ecosystem.config.cjs`
-(new), `docs/deploy.md` (new).
+(new), `docs/deploy.md`.
 
 **Done when:** a stop signal waits for running setup work (up to 28 s) and
 then exits; tests cover it; checked once on the server with the owner's
