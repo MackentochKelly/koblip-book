@@ -8,6 +8,7 @@ import {
 } from "motion/react"
 import { useRef, useState } from "react"
 
+import { frostedGlassClassName } from "@/components/glass-frame"
 import { useIsFullScreen } from "@/hooks/use-full-screen"
 import { cn } from "@/lib/utils"
 
@@ -22,10 +23,6 @@ const SCROLL_INTENT = 8
 // The header's change of size: 350ms on the standard curve
 // (docs/ui-rules/motion.md, the ease-standard token).
 const LAYOUT_TRANSITION = { duration: 0.35, ease: [0.2, 0, 0, 1] } as const
-
-// The frosted menu glass (dropdowns, selects), so the header matches them.
-const frostedClassName =
-  "bg-menu-glass shadow-lg ring-1 ring-glass-edge backdrop-blur-2xl backdrop-saturate-150"
 
 // Keeps the header (a SiteHeader) on top of the public pages while they
 // scroll. At the top it sits clear on the page, as if part of it; once
@@ -97,7 +94,7 @@ export function StickyHeader({ children }: { children: React.ReactNode }) {
             style={{ borderRadius: 9999 }}
             className={cn(
               "pointer-events-none absolute inset-0 -z-10 origin-top transition-[scale,opacity] motion-reduce:scale-100",
-              frostedClassName,
+              frostedGlassClassName,
               hidden
                 ? "scale-95 opacity-0 duration-200 ease-exit"
                 : "duration-300 ease-enter",

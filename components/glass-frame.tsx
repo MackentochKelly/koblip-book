@@ -6,6 +6,12 @@ import { cn } from "@/lib/utils"
 // Meta badge and the Search / Maps link switch.
 export const glassClassName = "bg-glass backdrop-blur-md dark:bg-glass"
 
+// The frosted menu glass (dropdowns, selects): the page colour at
+// --menu-glass behind a strong blur, with the glass edge and a shadow. For
+// something floating over the page: the scrolled header, a tip.
+export const frostedGlassClassName =
+  "bg-menu-glass shadow-lg ring-1 ring-glass-edge backdrop-blur-2xl backdrop-saturate-150"
+
 // The faint light edge (`glass-edge`) on the switch, the header buttons
 // and the Meta badge. The fill runs under it, which makes the line brighter.
 export const glassEdgeClassName = "border-glass-edge dark:border-glass-edge"

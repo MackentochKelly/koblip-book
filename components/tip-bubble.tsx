@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { POP } from "@/components/feature-preview"
+import { frostedGlassClassName } from "@/components/glass-frame"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
@@ -11,7 +12,7 @@ import { cn } from "@/lib/utils"
 // Room between the arrow and the bubble's rounded ends.
 const ARROW_EDGE = 20
 
-// A tip under its parent (which is `relative`), in the tooltip's look,
+// A tip under its parent (which is `relative`), in the frosted menu glass,
 // with its arrow pointing up at `anchor`, and an X to hide it. It pops in
 // again each time its words change. In the page, not a portal: it scrolls
 // with the page under the fixed header and never takes the focus. Screen
@@ -78,13 +79,21 @@ export function TipBubble({
           key={text}
           {...POP}
           style={{ transformOrigin: arrowX === null ? "top" : `${arrowX}px 0` }}
-          className="relative flex items-center gap-1 rounded-xl bg-foreground py-1 pr-1 pl-3 text-sm text-background shadow-lg"
+          className={cn(
+            frostedGlassClassName,
+            "relative flex items-center gap-1 rounded-xl py-1 pr-1 pl-3 text-sm text-popover-foreground"
+          )}
         >
           {arrowX !== null && (
             <span
               aria-hidden
               style={{ left: arrowX }}
-              className="absolute -top-1 size-2.5 -translate-x-1/2 rotate-45 rounded-[2px] bg-foreground"
+              // Only the half outside the bubble, so the glass isn't doubled
+              // where they meet.
+              className={cn(
+                frostedGlassClassName,
+                "absolute -top-1 size-2.5 -translate-x-1/2 rotate-45 rounded-[2px] shadow-none ring-0 [clip-path:polygon(0_0,100%_0,0_100%)]"
+              )}
             />
           )}
           <span aria-hidden className="text-balance">
@@ -95,7 +104,6 @@ export function TipBubble({
             size="icon-sm"
             aria-label={closeLabel}
             onClick={onClose}
-            className="text-background hover:bg-background/15 hover:text-background"
           >
             <XIcon />
           </Button>
