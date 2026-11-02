@@ -459,6 +459,80 @@ const en = {
     },
     code: "See the code",
     event: "Event page",
+    // The ⓘ beside each title: the same thing, explained in full.
+    more: "More about this",
+    sections: {
+      what: "What it does",
+      how: "How it works",
+      note: "Good to know",
+    },
+    details: {
+      assistant: {
+        what: "Runs your day with you: bookings, customers, services, add-ons, team, hours and free times.",
+        how: "Type or talk in plain words, like “Book Ana at 3 pm”. It answers from your real data.",
+        note: "Before any change, it shows a card with what it will do. Nothing happens until you tap yes.",
+      },
+      setup: {
+        what: "Builds your first booking page from your Google Maps listing.",
+        how: "Pick your business. It suggests services with prices and times, add-ons, a starter team and your policies.",
+        note: "These are only a start. Edit or remove anything later.",
+      },
+      about: {
+        what: "Writes the short intro customers read on your booking page.",
+        how: "It uses your business's own facts, never Google reviews. In your details, it can also tidy what you wrote.",
+        note: "Nothing is saved until you save it.",
+      },
+      translate: {
+        what: "Shows your page in Spanish too, so more customers can book.",
+        how: "Your services and business details are translated for you. Only new or changed texts are sent again.",
+        note: "Customers pick English or Spanish on your page.",
+      },
+      voice: {
+        what: "Lets you use the assistant by talking, hands-free.",
+        how: "Turn on talking mode and speak. Muse Voice Transcribe hears you live, and the assistant answers out loud.",
+        note: "Spoken replies use ElevenLabs voices.",
+      },
+      portraits: {
+        what: "Gives each starter team member a photo, so your page never looks empty.",
+        how: "It draws one from the person's role and what they're good at.",
+        note: "Upload a real photo anytime to replace it.",
+      },
+      newWork: {
+        what: "The hackathon only counts work built during the event.",
+        how: (date: string) =>
+          `Our first commit is from ${date}. Every change since is dated in the public history.`,
+      },
+      openSource: {
+        what: "The hackathon asks for a public repository.",
+        how: "All of Koblip Book's code is on GitHub for anyone to read.",
+      },
+      metaModels: {
+        what: "Every project must use Meta's models.",
+        how: "Muse Spark writes and thinks, Muse Voice Transcribe listens and Muse Image draws, all through the Meta Model API.",
+        note: "Spoken replies use ElevenLabs.",
+      },
+      control: {
+        what: "The AI helps you. It never acts behind your back.",
+        how: "The assistant shows each change on a card and waits for your yes. Every change it makes is logged.",
+      },
+      track: {
+        what: "Our hackathon track: bring Meta's models into a world you know.",
+        how: "Local businesses lose hours to bookings and messages. Koblip Book gives that time back.",
+      },
+      ownNumber: {
+        what: "Send WhatsApp messages from your own business number.",
+        how: "Connect it in a few taps, so messages come from your business.",
+      },
+      reminders: {
+        what: "Customers get their booking messages on WhatsApp.",
+        how: "A confirmation when they book, reminders before the visit, and a note if it changes or is cancelled.",
+        note: "You choose when reminders go out.",
+      },
+      checked: {
+        what: "Koblip is a verified Meta Tech Provider.",
+        how: "Meta reviewed our business before approving us to connect businesses to WhatsApp.",
+      },
+    },
   },
 }
 
@@ -898,6 +972,75 @@ const es: Messages = {
     },
     code: "Ver el código",
     event: "Página del evento",
+    more: "Más sobre esto",
+    sections: { what: "Qué hace", how: "Cómo funciona", note: "Bueno saber" },
+    details: {
+      assistant: {
+        what: "Lleva tu día contigo: citas, clientes, servicios, extras, equipo, horario y horas libres.",
+        how: "Escribe o habla en palabras simples, como “Reserva a Ana a las 15:00”. Responde con tus datos reales.",
+        note: "Antes de cambiar algo, muestra una tarjeta con lo que hará. Nada pasa hasta que tocas sí.",
+      },
+      setup: {
+        what: "Crea tu primera página de reservas desde tu ficha de Google Maps.",
+        how: "Elige tu negocio. Sugiere servicios con precios y tiempos, extras, un equipo inicial y tus políticas.",
+        note: "Es solo un comienzo. Edita o quita lo que quieras después.",
+      },
+      about: {
+        what: "Escribe la breve presentación que tus clientes leen en tu página.",
+        how: "Usa los datos de tu negocio, nunca reseñas de Google. En tus datos, también puede pulir lo que escribiste.",
+        note: "Nada se guarda hasta que tú lo guardas.",
+      },
+      translate: {
+        what: "Muestra tu página también en español, para que más clientes reserven.",
+        how: "Tus servicios y datos del negocio se traducen por ti. Solo se envían de nuevo los textos nuevos o cambiados.",
+        note: "Tus clientes eligen inglés o español en tu página.",
+      },
+      voice: {
+        what: "Te deja usar el asistente hablando, sin manos.",
+        how: "Activa el modo de voz y habla. Muse Voice Transcribe te escucha en vivo y el asistente responde en voz alta.",
+        note: "Las respuestas habladas usan voces de ElevenLabs.",
+      },
+      portraits: {
+        what: "Da una foto a cada persona del equipo inicial, para que tu página nunca se vea vacía.",
+        how: "La dibuja según el puesto de la persona y lo que hace mejor.",
+        note: "Sube una foto real cuando quieras para cambiarla.",
+      },
+      newWork: {
+        what: "El hackathon solo cuenta lo hecho durante el evento.",
+        how: (date: string) =>
+          `Nuestro primer commit es del ${date}. Cada cambio desde entonces tiene fecha en el historial público.`,
+      },
+      openSource: {
+        what: "El hackathon pide un repositorio público.",
+        how: "Todo el código de Koblip Book está en GitHub para que cualquiera lo lea.",
+      },
+      metaModels: {
+        what: "Cada proyecto debe usar los modelos de Meta.",
+        how: "Muse Spark escribe y piensa, Muse Voice Transcribe escucha y Muse Image dibuja, todo con la Meta Model API.",
+        note: "Las respuestas habladas usan ElevenLabs.",
+      },
+      control: {
+        what: "La IA te ayuda. Nunca actúa a tus espaldas.",
+        how: "El asistente muestra cada cambio en una tarjeta y espera tu sí. Cada cambio que hace queda registrado.",
+      },
+      track: {
+        what: "Nuestra categoría: llevar los modelos de Meta a un mundo que conoces.",
+        how: "Los negocios locales pierden horas en citas y mensajes. Koblip Book les devuelve ese tiempo.",
+      },
+      ownNumber: {
+        what: "Envía mensajes de WhatsApp desde el número de tu negocio.",
+        how: "Conéctalo en pocos toques, para que los mensajes vengan de tu negocio.",
+      },
+      reminders: {
+        what: "Tus clientes reciben los mensajes de su cita por WhatsApp.",
+        how: "Una confirmación al reservar, recordatorios antes de la visita y un aviso si cambia o se cancela.",
+        note: "Tú eliges cuándo salen los recordatorios.",
+      },
+      checked: {
+        what: "Koblip es un Meta Tech Provider verificado.",
+        how: "Meta revisó nuestro negocio antes de aprobarnos para conectar negocios a WhatsApp.",
+      },
+    },
   },
 }
 

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/icons"
 
 import { glassButtonClassName } from "@/components/glass-frame"
+import { InfoTip } from "@/components/info-tip"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
@@ -29,6 +30,11 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
+import {
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+} from "@/components/ui/popover"
 import { HACKATHON, MUSE } from "@/lib/hackathon"
 import { messagesFor } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
@@ -43,7 +49,11 @@ type Row = {
   description?: string
   // A small badge beside the title, like "Soon".
   tag?: string
+  // The ⓘ beside the title: the same thing in full, in short sections.
+  more?: More
 }
+
+type More = { what: string; how: string; note?: string }
 
 // One card: the Meta model that does these (named once, on top), or none.
 type Group = { heading?: string; rows: Row[] }
@@ -73,6 +83,8 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
     new Date(`${HACKATHON.start}T12:00:00`),
     new Date(`${HACKATHON.end}T12:00:00`)
   )
+  const d = t.details
+  const firstDay = day(HACKATHON.firstCommit)
   const check = <CircleCheckFilledIcon className="size-5 text-success" />
   // WhatsApp: its own file from the official pack, never recoloured, its
   // name never joined to other words
@@ -92,29 +104,33 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
       {
         heading: MUSE.spark,
         rows: [
-          { icon: <SparklesIcon />, ...t.ai.assistant },
-          { icon: <StoreIcon />, ...t.ai.setup },
-          { icon: <SquarePenIcon />, ...t.ai.about },
-          { icon: <LanguagesIcon />, ...t.ai.translate },
+          { icon: <SparklesIcon />, ...t.ai.assistant, more: d.assistant },
+          { icon: <StoreIcon />, ...t.ai.setup, more: d.setup },
+          { icon: <SquarePenIcon />, ...t.ai.about, more: d.about },
+          { icon: <LanguagesIcon />, ...t.ai.translate, more: d.translate },
         ],
       },
       {
         heading: MUSE.voice,
-        rows: [{ icon: <AudioLinesIcon />, ...t.ai.voice }],
+        rows: [{ icon: <AudioLinesIcon />, ...t.ai.voice, more: d.voice }],
       },
       {
         heading: MUSE.image,
-        rows: [{ icon: <ImageIcon />, ...t.ai.portraits }],
+        rows: [{ icon: <ImageIcon />, ...t.ai.portraits, more: d.portraits }],
       },
     ],
     rules: [
       {
         rows: [
-          { icon: check, title: t.rules.newWork(day(HACKATHON.firstCommit)) },
-          { icon: check, title: t.rules.openSource },
-          { icon: check, title: t.rules.metaModels },
-          { icon: check, title: t.rules.control },
-          { icon: check, title: t.rules.track },
+          {
+            icon: check,
+            title: t.rules.newWork(firstDay),
+            more: { ...d.newWork, how: d.newWork.how(firstDay) },
+          },
+          { icon: check, title: t.rules.openSource, more: d.openSource },
+          { icon: check, title: t.rules.metaModels, more: d.metaModels },
+          { icon: check, title: t.rules.control, more: d.control },
+          { icon: check, title: t.rules.track, more: d.track },
         ],
       },
     ],
@@ -126,16 +142,19 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
             title: provider.ownNumber,
             description: provider.ownNumberText,
             tag: home.soon,
+            more: d.ownNumber,
           },
           {
             icon: whatsapp,
             title: provider.reminders,
             description: provider.remindersText,
+            more: d.reminders,
           },
           {
             icon: <ShieldCheckIcon />,
             title: provider.checked,
             description: provider.checkedText,
+            more: d.checked,
           },
         ],
       },
@@ -217,13 +236,25 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
                   <ItemGroup
                     className={cn(rows.length > 1 && "sm:grid sm:grid-cols-2")}
                   >
-                    {rows.map(({ icon, title, description, tag }) => (
+                    {rows.map(({ icon, title, description, tag, more }) => (
                       <Item key={title} size="xs">
                         <ItemMedia variant="icon">{icon}</ItemMedia>
                         <ItemContent>
                           <ItemTitle>
                             {title}
                             {tag && <Badge variant="secondary">{tag}</Badge>}
+                            {more && (
+                              <InfoTip
+                                label={`${t.more}: ${title}`}
+                                className="-my-2"
+                              >
+                                <MoreAbout
+                                  title={title}
+                                  more={more}
+                                  sections={t.sections}
+                                />
+                              </InfoTip>
+                            )}
                           </ItemTitle>
                           {description && (
                             <ItemDescription>{description}</ItemDescription>
@@ -238,6 +269,32 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
           </div>
         </div>
       </ResponsivePanel>
+    </>
+  )
+}
+
+// The ⓘ's words: the title, then each part under its own short label.
+function MoreAbout({
+  title,
+  more,
+  sections,
+}: {
+  title: string
+  more: More
+  sections: Record<keyof More, string>
+}) {
+  const parts = (["what", "how", "note"] as const).filter((key) => more[key])
+  return (
+    <>
+      <PopoverHeader>
+        <PopoverTitle>{title}</PopoverTitle>
+      </PopoverHeader>
+      {parts.map((key) => (
+        <PopoverHeader key={key}>
+          <p className="font-medium">{sections[key]}</p>
+          <PopoverDescription>{more[key]}</PopoverDescription>
+        </PopoverHeader>
+      ))}
     </>
   )
 }

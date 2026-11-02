@@ -2,7 +2,11 @@
 
 import { Button } from "@/components/ui/button"
 import { InfoCircleIcon } from "@/components/ui/icons"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 // An ⓘ with more words behind it (docs/ui-rules/forms-and-text.md). A
 // popover that also opens on hover, not a tooltip: Base UI's tooltips never
@@ -10,16 +14,26 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 export function InfoTip({
   children,
   label,
+  className,
 }: {
   children: React.ReactNode
   // The ⓘ button's name for screen readers.
   label?: string
+  // For the ⓘ button, e.g. to keep it from making a line taller.
+  className?: string
 }) {
   return (
     <Popover>
       <PopoverTrigger
         openOnHover
-        render={<Button variant="ghost" size="icon-sm" aria-label={label} />}
+        render={
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={label}
+            className={className}
+          />
+        }
       >
         <InfoCircleIcon />
       </PopoverTrigger>
