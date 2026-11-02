@@ -248,8 +248,7 @@ export function SeeItInAction({
       />
       <div
         className={cn(
-          // Phones: a little more room under the phone than around it.
-          "relative isolate overflow-hidden rounded-4xl p-3 pb-6 sm:p-6 lg:p-10",
+          "relative isolate overflow-hidden rounded-4xl p-3 sm:p-6 lg:p-10",
           look === "colour" && heroEdgeClassName,
           look === "calm" && "bg-muted",
           look === "glow" && "bg-soft-glow ring-1 ring-border"
