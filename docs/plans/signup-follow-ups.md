@@ -15,7 +15,7 @@ Three problems found while doing [Sign-up fixes](signup-fixes.md)
 
 | Task | What | Size | Needs | Status |
 | --- | --- | --- | --- | --- |
-| F1 | The Spanish settings count matches what Translate does | S | | Working on: M Kelly B, 2026-11-02 |
+| F1 | The Spanish settings count matches what Translate does | S | | Done |
 | F2 | A deploy lets running setup work finish | S | | To do |
 | F3 | Sign-in works on every address the app runs on | S | | To do |
 
@@ -41,6 +41,11 @@ use it, so they can't drift again. No change to what gets translated.
 
 **Done when:** a team member's About counts as pending until translated;
 a test proves the status and the Translate run collect the same texts.
+
+**Done (2026-11-02):** status and Translate use one read-only loader,
+including team About and full saved translation rows. Tests cover About
+becoming pending again, every text kind matching the AI request, and
+orphan cleanup staying in Translate only.
 
 ### F2 · A deploy lets running setup work finish 🟠
 

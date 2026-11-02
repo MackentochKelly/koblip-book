@@ -8,8 +8,11 @@ import {
   addonGroups,
   addonOptions,
   businesses,
+  businessPolicies,
+  businessPolicyPoints,
   serviceAddonGroups,
   services,
+  teamMembers,
   translations,
   user,
 } from "@/lib/db/schema"
@@ -185,4 +188,67 @@ test("a renamed option goes stale, removed groups lose their rows", async () => 
   expect(rows.some((row) => row.entityId === "g1")).toBe(false)
   expect(rows.some((row) => row.entityId === "o1")).toBe(false)
   expect(rows.some((row) => row.entityId === "svc-1")).toBe(true)
+})
+
+test("status counts exactly every kind of text the translate run sends", async () => {
+  fresh()
+  const { db } = await import("@/lib/db")
+  const businessId = "biz-all"
+  await db.insert(businesses).values({
+    id: businessId, slug: "all-texts", name: "All Texts", description: "About our shop",
+    category: "Barber shop", timezone: "America/Santo_Domingo", currency: "DOP", ownerId: "u1",
+  })
+  await db.insert(services).values({ id: "svc-all", businessId, name: "Cut", description: "A tidy cut", durationMinutes: 30 })
+  await db.insert(addonGroups).values({ id: "group-all", businessId, name: "Extras", prompt: "Choose extras" })
+  await db.insert(addonOptions).values({ id: "option-all", businessId, groupId: "group-all", name: "Wash", description: "A gentle wash" })
+  await db.insert(teamMembers).values({ id: "member-all", businessId, name: "Ana", description: "Barber", about: "Ten years of fades." })
+  await db.insert(businessPolicies).values({ id: "policy-all", businessId, kind: "booking", body: "Cancel a day ahead." })
+  await db.insert(businessPolicyPoints).values({ id: "point-all", businessId, icon: "clock", title: "Arrive on time", body: "Please arrive on time.", position: 0 })
+
+  const expected = [
+    { id: "biz-all:business.description", text: "About our shop" },
+    { id: "biz-all:business.category", text: "Barber shop" },
+    { id: "svc-all:service.name", text: "Cut" },
+    { id: "svc-all:service.description", text: "A tidy cut" },
+    { id: "group-all:addon_group.prompt", text: "Choose extras" },
+    { id: "option-all:addon.name", text: "Wash" },
+    { id: "option-all:addon.description", text: "A gentle wash" },
+    { id: "member-all:team_member.description", text: "Barber" },
+    { id: "member-all:team_member.about", text: "Ten years of fades." },
+    { id: "policy-all:policy.body", text: "Cancel a day ahead." },
+    { id: "point-all:policy_point.title", text: "Arrive on time" },
+    { id: "point-all:policy_point.body", text: "Please arrive on time." },
+  ]
+  const before = await getTranslationStatus(businessId)
+  expect(before).toMatchObject({ total: expected.length, upToDate: 0 })
+  expect(await translateBusiness(businessId)).toEqual({ ok: true, translated: before.total })
+  const sent = createMock.mock.calls.flatMap(([request]) => {
+    const content = request.messages[1].content as string
+    return JSON.parse(content.slice(content.indexOf("["))) as { id: string; text: string }[]
+  })
+  expect(sent).toEqual(expected)
+  expect(before.total).toBe(sent.length)
+  expect(await getTranslationStatus(businessId)).toMatchObject({ total: before.total, upToDate: before.total })
+})
+
+test("status leaves orphan translations alone; only Translate deletes them", async () => {
+  fresh()
+  const { db } = await import("@/lib/db")
+  const businessId = "biz-orphan"
+  await db.insert(businesses).values({
+    id: businessId, slug: "orphan-texts", name: "Orphan Texts",
+    timezone: "America/Santo_Domingo", currency: "DOP", ownerId: "u1",
+  })
+  await db.insert(translations).values({
+    id: "translation-orphan", businessId, entityId: "deleted-service", field: "service.name",
+    language: "es", sourceText: "Cut", text: "Corte",
+  })
+  const saved = () => db.select().from(translations).where(eq(translations.id, "translation-orphan"))
+  const before = await saved()
+  expect(before).toHaveLength(1)
+  expect(await getTranslationStatus(businessId)).toMatchObject({ total: 0, upToDate: 0 })
+  expect(await saved()).toEqual(before)
+  expect(await translateBusiness(businessId)).toEqual({ ok: true, translated: 0 })
+  expect(await saved()).toEqual([])
+  expect(createMock).not.toHaveBeenCalled()
 })

@@ -6,6 +6,7 @@ import { afterAll, beforeAll, expect, test, vi } from "vitest"
 import {
   businesses,
   services,
+  teamMembers,
   translations,
   user,
 } from "@/lib/db/schema"
@@ -110,4 +111,22 @@ test("the category is pending until its Spanish source matches", async () => {
   expect(await getTranslationStatus("biz-category")).toMatchObject({ total: 1, upToDate: 1 })
   await db.update(businesses).set({ category: "Photo studio" }).where(eq(businesses.id, "biz-category"))
   expect(await getTranslationStatus("biz-category")).toMatchObject({ total: 1, upToDate: 0 })
+})
+
+test("a team member's About is pending until translated and again when changed", async () => {
+  const { db } = await import("@/lib/db")
+  const { eq } = await import("drizzle-orm")
+  await db.insert(businesses).values({
+    id: "biz-team", slug: "team-shop", name: "Team Shop",
+    timezone: "America/Santo_Domingo", currency: "DOP", ownerId: "u1",
+  })
+  await db.insert(teamMembers).values({ id: "tm-about", businessId: "biz-team", name: "Ana", about: "Ten years of fades." })
+  expect(await getTranslationStatus("biz-team")).toMatchObject({ total: 1, upToDate: 0 })
+  await db.insert(translations).values({
+    businessId: "biz-team", entityId: "tm-about", field: "team_member.about",
+    language: "es", sourceText: "Ten years of fades.", text: "Diez años de degradados.",
+  })
+  expect(await getTranslationStatus("biz-team")).toMatchObject({ total: 1, upToDate: 1 })
+  await db.update(teamMembers).set({ about: "Twelve years of fades." }).where(eq(teamMembers.id, "tm-about"))
+  expect(await getTranslationStatus("biz-team")).toMatchObject({ total: 1, upToDate: 0 })
 })

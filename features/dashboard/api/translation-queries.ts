@@ -3,22 +3,10 @@ import { and, eq } from "drizzle-orm"
 import { notFound } from "next/navigation"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
-import {
-  addonGroups,
-  addonOptions,
-  businesses,
-  businessPolicies,
-  businessPolicyPoints,
-  services,
-  teamMembers,
-  translations,
-} from "@/lib/db/schema"
+import { businesses, translations } from "@/lib/db/schema"
 import { isMetaAiEnabled } from "@/lib/meta-ai"
 import type { TranslationStatus } from "../translation-types"
-import {
-  collectTranslatableTexts,
-  pendingTranslations,
-} from "../utils/translate"
+import { loadTranslatableTexts } from "./translatable-texts"
 
 async function ownedBusiness(businessId: string) {
   const session = await requireOwner()
@@ -37,69 +25,7 @@ export async function getTranslationStatus(
   businessId: string
 ): Promise<TranslationStatus> {
   const business = await ownedBusiness(businessId)
-  const [serviceRows, addonGroupRows, addonOptionRows, teamRows, policyRows, pointRows] =
-    await Promise.all([
-    db
-      .select({
-        id: services.id,
-        name: services.name,
-        description: services.description,
-      })
-      .from(services)
-      .where(eq(services.businessId, business.id)),
-    db
-      .select({ id: addonGroups.id, prompt: addonGroups.prompt })
-      .from(addonGroups)
-      .where(eq(addonGroups.businessId, business.id)),
-    db
-      .select({
-        id: addonOptions.id,
-        name: addonOptions.name,
-        description: addonOptions.description,
-      })
-      .from(addonOptions)
-      .where(eq(addonOptions.businessId, business.id)),
-    db
-      .select({ id: teamMembers.id, description: teamMembers.description })
-      .from(teamMembers)
-      .where(eq(teamMembers.businessId, business.id)),
-    db
-      .select({ id: businessPolicies.id, body: businessPolicies.body })
-      .from(businessPolicies)
-      .where(eq(businessPolicies.businessId, business.id)),
-    db
-      .select({
-        id: businessPolicyPoints.id,
-        title: businessPolicyPoints.title,
-        body: businessPolicyPoints.body,
-      })
-      .from(businessPolicyPoints)
-      .where(eq(businessPolicyPoints.businessId, business.id)),
-  ])
-  const existing = await db
-    .select({
-      entityId: translations.entityId,
-      field: translations.field,
-      sourceText: translations.sourceText,
-    })
-    .from(translations)
-    .where(
-      and(
-        eq(translations.businessId, business.id),
-        eq(translations.language, "es")
-      )
-    )
-  const all = collectTranslatableTexts(
-    business.id,
-    business.description,
-    business.category,
-    serviceRows,
-    { groups: addonGroupRows, options: addonOptionRows },
-    teamRows,
-    policyRows,
-    pointRows
-  )
-  const pending = pendingTranslations(all, existing)
+  const { all, pending } = await loadTranslatableTexts(business)
   return {
     language: "es",
     enabled: isMetaAiEnabled(),
