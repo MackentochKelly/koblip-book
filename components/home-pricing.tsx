@@ -71,7 +71,7 @@ export function HomePricing({
           locale={locale}
           sample={
             <>
-              <CheckIcon className="size-4 shrink-0 text-success" />
+              <CheckIcon className="size-5 shrink-0 stroke-[2.25] text-success" />
               {words.features.sample.done}
             </>
           }
@@ -98,7 +98,7 @@ export function HomePricing({
                 width={16}
                 height={16}
                 unoptimized
-                className="size-4 shrink-0 object-contain"
+                className="mt-0.5 size-4 shrink-0 object-contain"
               />
               {t.proSample}
             </>
@@ -147,7 +147,8 @@ function PlanCard({
               </p>
             </Box>
             <Bubble variant="outline">
-              <BubbleContent className="flex items-center gap-2 bg-card">
+              {/* The icon stays beside the first line when the words wrap. */}
+              <BubbleContent className="flex items-start gap-2 bg-card">
                 {sample}
               </BubbleContent>
             </Bubble>
