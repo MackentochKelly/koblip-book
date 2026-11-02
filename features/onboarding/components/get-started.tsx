@@ -423,10 +423,15 @@ export function GetStarted({
             {prepared ? <StoreIcon className="size-6" /> : <Spinner />}
           </AvatarFallback>
         </Avatar>
-        <div className="flex flex-col gap-1">
+        <div className="flex w-full min-w-0 flex-col gap-1">
           <p className="font-heading text-lg font-medium">{picked.name}</p>
+          {/* One line, ending in "…" when long; the whole address shows
+              on hover. */}
           {picked.address && (
-            <p className="line-clamp-2 text-sm text-balance text-muted-foreground">
+            <p
+              title={picked.address}
+              className="truncate text-sm text-muted-foreground"
+            >
               {picked.address}
             </p>
           )}
