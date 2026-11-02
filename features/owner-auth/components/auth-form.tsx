@@ -5,7 +5,7 @@ import { motion } from "motion/react"
 import { useRouter } from "next/navigation"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CircleAlertIcon, InfoIcon } from "@/components/ui/icons"
+import { CircleAlertIcon, InfoIcon, MailIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -135,11 +135,6 @@ export function AuthForm({
 
   const emailPart = (
     <>
-        {step === "email" && (
-          <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-            {t.or}
-          </FieldSeparator>
-        )}
         <Field data-invalid={error?.field === "email" || undefined}>
           <FieldLabel htmlFor="auth-email">{t.email}</FieldLabel>
           {/* The account's username: password managers fill it with the
@@ -239,15 +234,21 @@ export function AuthForm({
               disabled={busy || !googleReady}
               language={language}
             />
+            <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
+              {t.or}
+            </FieldSeparator>
           </>
         )}
         {!emailOpen ? (
+          // The other way in, shaped like the Google button above it.
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
+            size="lg"
             disabled={busy}
             onClick={() => setEmailOpen(true)}
           >
+            <MailIcon data-icon="inline-start" />
             {t.useEmail}
           </Button>
         ) : emailLater ? (

@@ -436,6 +436,18 @@ export function GetStarted({
             </p>
           )}
         </div>
+        {/* Right under the business it is about. A quiet link with a full
+            touch target; the negative margin keeps the lines close. */}
+        {!blocked && !signedIn && (
+          <Button
+            variant="link"
+            onClick={back}
+            disabled={finishing}
+            className="-my-3 h-11 text-muted-foreground"
+          >
+            {t.notYours}
+          </Button>
+        )}
       </div>
       {blocked ? (
         <Field data-invalid>
@@ -451,19 +463,14 @@ export function GetStarted({
           {t.building}
         </Button>
       ) : (
-        <>
-          <AuthForm
-            onSignedIn={() => finish()}
-            disabled={finishing}
-            googleNext={ready ? `/?claim=${ready.slug}` : undefined}
-            googleReady={Boolean(ready)}
-            emailLater
-            language={language}
-          />
-          <Button variant="ghost" onClick={back} disabled={finishing}>
-            {t.notYours}
-          </Button>
-        </>
+        <AuthForm
+          onSignedIn={() => finish()}
+          disabled={finishing}
+          googleNext={ready ? `/?claim=${ready.slug}` : undefined}
+          googleReady={Boolean(ready)}
+          emailLater
+          language={language}
+        />
       )}
     </div>
   )

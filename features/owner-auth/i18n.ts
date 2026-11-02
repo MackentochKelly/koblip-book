@@ -14,7 +14,7 @@ const en = {
   password: "Password",
   continue: "Continue",
   createAccount: "Create account",
-  useEmail: "Use email instead",
+  useEmail: "Continue with email",
   google: "Continue with Google",
   errors: {
     email: "Check your email address",
@@ -48,7 +48,7 @@ const es: AuthWords = {
   password: "Contraseña",
   continue: "Continuar",
   createAccount: "Crear cuenta",
-  useEmail: "Usar correo",
+  useEmail: "Continuar con correo",
   google: "Continuar con Google",
   errors: {
     email: "Revisa tu correo",
