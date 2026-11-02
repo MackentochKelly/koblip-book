@@ -14,23 +14,22 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { XIcon } from "@/components/ui/icons"
-import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { demoHref } from "@/lib/demo-rules"
 import { HACKATHON } from "@/lib/hackathon"
 import type { Messages } from "@/lib/i18n"
 import { LAYOUT_MOVE } from "@/lib/motion-tokens"
 
-const CLOSED_KEY = "home-support-box-closed"
-
 // The home page's small card in the corner, where a cookie banner would
 // sit: a star on GitHub, and the demo to try. It comes up once the hero
 // (and its search box) is scrolled away, never covers anything people need
 // and never takes the focus. Closing it, or using either button, hides it
-// on this device for good. The GitHub mark: GitHub's own white file on the
+// until the page is loaded again. The GitHub mark: GitHub's own white file on the
 // purple button, never recoloured (brand.github.com/foundations/logo).
 // Place it right after the hero: it watches that spot.
 export function SupportBox({ words }: { words: Messages["home"]["support"] }) {
-  const [closed, close] = useStoredFlag(CLOSED_KEY)
+  // Closed for this visit only: every load of the page asks again.
+  const [closed, setClosed] = useState(false)
+  const close = () => setClosed(true)
   const [shown, setShown] = useState(false)
   const spot = useRef<HTMLDivElement>(null)
 
