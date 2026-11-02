@@ -5,7 +5,7 @@ import { useState } from "react"
 import {
   AudioLinesIcon,
   ChevronRightIcon,
-  CircleCheckIcon,
+  CircleCheckFilledIcon,
   ExternalLinkIcon,
   ImageIcon,
   LanguagesIcon,
@@ -73,7 +73,7 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
     new Date(`${HACKATHON.start}T12:00:00`),
     new Date(`${HACKATHON.end}T12:00:00`)
   )
-  const check = <CircleCheckIcon className="text-success" />
+  const check = <CircleCheckFilledIcon className="size-5 text-success" />
   // WhatsApp: its own file from the official pack, never recoloured, its
   // name never joined to other words
   // (meta.com/brand/resources/whatsapp/whatsapp-brand).
