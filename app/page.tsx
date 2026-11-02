@@ -102,7 +102,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
             <div className="flex flex-col gap-6">
               <HackathonBadge language={language} />
               <div className="flex flex-col gap-4">
-                <h1 className="font-display text-hero font-medium tracking-tight text-balance text-hero-foreground sm:text-7xl">
+                <h1 className="font-display text-hero font-medium tracking-tight text-balance text-hero-foreground sm:text-6xl md:text-7xl">
                   {t.titleStart}{" "}
                   <span className="font-serif font-normal tracking-normal italic">
                     {t.titleEnd}
