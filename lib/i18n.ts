@@ -331,7 +331,7 @@ const en = {
       signIn: "Sign in with Google",
       signInText: "One tap. Free.",
       check: "AI builds your page",
-      checkText: "Services, prices, photos, team.",
+      checkText: "Services, prices, hours.",
       share: "Get booked",
       shareText: "Share your link. Bookings come in.",
       // The sample shown in the step pictures.
@@ -722,7 +722,7 @@ const es: Messages = {
       signIn: "Entra con Google",
       signInText: "Un toque. Gratis.",
       check: "La IA crea tu página",
-      checkText: "Servicios, precios, fotos, equipo.",
+      checkText: "Servicios, precios, horarios.",
       share: "Recibe reservas",
       shareText: "Comparte tu enlace. Llegan las reservas.",
       sample: {
