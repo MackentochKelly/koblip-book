@@ -1,4 +1,7 @@
-import { heroEdgeClassName } from "@/components/glass-frame"
+import {
+  fullScreenHostClassName,
+  heroEdgeClassName,
+} from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
 import { LanguageProvider } from "@/components/language-provider"
 import { SiteHeader } from "@/components/site-header"
@@ -39,7 +42,8 @@ export function StartScreen({
         <section
           className={cn(
             "relative isolate flex flex-1 flex-col overflow-hidden rounded-4xl",
-            heroEdgeClassName
+            heroEdgeClassName,
+            fullScreenHostClassName
           )}
         >
           <HeroGradient />

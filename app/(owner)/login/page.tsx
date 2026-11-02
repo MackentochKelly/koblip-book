@@ -1,7 +1,11 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
-import { GlassCard, heroEdgeClassName } from "@/components/glass-frame"
+import {
+  fullScreenHostClassName,
+  GlassCard,
+  heroEdgeClassName,
+} from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
 import { LanguageProvider } from "@/components/language-provider"
 import { StickyHeader } from "@/components/sticky-header"
@@ -63,7 +67,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <section
           className={cn(
             "relative isolate flex flex-1 flex-col overflow-hidden rounded-4xl",
-            heroEdgeClassName
+            heroEdgeClassName,
+            fullScreenHostClassName
           )}
         >
           <HeroGradient />

@@ -2,7 +2,10 @@ import type { Metadata } from "next"
 import { headers } from "next/headers"
 import Link from "next/link"
 
-import { heroEdgeClassName } from "@/components/glass-frame"
+import {
+  fullScreenHostClassName,
+  heroEdgeClassName,
+} from "@/components/glass-frame"
 import { StickyHeader } from "@/components/sticky-header"
 import { HeroGradient } from "@/components/hero-gradient"
 import { HomeBand } from "@/components/home-band"
@@ -87,7 +90,8 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         <section
           className={cn(
             "relative isolate flex flex-1 flex-col overflow-hidden rounded-4xl",
-            heroEdgeClassName
+            heroEdgeClassName,
+            fullScreenHostClassName
           )}
         >
           <HeroGradient />

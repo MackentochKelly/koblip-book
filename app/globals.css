@@ -5,6 +5,9 @@
 @source "../node_modules/streamdown/dist/*.js";
 
 @custom-variant dark (&:is(.dark *));
+/* While a view takes the whole screen (data-full-screen on <html>, set by
+   useMarkFullScreen). */
+@custom-variant full-screen (&:is([data-full-screen] *));
 
 /* A frosted menu's surface (dropdowns, selects): the popover colour at
    --menu-glass, like Koblip Sales. shadcn's translucent preset uses 70%. */

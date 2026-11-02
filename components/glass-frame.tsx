@@ -37,6 +37,14 @@ export const glassButtonClassName = cn(
 export const heroEdgeClassName =
   "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:p-px after:inset-ring after:inset-ring-glass-frame-edge after:backdrop-blur-md after:backdrop-saturate-(--glass-saturate) after:[mask:linear-gradient(#000_0_0)_content-box_exclude,linear-gradient(#000_0_0)]"
 
+// A hero panel that holds the phone's full screen search. The panel is
+// `isolate` (its gradient stays behind its content), so the search's own
+// z-index only counts inside it, and the page after the panel (moving
+// rows, cards) would draw over the search. While the search is open, the
+// panel itself rises above the page; windows and sheets opened from the
+// search still open above it.
+export const fullScreenHostClassName = "full-screen:z-50"
+
 // The glass frame's round: the card's, plus the frame's room around it.
 export const glassFrameRoundClassName =
   "rounded-[calc(var(--radius-4xl)+--spacing(1.5))]"
