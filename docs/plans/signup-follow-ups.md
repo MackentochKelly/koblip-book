@@ -72,11 +72,12 @@ which puts npm and a shell between PM2 and the server. Team photo jobs in
    ends the process before PM2's SIGKILL.
 2. `startPreparing` awaits the team photos.
 3. Keep the PM2 setup in the repo (`ecosystem.config.cjs`): runs
-   `server.mjs` directly, `kill_timeout: 30000`. Update the deploy steps.
+   `server.mjs` directly, `kill_timeout: 30000`. The release script starts
+   the app from that file, so the file is what runs.
 
 **Files:** `server.mjs`, `server/shutdown.mjs` (new) and its test,
 `features/starter-catalog/api/prepare-jobs.ts`, `ecosystem.config.cjs`
-(new), `docs/deploy.md`.
+(new), `scripts/deploy-release.sh`, `docs/deploy.md`.
 
 **Done when:** a stop signal waits for running setup work (up to 28 s) and
 then exits; tests cover it; checked once on the server with the owner's
