@@ -56,4 +56,10 @@ export const ASSISTANT_RULES = {
   maxRequestMs: 120_000,
   // How long after a page load the floating globe shows its ideas.
   floatIdeasMs: 20_000,
+  // They come and leave one by one: how long each takes to fade, and how long
+  // after one starts the next does.
+  floatIdeasFadeInMs: 2000,
+  floatIdeasFadeInGapMs: 1000,
+  floatIdeasFadeOutMs: 2600,
+  floatIdeasFadeOutGapMs: 1300,
 } as const

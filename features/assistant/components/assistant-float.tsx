@@ -53,6 +53,8 @@ export function AssistantFloat({
   // Off on a phone, so its moving canvas never starts there.
   if (!desktop || assistantOpen) return null
 
+  const ideas = IDEAS.filter(({ key }) => !closed.includes(key))
+
   const ask = (question: string) => {
     handOff(businessId, { kind: "ask", text: question })
     router.push(href)
@@ -64,42 +66,54 @@ export function AssistantFloat({
       href={href}
       label={messages.title}
       bare
-      attached={IDEAS.filter(({ key }) => !closed.includes(key)).map(
-        ({ key, icon: Icon }) => (
-          <div
-            key={key}
-            className={cn(
-              "group/idea relative transition-[opacity,visibility] duration-300",
-              !showIdeas && "invisible opacity-0"
-            )}
-          >
-            <Card className="gap-0 p-0">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="justify-start text-xs font-normal text-muted-foreground [&_svg:not([class*='size-'])]:size-3.5"
-                onClick={() => ask(messages.empty.suggestions[key])}
-              >
-                <Icon data-icon="inline-start" />
-                {messages.empty.shortIdeas[key]}
-              </Button>
-            </Card>
-            {/* Comes up with the pointer or the keyboard; always there on a
-                touch screen, which has no pointer to bring it up. */}
+      attached={ideas.map(({ key, icon: Icon }, order) => (
+        <div
+          key={key}
+          className={cn(
+            "group/idea relative transition-[opacity,visibility] ease-linear",
+            showIdeas ? "animate-in fade-in" : "invisible opacity-0"
+          )}
+          // They come out of the globe, nearest first, and leave towards it,
+          // farthest first.
+          style={
+            showIdeas
+              ? {
+                  animationDuration: `${ASSISTANT_RULES.floatIdeasFadeInMs}ms`,
+                  animationDelay: `${(ideas.length - 1 - order) * ASSISTANT_RULES.floatIdeasFadeInGapMs}ms`,
+                  animationFillMode: "backwards",
+                }
+              : {
+                  transitionDuration: `${ASSISTANT_RULES.floatIdeasFadeOutMs}ms`,
+                  transitionDelay: `${order * ASSISTANT_RULES.floatIdeasFadeOutGapMs}ms`,
+                }
+          }
+        >
+          <Card className="gap-0 p-0">
             <Button
               type="button"
-              variant="secondary"
-              size="icon-xs"
-              aria-label={`${messages.empty.closeIdea}: ${messages.empty.shortIdeas[key]}`}
-              className="absolute -top-2 -right-2 opacity-0 group-hover/idea:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
-              onClick={() => setClosed((keys) => [...keys, key])}
+              variant="ghost"
+              size="sm"
+              className="justify-start text-xs font-normal text-muted-foreground [&_svg:not([class*='size-'])]:size-3.5"
+              onClick={() => ask(messages.empty.suggestions[key])}
             >
-              <XIcon />
+              <Icon data-icon="inline-start" />
+              {messages.empty.shortIdeas[key]}
             </Button>
-          </div>
-        )
-      )}
+          </Card>
+          {/* Comes up with the pointer or the keyboard; always there on a
+                touch screen, which has no pointer to bring it up. */}
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon-xs"
+            aria-label={`${messages.empty.closeIdea}: ${messages.empty.shortIdeas[key]}`}
+            className="absolute -top-2 -right-2 opacity-0 group-hover/idea:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
+            onClick={() => setClosed((keys) => [...keys, key])}
+          >
+            <XIcon />
+          </Button>
+        </div>
+      ))}
     >
       <VoiceGlobe className="size-full" />
     </FloatingLink>
