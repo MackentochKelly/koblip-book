@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react"
 import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
 
+import { frostedGlassClassName } from "@/components/glass-frame"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -62,7 +63,9 @@ export function SupportBox({ words }: { words: Messages["home"]["support"] }) {
             // computer: a small card in the bottom-left corner.
             className="fixed right-[max(--spacing(4),env(safe-area-inset-right))] bottom-[max(--spacing(4),env(safe-area-inset-bottom))] left-[max(--spacing(4),env(safe-area-inset-left))] z-40 md:right-auto md:bottom-[max(--spacing(6),env(safe-area-inset-bottom))] md:left-[max(--spacing(6),env(safe-area-inset-left))] md:w-sm"
           >
-            <Card size="sm">
+            {/* Floats over the page: the frosted glass the scrolled header uses
+                (see-through, blurred, a soft shadow). */}
+            <Card size="sm" className={frostedGlassClassName}>
               <CardHeader>
                 <CardTitle>{words.title}</CardTitle>
                 <CardDescription>{words.text}</CardDescription>
