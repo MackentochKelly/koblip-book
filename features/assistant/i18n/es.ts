@@ -64,6 +64,13 @@ const messages: typeof en = {
       week: "¿Cómo va esta semana?",
       customers: "¿Quiénes son mis clientes más nuevos?",
     },
+    // Junto al globo flotante, donde hay poco espacio. Un toque envía la
+    // sugerencia de arriba con el mismo nombre.
+    shortIdeas: {
+      services: "Mis servicios",
+      week: "Esta semana",
+      customers: "Clientes nuevos",
+    },
   },
   composer: {
     placeholder: "Pregunta o dime qué hacer",

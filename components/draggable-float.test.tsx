@@ -62,3 +62,16 @@ test("a button never moved stays at the bottom right", () => {
   act(() => resized())
   expect(place()).not.toContain("px")
 })
+
+test("the button says its corner, so what rests beside it stays on the screen", async () => {
+  saved = JSON.stringify({ side: "left", edge: "top" })
+  render(
+    <DraggableFloat id="test" attached={<span>Idea</span>}>
+      <span>Open</span>
+    </DraggableFloat>
+  )
+  screen.getByText("Idea")
+  const button = screen.getByText("Open").parentElement
+  await vi.waitFor(() => expect(button?.dataset.edge).toBe("top"))
+  expect(button?.dataset.side).toBe("left")
+})

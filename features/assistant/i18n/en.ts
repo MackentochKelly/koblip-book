@@ -69,6 +69,13 @@ const messages = {
       week: "How is this week going?",
       customers: "Who are my newest customers?",
     },
+    // Beside the floating globe, where room is short. A tap sends the
+    // suggestion above with the same name.
+    shortIdeas: {
+      services: "My services",
+      week: "This week",
+      customers: "New customers",
+    },
   },
   composer: {
     placeholder: "Ask or tell me what to do",

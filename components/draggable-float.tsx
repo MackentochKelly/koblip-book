@@ -42,12 +42,16 @@ function project(velocity: number) {
 // bottom right, clear of the phone's bottom bar, and never leaves the
 // screen's safe area, even when the window changes size. A tap still works
 // as a tap; a drag never counts as one (motion.dev/docs/react-drag).
+// `attached` moves with the button and rests beside it, on the side away from
+// the screen's edges: above it unless it is in a top corner.
 export function DraggableFloat({
   id,
+  attached,
   children,
 }: {
   // Names the corner this button keeps in the browser.
   id: string
+  attached?: React.ReactNode
   children: React.ReactNode
 }) {
   const areaRef = useRef<HTMLDivElement>(null)
@@ -70,6 +74,14 @@ export function DraggableFloat({
     }
   }
 
+  // Says the corner on the button, for `attached` to stay on the screen.
+  function markCorner({ side, edge }: Corner) {
+    if (itemRef.current) {
+      itemRef.current.dataset.side = side
+      itemRef.current.dataset.edge = edge
+    }
+  }
+
   // Put the button back in its last corner, before it is drawn and whenever
   // the window changes size.
   useLayoutEffect(() => {
@@ -81,6 +93,7 @@ export function DraggableFloat({
       }
       x.set(corner.side === "left" ? -space.across : 0)
       y.set(corner.edge === "top" ? -space.up : 0)
+      markCorner(corner)
     }
     place()
     const observer = new ResizeObserver(place)
@@ -108,6 +121,7 @@ export function DraggableFloat({
       velocity: info.velocity.y,
     })
     saveCorner(key, corner)
+    markCorner(corner)
   }
 
   return (
@@ -136,8 +150,13 @@ export function DraggableFloat({
             event.stopPropagation()
           }
         }}
-        className="pointer-events-auto absolute right-0 bottom-0 cursor-grab active:cursor-grabbing"
+        className="group/float pointer-events-auto absolute right-0 bottom-0 cursor-grab active:cursor-grabbing"
       >
+        {attached && (
+          <div className="absolute right-0 bottom-full mb-2 w-max group-data-[edge=top]/float:top-full group-data-[edge=top]/float:bottom-auto group-data-[edge=top]/float:mt-2 group-data-[edge=top]/float:mb-0 group-data-[side=left]/float:right-auto group-data-[side=left]/float:left-0">
+            {attached}
+          </div>
+        )}
         {children}
       </motion.div>
     </div>
