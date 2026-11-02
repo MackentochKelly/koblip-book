@@ -92,20 +92,22 @@ read the checked-out configuration, with a fallback for older commits.
 
 **Problem:** the sign-up audit got `403 INVALID_ORIGIN` from better-auth.
 By default better-auth trusts only its base URL
-(better-auth.com/docs/reference/security); `.env.local` sets
-`BETTER_AUTH_URL=http://localhost:3100`, so a dev server on another port
-(the worktree lanes use 3101) or another host (`127.0.0.1`) is refused.
-Since S3 the form shows a clear error, but sign-in still fails there.
+(better-auth.com/docs/reference/security).
 
-**Fix:** reproduce it first and confirm the refused origin. Then trust
-the project's own dev origins with better-auth's documented
-`trustedOrigins`, in development only. Production keeps trusting only
-its own URL (the docs warn against localhost there).
+**Root cause (audit, 2026-11-02):** one dev server answers on two addresses.
+Reproduced on `BETTER_AUTH_URL=http://localhost:3100`: a sign-in from
+`localhost:3100` passes the check, the same one from `127.0.0.1:3100` gets
+the 403. Production is not affected: nginx serves only book.koblip.com, its
+`BETTER_AUTH_URL`. Worktrees are not affected either: each sets its own URL.
 
-**Files:** `lib/auth.ts`, its env docs, a test for the origin list.
+**Fix:** in development only, `proxy.ts` redirects a page opened on another
+loopback name of the same port to the `BETTER_AUTH_URL` address, so the app
+has one address. The auth settings don't change.
 
-**Done when:** sign-up works on each dev address the project uses, and
-the production list holds only the production URL.
+**Files:** `proxy.ts`, `lib/dev-address.ts` (new) and its test.
+
+**Done when:** opening `127.0.0.1:<port>` lands on the `BETTER_AUTH_URL`
+address and sign-up works there; a production build never redirects.
 
 ## Decisions log
 
@@ -113,3 +115,4 @@ the production list holds only the production URL.
 | --- | --- | --- | --- |
 | F2: 30 s PM2 kill timeout, kept in a repo ecosystem file | The top of Next.js' recommended 10–30 s drain; in the repo it is reviewed and can't drift from what's on the server. Longer AI work still resumes through S9. | M Kelly B | 2026-11-01 |
 | F2: keep one instance and `pm2 restart`; no cluster mode | PM2's code shows `reload` in fork mode is just a restart, so no zero-downtime that way. Cluster mode would split the in-memory setup jobs and voice session limits across processes. Trade-off: a deploy while long work runs can take the site down for up to 30 s; an idle server stops at once. | M Kelly B | 2026-11-02 |
+| F3: one dev address through a dev-only redirect, not `trustedOrigins` | Trusting `127.0.0.1` would pass the email check but leave Google broken: its state cookie is set on `127.0.0.1` while Google returns to `BETTER_AUTH_URL`. Sessions and email links also stay tied to one address. The auth settings, which guard production, stay untouched. Other devices on the network stay refused, since nothing uses them. | M Kelly B | 2026-11-02 |
