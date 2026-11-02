@@ -191,7 +191,7 @@ export function BookingsView({
       <div className="flex items-center justify-between gap-3 max-md:contents">
         {/* The greeting with today's line under it. The page's name is only
             for screen readers: the top bar or sidebar shows it. */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col">
           {/* Home on a phone, like its tab; Dashboard on a computer. */}
           <h1 className="sr-only">
             <span className="md:hidden">{m.shell.nav.home}</span>
