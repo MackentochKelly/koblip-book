@@ -96,10 +96,11 @@ export function BookingsTable({
     label: name,
   }))
   const teamOptions = team.map(({ id, name }) => ({ value: id, label: name }))
-  // The phone's Filters count: the dates when not the usual ones, and
-  // each list with something ticked.
+  // The phone's Filters count: a status other than All, the dates when not
+  // the usual ones, and each list with something ticked.
   const usualDates = presetOf(range, today) === "around"
   const filterCount =
+    (filters.status === NO_FILTERS.status ? 0 : 1) +
     (usualDates ? 0 : 1) +
     (filters.serviceIds.length > 0 ? 1 : 0) +
     (filters.teamIds.length > 0 ? 1 : 0)
@@ -127,11 +128,36 @@ export function BookingsTable({
             count={filterCount}
             clearLabel={t.clearAll}
             onClear={() => {
-              set({ serviceIds: [], teamIds: [] })
+              set({ status: NO_FILTERS.status, serviceIds: [], teamIds: [] })
               if (!usualDates) onRangeChange(presetRange("around", today))
             }}
             doneLabel={t.showResults(total)}
           >
+            {/* A phone picks the status here, a computer from tabs. */}
+            <FieldSet>
+              <FieldLegend variant="label">{t.status}</FieldLegend>
+              <Select
+                value={filters.status}
+                onValueChange={(status) => {
+                  if (status) set({ status })
+                }}
+                items={statusTabs.map((tab) => ({
+                  value: tab.id,
+                  label: tab.label,
+                }))}
+              >
+                <SelectTrigger aria-label={t.status} className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusTabs.map((tab) => (
+                    <SelectItem key={tab.id} value={tab.id}>
+                      {tab.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FieldSet>
             <FieldSet>
               <FieldLegend variant="label">{t.dates}</FieldLegend>
               <DateRangePicker
@@ -199,25 +225,6 @@ export function BookingsTable({
         </div>
       </div>
 
-      {/* A phone picks the status from a list, a computer from tabs. */}
-      <Select
-        value={filters.status}
-        onValueChange={(status) => {
-          if (status) set({ status })
-        }}
-        items={statusTabs.map((tab) => ({ value: tab.id, label: tab.label }))}
-      >
-        <SelectTrigger aria-label={t.status} className="w-full md:hidden">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {statusTabs.map((tab) => (
-            <SelectItem key={tab.id} value={tab.id}>
-              {tab.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
       <ViewTabs
         views={statusTabs}
         value={filters.status}
