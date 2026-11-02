@@ -4,7 +4,18 @@ import { AnimatePresence, motion } from "motion/react"
 import Image from "next/image"
 import { useRef, useState } from "react"
 
-import { Box, burstFrom, POP, RISE, Scene } from "@/components/feature-preview"
+import {
+  Box,
+  burstFrom,
+  PhotoAvatar,
+  POP,
+  ReplayButton,
+  RISE,
+  SAMPLE_PHOTO,
+  SAMPLE_TEAM,
+  Scene,
+  TapMark,
+} from "@/components/feature-preview"
 import { GoogleMark, googleButtonClassName } from "@/components/google-mark"
 import { Rating } from "@/components/rating"
 import { Button } from "@/components/ui/button"
@@ -173,47 +184,19 @@ function FindPreview({ words, shared }: { words: Words; shared: Shared }) {
   )
 }
 
-// A tap: a soft circle that grows and fades on what is tapped (a
-// `relative` parent).
-export function TapMark({ ms, className }: { ms: number; className?: string }) {
-  return (
-    <motion.span
-      aria-hidden
-      initial={{ opacity: 0.5, scale: 0.4 }}
-      animate={{ opacity: 0, scale: 1.4 }}
-      transition={{ duration: ms / 1000 }}
-      className={cn(
-        "pointer-events-none absolute top-1/2 left-1/3 size-10 -translate-1/2 rounded-full bg-primary/40",
-        className
-      )}
-    />
-  )
-}
-
-type CheckPhase = "building" | "photos" | "name" | "hours" | "services" | "team"
+type CheckPhase = "building" | "photos" | "name" | "services" | "team"
 
 const CHECK_ORDER: CheckPhase[] = [
   "building",
   "photos",
   "name",
-  "hours",
   "services",
   "team",
 ]
 
-// The sample business's own pictures (the demo's Lumen Studio, in
-// public/demo/lumen): a photo of the place and its team.
-const CHECK_PHOTO = "/demo/lumen/01.jpg"
-const CHECK_TEAM = [
-  "/demo/lumen/team-01.webp",
-  "/demo/lumen/team-02.webp",
-  "/demo/lumen/team-03.webp",
-]
-
 // A small copy of the page building itself (useStoryLoop) while Muse, the
 // AI, works: placeholders, then the business's photo, the name and
-// rating, today's hours, the services one by one and the team, then
-// "Ready". Rests on the finished page; tap the picture to play it again.
+// rating, the services and prices one by one and the team, then "Ready". Rests on the finished page; tap the picture to play it again.
 function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
   const services = words.services
   const box = useRef<HTMLDivElement>(null)
@@ -232,8 +215,6 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
       await wait(time.photos)
       setPhase("name")
       await wait(time.nameIn)
-      setPhase("hours")
-      await wait(time.hoursIn)
       setPhase("services")
       for (let count = 1; count <= services.length; count++) {
         setShown(count)
@@ -253,38 +234,23 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
   )
   const reached = (step: CheckPhase) =>
     CHECK_ORDER.indexOf(phase) >= CHECK_ORDER.indexOf(step)
-  const hours = `${formatClock(words.hours.opens, shared.locale)}–${formatClock(words.hours.closes, shared.locale)}`
 
   return (
     <>
-      {/* Tap the picture to play it again. */}
-      <Button
-        variant="ghost"
-        aria-label={words.replay}
-        onClick={replay}
-        className="absolute inset-0 z-10 h-auto rounded-none hover:bg-transparent dark:hover:bg-transparent"
-      />
+      <ReplayButton label={words.replay} onClick={replay} />
       <div ref={box} className="relative w-full max-w-60">
         <Box>
-          <div className="flex flex-col gap-3 px-(--card-spacing)">
+          <div className="flex flex-col gap-2 px-(--card-spacing)">
             <div className="flex items-center gap-3">
               {/* The business's photo, as on the real page. */}
               {reached("photos") ? (
                 <motion.div {...POP} className="flex shrink-0">
-                  <Avatar size="lg">
-                    <Image
-                      src={CHECK_PHOTO}
-                      alt=""
-                      width={40}
-                      height={40}
-                      className="size-full rounded-full object-cover"
-                    />
-                  </Avatar>
+                  <PhotoAvatar src={SAMPLE_PHOTO} size="lg" />
                 </motion.div>
               ) : (
                 <Skeleton className="size-10 shrink-0 rounded-full" />
               )}
-              <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 {reached("name") ? (
                   <motion.div
                     {...RISE}
@@ -298,19 +264,21 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
                 ) : (
                   <Skeleton className="h-4 w-28" />
                 )}
-                {reached("hours") ? (
-                  <motion.span
-                    {...RISE}
-                    className="truncate text-xs text-muted-foreground"
-                  >
-                    {words.openToday} · {hours}
-                  </motion.span>
+                {/* The team, with their photos. */}
+                {reached("team") ? (
+                  <motion.div {...RISE} className="flex">
+                    <AvatarGroup>
+                      {SAMPLE_TEAM.map(({ photo }) => (
+                        <PhotoAvatar key={photo} src={photo} size="sm" />
+                      ))}
+                    </AvatarGroup>
+                  </motion.div>
                 ) : (
-                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-6 w-16" />
                 )}
               </div>
             </div>
-            <div className="flex flex-col gap-1.5 text-xs">
+            <div className="flex flex-col gap-1 text-xs">
               {services.map((service, index) =>
                 reached("services") && index < shown ? (
                   <motion.div
@@ -328,30 +296,6 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
                 )
               )}
             </div>
-            {/* The team, with their photos. */}
-            {reached("team") ? (
-              <motion.div
-                {...RISE}
-                className="flex h-6 items-center justify-between gap-2 text-xs"
-              >
-                <span>{words.team}</span>
-                <AvatarGroup>
-                  {CHECK_TEAM.map((photo) => (
-                    <Avatar key={photo} size="sm">
-                      <Image
-                        src={photo}
-                        alt=""
-                        width={24}
-                        height={24}
-                        className="size-full rounded-full object-cover"
-                      />
-                    </Avatar>
-                  ))}
-                </AvatarGroup>
-              </motion.div>
-            ) : (
-              <Skeleton className="h-6 w-full" />
-            )}
           </div>
         </Box>
         {/* On the box's corner so nothing moves under it: Muse while it

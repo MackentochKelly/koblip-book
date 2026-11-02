@@ -365,7 +365,6 @@ const en = {
         newBooking: "New booking",
         bookingService: "Haircut",
         bookingTime: "15:00",
-        hours: { opens: "09:00", closes: "19:00" },
       },
     },
     features: {
@@ -757,7 +756,6 @@ const es: Messages = {
         newBooking: "Nueva reserva",
         bookingService: "Corte",
         bookingTime: "15:00",
-        hours: { opens: "09:00", closes: "19:00" },
       },
     },
     features: {

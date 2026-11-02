@@ -10,8 +10,7 @@ import Image from "next/image"
 import { useId, useRef, useState } from "react"
 
 import { BottomPanel } from "@/components/bottom-panel"
-import { Box, Scene } from "@/components/feature-preview"
-import { TapMark } from "@/components/step-preview"
+import { Box, Scene, TapMark } from "@/components/feature-preview"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {

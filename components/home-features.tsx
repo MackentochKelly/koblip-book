@@ -19,19 +19,19 @@ export function HomeFeatures({ words }: { words: Messages["home"] }) {
       key: "page",
       title: t.page,
       text: t.pageText,
-      picture: <FeaturePreview name="page" sample={t.sample} />,
+      picture: <FeaturePreview name="page" words={words} />,
     },
     {
       key: "book",
       title: t.book,
       text: t.bookText,
-      picture: <FeaturePreview name="book" sample={t.sample} />,
+      picture: <FeaturePreview name="book" words={words} />,
     },
     {
       key: "assistant",
       title: t.assistant,
       text: t.assistantText,
-      picture: <FeaturePreview name="assistant" sample={t.sample} />,
+      picture: <FeaturePreview name="assistant" words={words} />,
     },
   ]
   const day: ShowcaseItem[] = DAY_PREVIEW_NAMES.map((name) => ({
@@ -53,7 +53,7 @@ export function HomeFeatures({ words }: { words: Messages["home"] }) {
             key: "language",
             title: t.language,
             text: t.languageText,
-            picture: <FeaturePreview name="language" sample={t.sample} />,
+            picture: <FeaturePreview name="language" words={words} />,
           },
           ...day,
         ]}

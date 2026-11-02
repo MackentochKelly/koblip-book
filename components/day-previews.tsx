@@ -1,24 +1,29 @@
 "use client"
 
 import { AnimatePresence, motion } from "motion/react"
-import { useState } from "react"
+import { useRef, useState } from "react"
 
 import {
   BookingRow,
   Box,
   firstName,
+  PhotoAvatar,
   POP,
+  ReplayButton,
   RISE,
+  SAMPLE_TEAM,
   Scene,
+  TapMark,
 } from "@/components/feature-preview"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckIcon } from "@/components/ui/icons"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Logo } from "@/components/works-with"
 import { formatClock } from "@/lib/format-booking-time"
 import type { Messages } from "@/lib/i18n"
-import { initials } from "@/lib/initials"
+import { useStoryLoop } from "@/hooks/use-story-loop"
+import { SHOWCASE_LOOP } from "@/lib/showcase-rules"
 import { cn } from "@/lib/utils"
 
 type Home = Messages["home"]
@@ -26,7 +31,7 @@ type Words = Home["everything"]
 type Steps = Home["steps"]["sample"]
 
 // More of the pictures on "What you get": Lumen Studio's day, the same story
-// as the rest of the page. Each has its own still colour wash: the theme's
+// as the rest of the page, each playing by itself (useStoryLoop). Each has its own still colour wash: the theme's
 // colours, a different mix per card.
 const WASHES = {
   bookings: { colors: ["--background", "--chart-1", "--chart-3"], seed: 160 },
@@ -36,7 +41,10 @@ const WASHES = {
     colors: ["--background", "--verified", "--chart-1"],
     seed: 280,
   },
-  reports: { colors: ["--background", "--chart-3", "--hero-accent"], seed: 320 },
+  reports: {
+    colors: ["--background", "--chart-3", "--hero-accent"],
+    seed: 320,
+  },
 } as const
 
 export type DayPreviewName = keyof typeof WASHES
@@ -74,185 +82,333 @@ export function DayPreview({
   )
 }
 
-// The day's bookings, with a new one landing on top.
+// The day's calendar: each booking, its time and who comes; the new one
+// in green.
+const DAY = [
+  { time: "10:00", service: 0, person: 0 },
+  { time: "11:30", service: 1, person: 1 },
+] as const
+
+// The calendar filling up (useStoryLoop): the day's bookings drop in one
+// by one, the new one last. Rests on the full day; tap to play it again.
 function BookingsPicture({ words, steps }: { words: Words; steps: Steps }) {
+  const box = useRef<HTMLDivElement>(null)
+  const rows = [
+    ...DAY.map(({ time, service, person }) => ({
+      time,
+      label: `${steps.services[service].name} · ${firstName(steps.people[person])}`,
+      fresh: false,
+    })),
+    {
+      time: steps.bookingTime,
+      label: `${steps.bookingService} · ${firstName(steps.people[2])}`,
+      fresh: true,
+    },
+  ]
+  const [shown, setShown] = useState(rows.length)
+  const time = SHOWCASE_LOOP.calendar
+  const replay = useStoryLoop(
+    box,
+    async (wait) => {
+      setShown(0)
+      await wait(time.start)
+      for (let count = 1; count <= rows.length; count++) {
+        setShown(count)
+        await wait(time.rowIn)
+      }
+      await wait(time.shown)
+    },
+    () => setShown(rows.length)
+  )
   return (
-    <Box>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <BookingRow
-          icon
-          title={steps.newBooking}
-          detail={`${firstName(steps.people[2])} · ${steps.bookingService} · ${formatClock(steps.bookingTime, words.sample.locale)}`}
-        />
-        <BookingRow
-          title={steps.people[1]}
-          detail={`${steps.services[1].name} · ${formatClock("11:30", words.sample.locale)}`}
-        />
+    <>
+      <ReplayButton label={steps.replay} onClick={replay} />
+      <div ref={box} className="w-full max-w-60">
+        <Box>
+          <div className="flex flex-col gap-1.5 px-(--card-spacing) text-xs">
+            {rows.map((row, index) => (
+              <div key={row.time} className="flex h-6 items-center gap-2">
+                <span className="w-16 shrink-0 whitespace-nowrap text-muted-foreground tabular-nums">
+                  {formatClock(row.time, words.sample.locale)}
+                </span>
+                <AnimatePresence initial={false}>
+                  {index < shown && (
+                    <motion.span
+                      {...RISE}
+                      className={cn(
+                        "flex h-full min-w-0 flex-1 items-center truncate rounded-md px-2 font-medium",
+                        row.fresh
+                          ? "bg-success text-success-foreground"
+                          : "bg-primary/10 text-primary dark:bg-primary/25 dark:text-primary-foreground"
+                      )}
+                    >
+                      {row.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+        </Box>
       </div>
-    </Box>
+    </>
   )
 }
 
+// Ana comes back (useStoryLoop): her visits go up by one. Rests on the
+// list; tap to play it again.
 function CustomersPicture({ words, steps }: { words: Words; steps: Steps }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [back, setBack] = useState(false)
+  const time = SHOWCASE_LOOP.customers
+  const replay = useStoryLoop(
+    box,
+    async (wait) => {
+      setBack(false)
+      await wait(time.before)
+      setBack(true)
+      await wait(time.shown)
+    },
+    () => setBack(false)
+  )
   const people = [
-    { name: steps.people[2], visits: 12 },
-    { name: steps.people[1], visits: 8 },
+    { name: steps.people[2], visits: back ? 12 : 11, back },
+    { name: steps.people[1], visits: 8, back: false },
   ]
   return (
-    <Box>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
-        {people.map(({ name, visits }) => (
-          <BookingRow
-            key={name}
-            title={name}
-            detail={`${visits} ${words.sample.visits}`}
-          />
-        ))}
+    <>
+      <ReplayButton label={steps.replay} onClick={replay} />
+      <div ref={box} className="w-full max-w-60">
+        <Box>
+          <div className="flex flex-col gap-3 px-(--card-spacing)">
+            {people.map(({ name, visits, back: came }) => (
+              <div
+                key={name}
+                className="flex items-center justify-between gap-2"
+              >
+                <BookingRow
+                  title={name}
+                  detail={`${visits} ${words.sample.visits}`}
+                />
+                <AnimatePresence>
+                  {came && (
+                    <motion.span {...POP} className="flex">
+                      <Badge className="bg-success text-success-foreground">
+                        +1
+                      </Badge>
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+        </Box>
       </div>
-    </Box>
+    </>
   )
 }
 
-// The team: tap a member to see when they work.
+// The team, with their photos (useStoryLoop): each member in turn, with
+// when they work. Tap a member to see theirs.
 function TeamPicture({ words, steps }: { words: Words; steps: Steps }) {
-  const team = [
-    { name: steps.people[4], hours: words.sample.hours[0] },
-    { name: steps.people[0], hours: words.sample.hours[1] },
-    { name: steps.people[3], hours: words.sample.hours[2] },
-  ]
-  const [picked, setPicked] = useState(team[0].name)
-  const member = team.find(({ name }) => name === picked) ?? team[0]
-  return (
-    <Box>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <div className="flex gap-2">
-          {team.map(({ name }) => (
-            <Button
-              key={name}
-              size="icon-lg"
-              variant="ghost"
-              aria-label={name}
-              aria-pressed={picked === name}
-              onClick={() => setPicked(name)}
-              className={cn(
-                "rounded-full",
-                picked === name && "ring-2 ring-primary"
-              )}
-            >
-              <Avatar>
-                <AvatarFallback>{initials(name)}</AvatarFallback>
-              </Avatar>
-            </Button>
-          ))}
-        </div>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={member.name} {...RISE} className="flex flex-col">
-            <span className="truncate font-medium">{member.name}</span>
-            <span className="truncate text-xs text-muted-foreground">
-              {member.hours}
-            </span>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    </Box>
+  const box = useRef<HTMLDivElement>(null)
+  const team = SAMPLE_TEAM.map(({ person, photo }, index) => ({
+    name: steps.people[person],
+    photo,
+    hours: words.sample.hours[index],
+  }))
+  const [picked, setPicked] = useState(0)
+  const time = SHOWCASE_LOOP.team
+  useStoryLoop(
+    box,
+    async (wait) => {
+      for (let index = 0; index < team.length; index++) {
+        setPicked(index)
+        await wait(time.each)
+      }
+    },
+    () => setPicked(0)
   )
-}
-
-// A WhatsApp reminder with its reply button: tap it and it turns to the
-// client's answer. Tap again to start over.
-function AutomationsPicture({ words, done }: { words: Words; done: string }) {
-  const [answered, setAnswered] = useState(false)
+  const member = team[picked]
   return (
-    <Box>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <div className="flex items-start gap-2">
-          <Logo
-            src="/brands/whatsapp-glyph-green.svg"
-            className="mt-0.5 size-4 shrink-0 object-contain"
-          />
-          <span>{words.sample.reminder}</span>
-        </div>
-        <Button
-          size="sm"
-          variant="outline"
-          aria-pressed={answered}
-          onClick={() => setAnswered(!answered)}
-          className={cn(
-            answered &&
-              "border-transparent bg-success text-success-foreground hover:bg-success/90 hover:text-success-foreground"
-          )}
-        >
-          <AnimatePresence mode="popLayout" initial={false}>
-            <motion.span
-              key={answered ? "done" : "confirm"}
-              {...POP}
-              className="flex items-center gap-1"
-            >
-              {answered && <CheckIcon />}
-              {answered ? done : words.sample.confirm}
-            </motion.span>
-          </AnimatePresence>
-        </Button>
-      </div>
-    </Box>
-  )
-}
-
-// What's booked most: one bar split by service, as on the dashboard. Pick a
-// period and it changes.
-function ReportsPicture({ words, steps }: { words: Words; steps: Steps }) {
-  const [period, setPeriod] = useState<keyof typeof REPORT>("week")
-  const { total, shares } = REPORT[period]
-  return (
-    <Box>
-      <div className="flex flex-col gap-2 px-(--card-spacing)">
-        <div className="flex items-center justify-between gap-2">
+    <div ref={box} className="w-full max-w-60">
+      <Box>
+        <div className="flex flex-col gap-3 px-(--card-spacing)">
+          <div className="flex gap-2">
+            {team.map(({ name, photo }, index) => (
+              <Button
+                key={name}
+                size="icon-lg"
+                variant="ghost"
+                aria-label={name}
+                aria-pressed={picked === index}
+                onClick={() => setPicked(index)}
+                className={cn(
+                  "rounded-full",
+                  picked === index && "ring-2 ring-primary"
+                )}
+              >
+                <PhotoAvatar src={photo} />
+              </Button>
+            ))}
+          </div>
           <AnimatePresence mode="wait" initial={false}>
-            <motion.div key={period} {...RISE} className="flex flex-col">
-              <span className="font-display text-2xl font-medium tracking-tight">
-                {total}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {words.sample.bookings}
+            <motion.div key={member.name} {...RISE} className="flex flex-col">
+              <span className="truncate font-medium">{member.name}</span>
+              <span className="truncate text-xs text-muted-foreground">
+                {member.hours}
               </span>
             </motion.div>
           </AnimatePresence>
-          <ToggleGroup
-            variant="outline"
-            size="sm"
-            value={[period]}
-            onValueChange={(value) => {
-              if (value[0]) setPeriod(value[0] as keyof typeof REPORT)
-            }}
-          >
-            <ToggleGroupItem value="week">{words.sample.week}</ToggleGroupItem>
-            <ToggleGroupItem value="month">
-              {words.sample.month}
-            </ToggleGroupItem>
-          </ToggleGroup>
         </div>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={period} {...RISE} className="flex flex-col gap-2">
-            <div className="flex h-2 gap-0.5 overflow-hidden rounded-full">
-              {shares.map((share, index) => (
-                <div
-                  key={index}
-                  className={SHADES[index]}
-                  style={{ width: `${share}%` }}
-                />
-              ))}
-            </div>
-            <div className="flex justify-between gap-2 text-xs text-muted-foreground">
-              {steps.services.map((service, index) => (
-                <span key={service.name} className="flex items-center gap-1">
-                  <span className={cn("size-2 rounded-full", SHADES[index])} />
-                  {service.name}
+      </Box>
+    </div>
+  )
+}
+
+type ReminderPhase = "none" | "reminder" | "tap" | "confirmed"
+
+// A WhatsApp reminder comes in on its own (useStoryLoop) and the client
+// taps Confirm. Rests on the reminder; Confirm plays it again.
+function AutomationsPicture({ words, done }: { words: Words; done: string }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [phase, setPhase] = useState<ReminderPhase>("reminder")
+  const time = SHOWCASE_LOOP.automations
+  const replay = useStoryLoop(
+    box,
+    async (wait) => {
+      setPhase("none")
+      await wait(time.reminderIn)
+      setPhase("reminder")
+      await wait(time.beforeTap)
+      setPhase("tap")
+      await wait(time.tap)
+      setPhase("confirmed")
+      await wait(time.confirmed)
+    },
+    () => setPhase("reminder")
+  )
+  const answered = phase === "confirmed"
+  return (
+    <div ref={box} className="w-full max-w-60">
+      <Box>
+        <div className="flex min-h-20 flex-col justify-center gap-3 px-(--card-spacing)">
+          <AnimatePresence initial={false}>
+            {phase !== "none" && (
+              <motion.div {...RISE} className="flex flex-col gap-3">
+                <div className="flex items-start gap-2">
+                  <Logo
+                    src="/brands/whatsapp-glyph-green.svg"
+                    className="mt-0.5 size-4 shrink-0 object-contain"
+                  />
+                  <span>{words.sample.reminder}</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={replay}
+                  className={cn(
+                    "relative",
+                    answered &&
+                      "border-transparent bg-success text-success-foreground hover:bg-success/90 hover:text-success-foreground"
+                  )}
+                >
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.span
+                      key={answered ? "done" : "confirm"}
+                      {...POP}
+                      className="flex items-center gap-1"
+                    >
+                      {answered && <CheckIcon />}
+                      {answered ? done : words.sample.confirm}
+                    </motion.span>
+                  </AnimatePresence>
+                  {phase === "tap" && (
+                    <TapMark ms={time.tap} className="left-1/2" />
+                  )}
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </Box>
+    </div>
+  )
+}
+
+// What's booked most: one bar split by service, as on the dashboard. It
+// shows the week, then the month (useStoryLoop); pick a period to see it.
+function ReportsPicture({ words, steps }: { words: Words; steps: Steps }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [period, setPeriod] = useState<keyof typeof REPORT>("week")
+  const time = SHOWCASE_LOOP.reports
+  useStoryLoop(
+    box,
+    async (wait) => {
+      setPeriod("week")
+      await wait(time.each)
+      setPeriod("month")
+      await wait(time.each)
+    },
+    () => setPeriod("week")
+  )
+  const { total, shares } = REPORT[period]
+  return (
+    <div ref={box} className="w-full max-w-60">
+      <Box>
+        <div className="flex flex-col gap-2 px-(--card-spacing)">
+          <div className="flex items-center justify-between gap-2">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div key={period} {...RISE} className="flex flex-col">
+                <span className="font-display text-2xl font-medium tracking-tight">
+                  {total}
                 </span>
-              ))}
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    </Box>
+                <span className="text-xs text-muted-foreground">
+                  {words.sample.bookings}
+                </span>
+              </motion.div>
+            </AnimatePresence>
+            <ToggleGroup
+              variant="outline"
+              size="sm"
+              value={[period]}
+              onValueChange={(value) => {
+                if (value[0]) setPeriod(value[0] as keyof typeof REPORT)
+              }}
+            >
+              <ToggleGroupItem value="week">
+                {words.sample.week}
+              </ToggleGroupItem>
+              <ToggleGroupItem value="month">
+                {words.sample.month}
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={period} {...RISE} className="flex flex-col gap-2">
+              <div className="flex h-2 gap-0.5 overflow-hidden rounded-full">
+                {shares.map((share, index) => (
+                  <div
+                    key={index}
+                    className={SHADES[index]}
+                    style={{ width: `${share}%` }}
+                  />
+                ))}
+              </div>
+              <div className="flex justify-between gap-2 text-xs text-muted-foreground">
+                {steps.services.map((service, index) => (
+                  <span key={service.name} className="flex items-center gap-1">
+                    <span
+                      className={cn("size-2 rounded-full", SHADES[index])}
+                    />
+                    {service.name}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </Box>
+    </div>
   )
 }
