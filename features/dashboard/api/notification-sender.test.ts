@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { and, eq, inArray } from "drizzle-orm"
-import { afterAll, beforeAll, beforeEach, expect, test, vi } from "vitest"
+import { afterAll, afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest"
 import { db } from "@/lib/db"
 import {
   bookings,
@@ -112,6 +112,18 @@ beforeAll(async () => {
     currency: "DOP",
     ownerId: "u1",
   })
+})
+
+// Every test runs at NOW: the code under test reads the clock too (a
+// message sent again is due "now", a booking that has started is too late),
+// so the real clock must never decide a result.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] })
+  vi.setSystemTime(NOW)
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 beforeEach(async () => {
@@ -854,35 +866,29 @@ test("the window on the own number closed: Koblip's number sends the template", 
 })
 
 test("the owner's bell hears once a month when Koblip's limit is near (N2)", async () => {
-  vi.useFakeTimers({ toFake: ["Date"] })
-  vi.setSystemTime(NOW)
-  try {
-    await db.delete(chatConnections)
-    await connectKoblip()
-    await db.insert(businessSettings).values({ businessId: "biz", key: "koblipMonthlyTemplates", value: 5 })
-    await book("b0", { createdAt: "2025-12-01T00:00:00.000Z" })
-    await db.insert(notificationSends).values(
-      [1440, 60, 30].map((reminderMinutes) => ({
-        businessId: "biz",
-        bookingId: "b0",
-        message: "reminder" as const,
-        reminderMinutes,
-        dueAt: later(-60).toISOString(),
-        state: "sent" as const,
-        via: "template" as const,
-        sender: "koblip" as const,
-        sentAt: later(-60).toISOString(),
-      }))
-    )
-    // The fourth of five is 80%: near.
-    await book("b1")
-    await runNotifications(NOW)
-    await book("b2")
-    await runNotifications(later(1))
-    expect(await bell()).toEqual([["koblipLimitNear", { sent: 4, limit: 5 }]])
-  } finally {
-    vi.useRealTimers()
-  }
+  await db.delete(chatConnections)
+  await connectKoblip()
+  await db.insert(businessSettings).values({ businessId: "biz", key: "koblipMonthlyTemplates", value: 5 })
+  await book("b0", { createdAt: "2025-12-01T00:00:00.000Z" })
+  await db.insert(notificationSends).values(
+    [1440, 60, 30].map((reminderMinutes) => ({
+      businessId: "biz",
+      bookingId: "b0",
+      message: "reminder" as const,
+      reminderMinutes,
+      dueAt: later(-60).toISOString(),
+      state: "sent" as const,
+      via: "template" as const,
+      sender: "koblip" as const,
+      sentAt: later(-60).toISOString(),
+    }))
+  )
+  // The fourth of five is 80%: near.
+  await book("b1")
+  await runNotifications(NOW)
+  await book("b2")
+  await runNotifications(later(1))
+  expect(await bell()).toEqual([["koblipLimitNear", { sent: 4, limit: 5 }]])
 })
 
 async function bell() {
