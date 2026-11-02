@@ -20,7 +20,6 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { Message, MessageContent, MessageFooter } from "@/components/ui/message"
 import {
   MessageScroller,
@@ -308,15 +307,15 @@ export function MessageList({
           {/* pb-12 keeps the last message clear of the bottom fade. */}
           <MessageScrollerContent className="mx-auto w-full max-w-3xl gap-4 p-4 pb-12">
             {/* Just the question, large, like big chat apps; the
-                suggestions sit above the message box. */}
+                suggestions sit above the message box. A greeting on the
+                page itself, not an empty state: the owner area draws empty
+                states as cards. */}
             {items.length === 0 && !busy && (
-              <Empty className="flex-1">
-                <EmptyHeader>
-                  <EmptyTitle className="text-2xl font-normal">
-                    {m.empty.title}
-                  </EmptyTitle>
-                </EmptyHeader>
-              </Empty>
+              <div className="flex flex-1 items-center justify-center p-12">
+                <h2 className="text-center font-heading text-2xl font-normal tracking-tight text-balance">
+                  {m.empty.title}
+                </h2>
+              </div>
             )}
             {items.map((item) =>
               item.role === "owner" ? (
