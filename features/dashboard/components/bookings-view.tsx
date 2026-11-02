@@ -187,7 +187,7 @@ export function BookingsView({
     <div className="flex flex-col gap-6">
       {/* On a phone the top bar names the page and Add floats at the foot,
           so this header row only shows on a computer. */}
-      <div className="flex items-center justify-between gap-3 max-md:contents">
+      <div className="flex items-center justify-between gap-3 max-md:contents md:mb-4">
         {/* The greeting with today's line under it. The page's name is only
             for screen readers: the top bar or sidebar shows it. */}
         <div className="flex flex-col">
