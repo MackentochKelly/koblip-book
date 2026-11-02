@@ -220,7 +220,7 @@ const en = {
       titleEnd: "free",
       subtitle: "No card needed. Pro is coming soon.",
       perMonth: "/month",
-      proSample: "See you tomorrow at 3 pm",
+      proSample: "Ana paid for her visit",
       free: {
         name: "Free",
         note: "Free for now. No card needed.",
@@ -229,17 +229,64 @@ const en = {
           "Online bookings, day or night",
           "Services, team and hours",
           "AI assistant, by typing or voice",
+          "Reminders on WhatsApp",
+          "Google Calendar",
           "English and Spanish",
         ],
       },
       pro: {
         name: "Pro",
-        note: "More ways to keep clients coming.",
+        note: "More ways to get booked and paid.",
         features: [
           "Everything in Free",
-          "Reminders on WhatsApp",
-          "Google Calendar",
+          "Payments with Stripe",
+          "Text reminders by SMS",
+          "Book buttons on Instagram and Facebook",
+          "Google review requests",
         ],
+      },
+    },
+    everything: {
+      title: "Everything",
+      titleStart: "Everything your business",
+      titleEnd: "needs",
+      subtitle: "One place for your whole day.",
+      items: {
+        bookings: {
+          title: "Bookings and services",
+          text: "Your calendar, services and extras, always up to date.",
+        },
+        customers: {
+          title: "Customers",
+          text: "Everyone who booked, with their visits.",
+        },
+        team: {
+          title: "Team",
+          text: "Each member has a login, hours and a profile.",
+        },
+        automations: {
+          title: "Automations",
+          text: "Reminders and replies on WhatsApp, on their own.",
+        },
+        reports: {
+          title: "Reports",
+          text: "See what's booked most, week by week.",
+        },
+        apps: {
+          title: "Your apps, connected",
+          text: "Works with the tools you already use.",
+        },
+      },
+      // The sample shown in the pictures.
+      sample: {
+        locale: "en-US",
+        visits: "visits",
+        hours: ["Mon to Fri","Tue to Sat","Weekends"],
+        reminder: "Hi Ana, see you tomorrow at 3 pm.",
+        confirm: "Confirm",
+        week: "Week",
+        month: "Month",
+        bookings: "bookings",
       },
     },
     cta: {
@@ -559,7 +606,7 @@ const es: Messages = {
       titleEnd: "gratis",
       subtitle: "Sin tarjeta. Pro llegará pronto.",
       perMonth: "/mes",
-      proSample: "Te esperamos mañana a las 3 pm",
+      proSample: "Ana pagó su cita",
       free: {
         name: "Gratis",
         note: "Gratis por ahora. Sin tarjeta.",
@@ -568,17 +615,64 @@ const es: Messages = {
           "Reservas en línea, de día o de noche",
           "Servicios, equipo y horarios",
           "Asistente de IA, por texto o voz",
+          "Recordatorios por WhatsApp",
+          "Google Calendar",
           "Inglés y español",
         ],
       },
       pro: {
         name: "Pro",
-        note: "Más formas de que tus clientes vuelvan.",
+        note: "Más formas de recibir reservas y pagos.",
         features: [
           "Todo lo de Gratis",
-          "Recordatorios por WhatsApp",
-          "Google Calendar",
+          "Pagos con Stripe",
+          "Recordatorios por SMS",
+          "Botones de reserva en Instagram y Facebook",
+          "Solicitudes de reseñas en Google",
         ],
+      },
+    },
+    everything: {
+      title: "Todo",
+      titleStart: "Todo lo que tu negocio",
+      titleEnd: "necesita",
+      subtitle: "Un solo lugar para todo tu día.",
+      items: {
+        bookings: {
+          title: "Reservas y servicios",
+          text: "Tu calendario, servicios y extras, siempre al día.",
+        },
+        customers: {
+          title: "Clientes",
+          text: "Todos los que reservaron, con sus visitas.",
+        },
+        team: {
+          title: "Equipo",
+          text: "Cada miembro tiene acceso, horario y perfil.",
+        },
+        automations: {
+          title: "Automatizaciones",
+          text: "Recordatorios y respuestas por WhatsApp, sin esfuerzo.",
+        },
+        reports: {
+          title: "Informes",
+          text: "Mira lo más reservado, semana a semana.",
+        },
+        apps: {
+          title: "Tus apps, conectadas",
+          text: "Funciona con las herramientas que ya usas.",
+        },
+      },
+      // The sample shown in the pictures.
+      sample: {
+        locale: "es-ES",
+        visits: "visitas",
+        hours: ["Lun a vie","Mar a sáb","Fines de semana"],
+        reminder: "Hola Ana, te esperamos mañana a las 15:00.",
+        confirm: "Confirmar",
+        week: "Semana",
+        month: "Mes",
+        bookings: "reservas",
       },
     },
     cta: {

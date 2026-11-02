@@ -49,7 +49,7 @@ export function MetaProviderBadge({ language }: { language: PageLanguage }) {
       whatsapp: true,
       title: t.reminders,
       description: t.remindersText,
-      soon: true,
+      soon: false,
     },
     {
       whatsapp: false,

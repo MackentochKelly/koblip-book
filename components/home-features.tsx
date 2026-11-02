@@ -10,9 +10,8 @@ import {
 } from "@/components/showcase-row"
 import type { Messages } from "@/lib/i18n"
 
-// What an owner gets: only features that work today (WhatsApp reminders
-// are "Soon" in WorksWith, so not here). Each picture is a small preview of
-// the app.
+// What an owner gets: the main features (HomeEverything lists the rest).
+// Each picture is a small preview of the app.
 export function HomeFeatures({
   words,
 }: {

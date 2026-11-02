@@ -8,6 +8,7 @@ import { HeroGradient } from "@/components/hero-gradient"
 import { HomeBand } from "@/components/home-band"
 import { HeroSideCards } from "@/components/hero-side-cards"
 import { HomeCta } from "@/components/home-cta"
+import { HomeEverything } from "@/components/home-everything"
 import { HomeFaq } from "@/components/home-faq"
 import { HomeFeatures } from "@/components/home-features"
 import { HomePricing } from "@/components/home-pricing"
@@ -141,6 +142,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         </HomeBand>
         <HomeBand tone="plain">
           <HomeFeatures words={t.features} />
+          <HomeEverything words={t} />
         </HomeBand>
         <HomeBand tone="brand">
           <SeeItInAction words={t.action} language={language} />

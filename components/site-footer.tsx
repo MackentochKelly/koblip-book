@@ -26,6 +26,7 @@ export function SiteFooter({ language }: { language: PageLanguage }) {
   const links = [
     { label: home.steps.title, href: `/#${HOME_SECTION_IDS.howItWorks}` },
     { label: home.features.title, href: `/#${HOME_SECTION_IDS.features}` },
+    { label: home.everything.title, href: `/#${HOME_SECTION_IDS.everything}` },
     { label: home.action.title, href: `/#${HOME_SECTION_IDS.action}` },
     { label: home.pricing.title, href: `/#${HOME_SECTION_IDS.pricing}` },
     { label: home.faq.title, href: `/#${HOME_SECTION_IDS.faq}` },

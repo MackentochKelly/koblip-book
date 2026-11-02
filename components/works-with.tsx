@@ -1,7 +1,6 @@
 import Image from "next/image"
 
 import { HomeRowLabel } from "@/components/home-section-title"
-import { Badge } from "@/components/ui/badge"
 import { messagesFor } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { PageLanguage } from "@/lib/page-language"
@@ -10,8 +9,7 @@ import type { PageLanguage } from "@/lib/page-language"
 // Meta's symbol from its brand pack (colour on light, white on dark), and
 // Google's own Maps and Calendar icons. WhatsApp: its own file from the
 // official pack, never recoloured, and its name never joined to other words
-// (meta.com/brand/resources/whatsapp/whatsapp-brand). `soon`: on the
-// roadmap, not built yet.
+// (meta.com/brand/resources/whatsapp/whatsapp-brand).
 // A quiet row of service names.
 export function WorksWith({ language }: { language: PageLanguage }) {
   const t = messagesFor(language).home
@@ -19,7 +17,6 @@ export function WorksWith({ language }: { language: PageLanguage }) {
     logo: string
     logoDark?: string
     name: string
-    soon?: boolean
   }[] = [
     {
       logo: "/brands/meta-symbol.png",
@@ -30,19 +27,17 @@ export function WorksWith({ language }: { language: PageLanguage }) {
     {
       logo: "/brands/whatsapp-glyph-green.svg",
       name: t.remindersOnWhatsApp,
-      soon: true,
     },
     {
       logo: "/brands/google-calendar.png",
       name: "Google Calendar",
-      soon: true,
     },
   ]
   return (
     <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6 px-4 py-12">
       <HomeRowLabel>{t.worksWith}</HomeRowLabel>
       <ul className="flex flex-wrap justify-center gap-x-8 gap-y-4">
-        {services.map(({ logo, logoDark, name, soon }) => (
+        {services.map(({ logo, logoDark, name }) => (
           <li
             key={name}
             className="flex items-center gap-2 text-muted-foreground"
@@ -58,7 +53,6 @@ export function WorksWith({ language }: { language: PageLanguage }) {
               />
             )}
             <span className="font-medium">{name}</span>
-            {soon && <Badge variant="secondary">{t.soon}</Badge>}
           </li>
         ))}
       </ul>
@@ -67,7 +61,7 @@ export function WorksWith({ language }: { language: PageLanguage }) {
 }
 
 // One logo, shown whole at the row's icon size.
-function Logo({ src, className }: { src: string; className: string }) {
+export function Logo({ src, className }: { src: string; className: string }) {
   return (
     <Image
       src={src}

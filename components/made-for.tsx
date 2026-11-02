@@ -34,6 +34,11 @@ const KINDS: [Kind, Icon][] = [
   ["repairs", WrenchIcon],
 ]
 
+// A slow sliding row whose ends fade out. Reduce Motion: one still copy,
+// wrapped onto more lines.
+export const marqueeRowClassName =
+  "w-full [mask-image:linear-gradient(to_right,transparent,#000_10%,#000_90%,transparent)] [--duration:50s] motion-reduce:justify-center motion-reduce:[mask-image:none] motion-reduce:px-4 motion-reduce:*:animate-none motion-reduce:*:flex-wrap motion-reduce:*:justify-center motion-reduce:*:not-first:hidden"
+
 // "Made for": a row of business kinds sliding slowly sideways (Magic UI's
 // Marquee), stopping under the mouse, so a visitor sees early that it is
 // for them. Right under "Works with" and quiet like it, but moving chips,
@@ -63,7 +68,7 @@ export function MadeFor({ language }: { language: PageLanguage }) {
       <Marquee
         aria-hidden
         pauseOnHover
-        className="w-full [mask-image:linear-gradient(to_right,transparent,#000_10%,#000_90%,transparent)] [--duration:50s] motion-reduce:justify-center motion-reduce:[mask-image:none] motion-reduce:px-4 motion-reduce:*:animate-none motion-reduce:*:flex-wrap motion-reduce:*:justify-center motion-reduce:*:not-first:hidden"
+        className={marqueeRowClassName}
       >
         {chips}
       </Marquee>

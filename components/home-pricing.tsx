@@ -3,7 +3,7 @@
 import Image from "next/image"
 
 import { Box, Scene } from "@/components/feature-preview"
-import { HOME_SECTION_IDS } from "@/components/home-section-title"
+import { HOME_SECTION_IDS, HomeBigTitle } from "@/components/home-section-title"
 import {
   showcaseCardClassName,
   ShowcasePicture,
@@ -53,15 +53,7 @@ export function HomePricing({
       id={HOME_SECTION_IDS.pricing}
       className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 pt-12 pb-12 sm:px-4 sm:pt-24"
     >
-      <div className="mb-4 flex flex-col items-center gap-2 px-2 text-center">
-        <h2 className="font-display text-3xl font-medium tracking-tight text-balance sm:text-4xl">
-          {t.titleStart}{" "}
-          <span className="font-serif font-normal tracking-normal italic">
-            {t.titleEnd}
-          </span>
-        </h2>
-        <p className="text-balance text-muted-foreground">{t.subtitle}</p>
-      </div>
+      <HomeBigTitle start={t.titleStart} end={t.titleEnd} line={t.subtitle} />
       <div className="grid gap-3 md:grid-cols-2">
         <PlanCard
           plan={t.free}
@@ -93,12 +85,12 @@ export function HomePricing({
           sample={
             <>
               <Image
-                src="/brands/whatsapp-glyph-green.svg"
+                src="/brands/stripe.svg"
                 alt=""
                 width={16}
                 height={16}
                 unoptimized
-                className="mt-0.5 size-4 shrink-0 object-contain"
+                className="mt-0.5 size-4 shrink-0 rounded-sm object-contain"
               />
               {t.proSample}
             </>

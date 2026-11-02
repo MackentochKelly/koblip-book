@@ -13,10 +13,35 @@ export const GET_STARTED_ID = "get-started"
 export const HOME_SECTION_IDS = {
   howItWorks: "how-it-works",
   features: "features",
+  everything: "everything",
   action: "see-it-in-action",
   pricing: "pricing",
   faq: "faq",
 } as const
+
+// A bigger centred title, the end in the hero's serif, with a line under it:
+// for a section that sells, not a row of examples.
+export function HomeBigTitle({
+  start,
+  end,
+  line,
+}: {
+  start: string
+  end: string
+  line: string
+}) {
+  return (
+    <div className="mb-4 flex flex-col items-center gap-2 px-2 text-center">
+      <h2 className="font-display text-3xl font-medium tracking-tight text-balance sm:text-4xl">
+        {start}{" "}
+        <span className="font-serif font-normal tracking-normal italic">
+          {end}
+        </span>
+      </h2>
+      <p className="text-balance text-muted-foreground">{line}</p>
+    </div>
+  )
+}
 
 // The small label over a quiet home row ("Works with", "Made for"): small
 // capitals with a thin line on each side, so it reads as a label.
