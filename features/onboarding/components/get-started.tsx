@@ -126,9 +126,18 @@ export function GetStarted({
   ]
   const router = useRouter()
   const [mode, setMode] = useState<Mode>("search")
-  // The server's promise, made a plain one for `.then` and `await`.
+  // The server's promise, made a plain one for `.then` and `await`. It
+  // rejects when the page's stream breaks (React: "Connection closed."):
+  // that reads as a failed build, as a failed search pick does.
   const [picked, setPicked] = useState<Picked | null>(() =>
-    start ? { ...start, prepared: Promise.resolve(start.prepared) } : null
+    start
+      ? {
+          ...start,
+          prepared: Promise.resolve(start.prepared).catch(
+            (): PreparedBusiness => ({ ok: false, error: "failed" })
+          ),
+        }
+      : null
   )
   const [handingOver, startHandOver] = useTransition()
   const [prepared, setPrepared] = useState<PreparedBusiness | null>(null)
