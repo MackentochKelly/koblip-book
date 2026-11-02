@@ -7,7 +7,6 @@ import { FloatingActionButton } from "@/components/floating-action-button"
 import { ViewAllLink } from "@/components/view-all-link"
 import { ViewTabs } from "@/components/view-tabs"
 import { Button } from "@/components/ui/button"
-import { HelperLine } from "@/components/helper-line"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Empty,
@@ -198,7 +197,9 @@ export function BookingsView({
             <span className="max-md:hidden">{m.shell.nav.dashboard}</span>
           </h1>
           <p className="text-2xl font-semibold tracking-tight">{greeting}</p>
-          <HelperLine>{briefLine}</HelperLine>
+          <p className="text-base text-pretty text-muted-foreground">
+            {briefLine}
+          </p>
         </div>
         <Button
           className="max-md:hidden"
