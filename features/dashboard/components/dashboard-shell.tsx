@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import {
-  ContactIcon,
+  CalendarDaysIcon,
   LayoutDashboardIcon,
   PlusIcon,
   TagIcon,
@@ -36,7 +36,7 @@ import { TopBar } from "./top-bar"
 
 const NAV = [
   { path: "", key: "home", icon: LayoutDashboardIcon },
-  { path: "/customers", key: "customers", icon: ContactIcon },
+  { path: "/bookings", key: "bookings", icon: CalendarDaysIcon },
   { path: "/services", key: "services", icon: TagIcon },
   { path: "/team", key: "team", icon: UsersIcon },
   { path: "/settings", key: "settings", icon: SettingsIcon },
@@ -44,8 +44,9 @@ const NAV = [
 
 // The phone has room for four tabs with the assistant between them (a +
 // instead on a page that adds something, see tab-bar-action.tsx);
-// Settings (with Hours) opens from the ☰ menu (Settings also from the account menu).
-const PHONE_LEFT = ["", "/customers"]
+// Customers and Settings (with Hours) open from the ☰ menu (Settings also
+// from the account menu).
+const PHONE_LEFT = ["", "/bookings"]
 const PHONE_RIGHT = ["/services", "/team"]
 
 // Pages whose middle button is + rather than the assistant. Known from the
