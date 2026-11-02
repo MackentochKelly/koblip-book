@@ -21,7 +21,7 @@ import { MadeFor } from "@/components/made-for"
 import { SeeItInAction } from "@/components/see-it-in-action"
 import { LanguageMenu } from "@/components/language-menu"
 import { LanguageProvider } from "@/components/language-provider"
-import { MetaProviderBadge } from "@/components/meta-provider-badge"
+import { HackathonBadge } from "@/components/hackathon-badge"
 import { SiteFooter } from "@/components/site-footer"
 import { headerButtonClassName, SiteHeader } from "@/components/site-header"
 import { WorksWith } from "@/components/works-with"
@@ -99,7 +99,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-10 px-4 pt-28 pb-12 text-center sm:pb-24">
             {/* A little more room round the title than between its lines. */}
             <div className="flex flex-col gap-6">
-              <MetaProviderBadge language={language} />
+              <HackathonBadge language={language} />
               <div className="flex flex-col gap-4">
                 <h1 className="font-display text-hero font-medium tracking-tight text-balance text-hero-foreground sm:text-7xl">
                   {t.titleStart}{" "}

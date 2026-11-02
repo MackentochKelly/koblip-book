@@ -411,8 +411,6 @@ const en = {
       },
     },
     provider: {
-      badge: "Verified Meta Tech Provider",
-      about: "Meta approved Koblip to connect businesses to WhatsApp.",
       ownNumber: "Your own WhatsApp number",
       ownNumberText: "Connect your business number in a few taps.",
       reminders: "Reminders on WhatsApp",
@@ -421,6 +419,64 @@ const en = {
       checkedText:
         "Meta verified our business and approved us to connect yours.",
     },
+  },
+  hackathon: {
+    badge: "Built for the Meta AI Hackathon",
+    about: (dates: string) =>
+      `Built during the event, ${dates}, on Meta's models.`,
+    tabs: { ai: "Meta AI", rules: "Rules", whatsapp: "WhatsApp" },
+    ai: {
+      assistant: {
+        title: "Your assistant",
+        description: "Runs bookings, services, team and hours by typing.",
+      },
+      voice: {
+        title: "Talking mode",
+        description: "Hears you live, so you can run the day hands-free.",
+      },
+      setup: {
+        title: "One-minute setup",
+        description:
+          "Writes services, prices, add-ons and policies from Google Maps.",
+      },
+      portraits: {
+        title: "Team photos",
+        description: "Draws a starter photo for each team member.",
+      },
+      about: {
+        title: "About text",
+        description: "Writes and polishes your business's About.",
+      },
+      translate: {
+        title: "In Spanish too",
+        description: "Translates your services and details.",
+      },
+    },
+    rules: {
+      newWork: {
+        title: "New work only",
+        description: (date: string) =>
+          `First commit on ${date}. Every step is in the public history.`,
+      },
+      openSource: {
+        title: "Open source",
+        description: "All the code is public on GitHub.",
+      },
+      metaModels: {
+        title: "Meta's models",
+        description: "Text, voice and images run on the Meta Model API.",
+      },
+      control: {
+        title: "You approve every change",
+        description: "The assistant asks before it changes anything.",
+      },
+      track: {
+        title: "Build for Your World",
+        description: "Our track: real work for local businesses.",
+      },
+    },
+    code: "See the code",
+    event: "Event page",
   },
 }
 
@@ -812,8 +868,6 @@ const es: Messages = {
       },
     },
     provider: {
-      badge: "Meta Tech Provider verificado",
-      about: "Meta aprobó a Koblip para conectar negocios a WhatsApp.",
       ownNumber: "Tu propio número de WhatsApp",
       ownNumberText: "Conecta el número de tu negocio en pocos toques.",
       reminders: "Recordatorios por WhatsApp",
@@ -822,6 +876,64 @@ const es: Messages = {
       checkedText:
         "Meta verificó nuestro negocio y nos aprobó para conectar el tuyo.",
     },
+  },
+  hackathon: {
+    badge: "Hecho para el Meta AI Hackathon",
+    about: (dates: string) =>
+      `Hecho durante el evento, ${dates}, con los modelos de Meta.`,
+    tabs: { ai: "Meta AI", rules: "Reglas", whatsapp: "WhatsApp" },
+    ai: {
+      assistant: {
+        title: "Tu asistente",
+        description: "Maneja citas, servicios, equipo y horario escribiendo.",
+      },
+      voice: {
+        title: "Modo de voz",
+        description: "Te escucha en vivo para llevar el día sin manos.",
+      },
+      setup: {
+        title: "Listo en un minuto",
+        description:
+          "Escribe servicios, precios, extras y políticas desde Google Maps.",
+      },
+      portraits: {
+        title: "Fotos del equipo",
+        description: "Dibuja una foto inicial para cada persona del equipo.",
+      },
+      about: {
+        title: "Texto Acerca de",
+        description: "Escribe y pule el Acerca de tu negocio.",
+      },
+      translate: {
+        title: "También en español",
+        description: "Traduce tus servicios y datos.",
+      },
+    },
+    rules: {
+      newWork: {
+        title: "Solo trabajo nuevo",
+        description: (date: string) =>
+          `Primer commit el ${date}. Cada paso está en el historial público.`,
+      },
+      openSource: {
+        title: "Código abierto",
+        description: "Todo el código es público en GitHub.",
+      },
+      metaModels: {
+        title: "Modelos de Meta",
+        description: "Texto, voz e imágenes usan la Meta Model API.",
+      },
+      control: {
+        title: "Tú apruebas cada cambio",
+        description: "El asistente pregunta antes de cambiar algo.",
+      },
+      track: {
+        title: "Build for Your World",
+        description: "Nuestra categoría: trabajo real para negocios locales.",
+      },
+    },
+    code: "Ver el código",
+    event: "Página del evento",
   },
 }
 
