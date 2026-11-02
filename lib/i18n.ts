@@ -412,73 +412,50 @@ const en = {
     },
     provider: {
       ownNumber: "Your own WhatsApp number",
-      ownNumberText: "Connect your business number in a few taps.",
+      ownNumberText: "Connect yours in a few taps.",
       reminders: "Reminders on WhatsApp",
-      remindersText: "Clients get their booking reminders on WhatsApp.",
+      remindersText: "Clients get their booking reminders there.",
       checked: "Checked by Meta",
-      checkedText:
-        "Meta verified our business and approved us to connect yours.",
+      checkedText: "Meta verified us to connect your business.",
     },
   },
   hackathon: {
     badge: "Built for the Meta AI Hackathon",
-    about: (dates: string) =>
-      `Built during the event, ${dates}, with Meta's AI.`,
+    about: (dates: string, models: number) =>
+      `Built ${dates}, with ${models} Meta models.`,
     tabs: { ai: "Meta AI", rules: "Rules", whatsapp: "WhatsApp" },
     ai: {
       assistant: {
-        title: "An assistant for your day",
-        description:
-          "Ask in plain words, like “Book Ana at 3 pm”. It acts once you say yes.",
+        title: "Assistant for your day",
+        description: "Ask in plain words. You approve.",
       },
       voice: {
         title: "Talk instead of typing",
-        description: "Turn on talking mode and just speak. It hears you live.",
+        description: "It hears you live.",
       },
       setup: {
-        title: "Your page in a minute",
-        description:
-          "Pick your business on Google Maps. It suggests services, prices and policies to start.",
+        title: "Page ready in a minute",
+        description: "Services and prices from Google Maps.",
       },
       portraits: {
         title: "Photos for your team",
-        description:
-          "No team photos yet? It draws one for each person. Swap in a real one anytime.",
+        description: "Drawn until you add real ones.",
       },
       about: {
-        title: "Your About, written for you",
-        description:
-          "A short intro customers read on your page. It can also tidy yours.",
+        title: "About text written for you",
+        description: "Shown on your booking page.",
       },
       translate: {
-        title: "Your page in Spanish too",
-        description:
-          "It translates your services and details, so more customers can book.",
+        title: "Your page in Spanish",
+        description: "Services and details translated.",
       },
     },
     rules: {
-      newWork: {
-        title: "Made during the event",
-        description: (date: string) =>
-          `Started on ${date}. Every change is dated in the public history.`,
-      },
-      openSource: {
-        title: "Open for anyone to check",
-        description: "All the code is public on GitHub.",
-      },
-      metaModels: {
-        title: "Powered by Meta's AI",
-        description: "Writing, listening and pictures all use Meta's models.",
-      },
-      control: {
-        title: "Nothing changes without you",
-        description: "The assistant shows each change and waits for your yes.",
-      },
-      track: {
-        title: "Built for real businesses",
-        description:
-          "Our track, Build for Your World: giving local businesses time back.",
-      },
+      newWork: (date: string) => `Made during the event, from ${date}`,
+      openSource: "Open source on GitHub",
+      metaModels: "Runs on Meta's models",
+      control: "Nothing changes without your yes",
+      track: "Track: Build for Your World",
     },
     code: "See the code",
     event: "Event page",
@@ -874,73 +851,50 @@ const es: Messages = {
     },
     provider: {
       ownNumber: "Tu propio número de WhatsApp",
-      ownNumberText: "Conecta el número de tu negocio en pocos toques.",
+      ownNumberText: "Conecta el tuyo en pocos toques.",
       reminders: "Recordatorios por WhatsApp",
-      remindersText: "Tus clientes reciben sus recordatorios por WhatsApp.",
+      remindersText: "Tus clientes reciben ahí sus recordatorios.",
       checked: "Verificado por Meta",
-      checkedText:
-        "Meta verificó nuestro negocio y nos aprobó para conectar el tuyo.",
+      checkedText: "Meta nos verificó para conectar tu negocio.",
     },
   },
   hackathon: {
     badge: "Hecho para el Meta AI Hackathon",
-    about: (dates: string) =>
-      `Hecho durante el evento, ${dates}, con la IA de Meta.`,
+    about: (dates: string, models: number) =>
+      `Hecho ${dates}, con ${models} modelos de Meta.`,
     tabs: { ai: "Meta AI", rules: "Reglas", whatsapp: "WhatsApp" },
     ai: {
       assistant: {
-        title: "Un asistente para tu día",
-        description:
-          "Pide en palabras simples, como “Reserva a Ana a las 15:00”. Actúa cuando dices que sí.",
+        title: "Asistente para tu día",
+        description: "Pide en palabras simples. Tú apruebas.",
       },
       voice: {
         title: "Habla en vez de escribir",
-        description: "Activa el modo de voz y habla. Te escucha en vivo.",
+        description: "Te escucha en vivo.",
       },
       setup: {
-        title: "Tu página en un minuto",
-        description:
-          "Elige tu negocio en Google Maps. Sugiere servicios, precios y políticas para empezar.",
+        title: "Página lista en un minuto",
+        description: "Servicios y precios desde Google Maps.",
       },
       portraits: {
         title: "Fotos para tu equipo",
-        description:
-          "¿Aún sin fotos? Dibuja una para cada persona. Cámbiala por una real cuando quieras.",
+        description: "Dibujadas hasta que subas las reales.",
       },
       about: {
         title: "Tu Acerca de, ya escrito",
-        description:
-          "Una breve presentación que tus clientes leen en tu página. También pule la tuya.",
+        description: "Se muestra en tu página de reservas.",
       },
       translate: {
-        title: "Tu página también en español",
-        description:
-          "Traduce tus servicios y datos, para que más clientes puedan reservar.",
+        title: "Tu página en español",
+        description: "Servicios y datos traducidos.",
       },
     },
     rules: {
-      newWork: {
-        title: "Hecho durante el evento",
-        description: (date: string) =>
-          `Empezó el ${date}. Cada cambio tiene fecha en el historial público.`,
-      },
-      openSource: {
-        title: "Abierto para que cualquiera lo revise",
-        description: "Todo el código es público en GitHub.",
-      },
-      metaModels: {
-        title: "Con la IA de Meta",
-        description: "Escribir, escuchar e imágenes usan los modelos de Meta.",
-      },
-      control: {
-        title: "Nada cambia sin ti",
-        description: "El asistente muestra cada cambio y espera tu sí.",
-      },
-      track: {
-        title: "Hecho para negocios reales",
-        description:
-          "Nuestra categoría, Build for Your World: devolver tiempo a los negocios locales.",
-      },
+      newWork: (date: string) => `Hecho durante el evento, desde el ${date}`,
+      openSource: "Código abierto en GitHub",
+      metaModels: "Funciona con modelos de Meta",
+      control: "Nada cambia sin tu sí",
+      track: "Categoría: Build for Your World",
     },
     code: "Ver el código",
     event: "Página del evento",

@@ -4,18 +4,15 @@ import Image from "next/image"
 import { useState } from "react"
 import {
   AudioLinesIcon,
-  CalendarDaysIcon,
   ChevronRightIcon,
+  CircleCheckIcon,
   ExternalLinkIcon,
-  GlobeIcon,
-  HandHeartIcon,
   ImageIcon,
   LanguagesIcon,
   ShieldCheckIcon,
   SparklesIcon,
   SquarePenIcon,
   StoreIcon,
-  ZapIcon,
 } from "@/components/ui/icons"
 
 import { glassButtonClassName } from "@/components/glass-frame"
@@ -23,12 +20,15 @@ import { ResponsivePanel } from "@/components/responsive-panel"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import { HACKATHON, MUSE } from "@/lib/hackathon"
 import { messagesFor } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
@@ -40,15 +40,19 @@ type Tab = "ai" | "rules" | "whatsapp"
 type Row = {
   icon: React.ReactNode
   title: string
-  description: string
-  // A small badge beside the title: the Meta model, or "Soon".
+  description?: string
+  // A small badge beside the title, like "Soon".
   tag?: string
 }
 
+// One card: the Meta model that does these (named once, on top), or none.
+type Group = { heading?: string; rows: Row[] }
+
 // The home page's glass pill: Koblip Book was built for Meta's hackathon.
-// Tap it for a panel with the Meta AI in the app, the event rules it keeps
-// and what Meta approved for WhatsApp. Plain words only: Meta's logo needs
-// Meta's approval (meta.com/brand/resources/meta/company-brand).
+// Tap it for a panel with the Meta AI in the app (one card per model), the
+// event rules it keeps (a checklist) and what Meta approved for WhatsApp.
+// Short rows only, so it reads at a glance. Plain words only: Meta's logo
+// needs Meta's approval (meta.com/brand/resources/meta/company-brand).
 export function HackathonBadge({ language }: { language: PageLanguage }) {
   const messages = messagesFor(language)
   const home = messages.home
@@ -69,62 +73,71 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
     new Date(`${HACKATHON.start}T12:00:00`),
     new Date(`${HACKATHON.end}T12:00:00`)
   )
+  const check = <CircleCheckIcon className="text-success" />
+  // WhatsApp: its own file from the official pack, never recoloured, its
+  // name never joined to other words
+  // (meta.com/brand/resources/whatsapp/whatsapp-brand).
+  const whatsapp = (
+    <Image
+      src="/brands/whatsapp-glyph-green.svg"
+      alt=""
+      width={16}
+      height={16}
+      unoptimized
+    />
+  )
 
-  const rows: Record<Tab, Row[]> = {
+  const groups: Record<Tab, Group[]> = {
     ai: [
-      { icon: <SparklesIcon />, ...t.ai.assistant, tag: MUSE.spark },
-      { icon: <AudioLinesIcon />, ...t.ai.voice, tag: MUSE.voice },
-      { icon: <StoreIcon />, ...t.ai.setup, tag: MUSE.spark },
-      { icon: <ImageIcon />, ...t.ai.portraits, tag: MUSE.image },
-      { icon: <SquarePenIcon />, ...t.ai.about, tag: MUSE.spark },
-      { icon: <LanguagesIcon />, ...t.ai.translate, tag: MUSE.spark },
+      {
+        heading: MUSE.spark,
+        rows: [
+          { icon: <SparklesIcon />, ...t.ai.assistant },
+          { icon: <StoreIcon />, ...t.ai.setup },
+          { icon: <SquarePenIcon />, ...t.ai.about },
+          { icon: <LanguagesIcon />, ...t.ai.translate },
+        ],
+      },
+      {
+        heading: MUSE.voice,
+        rows: [{ icon: <AudioLinesIcon />, ...t.ai.voice }],
+      },
+      {
+        heading: MUSE.image,
+        rows: [{ icon: <ImageIcon />, ...t.ai.portraits }],
+      },
     ],
     rules: [
       {
-        icon: <CalendarDaysIcon />,
-        title: t.rules.newWork.title,
-        description: t.rules.newWork.description(day(HACKATHON.firstCommit)),
+        rows: [
+          { icon: check, title: t.rules.newWork(day(HACKATHON.firstCommit)) },
+          { icon: check, title: t.rules.openSource },
+          { icon: check, title: t.rules.metaModels },
+          { icon: check, title: t.rules.control },
+          { icon: check, title: t.rules.track },
+        ],
       },
-      { icon: <GlobeIcon />, ...t.rules.openSource },
-      { icon: <ZapIcon />, ...t.rules.metaModels },
-      { icon: <ShieldCheckIcon />, ...t.rules.control },
-      { icon: <HandHeartIcon />, ...t.rules.track },
     ],
-    // WhatsApp: its own file from the official pack, never recoloured, its
-    // name never joined to other words
-    // (meta.com/brand/resources/whatsapp/whatsapp-brand).
     whatsapp: [
       {
-        icon: (
-          <Image
-            src="/brands/whatsapp-glyph-green.svg"
-            alt=""
-            width={20}
-            height={20}
-            unoptimized
-          />
-        ),
-        title: provider.ownNumber,
-        description: provider.ownNumberText,
-        tag: home.soon,
-      },
-      {
-        icon: (
-          <Image
-            src="/brands/whatsapp-glyph-green.svg"
-            alt=""
-            width={20}
-            height={20}
-            unoptimized
-          />
-        ),
-        title: provider.reminders,
-        description: provider.remindersText,
-      },
-      {
-        icon: <ShieldCheckIcon />,
-        title: provider.checked,
-        description: provider.checkedText,
+        rows: [
+          {
+            icon: whatsapp,
+            title: provider.ownNumber,
+            description: provider.ownNumberText,
+            tag: home.soon,
+          },
+          {
+            icon: whatsapp,
+            title: provider.reminders,
+            description: provider.remindersText,
+          },
+          {
+            icon: <ShieldCheckIcon />,
+            title: provider.checked,
+            description: provider.checkedText,
+          },
+        ],
       },
     ],
   }
@@ -174,7 +187,9 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
         }
       >
         <div className="flex flex-col gap-4">
-          <p className="text-sm text-muted-foreground">{t.about(dates)}</p>
+          <p className="text-sm text-muted-foreground">
+            {t.about(dates, Object.keys(MUSE).length)}
+          </p>
           <ViewTabs
             views={[
               { id: "ai", label: t.tabs.ai },
@@ -185,21 +200,41 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
             onChange={setTab}
             ariaLabel={HACKATHON.name}
           />
+          {/* A card with one row sits beside the next on a computer. */}
           <div className="grid gap-3 sm:grid-cols-2">
-            {rows[tab].map(({ icon, title, description, tag }) => (
-              <Card key={title} size="sm">
-                <CardHeader>
-                  {/* The icon, and the Meta model on the same row, so the
-                      words below get the card's full width. */}
-                  <div className="mb-1 flex items-start justify-between gap-2">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-muted [&_svg:not([class*='size-'])]:size-5">
-                      {icon}
-                    </div>
-                    {tag && <Badge variant="secondary">{tag}</Badge>}
-                  </div>
-                  <CardTitle>{title}</CardTitle>
-                  <CardDescription>{description}</CardDescription>
-                </CardHeader>
+            {groups[tab].map(({ heading, rows }) => (
+              <Card
+                key={heading ?? tab}
+                size="sm"
+                className={cn("gap-1", rows.length > 1 && "sm:col-span-2")}
+              >
+                {heading && (
+                  <CardHeader>
+                    <CardTitle>{heading}</CardTitle>
+                  </CardHeader>
+                )}
+                {/* The rows' own padding lines them up with the heading; two
+                    per row on a computer. */}
+                <CardContent className="px-1">
+                  <ItemGroup
+                    className={cn(rows.length > 1 && "sm:grid sm:grid-cols-2")}
+                  >
+                    {rows.map(({ icon, title, description, tag }) => (
+                      <Item key={title} size="xs">
+                        <ItemMedia variant="icon">{icon}</ItemMedia>
+                        <ItemContent>
+                          <ItemTitle>
+                            {title}
+                            {tag && <Badge variant="secondary">{tag}</Badge>}
+                          </ItemTitle>
+                          {description && (
+                            <ItemDescription>{description}</ItemDescription>
+                          )}
+                        </ItemContent>
+                      </Item>
+                    ))}
+                  </ItemGroup>
+                </CardContent>
               </Card>
             ))}
           </div>
