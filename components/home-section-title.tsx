@@ -1,4 +1,5 @@
 import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
 
 // The title of a home page section ("How it works", "What you get", …).
 export const homeSectionTitleClassName =
@@ -20,18 +21,26 @@ export const HOME_SECTION_IDS = {
 } as const
 
 // A bigger centred title, the end in the hero's serif, with a line under it:
-// for a section that sells, not a row of examples.
+// for a section that sells, not a row of examples. `beside`: next to its
+// section's content on computers, so it lines up on the left there.
 export function HomeBigTitle({
   start,
   end,
   line,
+  beside = false,
 }: {
   start: string
   end: string
   line: string
+  beside?: boolean
 }) {
   return (
-    <div className="mb-4 flex flex-col items-center gap-2 px-2 text-center">
+    <div
+      className={cn(
+        "mb-4 flex flex-col items-center gap-2 px-2 text-center",
+        beside && "md:items-start md:text-left"
+      )}
+    >
       <h2 className="font-display text-3xl font-medium tracking-tight text-balance sm:text-4xl">
         {start}{" "}
         <span className="font-serif font-normal tracking-normal italic">

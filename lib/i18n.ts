@@ -189,6 +189,8 @@ const en = {
     },
     faq: {
       title: "Questions",
+      titleStart: "Your questions,",
+      titleEnd: "answered",
       subtitle: "Everything you need to know.",
       items: [
         { q: "Is it free?", a: "Yes, it's free for now. No card needed." },
@@ -281,7 +283,7 @@ const en = {
       sample: {
         locale: "en-US",
         visits: "visits",
-        hours: ["Mon to Fri","Tue to Sat","Weekends"],
+        hours: ["Mon to Fri", "Tue to Sat", "Weekends"],
         reminder: "Hi Ana, see you tomorrow.",
         confirm: "Confirm",
         week: "Week",
@@ -577,6 +579,8 @@ const es: Messages = {
     },
     faq: {
       title: "Preguntas",
+      titleStart: "Tus preguntas,",
+      titleEnd: "resueltas",
       subtitle: "Todo lo que necesitas saber.",
       items: [
         { q: "¿Es gratis?", a: "Sí, por ahora es gratis. Sin tarjeta." },
@@ -669,7 +673,7 @@ const es: Messages = {
       sample: {
         locale: "es-ES",
         visits: "visitas",
-        hours: ["Lun a vie","Mar a sáb","Fines de semana"],
+        hours: ["Lun a vie", "Mar a sáb", "Fines de semana"],
         reminder: "Hola Ana, te esperamos mañana.",
         confirm: "Confirmar",
         week: "Semana",
