@@ -100,11 +100,12 @@ Reproduced on `BETTER_AUTH_URL=http://localhost:3100`: a sign-in from
 the 403. Production is not affected: nginx serves only book.koblip.com, its
 `BETTER_AUTH_URL`. Worktrees are not affected either: each sets its own URL.
 
-**Fix:** in development only, `proxy.ts` redirects a page opened on another
-loopback name of the same port to the `BETTER_AUTH_URL` address, so the app
-has one address. The auth settings don't change.
+**Fix:** in development only, `server.mjs` redirects a page opened on another
+loopback name of the same port to the `BETTER_AUTH_URL` address, before the
+request reaches Next.js, so the app has one address. The auth settings don't
+change.
 
-**Files:** `proxy.ts`, `lib/dev-address.ts` (new) and its test.
+**Files:** `server.mjs`, `server/dev-address.mjs` (new) and its test.
 
 **Done when:** opening `127.0.0.1:<port>` lands on the `BETTER_AUTH_URL`
 address and sign-up works there; a production build never redirects.
@@ -116,3 +117,4 @@ address and sign-up works there; a production build never redirects.
 | F2: 30 s PM2 kill timeout, kept in a repo ecosystem file | The top of Next.js' recommended 10–30 s drain; in the repo it is reviewed and can't drift from what's on the server. Longer AI work still resumes through S9. | M Kelly B | 2026-11-01 |
 | F2: keep one instance and `pm2 restart`; no cluster mode | PM2's code shows `reload` in fork mode is just a restart, so no zero-downtime that way. Cluster mode would split the in-memory setup jobs and voice session limits across processes. Trade-off: a deploy while long work runs can take the site down for up to 30 s; an idle server stops at once. | M Kelly B | 2026-11-02 |
 | F3: one dev address through a dev-only redirect, not `trustedOrigins` | Trusting `127.0.0.1` would pass the email check but leave Google broken: its state cookie is set on `127.0.0.1` while Google returns to `BETTER_AUTH_URL`. Sessions and email links also stay tied to one address. The auth settings, which guard production, stay untouched. Other devices on the network stay refused, since nothing uses them. | M Kelly B | 2026-11-02 |
+| F3: the redirect lives in `server.mjs`, not `proxy.ts`, and `skipProxyUrlNormalize` stays off | Next.js treats `127.0.0.1`, `[::1]` and `localhost` as the same host in Proxy, so a Proxy redirect between them loops (`next/dist/server/web/next-url.js`, `adapter.js`; seen as `ERR_TOO_MANY_REDIRECTS`). The flag stops that, but it turns off all Proxy URL normalising, so dev would behave differently from production. The custom server sees the real Host header before Next.js changes anything. | M Kelly B | 2026-11-02 |
