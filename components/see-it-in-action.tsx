@@ -27,8 +27,6 @@ import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import {
   ArrowRightIcon,
   ExternalLinkIcon,
-  MaximizeIcon,
-  MinimizeIcon,
   SearchIcon,
 } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -66,9 +64,10 @@ const SCREEN = "h-[min(44rem,72dvh)]"
 // one screen at a time. Computers follow the steps beside the phone: the
 // step you're on opens as the page's white card in its glass frame, with a
 // button to the next one, and the last opens the full app. Phones pick from
-// the shared tab row above it, with the step's line under it and the same
-// button below; after the assistant, it opens the full app. Each screen opens on first use and is kept, so a booking
-// started there survives switching steps.
+// the shared tab row above it, with the step's line as a tip and the full
+// app as an icon beside it, and nothing under the phone. Each screen opens
+// on first use and is kept, so a booking started there survives switching
+// steps.
 export function SeeItInAction({
   words,
   findBusinessLabel,
@@ -88,8 +87,6 @@ export function SeeItInAction({
   const [tab, setTab] = useState<DemoView>("page")
   const [step, setStep] = useState<Step>("page")
   const [opened, setOpened] = useState<DemoView[]>(["page"])
-  // Phones: the screen out of the phone, filling the window.
-  const [expanded, setExpanded] = useState(false)
   // Phones: what to do on the open screen, as a tip pointing at its tab.
   const [tipsHidden, hideTips] = useStoredFlag(TIPS_HIDDEN_KEY)
   const tabRow = useRef<HTMLDivElement>(null)
@@ -137,25 +134,13 @@ export function SeeItInAction({
 
   // The booking page runs up under the phone's status bar (clearTop), so
   // it is told the bar's height, as a real iPhone tells a page (the
-  // --safe-top its pinned bars keep clear of). Full screen has no bar.
-  const pageFrame = useRef<HTMLIFrameElement>(null)
-  const fitPage = useCallback(() => {
-    const root = pageFrame.current?.contentDocument?.documentElement
-    if (!root) return
-    if (expanded) root.style.removeProperty("--safe-top")
-    else root.style.setProperty("--safe-top", `${PHONE_STATUS_BAR}px`)
-  }, [expanded])
-  useEffect(fitPage, [fitPage])
-
-  // Escape leaves full screen.
-  useEffect(() => {
-    if (!expanded) return
-    const leave = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setExpanded(false)
-    }
-    window.addEventListener("keydown", leave)
-    return () => window.removeEventListener("keydown", leave)
-  }, [expanded])
+  // --safe-top its pinned bars keep clear of).
+  const fitPage = (event: React.SyntheticEvent<HTMLIFrameElement>) => {
+    event.currentTarget.contentDocument?.documentElement.style.setProperty(
+      "--safe-top",
+      `${PHONE_STATUS_BAR}px`
+    )
+  }
 
   function choose(next: Step) {
     const view = next === "try" ? "dashboard" : next
@@ -231,8 +216,6 @@ export function SeeItInAction({
   ) : (
     openApp
   )
-  // Phones have no step 4 tab: after the assistant, the full app.
-  const phoneButton = tab === "assistant" ? openApp : nextButton
 
   const problem =
     demo.state === "failed" || demo.state === "tooMany" ? (
@@ -265,24 +248,19 @@ export function SeeItInAction({
       />
       <div
         className={cn(
-          "relative isolate rounded-4xl p-3 sm:p-6 lg:p-10",
-          // Safari clips a fixed child to a rounded box that hides its
-          // overflow, so the full screen lifts that.
-          !expanded && "overflow-hidden",
-          // The glass edge would draw over the full screen.
-          look === "colour" && !expanded && heroEdgeClassName,
+          // Phones: a little more room under the phone than around it.
+          "relative isolate overflow-hidden rounded-4xl p-3 pb-6 sm:p-6 lg:p-10",
+          look === "colour" && heroEdgeClassName,
           look === "calm" && "bg-muted",
-          look === "glow" && "bg-soft-glow ring-1 ring-border",
-          // Full screen: above the page's pinned header.
-          expanded && "z-50"
+          look === "glow" && "bg-soft-glow ring-1 ring-border"
         )}
       >
         {!calm && <HeroGradient />}
         {problem ?? (
           <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 lg:grid lg:grid-cols-2 lg:gap-16">
-            {/* Phones: the steps, and a button that takes the screen full
-                screen, with the step's line as a tip pointing at its tab,
-                over the phone (read out from the line kept for screen
+            {/* Phones: the steps, and step 4 (the full app, in a new tab)
+                as an icon beside them, with no button under the phone. The
+                step's line is a tip pointing at its tab, over the phone (read out from the line kept for screen
                 readers). It shows once the demo is open, so a tip hidden
                 before never flashes in. */}
             <div
@@ -293,12 +271,20 @@ export function SeeItInAction({
               <Button
                 variant="outline"
                 size="icon"
-                aria-label={words.expand}
-                onClick={() => setExpanded(true)}
+                aria-label={words.open.dashboard}
+                disabled={!paths}
+                nativeButton={false}
+                render={
+                  <a
+                    href={paths?.dashboard}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  />
+                }
               >
-                <MaximizeIcon />
+                <ExternalLinkIcon />
               </Button>
-              {demo.state === "ready" && !tipsHidden && !expanded && (
+              {demo.state === "ready" && !tipsHidden && (
                 <TipBubble
                   anchor={activeTab}
                   text={words.hints[tab]}
@@ -378,26 +364,11 @@ export function SeeItInAction({
                 // The booking page opens on its photos: they run up under
                 // the Dynamic Island, as on a real iPhone.
                 clearTop={tab === "page"}
-                expanded={expanded}
-                topBar={
-                  <div className="flex shrink-0 items-center justify-between gap-2 border-b px-3 pt-[max(env(safe-area-inset-top),--spacing(2))] pb-2">
-                    {tabs}
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      aria-label={words.shrink}
-                      onClick={() => setExpanded(false)}
-                    >
-                      <MinimizeIcon />
-                    </Button>
-                  </div>
-                }
               >
                 {DEMO_VIEWS.map((view) =>
                   demo.state === "ready" && opened.includes(view) ? (
                     <iframe
                       key={view}
-                      ref={view === "page" ? pageFrame : undefined}
                       onLoad={view === "page" ? fitPage : undefined}
                       // The booking page in the home page's language.
                       src={
@@ -419,7 +390,6 @@ export function SeeItInAction({
                 )}
               </PhoneMockup>
             </div>
-            <div className="w-full max-w-md lg:hidden">{phoneButton}</div>
           </div>
         )}
       </div>

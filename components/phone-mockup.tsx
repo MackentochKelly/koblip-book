@@ -36,21 +36,14 @@ type Shrink = "zoom" | "transform"
 // page's words keep the phone's proportions instead of being drawn large.
 // `className` sizes the box (give it a height); the phone keeps its shape
 // inside it. `clearTop`: the page runs up under the status bar (a page
-// that opens on a photo), instead of starting below it. `expanded`: the
-// screen leaves the phone and fills the whole
-// window (the frame's page stays as it is, no reload), with `topBar`
-// pinned above it.
+// that opens on a photo), instead of starting below it.
 export function PhoneMockup({
   className,
   clearTop = false,
-  expanded = false,
-  topBar,
   children,
 }: {
   className?: string
   clearTop?: boolean
-  expanded?: boolean
-  topBar?: React.ReactNode
   children: React.ReactNode
 }) {
   const box = useRef<HTMLDivElement>(null)
@@ -67,20 +60,6 @@ export function PhoneMockup({
     return () => watcher.disconnect()
   }, [])
 
-  // While the screen fills the window, the page under it doesn't scroll.
-  useEffect(() => {
-    if (!expanded) return
-    const root = document.documentElement
-    const before = root.style.overflow
-    root.style.overflow = "hidden"
-    return () => {
-      root.style.overflow = before
-    }
-  }, [expanded])
-
-  // Expanded, nothing is shrunk: a fixed screen inside a zoomed or
-  // transformed box would be shrunk or pinned to the box.
-  const shrunk = !expanded && shrink !== null
   return (
     <div ref={box} className={cn("relative aspect-[450/920]", className)}>
       {!!scale && (
@@ -91,7 +70,7 @@ export function PhoneMockup({
             height: FRAME.height,
             // Shown once the test frame has said how to shrink.
             visibility: shrink === null ? "hidden" : undefined,
-            ...(shrunk &&
+            ...(shrink !== null &&
               (shrink === "zoom"
                 ? { zoom: scale }
                 : { transform: `scale(${scale})`, transformOrigin: "0 0" })),
@@ -119,25 +98,17 @@ export function PhoneMockup({
             </div>
           )}
           <div
-            className={cn(
-              "flex flex-col overflow-hidden bg-background",
-              expanded ? "fixed inset-0 z-50" : "absolute"
-            )}
-            style={
-              expanded
-                ? undefined
-                : {
-                    left: SCREEN.left,
-                    top: SCREEN.top,
-                    width: SCREEN.width,
-                    height: SCREEN.height,
-                    borderRadius: SCREEN.radius,
-                    paddingTop: clearTop ? 0 : PHONE_STATUS_BAR,
-                    paddingBottom: HOME_AREA,
-                  }
-            }
+            className="absolute flex flex-col overflow-hidden bg-background"
+            style={{
+              left: SCREEN.left,
+              top: SCREEN.top,
+              width: SCREEN.width,
+              height: SCREEN.height,
+              borderRadius: SCREEN.radius,
+              paddingTop: clearTop ? 0 : PHONE_STATUS_BAR,
+              paddingBottom: HOME_AREA,
+            }}
           >
-            {expanded && topBar}
             {children}
           </div>
           {/* The frame on top, so its edge covers the screen's. */}
@@ -147,10 +118,7 @@ export function PhoneMockup({
             alt=""
             width={FRAME.width}
             height={FRAME.height}
-            className={cn(
-              "pointer-events-none absolute inset-0 select-none",
-              expanded && "hidden"
-            )}
+            className="pointer-events-none absolute inset-0 select-none"
           />
         </div>
       )}

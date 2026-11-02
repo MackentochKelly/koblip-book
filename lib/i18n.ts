@@ -337,9 +337,7 @@ const en = {
       tooMany: "Too many demos opened from here. Try again in an hour.",
       failed: "The demo didn't open.",
       retry: "Try again",
-      expand: "Full screen",
       hideTips: "Hide tips",
-      shrink: "Exit full screen",
     },
     steps: {
       title: "How it works",
@@ -743,9 +741,7 @@ const es: Messages = {
       tooMany: "Se abrieron demasiadas demos desde aquí. Prueba en una hora.",
       failed: "La demo no se abrió.",
       retry: "Reintentar",
-      expand: "Pantalla completa",
       hideTips: "Ocultar consejos",
-      shrink: "Salir de pantalla completa",
     },
     steps: {
       title: "Cómo funciona",
