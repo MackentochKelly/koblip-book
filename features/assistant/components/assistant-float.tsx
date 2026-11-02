@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname, useRouter } from "next/navigation"
-import { useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 
 import { FloatingLink } from "@/components/floating-link"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/icons"
 import { VoiceGlobe } from "@/components/voice-globe"
 import { useIsDesktop } from "@/hooks/use-is-desktop"
+import { useReducedMotion } from "@/hooks/use-theme-colors"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type { PageLanguage } from "@/lib/page-language"
 import { cn } from "@/lib/utils"
@@ -29,6 +30,14 @@ const IDEAS = [
 ] as const
 
 type IdeaKey = (typeof IDEAS)[number]["key"]
+
+// From a point to the screen's farthest corner.
+function farthestCorner(x: number, y: number) {
+  return Math.hypot(
+    Math.max(x, window.innerWidth - x),
+    Math.max(y, window.innerHeight - y)
+  )
+}
 
 // The way into the assistant on a computer (a phone has the tab bar's middle
 // button): a round globe that floats over every other page and opens the
@@ -47,17 +56,80 @@ export function AssistantFloat({
   const desktop = useIsDesktop()
   const showIdeas = useJustLoaded(ASSISTANT_RULES.floatIdeasMs)
   const [closed, setClosed] = useState<readonly IdeaKey[]>([])
+  // The globe is opening: it grows over the screen, then fades off the page.
+  const [opening, setOpening] = useState(false)
+  const still = useReducedMotion()
+  const globe = useRef<HTMLDivElement>(null)
   const href = `/dashboard/${businessId}/assistant`
-  const assistantOpen = usePathname().startsWith(href)
+  const pathname = usePathname()
+  const assistantOpen = pathname.startsWith(href)
+
+  // Called once the new page is on screen.
+  const arrived = useRef<(() => void) | null>(null)
+  useLayoutEffect(() => {
+    if (assistantOpen) arrived.current?.()
+  }, [assistantOpen])
 
   // Off on a phone, so its moving canvas never starts there.
-  if (!desktop || assistantOpen) return null
+  if (!desktop || (assistantOpen && !opening)) return null
 
-  const ideas = IDEAS.filter(({ key }) => !closed.includes(key))
+  const ideas = opening ? [] : IDEAS.filter(({ key }) => !closed.includes(key))
+
+  // Goes to the Assistant; resolves once it is on screen.
+  const arrive = () =>
+    new Promise<void>((resolve) => {
+      const timer = setTimeout(resolve, ASSISTANT_RULES.globeOpenWaitMs)
+      arrived.current = () => {
+        clearTimeout(timer)
+        arrived.current = null
+        resolve()
+      }
+      router.push(href)
+    })
+
+  // The globe grows past the screen's edges. Only then does the page change,
+  // hidden behind it, and the globe fades away to show the Assistant.
+  const open = async () => {
+    const ball = globe.current
+    if (opening) return
+    // Someone asked for less motion: it just opens.
+    if (!ball || still) {
+      router.push(href)
+      return
+    }
+    const place = ball.getBoundingClientRect()
+    const scale =
+      (farthestCorner(
+        place.left + place.width / 2,
+        place.top + place.height / 2
+      ) *
+        2.2) /
+      place.width
+    setOpening(true)
+    const grow = ball.animate(
+      [{ transform: "scale(1)" }, { transform: `scale(${scale})` }],
+      {
+        duration: ASSISTANT_RULES.globeOpenGrowMs,
+        easing: "cubic-bezier(0.6, 0, 0.2, 1)",
+        fill: "forwards",
+      }
+    )
+    await grow.finished
+    await arrive()
+    const fade = ball.animate([{ opacity: 1 }, { opacity: 0 }], {
+      duration: ASSISTANT_RULES.globeOpenFadeMs,
+      easing: "ease-out",
+      fill: "forwards",
+    })
+    await fade.finished
+    grow.cancel()
+    fade.cancel()
+    setOpening(false)
+  }
 
   const ask = (question: string) => {
     handOff(businessId, { kind: "ask", text: question })
-    router.push(href)
+    void open()
   }
 
   return (
@@ -66,6 +138,12 @@ export function AssistantFloat({
       href={href}
       label={messages.title}
       bare
+      onClick={(event) => {
+        // A new tab or window opens as any link does.
+        if (event.metaKey || event.ctrlKey || event.shiftKey) return
+        event.preventDefault()
+        void open()
+      }}
       attached={ideas.map(({ key, icon: Icon }, order) => (
         <div
           key={key}
@@ -106,7 +184,9 @@ export function AssistantFloat({
         </div>
       ))}
     >
-      <VoiceGlobe className="size-full" />
+      <div ref={globe} className="size-full">
+        <VoiceGlobe className="size-full" />
+      </div>
     </FloatingLink>
   )
 }

@@ -58,4 +58,9 @@ export const ASSISTANT_RULES = {
   // one starts the next does.
   floatIdeasFadeOutMs: 2600,
   floatIdeasFadeOutGapMs: 1300,
+  // The floating globe opening the Assistant: how long it grows over the screen
+  // and fades away, and how long it waits at most for the page behind it.
+  globeOpenGrowMs: 700,
+  globeOpenFadeMs: 500,
+  globeOpenWaitMs: 8000,
 } as const

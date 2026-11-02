@@ -16,6 +16,7 @@ export function FloatingLink({
   label,
   bare = false,
   attached,
+  onClick,
   children,
 }: {
   // Names the corner this button keeps in the browser.
@@ -24,6 +25,7 @@ export function FloatingLink({
   label: string
   bare?: boolean
   attached?: React.ReactNode
+  onClick?: React.MouseEventHandler<HTMLElement>
   children: React.ReactNode
 }) {
   return (
@@ -35,6 +37,7 @@ export function FloatingLink({
         title={label}
         nativeButton={false}
         render={<Link href={href} draggable={false} />}
+        onClick={onClick}
         className={cn(
           "size-12 rounded-full",
           bare
