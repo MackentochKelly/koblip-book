@@ -47,10 +47,7 @@ export function HomeCta({
           {title}
         </h2>
         <div className="flex flex-col items-center gap-3">
-          {/* A glass ring around it, like the frame around the search box. */}
-          <FindBusinessButton className="ring-6 ring-glass-frame-edge">
-            {button}
-          </FindBusinessButton>
+          <FindBusinessButton>{button}</FindBusinessButton>
           <p className="text-sm text-hero-foreground">{hint}</p>
         </div>
       </div>
