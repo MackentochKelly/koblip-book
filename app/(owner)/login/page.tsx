@@ -11,6 +11,7 @@ import { LanguageProvider } from "@/components/language-provider"
 import { StickyHeader } from "@/components/sticky-header"
 import { SiteHeader } from "@/components/site-header"
 import { claimBusiness } from "@/features/dashboard/api/actions"
+import { RememberOwnerLanguage } from "@/features/dashboard/i18n/remember-language"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { prepareFound } from "@/features/onboarding/api/prepare-found"
 import { GetStarted } from "@/features/onboarding/components/get-started"
@@ -18,6 +19,7 @@ import { readSignUpLink } from "@/features/onboarding/utils/sign-up-link"
 import { AuthForm } from "@/features/owner-auth/components/auth-form"
 import { authWordsFor } from "@/features/owner-auth/i18n"
 import { getSession } from "@/lib/dal"
+import { languageParam } from "@/lib/page-language"
 import { fontDisplay } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import { safeNext } from "@/lib/safe-next"
@@ -50,12 +52,15 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   if (signedIn && !finish) {
     redirect(target)
   }
-  // A link from the home page names its language: the page keeps it.
+  // A link from the home page names its language: the page keeps it, and
+  // it is remembered for the owner area after it.
+  const linked = languageParam(params.lang)
   const language = await getOwnerLanguage(params.lang)
   const words = authWordsFor(language)
   const googleError = typeof error === "string" ? error : null
   return (
     <LanguageProvider language={language}>
+      {linked && <RememberOwnerLanguage language={linked} />}
       <div
         className={cn(
           "flex min-h-dvh flex-col bg-background p-2 sm:p-3",
