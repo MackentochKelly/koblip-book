@@ -194,7 +194,7 @@ export function BottomPanel({
           <div
             ref={scroll}
             className={cn(
-              "min-h-0 flex-1 overflow-y-auto p-4",
+              "min-h-0 flex-1 overflow-y-auto overscroll-contain p-4",
               // A line between the list and the buttons, with room above it.
               footer && "border-b pb-16"
             )}
