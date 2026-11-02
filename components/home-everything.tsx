@@ -113,8 +113,7 @@ function AppsCard({ words, soon }: { words: Words; soon: string }) {
   const details = words.appDetails[shown.key]
   return (
     <Card className={showcaseCardClassName}>
-      {/* No edge line here: the wash fills the picture to its edge. */}
-      <ShowcasePicture className="aspect-auto h-56 after:hidden">
+      <ShowcasePicture className="aspect-auto h-56">
         <Scene {...WASH}>
           {/* For the keyboard and screen readers: the moving rows repeat
               each app, so they get this list, one button each, shown as a
@@ -195,10 +194,9 @@ function AppsCard({ words, soon }: { words: Words; soon: string }) {
 const appChipClassName =
   "flex h-12 items-center gap-2 rounded-full bg-card px-4 font-medium text-card-foreground ring-1 ring-foreground/5"
 
-// A pill you can tap: under the mouse it turns muted with a brand edge, and
-// it presses in.
+// A pill you can tap: under the mouse it turns muted, and it presses in.
 const appChipHoverClassName =
-  "cursor-pointer transition-[background-color,box-shadow,scale] hover:bg-muted hover:ring-2 hover:ring-primary/40 active:scale-95"
+  "cursor-pointer transition-[background-color,scale] hover:bg-muted active:scale-95"
 
 // The app's logo, with its dark-mode version where it has one.
 function AppLogo({ app, className }: { app: App; className: string }) {
