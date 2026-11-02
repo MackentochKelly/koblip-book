@@ -189,12 +189,11 @@ export function BookingsView({
       {/* On a phone the top bar names the page and Add floats at the foot,
           so this header row only shows on a computer. */}
       <div className="flex items-center justify-between gap-3 max-md:contents">
-        {/* The page's name sits small over the greeting (only for screen
-            readers on a phone, where the top bar names it), and today's
-            line under it. */}
+        {/* The greeting with today's line under it. The page's name is only
+            for screen readers: the top bar or sidebar shows it. */}
         <div className="flex flex-col gap-1">
           {/* Home on a phone, like its tab; Dashboard on a computer. */}
-          <h1 className="text-sm text-muted-foreground max-md:sr-only">
+          <h1 className="sr-only">
             <span className="md:hidden">{m.shell.nav.home}</span>
             <span className="max-md:hidden">{m.shell.nav.dashboard}</span>
           </h1>
