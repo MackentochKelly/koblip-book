@@ -33,17 +33,19 @@ export function HomeFaq({ words }: { words: Messages["home"]["faq"] }) {
           beside
         />
       </div>
-      {/* The first question starts open. */}
+      {/* The first question starts open. Each question is known by its
+          place, the same in every language, so switching language keeps
+          the open one open. */}
       <Accordion
-        defaultValue={words.items.slice(0, 1).map((item) => item.q)}
+        defaultValue={[0]}
         className={cn(
           oneCard ? "bg-card" : "gap-3 overflow-visible rounded-none border-0"
         )}
       >
-        {words.items.map((item) => (
+        {words.items.map((item, index) => (
           <AccordionItem
-            key={item.q}
-            value={item.q}
+            key={index}
+            value={index}
             className={cn(!oneCard && "rounded-2xl border")}
           >
             <AccordionTrigger className="py-5 text-base hover:no-underline">
