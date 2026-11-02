@@ -3,10 +3,9 @@
 import { heroEdgeClassName } from "@/components/glass-frame"
 import { HeroGradient } from "@/components/hero-gradient"
 import { useHomeLook } from "@/components/home-look"
-import { GET_STARTED_ID } from "@/components/home-section-title"
 import { Button } from "@/components/ui/button"
 import { SearchIcon } from "@/components/ui/icons"
-import { useReducedMotion } from "@/hooks/use-theme-colors"
+import { useFindBusiness } from "@/hooks/use-find-business"
 import { cn } from "@/lib/utils"
 
 // The home page's last call to action: a small copy of the hero panel
@@ -21,19 +20,10 @@ export function HomeCta({
   button: string
   hint: string
 }) {
-  const still = useReducedMotion()
+  const findBusiness = useFindBusiness()
   // The "bands" look: a smaller card in the middle, with room round it, so
   // the page ends on an invitation, not a second hero.
   const bands = useHomeLook() === "bands"
-  function findBusiness() {
-    const target = document.getElementById(GET_STARTED_ID)
-    if (!target) return
-    target.scrollIntoView({
-      behavior: still ? "auto" : "smooth",
-      block: "center",
-    })
-    target.querySelector("input")?.focus({ preventScroll: true })
-  }
   return (
     <section
       className={cn(

@@ -10,6 +10,7 @@ import { HeroSideCards } from "@/components/hero-side-cards"
 import { HomeCta } from "@/components/home-cta"
 import { HomeFaq } from "@/components/home-faq"
 import { HomeFeatures } from "@/components/home-features"
+import { HomePricing } from "@/components/home-pricing"
 import { GET_STARTED_ID } from "@/components/home-section-title"
 import { HowItWorks } from "@/components/how-it-works"
 import { MadeFor } from "@/components/made-for"
@@ -143,6 +144,9 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         </HomeBand>
         <HomeBand tone="brand">
           <SeeItInAction words={t.action} language={language} />
+        </HomeBand>
+        <HomeBand tone="plain">
+          <HomePricing words={t} locale={messagesFor(language).locale} />
         </HomeBand>
         <HomeBand tone="muted">
           <HomeFaq words={t.faq} />

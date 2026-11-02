@@ -27,6 +27,7 @@ export function SiteFooter({ language }: { language: PageLanguage }) {
     { label: home.steps.title, href: `/#${HOME_SECTION_IDS.howItWorks}` },
     { label: home.features.title, href: `/#${HOME_SECTION_IDS.features}` },
     { label: home.action.title, href: `/#${HOME_SECTION_IDS.action}` },
+    { label: home.pricing.title, href: `/#${HOME_SECTION_IDS.pricing}` },
     { label: home.faq.title, href: `/#${HOME_SECTION_IDS.faq}` },
     { label: t.privacy, href: `/privacy?lang=${language}` },
     { label: t.terms, href: `/terms?lang=${language}` },

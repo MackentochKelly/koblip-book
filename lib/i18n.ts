@@ -214,6 +214,30 @@ const en = {
         },
       ],
     },
+    pricing: {
+      title: "Pricing",
+      perMonth: "/month",
+      free: {
+        name: "Free",
+        note: "Free for now. No card needed.",
+        features: [
+          "Your page from Google Maps",
+          "Online bookings, day or night",
+          "Services, team and hours",
+          "AI assistant, by typing or voice",
+          "English and Spanish",
+        ],
+      },
+      pro: {
+        name: "Pro",
+        note: "More ways to keep clients coming.",
+        features: [
+          "Everything in Free",
+          "Reminders on WhatsApp",
+          "Google Calendar",
+        ],
+      },
+    },
     cta: {
       title: "Get your booking page today",
       button: "Find your business",
@@ -524,6 +548,30 @@ const es: Messages = {
           a: "Sí. Tu página se muestra en el idioma de tu cliente, inglés o español.",
         },
       ],
+    },
+    pricing: {
+      title: "Precios",
+      perMonth: "/mes",
+      free: {
+        name: "Gratis",
+        note: "Gratis por ahora. Sin tarjeta.",
+        features: [
+          "Tu página desde Google Maps",
+          "Reservas en línea, de día o de noche",
+          "Servicios, equipo y horarios",
+          "Asistente de IA, por texto o voz",
+          "Inglés y español",
+        ],
+      },
+      pro: {
+        name: "Pro",
+        note: "Más formas de que tus clientes vuelvan.",
+        features: [
+          "Todo lo de Gratis",
+          "Recordatorios por WhatsApp",
+          "Google Calendar",
+        ],
+      },
     },
     cta: {
       title: "Consigue hoy tu página de reservas",

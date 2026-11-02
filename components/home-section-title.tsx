@@ -14,6 +14,7 @@ export const HOME_SECTION_IDS = {
   howItWorks: "how-it-works",
   features: "features",
   action: "see-it-in-action",
+  pricing: "pricing",
   faq: "faq",
 } as const
 
