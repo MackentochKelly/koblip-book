@@ -19,6 +19,7 @@ import { demoHref } from "@/lib/demo-rules"
 import { HACKATHON } from "@/lib/hackathon"
 import type { Messages } from "@/lib/i18n"
 import { LAYOUT_MOVE } from "@/lib/motion-tokens"
+import { cn } from "@/lib/utils"
 
 // The home page's small card in the corner, where a cookie banner would
 // sit: a star on GitHub, and the demo to try. It comes up once the hero
@@ -64,8 +65,12 @@ export function SupportBox({ words }: { words: Messages["home"]["support"] }) {
             className="fixed right-[max(--spacing(4),env(safe-area-inset-right))] bottom-[max(--spacing(4),env(safe-area-inset-bottom))] left-[max(--spacing(4),env(safe-area-inset-left))] z-40 md:right-auto md:bottom-[max(--spacing(6),env(safe-area-inset-bottom))] md:left-[max(--spacing(6),env(safe-area-inset-left))] md:w-sm"
           >
             {/* Floats over the page: the frosted glass the scrolled header uses
-                (see-through, blurred, a soft shadow). */}
-            <Card size="sm" className={frostedGlassClassName}>
+                (see-through, blurred, a soft shadow), with the theme's border
+                colour as its edge so it shows on white too. */}
+            <Card
+              size="sm"
+              className={cn(frostedGlassClassName, "ring-border")}
+            >
               <CardHeader>
                 <CardTitle>{words.title}</CardTitle>
                 <CardDescription>{words.text}</CardDescription>
