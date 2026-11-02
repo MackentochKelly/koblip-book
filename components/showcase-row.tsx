@@ -55,13 +55,13 @@ export function ShowcaseRow({
       id={id}
       className={cn("mx-auto w-full max-w-page px-2 pb-12 sm:px-4", className)}
     >
-      {/* The cards slide on to the screen's edge instead of being cut at
-          the row's edge: the carousel doesn't clip, the page does (its
-          overflow-x-clip). */}
+      {/* On phones the cards slide on to the screen's edge instead of being
+          cut at the row's edge: the carousel doesn't clip, the page does (its
+          overflow-x-clip). Computers show whole cards only: the row clips. */}
       <Carousel
         opts={{ align: "start" }}
         plugins={[wheel]}
-        className="*:data-[slot=carousel-content]:overflow-visible"
+        className="*:data-[slot=carousel-content]:overflow-visible md:*:data-[slot=carousel-content]:overflow-hidden"
       >
         <div className="mb-4 flex items-center justify-between gap-4 px-2">
           <h2 className={homeSectionTitleClassName}>{title}</h2>
