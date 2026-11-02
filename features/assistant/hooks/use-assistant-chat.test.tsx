@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from "@testing-library/react"
+import { act, renderHook } from "@testing-library/react"
 import { StrictMode } from "react"
 import { afterEach, expect, test, vi } from "vitest"
 
@@ -17,32 +17,13 @@ async function* events(...list: AssistantStreamEvent[]) {
   for (const event of list) yield event
 }
 
-// Every answer is checked; the check ends "done".
 const transport: AssistantTransport = {
-  chat: () =>
-    events(
-      { type: "text", delta: "2 bookings." },
-      {
-        type: "check",
-        id: "c1",
-        label: "Checking…",
-        failedLabel: "Not checked",
-      },
-      { type: "done" }
-    ),
+  chat: () => events({ type: "text", delta: "2 bookings." }, { type: "done" }),
   confirm: () =>
     events(
       { type: "result", ok: true, text: "Booked.", kind: "bookings" },
-      {
-        type: "check",
-        id: "c2",
-        label: "Checking…",
-        failedLabel: "Not checked",
-      },
       { type: "done" }
     ),
-  check: ({ id }) =>
-    events({ type: "step", id, label: "Checked", status: "done" }),
 }
 
 // Strict mode runs each state update twice, as React may in production.
@@ -60,17 +41,11 @@ const lastReply = (items: ReturnType<typeof useAssistantChat>["items"]) => {
   return reply?.role === "assistant" ? reply : null
 }
 
-test("a question's check ends on the reply on screen", async () => {
+test("a question gets one reply on screen", async () => {
   const { result } = await renderChat()
   await act(async () => {
     await result.current.send("How many today?")
   })
-  await waitFor(() =>
-    expect(lastReply(result.current.items)?.steps).toEqual([
-      { id: "c1", label: "Checked", status: "done" },
-    ])
-  )
-  // One question, one reply.
   expect(result.current.items.map((item) => item.role)).toEqual([
     "owner",
     "assistant",
@@ -78,34 +53,11 @@ test("a question's check ends on the reply on screen", async () => {
   expect(lastReply(result.current.items)?.text).toBe("2 bookings.")
 })
 
-test("a tapped action's check ends on the reply on screen", async () => {
+test("a tapped action's result lands on the reply on screen", async () => {
   const { result } = await renderChat()
   await act(async () => {
     result.current.answer("p1", true)
   })
-  await waitFor(() =>
-    expect(lastReply(result.current.items)?.steps).toEqual([
-      { id: "c2", label: "Checked", status: "done" },
-    ])
-  )
   expect(result.current.items).toHaveLength(1)
   expect(lastReply(result.current.items)?.result?.text).toBe("Booked.")
-})
-
-test("a check that can't answer ends in its failed words, marked unchecked", async () => {
-  const { result } = await renderChat({
-    ...transport,
-    check: () => {
-      throw new Error("offline")
-    },
-  })
-  await act(async () => {
-    await result.current.send("How many today?")
-  })
-  await waitFor(() =>
-    expect(lastReply(result.current.items)).toMatchObject({
-      steps: [{ id: "c1", label: "Not checked", status: "failed" }],
-      unverified: true,
-    })
-  )
 })

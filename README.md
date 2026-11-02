@@ -46,7 +46,6 @@ All calls go through the Meta Model API; the model names live in one place, [`li
 | Model | What it does in Koblip Book | Code |
 | --- | --- | --- |
 | **Muse Spark** (`muse-spark-1.3`) | The owner's assistant: reads and manages bookings, services and hours with 68 tools, by text or voice. Changes wait for the owner's approval on a confirm card | [`run-chat.ts`](features/assistant/api/run-chat.ts) |
-| **Muse Spark** | Checks each assistant answer against the tool results, so it never states a fact the data doesn't back | [`check-answer.ts`](features/assistant/api/check-answer.ts) |
 | **Muse Spark** | Writes a business's "About" text from its Google Maps details during setup | [`write-about.ts`](features/place-import/api/write-about.ts) |
 | **Muse Spark** | Suggests services and add-on groups for a new business | [`actions.ts`](features/dashboard/api/actions.ts), [`addon-actions.ts`](features/dashboard/api/addon-actions.ts) |
 | **Muse Spark** | Translates services and business details from English into Spanish | [`translate.ts`](features/dashboard/utils/translate.ts) |

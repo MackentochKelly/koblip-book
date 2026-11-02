@@ -61,7 +61,6 @@ export function AssistantChat({
     onCutOff: chat.cutOff,
     onWithdraw: chat.withdraw,
     confirmLine: messages.composer.live.confirmLine,
-    uncheckedLine: messages.composer.live.uncheckedLine,
     fillers: messages.composer.live.fillers,
     cutIns: messages.composer.live.cutIns,
     greeting: messages.composer.live.greeting,

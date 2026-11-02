@@ -32,9 +32,6 @@ const messages: typeof en = {
     deleteAddon: "Eliminando extras…",
     updateBusiness: "Guardando datos…",
     working: "Trabajando…",
-    checking: "Revisando la respuesta…",
-    checked: "Respuesta revisada",
-    notChecked: "No se pudo revisar la respuesta",
   },
   // The same step chips once they finished well.
   stepsDone: {

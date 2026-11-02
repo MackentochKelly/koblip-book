@@ -5,7 +5,6 @@ import { useEffect, useEffectEvent, useRef, useState } from "react"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type {
   AnswerListener,
-  AssistantCheckRequest,
   AssistantConfirmRequest,
   AssistantRequest,
   AssistantStreamEvent,
@@ -37,7 +36,6 @@ export interface AssistantTransport {
     signal?: AbortSignal
   ): AsyncIterable<AssistantStreamEvent>
   confirm(request: AssistantConfirmRequest): AsyncIterable<AssistantStreamEvent>
-  check(request: AssistantCheckRequest): AsyncIterable<AssistantStreamEvent>
 }
 
 type ErrorCode = Extract<AssistantStreamEvent, { type: "error" }>["code"]
@@ -111,35 +109,6 @@ export function useAssistantChat(
     })
   }, [busy, items, businessId, chatId])
 
-  // An answer's check, run after its reply ended so nothing waits for it:
-  // its outcome goes to that reply, even when the owner already asked
-  // again. A check that fails to answer marks the reply unchecked, and
-  // `listen` hears it (talking mode says so).
-  const runCheck = async (
-    { id, failedLabel }: { id: string; failedLabel: string },
-    replyId: string,
-    listen?: AnswerListener
-  ) => {
-    const apply = (event: AssistantStreamEvent) =>
-      setItems((current) => applyEvent(current, event, replyId))
-    let ended = false
-    try {
-      for await (const event of transport.check({ businessId, id })) {
-        if (event.type === "error") break
-        if (event.type === "step") ended = true
-        if (event.type === "notice") listen?.onUnchecked?.()
-        apply(event)
-      }
-    } catch {
-      // Same as no answer: marked unchecked below.
-    }
-    if (!ended) {
-      apply({ type: "step", id, label: failedLabel, status: "failed" })
-      apply({ type: "notice", kind: "unverified" })
-      listen?.onUnchecked?.()
-    }
-  }
-
   // Shows each event on its reply as it comes, and gives back that reply as
   // it ends, so a caller (talking mode) can read it without waiting for the
   // screen to update. `start` already holds the reply (`replyId`): it is
@@ -154,10 +123,8 @@ export function useAssistantChat(
     setError(null)
     unsaved.current = true
     let latest = start
-    let check: { id: string; failedLabel: string } | null = null
     try {
       for await (const event of stream) {
-        if (event.type === "check") check = event
         if (event.type === "error") setError(event.code)
         else {
           if (event.type === "text") listen?.onText(event.delta)
@@ -173,7 +140,6 @@ export function useAssistantChat(
     } finally {
       setBusy(false)
     }
-    if (check !== null) void runCheck(check, replyId, listen)
     const reply = latest.find((item) => item.id === replyId)
     return reply?.role === "assistant" ? reply : null
   }

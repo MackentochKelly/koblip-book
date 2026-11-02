@@ -62,10 +62,8 @@ async function* events(
   }
 }
 
-// The real server: POST /api/assistant, /api/assistant/confirm and
-// /api/assistant/check.
+// The real server: POST /api/assistant and /api/assistant/confirm.
 export const httpTransport: AssistantTransport = {
   chat: (request, signal) => events("/api/assistant", request, signal),
   confirm: (request) => events("/api/assistant/confirm", request),
-  check: (request) => events("/api/assistant/check", request),
 }

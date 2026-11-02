@@ -142,20 +142,6 @@ function SourceLines({
   )
 }
 
-// A small warning when the answer could not be double-checked.
-function UnverifiedLine({ label }: { label: string }) {
-  return (
-    <Trace>
-      <TraceLine>
-        <TraceIcon>
-          <AlertCircleIcon />
-        </TraceIcon>
-        <TraceTitle>{label}</TraceTitle>
-      </TraceLine>
-    </Trace>
-  )
-}
-
 // One icon per step: working, done or failed.
 function StepIcon({ status }: { status: ChatStep["status"] }) {
   if (status === "running") return <Spinner />
@@ -393,9 +379,6 @@ export function MessageList({
                           onAnswer={(accept) => onAnswer(confirm.id, accept)}
                         />
                       ))}
-                      {item.unverified && (
-                        <UnverifiedLine label={m.unverified} />
-                      )}
                       {/* No steps to fold them into: on their own. */}
                       {item.steps.length === 0 && item.sources.length > 0 && (
                         <Trace>

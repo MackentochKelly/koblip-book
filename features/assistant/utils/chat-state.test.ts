@@ -96,7 +96,6 @@ test("toMessages skips empty replies and keeps the newest", () => {
       times: null,
       result: null,
       sources: [],
-      unverified: false,
       memory: [],
     },
     { id: "o2", role: "owner", text: "Again" },
@@ -188,7 +187,7 @@ test("a tapped action's result lands on the reply and goes back as words", () =>
   expect(restoreChat(saveChat(items))).toEqual(items)
 })
 
-test("sources and the unverified notice land on the reply, not in its words", () => {
+test("sources land on the reply, not in its words", () => {
   let items: ChatItem[] = [owner, replyTo()]
   items = applyEvent(items, { type: "text", delta: "3 today." }, R)
   items = applyEvent(
@@ -199,12 +198,10 @@ test("sources and the unverified notice land on the reply, not in its words", ()
     },
     R
   )
-  items = applyEvent(items, { type: "notice", kind: "unverified" }, R)
   const reply = items[1]
   expect(reply.role === "assistant" && reply.sources).toEqual([
     { kind: "bookings", count: 3 },
   ])
-  expect(reply.role === "assistant" && reply.unverified).toBe(true)
   expect(toMessages(items, 10).at(-1)).toEqual({
     role: "assistant",
     text: "3 today.",
@@ -281,61 +278,14 @@ test("free times land on the reply and come back from storage", () => {
   expect(restoreChat(saveChat(items))).toEqual(items)
 })
 
-test("an answer's check shows as a chip and ends on its own reply", () => {
-  let items: ChatItem[] = [owner, replyTo()]
-  items = applyEvent(items, { type: "text", delta: "2 bookings." }, R)
-  items = applyEvent(
-    items,
-    { type: "check", id: "c1", label: "Checking…", failedLabel: "Not checked" },
-    R
-  )
-  const replyId = items[1].id
-  // The owner asks again before the check ends.
-  items = [
-    ...items,
-    { id: "o2", role: "owner", text: "And tomorrow?" },
-    replyTo("r2"),
-  ]
-  items = applyEvent(items, { type: "text", delta: "None." }, "r2")
-  const check = { type: "step", id: "c1", label: "Checking…" } as const
-  items = applyEvent(items, { ...check, status: "failed" }, replyId)
-  items = applyEvent(items, { type: "notice", kind: "unverified" }, replyId)
-  items = applyEvent(items, { type: "choices", options: ["A", "B"] }, replyId)
-  const [, first, , last] = items
-  expect(first).toMatchObject({
-    steps: [{ id: "c1", label: "Checking…", status: "failed" }],
-    unverified: true,
-    choices: ["A", "B"],
-  })
-  expect(last).toMatchObject({ text: "None.", steps: [], unverified: false })
-  // A reply that is gone takes nothing.
-  expect(
-    applyEvent(items, { type: "notice", kind: "unverified" }, "gone")
-  ).toEqual(items)
-})
-
 test("an event never makes a reply: one with no reply on screen changes nothing", () => {
   const events: AssistantStreamEvent[] = [
     { type: "text", delta: "Hi" },
-    { type: "check", id: "c1", label: "Checking…", failedLabel: "Not checked" },
     { type: "choices", options: ["A", "B"] },
   ]
   for (const event of events) {
     expect(applyEvent([owner], event, R)).toEqual([owner])
   }
-})
-
-test("a check left running when the page closed comes back ended", () => {
-  let items: ChatItem[] = [owner, replyTo()]
-  items = applyEvent(items, { type: "text", delta: "2 bookings." }, R)
-  items = applyEvent(
-    items,
-    { type: "check", id: "c1", label: "Checking…", failedLabel: "Not checked" },
-    R
-  )
-  expect(restoreChat(saveChat(items))[1]).toMatchObject({
-    steps: [{ id: "c1", label: "Not checked", status: "failed" }],
-  })
 })
 
 test("an answer's memory lands on it, goes back with it, and is kept", () => {

@@ -9,8 +9,6 @@ export const ASSISTANT_RULES = {
   // Shorter voice reasoning: https://dev.meta.ai/docs/reasoning
   reasoningEffort: "low",
   voiceReasoningEffort: "minimal",
-  // Timeout for one answer check.
-  answerCheckTimeoutMs: 20_000,
   // Choice buttons: how many options (a full day of 15-minute times; the
   // screen shows the first 6 and "N more"), and how long one option is.
   maxChoices: 48,

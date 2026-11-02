@@ -34,9 +34,6 @@ const messages = {
     deleteAddon: "Deleting extras…",
     updateBusiness: "Saving business details…",
     working: "Working…",
-    checking: "Checking the answer…",
-    checked: "Answer checked",
-    notChecked: "Couldn't check the answer",
   },
   // The same step chips once they finished well.
   stepsDone: {

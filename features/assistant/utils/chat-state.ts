@@ -12,16 +12,13 @@ export interface ChatStep {
   id: string
   label: string
   status: "running" | "done" | "failed"
-  // An answer's check only: its words if the screen must end it unchecked
-  // (the check could not answer, or the page closed during it).
-  failedLabel?: string
 }
 
-// A step the screen ends without its outcome: failed, in its failed words.
+// A step the screen ends without its outcome: failed.
 export function endFailed(step: ChatStep): ChatStep {
   return {
     id: step.id,
-    label: step.failedLabel ?? step.label,
+    label: step.label,
     status: "failed",
   }
 }
@@ -67,8 +64,6 @@ export type ChatItem =
       times: ChatTimes | null
       result: ChatResult | null
       sources: ChatSource[]
-      // Set when the answer could not be double-checked.
-      unverified: boolean
       // The records it looked up, sent back with it so the next question
       // can use their ids.
       memory: MemoryRow[]
@@ -130,7 +125,6 @@ export function newReply(): AssistantItem {
     times: null,
     result: null,
     sources: [],
-    unverified: false,
     memory: [],
   }
 }
@@ -179,20 +173,6 @@ export function applyEvent(
           },
         ],
       }))
-    case "check":
-      // The check runs after the reply ends; its chip shows meanwhile.
-      return withReply((reply) => ({
-        ...reply,
-        steps: [
-          ...reply.steps,
-          {
-            id: event.id,
-            label: event.label,
-            status: "running",
-            failedLabel: event.failedLabel,
-          },
-        ],
-      }))
     case "choices":
       return withReply((reply) => ({
         ...reply,
@@ -217,8 +197,6 @@ export function applyEvent(
       return withReply((reply) => ({ ...reply, sources: event.items }))
     case "memory":
       return withReply((reply) => ({ ...reply, memory: event.rows }))
-    case "notice":
-      return withReply((reply) => ({ ...reply, unverified: true }))
     default:
       return items
   }
@@ -288,7 +266,7 @@ export function toMessages(
 // Saved chats carry this number. Raise it whenever ChatItem changes:
 // a chat saved by another version starts fresh instead of breaking the
 // screen.
-export const CHAT_STORAGE_VERSION = 8
+export const CHAT_STORAGE_VERSION = 9
 
 const isText = (value: unknown): value is string => typeof value === "string"
 
@@ -326,7 +304,6 @@ function isChatItem(value: unknown): value is ChatItem {
     (item.times === null || isTimes(item.times)) &&
     (item.cutOff === undefined || isText(item.cutOff)) &&
     Array.isArray(item.sources) &&
-    typeof item.unverified === "boolean" &&
     cleanMemory(item.memory) !== null &&
     Array.isArray(item.memory) &&
     (item.result === null ||

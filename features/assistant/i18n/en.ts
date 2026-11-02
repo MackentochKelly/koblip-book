@@ -51,8 +51,6 @@ const messages = {
     customers: (n: number) =>
       n === 1 ? "Based on 1 client" : `Based on ${n} clients`,
   },
-  // When the answer could not be double-checked.
-  unverified: "Not double-checked. Please verify.",
   // Under each answer.
   actions: {
     copy: "Copy",
@@ -106,7 +104,6 @@ const messages = {
       // Said out loud when an answer waits for a tap on its card.
       confirmLine: "To do it, tap the button on the screen.",
       // Said out loud when an answer's check could not back it.
-      uncheckedLine: "Heads up, I couldn't double-check that. Have a look on the screen.",
       // Said once when talking starts.
       greeting: "Hey! What's up?",
       // Said once if an answer is slow.

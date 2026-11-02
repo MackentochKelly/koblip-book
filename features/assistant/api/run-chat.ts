@@ -21,7 +21,6 @@ import {
   INTERRUPTED_BEFORE_WORDS_NOTE,
 } from "../utils/system-prompt"
 import { memoryRow, type MemoryRow } from "../utils/memory"
-import { storeAnswerCheck } from "./answer-checks"
 import { ASK_OWNER_TOOL, askOf } from "./ask-owner"
 import { storePendingAction } from "./pending-actions"
 
@@ -468,31 +467,6 @@ export async function* runChat(
         const items = [...sources].flatMap(([kind, count]) =>
           count > 0 ? [{ kind, count }] : []
         )
-        // The reply ends here: the screen runs the check right after
-        // (POST /api/assistant/check), so nothing waits for it.
-        const stored = storeAnswerCheck({
-          ownerId: context.ownerId,
-          businessId: context.businessId,
-          question:
-            [...messages].reverse().find((m) => m.role === "owner")?.text ?? "",
-          toolResults: history.flatMap((m) =>
-            m.role === "tool" && typeof m.content === "string"
-              ? [m.content]
-              : []
-          ),
-          answer: text,
-          labels: { done: t.steps.checked, failed: t.steps.notChecked },
-        })
-        if ("error" in stored) {
-          yield { type: "notice", kind: "unverified" }
-        } else {
-          yield {
-            type: "check",
-            id: stored.id,
-            label: t.steps.checking,
-            failedLabel: t.steps.notChecked,
-          }
-        }
         if (items.length > 0) yield { type: "sources", items }
         // The picker shows at once, unchecked: it is the tool's own data.
         // Talking mode shows it too while a few times are said.

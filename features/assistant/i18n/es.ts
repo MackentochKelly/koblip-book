@@ -47,7 +47,6 @@ const messages: typeof en = {
     customers: (n: number) =>
       n === 1 ? "Basado en 1 cliente" : `Basado en ${n} clientes`,
   },
-  unverified: "Sin comprobar. Revísalo, por favor.",
   // Under each answer.
   actions: {
     copy: "Copiar",
@@ -97,7 +96,6 @@ const messages: typeof en = {
       end: "Terminar",
       waveform: "Nivel de voz",
       confirmLine: "Para hacerlo, toca el botón en la pantalla.",
-      uncheckedLine: "Ojo, no pude confirmarlo. Revísalo en la pantalla.",
       greeting: "¡Hola! ¿Qué onda?",
       fillers: ["Mmm, a ver.", "Espérate, ya casi.", "Va, un seg."],
       cutIns: ["Ah,", "Bueno,", "Va,"],

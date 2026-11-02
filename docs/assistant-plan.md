@@ -101,7 +101,6 @@ features/assistant/
   hooks/      use-assistant-chat (reads the stream)
 app/api/assistant/route.ts       POST: chat stream
 app/api/assistant/confirm/route.ts  POST: run a confirmed action
-app/api/assistant/check/route.ts    POST: run a finished answer's check
 lib/assistant-rules.ts           ASSISTANT_RULES = { maxSteps, maxMessageChars, ... }
 ```
 
@@ -117,19 +116,12 @@ Response: a stream of events, one JSON per line:
 | `text` | `delta` | words appearing in the reply |
 | `step` | `id`, `label`, `status: running or done or failed` | a small chip: "Finding bookings…" |
 | `confirm` | `id`, `title`, `summary`, `destructive` | a card with Confirm and Cancel buttons |
-| `check` | `id`, `label` | the answer is done; its check runs next (a "Checking the answer…" chip) |
 | `memory` | `rows: [{ kind, id, label }]` | nothing; kept on the reply and sent back as its `memory`, so the next question can use the ids |
 | `done` | none | input enabled again |
 | `error` | `code` (`rate_limited`, `unavailable`, `too_long`, `not_allowed`) | a short message and Retry |
 
 Confirm tap: `POST /api/assistant/confirm` with `{ businessId, id, accept }`.
 Result is the same event style (`step`, `text`, `done`).
-
-Answer check: after a reply that sent `check`, the screen calls
-`POST /api/assistant/check` with `{ businessId, id }`, so the reply (and its
-time picker) never waits for the check. Its events (`step` done or failed,
-`notice`, `choices`, `done`) go to that reply, even when the owner already
-asked again. A check is single use, its owner's only, and lives 2 minutes.
 
 Muse Code writes this into `features/assistant/types.ts` first. Everything
 else follows it.
@@ -481,3 +473,10 @@ accepted (no 400) and a little faster than "low".
 - Seen once in ~7 runs: with no answer check in talking mode, one answer
   said "no bookings" after a lookup that returned none (the other runs:
   3, correct). Lookup arguments are not logged, so the cause is unknown.
+
+## Answer check removed (2026-11-02)
+
+The second model call that checked each answer against its lookups is gone,
+on the owner's decision: when the check itself failed it warned about good
+answers, which caused more trouble than it was worth. Answers now show without
+that warning. Older notes above that mention the check are history.

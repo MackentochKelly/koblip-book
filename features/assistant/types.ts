@@ -9,7 +9,6 @@ export type SourceKind = "bookings" | "services" | "team" | "customers"
 export type AssistantStreamEvent =
   | { type: "text"; delta: string } // words appearing in the reply
   | { type: "result"; ok: boolean; text: string; kind: ResultKind } // tap outcome with a link
-  | { type: "notice"; kind: "unverified" } // warning instead of words
   | { type: "sources"; items: { kind: SourceKind; count: number }[] } // what the answer was based on
   | {
       type: "step"
@@ -25,7 +24,6 @@ export type AssistantStreamEvent =
       destructive: boolean
       action: string // the button's word, e.g. "Book", "Delete"
     } // card with the action button and Cancel
-  | { type: "check"; id: string; label: string; failedLabel: string } // the answer's check runs next: POST /api/assistant/check with this id; label = its step chip, failedLabel = its words if the screen must end it unchecked
   | { type: "memory"; rows: MemoryRow[] } // records this answer looked up, sent back with it next time
   | { type: "choices"; options: string[] } // quick answers; a tap sends one
   | {
@@ -86,12 +84,6 @@ export interface AssistantConfirmRequest {
   accept: boolean
 }
 
-// Request for POST /api/assistant/check (an answer's check, after it ends).
-export interface AssistantCheckRequest {
-  businessId: string
-  id: string
-}
-
 // One tool the route handler offers to the loop.
 export interface AssistantToolDefinition {
   name: string
@@ -139,7 +131,6 @@ export interface AnswerListener {
   onText: (delta: string) => void
   onLookup: () => void
   // The answer's check, run after it ended, could not back it.
-  onUnchecked?: () => void
 }
 
 // One voice the owner can pick for talking live (an account voice, see

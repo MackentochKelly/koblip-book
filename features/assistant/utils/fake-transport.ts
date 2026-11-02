@@ -50,7 +50,4 @@ export const fakeTransport: AssistantTransport = {
     yield* words(accept ? "Done." : "Okay, I left it as it is.")
     yield { type: "done" }
   },
-  async *check() {
-    yield { type: "done" }
-  },
 }
