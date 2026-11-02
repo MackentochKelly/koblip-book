@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useFindBusiness } from "@/hooks/use-find-business"
-import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { DEMO_VIEWS, type DemoPaths, type DemoView } from "@/lib/demo-rules"
 import type { Messages } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
@@ -47,9 +46,6 @@ type Demo =
 // same demo as the full app in a new tab.
 const STEPS = [...DEMO_VIEWS, "try"] as const
 type Step = (typeof STEPS)[number]
-
-// Phones: the tip over the demo, once hidden, stays hidden on this device.
-const TIPS_HIDDEN_KEY = "home-demo-tips-hidden"
 
 // The phone's height: short enough that the whole panel fits on the
 // screen.
@@ -88,7 +84,8 @@ export function SeeItInAction({
   const [step, setStep] = useState<Step>("page")
   const [opened, setOpened] = useState<DemoView[]>(["page"])
   // Phones: what to do on the open screen, as a tip pointing at its tab.
-  const [tipsHidden, hideTips] = useStoredFlag(TIPS_HIDDEN_KEY)
+  // Its X hides it until the page is loaded again.
+  const [tipsHidden, setTipsHidden] = useState(false)
   const tabRow = useRef<HTMLDivElement>(null)
   const activeTab = useCallback(
     () => tabRow.current?.querySelector("[data-active]") ?? null,
@@ -259,9 +256,9 @@ export function SeeItInAction({
           <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 lg:grid lg:grid-cols-2 lg:gap-16">
             {/* Phones: the steps, and step 4 (the full app, in a new tab)
                 as an icon beside them, with no button under the phone. The
-                step's line is a tip pointing at its tab, over the phone (read out from the line kept for screen
-                readers). It shows once the demo is open, so a tip hidden
-                before never flashes in. */}
+                step's line is a tip pointing at its tab, over the phone
+                (read out from the line kept for screen readers), once the
+                demo is open. */}
             <div
               ref={tabRow}
               className="relative flex max-w-full items-center gap-2 lg:hidden"
@@ -288,7 +285,7 @@ export function SeeItInAction({
                   anchor={activeTab}
                   text={words.hints[tab]}
                   closeLabel={words.hideTips}
-                  onClose={hideTips}
+                  onClose={() => setTipsHidden(true)}
                 />
               )}
             </div>

@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { POP } from "@/components/feature-preview"
-import { frostedGlassClassName } from "@/components/glass-frame"
+import { frostedTipClassName } from "@/components/glass-frame"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 // Room between the arrow and the bubble's rounded ends.
 const ARROW_EDGE = 20
 
-// A tip under its parent (which is `relative`), in the frosted menu glass,
+// A tip under its parent (which is `relative`), in the frosted tip glass,
 // with its arrow pointing up at `anchor`, and an X to hide it. It pops in
 // again each time its words change. In the page, not a portal: it scrolls
 // with the page under the fixed header and never takes the focus. Screen
@@ -80,7 +80,7 @@ export function TipBubble({
           {...POP}
           style={{ transformOrigin: arrowX === null ? "top" : `${arrowX}px 0` }}
           className={cn(
-            frostedGlassClassName,
+            frostedTipClassName,
             "relative flex items-center gap-1 rounded-xl py-1 pr-1 pl-3 text-sm text-popover-foreground"
           )}
         >
@@ -91,7 +91,7 @@ export function TipBubble({
               // Only the half outside the bubble, so the glass isn't doubled
               // where they meet.
               className={cn(
-                frostedGlassClassName,
+                frostedTipClassName,
                 "absolute -top-1 size-2.5 -translate-x-1/2 rotate-45 rounded-[2px] shadow-none ring-0 [clip-path:polygon(0_0,100%_0,0_100%)]"
               )}
             />

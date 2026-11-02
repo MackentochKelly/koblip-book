@@ -16,6 +16,16 @@
   );
 }
 
+/* A tip's frosted surface: the popover colour at --tip-glass, more solid
+   than a menu so it reads white over a photo or the phone's dark frame. */
+@utility bg-tip-glass {
+  background-color: color-mix(
+    in oklab,
+    var(--popover) var(--tip-glass, 80%),
+    transparent
+  );
+}
+
 /* A test look (components/home-look.tsx, /glow): the page colour with one
    soft glow of the brand colours from the top, instead of a full wash. */
 @utility bg-soft-glow {
@@ -237,6 +247,8 @@
     --glass-frame-edge: color-mix(in oklab, var(--foreground) 8%, transparent);
     /* How solid the frosted menus are; same as Koblip Sales. */
     --menu-glass: 40%;
+    /* How solid a tip is (bg-tip-glass): white frost over anything. */
+    --tip-glass: 80%;
     /* Cards sit just above the page: a hairline contact shadow and a soft,
        wide one, faint enough to feel rather than see. */
     --card-shadow:
@@ -325,6 +337,7 @@
   .dark {
     --glass-fill: 100%;
     --menu-glass: 100%;
+    --tip-glass: 100%;
   }
 }
 
