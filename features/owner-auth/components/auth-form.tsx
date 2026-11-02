@@ -39,6 +39,7 @@ type Step = "email" | "password" | "create"
 export function AuthForm({
   next = "/dashboard",
   googleNext = next,
+  googleErrorNext,
   googleReady = true,
   googleError = null,
   onSignedIn,
@@ -48,6 +49,8 @@ export function AuthForm({
 }: {
   next?: string
   googleNext?: string
+  // Where a failed Google sign-in comes back to (default: this login page).
+  googleErrorNext?: string
   googleReady?: boolean
   // The `error` Google sign-in came back with, if any.
   googleError?: string | null
@@ -231,6 +234,7 @@ export function AuthForm({
             {googleError && <GoogleError code={googleError} language={language} />}
             <GoogleButton
               callbackURL={googleNext}
+              errorCallbackURL={googleErrorNext}
               disabled={busy || !googleReady}
               language={language}
             />

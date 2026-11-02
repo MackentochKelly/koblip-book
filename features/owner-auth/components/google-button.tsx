@@ -12,13 +12,15 @@ import { authWordsFor } from "../i18n"
 // "Continue with Google", in Google's look (GoogleMark). After Google, the
 // browser comes back to `callbackURL`; when Google sign-in fails, to the
 // login page with `?error=` (and the same `next`), which says what
-// happened.
+// happened, or to `errorCallbackURL` when the screen has its own.
 export function GoogleButton({
   callbackURL,
+  errorCallbackURL = `/login?next=${encodeURIComponent(callbackURL)}`,
   disabled = false,
   language = "en",
 }: {
   callbackURL: string
+  errorCallbackURL?: string
   disabled?: boolean
   language?: PageLanguage
 }) {
@@ -29,7 +31,7 @@ export function GoogleButton({
     const { error } = await authClient.signIn.social({
       provider: "google",
       callbackURL,
-      errorCallbackURL: `/login?next=${encodeURIComponent(callbackURL)}`,
+      errorCallbackURL,
     })
     if (error) setSending(false)
   }

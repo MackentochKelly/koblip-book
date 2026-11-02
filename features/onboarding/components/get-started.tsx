@@ -101,6 +101,7 @@ export function GetStarted({
   hint = true,
   handOver = false,
   start,
+  googleError = null,
   language,
 }: {
   signedIn: boolean
@@ -114,6 +115,8 @@ export function GetStarted({
   // The sign-up page: the business the owner picked on the home page,
   // built on the server while they sign up.
   start?: Picked
+  // The sign-up page: the `error` Google sign-in came back with, if any.
+  googleError?: string | null
   language: PageLanguage
 }) {
   const t = onboardingWordsFor(language)
@@ -366,7 +369,9 @@ export function GetStarted({
     </div>
   )
 
-  if (resuming) {
+  // With the business's card on screen (the sign-up page), the card itself
+  // says the page is being built (below).
+  if (resuming && !picked) {
     return box(
       <Button size="lg" disabled className="w-full">
         <Spinner data-icon="inline-start" />
@@ -405,6 +410,11 @@ export function GetStarted({
         .filter(Boolean)
         .join(" · ")
     : ""
+  // Google comes back to this same card: on success to finish here, on
+  // failure to say what happened.
+  const saved = ready
+    ? { name: picked.name, address: picked.address, slug: ready.slug }
+    : null
   return box(
     <div className="flex flex-col gap-5">
       {/* The business, centered: its photo (the same bordered Avatar as
@@ -460,7 +470,9 @@ export function GetStarted({
           <AuthForm
             onSignedIn={() => finish()}
             disabled={finishing}
-            googleNext={ready ? `/?claim=${ready.slug}` : undefined}
+            googleNext={saved ? signUpHref(saved, { finish: true }) : undefined}
+            googleErrorNext={saved ? signUpHref(saved) : undefined}
+            googleError={googleError}
             googleReady={Boolean(ready)}
             emailLater
             language={language}

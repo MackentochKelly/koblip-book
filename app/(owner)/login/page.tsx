@@ -37,12 +37,17 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const target = safeNext(typeof next === "string" ? next : undefined)
   // A demo guest has no account yet: they see the form like anyone else.
   const session = await getSession()
-  if (session && !session.isGuest) {
+  const signedIn = session !== null && !session.isGuest
+  const link = readSignUpLink(params)
+  const found = link?.found
+  // Back from Google on the sign-up page: it stays, to finish there.
+  const finish = signedIn ? (link?.finish ?? null) : null
+  if (signedIn && !finish) {
     redirect(target)
   }
   const language = await getOwnerLanguage()
   const words = authWordsFor(language)
-  const found = readSignUpLink(params)
+  const googleError = typeof error === "string" ? error : null
   return (
     <LanguageProvider language={language}>
       <div
@@ -74,8 +79,10 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
             </h1>
             {found ? (
               <GetStarted
-                signedIn={false}
+                signedIn={signedIn}
                 claim={claimBusiness}
+                resume={finish}
+                googleError={googleError}
                 hint={false}
                 // Not awaited: the page shows at once, the card's photo
                 // follows when the page is built.
@@ -90,7 +97,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
               <GlassCard>
                 <AuthForm
                   next={target}
-                  googleError={typeof error === "string" ? error : null}
+                  googleError={googleError}
                   language={language}
                 />
               </GlassCard>
