@@ -117,6 +117,6 @@ CI runs these checks on pushes and pull requests. Tests live beside the code the
 
 Read [AGENTS.md](AGENTS.md) for repository conventions and the [UI checklist](docs/ui-rules/checklist.md) before changing the interface. Keep credentials in the ignored `.env.local`; `.env.example` contains variable names and placeholders only.
 
-The [documentation index](docs/README.md) links to setup, design rules, technical notes and dated reviews. Historical task briefs are archived separately from current development guidance.
+[Deploying](docs/deploy.md) is one command, `npm run deploy`. The [documentation index](docs/README.md) links to setup, design rules, technical notes and dated reviews. Historical task briefs are archived separately from current development guidance.
 
 </details>

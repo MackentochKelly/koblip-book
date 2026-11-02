@@ -18,7 +18,8 @@ Koblip Book is a booking app for any local business: customers book appointments
 - `npm run typecheck` — typecheck (`tsc --noEmit`)
 - `npm run lint` — lint (`eslint`)
 - `npm test` — run tests once (`vitest run`)
-- `npm run build` — production build
+- `npm run build` — production build (never on the server: it runs out of memory)
+- `npm run deploy` — build `main` on this machine and put it live, on the owner's go-ahead only ([docs/deploy.md](docs/deploy.md))
 
 ## Structure
 
