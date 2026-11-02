@@ -4,6 +4,7 @@ import { BottomPanel } from "@/components/bottom-panel"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -18,6 +19,7 @@ export function ResponsivePanel({
   open,
   onClose,
   title,
+  description,
   wide = false,
   footer,
   children,
@@ -25,6 +27,8 @@ export function ResponsivePanel({
   open: boolean
   onClose: () => void
   title: string
+  // One short line under the title.
+  description?: string
   wide?: boolean
   footer?: React.ReactNode
   children: React.ReactNode
@@ -32,7 +36,13 @@ export function ResponsivePanel({
   const phone = useIsMobile()
   if (phone) {
     return (
-      <BottomPanel open={open} onClose={onClose} title={title} footer={footer}>
+      <BottomPanel
+        open={open}
+        onClose={onClose}
+        title={title}
+        description={description}
+        footer={footer}
+      >
         {children}
       </BottomPanel>
     )
@@ -47,6 +57,7 @@ export function ResponsivePanel({
       <DialogContent className={cn(wide && "sm:max-w-3xl")}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
+          {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <div className="-mx-6 max-h-[60dvh] scroll-fade overflow-y-auto overscroll-contain px-6 py-2">
           {children}

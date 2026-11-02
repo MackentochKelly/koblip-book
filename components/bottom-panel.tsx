@@ -6,6 +6,7 @@ import { Drawer as DrawerPrimitive } from "@base-ui/react/drawer"
 import {
   Drawer,
   DrawerContent,
+  DrawerDescription,
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
@@ -108,6 +109,7 @@ export function BottomPanel({
   onClose,
   onClosed,
   title,
+  description,
   header,
   footer,
   children,
@@ -117,6 +119,8 @@ export function BottomPanel({
   // Once it has finished sliding away.
   onClosed?: () => void
   title: string
+  // One short line under the title.
+  description?: string
   header?: React.ReactNode
   footer?: React.ReactNode
   children: React.ReactNode
@@ -189,6 +193,9 @@ export function BottomPanel({
           {header ?? (
             <DrawerHeader>
               <DrawerTitle>{title}</DrawerTitle>
+              {description && (
+                <DrawerDescription>{description}</DrawerDescription>
+              )}
             </DrawerHeader>
           )}
           <div

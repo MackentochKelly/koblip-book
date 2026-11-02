@@ -161,6 +161,7 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
         open={open}
         onClose={() => setOpen(false)}
         title={HACKATHON.name}
+        description={t.about(dates, Object.keys(MUSE).length)}
         wide
         footer={
           <>
@@ -186,10 +187,7 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
           </>
         }
       >
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-muted-foreground">
-            {t.about(dates, Object.keys(MUSE).length)}
-          </p>
+        <div className="flex flex-col gap-4 pt-3">
           <ViewTabs
             views={[
               { id: "ai", label: t.tabs.ai },
