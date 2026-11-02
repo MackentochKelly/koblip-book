@@ -61,6 +61,8 @@ const messages: typeof en = {
       free: "¿Quién está libre mañana?",
       book: "Reservar a un cliente",
       services: "Ver mis servicios",
+      week: "¿Cómo va esta semana?",
+      customers: "¿Quiénes son mis clientes más nuevos?",
     },
   },
   composer: {

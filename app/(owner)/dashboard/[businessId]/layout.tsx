@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 
 import { Toaster } from "@/components/ui/sonner"
+import { AssistantFloat } from "@/features/assistant/components/assistant-float"
 import {
   getMyBusinesses,
   getOwnerBusiness,
@@ -46,6 +47,9 @@ export default async function BusinessDashboardLayout({
         businesses={businesses}
         owner={{ name: owner.name, email: owner.email, image: owner.image }}
         bell={<NotificationBell />}
+        assistantFloat={
+          <AssistantFloat businessId={business.id} language={language} />
+        }
       >
         {/* A demo guest has no email of its own to confirm. */}
         {!owner.emailVerified && !owner.isGuest && (

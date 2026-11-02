@@ -15,16 +15,13 @@ import {
 
 import { AppInset } from "@/components/app-inset"
 import { BottomTabBar, TabBarLink } from "@/components/bottom-tab-bar"
-import { FloatingLink } from "@/components/floating-link"
 import { PageContent } from "@/components/page-content"
 import { PhotoWordsProvider } from "@/components/photo-upload"
 import { SpinSwap } from "@/components/spin-swap"
 import { Button } from "@/components/ui/button"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { VoiceGlobe } from "@/components/voice-globe"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
-import { useIsDesktop } from "@/hooks/use-is-desktop"
 import { UPLOAD_RULES } from "@/lib/upload-rules"
 import { cn } from "@/lib/utils"
 import {
@@ -59,18 +56,21 @@ const ADD_PAGES = ["/customers", "/services", "/team"]
 // The owner area: the ☰ menu (folding on a computer, sliding in on a phone),
 // a bottom tab bar on a phone for the main pages, and a top bar with the
 // business name, its public page and the account menu. `bell` is the
-// notifications bell, in the top bar beside the account menu.
+// notifications bell, in the top bar beside the account menu. `assistantFloat`
+// floats over every page but the assistant's own.
 export function DashboardShell({
   business,
   businesses,
   owner,
   bell,
+  assistantFloat,
   children,
 }: {
   business: { id: string; slug: string; name: string }
   businesses: OwnedBusiness[]
   owner: { name: string; email: string; image: string | null }
   bell?: React.ReactNode
+  assistantFloat?: React.ReactNode
   children: React.ReactNode
 }) {
   const pathname = usePathname()
@@ -84,7 +84,6 @@ export function DashboardShell({
   const base = `/dashboard/${business.id}`
   const assistantHref = `${base}/assistant`
   const assistantOpen = pathname.startsWith(assistantHref)
-  const desktop = useIsDesktop()
   const addPage = ADD_PAGES.find((path) => pathname.startsWith(base + path))
   // Until the page gives its own, the + is named for the page and waits.
   const addLabel =
@@ -194,17 +193,7 @@ export function DashboardShell({
             </div>
             {PHONE_RIGHT.map((path) => tab(path))}
           </BottomTabBar>
-          {/* The phone has the tab bar's middle button for this. */}
-          {desktop && !assistantOpen && (
-            <FloatingLink
-              id="assistant"
-              href={assistantHref}
-              label={m.assistant}
-              bare
-            >
-              <VoiceGlobe className="size-full" />
-            </FloatingLink>
-          )}
+          {!assistantOpen && assistantFloat}
         </SidebarProvider>
       </CommandMenuProvider>
     </TooltipProvider>

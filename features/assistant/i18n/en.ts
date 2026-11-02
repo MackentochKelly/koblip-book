@@ -66,6 +66,8 @@ const messages = {
       free: "Who is free tomorrow?",
       book: "Book a client",
       services: "Show my services",
+      week: "How is this week going?",
+      customers: "Who are my newest customers?",
     },
   },
   composer: {
