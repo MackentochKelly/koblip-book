@@ -77,7 +77,7 @@ const bookings: typeof en = {
   viewAll: "Ver todas",
   list: {
     tabs: { bookings: "Reservas", calendar: "Calendario" },
-    search: "Buscar cliente, teléfono o servicio",
+    search: "Buscar reservas",
     statuses: {
       all: "Todas",
       upcoming: "Próximas",
