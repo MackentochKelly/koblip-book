@@ -24,13 +24,11 @@ import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { HACKATHON, MUSE } from "@/lib/hackathon"
 import { messagesFor } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
@@ -187,20 +185,24 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
             onChange={setTab}
             ariaLabel={HACKATHON.name}
           />
-          <ItemGroup className="gap-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {rows[tab].map(({ icon, title, description, tag }) => (
-              <Item key={title} variant="muted" size="sm">
-                <ItemMedia variant="icon">{icon}</ItemMedia>
-                <ItemContent>
-                  <ItemTitle>
-                    {title}
+              <Card key={title} size="sm">
+                <CardHeader>
+                  {/* The icon, and the Meta model on the same row, so the
+                      words below get the card's full width. */}
+                  <div className="mb-1 flex items-start justify-between gap-2">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-muted [&_svg:not([class*='size-'])]:size-5">
+                      {icon}
+                    </div>
                     {tag && <Badge variant="secondary">{tag}</Badge>}
-                  </ItemTitle>
-                  <ItemDescription>{description}</ItemDescription>
-                </ItemContent>
-              </Item>
+                  </div>
+                  <CardTitle>{title}</CardTitle>
+                  <CardDescription>{description}</CardDescription>
+                </CardHeader>
+              </Card>
             ))}
-          </ItemGroup>
+          </div>
         </div>
       </ResponsivePanel>
     </>

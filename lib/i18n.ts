@@ -423,56 +423,61 @@ const en = {
   hackathon: {
     badge: "Built for the Meta AI Hackathon",
     about: (dates: string) =>
-      `Built during the event, ${dates}, on Meta's models.`,
+      `Built during the event, ${dates}, with Meta's AI.`,
     tabs: { ai: "Meta AI", rules: "Rules", whatsapp: "WhatsApp" },
     ai: {
       assistant: {
-        title: "Your assistant",
-        description: "Runs bookings, services, team and hours by typing.",
+        title: "An assistant for your day",
+        description:
+          "Ask in plain words, like “Book Ana at 3 pm”. It acts once you say yes.",
       },
       voice: {
-        title: "Talking mode",
-        description: "Hears you live, so you can run the day hands-free.",
+        title: "Talk instead of typing",
+        description: "Turn on talking mode and just speak. It hears you live.",
       },
       setup: {
-        title: "One-minute setup",
+        title: "Your page in a minute",
         description:
-          "Writes services, prices, add-ons and policies from Google Maps.",
+          "Pick your business on Google Maps. It suggests services, prices and policies to start.",
       },
       portraits: {
-        title: "Team photos",
-        description: "Draws a starter photo for each team member.",
+        title: "Photos for your team",
+        description:
+          "No team photos yet? It draws one for each person. Swap in a real one anytime.",
       },
       about: {
-        title: "About text",
-        description: "Writes and polishes your business's About.",
+        title: "Your About, written for you",
+        description:
+          "A short intro customers read on your page. It can also tidy yours.",
       },
       translate: {
-        title: "In Spanish too",
-        description: "Translates your services and details.",
+        title: "Your page in Spanish too",
+        description:
+          "It translates your services and details, so more customers can book.",
       },
     },
     rules: {
       newWork: {
-        title: "New work only",
+        title: "Made during the event",
         description: (date: string) =>
-          `First commit on ${date}. Every step is in the public history.`,
+          `Started on ${date}. Every change is dated in the public history.`,
       },
       openSource: {
-        title: "Open source",
+        title: "Open for anyone to check",
         description: "All the code is public on GitHub.",
       },
       metaModels: {
-        title: "Meta's models",
-        description: "Text, voice and images run on the Meta Model API.",
+        title: "Powered by Meta's AI",
+        description: "Writing, listening and pictures all use Meta's models.",
       },
       control: {
-        title: "You approve every change",
-        description: "The assistant asks before it changes anything.",
+        title: "Nothing changes without you",
+        description: "The assistant shows each change and waits for your yes.",
       },
       track: {
-        title: "Build for Your World",
-        description: "Our track: real work for local businesses.",
+        title: "Built for real businesses",
+        description:
+          "Our track, Build for Your World: giving local businesses time back.",
       },
     },
     code: "See the code",
@@ -880,56 +885,61 @@ const es: Messages = {
   hackathon: {
     badge: "Hecho para el Meta AI Hackathon",
     about: (dates: string) =>
-      `Hecho durante el evento, ${dates}, con los modelos de Meta.`,
+      `Hecho durante el evento, ${dates}, con la IA de Meta.`,
     tabs: { ai: "Meta AI", rules: "Reglas", whatsapp: "WhatsApp" },
     ai: {
       assistant: {
-        title: "Tu asistente",
-        description: "Maneja citas, servicios, equipo y horario escribiendo.",
+        title: "Un asistente para tu día",
+        description:
+          "Pide en palabras simples, como “Reserva a Ana a las 15:00”. Actúa cuando dices que sí.",
       },
       voice: {
-        title: "Modo de voz",
-        description: "Te escucha en vivo para llevar el día sin manos.",
+        title: "Habla en vez de escribir",
+        description: "Activa el modo de voz y habla. Te escucha en vivo.",
       },
       setup: {
-        title: "Listo en un minuto",
+        title: "Tu página en un minuto",
         description:
-          "Escribe servicios, precios, extras y políticas desde Google Maps.",
+          "Elige tu negocio en Google Maps. Sugiere servicios, precios y políticas para empezar.",
       },
       portraits: {
-        title: "Fotos del equipo",
-        description: "Dibuja una foto inicial para cada persona del equipo.",
+        title: "Fotos para tu equipo",
+        description:
+          "¿Aún sin fotos? Dibuja una para cada persona. Cámbiala por una real cuando quieras.",
       },
       about: {
-        title: "Texto Acerca de",
-        description: "Escribe y pule el Acerca de tu negocio.",
+        title: "Tu Acerca de, ya escrito",
+        description:
+          "Una breve presentación que tus clientes leen en tu página. También pule la tuya.",
       },
       translate: {
-        title: "También en español",
-        description: "Traduce tus servicios y datos.",
+        title: "Tu página también en español",
+        description:
+          "Traduce tus servicios y datos, para que más clientes puedan reservar.",
       },
     },
     rules: {
       newWork: {
-        title: "Solo trabajo nuevo",
+        title: "Hecho durante el evento",
         description: (date: string) =>
-          `Primer commit el ${date}. Cada paso está en el historial público.`,
+          `Empezó el ${date}. Cada cambio tiene fecha en el historial público.`,
       },
       openSource: {
-        title: "Código abierto",
+        title: "Abierto para que cualquiera lo revise",
         description: "Todo el código es público en GitHub.",
       },
       metaModels: {
-        title: "Modelos de Meta",
-        description: "Texto, voz e imágenes usan la Meta Model API.",
+        title: "Con la IA de Meta",
+        description: "Escribir, escuchar e imágenes usan los modelos de Meta.",
       },
       control: {
-        title: "Tú apruebas cada cambio",
-        description: "El asistente pregunta antes de cambiar algo.",
+        title: "Nada cambia sin ti",
+        description: "El asistente muestra cada cambio y espera tu sí.",
       },
       track: {
-        title: "Build for Your World",
-        description: "Nuestra categoría: trabajo real para negocios locales.",
+        title: "Hecho para negocios reales",
+        description:
+          "Nuestra categoría, Build for Your World: devolver tiempo a los negocios locales.",
       },
     },
     code: "Ver el código",
