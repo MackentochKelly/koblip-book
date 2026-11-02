@@ -1,7 +1,7 @@
 "use client"
 
 import { MeshGradient } from "@paper-design/shaders-react"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence, motion, useInView } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 
 import { celebrate } from "@/components/celebration"
@@ -18,6 +18,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useThemeColors } from "@/hooks/use-theme-colors"
 import { initials } from "@/lib/initials"
 import type { Messages } from "@/lib/i18n"
+import { SHOWCASE_WASH_MARGIN } from "@/lib/showcase-rules"
 import { cn } from "@/lib/utils"
 
 type Sample = Messages["home"]["features"]["sample"]
@@ -72,15 +73,18 @@ export function Scene({
 }) {
   const colors = useThemeColors(tokens)
   const look = useHomeLook()
+  const box = useRef<HTMLDivElement>(null)
+  const near = useInView(box, { margin: SHOWCASE_WASH_MARGIN })
   return (
     <div
+      ref={box}
       className={cn(
         "relative isolate flex size-full items-center justify-center p-4",
         look === "calm" && "bg-muted",
         look === "glow" && "bg-soft-glow"
       )}
     >
-      {colors && (look === "colour" || (look === "bands" && featured)) && (
+      {near && colors && (look === "colour" || (look === "bands" && featured)) && (
         <MeshGradient
           aria-hidden
           colors={colors}

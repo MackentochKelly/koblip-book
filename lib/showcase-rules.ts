@@ -1,3 +1,9 @@
+// How near the screen a picture's colour wash starts drawing. Each wash uses
+// one of the browser's few graphics slots (about 16 a page; past that it
+// drops the oldest, the hero's moving colours), so only those near the
+// screen hold one.
+export const SHOWCASE_WASH_MARGIN = "200px"
+
 // The home page's self-playing pictures ("How it works"): how many rounds
 // they play before resting (WCAG 2.2.2: nothing moves by itself for long
 // without a way to stop it) and each story's timing, in ms.
