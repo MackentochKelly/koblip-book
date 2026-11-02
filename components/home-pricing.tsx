@@ -3,6 +3,7 @@
 import Image from "next/image"
 
 import { Box, Scene } from "@/components/feature-preview"
+import { FindBusinessButton } from "@/components/find-business-button"
 import { HOME_SECTION_IDS, HomeBigTitle } from "@/components/home-section-title"
 import {
   showcaseCardClassName,
@@ -10,7 +11,6 @@ import {
 } from "@/components/showcase-row"
 import { Badge } from "@/components/ui/badge"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardAction,
@@ -20,8 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { CheckIcon, SearchIcon } from "@/components/ui/icons"
-import { useFindBusiness } from "@/hooks/use-find-business"
+import { CheckIcon } from "@/components/ui/icons"
 import { moneyShortParts } from "@/lib/format-price"
 import type { Messages } from "@/lib/i18n"
 import { PRICING_RULES } from "@/lib/pricing-rules"
@@ -46,7 +45,6 @@ export function HomePricing({
   words: Messages["home"]
   locale: string
 }) {
-  const findBusiness = useFindBusiness()
   const t = words.pricing
   return (
     <section
@@ -69,10 +67,10 @@ export function HomePricing({
           }
         >
           <CardFooter className="mt-auto">
-            <Button size="lg" className="w-full" onClick={findBusiness}>
-              <SearchIcon data-icon="inline-start" />
+            {/* Full width and a full 44px tall: the card's one action. */}
+            <FindBusinessButton className="h-11 w-full text-base">
               {words.cta.button}
-            </Button>
+            </FindBusinessButton>
           </CardFooter>
         </PlanCard>
         <PlanCard

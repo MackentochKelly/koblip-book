@@ -4,9 +4,7 @@ import { heroEdgeClassName } from "@/components/glass-frame"
 import { homeGroupSpaceClassName } from "@/components/home-band"
 import { HeroGradient } from "@/components/hero-gradient"
 import { useHomeLook } from "@/components/home-look"
-import { Button } from "@/components/ui/button"
-import { SearchIcon } from "@/components/ui/icons"
-import { useFindBusiness } from "@/hooks/use-find-business"
+import { FindBusinessButton } from "@/components/find-business-button"
 import { cn } from "@/lib/utils"
 
 // The home page's last call to action: a small copy of the hero panel
@@ -21,7 +19,6 @@ export function HomeCta({
   button: string
   hint: string
 }) {
-  const findBusiness = useFindBusiness()
   // The "bands" look: a smaller card in the middle, with room round it, so
   // the page ends on an invitation, not a second hero.
   const bands = useHomeLook() === "bands"
@@ -50,19 +47,10 @@ export function HomeCta({
           {title}
         </h2>
         <div className="flex flex-col items-center gap-3">
-          <Button
-            size="lg"
-            onClick={findBusiness}
-            // A glass ring around it, like the frame around the search box.
-            className="ring-6 ring-glass-frame-edge"
-          >
-            <SearchIcon
-              data-icon="inline-start"
-              // A little bigger and bolder, to match the button's words.
-              className="size-5 stroke-[2.25]"
-            />
+          {/* A glass ring around it, like the frame around the search box. */}
+          <FindBusinessButton className="ring-6 ring-glass-frame-edge">
             {button}
-          </Button>
+          </FindBusinessButton>
           <p className="text-sm text-hero-foreground">{hint}</p>
         </div>
       </div>
