@@ -130,6 +130,33 @@ test("startPreparing leaves demo copies alone", async () => {
   expect(mocks.draftFor).not.toHaveBeenCalled()
 })
 
+test("startPreparing waits for every photo, without delaying Spanish or rejecting for a failed photo", async () => {
+  const biz = business()
+  let finishPhoto: (value: string) => void = () => {}
+  let failPhoto: (error: Error) => void = () => {}
+  mocks.hasCatalog.mockResolvedValue(true)
+  mocks.catalogSummary.mockResolvedValue({
+    created: true,
+    team: [{ id: "tm-slow" }, { id: "tm-fails" }],
+  })
+  mocks.policyParts.mockResolvedValue({ texts: true, points: true })
+  mocks.drawMemberPhoto
+    .mockImplementationOnce(() => new Promise((resolve) => { finishPhoto = resolve }))
+    .mockImplementationOnce(() => new Promise((_resolve, reject) => { failPhoto = reject }))
+  const translate = vi.fn(async () => {})
+  const settled = vi.fn()
+  const done = startPreparing(biz, translate).then(settled)
+  await vi.waitFor(() => expect(translate).toHaveBeenCalledOnce())
+  expect(mocks.drawMemberPhoto).toHaveBeenCalledTimes(2)
+  expect(settled).not.toHaveBeenCalled()
+  failPhoto(new Error("photo"))
+  await Promise.resolve()
+  expect(settled).not.toHaveBeenCalled()
+  finishPhoto("/photos/slow.webp")
+  await expect(done).resolves.toBeUndefined()
+  expect(settled).toHaveBeenCalledOnce()
+})
+
 test("saved setup resumes its rows, missing photos and Spanish after the store is cleared", async () => {
   const biz = business()
   mocks.draftFor.mockResolvedValue({ team: { role: "Photographer" } })

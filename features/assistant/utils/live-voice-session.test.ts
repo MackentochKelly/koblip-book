@@ -480,6 +480,14 @@ test("a clean close at the time limit ends without an error", () => {
   expect(t.parts.onEnd).toHaveBeenCalled()
 })
 
+test("a service restart reports unavailable and ends the browser's voice session", () => {
+  const t = setup()
+  t.session.closed(1012)
+  expect(t.parts.onError).toHaveBeenCalledWith("unavailable")
+  expect(t.parts.close).toHaveBeenCalled()
+  expect(t.parts.onEnd).toHaveBeenCalled()
+})
+
 test("nothing is spoken after the end", async () => {
   const t = setup()
   t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Hi" })

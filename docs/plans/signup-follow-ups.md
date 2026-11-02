@@ -83,6 +83,11 @@ which puts npm and a shell between PM2 and the server. Team photo jobs in
 then exits; tests cover it; checked once on the server with the owner's
 go-ahead.
 
+**Built (2026-11-02), server check still to do:** the custom server drains
+requests and `after()` work, including team photos, with a 28 s limit.
+PM2 runs the server directly with a 30 s timeout; release and rollback
+read the checked-out configuration, with a fallback for older commits.
+
 ### F3 · Sign-in works on every address the app runs on 🟡
 
 **Problem:** the sign-up audit got `403 INVALID_ORIGIN` from better-auth.

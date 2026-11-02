@@ -11,6 +11,7 @@ import { WebSocket, WebSocketServer } from "ws"
 import { relayVoice } from "./server/voice-relay.mjs"
 import { handleVoiceUpgrade } from "./server/voice-upgrade.mjs"
 import { createVoiceSlots } from "./server/voice-slots.mjs"
+import { createShutdownHandler } from "./server/shutdown.mjs"
 
 const port = parseInt(process.env.PORT || "3000", 10)
 const hostname = process.env.HOSTNAME || "localhost"
@@ -57,5 +58,8 @@ server.on("upgrade", (request, socket, head) => {
   handleUpgrade(request, socket, head)
 })
 server.listen(port, hostname, () => {
+  const shutdown = createShutdownHandler({ server, app, wss, dev })
+  process.on("SIGINT", shutdown)
+  process.on("SIGTERM", shutdown)
   console.log(`> Server listening at http://${hostname}:${port}`)
 })

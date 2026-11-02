@@ -36,31 +36,54 @@ wait_until_it_answers() {
   return 1
 }
 
+# Recreate the entry so PM2 reads the checked-out commit's configuration.
+# A failed start may already have deleted it; absence must not block rollback.
+start_app() {
+  local pid
+  # A stopped entry reports 0, a missing one nothing; daemon errors fail.
+  pid=$(pm2 pid "$PM2_NAME") || return 1
+  if [ -n "$pid" ]; then
+    pm2 delete "$PM2_NAME" > /dev/null || return 1
+  fi
+  if [ -f ecosystem.config.cjs ]; then
+    BOOK_PM2_NAME="$PM2_NAME" BOOK_PORT="$PORT" pm2 start ecosystem.config.cjs --only "$PM2_NAME" > /dev/null || return 1
+  else
+    # The first rollback can return to a commit without the ecosystem file.
+    # .env.production has no port or host, and the deleted entry held them.
+    PORT="$PORT" HOSTNAME=127.0.0.1 pm2 start npm --name "$PM2_NAME" -- start > /dev/null || return 1
+  fi
+  wait_until_it_answers || return 1
+  pm2 save > /dev/null || return 1
+}
+
 # Undoes only what was done, newest first. The app is stopped throughout, so
 # restoring the database loses nothing but what a failed start wrote.
 roll_back() {
   echo "==> Putting ${OLD:0:7} back"
-  pm2 stop "$PM2_NAME" > /dev/null || true
+  local pid
+  pid=$(pm2 pid "$PM2_NAME") || return 1
+  if [ -n "$pid" ]; then
+    pm2 stop "$PM2_NAME" > /dev/null || return 1
+  fi
   if $NEXT_SWAPPED; then
-    rm -rf .next
-    mv "$WORK/previous/.next" .next
+    rm -rf .next || return 1
+    mv "$WORK/previous/.next" .next || return 1
   fi
   if $MODULES_SWAPPED; then
-    rm -rf node_modules
-    mv "$WORK/previous/node_modules" node_modules
+    rm -rf node_modules || return 1
+    mv "$WORK/previous/node_modules" node_modules || return 1
   fi
   if $MIGRATED; then
-    cp "$BACKUP" "$DB"
+    cp "$BACKUP" "$DB" || return 1
   fi
   if $MERGED; then
-    git reset -q --hard "$OLD"
+    git reset -q --hard "$OLD" || return 1
   fi
-  pm2 restart "$PM2_NAME" --update-env > /dev/null
-  if wait_until_it_answers; then
+  if start_app; then
     echo "rolled back: ${OLD:0:7} is live"
     return 0
   fi
-  echo "ROLLBACK FAILED: nothing answers on port $PORT"
+  echo "ROLLBACK FAILED: could not start, verify or save the PM2 entry on port $PORT"
   return 1
 }
 
@@ -74,7 +97,11 @@ finish() {
       if roll_back; then
         status="rolled back; ${OLD:0:7} is live"
       else
-        status="the site is DOWN; rollback failed, see $WORK/release.log"
+        if answers; then
+          status="rollback incomplete; the site answers but restore or PM2 save failed, see $WORK/release.log"
+        else
+          status="the site is DOWN; rollback failed, see $WORK/release.log"
+        fi
       fi
     fi
   fi
@@ -115,17 +142,17 @@ for part in images fetch-cache; do
   fi
 done
 
-# The site is down from here until the new version answers: seconds.
+# Drain running work before switching; an idle app stops at once.
 echo "==> Switching"
-pm2 stop "$PM2_NAME" > /dev/null
 STOPPED=true
+pm2 stop "$PM2_NAME" > /dev/null
 
 BACKUP="$DB.bak-pre-${OLD:0:7}-$(date +%Y%m%d%H%M%S)"
 cp "$DB" "$BACKUP"
 echo "database backup: $BACKUP"
 
-git merge -q --ff-only "$SHA"
 MERGED=true
+git merge -q --ff-only "$SHA"
 
 if $NEW_MODULES; then
   mv node_modules "$WORK/previous/node_modules"
@@ -143,8 +170,7 @@ mv .next "$WORK/previous/.next"
 NEXT_SWAPPED=true
 mv "$WORK/incoming/.next" .next
 
-pm2 restart "$PM2_NAME" --update-env > /dev/null
-wait_until_it_answers
+start_app
 LIVE=true
 echo "==> ${SHA:0:7} is answering on port $PORT"
 

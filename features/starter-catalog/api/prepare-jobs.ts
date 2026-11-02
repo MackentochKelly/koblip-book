@@ -126,15 +126,16 @@ export async function startPreparing(
   translate: () => Promise<unknown>
 ): Promise<void> {
   if (business.isDemo || business.setupFinishedAt !== null) return
+  const photos: Promise<unknown>[] = []
   const catalog = catalogJob(business).then((result) => {
     if (result.ok && result.summary.created) {
       for (const member of result.summary.team) {
         if (!member.photoUrl) {
-          void photoJob(business, member.id).catch(() => null)
+          photos.push(photoJob(business, member.id).catch(() => null))
         }
       }
     }
   })
   await Promise.allSettled([catalog, policiesJob(business)])
-  await Promise.resolve().then(translate).catch(() => null)
+  await Promise.allSettled([...photos, Promise.resolve().then(translate)])
 }
