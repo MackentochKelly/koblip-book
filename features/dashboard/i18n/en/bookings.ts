@@ -79,7 +79,7 @@ const bookings = {
   // The Bookings page: every booking in a date range, and a calendar.
   list: {
     tabs: { bookings: "Bookings", calendar: "Calendar" },
-    search: "Search customer, phone or service",
+    search: "Search bookings",
     statuses: {
       all: "All",
       upcoming: "Upcoming",
