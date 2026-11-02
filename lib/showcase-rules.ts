@@ -54,9 +54,10 @@ export const SHOWCASE_LOOP = {
     sheetIn: 2000,
     home: 3800,
   },
-  // "Get booked": today's list, and a new booking coming in on top.
-  booked: {
-    before: 1400,
-    shown: 3600,
+  // "Sign in with Google": the button is tapped, then signed in.
+  signIn: {
+    beforeTap: 1200,
+    tap: 700,
+    done: 3200,
   },
 } as const

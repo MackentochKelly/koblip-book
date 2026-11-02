@@ -327,16 +327,19 @@ const en = {
     steps: {
       title: "How it works",
       find: "Find your business",
-      findText: "Search it like on Google Maps.",
-      check: "Check your page",
-      checkText: "Your services, hours and photos are ready.",
-      share: "Share your link",
-      shareText: "Clients book from it, day or night.",
-      booked: "Get booked",
-      bookedText: "Bookings show up in your dashboard.",
+      findText: "Search it on Google Maps.",
+      signIn: "Sign in with Google",
+      signInText: "One tap. Free.",
+      check: "AI builds your page",
+      checkText: "Services, prices, photos, team.",
+      share: "Get booked",
+      shareText: "Share your link. Bookings come in.",
       // The sample shown in the step pictures.
       sample: {
         search: "Search",
+        google: "Continue with Google",
+        owner: "Lucía Gómez",
+        signedIn: "Signed in · Free",
         address: "Calle Mayor 12, Madrid",
         services: [
           { name: "Haircut", priceMinor: 2500 },
@@ -361,7 +364,6 @@ const en = {
         bookingService: "Haircut",
         bookingTime: "15:00",
         hours: { opens: "09:00", closes: "19:00" },
-        today: "Today",
       },
     },
     features: {
@@ -716,15 +718,18 @@ const es: Messages = {
     steps: {
       title: "Cómo funciona",
       find: "Busca tu negocio",
-      findText: "Búscalo como en Google Maps.",
-      check: "Revisa tu página",
-      checkText: "Tus servicios, horarios y fotos ya están listos.",
-      share: "Comparte tu enlace",
-      shareText: "Tus clientes reservan desde ahí, a cualquier hora.",
-      booked: "Recibe reservas",
-      bookedText: "Las reservas llegan a tu panel.",
+      findText: "Búscalo en Google Maps.",
+      signIn: "Entra con Google",
+      signInText: "Un toque. Gratis.",
+      check: "La IA crea tu página",
+      checkText: "Servicios, precios, fotos, equipo.",
+      share: "Recibe reservas",
+      shareText: "Comparte tu enlace. Llegan las reservas.",
       sample: {
         search: "Buscar",
+        google: "Continuar con Google",
+        owner: "Lucía Gómez",
+        signedIn: "Sesión iniciada · Gratis",
         address: "Calle Mayor 12, Madrid",
         services: [
           { name: "Corte", priceMinor: 2500 },
@@ -749,7 +754,6 @@ const es: Messages = {
         bookingService: "Corte",
         bookingTime: "15:00",
         hours: { opens: "09:00", closes: "19:00" },
-        today: "Hoy",
       },
     },
     features: {
