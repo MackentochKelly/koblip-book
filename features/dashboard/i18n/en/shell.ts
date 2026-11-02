@@ -37,6 +37,7 @@ const shell = {
   signOut: "Sign out",
   // Home's greeting, by the business's clock; no name for a demo guest.
   greeting: {
+    eveningFrom: 18,
     morning: (name?: string) =>
       name ? `Good morning, ${name}` : "Good morning",
     afternoon: (name?: string) =>

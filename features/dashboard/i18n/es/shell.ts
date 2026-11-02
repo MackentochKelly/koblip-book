@@ -36,6 +36,8 @@ const shell: typeof en = {
   language: "Idioma",
   signOut: "Cerrar sesión",
   greeting: {
+    // "Buenas tardes" lasts until about 8pm.
+    eveningFrom: 20,
     morning: (name?: string) => (name ? `Buenos días, ${name}` : "Buenos días"),
     afternoon: (name?: string) =>
       name ? `Buenas tardes, ${name}` : "Buenas tardes",

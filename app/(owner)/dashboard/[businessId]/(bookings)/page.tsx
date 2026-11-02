@@ -81,9 +81,9 @@ export default async function BookingsPage({ params }: Props) {
   const firstName = session.isGuest
     ? undefined
     : session.name.trim().split(/\s+/)[0] || undefined
-  const greeting = (await getOwnerMessages()).shell.greeting[
-    partOfDay(business.timezone)
-  ](firstName)
+  const words = (await getOwnerMessages()).shell.greeting
+  const greeting =
+    words[partOfDay(business.timezone, words.eveningFrom)](firstName)
   const openDays = new Set(owner.hours.map((hour) => hour.weekday)).size
   const confirmed = business.detailsConfirmedAt !== null
   const steps = setupTasks(

@@ -1,11 +1,14 @@
-// Home's greeting: morning until noon, afternoon until 6pm, then evening,
-// by the clock where the business is.
+// Home's greeting: morning until noon, afternoon until the language's evening
+// hour (i18n shell.greeting.eveningFrom), by the clock where the business is.
 const AFTERNOON_FROM = 12
-const EVENING_FROM = 18
 
 export type PartOfDay = "morning" | "afternoon" | "evening"
 
-export function partOfDay(timeZone: string, now: Date = new Date()): PartOfDay {
+export function partOfDay(
+  timeZone: string,
+  eveningFrom: number,
+  now: Date = new Date()
+): PartOfDay {
   const hour = Number(
     new Intl.DateTimeFormat("en-US", {
       timeZone,
@@ -14,6 +17,6 @@ export function partOfDay(timeZone: string, now: Date = new Date()): PartOfDay {
     }).format(now)
   )
   if (hour < AFTERNOON_FROM) return "morning"
-  if (hour < EVENING_FROM) return "afternoon"
+  if (hour < eveningFrom) return "afternoon"
   return "evening"
 }

@@ -64,7 +64,7 @@ export function BookingsView({
   setup?: React.ReactNode
   // ISO time the page was loaded: what is upcoming and what can be done.
   now: string
-  // The assistant's Ask card, under today's line.
+  // The assistant's Ask card, the Assistant widget's only part.
   assistant?: React.ReactNode
   summary: PeriodSummary
   currency: string
