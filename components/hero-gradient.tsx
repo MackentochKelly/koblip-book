@@ -23,7 +23,7 @@ const LOOKS = {
     colorTokens: ["--chart-1", "--hero-accent", "--chart-2", "--hero-accent"],
     distortion: 0.9,
     swirl: 0.6,
-    speed: 1.6,
+    speed: 1.2,
     veiled: false,
   },
 } as const
