@@ -74,12 +74,13 @@ npm test
 
 # Only NEXT_PUBLIC_* values are baked into the build, and they come from the
 # server's own settings. Every secret stays there: the server reads them when
-# it runs.
+# it runs. The auth placeholders only keep Better Auth quiet while pages build.
 echo "==> Building"
 set -a
 eval "$(ssh "$HOST" "grep '^NEXT_PUBLIC_' $APP/.env.production")"
 set +a
-npx next build
+BETTER_AUTH_SECRET=build-only-never-used-when-the-app-runs \
+  BETTER_AUTH_URL="$SITE" npx next build
 
 echo "==> Uploading"
 STAGE=$(mktemp -d)

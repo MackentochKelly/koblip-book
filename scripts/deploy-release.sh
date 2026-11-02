@@ -98,7 +98,7 @@ tar --no-same-owner -xzf "$WORK/next.tgz" -C "$WORK/incoming"
 [ -s "$WORK/incoming/.next/BUILD_ID" ]
 
 NEW_MODULES=false
-if ! git diff --quiet "$OLD" "$SHA" -- package.json package-lock.json; then
+if ! git diff --quiet "$OLD" "$SHA" -- package-lock.json; then
   echo "==> Installing packages"
   mkdir -p "$WORK/incoming/deps"
   git show "$SHA:package.json" > "$WORK/incoming/deps/package.json"
