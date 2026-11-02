@@ -1,6 +1,6 @@
 "use client"
 
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { Box } from "@/components/feature-preview"
@@ -30,11 +30,12 @@ import {
   SearchIcon,
 } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useElementHeight } from "@/hooks/use-element-height"
 import { useFindBusiness } from "@/hooks/use-find-business"
 import { DEMO_VIEWS, type DemoPaths, type DemoView } from "@/lib/demo-rules"
 import type { Messages } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
-import { LAYOUT_MOVE, SMALL_FADE } from "@/lib/motion-tokens"
+import { FADE_IN, LARGE_MOVE, SMALL_FADE } from "@/lib/motion-tokens"
 import { cn } from "@/lib/utils"
 
 type Words = Messages["home"]["action"]
@@ -298,27 +299,19 @@ export function SeeItInAction({
               aria-label={words.tabsLabel}
               className="hidden w-full max-w-md flex-col gap-2 justify-self-end lg:flex"
             >
-              {/* Changing step: the other steps slide to their new places
-                  while the one opening fades in as the white card and the
-                  one closing fades back to a row. Only transform and
-                  opacity move (docs/ui-rules/motion.md); Reduce Motion
-                  keeps the fades. */}
+              {/* Changing step, like an accordion: the step opening
+                  unfolds into the white card while the one closing folds
+                  back to a row, and the rows between follow. */}
               {STEPS.map((view, index) => (
-                <motion.div
-                  key={view}
-                  layout="position"
-                  transition={LAYOUT_MOVE}
-                  // popLayout lifts the closing look out against this box.
-                  className="relative"
-                >
+                <StepFold key={view}>
                   <AnimatePresence mode="popLayout" initial={false}>
                     {view === step ? (
                       <motion.div
                         key="open"
-                        initial={{ opacity: 0, scale: 0.97 }}
-                        animate={{ opacity: 1, scale: 1 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
                         exit={{ opacity: 0, transition: SMALL_FADE }}
-                        transition={LAYOUT_MOVE}
+                        transition={FADE_IN}
                       >
                         <Box className="max-w-none">
                           <div
@@ -343,8 +336,8 @@ export function SeeItInAction({
                         key="closed"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={SMALL_FADE}
+                        exit={{ opacity: 0, transition: SMALL_FADE }}
+                        transition={FADE_IN}
                       >
                         <Item
                           render={<button type="button" />}
@@ -370,7 +363,7 @@ export function SeeItInAction({
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </motion.div>
+                </StepFold>
               ))}
             </div>
             <div className="relative isolate lg:justify-self-start">
@@ -417,5 +410,31 @@ export function SeeItInAction({
         )}
       </div>
     </section>
+  )
+}
+
+// One step on computers, growing or shrinking to its content at a large
+// change's pace (the install guide's way: the height follows the measured
+// content), so a step unfolds in place and the steps under it move with
+// it. The look inside crossfades: the old one is lifted out (popLayout)
+// and fades while the new one fades in. It clips only while moving, so a
+// row's focus ring shows. Reduce Motion: straight to size.
+function StepFold({ children }: { children: React.ReactNode }) {
+  const [measure, height] = useElementHeight()
+  const still = useReducedMotion()
+  const [moving, setMoving] = useState(false)
+  return (
+    <motion.div
+      initial={false}
+      animate={{ height: height ?? "auto" }}
+      transition={still ? { duration: 0 } : LARGE_MOVE}
+      onAnimationStart={() => setMoving(true)}
+      onAnimationComplete={() => setMoving(false)}
+      className={cn(moving && "overflow-hidden")}
+    >
+      <div ref={measure} className="relative">
+        {children}
+      </div>
+    </motion.div>
   )
 }
