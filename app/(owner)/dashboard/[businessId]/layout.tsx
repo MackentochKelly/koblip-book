@@ -6,6 +6,7 @@ import {
   getMyBusinesses,
   getOwnerBusiness,
 } from "@/features/dashboard/api/queries"
+import { DemoBar } from "@/features/dashboard/components/demo-bar"
 import { DashboardShell } from "@/features/dashboard/components/dashboard-shell"
 import {
   getOwnerLanguage,
@@ -51,6 +52,7 @@ export default async function BusinessDashboardLayout({
           <AssistantFloat businessId={business.id} language={language} />
         }
       >
+        {owner.isGuest && <DemoBar />}
         {/* A demo guest has no email of its own to confirm. */}
         {!owner.emailVerified && !owner.isGuest && (
           <VerifyEmailAlert

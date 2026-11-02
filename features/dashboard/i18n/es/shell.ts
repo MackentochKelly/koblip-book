@@ -35,6 +35,11 @@ const shell: typeof en = {
   device: "Dispositivo",
   language: "Idioma",
   signOut: "Cerrar sesión",
+  demo: {
+    title: "Esto es una demo",
+    text: "Mira todo. Se borra en un día.",
+    action: "Crea tu página",
+  },
   greeting: {
     // "Buenas tardes" lasts until about 8pm.
     eveningFrom: 20,

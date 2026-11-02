@@ -35,6 +35,12 @@ const shell = {
   device: "Device",
   language: "Language",
   signOut: "Sign out",
+  // The bar over the full app for a home page demo guest.
+  demo: {
+    title: "This is a demo",
+    text: "Look around. It resets in a day.",
+    action: "Get your own page",
+  },
   // Home's greeting, by the business's clock; no name for a demo guest.
   greeting: {
     eveningFrom: 18,

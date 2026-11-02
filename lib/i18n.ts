@@ -314,11 +314,18 @@ const en = {
         page: "Book",
         dashboard: "See it arrive",
         assistant: "Ask your AI",
+        try: "Try it yourself",
       },
       hints: {
         page: "Pick a time on the real booking page.",
         dashboard: "Your booking lands here in seconds.",
         assistant: "Ask what's on today, or move a booking.",
+        try: "Open the full app. Click anything.",
+      },
+      // Step 4: the visitor's same demo, as the full app in a new tab.
+      open: {
+        dashboard: "Open the dashboard",
+        page: "Booking page",
       },
       tabsLabel: "Demo screens",
       tabs: { page: "Page", dashboard: "Dashboard", assistant: "Assistant" },
@@ -713,11 +720,17 @@ const es: Messages = {
         page: "Reserva",
         dashboard: "Mira cómo llega",
         assistant: "Pregunta a tu IA",
+        try: "Pruébalo tú",
       },
       hints: {
         page: "Elige una hora en la página de reservas real.",
         dashboard: "Tu reserva llega aquí en segundos.",
         assistant: "Pregunta qué hay hoy o mueve una reserva.",
+        try: "Abre la app completa. Toca lo que quieras.",
+      },
+      open: {
+        dashboard: "Abrir el panel",
+        page: "Página de reservas",
       },
       tabsLabel: "Pantallas de la demo",
       tabs: { page: "Página", dashboard: "Panel", assistant: "Asistente" },

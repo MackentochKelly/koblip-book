@@ -25,6 +25,7 @@ import {
 import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import {
   ArrowRightIcon,
+  ExternalLinkIcon,
   MaximizeIcon,
   MinimizeIcon,
   SearchIcon,
@@ -42,6 +43,11 @@ type Demo =
   | { state: "waiting" | "opening" | "failed" | "tooMany" }
   | { state: "ready"; paths: DemoPaths }
 
+// The steps beside the phone on computers: the three screens, then 4, the
+// same demo as the full app in a new tab.
+const STEPS = [...DEMO_VIEWS, "try"] as const
+type Step = (typeof STEPS)[number]
+
 // The phone's height: short enough that the whole panel fits on the
 // screen.
 const SCREEN = "h-[min(44rem,72dvh)]"
@@ -49,13 +55,14 @@ const SCREEN = "h-[min(44rem,72dvh)]"
 // "See it in action": the real app on the visitor's own demo copy
 // (features/demo, opened once by POST /api/demo when the section comes
 // near, so all three screens are the same guest's). 1, the booking page;
-// 2, the dashboard, where that booking arrives; 3, the AI assistant.
+// 2, the dashboard, where that booking arrives; 3, the AI assistant; 4, try
+// it yourself: the same copy as the full app, in a new tab.
 // Like the feature demos of big apps: one panel on the hero's colour wash,
 // one screen at a time. Computers follow the steps beside the phone: the
 // step you're on opens as the page's white card in its glass frame, with a
-// button to the next one, and the last ends on the search. Phones pick from
+// button to the next one, and the last opens the full app. Phones pick from
 // the shared tab row above it, with the step's line under it and the same
-// button below. Each screen opens on first use and is kept, so a booking
+// button below; after the assistant, it opens the full app. Each screen opens on first use and is kept, so a booking
 // started there survives switching steps.
 export function SeeItInAction({
   words,
@@ -71,7 +78,10 @@ export function SeeItInAction({
   const look = useHomeLook()
   const calm = look !== "colour"
   const [demo, setDemo] = useState<Demo>({ state: "waiting" })
+  // The screen in the phone, and the step beside it (step 4 keeps the
+  // dashboard in the phone).
   const [tab, setTab] = useState<DemoView>("page")
+  const [step, setStep] = useState<Step>("page")
   const [opened, setOpened] = useState<DemoView[]>(["page"])
   // Phones: the screen out of the phone, filling the window.
   const [expanded, setExpanded] = useState(false)
@@ -135,7 +145,9 @@ export function SeeItInAction({
     return () => window.removeEventListener("keydown", leave)
   }, [expanded])
 
-  function choose(view: DemoView) {
+  function choose(next: Step) {
+    const view = next === "try" ? "dashboard" : next
+    setStep(next)
     setTab(view)
     setOpened((list) => (list.includes(view) ? list : [...list, view]))
   }
@@ -153,26 +165,62 @@ export function SeeItInAction({
     />
   )
 
-  const nextView = DEMO_VIEWS[DEMO_VIEWS.indexOf(tab) + 1]
-  const nextButton = (
-    <Button
-      size="lg"
-      className="w-full"
-      onClick={() => (nextView ? choose(nextView) : findBusiness())}
-    >
-      {nextView ? (
-        <>
-          {words.steps[nextView]}
-          <ArrowRightIcon data-icon="inline-end" />
-        </>
-      ) : (
-        <>
+  // Step 4: the visitor's same demo as the full app, in a new tab so the
+  // home page stays; the booking page and the search beside it.
+  const paths = demo.state === "ready" ? demo.paths : null
+  const openApp = (
+    <div className="flex w-full flex-col gap-2">
+      <Button
+        size="lg"
+        className="w-full"
+        disabled={!paths}
+        nativeButton={false}
+        render={
+          <a
+            href={paths?.dashboard}
+            target="_blank"
+            rel="noopener noreferrer"
+          />
+        }
+      >
+        {words.open.dashboard}
+        <ExternalLinkIcon data-icon="inline-end" />
+      </Button>
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button
+          variant="ghost"
+          disabled={!paths}
+          nativeButton={false}
+          render={
+            <a
+              href={paths ? `${paths.page}?lang=${language}` : undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+            />
+          }
+        >
+          {words.open.page}
+          <ExternalLinkIcon data-icon="inline-end" />
+        </Button>
+        <Button variant="ghost" onClick={findBusiness}>
           <SearchIcon data-icon="inline-start" />
           {findBusinessLabel}
-        </>
-      )}
-    </Button>
+        </Button>
+      </div>
+    </div>
   )
+
+  const nextStep = STEPS[STEPS.indexOf(step) + 1]
+  const nextButton = nextStep ? (
+    <Button size="lg" className="w-full" onClick={() => choose(nextStep)}>
+      {words.steps[nextStep]}
+      <ArrowRightIcon data-icon="inline-end" />
+    </Button>
+  ) : (
+    openApp
+  )
+  // Phones have no step 4 tab: after the assistant, the full app.
+  const phoneButton = tab === "assistant" ? openApp : nextButton
 
   const problem =
     demo.state === "failed" || demo.state === "tooMany" ? (
@@ -246,8 +294,8 @@ export function SeeItInAction({
               aria-label={words.tabsLabel}
               className="hidden w-full max-w-md flex-col gap-2 justify-self-end lg:flex"
             >
-              {DEMO_VIEWS.map((view, index) =>
-                view === tab ? (
+              {STEPS.map((view, index) =>
+                view === step ? (
                   <Box key={view} className="max-w-none">
                     <AnimatePresence mode="wait" initial={false}>
                       <motion.div
@@ -350,7 +398,7 @@ export function SeeItInAction({
                 )}
               </PhoneMockup>
             </div>
-            <div className="w-full max-w-md lg:hidden">{nextButton}</div>
+            <div className="w-full max-w-md lg:hidden">{phoneButton}</div>
           </div>
         )}
       </div>
