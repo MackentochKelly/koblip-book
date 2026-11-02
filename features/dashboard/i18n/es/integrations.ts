@@ -1,4 +1,7 @@
+import { appWordsFor } from "@/lib/app-words"
 import type en from "../en/integrations"
+
+const apps = appWordsFor("es")
 
 const integrations: typeof en = {
   tabs: {
@@ -18,47 +21,19 @@ const integrations: typeof en = {
   soon: "Próximamente",
   about: (name: string) => `Sobre ${name}`,
   whatsapp: {
-    name: "WhatsApp",
-    description:
-      "WhatsApp Business oficial, directo de Meta. Envía recordatorios de reservas y difusiones desde el número de tu negocio.",
+    ...apps.whatsapp,
     manage: "Gestionar",
     useOwnNumber: "Usar tu propio número",
     disconnect: "Desconectar",
   },
-  sms: {
-    name: "SMS de Twilio",
-    description:
-      "Confirmaciones y recordatorios de reservas por mensaje de texto con Twilio, para clientes sin WhatsApp.",
-  },
-  email: {
-    name: "Email",
-    description:
-      "Confirmaciones, recordatorios y cambios de reservas enviados a tus clientes por email.",
-  },
-  instagram: {
-    name: "Instagram",
-    description:
-      "Un botón Reservar en tu perfil de Instagram, para que tus seguidores reserven en pocos toques.",
-  },
-  facebook: {
-    name: "Facebook",
-    description:
-      "Un botón Reservar en tu página de Facebook, para que reserven sin salir.",
-  },
-  googleBusiness: {
-    name: "Perfil de Empresa de Google",
-    description:
-      "Un botón Reservar en la Búsqueda y Maps de Google, donde te encuentran tus clientes.",
-  },
-  googleReviews: {
-    name: "Reseñas de Google",
-    description:
-      "Después de cada visita, pide a tus clientes una reseña en Google para conseguir más reservas.",
-  },
+  sms: apps.sms,
+  email: apps.email,
+  instagram: apps.instagram,
+  facebook: apps.facebook,
+  googleBusiness: apps.googleBusiness,
+  googleReviews: apps.googleReviews,
   googleCalendar: {
-    name: "Google Calendar",
-    description:
-      "Tus reservas en tu Google Calendar, al día con cada cambio.",
+    ...apps.googleCalendar,
     connect: "Conectar",
     disconnect: "Desconectar",
     disconnected: "Google Calendar desconectado.",
@@ -80,41 +55,20 @@ const integrations: typeof en = {
     busyNobodyHint: "No recibes reservas",
     saveFailed: "No se pudo guardar. Inténtalo de nuevo.",
     removeEvents: "Quitar también las reservas de Google Calendar",
-    removeEventsFailed: "Desconectado. No se pudieron quitar las reservas de Google Calendar.",
+    removeEventsFailed:
+      "Desconectado. No se pudieron quitar las reservas de Google Calendar.",
     syncNow: "Sincronizar ahora",
     synced: (ago: string) => `Sincronizado ${ago}`,
     notSynced: "Aún sin sincronizar",
     syncNowFailed: "No se pudo sincronizar. Inténtalo de nuevo.",
   },
-  appleCalendar: {
-    name: "Apple Calendar",
-    description:
-      "Tus reservas en Apple Calendar en iPhone, iPad y Mac, siempre al día.",
-  },
-  outlook: {
-    name: "Outlook Calendar",
-    description:
-      "Tus reservas en tu calendario de Outlook, al día con cada cambio.",
-  },
-  stripe: {
-    name: "Stripe",
-    description:
-      "Cobra un depósito o el pago completo al reservar, para que menos clientes falten.",
-  },
-  metaPixel: {
-    name: "Meta Pixel",
-    description:
-      "Mira qué anuncios de Facebook e Instagram te traen reservas.",
-  },
-  googleAnalytics: {
-    name: "Google Analytics",
-    description:
-      "Mira quién visita tu página de reservas y cuántos reservan.",
-  },
+  appleCalendar: apps.appleCalendar,
+  outlook: apps.outlook,
+  stripe: apps.stripe,
+  metaPixel: apps.metaPixel,
+  googleAnalytics: apps.googleAnalytics,
   koblipChat: {
-    name: "Koblip Chat",
-    description:
-      "Recordatorios y difusiones por WhatsApp con Koblip Chat, que tiene tu conexión oficial con Meta. Las respuestas llegan a tu bandeja de Koblip Chat.",
+    ...apps.koblipChat,
     connect: "Conectar",
     manage: "Gestionar",
     disconnected: "Koblip Chat desconectado.",
@@ -124,11 +78,13 @@ const integrations: typeof en = {
     connectedToast: "Koblip Chat conectado.",
     failed: "No se pudo conectar Koblip Chat. Inténtalo de nuevo.",
     messages: {
-      noNumber: "Añade un número de WhatsApp en Koblip Chat para enviar mensajes.",
+      noNumber:
+        "Añade un número de WhatsApp en Koblip Chat para enviar mensajes.",
       settingUp: "Preparando tus mensajes de WhatsApp…",
       notSubmitted: "Tus mensajes de WhatsApp aún no se han enviado a Meta.",
       waiting: "Tus mensajes de WhatsApp esperan la aprobación de Meta.",
-      rejected: "Meta no aprobó un mensaje de WhatsApp. Revísalo en Koblip Chat.",
+      rejected:
+        "Meta no aprobó un mensaje de WhatsApp. Revísalo en Koblip Chat.",
     },
   },
 }

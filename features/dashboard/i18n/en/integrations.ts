@@ -1,3 +1,7 @@
+import { appWordsFor } from "@/lib/app-words"
+
+const apps = appWordsFor("en")
+
 // The Integrations page: the apps a business connects to Koblip Book.
 const integrations = {
   tabs: {
@@ -17,47 +21,19 @@ const integrations = {
   soon: "Coming soon",
   about: (name: string) => `About ${name}`,
   whatsapp: {
-    name: "WhatsApp",
-    description:
-      "Official WhatsApp Business, straight from Meta. Send booking reminders and broadcasts from your own business number.",
+    ...apps.whatsapp,
     manage: "Manage",
     useOwnNumber: "Use your own number",
     disconnect: "Disconnect",
   },
-  sms: {
-    name: "Twilio SMS",
-    description:
-      "Booking confirmations and reminders by text message through Twilio, for customers without WhatsApp.",
-  },
-  email: {
-    name: "Email",
-    description:
-      "Booking confirmations, reminders and changes sent to your customers by email.",
-  },
-  instagram: {
-    name: "Instagram",
-    description:
-      "A Book button on your Instagram profile, so followers book in a few taps.",
-  },
-  facebook: {
-    name: "Facebook",
-    description:
-      "A Book button on your Facebook Page, so visitors book without leaving.",
-  },
-  googleBusiness: {
-    name: "Google Business Profile",
-    description:
-      "A Book button on Google Search and Maps, where customers find you.",
-  },
-  googleReviews: {
-    name: "Google reviews",
-    description:
-      "After each visit, ask customers for a Google review to win more bookings.",
-  },
+  sms: apps.sms,
+  email: apps.email,
+  instagram: apps.instagram,
+  facebook: apps.facebook,
+  googleBusiness: apps.googleBusiness,
+  googleReviews: apps.googleReviews,
   googleCalendar: {
-    name: "Google Calendar",
-    description:
-      "Your bookings in your Google Calendar, kept up to date as they change.",
+    ...apps.googleCalendar,
     connect: "Connect",
     disconnect: "Disconnect",
     disconnected: "Google Calendar disconnected.",
@@ -79,41 +55,20 @@ const integrations = {
     busyNobodyHint: "You don't take bookings",
     saveFailed: "Couldn't save. Try again.",
     removeEvents: "Also remove the bookings from Google Calendar",
-    removeEventsFailed: "Disconnected. Couldn't remove the bookings from Google Calendar.",
+    removeEventsFailed:
+      "Disconnected. Couldn't remove the bookings from Google Calendar.",
     syncNow: "Sync now",
     synced: (ago: string) => `Synced ${ago}`,
     notSynced: "Not synced yet",
     syncNowFailed: "Couldn't sync. Try again.",
   },
-  appleCalendar: {
-    name: "Apple Calendar",
-    description:
-      "Your bookings in Apple Calendar on iPhone, iPad and Mac, kept up to date.",
-  },
-  outlook: {
-    name: "Outlook Calendar",
-    description:
-      "Your bookings in your Outlook calendar, kept up to date as they change.",
-  },
-  stripe: {
-    name: "Stripe",
-    description:
-      "Take deposits or full payment when customers book, so fewer skip their visit.",
-  },
-  metaPixel: {
-    name: "Meta Pixel",
-    description:
-      "See which Facebook and Instagram ads bring you bookings.",
-  },
-  googleAnalytics: {
-    name: "Google Analytics",
-    description:
-      "See who visits your booking page and how many of them book.",
-  },
+  appleCalendar: apps.appleCalendar,
+  outlook: apps.outlook,
+  stripe: apps.stripe,
+  metaPixel: apps.metaPixel,
+  googleAnalytics: apps.googleAnalytics,
   koblipChat: {
-    name: "Koblip Chat",
-    description:
-      "WhatsApp reminders and broadcasts through Koblip Chat, which holds your official Meta connection. Replies arrive in your Koblip Chat inbox.",
+    ...apps.koblipChat,
     connect: "Connect",
     manage: "Manage",
     disconnected: "Koblip Chat disconnected.",
@@ -127,7 +82,8 @@ const integrations = {
       settingUp: "Setting up your WhatsApp messages…",
       notSubmitted: "Your WhatsApp messages aren't submitted to Meta yet.",
       waiting: "Your WhatsApp messages are waiting for Meta's approval.",
-      rejected: "Meta didn't approve a WhatsApp message. Check it in Koblip Chat.",
+      rejected:
+        "Meta didn't approve a WhatsApp message. Check it in Koblip Chat.",
     },
   },
 }

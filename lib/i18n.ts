@@ -1,3 +1,4 @@
+import { appWordsFor } from "./app-words"
 import type { PageLanguage } from "./page-language"
 
 // The public page's and booking's own words, in each page language. The
@@ -279,6 +280,8 @@ const en = {
           text: "Works with the tools you already use.",
         },
       },
+      // Each app's name and what Koblip does with it, opened from the apps.
+      appDetails: appWordsFor("en"),
       // The sample shown in the pictures.
       sample: {
         locale: "en-US",
@@ -672,6 +675,7 @@ const es: Messages = {
           text: "Funciona con las herramientas que ya usas.",
         },
       },
+      appDetails: appWordsFor("es"),
       // The sample shown in the pictures.
       sample: {
         locale: "es-ES",

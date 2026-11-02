@@ -1,8 +1,11 @@
 "use client"
 
+import { useState } from "react"
+
 import { Scene } from "@/components/feature-preview"
 import { HOME_SECTION_IDS, HomeBigTitle } from "@/components/home-section-title"
 import { marqueeRowClassName } from "@/components/made-for"
+import { ResponsivePanel } from "@/components/responsive-panel"
 import {
   showcaseCardClassName,
   ShowcasePicture,
@@ -15,6 +18,7 @@ import {
 } from "@/components/ui/card"
 import { Marquee } from "@/components/ui/marquee"
 import { Logo } from "@/components/works-with"
+import type { AppKey } from "@/lib/app-words"
 import type { Messages } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
@@ -27,30 +31,47 @@ const WASH = {
   seed: 360,
 } as const
 
-type App = { logo: string; logoDark?: string; name: string }
+type App = { key: AppKey; logo: string; logoDark?: string; name: string }
 
 // The apps a business can connect today (the dashboard's Integrations page).
 const APPS_WORKING: App[] = [
   {
+    key: "muse",
     logo: "/brands/meta-symbol.png",
     logoDark: "/brands/meta-symbol-white.png",
     name: "Muse by Meta",
   },
-  { logo: "/brands/google-maps.svg", name: "Google Maps" },
-  { logo: "/brands/whatsapp-glyph-green.svg", name: "WhatsApp" },
-  { logo: "/brands/google-calendar.png", name: "Google Calendar" },
-  { logo: "/brands/koblip-chat.png", name: "Koblip Chat" },
+  { key: "googleMaps", logo: "/brands/google-maps.svg", name: "Google Maps" },
+  {
+    key: "whatsapp",
+    logo: "/brands/whatsapp-glyph-green.svg",
+    name: "WhatsApp",
+  },
+  {
+    key: "googleCalendar",
+    logo: "/brands/google-calendar.png",
+    name: "Google Calendar",
+  },
+  { key: "koblipChat", logo: "/brands/koblip-chat.png", name: "Koblip Chat" },
 ]
 
 // The ones marked "Coming soon" on that page.
 const APPS_SOON: App[] = [
-  { logo: "/brands/stripe.svg", name: "Stripe" },
-  { logo: "/brands/instagram.png", name: "Instagram" },
-  { logo: "/brands/facebook.png", name: "Facebook" },
-  { logo: "/brands/google-business.png", name: "Google Business Profile" },
-  { logo: "/brands/apple-calendar.png", name: "Apple Calendar" },
-  { logo: "/brands/outlook.svg", name: "Outlook" },
-  { logo: "/brands/twilio.png", name: "Twilio SMS" },
+  { key: "stripe", logo: "/brands/stripe.svg", name: "Stripe" },
+  { key: "instagram", logo: "/brands/instagram.png", name: "Instagram" },
+  { key: "facebook", logo: "/brands/facebook.png", name: "Facebook" },
+  {
+    key: "googleBusiness",
+    logo: "/brands/google-business.png",
+    name: "Google Business Profile",
+  },
+  {
+    key: "appleCalendar",
+    logo: "/brands/apple-calendar.png",
+    name: "Apple Calendar",
+  },
+  { key: "outlook", logo: "/brands/outlook.svg", name: "Outlook" },
+  { key: "sms", logo: "/brands/twilio.png", name: "Twilio SMS" },
 ]
 
 // The apps the business connects to, under a big title.
@@ -67,31 +88,55 @@ export function HomeEverything({ words }: { words: Home }) {
   )
 }
 
-// The apps: the ones working today slide one way, the ones coming the other.
+// The apps: the ones working today slide one way, the ones coming the other,
+// and keep sliding under the mouse. Tap one to see what Koblip does with it.
 function AppsCard({ words, soon }: { words: Words; soon: string }) {
+  const [open, setOpen] = useState(false)
+  // Kept while the panel slides away, so its words stay.
+  const [shown, setShown] = useState<App>(APPS_WORKING[0])
+  const show = (app: App) => {
+    setShown(app)
+    setOpen(true)
+  }
+  const details = words.appDetails[shown.key]
   return (
     <Card className={showcaseCardClassName}>
       <ShowcasePicture className="aspect-auto h-56">
         <Scene {...WASH}>
+          {/* For the keyboard and screen readers: the moving rows repeat
+              each app, so they get this list, one button each, shown as a
+              pill while focused. */}
           <ul className="sr-only">
-            {APPS_WORKING.map(({ name }) => (
-              <li key={name}>{name}</li>
-            ))}
-            {APPS_SOON.map(({ name }) => (
-              <li key={name}>
-                {name}: {soon}
+            {[...APPS_WORKING, ...APPS_SOON].map((app) => (
+              <li key={app.key}>
+                <button
+                  type="button"
+                  onClick={() => show(app)}
+                  className={cn(
+                    appChipClassName,
+                    "focus-visible:not-sr-only focus-visible:absolute focus-visible:top-2 focus-visible:left-2 focus-visible:z-10 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  )}
+                >
+                  {app.name}
+                  {APPS_SOON.includes(app) && `: ${soon}`}
+                </button>
               </li>
             ))}
           </ul>
           <div aria-hidden className="flex w-full flex-col gap-2">
-            <Marquee pauseOnHover className={marqueeRowClassName}>
+            <Marquee className={marqueeRowClassName}>
               {APPS_WORKING.map((app) => (
-                <AppChip key={app.name} app={app} />
+                <AppChip key={app.key} app={app} onClick={() => show(app)} />
               ))}
             </Marquee>
-            <Marquee reverse pauseOnHover className={marqueeRowClassName}>
+            <Marquee reverse className={marqueeRowClassName}>
               {APPS_SOON.map((app) => (
-                <AppChip key={app.name} app={app} soon={soon} />
+                <AppChip
+                  key={app.key}
+                  app={app}
+                  soon={soon}
+                  onClick={() => show(app)}
+                />
               ))}
             </Marquee>
           </div>
@@ -101,29 +146,67 @@ function AppsCard({ words, soon }: { words: Words; soon: string }) {
         <CardTitle>{words.items.apps.title}</CardTitle>
         <CardDescription>{words.items.apps.text}</CardDescription>
       </CardHeader>
+      <ResponsivePanel
+        open={open}
+        onClose={() => setOpen(false)}
+        title={details.name}
+        icon={<AppLogo app={shown} className="size-12" />}
+      >
+        <p className="text-center text-balance text-muted-foreground">
+          {details.description}
+        </p>
+      </ResponsivePanel>
     </Card>
   )
 }
 
-// One app in the sliding rows, a white pill on the wash.
-function AppChip({ app, soon }: { app: App; soon?: string }) {
+// A white pill on the wash.
+const appChipClassName =
+  "flex h-12 items-center gap-2 rounded-full bg-card px-4 font-medium text-card-foreground ring-1 ring-foreground/5"
+
+// The app's logo, with its dark-mode version where it has one.
+function AppLogo({ app, className }: { app: App; className: string }) {
   return (
-    <span className="flex h-12 items-center gap-2 rounded-full bg-card px-4 font-medium text-card-foreground ring-1 ring-foreground/5">
+    <>
       <Logo
         src={app.logo}
         className={cn(
-          "size-5 rounded-sm object-contain",
-          app.logoDark && "dark:hidden"
+          "rounded-sm object-contain",
+          app.logoDark && "dark:hidden",
+          className
         )}
       />
       {app.logoDark && (
         <Logo
           src={app.logoDark}
-          className="hidden size-5 object-contain dark:block"
+          className={cn("hidden object-contain dark:block", className)}
         />
       )}
+    </>
+  )
+}
+
+// One app in the sliding rows. Mouse and touch only: the moving rows are
+// hidden from the keyboard (see the list above).
+function AppChip({
+  app,
+  soon,
+  onClick,
+}: {
+  app: App
+  soon?: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      onClick={onClick}
+      className={cn(appChipClassName, "cursor-pointer")}
+    >
+      <AppLogo app={app} className="size-5" />
       {app.name}
       {soon && <span className="text-xs text-muted-foreground">{soon}</span>}
-    </span>
+    </button>
   )
 }
