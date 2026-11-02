@@ -153,7 +153,7 @@ export function DraggableFloat({
         className="group/float pointer-events-auto absolute right-0 bottom-0 cursor-grab active:cursor-grabbing"
       >
         {attached && (
-          <div className="absolute right-0 bottom-full mb-2 w-max group-data-[edge=top]/float:top-full group-data-[edge=top]/float:bottom-auto group-data-[edge=top]/float:mt-2 group-data-[edge=top]/float:mb-0 group-data-[side=left]/float:right-auto group-data-[side=left]/float:left-0">
+          <div className="absolute right-0 bottom-full mb-2 flex w-max flex-col items-end gap-2 group-data-[edge=top]/float:top-full group-data-[edge=top]/float:bottom-auto group-data-[edge=top]/float:mt-2 group-data-[edge=top]/float:mb-0 group-data-[side=left]/float:right-auto group-data-[side=left]/float:left-0 group-data-[side=left]/float:items-start">
             {attached}
           </div>
         )}

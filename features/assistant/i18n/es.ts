@@ -71,6 +71,7 @@ const messages: typeof en = {
       week: "Esta semana",
       customers: "Clientes nuevos",
     },
+    closeIdea: "Cerrar",
   },
   composer: {
     placeholder: "Pregunta o dime qué hacer",

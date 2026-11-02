@@ -57,7 +57,7 @@ const ADD_PAGES = ["/customers", "/services", "/team"]
 // a bottom tab bar on a phone for the main pages, and a top bar with the
 // business name, its public page and the account menu. `bell` is the
 // notifications bell, in the top bar beside the account menu. `assistantFloat`
-// floats over every page but the assistant's own.
+// floats over the pages.
 export function DashboardShell({
   business,
   businesses,
@@ -193,7 +193,7 @@ export function DashboardShell({
             </div>
             {PHONE_RIGHT.map((path) => tab(path))}
           </BottomTabBar>
-          {!assistantOpen && assistantFloat}
+          {assistantFloat}
         </SidebarProvider>
       </CommandMenuProvider>
     </TooltipProvider>

@@ -54,4 +54,6 @@ export const ASSISTANT_RULES = {
   typedHoldChars: 160,
   // Total wall time for one chat request, model calls and tools together.
   maxRequestMs: 120_000,
+  // How long after a page load the floating globe shows its ideas.
+  floatIdeasMs: 20_000,
 } as const

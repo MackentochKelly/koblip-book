@@ -76,6 +76,7 @@ const messages = {
       week: "This week",
       customers: "New customers",
     },
+    closeIdea: "Close",
   },
   composer: {
     placeholder: "Ask or tell me what to do",
