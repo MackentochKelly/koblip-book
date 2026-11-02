@@ -1,5 +1,6 @@
 "use client"
 
+import { DAY_PREVIEW_NAMES, DayPreview } from "@/components/day-previews"
 import { FeaturePreview } from "@/components/feature-preview"
 import { useHomeLook } from "@/components/home-look"
 import { HOME_SECTION_IDS } from "@/components/home-section-title"
@@ -10,48 +11,55 @@ import {
 } from "@/components/showcase-row"
 import type { Messages } from "@/lib/i18n"
 
-// What an owner gets: the main features (HomeEverything lists the rest).
-// Each picture is a small preview of the app.
-export function HomeFeatures({
-  words,
-}: {
-  words: Messages["home"]["features"]
-}) {
-  const items: ShowcaseItem[] = [
+// The pictures here hold whole lists, so they need the height on any width.
+const PICTURE_CLASS_NAME = "aspect-auto h-72"
+
+// What an owner gets. Each picture is a small preview of the app.
+export function HomeFeatures({ words }: { words: Messages["home"] }) {
+  const t = words.features
+  const main: ShowcaseItem[] = [
     {
       key: "page",
-      title: words.page,
-      text: words.pageText,
-      picture: <FeaturePreview name="page" sample={words.sample} />,
+      title: t.page,
+      text: t.pageText,
+      picture: <FeaturePreview name="page" sample={t.sample} />,
     },
     {
       key: "book",
-      title: words.book,
-      text: words.bookText,
-      picture: <FeaturePreview name="book" sample={words.sample} />,
+      title: t.book,
+      text: t.bookText,
+      picture: <FeaturePreview name="book" sample={t.sample} />,
     },
     {
       key: "assistant",
-      title: words.assistant,
-      text: words.assistantText,
-      picture: <FeaturePreview name="assistant" sample={words.sample} />,
+      title: t.assistant,
+      text: t.assistantText,
+      picture: <FeaturePreview name="assistant" sample={t.sample} />,
     },
   ]
-  // The "bands" look: a fourth card, and all four in a still 2 by 2 grid.
+  const day: ShowcaseItem[] = DAY_PREVIEW_NAMES.map((name) => ({
+    key: name,
+    title: words.everything.items[name].title,
+    text: words.everything.items[name].text,
+    picture: <DayPreview name={name} words={words} />,
+  }))
+  // The "bands" look: a language card too, and all of them in a still grid.
   if (useHomeLook() === "bands") {
     return (
       <ShowcaseGrid
         id={HOME_SECTION_IDS.features}
-        title={words.title}
-        subtitle={words.subtitle}
+        title={t.title}
+        subtitle={t.subtitle}
+        pictureClassName={PICTURE_CLASS_NAME}
         items={[
-          ...items,
+          ...main,
           {
             key: "language",
-            title: words.language,
-            text: words.languageText,
-            picture: <FeaturePreview name="language" sample={words.sample} />,
+            title: t.language,
+            text: t.languageText,
+            picture: <FeaturePreview name="language" sample={t.sample} />,
           },
+          ...day,
         ]}
       />
     )
@@ -59,10 +67,11 @@ export function HomeFeatures({
   return (
     <ShowcaseRow
       id={HOME_SECTION_IDS.features}
-      title={words.title}
-      previous={words.previous}
-      next={words.next}
-      items={items}
+      title={t.title}
+      previous={t.previous}
+      next={t.next}
+      pictureClassName={PICTURE_CLASS_NAME}
+      items={[...main, ...day]}
     />
   )
 }

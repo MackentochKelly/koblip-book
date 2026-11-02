@@ -141,7 +141,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           <HowItWorks words={t} />
         </HomeBand>
         <HomeBand tone="plain">
-          <HomeFeatures words={t.features} />
+          <HomeFeatures words={t} />
           <HomeEverything words={t} />
         </HomeBand>
         <HomeBand tone="brand">
