@@ -5,6 +5,7 @@ import type { PageLanguage } from "@/lib/page-language"
 // the login page, English on the home page.
 const en = {
   logIn: "Log in",
+  signUp: "Sign up",
   or: "or",
   email: "Email",
   useAnotherEmail: "Use another email",
@@ -37,6 +38,7 @@ export type AuthWords = typeof en
 
 const es: AuthWords = {
   logIn: "Iniciar sesión",
+  signUp: "Regístrate",
   or: "o",
   email: "Correo",
   useAnotherEmail: "Usar otro correo",
@@ -52,7 +54,8 @@ const es: AuthWords = {
     password: `Usa al menos ${ONBOARDING_RULES.minPasswordLength} caracteres`,
     passwordTooLong: `Usa como máximo ${ONBOARDING_RULES.maxPasswordLength} caracteres`,
     invalidPassword: "Revisa tu contraseña",
-    tooManyTries: "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
+    tooManyTries:
+      "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
     connection: "No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.",
     failed: "Algo salió mal. Inténtalo de nuevo.",
     existingAccount: "Ya tienes una cuenta. Escribe tu contraseña.",

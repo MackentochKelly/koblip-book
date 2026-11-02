@@ -1,6 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import {
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  ViewTransition,
+} from "react"
 import { flushSync } from "react-dom"
 import { AnimatePresence, motion } from "motion/react"
 import { useRouter } from "next/navigation"
@@ -50,15 +56,14 @@ import {
   prepareBusiness,
   prepareBusinessFromLink,
 } from "../api/prepare-actions"
-import {
-  searchBusinesses,
-  searchBusinessesByText,
-} from "../api/search-actions"
+import { searchBusinesses, searchBusinessesByText } from "../api/search-actions"
 import type {
   BusinessSearchResult,
   BusinessSuggestion,
+  FoundBusiness,
   PreparedBusiness,
 } from "../types"
+import { signUpHref } from "../utils/sign-up-link"
 import { useDebounced } from "../utils/use-debounced"
 import { useSessionToken } from "../utils/use-session-token"
 import { SearchAreaPanel, type SearchArea } from "./search-area"
@@ -76,6 +81,13 @@ interface Picked {
   prepared: Promise<PreparedBusiness>
 }
 
+// A business found by the search or a pasted link, and how to build its
+// page: only called where the owner signs up.
+type Choose = (
+  found: FoundBusiness,
+  prepare: () => Promise<PreparedBusiness>
+) => void
+
 type Mode = "search" | "link"
 
 // On a phone the search box grows into a full screen search when tapped
@@ -87,13 +99,15 @@ const COVER = { duration: 0.2, ease: "easeOut" } as const
 const MotionCard = motion.create(Card)
 
 // The home page's one box: find your business (or paste its Maps link),
-// tap it, log in. The page is built while the owner logs in, then the
+// tap it, sign up. The page is built while the owner signs up, then the
 // business becomes theirs and its dashboard opens.
 export function GetStarted({
   signedIn,
   claim,
   resume = null,
   hint = true,
+  handOver = false,
+  start,
   language,
 }: {
   signedIn: boolean
@@ -101,6 +115,12 @@ export function GetStarted({
   // Back from Google login: the page to make the owner's.
   resume?: string | null
   hint?: boolean
+  // The home page: a signed-out owner who picks their business goes on to
+  // the sign-up page, which fades in with this box.
+  handOver?: boolean
+  // The sign-up page: the business the owner picked on the home page,
+  // built on the server while they sign up.
+  start?: Picked
   language: PageLanguage
 }) {
   const t = onboardingWordsFor(language)
@@ -110,7 +130,11 @@ export function GetStarted({
   ]
   const router = useRouter()
   const [mode, setMode] = useState<Mode>("search")
-  const [picked, setPicked] = useState<Picked | null>(null)
+  // The server's promise, made a plain one for `.then` and `await`.
+  const [picked, setPicked] = useState<Picked | null>(() =>
+    start ? { ...start, prepared: Promise.resolve(start.prepared) } : null
+  )
+  const [handingOver, startHandOver] = useTransition()
   const [prepared, setPrepared] = useState<PreparedBusiness | null>(null)
   const [error, setError] = useState("")
   const [finishing, setFinishing] = useState(false)
@@ -192,14 +216,36 @@ export function GetStarted({
     }
   }, [open])
 
-  const choose = (next: Picked) => {
-    setPicked(next)
-    setPrepared(null)
-    setError("")
-    void next.prepared.then((result) => {
+  // The picked business's page, once built. A pick dropped meanwhile
+  // ("Not your business?") no longer applies.
+  useEffect(() => {
+    if (!picked) return
+    let current = true
+    void picked.prepared.then((result) => {
+      if (!current) return
       setPrepared(result)
       if (!result.ok) setError(t.errors[result.error])
     })
+    return () => {
+      current = false
+    }
+  }, [picked, t])
+
+  const choose: Choose = (found, prepare) => {
+    // Signed out on the home page: the sign-up page takes over (a route
+    // change, so React runs it as a view transition).
+    if (handOver && !signedIn) {
+      startHandOver(() => router.push(signUpHref(found)))
+      return
+    }
+    const next = {
+      name: found.name,
+      address: found.address,
+      prepared: prepare(),
+    }
+    setPicked(next)
+    setPrepared(null)
+    setError("")
     if (signedIn) void finish(next)
   }
 
@@ -245,69 +291,78 @@ export function GetStarted({
         />
       )}
       {/* The shared glass frame around the card. While full screen,
-          an empty space of its size keeps the page still. */}
-      <div
-        className="w-full"
-        style={open ? { height: rest.height } : undefined}
-      >
-        {/* The page colour over the whole page, from the moment the search
+          an empty space of its size keeps the page still. The same box on
+          the home and sign-up pages: it morphs from one to the other
+          (react.dev/reference/react/ViewTransition). */}
+      <ViewTransition name="get-started" share="morph" default="none">
+        <div
+          className="w-full"
+          style={open ? { height: rest.height } : undefined}
+        >
+          {/* The page colour over the whole page, from the moment the search
             opens, so the page behind never shows where iPhone Safari draws
             it (under the clock, behind its see-through keyboard bar). */}
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              aria-hidden
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={COVER}
-              className="fixed inset-x-0 -inset-y-[100vmax] z-50 bg-background"
-            />
-          )}
-        </AnimatePresence>
-        <motion.div
-          ref={frameRef}
-          layout
-          layoutDependency={growOnce}
-          transition={GROW}
-          style={
-            open
-              ? {
-                  borderRadius: 0,
-                  ...(visible && { top: visible.top, height: visible.height }),
-                }
-              : rest.radius
-                ? { borderRadius: rest.radius }
-                : undefined
-          }
-          className={cn(
-            glassFrameClassName,
-            open &&
-              "fixed inset-x-0 top-0 z-50 h-dvh bg-background p-0 pt-[env(safe-area-inset-top)] inset-ring-0"
-          )}
-        >
-          <MotionCard
+          <AnimatePresence>
+            {open && (
+              <motion.div
+                aria-hidden
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={COVER}
+                className="fixed inset-x-0 -inset-y-[100vmax] z-50 bg-background"
+              />
+            )}
+          </AnimatePresence>
+          <motion.div
+            ref={frameRef}
             layout
             layoutDependency={growOnce}
             transition={GROW}
+            style={
+              open
+                ? {
+                    borderRadius: 0,
+                    ...(visible && {
+                      top: visible.top,
+                      height: visible.height,
+                    }),
+                  }
+                : rest.radius
+                  ? { borderRadius: rest.radius }
+                  : undefined
+            }
             className={cn(
-              "text-left shadow-none ring-0",
-              open && "h-full rounded-none"
+              glassFrameClassName,
+              open &&
+                "fixed inset-x-0 top-0 z-50 h-dvh bg-background p-0 pt-[env(safe-area-inset-top)] inset-ring-0"
             )}
           >
-            <CardContent className={cn(open && "flex min-h-0 flex-1 flex-col")}>
-              <motion.div
-                layout="position"
-                layoutDependency={growOnce}
-                transition={GROW}
+            <MotionCard
+              layout
+              layoutDependency={growOnce}
+              transition={GROW}
+              className={cn(
+                "text-left shadow-none ring-0",
+                open && "h-full rounded-none"
+              )}
+            >
+              <CardContent
                 className={cn(open && "flex min-h-0 flex-1 flex-col")}
               >
-                {content}
-              </motion.div>
-            </CardContent>
-          </MotionCard>
-        </motion.div>
-      </div>
+                <motion.div
+                  layout="position"
+                  layoutDependency={growOnce}
+                  transition={GROW}
+                  className={cn(open && "flex min-h-0 flex-1 flex-col")}
+                >
+                  {content}
+                </motion.div>
+              </CardContent>
+            </MotionCard>
+          </motion.div>
+        </div>
+      </ViewTransition>
       {/* The home page's note; the dashboard hides it. */}
       {!picked && hint && (
         <p className="flex items-center gap-2 text-sm font-medium">
@@ -330,13 +385,14 @@ export function GetStarted({
   if (!picked) {
     return box(
       mode === "link" ? (
-        <PasteLink onChoose={choose} t={t} />
+        <PasteLink onChoose={choose} busy={handingOver} t={t} />
       ) : (
         <FindBusiness
-          onChoose={(next) => {
+          onChoose={(found, prepare) => {
             setExpanded(false)
-            choose(next)
+            choose(found, prepare)
           }}
+          busy={handingOver}
           expanded={open}
           onExpand={expand}
           onCollapse={collapse}
@@ -406,12 +462,15 @@ const queryId = (text: string) => `query:${text}`
 
 function FindBusiness({
   onChoose,
+  busy,
   expanded,
   onExpand,
   onCollapse,
   t,
 }: {
-  onChoose: (picked: Picked) => void
+  onChoose: Choose
+  // The picked business's sign-up page is on its way: its row spins.
+  busy: boolean
   expanded: boolean
   onExpand: () => void
   onCollapse: () => void
@@ -428,6 +487,7 @@ function FindBusiness({
   const [searching, setSearching] = useState(false)
   // The suggested search being run (its row shows a spinner).
   const [runningQuery, setRunningQuery] = useState<string | null>(null)
+  const [pickedId, setPickedId] = useState<string | null>(null)
   // Bumped by each new search, so an older answer is dropped.
   const searchRun = useRef(0)
   const listRef = useRef<HTMLDivElement>(null)
@@ -535,16 +595,20 @@ function FindBusiness({
   }
 
   const pick = (business: BusinessSuggestion) => {
-    const token = sessionToken()
-    renew()
-    onChoose({
+    const found = {
       name: business.name,
       address: business.address,
-      prepared: prepareBusiness({
-        placeId: business.placeId,
-        sessionToken: token,
-      }).catch((): PreparedBusiness => ({ ok: false, error: "failed" })),
-    })
+      placeId: business.placeId,
+      sessionToken: sessionToken(),
+    }
+    renew()
+    setPickedId(business.placeId)
+    onChoose(found, () =>
+      prepareBusiness({
+        placeId: found.placeId,
+        sessionToken: found.sessionToken,
+      }).catch((): PreparedBusiness => ({ ok: false, error: "failed" }))
+    )
   }
 
   return (
@@ -635,7 +699,13 @@ function FindBusiness({
                     description: result.address,
                   }
             )}
-            busyId={runningQuery === null ? null : queryId(runningQuery)}
+            busyId={
+              runningQuery !== null
+                ? queryId(runningQuery)
+                : busy
+                  ? pickedId
+                  : null
+            }
             onPick={(id) => {
               const result = results.find((found) =>
                 found.kind === "query"
@@ -671,9 +741,11 @@ function FindBusiness({
 // The backup way in: a link shared from Google Maps.
 function PasteLink({
   onChoose,
+  busy,
   t,
 }: {
-  onChoose: (picked: Picked) => void
+  onChoose: Choose
+  busy: boolean
   t: OnboardingWords
 }) {
   const [link, setLink] = useState("")
@@ -697,12 +769,12 @@ function PasteLink({
       setError(t.errors[result.error])
       return
     }
-    onChoose({
-      name: result.name,
-      address: result.address,
-      prepared: Promise.resolve(result),
-    })
+    onChoose(
+      { name: result.name, address: result.address, slug: result.slug },
+      () => Promise.resolve(result)
+    )
   }
+  const waiting = sending || busy
 
   return (
     <form
@@ -730,8 +802,8 @@ function PasteLink({
         </InputGroup>
         {error && <FieldError>{error}</FieldError>}
       </Field>
-      <Button type="submit" size="lg" disabled={sending}>
-        {sending && <Spinner data-icon="inline-start" />}
+      <Button type="submit" size="lg" disabled={waiting}>
+        {waiting && <Spinner data-icon="inline-start" />}
         {t.continue}
       </Button>
     </form>

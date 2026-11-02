@@ -8,8 +8,7 @@ export interface BusinessSuggestion {
 // search Google suggests ("photography studio near Brockton, MA, USA")
 // that lists businesses when tapped.
 export type BusinessSearchResult =
-  | ({ kind: "business" } & BusinessSuggestion)
-  | { kind: "query"; text: string }
+  ({ kind: "business" } & BusinessSuggestion) | { kind: "query"; text: string }
 
 export interface CitySuggestion {
   placeId: string
@@ -35,3 +34,10 @@ export type PreparedBusiness =
       openDays: number
     }
   | { ok: false; error: "invalid" | "not_found" | "failed" }
+
+// A business the owner picked, before its page is ready: a search result
+// (its Google place, with the search's session token) or a pasted link's
+// page, already saved.
+export type FoundBusiness = { name: string; address: string | null } & (
+  { placeId: string; sessionToken: string } | { slug: string }
+)

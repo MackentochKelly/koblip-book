@@ -1,50 +1,14 @@
 "use server"
 
-import { eq } from "drizzle-orm"
-import { getBusinessPage } from "@/features/business-page/api/get-business-page"
 import {
   importPlace,
   importPlaceById,
 } from "@/features/place-import/api/import-place"
-import { db } from "@/lib/db"
-import { businessHours, businesses } from "@/lib/db/schema"
 import type { PreparedBusiness } from "../types"
+import { failed, readPreparedBusiness } from "./prepared-business"
 import { purgeUnclaimedImports } from "./purge-unclaimed"
 
 const PLACE_ID_PATTERN = /^[A-Za-z0-9_-]{10,300}$/
-
-function failed(error: unknown): PreparedBusiness {
-  console.error(error instanceof Error ? error.message : String(error))
-  return { ok: false, error: "failed" }
-}
-
-// Reads the freshly imported business row plus its first photo.
-async function toPrepared(slug: string): Promise<PreparedBusiness> {
-  const [business] = await db
-    .select()
-    .from(businesses)
-    .where(eq(businesses.slug, slug))
-    .limit(1)
-  if (!business) {
-    return failed("prepareBusiness imported no business row")
-  }
-  const page = await getBusinessPage(slug)
-  const hours = await db
-    .select({ weekday: businessHours.weekday })
-    .from(businessHours)
-    .where(eq(businessHours.businessId, business.id))
-  return {
-    ok: true,
-    slug,
-    name: business.name,
-    address: business.address,
-    photoUrl: page?.photos[0]?.url ?? null,
-    category: business.category,
-    phone: business.phone,
-    website: business.website,
-    openDays: new Set(hours.map((hour) => hour.weekday)).size,
-  }
-}
 
 // Imports the picked place (a new business row, or the one already saved,
 // left as it is; no login needed) and returns what the login page shows
@@ -73,7 +37,7 @@ export async function prepareBusiness({
     }
     return failed(error)
   }
-  return toPrepared(slug)
+  return readPreparedBusiness(slug)
 }
 
 // Same from a pasted Google Maps link. Replaces addBusinessFromLink.
@@ -99,5 +63,5 @@ export async function prepareBusinessFromLink({
     }
     return failed(error)
   }
-  return toPrepared(slug)
+  return readPreparedBusiness(slug)
 }

@@ -341,6 +341,31 @@
   }
 }
 
+/* Page changes that run as view transitions (home → sign-up page): the
+   page crossfades and the shared box (share="morph") moves and resizes into
+   its new place, slowly enough to follow: 800ms on the standard curve
+   (docs/ui-rules/motion.md; nextjs.org/docs/app/guides/view-transitions).
+   Reduce Motion: the new page is there at once. */
+::view-transition-group(root),
+::view-transition-group(.morph) {
+  animation-duration: 800ms;
+  animation-timing-function: var(--ease-standard);
+}
+::view-transition-old(root),
+::view-transition-new(root),
+::view-transition-old(.morph),
+::view-transition-new(.morph) {
+  animation-duration: 800ms;
+  animation-timing-function: var(--ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}
+
 @layer base {
   /* The owner area's gray page (data-surface="app" on its frame): outline
      rows and empty states are filled like cards, so they read as white

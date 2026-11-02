@@ -128,6 +128,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                 signedIn={signedIn}
                 claim={claimBusiness}
                 resume={typeof claim === "string" ? claim : null}
+                handOver
                 language={language}
               />
             </div>
