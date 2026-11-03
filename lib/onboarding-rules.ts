@@ -2,14 +2,14 @@ export const ONBOARDING_RULES = {
   debounceMs: 250,
   maxResults: 5,
   biasRadiusMeters: 50_000,
-  // The browser's location for "Near me" (PositionOptions,
-  // developer.mozilla.org/docs/Web/API/Geolocation/getCurrentPosition): one
-  // read in the last 10 minutes is reused; a new one gets 10 seconds.
+  // W3C PositionOptions: permit a cached position up to ten minutes old.
+  // Coordinates stay in memory; the browser may evict its cache at any time.
+  // https://www.w3.org/TR/geolocation/#position_options
   locationMaxAgeMs: 600_000,
-  locationTimeoutMs: 10_000,
-  // A location already allowed that takes longer than this opens the
-  // "Search near" panel, so the wait shows and a city can be picked.
-  locationPanelDelayMs: 600,
+  // Product limits: show the waiting message at fifteen seconds, acquisition at sixty.
+  // Native timeout excludes time awaiting permission/visibility (W3C).
+  locationWaitMs: 15_000,
+  locationTimeoutMs: 60_000,
   minInput: 2,
   maxInput: 100,
   // Home search text width at 375px: 219px in Inter 16px. A measured
