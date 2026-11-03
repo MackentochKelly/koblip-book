@@ -30,7 +30,7 @@ import {
   MessageCircleIcon,
   OctagonXIcon,
 } from "@/components/ui/icons"
-import { Input } from "@/components/ui/input"
+import { PhoneInput } from "@/components/phone-input"
 import {
   Select,
   SelectContent,
@@ -444,16 +444,14 @@ function OwnerPhoneField({
       <Field data-invalid={badPhone || undefined}>
         <FieldLabel htmlFor="test-owner-phone">{t.yourNumber}</FieldLabel>
         <div className="flex flex-col gap-2 md:flex-row">
-          <Input
+          <PhoneInput
             id="test-owner-phone"
-            type="tel"
-            inputMode="tel"
             autoComplete="tel"
-            placeholder="+1 809 555 0000"
             className="md:flex-1"
             value={phone}
             aria-invalid={badPhone || undefined}
-            onChange={(event) => setPhone(event.target.value)}
+            onChange={setPhone}
+            locale={m.locale}
           />
           <Button type="submit" disabled={pending}>
             {pending && <Spinner data-icon="inline-start" />}

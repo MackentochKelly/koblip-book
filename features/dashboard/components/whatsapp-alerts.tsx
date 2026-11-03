@@ -13,7 +13,7 @@ import {
   FieldError,
   FieldLabel,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { PhoneInput } from "@/components/phone-input"
 import { Spinner } from "@/components/ui/spinner"
 import { PHONE_PATTERN } from "@/lib/booking-rules"
 import { saveNotificationSettings } from "../api/notification-actions"
@@ -74,15 +74,13 @@ export function WhatsappAlerts({
           <FieldLabel htmlFor="owner-whatsapp" className="sr-only">
             {t.yourNumber}
           </FieldLabel>
-          <Input
+          <PhoneInput
             id="owner-whatsapp"
-            type="tel"
-            inputMode="tel"
             autoComplete="tel"
-            placeholder="+1 809 555 0000"
             value={phone}
             aria-invalid={badPhone || undefined}
-            onChange={(event) => setPhone(event.target.value)}
+            onChange={setPhone}
+            locale={m.locale}
           />
           {badPhone ? (
             <FieldError>{t.badPhone}</FieldError>

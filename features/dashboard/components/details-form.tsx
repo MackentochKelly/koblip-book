@@ -15,6 +15,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { PhoneInput } from "@/components/phone-input"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
@@ -192,14 +193,13 @@ export function DetailsForm({
         </Field>
         <Field data-invalid={invalid === "phone" || undefined}>
           <FieldLabel htmlFor="details-phone">{t.phone}</FieldLabel>
-          <Input
+          <PhoneInput
             {...noAutofill("details_phone")}
             id="details-phone"
-            type="tel"
-            inputMode="tel"
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
+            onChange={setPhone}
             aria-invalid={invalid === "phone" || undefined}
+            locale={m.locale}
           />
           {invalid === "phone" && <FieldError>{t.checkPhone}</FieldError>}
         </Field>

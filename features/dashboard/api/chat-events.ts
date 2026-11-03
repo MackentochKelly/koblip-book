@@ -1,6 +1,6 @@
 import "server-only"
 import { createHmac, timingSafeEqual } from "node:crypto"
-import { and, desc, eq, sql } from "drizzle-orm"
+import { and, desc, eq, inArray, sql } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import {
@@ -11,6 +11,7 @@ import {
   notificationSends,
 } from "@/lib/db/schema"
 import { notify } from "@/lib/in-app-notifications"
+import { whatsappCustomerKeys } from "@/lib/whatsapp-phone"
 import { runAutomations } from "./automation-engine"
 import {
   applyButtonReply,
@@ -234,7 +235,7 @@ async function notifyCustomerWrote(
         and(
           eq(notificationSends.sender, "koblip"),
           eq(notificationSends.state, "sent"),
-          eq(bookings.customerKey, `p:${customerPhone}`)
+          inArray(bookings.customerKey, whatsappCustomerKeys(customerPhone))
         )
       )
       .orderBy(desc(notificationSends.sentAt))
@@ -245,7 +246,7 @@ async function notifyCustomerWrote(
     const [booking] = await db
       .select({ customerName: bookings.customerName })
       .from(bookings)
-      .where(and(eq(bookings.businessId, businessId), eq(bookings.customerKey, `p:${customerPhone}`)))
+      .where(and(eq(bookings.businessId, businessId), inArray(bookings.customerKey, whatsappCustomerKeys(customerPhone))))
       .orderBy(desc(bookings.createdAt))
       .limit(1)
     await notify(

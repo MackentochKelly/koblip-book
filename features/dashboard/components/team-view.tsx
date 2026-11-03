@@ -49,6 +49,7 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { PhoneInput } from "@/components/phone-input"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Item,
@@ -525,16 +526,15 @@ function MemberForm({
         </Field>
         <Field data-invalid={error === "phone" || undefined}>
           <FieldLabel htmlFor="member-phone">{t.phone}</FieldLabel>
-          <Input
+          <PhoneInput
             {...noAutofill("member_phone")}
             id="member-phone"
-            type="tel"
-            inputMode="tel"
             className="min-h-11 md:min-h-9"
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
+            onChange={setPhone}
             placeholder={c.optional}
             aria-invalid={error === "phone" || undefined}
+            locale={m.locale}
           />
           {error === "phone" && <FieldError>{t.badPhone}</FieldError>}
         </Field>

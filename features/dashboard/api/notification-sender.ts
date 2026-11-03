@@ -17,6 +17,7 @@ import {
 } from "@/lib/db/schema"
 import type { NotificationRules } from "@/lib/notification-rules"
 import { notificationRules } from "@/lib/platform-settings"
+import { whatsappDigits } from "@/lib/whatsapp-phone"
 import {
   BOOKING_MESSAGES,
   bookingValues,
@@ -536,13 +537,14 @@ async function deliver(
   const off = kind === "thankYou" ? !settings.thankYouReply : settings.turnedOff.includes(kind)
   if (off) return { state: "skipped", reason: "turnedOff" }
   const toOwner = isOwnerAlert(kind)
-  const phone = toOwner ? settings.ownerPhone : booking.customerPhone
+  const typed = toOwner ? settings.ownerPhone : booking.customerPhone
+  const phone = typed && whatsappDigits(typed, business)
   const line = await lineFor(
     business.id,
     settings.turnedOff,
     phone
       ? {
-          digits: phone.replace(/\D/g, ""),
+          digits: phone,
           useWindow: kind === "thankYou" || settings.freeTextInWindow,
           now,
           rules,
@@ -760,7 +762,8 @@ async function postTo(
   try {
     contact = await call<Contact>("/api/contacts/find-or-create", {
       method: "POST",
-      body: { phone_number: digits, name: contactName },
+      // Chat takes no name or a real one, never an empty one.
+      body: { phone_number: digits, ...(contactName.trim() ? { name: contactName } : {}) },
     })
   } catch (error) {
     if (!(error instanceof ChatApiError)) throw error
@@ -797,12 +800,17 @@ export async function sendTestMessage(
 ): Promise<Outcome> {
   const settings = await notificationSettingsFor(businessId)
   const rules = await notificationRules(businessId)
+  const [business] = await db
+    .select({ name: businesses.name, address: businesses.address, phone: businesses.phone, timezone: businesses.timezone })
+    .from(businesses)
+    .where(eq(businesses.id, businessId))
+  const phone = settings.ownerPhone && business ? whatsappDigits(settings.ownerPhone, business) : settings.ownerPhone
   const line = await lineFor(
     businessId,
     settings.turnedOff,
-    settings.ownerPhone
+    phone
       ? {
-          digits: settings.ownerPhone.replace(/\D/g, ""),
+          digits: phone.replace(/\D/g, ""),
           useWindow: settings.freeTextInWindow,
           now,
           rules,
@@ -810,18 +818,14 @@ export async function sendTestMessage(
       : undefined
   )
   if (!line || line === "wait") return { state: "skipped", reason: "notConnected" }
-  if (!settings.ownerPhone) return { state: "skipped", reason: "noOwnerPhone" }
-  const [business] = await db
-    .select({ name: businesses.name, address: businesses.address })
-    .from(businesses)
-    .where(eq(businesses.id, businessId))
+  if (!phone) return { state: "skipped", reason: "noOwnerPhone" }
   const values = exampleValues(settings.ownerLanguage)
   if (business) values.business = business.name
   if (business?.address) values.address = business.address
   return sendMessage({
     businessId,
     line,
-    phone: settings.ownerPhone,
+    phone,
     contactName: business?.name ?? values.business,
     message,
     language: settings.ownerLanguage,

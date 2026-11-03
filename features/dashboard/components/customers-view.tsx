@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/item"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { PhoneInput } from "@/components/phone-input"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
@@ -339,16 +340,15 @@ function AddCustomerPanel({
           </Field>
           <Field data-invalid={error === "phone" || undefined}>
             <FieldLabel htmlFor="customer-phone">{t.phone}</FieldLabel>
-            <Input
+            <PhoneInput
               {...noAutofill("customer_phone")}
               id="customer-phone"
-              type="tel"
-              inputMode="tel"
               className="min-h-11 md:min-h-9"
               value={phone}
-              onChange={(event) => setPhone(event.target.value)}
+              onChange={setPhone}
               aria-invalid={error === "phone" || undefined}
-            />
+            locale={m.locale}
+          />
             {error === "phone" && <FieldError>{t.badPhone}</FieldError>}
           </Field>
         </FieldGroup>

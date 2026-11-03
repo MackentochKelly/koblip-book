@@ -5,6 +5,7 @@ import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { customerKey } from "@/lib/customer-key"
 import { db } from "@/lib/db"
 import { bookings, customers } from "@/lib/db/schema"
+import { internationalPhone } from "@/lib/whatsapp-phone"
 import type { ActionResult } from "../types"
 import { ownedBusiness, revalidateBusiness } from "./owned-business"
 
@@ -22,10 +23,10 @@ export async function addCustomer(
     return { ok: false, error: "name" }
   }
   const rawPhone = typeof input.phone === "string" ? input.phone.trim() : ""
-  const phone = rawPhone === "" ? null : rawPhone
-  if (phone !== null && !PHONE_PATTERN.test(phone)) {
+  if (rawPhone !== "" && !PHONE_PATTERN.test(rawPhone)) {
     return { ok: false, error: "phone" }
   }
+  const phone = rawPhone === "" ? null : internationalPhone(rawPhone, owned.business)
   const key = customerKey(phone, name)
   const ownerBusinessId = owned.business.id
   const [saved, booked] = await Promise.all([

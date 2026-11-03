@@ -35,6 +35,8 @@ const chat = vi.fn(async (url: string, init: RequestInit = {}) => {
   const path = new URL(url).pathname
   if (path === "/api/contacts/find-or-create") {
     if (contactFails) return answer({ success: false, code: "contact_failed" }, 500)
+    // As Chat does: no name or a real one, never an empty one.
+    if (JSON.parse(String(init.body)).name === "") return answer({ success: false, code: "invalid" }, 400)
     return answer({ success: true, data: { _id: "contact", is_unsubscribed: unsubscribed } })
   }
   if (path === "/api/whatsapp/send") {
@@ -437,4 +439,34 @@ test("an outbound callback racing a shared send waits for its durable receipt in
   ]))
   await runAutomations(outbound("manual-after-race"), null)
   expect(await db.select().from(automationPauses)).toEqual([expect.objectContaining({ customerPhone: PHONE })])
+})
+
+test("a customer who never booked gets the Welcome, with no name sent", async () => {
+  await runAutomations(inbound(), null)
+  expect(sent).toHaveLength(1)
+  expect((await rows())[0]).toMatchObject({ step: "welcome", state: "sent" })
+})
+
+test("a Welcome that failed tries again on the customer's next message", async () => {
+  sendFails = true
+  await runAutomations(inbound("event-first"), null)
+  expect((await rows())[0]).toMatchObject({ state: "failed", reason: "send_failed" })
+  sendFails = false
+  vi.setSystemTime(new Date(Date.parse(NOW) + 60_000))
+  await runAutomations(inbound("event-second"), NOW)
+  expect(sent).toHaveLength(1)
+  // Once it arrived, the next message is an ordinary one.
+  vi.setSystemTime(new Date(Date.parse(NOW) + 120_000))
+  await runAutomations(inbound("event-third"), NOW)
+  expect(sent).toHaveLength(1)
+})
+
+test("a customer saved without the country code is still recognized", async () => {
+  await db.insert(bookings).values({
+    businessId: "biz", serviceName: "Cut", customerName: "Ana", customerPhone: PHONE.slice(1),
+    customerKey: `p:${PHONE.slice(1)}`, startAt: NOW, endAt: NOW, durationMinutes: 30, priceMinor: 0, currency: "USD",
+    source: "online", language: "es",
+  } as typeof bookings.$inferInsert)
+  await runAutomations(inbound(), null)
+  expect((await rows())[0]).toMatchObject({ customerName: "Ana", language: "es", state: "sent" })
 })
