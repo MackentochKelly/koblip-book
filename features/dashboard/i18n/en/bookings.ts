@@ -79,7 +79,7 @@ const bookings = {
   // The Bookings page: every booking in a date range, and a calendar.
   list: {
     tabs: { bookings: "Bookings", calendar: "Calendar" },
-    search: "Search bookings",
+    search: "Search bookings…",
     statuses: {
       all: "All",
       upcoming: "Upcoming",
@@ -230,7 +230,7 @@ const bookings = {
   customers: {
     title: "Customers",
     people: (n: number): string => (n === 1 ? "1 person" : `${n} people`),
-    search: "Name or phone",
+    search: "Name or phone…",
     searchLabel: "Search customers",
     noneFound: "No one found",
     clearSearch: "Clear search",

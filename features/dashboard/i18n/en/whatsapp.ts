@@ -224,7 +224,7 @@ const whatsapp = {
   history: "History",
   noHistory: "No messages yet",
   // Activity's filters and search.
-  search: "Name or phone",
+  search: "Name or phone…",
   searchLabel: "Search by customer name or phone",
   messageFilter: "Message",
   stateFilter: "Status",

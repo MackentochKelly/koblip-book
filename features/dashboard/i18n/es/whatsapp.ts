@@ -222,7 +222,7 @@ const whatsapp: typeof en = {
   history: "Historial",
   noHistory: "Aún no hay mensajes",
   // Los filtros y la búsqueda de Actividad.
-  search: "Nombre o teléfono",
+  search: "Nombre o teléfono…",
   searchLabel: "Buscar por nombre o teléfono del cliente",
   messageFilter: "Mensaje",
   stateFilter: "Estado",

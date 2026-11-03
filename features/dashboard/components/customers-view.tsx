@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import { SearchField } from "@/components/search-field"
 import {
   ChevronRightIcon,
   PlusIcon,
-  SearchIcon,
   UsersIcon,
 } from "@/components/ui/icons"
 import { toast } from "sonner"
@@ -26,11 +26,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
 import {
   Item,
   ItemActions,
@@ -126,19 +121,13 @@ export function CustomersView({
         </Button>
       </div>
       {customers.length > 0 && (
-        <InputGroup>
-          <InputGroupAddon>
-            <SearchIcon />
-          </InputGroupAddon>
-          <InputGroupInput
-            {...noAutofill("customers")}
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t.search}
-            aria-label={t.searchLabel}
-          />
-        </InputGroup>
+        <SearchField
+          {...noAutofill("customers")}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={t.search}
+          aria-label={t.searchLabel}
+        />
       )}
       {shown.length === 0 ? (
         <Empty className="border">

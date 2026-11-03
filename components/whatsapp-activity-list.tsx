@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/confirm-dialog"
+import { SearchField } from "@/components/search-field"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,11 +16,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { CalendarDaysIcon, RefreshIcon, SearchIcon, XIcon } from "@/components/ui/icons"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
 import {
   Item,
   ItemActions,
@@ -194,20 +190,14 @@ export function WhatsappActivityList({
             show({ ...filter, search: query.trim() || undefined })
           }}
         >
-          <InputGroup>
-            <InputGroupAddon>
-              <SearchIcon />
-            </InputGroupAddon>
-            <InputGroupInput
-              {...noAutofill("activity")}
-              type="search"
-              enterKeyHint="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t.search}
-              aria-label={t.searchLabel}
-            />
-          </InputGroup>
+          <SearchField
+            {...noAutofill("activity")}
+            enterKeyHint="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t.search}
+            aria-label={t.searchLabel}
+          />
         </form>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:flex">
           <Select
