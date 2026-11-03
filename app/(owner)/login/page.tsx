@@ -101,6 +101,10 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
                 start={{
                   name: found.name,
                   address: found.address,
+                  photoUrl:
+                    "placeId" in found
+                      ? `/api/business-preview-photo?place=${encodeURIComponent(found.placeId)}`
+                      : `/api/business-preview-photo?business=${encodeURIComponent(found.slug)}`,
                   prepared: prepareFound(found),
                 }}
                 language={language}

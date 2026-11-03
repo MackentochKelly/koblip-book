@@ -1,5 +1,6 @@
 export const ONBOARDING_RULES = {
   debounceMs: 250,
+  photoTimeoutMs: 10_000,
   maxResults: 5,
   biasRadiusMeters: 50_000,
   // W3C PositionOptions: permit a cached position up to ten minutes old.

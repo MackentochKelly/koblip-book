@@ -1,7 +1,6 @@
 import "server-only"
 
 import { eq } from "drizzle-orm"
-import { getBusinessPage } from "@/features/business-page/api/get-business-page"
 import { db } from "@/lib/db"
 import { businessHours, businesses } from "@/lib/db/schema"
 import type { PreparedBusiness } from "../types"
@@ -24,7 +23,6 @@ export async function readPreparedBusiness(
   if (!business) {
     return failed("prepareBusiness imported no business row")
   }
-  const page = await getBusinessPage(slug)
   const hours = await db
     .select({ weekday: businessHours.weekday })
     .from(businessHours)
@@ -34,7 +32,7 @@ export async function readPreparedBusiness(
     slug,
     name: business.name,
     address: business.address,
-    photoUrl: page?.photos[0]?.url ?? null,
+    photoUrl: `/api/business-preview-photo?business=${encodeURIComponent(slug)}`,
     category: business.category,
     phone: business.phone,
     website: business.website,
