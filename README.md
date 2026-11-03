@@ -39,13 +39,17 @@ Koblip Book helps local businesses get online and take appointments. Customers b
 
 Everything in this repository was built during the Hackathon (October 26 – November 4, 2026). The first commit is dated **October 26, 2026**, and the [commit history](https://github.com/MackentochKelly/koblip-book/commits/main) shows each step since.
 
+### What existed before the Hackathon
+
+**Koblip Chat**, a separate WhatsApp product with its own repository (first commit June 4, 2026), is not part of this submission. Koblip Book sends and receives WhatsApp messages through its public API. Book's WhatsApp features (booking messages, reminders, automatic replies and flows) are in this repository and were built during the Hackathon.
+
 ### How Koblip Book uses Meta's models
 
 All calls go through the Meta Model API; the model names live in one place, [`lib/meta-ai.ts`](lib/meta-ai.ts).
 
 | Model | What it does in Koblip Book | Code |
 | --- | --- | --- |
-| **Muse Spark** (`muse-spark-1.3`) | The owner's assistant: reads and manages bookings, services and hours with 26 tools, by text or voice. Changes wait for the owner's approval on a confirm card | [`run-chat.ts`](features/assistant/api/run-chat.ts) |
+| **Muse Spark** (`muse-spark-1.3`) | The owner's assistant: reads and manages bookings, services and hours with 25 tools, plus 2 of its own for asking the owner and hearing a yes, by text or voice. Changes wait for the owner's approval on a confirm card | [`run-chat.ts`](features/assistant/api/run-chat.ts) |
 | **Muse Spark** | Writes a business's "About" text from its Google Maps details during setup | [`write-about.ts`](features/place-import/api/write-about.ts) |
 | **Muse Spark** | Suggests services and add-on groups for a new business | [`actions.ts`](features/dashboard/api/actions.ts), [`addon-actions.ts`](features/dashboard/api/addon-actions.ts) |
 | **Muse Spark** | Translates services and business details from English into Spanish | [`translate.ts`](features/dashboard/utils/translate.ts) |
