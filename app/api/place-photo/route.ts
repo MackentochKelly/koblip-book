@@ -1,3 +1,4 @@
+import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import type { NextRequest } from "next/server"
 
 import { PLACE_PHOTO_PX, placePhotoSize } from "@/lib/place-photo"
@@ -22,21 +23,20 @@ export async function GET(request: NextRequest) {
   const box =
     size === "full" ? `maxWidthPx=${px}` : `maxWidthPx=${px}&maxHeightPx=${px}`
   let res: Response
+  let body: ArrayBuffer
   try {
-    res = await fetch(
-      `https://places.googleapis.com/v1/${name}/media?${box}`,
-      {
-        headers: { "X-Goog-Api-Key": key },
-        cache: "no-store",
-      }
-    )
+    res = await fetch(`https://places.googleapis.com/v1/${name}/media?${box}`, {
+      headers: { "X-Goog-Api-Key": key },
+      cache: "no-store",
+      signal: AbortSignal.timeout(ONBOARDING_RULES.photoTimeoutMs),
+    })
+    body = await res.arrayBuffer()
   } catch {
     return Response.json({ error: "Photo unavailable" }, { status: 502 })
   }
   if (!res.ok) {
     return Response.json({ error: "Photo unavailable" }, { status: 502 })
   }
-  const body = await res.arrayBuffer()
   return new Response(body, {
     headers: {
       "content-type":

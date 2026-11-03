@@ -140,12 +140,13 @@ test("prepareBusiness returns the prepared shop", async () => {
     slug: "claimed-shop",
     name: "Claimed Shop",
     address: "1 Main St",
-    photoUrl: "https://photo/1",
+    photoUrl: "/api/business-preview-photo?business=claimed-shop",
     category: "Barber shop",
     phone: "+18095550100",
     website: "https://claimed.example",
     openDays: 2,
   })
+  expect(getBusinessPageMock).not.toHaveBeenCalled()
   expect(importPlaceByIdMock).toHaveBeenCalledWith(
     "ChIJclaimedplace",
     "123e4567-e89b-42d3-a456-426614174000"

@@ -72,6 +72,7 @@ type ClaimResult =
 interface Picked {
   name: string
   address: string | null
+  photoUrl?: string
   prepared: Promise<PreparedBusiness>
 }
 
@@ -247,6 +248,10 @@ export function GetStarted({
     const next = {
       name: found.name,
       address: found.address,
+      photoUrl:
+        "placeId" in found
+          ? `/api/business-preview-photo?place=${encodeURIComponent(found.placeId)}`
+          : `/api/business-preview-photo?business=${encodeURIComponent(found.slug)}`,
       prepared: prepare(),
     }
     setPicked(next)
@@ -432,15 +437,15 @@ export function GetStarted({
           built, what it is and when it opens. */}
       <div className="flex flex-col items-center gap-3 text-center">
         <Avatar className="size-20">
-          {ready?.photoUrl && (
+          {(picked.photoUrl || ready?.photoUrl) && (
             <AvatarImage
-              src={ready.photoUrl}
+              src={picked.photoUrl || ready?.photoUrl || undefined}
               alt=""
               className="animate-in duration-300 fade-in"
             />
           )}
           <AvatarFallback>
-            {prepared ? <StoreIcon className="size-6" /> : <Spinner />}
+            <StoreIcon className="size-6" />
           </AvatarFallback>
         </Avatar>
         <div className="flex w-full min-w-0 flex-col gap-1">
