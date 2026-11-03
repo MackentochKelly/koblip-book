@@ -29,6 +29,27 @@ const whatsapp = {
     businessName: "business name",
     moveUp: (label: string) => `Move ${label} up`,
     saved: "Saved.",
+    canvas: {
+      groups: { start: "Start", messages: "Messages", buttons: "Buttons" },
+      inUse: "In use",
+      kinds: { trigger: "Trigger", action: "Action" },
+      steps: {
+        customerWrites: "Customer writes",
+        sendMessage: "Send message",
+        bookingLink: "Send booking link",
+        servicesList: "Send services",
+        serviceLink: "Send service link",
+        notify: "Notify you",
+        reply: "Send reply",
+      },
+      palette: {
+        bookingLink: "Send booking link",
+        servicesList: "Send services",
+        handoff: "Talk to you",
+      },
+      serviceLink: "Opens your services page",
+      zoom: { zoomOut: "Zoom out", zoomIn: "Zoom in", resetZoom: "Zoom", fit: "Fit to screen" },
+    },
     problems: {
       empty: "Can't be empty.",
       tooLong: "Too long.",

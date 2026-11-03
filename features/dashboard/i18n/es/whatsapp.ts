@@ -31,6 +31,27 @@ const whatsapp: typeof en = {
     businessName: "nombre del negocio",
     moveUp: (label: string) => `Subir ${label}`,
     saved: "Guardado.",
+    canvas: {
+      groups: { start: "Inicio", messages: "Mensajes", buttons: "Botones" },
+      inUse: "En uso",
+      kinds: { trigger: "Inicio", action: "Acción" },
+      steps: {
+        customerWrites: "Cliente escribe",
+        sendMessage: "Enviar mensaje",
+        bookingLink: "Enviar enlace de reserva",
+        servicesList: "Enviar servicios",
+        serviceLink: "Enviar enlace del servicio",
+        notify: "Avisarte",
+        reply: "Enviar respuesta",
+      },
+      palette: {
+        bookingLink: "Enviar enlace de reserva",
+        servicesList: "Enviar servicios",
+        handoff: "Hablar contigo",
+      },
+      serviceLink: "Abre tu página de servicios",
+      zoom: { zoomOut: "Alejar", zoomIn: "Acercar", resetZoom: "Zoom", fit: "Ajustar a la pantalla" },
+    },
     problems: {
       empty: "No puede estar vacío.",
       tooLong: "Demasiado largo.",

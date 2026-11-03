@@ -46,6 +46,12 @@ export type AutomationLimits = {
 type Draft = { wording: AutomationWording; buttons: AutomationButton[] }
 type Problem = { error: AutomationProblem; field?: string }
 
+const newButton = (action: AutomationAction["type"]): AutomationButton => ({
+  id: crypto.randomUUID(),
+  label: { en: "", es: "" },
+  action: { type: action },
+})
+
 // Edits a flow: every word in both languages and its buttons (add, remove,
 // move up, rename), with the message as the customer reads it last (U2).
 // Both languages save together.
@@ -54,12 +60,15 @@ export function AutomationEditor({
   businessName,
   automation,
   limits,
+  adding,
   onClose,
 }: {
   businessId: string
   businessName: string
   automation: Automation | null
   limits: AutomationLimits
+  // Opens with this button added, for the owner to name.
+  adding?: AutomationAction["type"]
   onClose: () => void
 }) {
   const m = useOwnerMessages()
@@ -67,7 +76,12 @@ export function AutomationEditor({
   const router = useRouter()
   const saved = (): Draft | null =>
     automation ? { wording: automation.wording, buttons: automation.buttons } : null
-  const [draft, setDraft] = useState<Draft | null>(saved)
+  const [draft, setDraft] = useState<Draft | null>(() => {
+    const start = saved()
+    return start && adding
+      ? { ...start, buttons: [...start.buttons, newButton(adding)] }
+      : start
+  })
   const [language, setLanguage] = useState<AutomationLanguage>(
     m.locale.startsWith("es") ? "es" : "en"
   )
@@ -266,10 +280,7 @@ export function AutomationEditor({
                     items={unused.map((action) => ({ value: action, label: t.flows.actions[action] }))}
                     label={t.addButton}
                     onAdd={(action) =>
-                      setButtons([
-                        ...draft.buttons,
-                        { id: crypto.randomUUID(), label: { en: "", es: "" }, action: { type: action } },
-                      ])
+                      setButtons([...draft.buttons, newButton(action)])
                     }
                   />
                 )}

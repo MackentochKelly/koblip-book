@@ -12,6 +12,24 @@ vi.mock("next/navigation", () => ({
 vi.mock("sonner", () => ({ toast }))
 vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }))
 vi.mock("../api/automation-actions", () => actions)
+// The canvas needs a real browser's sizes; flow-graph.test.ts tests its steps.
+vi.mock("@/components/flow-canvas", () => ({
+  FlowCanvas: ({ label, steps, onOpenStep }: {
+    label: string
+    steps: { id: string; title: string; summary: string; outputs?: { label: string }[] }[]
+    onOpenStep: (id: string) => void
+  }) => (
+    <ul aria-label={label}>
+      {steps.map((step) => (
+        <li key={step.id}>
+          <button onClick={() => onOpenStep(step.id)}>{step.title}</button>
+          {step.summary}
+          {step.outputs?.map((output) => output.label).join(" ")}
+        </li>
+      ))}
+    </ul>
+  ),
+}))
 
 const { WhatsappFlows } = await import("./whatsapp-flows")
 const { welcomeDefaults } = await import("../utils/automation-defaults")
@@ -51,12 +69,19 @@ test("shows Welcome's steps: trigger, message and each button", () => {
   expect(steps.textContent).toContain("Thanks for writing to Davida Salon!")
   for (const [label, action] of [
     ["Book now", "Opens your booking page"],
-    ["Our services", "Sends your services"],
+    ["Our services", "Choose a service to book."],
     ["Talk to us", "Tells you, then stays quiet"],
   ]) {
     expect(steps.textContent).toContain(label)
     expect(steps.textContent).toContain(action)
   }
+})
+
+test("a step opens the editor; a button the flow doesn't use opens it with that button added", async () => {
+  show({ ...welcome(), buttons: welcome().buttons.slice(0, 2) })
+  fireEvent.click(screen.getByRole("button", { name: "Talk to you" }))
+  expect(await screen.findByPlaceholderText("Tells you, then stays quiet")).toBeTruthy()
+  expect(screen.getByRole("button", { name: "Save" })).toHaveProperty("disabled", false)
 })
 
 test("turns Welcome on", async () => {
