@@ -1,3 +1,5 @@
+import type { TargetAndTransition } from "motion/react"
+
 // Motion's timings, from docs/ui-rules/motion.md (Material 3 tokens), for
 // Motion (motion.dev) transitions; CSS uses the ease-standard token.
 
@@ -17,3 +19,18 @@ export const FADE_IN = { duration: 0.3, ease: EASE_STANDARD } as const
 
 // A small fade, like a tip or a row's look changing: 150ms.
 export const SMALL_FADE = { duration: 0.15, ease: EASE_STANDARD } as const
+
+// A short shake that points to the one thing to tap (a rotate, so it moves
+// nothing around it): after the window opening it sits in (300ms), three
+// 500ms shakes 1s apart, done in under 5s (docs/ui-rules/motion.md). Reduce
+// Motion turns it off (MotionConfig reducedMotion="user").
+export const NUDGE: TargetAndTransition = {
+  rotate: [0, -4, 4, -3, 3, 0],
+  transition: {
+    delay: 0.3,
+    duration: 0.5,
+    repeat: 2,
+    repeatDelay: 1,
+    ease: EASE_STANDARD,
+  },
+}

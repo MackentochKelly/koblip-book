@@ -499,6 +499,17 @@ export function GetStarted({
   )
 }
 
+// The browser's answer so far for location, read without a prompt
+// (developer.mozilla.org/docs/Web/API/Permissions/query). A browser that
+// can't tell reads as not asked yet.
+function locationPermission(): Promise<PermissionState> {
+  if (!navigator.permissions) return Promise.resolve("prompt")
+  return navigator.permissions.query({ name: "geolocation" }).then(
+    (status) => status.state,
+    () => "prompt"
+  )
+}
+
 // Search as you type, near the owner or a city they pick.
 // A suggested search's row id: kept apart from Google place ids.
 const queryId = (text: string) => `query:${text}`
@@ -537,16 +548,35 @@ function FindBusiness({
   const [area, setArea] = useState<SearchArea | null>(null)
   const [areaOpen, setAreaOpen] = useState(false)
   const [locating, setLocating] = useState(false)
-  const asked = useRef(false)
+  // False once the browser won't give a location: the panel offers cities.
+  const [canLocate, setCanLocate] = useState(true)
+  // How many times in a row the browser allowed it but couldn't tell where
+  // the visitor is (no signal, or the device's own location setting is
+  // off): they can try again or pick a city.
+  const [locateFails, setLocateFails] = useState(0)
+  // Opens the panel when a location already allowed is slow to come.
+  const slowTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  // Where focus goes when the panel closes with no place picked: the
+  // "Anywhere" button, so the search box doesn't take it back and reopen it.
+  const areaButtonRef = useRef<HTMLButtonElement>(null)
   const { current: sessionToken, renew } = useSessionToken()
   const needle = useDebounced(query.trim(), ONBOARDING_RULES.debounceMs)
 
-  const locate = (quiet = false) => {
-    if (!navigator.geolocation) return
+  // A refusal leaves the panel on its cities; a location that couldn't be
+  // read keeps "Use my current location" for another try
+  // (developer.mozilla.org/docs/Web/API/GeolocationPositionError/code).
+  const locate = () => {
+    if (!navigator.geolocation) {
+      setCanLocate(false)
+      setAreaOpen(true)
+      return
+    }
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        clearTimeout(slowTimer.current)
         setLocating(false)
+        setLocateFails(0)
         setAreaOpen(false)
         setArea({
           label: t.nearMe,
@@ -556,19 +586,52 @@ function FindBusiness({
           },
         })
       },
-      () => {
+      (error) => {
+        clearTimeout(slowTimer.current)
         setLocating(false)
-        if (!quiet) setAreaOpen(true)
+        if (error.code === error.PERMISSION_DENIED) setCanLocate(false)
+        else setLocateFails((fails) => fails + 1)
+        setAreaOpen(true)
       },
-      { maximumAge: 600_000, timeout: 10_000 }
+      {
+        maximumAge: ONBOARDING_RULES.locationMaxAgeMs,
+        timeout: ONBOARDING_RULES.locationTimeoutMs,
+      }
     )
   }
 
-  // The phone asks once, the first time the owner starts typing.
-  const askLocation = () => {
-    if (asked.current || area) return
-    asked.current = true
-    locate(true)
+  // No timer left running once the search is gone.
+  useEffect(() => () => clearTimeout(slowTimer.current), [])
+
+  // The search starts only once it has a place: every tap in the box
+  // opens the "Search near" panel until the visitor uses their location or
+  // picks a city. A location already allowed is used at once, with no
+  // panel unless it is slow to come (then the panel shows it on its way,
+  // with the cities); one never asked for waits for a tap on "Use my
+  // current location", so the browser's own prompt follows it; one refused
+  // leaves the cities.
+  const askLocation = async () => {
+    if (area || areaOpen) return
+    if (locating) {
+      setAreaOpen(true)
+      return
+    }
+    if (!navigator.geolocation) {
+      setCanLocate(false)
+      setAreaOpen(true)
+      return
+    }
+    const state = await locationPermission()
+    if (state === "granted") {
+      locate()
+      slowTimer.current = setTimeout(
+        () => setAreaOpen(true),
+        ONBOARDING_RULES.locationPanelDelayMs
+      )
+      return
+    }
+    setCanLocate(state === "prompt")
+    setAreaOpen(true)
   }
 
   useEffect(() => {
@@ -658,6 +721,7 @@ function FindBusiness({
     <div className={cn("flex flex-col gap-3", expanded && "min-h-0 flex-1")}>
       <div className="flex items-center gap-2">
         <Button
+          ref={areaButtonRef}
           variant="outline"
           size="sm"
           onClick={() => setAreaOpen(true)}
@@ -696,7 +760,7 @@ function FindBusiness({
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => {
             setFocused(true)
-            askLocation()
+            void askLocation()
             onExpand()
           }}
           placeholder={placeholder}
@@ -773,8 +837,11 @@ function FindBusiness({
           setArea(next)
           setAreaOpen(false)
         }}
-        locate={() => locate()}
+        locate={locate}
         locating={locating}
+        canLocate={canLocate}
+        locateFails={locateFails}
+        finalFocus={area ? true : areaButtonRef}
         words={t.area}
       />
     </div>
