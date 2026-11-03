@@ -93,12 +93,14 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
               <GetStarted
                 signedIn={signedIn}
                 claim={claimBusiness}
-                resume={finish}
+                resume={finish === "__place__" ? null : finish}
+                resumePending={finish === "__place__"}
                 googleError={googleError}
                 hint={false}
                 // Not awaited: the page shows at once, the card's photo
                 // follows when the page is built.
                 start={{
+                  found,
                   name: found.name,
                   address: found.address,
                   photoUrl:
