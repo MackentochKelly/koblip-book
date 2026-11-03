@@ -1,16 +1,29 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { LocateFixedIcon, MapPinIcon, SearchIcon } from "@/components/ui/icons"
-
-import { ResponsivePanel } from "@/components/responsive-panel"
+import { motion } from "motion/react"
 import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
-import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
+  AlertCircleIcon,
+  MapPinIcon,
+  NavigationIcon,
+} from "@/components/ui/icons"
+
+import { SearchField } from "@/components/search-field"
+import { glassClassName, glassEdgeClassName } from "@/components/glass-frame"
+import { VoiceGlobe } from "@/components/voice-globe"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { FieldSeparator } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
+import { cn } from "@/lib/utils"
+import { NUDGE } from "@/lib/motion-tokens"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import { cityCenter, searchCities } from "../api/search-actions"
 import type { CitySuggestion, Coordinates } from "../types"
@@ -25,13 +38,18 @@ export interface SearchArea {
   center: Coordinates
 }
 
-// Where business search looks first: the phone's location or a city.
+// Where business search looks first: the phone's location (the one main
+// action) or a city. A dialog in the middle of the screen on a phone too,
+// so it reads as a question before the search.
 export function SearchAreaPanel({
   open,
   onClose,
   onPick,
   locate,
   locating,
+  canLocate,
+  locateFails,
+  finalFocus,
   words: t,
 }: {
   open: boolean
@@ -39,6 +57,13 @@ export function SearchAreaPanel({
   onPick: (area: SearchArea) => void
   locate: () => void
   locating: boolean
+  // False once the browser won't give a location: cities only.
+  canLocate: boolean
+  // Times in a row the browser allowed it but couldn't tell where the
+  // visitor is: after the second, the device's setting is the likely cause.
+  locateFails: number
+  // Where focus goes on close (Base UI Dialog.Popup `finalFocus`).
+  finalFocus: boolean | React.RefObject<HTMLElement | null>
   words: OnboardingWords["area"]
 }) {
   const [query, setQuery] = useState("")
@@ -77,49 +102,88 @@ export function SearchAreaPanel({
   }
 
   return (
-    <ResponsivePanel open={open} onClose={onClose} title={t.title}>
-      <div className="flex flex-col gap-3">
-        <Item
-          variant="outline"
-          render={<button type="button" onClick={locate} />}
-          className="text-left"
-        >
-          <ItemMedia variant="icon">
-            {locating ? <Spinner /> : <LocateFixedIcon />}
-          </ItemMedia>
-          <ItemContent>
-            <ItemTitle>{t.useLocation}</ItemTitle>
-          </ItemContent>
-        </Item>
-        <InputGroup>
-          <InputGroupAddon>
-            <SearchIcon />
-          </InputGroupAddon>
-          <InputGroupInput
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose()
+      }}
+    >
+      <DialogContent className="sm:max-w-sm" finalFocus={finalFocus}>
+        <DialogHeader className="items-center gap-0 text-center">
+          {/* The app's moving colour globe, with a glass pin on it. */}
+          <div className="relative mt-2 mb-4 size-28">
+            <VoiceGlobe className="size-full" />
+            <span
+              aria-hidden
+              className={cn(
+                "absolute inset-0 m-auto flex size-12 items-center justify-center rounded-full border text-primary-foreground shadow-card [&_svg]:size-6",
+                glassClassName,
+                glassEdgeClassName
+              )}
+            >
+              <MapPinIcon />
+            </span>
+          </div>
+          <DialogTitle className="text-xl leading-tight">{t.title}</DialogTitle>
+          <DialogDescription>{t.helper}</DialogDescription>
+        </DialogHeader>
+        {canLocate && (
+          <>
+            <div className="mb-2 flex flex-col items-center">
+              {/* Shakes a few times as the window opens, so the eye finds it. */}
+              <motion.div animate={NUDGE}>
+                <Button size="lg" onClick={locate} disabled={locating}>
+                  {locating ? (
+                    <Spinner data-icon="inline-start" />
+                  ) : (
+                    <NavigationIcon data-icon="inline-start" />
+                  )}
+                  {t.useLocation}
+                </Button>
+              </motion.div>
+              {/* The app's error look (shadcn Alert, read out as it appears). */}
+              {locateFails > 0 && !locating && (
+                <Alert variant="destructive" className="mt-3">
+                  <AlertCircleIcon />
+                  <AlertDescription>
+                    {locateFails > 1 ? t.turnOnLocation : t.notFound}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+            <FieldSeparator className="*:data-[slot=field-separator-content]:bg-popover">
+              {t.or}
+            </FieldSeparator>
+          </>
+        )}
+        <div className="flex flex-col gap-3">
+          <SearchField
             {...noAutofill("city")}
-            type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t.city}
             aria-label={t.city}
           />
-        </InputGroup>
-        {cities.length > 0 && (
-          <SuggestionList
-            items={cities.map((city) => ({
-              id: city.placeId,
-              title: city.name,
-              description: city.region,
-            }))}
-            busyId={picking}
-            onPick={(id) => {
-              const city = cities.find((found) => found.placeId === id)
-              if (city) void pick(city)
-            }}
-            icon={<MapPinIcon />}
-          />
-        )}
-      </div>
-    </ResponsivePanel>
+          {/* The cities scroll, so the dialog fits above a phone's keyboard. */}
+          {cities.length > 0 && (
+            <div className="-mx-1 max-h-[40dvh] scroll-fade overflow-y-auto overscroll-contain px-1">
+              <SuggestionList
+                items={cities.map((city) => ({
+                  id: city.placeId,
+                  title: city.name,
+                  description: city.region,
+                }))}
+                busyId={picking}
+                onPick={(id) => {
+                  const city = cities.find((found) => found.placeId === id)
+                  if (city) void pick(city)
+                }}
+                icon={<MapPinIcon />}
+              />
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

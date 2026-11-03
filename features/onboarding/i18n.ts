@@ -33,8 +33,13 @@ const en = {
   continue: "Continue",
   area: {
     title: "Search near",
-    useLocation: "Use my location",
-    city: "City",
+    helper: "Find businesses close to you",
+    useLocation: "Use my current location",
+    notFound: "Couldn't find you. Try again or pick a city.",
+    turnOnLocation:
+      "Turn on Location for your browser in your device settings, or pick a city.",
+    or: "or pick a city",
+    city: "Search a city",
   },
   // Right after sign-up: the page's details from Google Maps, row by row.
   found: {
@@ -92,8 +97,13 @@ const es: OnboardingWords = {
   continue: "Continuar",
   area: {
     title: "Buscar cerca de",
-    useLocation: "Usar mi ubicación",
-    city: "Ciudad",
+    helper: "Encuentra negocios cerca de ti",
+    useLocation: "Usar mi ubicación actual",
+    notFound: "No te encontramos. Inténtalo de nuevo o elige una ciudad.",
+    turnOnLocation:
+      "Activa la ubicación de tu navegador en los ajustes del dispositivo, o elige una ciudad.",
+    or: "o elige una ciudad",
+    city: "Busca una ciudad",
   },
   found: {
     title: "Tus datos de Google Maps",
