@@ -5,17 +5,17 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
-import { AutomationSteps } from "@/components/automation-steps"
 import { Button } from "@/components/ui/button"
 import { SwitchCard } from "@/components/switch-card"
 import { ItemGroup } from "@/components/ui/item"
 import { setAutomationOn } from "../api/automation-actions"
 import { useOwnerMessages } from "../i18n/provider"
-import type { Automation, AutomationLanguage } from "../types/automations"
+import type { Automation, AutomationAction, AutomationLanguage } from "../types/automations"
 import { AutomationEditor, type AutomationLimits } from "./automation-editor"
+import { WhatsappFlowCanvas } from "./whatsapp-flow-canvas"
 
 // Flows: each automation as a card with its switch, like Messages, and its
-// steps under it; the card opens its editor (D11). Flows answer only on the
+// canvas under it; the card and the canvas open its editor (D11). Flows answer only on the
 // business's own number (D2).
 export function WhatsappFlows({
   businessId,
@@ -33,11 +33,18 @@ export function WhatsappFlows({
   // The open flow is read from `automations`, so a refresh shows its news.
   const [openId, setOpenId] = useState<string | null>(null)
   const [editorKey, setEditorKey] = useState(0)
+  // The button the editor opens with, added from the canvas's side.
+  const [adding, setAdding] = useState<AutomationAction["type"] | undefined>()
   const m = useOwnerMessages()
   const t = m.whatsapp
   const open = automations.find((item) => item.id === openId)
   // The owner reads the words in their own language.
   const language: AutomationLanguage = m.locale.startsWith("es") ? "es" : "en"
+  const openEditor = (id: string, action?: AutomationAction["type"]) => {
+    setAdding(action)
+    setEditorKey((value) => value + 1)
+    setOpenId(id)
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -53,7 +60,7 @@ export function WhatsappFlows({
           </Button>
         </div>
       )}
-      {/* Each flow: its card with the switch, then its steps. */}
+      {/* Each flow: its card with the switch, then its canvas. */}
       {automations.map((automation) => (
         <div key={automation.id} className="flex flex-col gap-3">
           <ItemGroup>
@@ -61,25 +68,15 @@ export function WhatsappFlows({
               businessId={businessId}
               automation={automation}
               ownNumber={ownNumber}
-              onOpen={() => {
-                setEditorKey((value) => value + 1)
-                setOpenId(automation.id)
-              }}
+              onOpen={() => openEditor(automation.id)}
             />
           </ItemGroup>
-          <AutomationSteps
-            body={automation.wording[language].body.replaceAll("{business}", businessName)}
-            buttons={automation.buttons.map((button) => ({
-              id: button.id,
-              label: button.label[language],
-              action: button.action.type,
-            }))}
-            labels={{
-              label: t.flows.stepsLabel(t.flows.names[automation.trigger]),
-              ...t.flows.kickers,
-              trigger: t.flows.triggers[automation.trigger],
-              actions: t.flows.actions,
-            }}
+          <WhatsappFlowCanvas
+            automation={automation}
+            businessName={businessName}
+            language={language}
+            maxButtons={limits.maxButtons}
+            onOpen={(action) => openEditor(automation.id, action)}
           />
         </div>
       ))}
@@ -90,6 +87,7 @@ export function WhatsappFlows({
         businessName={businessName}
         automation={open ?? null}
         limits={limits}
+        adding={adding}
         onClose={() => setOpenId(null)}
       />
     </div>

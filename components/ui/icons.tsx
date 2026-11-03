@@ -47,6 +47,7 @@ import {
   Mail as MynaMail,
   MapPin as MynaMapPin,
   Maximize as MynaMaximize,
+  Minus as MynaMinus,
   Minimize as MynaMinimize,
   Monitor as MynaMonitor,
   Moon as MynaMoon,
@@ -266,6 +267,7 @@ export const LogOutIcon = icon(MynaLogout as Icon, "LogOutIcon")
 export const MailIcon = icon(MynaMail as Icon, "MailIcon")
 export const MapPinIcon = icon(MynaMapPin as Icon, "MapPinIcon")
 export const MaximizeIcon = icon(MynaMaximize as Icon, "MaximizeIcon")
+export const MinusIcon = icon(MynaMinus as Icon, "MinusIcon")
 export const MessageCircleIcon = icon(MynaChat as Icon, "MessageCircleIcon")
 export const MinimizeIcon = icon(MynaMinimize as Icon, "MinimizeIcon")
 export const MonitorIcon = icon(MynaMonitor as Icon, "MonitorIcon")
