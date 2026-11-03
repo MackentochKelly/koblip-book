@@ -70,6 +70,7 @@ type ClaimResult =
   { ok: true; businessId: string } | { ok: false; error: string }
 
 interface Picked {
+  found?: FoundBusiness
   name: string
   address: string | null
   photoUrl?: string
@@ -100,6 +101,7 @@ export function GetStarted({
   signedIn,
   claim,
   resume = null,
+  resumePending = false,
   hint = true,
   handOver = false,
   start,
@@ -110,6 +112,7 @@ export function GetStarted({
   claim: (slug: string) => Promise<ClaimResult>
   // Back from Google login: the page to make the owner's.
   resume?: string | null
+  resumePending?: boolean
   hint?: boolean
   // The home page: a signed-out owner who picks their business goes on to
   // the sign-up page, which fades in with this box.
@@ -161,7 +164,7 @@ export function GetStarted({
   // measures on every render while this is undefined;
   // motion.dev/docs/react-layout-animations).
   const growOnce = open || undefined
-  const [resuming, setResuming] = useState(Boolean(resume && signedIn))
+  const [resuming, setResuming] = useState(Boolean((resume || resumePending) && signedIn))
 
   // Back from Google: make the page the owner's and open the details check.
   useEffect(() => {
@@ -182,6 +185,20 @@ export function GetStarted({
       current = false
     }
   }, [resume, signedIn, claim, router])
+
+  useEffect(() => {
+    if (!resumePending || !signedIn || !picked) return
+    let current = true
+    void picked.prepared.then(async (result) => {
+      if (!current) return
+      if (!result.ok) { setResuming(false); return }
+      const claimed = await claim(result.slug).catch(() => null)
+      if (!current) return
+      if (claimed?.ok) router.replace(`/setup/${claimed.businessId}/google`)
+      else { setResuming(false); setError(t.errors.failed) }
+    })
+    return () => { current = false }
+  }, [resumePending, signedIn, picked, claim, router, t])
 
   const expand = () => {
     const frame = frameRef.current
@@ -246,6 +263,7 @@ export function GetStarted({
       return
     }
     const next = {
+      found,
       name: found.name,
       address: found.address,
       photoUrl:
@@ -430,6 +448,7 @@ export function GetStarted({
   const saved = ready
     ? { name: picked.name, address: picked.address, slug: ready.slug }
     : null
+  const googleFound = saved ?? picked.found
   return box(
     <div className="flex flex-col gap-5">
       {/* The business, centered: its photo (the same bordered Avatar as
@@ -486,13 +505,13 @@ export function GetStarted({
             onSignedIn={() => finish()}
             disabled={finishing}
             googleNext={
-              saved ? signUpHref(saved, { finish: true, language }) : undefined
+              googleFound ? signUpHref(googleFound, { finish: true, language }) : undefined
             }
             googleErrorNext={
-              saved ? signUpHref(saved, { language }) : undefined
+              googleFound ? signUpHref(googleFound, { language }) : undefined
             }
             googleError={googleError}
-            googleReady={Boolean(ready)}
+            googleReady={Boolean(googleFound)}
             emailLater
             language={language}
           />

@@ -69,7 +69,7 @@ export function readSignUpLink(
   const placeId = text(params, PARAMS.placeId)
   const sessionToken = text(params, PARAMS.sessionToken)
   if (placeId && sessionToken) {
-    return { found: { name, address, placeId, sessionToken }, finish: null }
+    return { found: { name, address, placeId, sessionToken }, finish: text(params, PARAMS.finish) === "1" ? "__place__" : null }
   }
   return null
 }
