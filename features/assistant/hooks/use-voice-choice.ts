@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 
+import type { PageLanguage } from "@/lib/page-language"
 import { saveOwnerVoice } from "../api/voice-actions"
 import type { VoiceChoice } from "../types"
 
@@ -29,6 +30,14 @@ export function useVoiceChoice(initial: VoiceChoice) {
     choose,
     // The voice is gone from ElevenLabs: ask again.
     forget: () => setChosen(null),
+    // A voice is chosen and it speaks this language, so a talk in it can
+    // start.
+    speaks: (language: PageLanguage) =>
+      Boolean(
+        initial.voices?.find((voice) => voice.voiceId === chosen)?.previews[
+          language
+        ]
+      ),
     asking,
     ask: () => setAsking(true),
     stopAsking: () => setAsking(false),

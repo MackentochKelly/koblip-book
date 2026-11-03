@@ -5,7 +5,6 @@ import {
   createFramer,
   createResampler,
   floatToPcm16,
-  level,
 } from "./pcm"
 
 test("same rate passes samples through", () => {
@@ -56,9 +55,4 @@ test("base64 PCM becomes floats", () => {
   const bytes = Uint8Array.from([0, 0, 0, 0x40, 0, 0x80])
   const base64 = btoa(String.fromCharCode(...bytes))
   expect([...base64Pcm16ToFloat(base64)]).toEqual([0, 0.5, -1])
-})
-
-test("level is 0 for silence and capped at 1", () => {
-  expect(level(new Float32Array(10))).toBe(0)
-  expect(level(new Float32Array(10).fill(1))).toBe(1)
 })

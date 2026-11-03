@@ -48,7 +48,13 @@ function isValidMessages(value: unknown): value is AssistantMessage[] {
       // and size.
       ((m as AssistantMessage).memory === undefined ||
         ((m as AssistantMessage).role === "assistant" &&
-          cleanMemory((m as AssistantMessage).memory) !== null))
+          cleanMemory((m as AssistantMessage).memory) !== null)) &&
+      // A card still waiting on this answer: assistant only, an id the
+      // server looks up for this owner and business.
+      ((m as AssistantMessage).waiting === undefined ||
+        ((m as AssistantMessage).role === "assistant" &&
+          typeof (m as AssistantMessage).waiting === "string" &&
+          ((m as AssistantMessage).waiting as string).length <= 64))
   )
 }
 

@@ -1,6 +1,6 @@
 import "server-only"
 
-import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js"
+import { type ElevenLabs, ElevenLabsClient } from "@elevenlabs/elevenlabs-js"
 import { eq } from "drizzle-orm"
 import { unstable_cache } from "next/cache"
 import { db } from "@/lib/db"
@@ -13,6 +13,22 @@ export interface AccountVoice {
   previewUrl: string | null
   labels: Record<string, string>
   languages: string[]
+  // Each language's own preview (the voice speaking that language), the
+  // live speaking model's first.
+  previews: Record<string, string>
+}
+
+function previewsOf(
+  languages: ElevenLabs.VerifiedVoiceLanguageResponseModel[]
+): Record<string, string> {
+  const previews: Record<string, string> = {}
+  for (const item of languages) {
+    if (!item.previewUrl) continue
+    if (item.modelId === VOICE_RULES.speakModel || !previews[item.language]) {
+      previews[item.language] = item.previewUrl
+    }
+  }
+  return previews
 }
 
 // Only successful lists are cached; a failed lookup can be tried again.
@@ -45,6 +61,7 @@ const cachedAccountVoices = unstable_cache(
               (voice.verifiedLanguages ?? []).map((item) => item.language)
             ),
           ],
+          previews: previewsOf(voice.verifiedLanguages ?? []),
         }))
       )
       if (!page.hasMore) break
@@ -55,7 +72,8 @@ const cachedAccountVoices = unstable_cache(
     } while (nextPageToken)
     return voices.sort((a, b) => a.name.localeCompare(b.name))
   },
-  ["elevenlabs-voices"],
+  // Named for the list's shape, so a list cached before previews is not read.
+  ["elevenlabs-voices", "previews"],
   {
     tags: ["elevenlabs-voices"],
     revalidate: VOICE_RULES.accountVoicesCacheSeconds,

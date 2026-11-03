@@ -6,46 +6,47 @@ vi.mock("@/lib/account-voices", () => ({
   getAccountVoices: vi.fn(),
   getOwnerVoiceId: vi.fn(),
 }))
-const { getAccountVoices, getOwnerVoiceId } = await import(
-  "@/lib/account-voices"
-)
+const { getAccountVoices, getOwnerVoiceId } =
+  await import("@/lib/account-voices")
 const { getVoiceChoice } = await import("./voice-choice")
 
-const voice = (voiceId: string, languages: string[]) => ({
+const voice = (voiceId: string, previews: Record<string, string>) => ({
   voiceId,
   name: voiceId,
   previewUrl: `https://x/${voiceId}.mp3`,
   labels: { gender: "female" },
-  languages,
+  languages: Object.keys(previews),
+  previews,
 })
 
-test("lists the voices that speak the owner's language, and their own", async () => {
+test("lists the voices with a page-language preview, and the owner's own", async () => {
   vi.mocked(getAccountVoices).mockResolvedValue([
-    voice("en1", ["en"]),
-    voice("both", ["en", "es"]),
-    voice("es1", ["es"]),
+    voice("en1", { en: "https://x/en1-en.mp3" }),
+    voice("both", { en: "https://x/both-en.mp3", es: "https://x/both-es.mp3" }),
+    voice("fr1", { fr: "https://x/fr1-fr.mp3" }),
+    voice("mine", { de: "https://x/mine-de.mp3" }),
   ])
-  vi.mocked(getOwnerVoiceId).mockResolvedValue("en1")
-  const choice = await getVoiceChoice("u1", "es")
-  expect(choice.chosen).toBe("en1")
+  vi.mocked(getOwnerVoiceId).mockResolvedValue("mine")
+  const choice = await getVoiceChoice("u1")
+  expect(choice.chosen).toBe("mine")
   expect(choice.voices?.map((item) => item.voiceId)).toEqual([
     "en1",
     "both",
-    "es1",
+    "mine",
   ])
   // Only what the picker shows crosses to the browser.
-  expect(choice.voices?.[0]).toEqual({
-    voiceId: "en1",
-    name: "en1",
-    previewUrl: "https://x/en1.mp3",
+  expect(choice.voices?.[1]).toEqual({
+    voiceId: "both",
+    name: "both",
     labels: { gender: "female" },
+    previews: { en: "https://x/both-en.mp3", es: "https://x/both-es.mp3" },
   })
 })
 
 test("no list when ElevenLabs can't be reached", async () => {
   vi.mocked(getAccountVoices).mockResolvedValue(null)
   vi.mocked(getOwnerVoiceId).mockResolvedValue(null)
-  expect(await getVoiceChoice("u1", "en")).toEqual({
+  expect(await getVoiceChoice("u1")).toEqual({
     voices: null,
     chosen: null,
   })

@@ -26,8 +26,12 @@ export const VOICE_RULES = {
   // Speak-token mints per owner per minute.
   maxSpeakTokensPerMinutePerOwner: 30,
   // Talking mode: if nothing has been said this long after the owner
-  // finished, say a short line ("Hmm, let me see."), once per turn.
+  // finished, say a short waiting line ("Hmm, let me see."). A lookup says
+  // it at once. At most one per answer.
   // ElevenLabs recommends 3 s for this "soft timeout":
   // https://elevenlabs.io/docs/agents-platform/customization/conversation-flow
   fillerAfterMs: 3000,
+  // A new waiting line ("Let me check.") or lead-in word ("Oh,") is never
+  // one of the last this many said in the talk, so it never repeats.
+  freshLines: 3,
 } as const

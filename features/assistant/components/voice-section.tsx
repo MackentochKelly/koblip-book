@@ -21,6 +21,7 @@ import { assistantMessagesFor } from "../i18n"
 import { useVoiceChoice } from "../hooks/use-voice-choice"
 import type { VoiceChoice } from "../types"
 import { VoiceList } from "./voice-list"
+import { VoicePreview } from "./voice-preview"
 
 // Settings → Account: the voice that talks live, changed in the same list
 // the first live talk asks with.
@@ -33,8 +34,9 @@ export function VoiceSection({
 }) {
   const t = assistantMessagesFor(language).voice
   const voice = useVoiceChoice(voiceChoice)
-  const name = voice.voices?.find(({ voiceId }) => voiceId === voice.chosen)
-    ?.name
+  const name = voice.voices?.find(
+    ({ voiceId }) => voiceId === voice.chosen
+  )?.name
   const choose = (voiceId: string) =>
     void voice.choose(voiceId).then((saved) => {
       if (saved) {
@@ -76,17 +78,21 @@ export function VoiceSection({
         onClose={voice.stopAsking}
         title={t.title}
       >
-        <div className="flex flex-col gap-4">
-          <HelperLine>{t.hint}</HelperLine>
-          {voice.voices && (
-            <VoiceList
-              voices={voice.voices}
-              chosen={voice.chosen}
-              labels={t}
-              onChoose={choose}
-            />
-          )}
-        </div>
+        <VoicePreview>
+          <div className="flex flex-col gap-4">
+            <HelperLine>{t.hint}</HelperLine>
+            {voice.voices && (
+              <VoiceList
+                key={language}
+                voices={voice.voices}
+                chosen={voice.chosen}
+                language={language}
+                labels={t}
+                onChoose={choose}
+              />
+            )}
+          </div>
+        </VoicePreview>
       </ResponsivePanel>
     </PageSection>
   )

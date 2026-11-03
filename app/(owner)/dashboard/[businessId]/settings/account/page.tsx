@@ -25,7 +25,7 @@ export default async function AccountPage({ params }: Props) {
     getOwnerBusiness(businessId),
     getOwnerLanguage(),
   ])
-  const voiceChoice = await getVoiceChoice(owner.userId, language)
+  const voiceChoice = await getVoiceChoice(owner.userId)
   return (
     <div className="flex flex-col gap-10">
       <VoiceSection language={language} voiceChoice={voiceChoice} />

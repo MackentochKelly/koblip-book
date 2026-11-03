@@ -276,3 +276,19 @@ test("bad or too big memory is a bad request", async () => {
     expect(res.status).toBe(400)
   }
 })
+
+test("a waiting card id is only an assistant's short string", async () => {
+  for (const message of [
+    { role: "owner", text: "hi", waiting: "c1" },
+    { role: "assistant", text: "", waiting: 7 },
+    { role: "assistant", text: "", waiting: "x".repeat(65) },
+  ]) {
+    const res = await POST(
+      post({
+        businessId: "b1",
+        messages: [message, { role: "owner", text: "yes" }],
+      })
+    )
+    expect(res.status).toBe(400)
+  }
+})

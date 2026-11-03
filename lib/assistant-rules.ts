@@ -46,10 +46,10 @@ export const ASSISTANT_RULES = {
   voiceMaxFrameBytes: 9_600,
   // Stats ranges over this many days are refused (getBookingsBetween).
   maxStatsRangeDays: 366,
-  // Typed answers: words held back until this many have come (and a
-  // sentence has ended), so a short line written before a tool call never
-  // shows. Longer answers stream from there.
-  typedHoldChars: 160,
+  // Answers, typed and talking: words held back until this many have come
+  // (and a sentence has ended), so a short line written before a tool call
+  // never shows. Longer answers stream from there.
+  holdChars: 160,
   // Total wall time for one chat request, model calls and tools together.
   maxRequestMs: 120_000,
   // How long after a page load the floating globe shows its ideas.

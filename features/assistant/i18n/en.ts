@@ -87,7 +87,7 @@ const messages = {
       title: "Talk to your assistant",
       speak:
         "Talk naturally. It answers out loud and writes it all in the chat.",
-      tap: "Changes still need a tap on the screen.",
+      tap: "Changes still need your yes: tap the button or say it.",
       privacy: "Your voice becomes text. We don't keep the recording.",
       continue: "Continue",
       neverShow: "Don't show again",
@@ -105,11 +105,20 @@ const messages = {
       confirmLine: "To do it, tap the button on the screen.",
       // Said out loud when an answer's check could not back it.
       // Said once when talking starts.
-      greeting: "Hey! What's up?",
+      greeting: "Hi! How can I help?",
       // Said once if an answer is slow.
-      fillers: ["Hmm, lemme see.", "Hang on, almost got it.", "Okay, one sec."],
+      fillers: [
+        "Let me check.",
+        "One moment.",
+        "Just a second.",
+        "Let me look.",
+        "Hmm, let me see.",
+        "Okay, checking now.",
+        "Give me a moment.",
+        "Let me pull that up.",
+      ],
       // Put in front of the answer when it cuts the first line off.
-      cutIns: ["Oh,", "Okay,", "Ah,"],
+      cutIns: ["Oh,", "Okay,", "Ah,", "Right,", "Alright,"],
     },
   },
   confirm: {
@@ -121,7 +130,12 @@ const messages = {
   // The voice that talks live: picked the first time, changed in Settings.
   voice: {
     title: "Choose a voice",
-    hint: "Tap a circle to hear it.",
+    hint: "Tap a voice to hear it.",
+    play: "Play",
+    pause: "Pause",
+    // The language the voices speak in their samples.
+    language: "Language",
+    languages: { en: "English", es: "Español" },
     start: "Start talking",
     setting: "Voice",
     none: "None chosen",

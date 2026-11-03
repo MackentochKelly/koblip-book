@@ -217,15 +217,20 @@ export function useAssistantChat(
     void ask(history)
   }
 
-  const answer = (id: string, accept: boolean) => {
-    if (busy) return
+  // A tap on a card; resolves with the reply that says what it did.
+  const answer = async (id: string, accept: boolean) => {
+    if (busy) return null
     const reply = newReply()
     const next = [
       ...resolveConfirm(items, id, accept ? "accepted" : "declined"),
       reply,
     ]
     setItems(next)
-    void consume(transport.confirm({ businessId, id, accept }), next, reply.id)
+    return consume(
+      transport.confirm({ businessId, id, accept }),
+      next,
+      reply.id
+    )
   }
 
   const reset = () => {

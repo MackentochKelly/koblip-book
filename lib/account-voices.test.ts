@@ -74,9 +74,14 @@ test("reads every non-default page, maps picker fields and sorts by name", async
           previewUrl: "https://preview.test/zoe",
           labels: { accent: "american" },
           verifiedLanguages: [
-            { language: "en", modelId: "a" },
+            { language: "en", modelId: "a", previewUrl: "https://x/en-a" },
             { language: "es", modelId: "a" },
-            { language: "en", modelId: "b" },
+            {
+              language: "en",
+              modelId: "eleven_v4_turbo",
+              previewUrl: "https://x/en-live",
+            },
+            { language: "en", modelId: "c", previewUrl: "https://x/en-c" },
           ],
           description: "unused",
         },
@@ -92,14 +97,30 @@ test("reads every non-default page, maps picker fields and sorts by name", async
     .mockResolvedValueOnce({ voices: [{ voiceId: "v3" }], hasMore: false })
   const voices = await getAccountVoices()
   expect(voices).toEqual([
-    { voiceId: "v1", name: "Ana", previewUrl: null, labels: {}, languages: [] },
-    { voiceId: "v3", name: "v3", previewUrl: null, labels: {}, languages: [] },
+    {
+      voiceId: "v1",
+      name: "Ana",
+      previewUrl: null,
+      labels: {},
+      languages: [],
+      previews: {},
+    },
+    {
+      voiceId: "v3",
+      name: "v3",
+      previewUrl: null,
+      labels: {},
+      languages: [],
+      previews: {},
+    },
     {
       voiceId: "v2",
       name: "Zoe",
       previewUrl: "https://preview.test/zoe",
       labels: { accent: "american" },
       languages: ["en", "es"],
+      // The live speaking model's preview wins; a language with none has none.
+      previews: { en: "https://x/en-live" },
     },
   ])
   expect(JSON.parse(JSON.stringify(voices))).toEqual(voices)
@@ -117,7 +138,7 @@ test("lists are cached for an hour with a tag", async () => {
   expect(search).toHaveBeenCalledTimes(1)
   expect(unstableCache).toHaveBeenCalledWith(
     expect.any(Function),
-    ["elevenlabs-voices"],
+    ["elevenlabs-voices", "previews"],
     {
       tags: ["elevenlabs-voices"],
       revalidate: 3600,

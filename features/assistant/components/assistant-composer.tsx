@@ -19,6 +19,7 @@ import { VoiceGlobe } from "@/components/voice-globe"
 import { VoiceWaveform } from "@/components/voice-waveform"
 import { useStoredFlag } from "@/hooks/use-stored-flag"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
+import type { PageLanguage } from "@/lib/page-language"
 import type { AssistantMessages } from "../i18n"
 import { type LiveVoice, useLiveVoiceSupported } from "../hooks/use-live-voice"
 import type { VoicePicking } from "../hooks/use-voice-choice"
@@ -67,7 +68,11 @@ export function AssistantComposer({
   // The chat's live session; absent where talking live happens elsewhere.
   live?: LiveVoice
   // The owner's voice for it, asked for before the first talk.
-  voice?: { picking: VoicePicking; labels: AssistantMessages["voice"] }
+  voice?: {
+    picking: VoicePicking
+    labels: AssistantMessages["voice"]
+    language: PageLanguage
+  }
   // Talking live happens somewhere else: the voice button calls this.
   onTalkLive?: () => void
   // Offer talking live as soon as this shows (asked for on another page).
@@ -90,12 +95,13 @@ export function AssistantComposer({
         ? "send"
         : "live"
 
-  // Talking live opens the voice intro first, until "Don't show again",
-  // and asks for a voice while none is chosen.
+  // Talking live opens the voice intro first, until "Don't show again";
+  // the intro always goes on to the voice step. Without the intro, the
+  // voice step opens only while no chosen voice speaks the app's language.
   const [introHidden, hideIntro] = useStoredFlag(VOICE_INTRO_HIDDEN_KEY)
   const [introOpen, setIntroOpen] = useState(false)
   const talk = () => {
-    if (voice && !voice.picking.chosen) voice.picking.ask()
+    if (voice && !voice.picking.speaks(voice.language)) voice.picking.ask()
     else void live?.start()
   }
   const startLive = () => {
@@ -235,6 +241,7 @@ export function AssistantComposer({
         <VoiceIntro
           open={introOpen || voice.picking.asking}
           step={introOpen ? "intro" : "voice"}
+          language={voice.language}
           labels={labels.voiceIntro}
           voiceLabels={voice.labels}
           voice={voice.picking}
@@ -243,13 +250,13 @@ export function AssistantComposer({
             voice.picking.stopAsking()
           }}
           onContinue={() => {
+            voice.picking.ask()
             setIntroOpen(false)
-            talk()
           }}
           onNeverShow={() => {
             hideIntro()
+            voice.picking.ask()
             setIntroOpen(false)
-            talk()
           }}
           onStart={() => {
             voice.picking.stopAsking()

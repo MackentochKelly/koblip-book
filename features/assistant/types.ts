@@ -1,3 +1,4 @@
+import type { PageLanguage } from "@/lib/page-language"
 import type { MemoryRow } from "./utils/memory"
 
 // Stream contract for POST /api/assistant (section 5 of docs/assistant-plan.md).
@@ -23,7 +24,9 @@ export type AssistantStreamEvent =
       summary: string
       destructive: boolean
       action: string // the button's word, e.g. "Book", "Delete"
+      spoken?: string // said out loud while talking, in place of the plain tap line
     } // card with the action button and Cancel
+  | { type: "accepted"; id: string } // an earlier card the owner said yes to in words; its result follows
   | { type: "memory"; rows: MemoryRow[] } // records this answer looked up, sent back with it next time
   | { type: "choices"; options: string[] } // quick answers; a tap sends one
   | {
@@ -54,6 +57,9 @@ export interface AssistantMessage {
   interrupted?: boolean
   // Assistant only. The records this reply looked up (the `memory` event).
   memory?: MemoryRow[]
+  // Assistant only. The id of this reply's card that still waits for the
+  // owner's tap, so the next answer knows about it.
+  waiting?: string
 }
 
 // One row of the Recent list: id, title, and last-write time.
@@ -106,6 +112,9 @@ export interface AssistantTool {
   confirm?: {
     describe: (args: unknown) => Promise<DescribedConfirm | { error: string }>
     execute: (args: unknown) => Promise<{ ok: boolean; doneText: string }>
+    // Said when the owner taps the card's other button; the plain
+    // "nothing was changed" line otherwise.
+    declinedText?: string
   }
 }
 
@@ -123,6 +132,9 @@ export interface ConfirmCard {
   summary: string
   destructive: boolean
   action: string // the button's word, e.g. "Book", "Delete"
+  // What the card will do, as a question said out loud while talking
+  // ("Book Sophia for Skin Fade…? Say yes or tap Book.").
+  spoken?: string
 }
 
 // Hears an answer while it is written (talking mode): its words, and the
@@ -138,8 +150,9 @@ export interface AnswerListener {
 export interface VoiceOption {
   voiceId: string
   name: string
-  previewUrl: string | null
   labels: Record<string, string>
+  // The voice speaking each page language it speaks.
+  previews: Partial<Record<PageLanguage, string>>
 }
 export interface VoiceChoice {
   // Null when ElevenLabs could not be reached.

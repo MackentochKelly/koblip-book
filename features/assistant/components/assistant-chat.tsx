@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useEffectEvent, useRef, useState } from "react"
 import { toast } from "sonner"
 import {
   ArrowLeftIcon,
@@ -22,6 +22,7 @@ import { useAssistantChat } from "../hooks/use-assistant-chat"
 import { useLiveVoice } from "../hooks/use-live-voice"
 import { useVoiceChoice } from "../hooks/use-voice-choice"
 import type { VoiceChoice } from "../types"
+import { wordsOf } from "../utils/chat-state"
 import { httpTransport } from "../utils/http-transport"
 import { AssistantComposer } from "./assistant-composer"
 import { MessageList } from "./message-list"
@@ -79,11 +80,30 @@ export function AssistantChat({
       }
     },
   })
+  // A talk hears and speaks in the language it started in, so when the
+  // app's language changes it ends; the next talk starts all in the new one.
+  const talkLanguage = useRef(language)
+  const endTalk = useEffectEvent(() => {
+    if (live.state !== "off") live.end()
+  })
+  useEffect(() => {
+    if (talkLanguage.current === language) return
+    talkLanguage.current = language
+    endTalk()
+  }, [language])
   // A tap on an answer's buttons: said into the talk while talking live
   // (the answer is spoken), sent as a typed message otherwise.
   const pick = (text: string) => {
     if (live.state !== "off") live.say(text)
     else void chat.send(text)
+  }
+  // A tap on a card. While talking live, what it did is said out loud
+  // ("Done! Sophia is booked…"), so the talk never just goes quiet.
+  const answer = (id: string, accept: boolean) => {
+    const talking = live.state !== "off"
+    void chat.answer(id, accept).then((reply) => {
+      if (talking && reply) live.announce(wordsOf(reply))
+    })
   }
   // Full screen on a phone only; on a computer it sits in the page.
   const phone = useIsMobile()
@@ -190,7 +210,7 @@ export function AssistantChat({
               error={chat.error}
               onSend={pick}
               onRetry={chat.retry}
-              onAnswer={chat.answer}
+              onAnswer={answer}
             />
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               {chat.items.length === 0 && !chat.busy && (
@@ -217,7 +237,7 @@ export function AssistantChat({
                 onSend={chat.send}
                 onStop={chat.stop}
                 live={live}
-                voice={{ picking: voice, labels: messages.voice }}
+                voice={{ picking: voice, labels: messages.voice, language }}
                 startLive={chat.liveRequested}
               />
             </div>

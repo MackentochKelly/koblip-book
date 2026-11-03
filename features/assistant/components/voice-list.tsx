@@ -1,56 +1,128 @@
 "use client"
 
-import type { ElevenLabs } from "@elevenlabs/elevenlabs-js"
+import { useState } from "react"
 
-import { AudioPlayerProvider } from "@/components/ui/audio-player"
-import { Command, CommandGroup, CommandList } from "@/components/ui/command"
-import { VoicePickerItem } from "@/components/ui/voice-picker"
+import { ViewTabs } from "@/components/view-tabs"
+import { Button } from "@/components/ui/button"
+import { CheckIcon, PauseIcon, PlayIcon } from "@/components/ui/icons"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from "@/components/ui/item"
+import { PAGE_LANGUAGES, type PageLanguage } from "@/lib/page-language"
+import { cn } from "@/lib/utils"
 import type { AssistantMessages } from "../i18n"
 import type { VoiceOption } from "../types"
+import { useVoicePreview } from "./voice-preview"
 
-// The voices as ElevenLabs UI's picker rows: a tap on a row's orb plays
-// the voice's ElevenLabs preview, a tap on the row chooses it.
+// The voices, with a tab for each language they speak in their samples
+// (starting on the owner's). A tap on a row chooses the voice and plays its
+// sample; the play button on the right only plays or stops it. The whole
+// row is the choose button (stretched over it with ::after), with the play
+// button above it as its own control, like SwitchCard. Needs a VoicePreview.
+// Give it key={language} so the tabs go back to the app's language when
+// that changes.
+// listClassName: for a list that scrolls on its own below the tabs.
 export function VoiceList({
   voices,
   chosen,
+  language,
   labels,
   onChoose,
+  listClassName,
 }: {
   voices: VoiceOption[]
   chosen: string | null
+  language: PageLanguage
   labels: AssistantMessages["voice"]
   onChoose: (voiceId: string) => void
+  listClassName?: string
 }) {
+  const preview = useVoicePreview()
+  const spoken = PAGE_LANGUAGES.filter((item) =>
+    voices.some((voice) => voice.previews[item])
+  )
+  const [picked, setPicked] = useState(language)
+  const shown = spoken.includes(picked) ? picked : (spoken[0] ?? language)
   // ElevenLabs' label in the owner's words, or as it comes.
   const word = (value: string | undefined) =>
     value && (labels.labels[value] ?? value.replaceAll("_", " "))
-  const rows: ElevenLabs.Voice[] = voices.map((voice) => ({
-    voiceId: voice.voiceId,
-    name: voice.name,
-    previewUrl: voice.previewUrl ?? undefined,
-    labels: Object.fromEntries(
-      (["accent", "gender"] as const).flatMap((key) => {
-        const value = word(voice.labels[key])
-        return value ? [[key, value]] : []
-      })
-    ),
-  }))
+  // ElevenLabs names often carry a tagline ("Adam - Engaging, Friendly");
+  // the row shows the name alone, with the accent and gender under it.
+  const shortName = (name: string) => name.split(/\s[-–]\s/)[0] || name
+
   return (
-    <AudioPlayerProvider>
-      <Command shouldFilter={false}>
-        <CommandList>
-          <CommandGroup>
-            {rows.map((voice) => (
-              <VoicePickerItem
-                key={voice.voiceId}
-                voice={voice}
-                isSelected={voice.voiceId === chosen}
-                onSelect={() => onChoose(voice.voiceId)}
-              />
-            ))}
-          </CommandGroup>
-        </CommandList>
-      </Command>
-    </AudioPlayerProvider>
+    <div className="flex flex-col gap-3">
+      {spoken.length > 1 && (
+        <ViewTabs
+          views={spoken.map((id) => ({ id, label: labels.languages[id] }))}
+          value={shown}
+          onChange={(next) => {
+            void preview.pause()
+            setPicked(next)
+          }}
+          ariaLabel={labels.language}
+          className="items-center"
+        />
+      )}
+      <ItemGroup className={listClassName}>
+        {voices.flatMap((voice) => {
+          const src = voice.previews[shown]
+          if (!src) return []
+          const id = `${voice.voiceId}:${shown}`
+          const playing = preview.isPlaying(id)
+          const selected = voice.voiceId === chosen
+          const details = [voice.labels.accent, voice.labels.gender]
+            .map(word)
+            .filter(Boolean)
+            .join(" · ")
+          return [
+            <Item
+              key={id}
+              size="xs"
+              className={cn(
+                "relative has-[[data-slot=item-content]_button:hover]:bg-muted",
+                selected && "bg-muted"
+              )}
+            >
+              <ItemContent className="min-w-0">
+                <button
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    onChoose(voice.voiceId)
+                    if (!playing) preview.play(id, src)
+                  }}
+                  className="flex min-h-11 min-w-0 flex-col items-start justify-center gap-0.5 rounded-md text-left outline-none after:absolute after:inset-0 after:rounded-2xl focus-visible:after:ring-3 focus-visible:after:ring-ring/50"
+                >
+                  <ItemTitle className="max-w-full">
+                    <span className="truncate">{shortName(voice.name)}</span>
+                  </ItemTitle>
+                  {details && <ItemDescription>{details}</ItemDescription>}
+                </button>
+              </ItemContent>
+              <ItemActions className="relative z-10">
+                {selected && <CheckIcon className="text-primary" />}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label={`${playing ? labels.pause : labels.play} ${shortName(voice.name)}`}
+                  onClick={() =>
+                    playing ? void preview.pause() : preview.play(id, src)
+                  }
+                >
+                  {playing ? <PauseIcon /> : <PlayIcon />}
+                </Button>
+              </ItemActions>
+            </Item>,
+          ]
+        })}
+      </ItemGroup>
+    </div>
   )
 }

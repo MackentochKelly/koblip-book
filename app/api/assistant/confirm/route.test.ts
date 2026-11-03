@@ -205,6 +205,23 @@ test("accept false runs nothing and ends", async () => {
   expect(execute).not.toHaveBeenCalled()
 })
 
+test("accept false says the tool's own words when it has them", async () => {
+  const booking = tool("create_booking")
+  vi.mocked(buildAssistantTools).mockReturnValue([
+    {
+      ...booking,
+      confirm: { ...booking.confirm, declinedText: "Okay, I didn't book it." },
+    },
+  ] as never)
+  const id = await store("u1", "b1", Date.now(), "create_booking")
+  const res = await POST(post({ businessId: "b1", id, accept: false }))
+  expect(await events(res)).toEqual([
+    { type: "text", delta: "Okay, I didn't book it." },
+    { type: "done" },
+  ])
+  expect(execute).not.toHaveBeenCalled()
+})
+
 test("accept true runs stored args only, extra body fields ignored", async () => {
   const id = await store()
   const res = await POST(

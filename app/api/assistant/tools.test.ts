@@ -1909,6 +1909,9 @@ test("create_booking happy path stores a card with a server weekday", async () =
     summary: expect.stringContaining("Thursday, January 1 · 10:00 AM"),
     destructive: false,
     action: "Book",
+    // Said out loud while talking: what the tap will do.
+    spoken:
+      "Book Ana for Cut on Thursday, January 1 at 10:00 AM? Say yes or tap Book.",
     args: STORED_BOOKING,
   })
   expect((card as { summary: string }).summary).toContain("Ana · Cut")
@@ -2395,8 +2398,8 @@ test("buildVoiceLine speaks briefly in both languages", async () => {
   const en = buildVoiceLine("en")
   for (const heading of [
     "Personality",
+    "Language",
     "Length",
-    "Before a lookup",
     "Variety",
     "Cut off",
     "Unclear words",
@@ -2405,13 +2408,15 @@ test("buildVoiceLine speaks briefly in both languages", async () => {
   ])
     expect(en).toContain(`# ${heading}`)
   expect(en).toContain("NEVER say the same sentence twice in this chat")
-  expect(en).toContain("ONE very short line of 2 to 4 words")
+  // No line of its own before a lookup; follow-ups come from the chat.
+  expect(en).not.toContain("# Before a lookup")
+  expect(en).toContain("For a follow-up like 'What time?'")
   expect(en).toContain("write nothing; the app says it out loud")
   const es = buildVoiceLine("es")
   for (const heading of [
     "Personalidad",
+    "Idioma",
     "Extensión",
-    "Antes de una consulta",
     "Variedad",
     "Te cortaron",
     "Palabras poco claras",
@@ -2420,7 +2425,8 @@ test("buildVoiceLine speaks briefly in both languages", async () => {
   ])
     expect(es).toContain(`# ${heading}`)
   expect(es).toContain("NUNCA digas la misma frase dos veces en este chat")
-  expect(es).toContain("UNA frase muy corta de 2 a 4 palabras")
+  expect(es).not.toContain("# Antes de una consulta")
+  expect(es).toContain("Para una pregunta de seguimiento como '¿A qué hora?'")
   expect(es).toContain("no escribas nada; la aplicación")
 })
 

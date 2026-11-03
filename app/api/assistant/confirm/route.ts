@@ -1,6 +1,6 @@
-import { logAssistantAction } from "@/features/assistant/api/audit-log"
 import { checkAssistantRateLimit } from "@/features/assistant/api/rate-limit"
 import { takePendingAction } from "@/features/assistant/api/pending-actions"
+import { runPending } from "@/features/assistant/api/run-pending"
 import {
   isCrossSiteRequest,
   requestBudget,
@@ -101,6 +101,11 @@ export async function POST(request: Request) {
   const encoder = new TextEncoder()
   const send = (event: AssistantStreamEvent): Uint8Array =>
     encoder.encode(JSON.stringify(event) + "\n")
+  const tool = buildAssistantTools(
+    owned.business.id,
+    session.userId,
+    language
+  ).find((tool) => tool.definition.name === pending.toolName)
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
@@ -108,61 +113,18 @@ export async function POST(request: Request) {
           return
         }
         if (!body.accept) {
-          controller.enqueue(send({ type: "text", delta: t.confirm.unchanged }))
+          controller.enqueue(
+            send({
+              type: "text",
+              delta: tool?.confirm?.declinedText ?? t.confirm.unchanged,
+            })
+          )
           controller.enqueue(send({ type: "done" }))
           return
         }
-        const tool = buildAssistantTools(
-          owned.business.id,
-          session.userId,
-          language
-        ).find((tool) => tool.definition.name === pending.toolName)
-        const stepId = pending.id.slice(0, 64)
-        controller.enqueue(
-          send({
-            type: "step",
-            id: stepId,
-            label: tool?.label ?? t.steps.working,
-            status: "running",
-          })
-        )
-        // Only the stored args run. Nothing else from the request body.
-        // The card is already taken, so a throw still ends with a result:
-        // the change may have happened, so the owner is told to check.
-        let outcome: { ok: boolean; doneText: string }
-        try {
-          outcome = tool?.confirm
-            ? await tool.confirm.execute(pending.args)
-            : { ok: false, doneText: t.confirm.unavailable }
-        } catch {
-          console.error("assistant-confirm-failed")
-          outcome = { ok: false, doneText: t.confirm.unknown }
+        for await (const event of runPending(pending, tool, t)) {
+          controller.enqueue(send(event))
         }
-        await logAssistantAction({
-          businessId: owned.business.id,
-          ownerId: session.userId,
-          tool: pending.toolName,
-          summary: outcome.doneText,
-          status: outcome.ok ? "ok" : "failed",
-        })
-        controller.enqueue(
-          send({
-            type: "step",
-            id: stepId,
-            label: outcome.ok
-              ? (tool?.doneLabel ?? t.stepsDone.working)
-              : (tool?.label ?? t.steps.working),
-            status: outcome.ok ? "done" : "failed",
-          })
-        )
-        controller.enqueue(
-          send({
-            type: "result",
-            ok: outcome.ok,
-            text: outcome.doneText,
-            kind: tool?.definition.resultKind ?? "bookings",
-          })
-        )
         controller.enqueue(send({ type: "done" }))
       } finally {
         budget.done()
