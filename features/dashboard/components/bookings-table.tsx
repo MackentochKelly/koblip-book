@@ -6,6 +6,7 @@ import { DateRangePicker, type DayRangeValue } from "@/components/date-range-pic
 import { FacetFilter } from "@/components/facet-filter"
 import { FilterChecks, FilterSheet } from "@/components/filter-sheet"
 import { ViewTabs } from "@/components/view-tabs"
+import { SearchField } from "@/components/search-field"
 import { Button } from "@/components/ui/button"
 import { FieldLegend, FieldSet } from "@/components/ui/field"
 import {
@@ -15,12 +16,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
-import { CalendarDaysIcon, SearchIcon, XIcon } from "@/components/ui/icons"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
+import { CalendarDaysIcon, XIcon } from "@/components/ui/icons"
 import {
   Select,
   SelectContent,
@@ -110,19 +106,13 @@ export function BookingsTable({
       {/* A computer: search, dates and filters in one row. A phone: search
           and one Filters button for a sheet with the rest. */}
       <div className="flex items-center gap-2 md:flex-wrap">
-        {/* The outline look of the date and filter buttons beside it. */}
-        <InputGroup className="min-w-0 flex-1 border-border bg-background md:w-80 md:flex-none dark:bg-transparent">
-          <InputGroupAddon>
-            <SearchIcon />
-          </InputGroupAddon>
-          <InputGroupInput
-            type="search"
-            value={filters.search}
-            onChange={(event) => set({ search: event.target.value })}
-            placeholder={t.search}
-            aria-label={t.search}
-          />
-        </InputGroup>
+        <SearchField
+          className="min-w-0 flex-1 md:w-80 md:flex-none"
+          value={filters.search}
+          onChange={(event) => set({ search: event.target.value })}
+          placeholder={t.search}
+          aria-label={t.search}
+        />
         <div className="md:hidden">
           <FilterSheet
             label={t.filters}

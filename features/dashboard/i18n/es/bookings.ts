@@ -77,7 +77,7 @@ const bookings: typeof en = {
   viewAll: "Ver todas",
   list: {
     tabs: { bookings: "Reservas", calendar: "Calendario" },
-    search: "Buscar reservas",
+    search: "Buscar reservas…",
     statuses: {
       all: "Todas",
       upcoming: "Próximas",
@@ -224,7 +224,7 @@ const bookings: typeof en = {
   customers: {
     title: "Clientes",
     people: (n: number) => (n === 1 ? "1 persona" : `${n} personas`),
-    search: "Nombre o teléfono",
+    search: "Nombre o teléfono…",
     searchLabel: "Buscar clientes",
     noneFound: "No se encontró a nadie",
     clearSearch: "Borrar búsqueda",
