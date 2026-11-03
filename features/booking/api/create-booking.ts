@@ -3,6 +3,7 @@
 import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { customerKey } from "@/lib/customer-key"
+import { internationalPhone } from "@/lib/whatsapp-phone"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
 import { googleBusyTimes } from "@/lib/google-calendar-busy"
@@ -252,8 +253,8 @@ export async function createBooking(
           startAt,
           endAt: new Date(endInstant).toISOString(),
           customerName: name,
-          customerPhone: phone,
-          customerKey: customerKey(phone, name),
+          customerPhone: internationalPhone(phone, business),
+          customerKey: customerKey(internationalPhone(phone, business), name),
           // The booking page names the business in the ⓘ on Phone whenever
           // it sends WhatsApp booking messages: booking is the yes.
           whatsappOptIn: whatsapp,

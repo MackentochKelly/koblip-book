@@ -3,6 +3,7 @@
 import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { customerKey } from "@/lib/customer-key"
+import { internationalPhone } from "@/lib/whatsapp-phone"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
@@ -268,8 +269,8 @@ export async function createOwnerBooking(
           startAt: new Date(startInstant).toISOString(),
           endAt: new Date(endInstant).toISOString(),
           customerName: name,
-          customerPhone: phone,
-          customerKey: customerKey(phone, name),
+          customerPhone: phone && internationalPhone(phone, business),
+          customerKey: customerKey(phone && internationalPhone(phone, business), name),
           source: "owner",
           status: "confirmed",
           note,

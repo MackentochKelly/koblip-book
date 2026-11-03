@@ -28,6 +28,7 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { PhoneInput } from "@/components/phone-input"
 import {
   Select,
   SelectContent,
@@ -417,15 +418,14 @@ function BookingForm({
         </Field>
         <Field data-invalid={error("phone")}>
           <FieldLabel htmlFor="add-phone">{t.phone}</FieldLabel>
-          <Input
+          <PhoneInput
             {...noAutofill("add_phone")}
             id="add-phone"
-            type="tel"
-            inputMode="tel"
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
+            onChange={setPhone}
             placeholder={t.optional}
             aria-invalid={error("phone")}
+            locale={m.locale}
           />
           {invalid === "phone" && <FieldError>{t.checkPhone}</FieldError>}
         </Field>

@@ -36,6 +36,7 @@ import {
   FieldTitle,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { PhoneInput } from "@/components/phone-input"
 import {
   Item,
   ItemContent,
@@ -419,16 +420,15 @@ export function DetailsStep({
               </InfoTip>
             )}
           </div>
-          <Input
+          <PhoneInput
             {...noAutofill("booking_phone")}
             id="booking-phone"
-            type="tel"
-            inputMode="tel"
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
+            onChange={setPhone}
             disabled={sending}
             maxLength={25}
             aria-invalid={error === "phone" || undefined}
+            locale={m.locale}
           />
           {error === "phone" && <FieldError>{m.booking.checkPhone}</FieldError>}
         </Field>

@@ -1,5 +1,5 @@
 import "server-only"
-import { and, asc, desc, eq } from "drizzle-orm"
+import { and, asc, desc, eq, inArray } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
@@ -8,6 +8,7 @@ import {
   chatConnections, notificationSends, services,
 } from "@/lib/db/schema"
 import { notify } from "@/lib/in-app-notifications"
+import { whatsappCustomerKeys } from "@/lib/whatsapp-phone"
 import { automationRules, notificationRules } from "@/lib/platform-settings"
 import { runInTurn } from "@/lib/run-in-turn"
 import { fillFields } from "@/lib/message-fields"
@@ -88,7 +89,7 @@ async function send(context: Context, step: AutomationRun["step"], message: Auto
   // A failed contact lookup is not retried by an event redelivery either.
   // Provider explanations are not stored: they can contain private content.
   await record(context, step, outcome.state === "pending" ? "failed" : outcome.state,
-    outcome.state === "sent" ? null : outcome.state === "skipped" ? "unsubscribed" : "chat",
+    outcome.state === "sent" ? null : outcome.state === "pending" ? "chat" : outcome.reason,
     outcome.state === "sent" ? outcome.chatRecordId : null)
 }
 
@@ -130,7 +131,7 @@ async function applyInbound(connection: Connection, event: AutomationEvent, prev
   const [business] = await db.select().from(businesses).where(eq(businesses.id, connection.businessId)).limit(1)
   if (!business || business.isDemo || !business.ownerId) return
   const [latestBooking] = await db.select({ language: bookings.language, name: bookings.customerName }).from(bookings)
-    .where(and(eq(bookings.businessId, business.id), eq(bookings.customerKey, `p:${event.customerPhone}`)))
+    .where(and(eq(bookings.businessId, business.id), inArray(bookings.customerKey, whatsappCustomerKeys(event.customerPhone))))
     .orderBy(desc(bookings.createdAt), desc(bookings.id)).limit(1)
   const parent = event.payload ? await parentRun(connection, event) : null
   const flows = await db.select().from(automations).where(and(eq(automations.businessId, business.id), eq(automations.on, true)))
@@ -191,12 +192,16 @@ async function applyInbound(connection: Connection, event: AutomationEvent, prev
         }
       } else {
         if (event.replyToMessageId || flow.trigger !== "firstMessage") continue
+        const [lastTry] = await db.select({ state: automationRuns.state }).from(automationRuns).where(and(
+          customerRun(context), eq(automationRuns.automationId, flow.id), eq(automationRuns.step, "welcome"), inArray(automationRuns.state, ["sent", "failed"])
+        )).orderBy(desc(automationRuns.at), desc(automationRuns.id)).limit(1)
         const [lastWelcome] = await db.select({ at: automationRuns.at }).from(automationRuns).where(and(
           customerRun(context), eq(automationRuns.automationId, flow.id), eq(automationRuns.step, "welcome"), eq(automationRuns.state, "sent")
         )).orderBy(desc(automationRuns.at)).limit(1)
         const baseline = Math.max(previousReplyAt ? Date.parse(previousReplyAt) : -Infinity,
           lastWelcome ? Date.parse(lastWelcome.at) : -Infinity)
-        if (Date.parse(event.at) - baseline <= rules.welcomeAgainDays * 24 * 60 * 60 * 1000) continue
+        // A Welcome that failed never reached them: their next message tries again.
+        if (lastTry?.state !== "failed" && Date.parse(event.at) - baseline <= rules.welcomeAgainDays * 24 * 60 * 60 * 1000) continue
         await send(context, step, { type: "button", body: fill(words.body), buttons: flow.buttons.map((button) => ({ id: button.id, label: button.label[language] })) })
       }
     } catch {
