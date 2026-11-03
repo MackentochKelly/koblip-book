@@ -59,7 +59,8 @@ import type {
 import { signUpHref } from "../utils/sign-up-link"
 import { useDebounced } from "../utils/use-debounced"
 import { useSessionToken } from "../utils/use-session-token"
-import { SearchAreaPanel, type SearchArea } from "./search-area"
+import { SearchAreaPanel } from "./search-area"
+import { useSearchLocation } from "../hooks/use-search-location"
 import { SuggestionList } from "./suggestion-list"
 import { noAutofill } from "@/lib/no-autofill"
 import type { PageLanguage } from "@/lib/page-language"
@@ -499,17 +500,6 @@ export function GetStarted({
   )
 }
 
-// The browser's answer so far for location, read without a prompt
-// (developer.mozilla.org/docs/Web/API/Permissions/query). A browser that
-// can't tell reads as not asked yet.
-function locationPermission(): Promise<PermissionState> {
-  if (!navigator.permissions) return Promise.resolve("prompt")
-  return navigator.permissions.query({ name: "geolocation" }).then(
-    (status) => status.state,
-    () => "prompt"
-  )
-}
-
 // Search as you type, near the owner or a city they pick.
 // A suggested search's row id: kept apart from Google place ids.
 const queryId = (text: string) => `query:${text}`
@@ -545,100 +535,19 @@ function FindBusiness({
   // Bumped by each new search, so an older answer is dropped.
   const searchRun = useRef(0)
   const listRef = useRef<HTMLDivElement>(null)
-  const [area, setArea] = useState<SearchArea | null>(null)
-  const [areaOpen, setAreaOpen] = useState(false)
-  const [locating, setLocating] = useState(false)
-  // False once the browser won't give a location: the panel offers cities.
-  const [canLocate, setCanLocate] = useState(true)
-  // How many times in a row the browser allowed it but couldn't tell where
-  // the visitor is (no signal, or the device's own location setting is
-  // off): they can try again or pick a city.
-  const [locateFails, setLocateFails] = useState(0)
-  // Opens the panel when a location already allowed is slow to come.
-  const slowTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
-  // Where focus goes when the panel closes with no place picked: the
-  // "Anywhere" button, so the search box doesn't take it back and reopen it.
+  const location = useSearchLocation()
+  const { area } = location.state
+  const { askLocation } = location
+  const canSearch = location.view.search
   const areaButtonRef = useRef<HTMLButtonElement>(null)
   const { current: sessionToken, renew } = useSessionToken()
   const needle = useDebounced(query.trim(), ONBOARDING_RULES.debounceMs)
-
-  // A refusal leaves the panel on its cities; a location that couldn't be
-  // read keeps "Use my current location" for another try
-  // (developer.mozilla.org/docs/Web/API/GeolocationPositionError/code).
-  const locate = () => {
-    if (!navigator.geolocation) {
-      setCanLocate(false)
-      setAreaOpen(true)
-      return
-    }
-    setLocating(true)
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        clearTimeout(slowTimer.current)
-        setLocating(false)
-        setLocateFails(0)
-        setAreaOpen(false)
-        setArea({
-          label: t.nearMe,
-          center: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          },
-        })
-      },
-      (error) => {
-        clearTimeout(slowTimer.current)
-        setLocating(false)
-        if (error.code === error.PERMISSION_DENIED) setCanLocate(false)
-        else setLocateFails((fails) => fails + 1)
-        setAreaOpen(true)
-      },
-      {
-        maximumAge: ONBOARDING_RULES.locationMaxAgeMs,
-        timeout: ONBOARDING_RULES.locationTimeoutMs,
-      }
-    )
-  }
-
-  // No timer left running once the search is gone.
-  useEffect(() => () => clearTimeout(slowTimer.current), [])
-
-  // The search starts only once it has a place: every tap in the box
-  // opens the "Search near" panel until the visitor uses their location or
-  // picks a city. A location already allowed is used at once, with no
-  // panel unless it is slow to come (then the panel shows it on its way,
-  // with the cities); one never asked for waits for a tap on "Use my
-  // current location", so the browser's own prompt follows it; one refused
-  // leaves the cities.
-  const askLocation = async () => {
-    if (area || areaOpen) return
-    if (locating) {
-      setAreaOpen(true)
-      return
-    }
-    if (!navigator.geolocation) {
-      setCanLocate(false)
-      setAreaOpen(true)
-      return
-    }
-    const state = await locationPermission()
-    if (state === "granted") {
-      locate()
-      slowTimer.current = setTimeout(
-        () => setAreaOpen(true),
-        ONBOARDING_RULES.locationPanelDelayMs
-      )
-      return
-    }
-    setCanLocate(state === "prompt")
-    setAreaOpen(true)
-  }
 
   useEffect(() => {
     let current = true
     // New words: a suggested search still running no longer applies.
     searchRun.current += 1
-    if (needle.length < ONBOARDING_RULES.minInput) {
+    if ((!area && !canSearch) || needle.length < ONBOARDING_RULES.minInput) {
       queueMicrotask(() => {
         if (!current) return
         setResults(null)
@@ -668,7 +577,7 @@ function FindBusiness({
     return () => {
       current = false
     }
-  }, [needle, area, sessionToken])
+  }, [needle, area, canSearch, sessionToken])
 
   // A suggested search ("photography studio near Brockton, MA, USA"):
   // its businesses replace the list. The tapped row goes with the old
@@ -724,17 +633,16 @@ function FindBusiness({
           ref={areaButtonRef}
           variant="outline"
           size="sm"
-          onClick={() => setAreaOpen(true)}
-          disabled={locating}
+          onClick={location.openPanel}
         >
-          {locating ? (
+          {location.view.busy ? (
             <Spinner data-icon="inline-start" />
           ) : area ? (
             <NavigationIcon data-icon="inline-start" />
           ) : (
             <MapPinIcon data-icon="inline-start" />
           )}
-          {area?.label ?? t.anywhere}
+          {area?.isCurrentLocation ? t.nearMe : (area?.label ?? t.anywhere)}
         </Button>
         {expanded && (
           <Button
@@ -758,6 +666,7 @@ function FindBusiness({
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onClick={() => void askLocation()}
           onFocus={() => {
             setFocused(true)
             void askLocation()
@@ -831,16 +740,18 @@ function FindBusiness({
         )}
       </div>
       <SearchAreaPanel
-        open={areaOpen}
-        onClose={() => setAreaOpen(false)}
-        onPick={(next) => {
-          setArea(next)
-          setAreaOpen(false)
-        }}
-        locate={locate}
-        locating={locating}
-        canLocate={canLocate}
-        locateFails={locateFails}
+        open={location.open}
+        onClose={location.closePanel}
+        onPick={location.pickCity}
+        locate={location.locate}
+        onCityPick={location.cancelForCity}
+        locating={location.view.busy}
+        pending={location.view.pending}
+        canLocate={location.view.canLocate}
+        locationAlert={location.view.alert}
+        // Picked a place: focus goes back where it was (the search box, ready
+        // to type). Closed without one: to the "Anywhere" button, so the
+        // search box doesn't take focus and reopen the panel.
         finalFocus={area ? true : areaButtonRef}
         words={t.area}
       />

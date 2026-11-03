@@ -36,8 +36,10 @@ const en = {
     helper: "Find businesses close to you",
     useLocation: "Use my current location",
     notFound: "Couldn't find you. Try again or pick a city.",
+    waiting: "Taking longer than expected. You can pick a city.",
+    timeout: "Location timed out. Try again or pick a city.",
     turnOnLocation:
-      "Turn on Location for your browser in your device settings, or pick a city.",
+      "Location access was blocked. Check browser and device settings, or pick a city.",
     or: "or pick a city",
     city: "Search a city",
   },
@@ -100,8 +102,10 @@ const es: OnboardingWords = {
     helper: "Encuentra negocios cerca de ti",
     useLocation: "Usar mi ubicación actual",
     notFound: "No te encontramos. Inténtalo de nuevo o elige una ciudad.",
+    waiting: "Está tardando más de lo esperado. Puedes elegir una ciudad.",
+    timeout: "Se agotó el tiempo. Inténtalo de nuevo o elige una ciudad.",
     turnOnLocation:
-      "Activa la ubicación de tu navegador en los ajustes del dispositivo, o elige una ciudad.",
+      "Acceso bloqueado. Revisa los ajustes del navegador y del dispositivo, o elige una ciudad.",
     or: "o elige una ciudad",
     city: "Busca una ciudad",
   },

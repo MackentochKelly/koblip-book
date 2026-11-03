@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion } from "motion/react"
 import {
   AlertCircleIcon,
@@ -26,17 +26,13 @@ import { cn } from "@/lib/utils"
 import { NUDGE } from "@/lib/motion-tokens"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import { cityCenter, searchCities } from "../api/search-actions"
-import type { CitySuggestion, Coordinates } from "../types"
+import type { CitySuggestion } from "../types"
+import type { LocationAlert, SearchArea } from "../utils/location-state"
 import { useDebounced } from "../utils/use-debounced"
 import { useSessionToken } from "../utils/use-session-token"
 import { SuggestionList } from "./suggestion-list"
 import { noAutofill } from "@/lib/no-autofill"
 import type { OnboardingWords } from "../i18n"
-
-export interface SearchArea {
-  label: string
-  center: Coordinates
-}
 
 // Where business search looks first: the phone's location (the one main
 // action) or a city. A dialog in the middle of the screen on a phone too,
@@ -46,9 +42,11 @@ export function SearchAreaPanel({
   onClose,
   onPick,
   locate,
+  onCityPick,
   locating,
+  pending,
   canLocate,
-  locateFails,
+  locationAlert,
   finalFocus,
   words: t,
 }: {
@@ -56,12 +54,12 @@ export function SearchAreaPanel({
   onClose: () => void
   onPick: (area: SearchArea) => void
   locate: () => void
+  onCityPick: () => void
   locating: boolean
+  pending: boolean
   // False once the browser won't give a location: cities only.
   canLocate: boolean
-  // Times in a row the browser allowed it but couldn't tell where the
-  // visitor is: after the second, the device's setting is the likely cause.
-  locateFails: number
+  locationAlert: LocationAlert
   // Where focus goes on close (Base UI Dialog.Popup `finalFocus`).
   finalFocus: boolean | React.RefObject<HTMLElement | null>
   words: OnboardingWords["area"]
@@ -69,8 +67,20 @@ export function SearchAreaPanel({
   const [query, setQuery] = useState("")
   const [cities, setCities] = useState<CitySuggestion[]>([])
   const [picking, setPicking] = useState<string | null>(null)
+  const pickRun = useRef(0)
   const { current: sessionToken, renew } = useSessionToken()
   const needle = useDebounced(query.trim(), ONBOARDING_RULES.debounceMs)
+
+  useEffect(() => {
+    let current = true
+    queueMicrotask(() => {
+      if (current) setPicking(null)
+    })
+    return () => {
+      current = false
+      pickRun.current += 1
+    }
+  }, [open])
 
   useEffect(() => {
     let current = true
@@ -89,11 +99,14 @@ export function SearchAreaPanel({
   }, [needle, sessionToken])
 
   const pick = async (city: CitySuggestion) => {
+    const run = ++pickRun.current
+    onCityPick()
     setPicking(city.placeId)
     const center = await cityCenter({
       placeId: city.placeId,
       sessionToken: sessionToken(),
     }).catch(() => null)
+    if (run !== pickRun.current) return
     renew()
     setPicking(null)
     if (!center) return
@@ -132,7 +145,15 @@ export function SearchAreaPanel({
             <div className="mb-2 flex flex-col items-center">
               {/* Shakes a few times as the window opens, so the eye finds it. */}
               <motion.div animate={NUDGE}>
-                <Button size="lg" onClick={locate} disabled={locating}>
+                <Button
+                  size="lg"
+                  onClick={() => {
+                    pickRun.current += 1
+                    setPicking(null)
+                    locate()
+                  }}
+                  disabled={pending}
+                >
                   {locating ? (
                     <Spinner data-icon="inline-start" />
                   ) : (
@@ -142,11 +163,23 @@ export function SearchAreaPanel({
                 </Button>
               </motion.div>
               {/* The app's error look (shadcn Alert, read out as it appears). */}
-              {locateFails > 0 && !locating && (
-                <Alert variant="destructive" className="mt-3">
+              {locationAlert !== "none" && !locating && (
+                <Alert
+                  variant={
+                    locationAlert === "waiting" ? "default" : "destructive"
+                  }
+                  role={locationAlert === "waiting" ? "status" : "alert"}
+                  className="mt-3"
+                >
                   <AlertCircleIcon />
                   <AlertDescription>
-                    {locateFails > 1 ? t.turnOnLocation : t.notFound}
+                    {locationAlert === "settings"
+                      ? t.turnOnLocation
+                      : locationAlert === "waiting"
+                        ? t.waiting
+                        : locationAlert === "timeout"
+                          ? t.timeout
+                          : t.notFound}
                   </AlertDescription>
                 </Alert>
               )}
