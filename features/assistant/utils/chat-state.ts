@@ -29,6 +29,8 @@ export interface ChatConfirm {
   summary: string
   destructive: boolean
   action: string
+  // Said out loud while talking, in place of the plain tap line.
+  spoken?: string
   state: ConfirmState
 }
 
@@ -169,6 +171,7 @@ export function applyEvent(
             summary: event.summary,
             destructive: event.destructive,
             action: event.action,
+            ...(event.spoken ? { spoken: event.spoken } : {}),
             state: "pending",
           },
         ],
@@ -197,6 +200,9 @@ export function applyEvent(
       return withReply((reply) => ({ ...reply, sources: event.items }))
     case "memory":
       return withReply((reply) => ({ ...reply, memory: event.rows }))
+    // An earlier card the owner said yes to in words: done like a tap.
+    case "accepted":
+      return resolveConfirm(items, event.id, "accepted")
     default:
       return items
   }
@@ -235,7 +241,7 @@ export function fromMessages(messages: AssistantMessage[]): ChatItem[] {
 
 // The words of one item; a tapped action's result counts as words, so
 // the assistant knows on the next question what was done.
-function wordsOf(item: ChatItem): string {
+export function wordsOf(item: ChatItem): string {
   if (item.role === "owner" || !item.result) return item.text
   return [item.text, item.result.text]
     .filter((part) => part.trim())
@@ -244,7 +250,9 @@ function wordsOf(item: ChatItem): string {
 
 // What the server gets: the words only, the newest `limit` messages. A
 // cut-off reply goes as only the part the owner got, marked, so the next
-// answer covers the rest; one cut off before any words is left out.
+// answer covers the rest; one cut off before any words is left out. A
+// reply whose card still waits goes with the card's id, even with no
+// words, so the next answer knows it is there and never makes it again.
 export function toMessages(
   items: ChatItem[],
   limit: number
@@ -255,11 +263,19 @@ export function toMessages(
         item.role === "assistant" && item.cutOff !== undefined
           ? { role: item.role, text: item.cutOff, interrupted: true }
           : { role: item.role, text: wordsOf(item) }
-      return item.role === "assistant" && item.memory.length > 0
-        ? { ...message, memory: item.memory }
-        : message
+      if (item.role !== "assistant") return message
+      const waiting = item.confirms.findLast(
+        (confirm) => confirm.state === "pending"
+      )
+      return {
+        ...message,
+        ...(item.memory.length > 0 ? { memory: item.memory } : {}),
+        ...(waiting ? { waiting: waiting.id } : {}),
+      }
     })
-    .filter((message) => message.text.trim() !== "")
+    .filter(
+      (message) => message.text.trim() !== "" || message.waiting !== undefined
+    )
     .slice(-limit)
 }
 

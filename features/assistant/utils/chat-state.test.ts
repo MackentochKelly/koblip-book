@@ -303,3 +303,54 @@ test("an answer's memory lands on it, goes back with it, and is kept", () => {
     memory: rows,
   })
 })
+
+test("a card still waiting goes back with its reply, even with no words", () => {
+  let items: ChatItem[] = [owner, replyTo()]
+  items = applyEvent(
+    items,
+    {
+      type: "confirm",
+      id: "c1",
+      title: "Book this appointment?",
+      summary: "Ana, 3pm",
+      destructive: false,
+      action: "Book",
+    },
+    R
+  )
+  expect(toMessages(items, 20)).toEqual([
+    { role: "owner", text: "Hi" },
+    { role: "assistant", text: "", waiting: "c1" },
+  ])
+  // Answered: the card no longer waits, and a reply with no words is left out.
+  expect(toMessages(resolveConfirm(items, "c1", "declined"), 20)).toEqual([
+    { role: "owner", text: "Hi" },
+  ])
+})
+
+test("a yes in words marks the earlier card done, and its result lands on the new reply", () => {
+  let items: ChatItem[] = [owner, replyTo("r0")]
+  items = applyEvent(
+    items,
+    {
+      type: "confirm",
+      id: "c1",
+      title: "Book this appointment?",
+      summary: "Ana, 3pm",
+      destructive: false,
+      action: "Book",
+    },
+    "r0"
+  )
+  items = [...items, { id: "o2", role: "owner", text: "Yes" }, replyTo()]
+  items = applyEvent(items, { type: "accepted", id: "c1" }, R)
+  items = applyEvent(
+    items,
+    { type: "result", ok: true, text: "Done!", kind: "bookings" },
+    R
+  )
+  const card = items[1]
+  const reply = items[3]
+  expect(card.role === "assistant" && card.confirms[0].state).toBe("accepted")
+  expect(reply.role === "assistant" && reply.result?.text).toBe("Done!")
+})

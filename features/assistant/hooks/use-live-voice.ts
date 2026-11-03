@@ -9,6 +9,7 @@ import {
 } from "react"
 
 import { useWakeLock } from "@/hooks/use-wake-lock"
+import { audioLevel } from "@/lib/audio-level"
 import { VOICE_RULES } from "@/lib/voice-rules"
 import type { AnswerListener } from "../types"
 import {
@@ -19,12 +20,7 @@ import {
   type LiveVoiceState,
   type Reply,
 } from "../utils/live-voice-session"
-import {
-  createFramer,
-  createResampler,
-  floatToPcm16,
-  level,
-} from "../utils/pcm"
+import { createFramer, createResampler, floatToPcm16 } from "../utils/pcm"
 import { PcmPlayer } from "../utils/pcm-player"
 import { openSpeech } from "../utils/speak-client"
 
@@ -209,6 +205,7 @@ export function useLiveVoice({
       confirmLine: latest.current.confirmLine,
       fillers: latest.current.fillers,
       cutIns: latest.current.cutIns,
+      random: Math.random,
       greeting: latest.current.greeting,
       onState: setState,
       onCaption: setCaption,
@@ -247,7 +244,7 @@ export function useLiveVoice({
     })
     capture.port.onmessage = (message: MessageEvent<Float32Array>) => {
       const samples = message.data
-      inputLevel.current = level(samples)
+      inputLevel.current = audioLevel(samples)
       if (socket.readyState !== WebSocket.OPEN) return
       for (const pcm of frame(floatToPcm16(resample(samples)))) {
         socket.send(pcm.buffer)
@@ -277,6 +274,11 @@ export function useLiveVoice({
     session.current?.said(text)
   }, [])
 
+  // A tapped card's result, said out loud.
+  const announce = useCallback((text: string) => {
+    session.current?.announce(text)
+  }, [])
+
   // The screen stays on while talking, like a phone call.
   useWakeLock(state !== "off")
 
@@ -301,6 +303,7 @@ export function useLiveVoice({
     start,
     end,
     say,
+    announce,
     getInputVolume,
     getOutputVolume,
     getVoiceFrequencies,

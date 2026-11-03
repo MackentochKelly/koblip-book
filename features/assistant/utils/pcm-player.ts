@@ -1,6 +1,7 @@
+import { audioLevel } from "@/lib/audio-level"
 import { VOICE_RULES } from "@/lib/voice-rules"
 
-import { base64Pcm16ToFloat, level } from "./pcm"
+import { base64Pcm16ToFloat } from "./pcm"
 
 // Plays ElevenLabs' PCM chunks back to back, gapless, and says how loud it
 // is right now for the globe. stop() cuts it off at once (the owner talked
@@ -60,7 +61,7 @@ export class PcmPlayer {
   volume = () => {
     if (this.sources.size === 0) return 0
     this.analyser.getFloatTimeDomainData(this.samples)
-    return level(this.samples)
+    return audioLevel(this.samples)
   }
 
   // The words that have started playing.

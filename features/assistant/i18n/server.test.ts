@@ -22,7 +22,9 @@ test("spanish translates chips, cards and results", () => {
   expect(t.cards.cancel).toBe("¿Cancelar esta reserva?")
   expect(t.cancel.done).toBe("Reserva cancelada.")
   expect(t.confirm.unchanged).toBe("Vale, no se cambió nada.")
-  expect(t.loop.stopped(8)).toContain("8")
+  expect(t.loop.stopped).toBe(
+    "Eso llevó demasiados pasos. ¿Puedes preguntar algo más concreto?"
+  )
 })
 
 test("unknown or missing language falls back to english", () => {

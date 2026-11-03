@@ -23,7 +23,7 @@ export default async function AssistantPage({
   // Only the language crosses to the browser: the words include
   // functions (counts), which a server page cannot send.
   const language = await getOwnerLanguage()
-  const voiceChoice = await getVoiceChoice(owner.userId, language)
+  const voiceChoice = await getVoiceChoice(owner.userId)
   return (
     <AssistantChat
       businessId={businessId}

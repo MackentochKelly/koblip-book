@@ -66,15 +66,17 @@ const messages: typeof en = {
     invalidArgs: "esos argumentos no eran válidos, pide lo que falte",
     lookupFailed: "esa búsqueda falló, pregúntalo de otra forma",
     tooMany: "demasiadas confirmaciones pendientes, responde una primero",
+    noCard:
+      "ninguna tarjeta espera un sí (ya se respondió o caducó); vuelve a hacer el cambio con su herramienta",
     askInvalid:
       "sin botones: las opciones deben ser 2 o más nombres copiados tal cual de los resultados de herramientas de este turno; si no, pregunta con palabras y enumera las opciones",
-    stopped: (maxSteps: number) =>
-      `Me quedé sin pasos después de ${maxSteps} búsquedas — pídeme algo más concreto.`,
+    stopped: "Eso llevó demasiados pasos. ¿Puedes preguntar algo más concreto?",
   },
   confirm: {
     unchanged: "Vale, no se cambió nada.",
     unavailable: "Esa acción ya no está disponible.",
-    unknown: "No pude confirmar si se hizo. Revisa la página para estar seguro.",
+    unknown:
+      "No pude confirmar si se hizo. Revisa la página para estar seguro.",
   },
   tapFirst: {
     cancel: "cancelar necesita tu toque primero",
@@ -127,7 +129,10 @@ const messages: typeof en = {
     closedWeek: "Cerrado toda la semana",
     at: (day: string, time: string) => `${day} a las ${time}`,
     booked: (name: string, service: string, when: string) =>
-      `Cita reservada para ${name}: ${service}, el ${when}.`,
+      `¡Listo! ${name} tiene cita para ${service} el ${when}.`,
+    ask: (name: string, service: string, when: string, action: string) =>
+      `¿Reservo a ${name} para ${service} el ${when}? Di que sí o toca ${action}.`,
+    declined: "Vale, no la reservé.",
     couldNotBook: (reason: string) => `No se pudo reservar: ${reason}.`,
     conflictClosed: "el negocio está cerrado a esa hora",
     conflictTaken: "ese hueco se acaba de ocupar",

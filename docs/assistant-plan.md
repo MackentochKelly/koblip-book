@@ -452,13 +452,20 @@ accepted (no 400) and a little faster than "low".
 - [x] **1. Server** (Codex): talking mode uses `reasoning_effort`
   "minimal" and skips the answer check; every answer streams as it is
   written; typed answers are checked after they show (a failed check adds
-  the "not double-checked" notice, no hidden retry); in talking mode the
-  model says one short line before a read-only lookup. Since A3
+  the "not double-checked" notice, no hidden retry). Since 2026-11-02 the
+  model no longer says a line before a lookup: the voice screen says the
+  waiting line instead (step 2), so it never stacks with the model's own
+  words, and a follow-up is answered from the chat without a lookup. Talking
+  holds each turn's first words like typed answers, so words written before
+  a tool call are never said. A waiting card goes back with its answer, and a
+  clear yes in words runs it like a tap (confirm_card). Since A3
   (docs/plans/assistant-fixes.md), talking mode is checked too, after the
   answer, and a failed check is said out loud once the voice is free.
 - [x] **2. Voice screen** (Claude): speak the answer while it streams; open
-  the speaking connection while it thinks; a short natural line if it is
-  still quiet after 3 s (once per turn).
+  the speaking connection while it thinks; a short waiting line, picked at
+  random and never one of the last few, as soon as a lookup starts or if it
+  is still quiet after 3 s (at most one per answer). The answer cuts it
+  off mid-word with a short lead-in ("Oh,").
 - [ ] **3. Check** (both): timings before/after, English and Spanish, a tap
   card in talking mode, typed answers still checked.
 

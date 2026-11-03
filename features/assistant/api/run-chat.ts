@@ -22,7 +22,13 @@ import {
 } from "../utils/system-prompt"
 import { memoryRow, type MemoryRow } from "../utils/memory"
 import { ASK_OWNER_TOOL, askOf } from "./ask-owner"
-import { storePendingAction } from "./pending-actions"
+import { CONFIRM_CARD_TOOL, waitingCardNote } from "./confirm-card"
+import {
+  peekPendingAction,
+  storePendingAction,
+  takePendingAction,
+} from "./pending-actions"
+import { runPending } from "./run-pending"
 
 export interface RunChatContext {
   businessName: string
@@ -213,6 +219,7 @@ async function* handleConfirmCall(
     summary: card.summary,
     destructive: card.destructive,
     action: card.action,
+    ...(card.spoken ? { spoken: card.spoken } : {}),
   }
   return true
 }
@@ -240,9 +247,28 @@ export async function* runChat(
   }
   const t = serverMessagesFor(context.language)
   const byName = new Map(tools.map((t) => [t.definition.name, t]))
-  // ask_owner is the loop's own tool, typed and talking alike: talking
-  // mode shows the same buttons while the question is said.
-  const offered = [...tools.map((tool) => tool.definition), ASK_OWNER_TOOL]
+  // ask_owner and confirm_card are the loop's own tools, typed and talking
+  // alike: talking mode shows the same buttons while the question is said.
+  // Always offered, so the prompt prefix stays the same for the cache.
+  const offered = [
+    ...tools.map((tool) => tool.definition),
+    ASK_OWNER_TOOL,
+    CONFIRM_CARD_TOOL,
+  ]
+  // The card the owner was shown just before their last words, if it is
+  // still stored for them: noted after that answer, and the only card
+  // confirm_card can run.
+  const waitingAt = messages.length - 2
+  const waitingId =
+    messages.at(-1)?.role === "owner" ? messages[waitingAt]?.waiting : undefined
+  const stored = waitingId
+    ? await peekPendingAction(waitingId).catch(() => null)
+    : null
+  const waiting =
+    stored?.ownerId === context.ownerId &&
+    stored.businessId === context.businessId
+      ? stored
+      : null
   const { date, time, weekday } = zonedNow(context.now, context.timeZone)
   // The newest few answers that carry records.
   const remembered = new Set(
@@ -290,9 +316,20 @@ export async function* runChat(
           role: m.role === "owner" ? "user" : "assistant",
           content: note === null ? m.text : `${note}\n${m.text}`,
         }
-        return remembered.has(index)
-          ? [said, { role: "developer", content: memoryNote(m.memory ?? []) }]
-          : [said]
+        const notes = [
+          ...(remembered.has(index) ? [memoryNote(m.memory ?? [])] : []),
+          ...(waiting && index === waitingAt
+            ? [waitingCardNote(waiting.toolName, waiting.args)]
+            : []),
+        ]
+        // A reply that was only a card has no words to send.
+        return [
+          ...(m.role === "assistant" && m.text.trim() === "" ? [] : [said]),
+          ...notes.map((content): OpenAI.Chat.ChatCompletionMessageParam => ({
+            role: "developer",
+            content,
+          })),
+        ]
       }
     ),
   ]
@@ -370,9 +407,9 @@ export async function* runChat(
       }
     }
     for (let turn = 0; turn < ASSISTANT_RULES.maxSteps; turn += 1) {
-      // Typed answers hold each turn's first words. Talking streams its
-      // first line at once, then holds later turns the same way.
-      const holding = context.voice !== true || textSent
+      // Each turn's first words are held, typed and talking alike: words
+      // written before a tool call (a note to itself, a "Let me check")
+      // never show or get said. Talking says its own waiting line instead.
       const stream = await modelCall()
       // Keep the full turn for history while sending each delta immediately.
       let text = ""
@@ -380,9 +417,7 @@ export async function* runChat(
       let shown = ""
       let held = ""
       const calls: CollectedCall[] = []
-      const show = function* (
-        words: string
-      ): Generator<AssistantStreamEvent> {
+      const show = function* (words: string): Generator<AssistantStreamEvent> {
         if (shown === "" && textSent) {
           yield { type: "text", delta: "\n\n" }
         }
@@ -417,14 +452,14 @@ export async function* runChat(
         }
         if (delta.content) {
           text += delta.content
-          if (!holding || shown !== "") {
+          if (shown !== "") {
             yield* show(delta.content)
           } else if (calls.length === 0) {
             held += delta.content
             // Long enough, with a finished sentence and more after it: an
             // answer.
             if (
-              held.length >= ASSISTANT_RULES.typedHoldChars &&
+              held.length >= ASSISTANT_RULES.holdChars &&
               /[.!?…]["')\]]*\s+\S|\n\s*\S/.test(held)
             ) {
               yield* show(held)
@@ -458,7 +493,7 @@ export async function* runChat(
         if (text.trim() === "") {
           yield {
             type: "text",
-            delta: t.loop.stopped(ASSISTANT_RULES.maxSteps),
+            delta: t.loop.stopped,
           }
           yield* memoryEvent()
           yield { type: "done" }
@@ -492,6 +527,30 @@ export async function* runChat(
       })
       for (let i = 0; i < toolCalls.length; i += 1) {
         const call = toolCalls[i]
+        if (call.function.name === CONFIRM_CARD_TOOL.name) {
+          // A clear yes in words runs the waiting card like a tap: taken
+          // once, stored args only, and the reply is its result.
+          const taken = waiting
+            ? await takePendingAction(
+                waiting.id,
+                context.ownerId,
+                context.businessId
+              )
+            : "expired"
+          if (typeof taken === "string") {
+            history.push({
+              role: "tool",
+              tool_call_id: call.id,
+              content: JSON.stringify({ error: t.loop.noCard }),
+            })
+            continue
+          }
+          yield { type: "accepted", id: taken.id }
+          yield* runPending(taken, byName.get(taken.toolName), t)
+          yield* memoryEvent()
+          yield { type: "done" }
+          return
+        }
         if (call.function.name === ASK_OWNER_TOOL.name) {
           // The question and its buttons end the reply at once. Options
           // must come word for word from this request's tool results;
@@ -628,7 +687,7 @@ export async function* runChat(
     }
     yield {
       type: "text",
-      delta: t.loop.stopped(ASSISTANT_RULES.maxSteps),
+      delta: t.loop.stopped,
     }
     yield* memoryEvent()
     yield { type: "done" }

@@ -68,10 +68,12 @@ const messages = {
     invalidArgs: "those arguments were not valid, ask for what is missing",
     lookupFailed: "that lookup failed, try asking differently",
     tooMany: "too many pending confirmations, answer one first",
+    noCard:
+      "no card is waiting for a yes (it was answered or expired); make the change again with its tool",
     askInvalid:
       "no buttons: options must be 2 or more names copied exactly from this turn's tool results; otherwise ask in plain words and list the options",
-    stopped: (maxSteps: number) =>
-      `I ran out of steps after ${maxSteps} lookups — ask me to narrow it down.`,
+    stopped:
+      "That took too many steps. Can you ask about something more specific?",
   },
   confirm: {
     unchanged: "Okay, nothing was changed.",
@@ -129,7 +131,11 @@ const messages = {
     closedWeek: "Closed all week",
     at: (day: string, time: string) => `${day} at ${time}`,
     booked: (name: string, service: string, when: string) =>
-      `Booked ${name} for ${service} on ${when}.`,
+      `Done! ${name} is booked for ${service} on ${when}.`,
+    // Said out loud with the booking card while talking.
+    ask: (name: string, service: string, when: string, action: string) =>
+      `Book ${name} for ${service} on ${when}? Say yes or tap ${action}.`,
+    declined: "Okay, I didn't book it.",
     couldNotBook: (reason: string) => `Could not book: ${reason}.`,
     conflictClosed: "the business is closed then",
     conflictTaken: "that time was just taken",

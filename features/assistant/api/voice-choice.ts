@@ -1,17 +1,12 @@
 import "server-only"
 
 import { getAccountVoices, getOwnerVoiceId } from "@/lib/account-voices"
-import type { PageLanguage } from "@/lib/page-language"
-import type { VoiceChoice } from "../types"
+import { PAGE_LANGUAGES } from "@/lib/page-language"
+import type { VoiceChoice, VoiceOption } from "../types"
 
-// The voices an owner picks from: the account's voices that speak the
-// owner's language, plus the one they chose. Each row plays a live orb, one
-// WebGL canvas each, and browsers run only about 16 per page, so the whole
-// account is never listed at once.
-export async function getVoiceChoice(
-  ownerId: string,
-  language: PageLanguage
-): Promise<VoiceChoice> {
+// The voices an owner picks from: the account's voices with a preview in a
+// page language (the picker has a tab for each), plus the one they chose.
+export async function getVoiceChoice(ownerId: string): Promise<VoiceChoice> {
   const [voices, chosen] = await Promise.all([
     getAccountVoices(),
     getOwnerVoiceId(ownerId),
@@ -19,16 +14,20 @@ export async function getVoiceChoice(
   return {
     voices:
       voices
-        ?.filter(
-          (voice) =>
-            voice.languages.includes(language) || voice.voiceId === chosen
-        )
-        .map(({ voiceId, name, previewUrl, labels }) => ({
+        ?.map(({ voiceId, name, labels, previews }): VoiceOption => ({
           voiceId,
           name,
-          previewUrl,
           labels,
-        })) ?? null,
+          previews: Object.fromEntries(
+            PAGE_LANGUAGES.flatMap((language) =>
+              previews[language] ? [[language, previews[language]]] : []
+            )
+          ),
+        }))
+        .filter(
+          (voice) =>
+            Object.keys(voice.previews).length > 0 || voice.voiceId === chosen
+        ) ?? null,
     chosen,
   }
 }

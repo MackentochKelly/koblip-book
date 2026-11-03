@@ -5,19 +5,36 @@ vi.mock("server-only", () => ({}))
 // The loop only stores cards; the store itself (the database) has its own
 // tests in pending-actions.test.ts.
 vi.mock("./pending-actions", () => {
-  const cards = new Map<string, { toolName: string; args: unknown }>()
+  type Card = {
+    id: string
+    ownerId: string
+    businessId: string
+    toolName: string
+    args: unknown
+  }
+  const cards = new Map<string, Card>()
   return {
-    storePendingAction: vi.fn(
-      async (input: { toolName: string; args: unknown }) => {
-        const id = crypto.randomUUID()
-        cards.set(id, input)
-        return { id }
+    storePendingAction: vi.fn(async (input: Omit<Card, "id">) => {
+      const id = crypto.randomUUID()
+      cards.set(id, { id, ...input })
+      return { id }
+    }),
+    peekPendingAction: vi.fn(async (id: string) => cards.get(id) ?? null),
+    takePendingAction: vi.fn(
+      async (id: string, ownerId: string, businessId: string) => {
+        const card = cards.get(id)
+        if (!card) return "expired"
+        if (card.ownerId !== ownerId || card.businessId !== businessId) {
+          return "not_allowed"
+        }
+        cards.delete(id)
+        return card
       }
     ),
-    peekPendingAction: vi.fn(async (id: string) => cards.get(id) ?? null),
     resetPendingActionsForTests: () => cards.clear(),
   }
 })
+vi.mock("./audit-log", () => ({ logAssistantAction: vi.fn() }))
 
 const { runChat } = await import("./run-chat")
 const meta = await import("@/lib/meta-ai")
@@ -110,7 +127,11 @@ test("plain answer sends one text event then done, with tools offered", async ()
     reasoning_effort: string
     parallel_tool_calls: boolean
   }
-  expect(body.tools.map((t) => t.function.name)).toEqual(["probe", "ask_owner"])
+  expect(body.tools.map((t) => t.function.name)).toEqual([
+    "probe",
+    "ask_owner",
+    "confirm_card",
+  ])
   expect(body.stream).toBe(true)
   expect(body.reasoning_effort).toBe("low")
   expect(body.parallel_tool_calls).toBe(false)
@@ -140,27 +161,13 @@ test("tool call then final answer, ids matched in order", async () => {
   expect(run).toHaveBeenNthCalledWith(2, {})
 })
 
-test("talking streams its line before a lookup and separates later text", async () => {
+test("talking never says words written before a lookup", async () => {
   scriptedClient([
-    [textChunk("Checking."), toolChunk(0, "a", "probe", "{}")],
-    [toolChunk(0, "b", "probe", "{}")],
-    [textChunk("Two"), textChunk(" bookings.")],
-  ])
-  const events = await collect(
-    runChat(MESSAGES, { ...CONTEXT, voice: true }, [probe(async () => ({}))])
-  )
-  expect(events.filter((e) => (e as { type: string }).type === "text")).toEqual(
     [
-      { type: "text", delta: "Checking." },
-      { type: "text", delta: "\n\n" },
-      { type: "text", delta: "Two bookings." },
-    ]
-  )
-})
-
-test("talking says only its first line before lookups", async () => {
-  scriptedClient([
-    [textChunk("On it."), toolChunk(0, "a", "probe", "{}")],
+      textChunk("I need to write nothing before read-only lookups. "),
+      textChunk("So I must call tool without text."),
+      toolChunk(0, "a", "probe", "{}"),
+    ],
     [textChunk("Checking extras."), toolChunk(0, "b", "probe", "{}")],
     [textChunk("Two bookings.")],
   ])
@@ -168,22 +175,17 @@ test("talking says only its first line before lookups", async () => {
     runChat(MESSAGES, { ...CONTEXT, voice: true }, [probe(async () => ({}))])
   )
   expect(events.filter((e) => (e as { type: string }).type === "text")).toEqual(
-    [
-      { type: "text", delta: "On it." },
-      { type: "text", delta: "\n\n" },
-      { type: "text", delta: "Two bookings." },
-    ]
+    [{ type: "text", delta: "Two bookings." }]
   )
 })
 
-test("talking streams a direct answer chunk by chunk", async () => {
+test("talking says a short direct answer whole", async () => {
   scriptedClient([[textChunk("Two"), textChunk(" bookings.")]])
   const events = await collect(
     runChat(MESSAGES, { ...CONTEXT, voice: true }, [])
   )
   expect(events).toEqual([
-    { type: "text", delta: "Two" },
-    { type: "text", delta: " bookings." },
+    { type: "text", delta: "Two bookings." },
     { type: "done" },
   ])
 })
@@ -205,7 +207,7 @@ test("typed: words written before a tool call never show", async () => {
 })
 
 test("typed: a long answer streams once enough words and a sentence have come", async () => {
-  const first = "x".repeat(ASSISTANT_RULES.typedHoldChars) + ". "
+  const first = "x".repeat(ASSISTANT_RULES.holdChars) + ". "
   scriptedClient([
     [textChunk(first), textChunk("Ana at 3"), textChunk(" and Leo.")],
   ])
@@ -727,7 +729,7 @@ test("spanish context uses spanish fallbacks and stop text", async () => {
   })
   expect(events).toContainEqual({
     type: "text",
-    delta: expect.stringContaining("Me quedé sin pasos"),
+    delta: expect.stringContaining("demasiados pasos"),
   })
 })
 
@@ -820,13 +822,13 @@ test("a question the model wrote with the call is not asked twice", async () => 
   expect(typed.filter((e) => (e as { type: string }).type === "text")).toEqual([
     { type: "text", delta: "Which service?" },
   ])
-  // Talking: its words were already said and ask, so only buttons come.
+  // Talking holds them the same way: the question is said once.
   scriptedClient(turns)
   const events = await collect(
     runChat(MESSAGES, { ...CONTEXT, voice: true }, tools)
   )
   expect(events.filter((e) => (e as { type: string }).type === "text")).toEqual(
-    [{ type: "text", delta: "Which service would you like?" }]
+    [{ type: "text", delta: "Which service?" }]
   )
   expect(events.slice(-2)).toEqual([
     { type: "choices", options: ["Cut", "Fade"] },
@@ -965,7 +967,7 @@ test("a barbershop's 8 services all come as buttons, 49 go back to the model", a
 
 test("talking mode asks with buttons too, the question said out loud", async () => {
   const { seen } = scriptedClient([
-    [textChunk("Lemme see."), toolChunk(0, "call-A", "probe", "{}")],
+    [textChunk("Let me check."), toolChunk(0, "call-A", "probe", "{}")],
     [askChunk("Cut, Fade, or something else?", ["Cut", "Fade"])],
   ])
   const events = await collect(
@@ -977,7 +979,11 @@ test("talking mode asks with buttons too, the question said out loud", async () 
     tools: { function: { name: string } }[]
     messages: { content: string }[]
   }
-  expect(body.tools.map((t) => t.function.name)).toEqual(["probe", "ask_owner"])
+  expect(body.tools.map((t) => t.function.name)).toEqual([
+    "probe",
+    "ask_owner",
+    "confirm_card",
+  ])
   expect(body.messages[0].content).toContain("ask_owner")
   expect(events.slice(-3)).toEqual([
     { type: "text", delta: "Cut, Fade, or something else?" },
@@ -1118,10 +1124,11 @@ test("voice gets the time picker too", async () => {
 })
 
 test("text is yielded before the model stream advances", async () => {
+  const first = "x".repeat(ASSISTANT_RULES.holdChars) + ". Then"
   let advanced = false
   const create = vi.fn(async () =>
     (async function* () {
-      yield textChunk("First")
+      yield textChunk(first)
       advanced = true
       yield textChunk(" second")
     })()
@@ -1129,10 +1136,10 @@ test("text is yielded before the model stream advances", async () => {
   vi.spyOn(meta, "getMetaAiClient").mockReturnValue({
     chat: { completions: { create } },
   } as never)
-  // Talking mode streams every word at once.
+  // Once enough words and a sentence have come, talking streams at once.
   const gen = runChat(MESSAGES, { ...CONTEXT, voice: true }, [])
   expect(await gen.next()).toEqual({
-    value: { type: "text", delta: "First" },
+    value: { type: "text", delta: first },
     done: false,
   })
   expect(advanced).toBe(false)
@@ -1148,7 +1155,7 @@ test.each([false, true])(
     )
     expect(create).toHaveBeenCalledTimes(2)
     expect(events.slice(-2)).toEqual([
-      { type: "text", delta: expect.stringContaining("ran out") },
+      { type: "text", delta: expect.stringContaining("too many steps") },
       { type: "done" },
     ])
   }
@@ -1256,4 +1263,121 @@ test("no free time at all means no picker", async () => {
   expect(events.some((e) => (e as { type: string }).type === "times")).toBe(
     false
   )
+})
+
+// A card shown in the last answer, then the owner's words about it.
+async function shownCard(
+  execute = vi.fn(async () => ({ ok: true, doneText: "Booked." }))
+) {
+  resetPendingActionsForTests()
+  const { storePendingAction } = await import("./pending-actions")
+  const { id } = (await storePendingAction({
+    ownerId: "u1",
+    businessId: "b1",
+    toolName: "cancel_booking",
+    args: { bookingId: "k1" },
+  })) as { id: string }
+  const tool = risky(async () => ({
+    title: "Cancel?",
+    summary: "Ana",
+    destructive: true,
+    action: "Cancel booking",
+  }))
+  tool.confirm.execute = execute
+  const messages = [
+    { role: "owner" as const, text: "Cancel Ana" },
+    { role: "assistant" as const, text: "", waiting: id },
+    { role: "owner" as const, text: "Yes, I confirm" },
+  ]
+  return { id, tool, execute, messages }
+}
+
+test("the waiting card is noted for the model, never sent as empty words", async () => {
+  const { tool, messages } = await shownCard()
+  const { seen } = scriptedClient([[textChunk("Tap the button.")]])
+  await collect(runChat(messages, CONTEXT, [tool]))
+  const sent = seen[0].messages as unknown as {
+    role: string
+    content: string
+  }[]
+  const tail = sent.slice(-2)
+  expect(tail[0].role).toBe("developer")
+  expect(tail[0].content).toContain(
+    'still waiting for the owner\'s tap: cancel_booking {"bookingId":"k1"}'
+  )
+  expect(tail[0].content).toContain("Never make this card again")
+  expect(tail[1]).toEqual({ role: "user", content: "Yes, I confirm" })
+  expect(sent.some((m) => m.role === "assistant" && m.content === "")).toBe(
+    false
+  )
+})
+
+test("a yes in words runs the waiting card like a tap, once", async () => {
+  const { id, tool, execute, messages } = await shownCard()
+  const { create } = scriptedClient([
+    [toolChunk(0, "c1", "confirm_card", "{}")],
+  ])
+  const events = await collect(runChat(messages, CONTEXT, [tool]))
+  expect(execute).toHaveBeenCalledWith({ bookingId: "k1" })
+  expect(events).toEqual([
+    { type: "accepted", id },
+    expect.objectContaining({ type: "step", status: "running" }),
+    expect.objectContaining({ type: "step", status: "done" }),
+    { type: "result", ok: true, text: "Booked.", kind: "bookings" },
+    { type: "done" },
+  ])
+  expect(create).toHaveBeenCalledTimes(1)
+  expect(await peekPendingAction(id)).toBeNull()
+})
+
+test("confirm_card with no card waiting runs nothing and goes back to the model", async () => {
+  const { tool, execute } = await shownCard()
+  const { seen } = scriptedClient([
+    [toolChunk(0, "c1", "confirm_card", "{}")],
+    [textChunk("Which booking?")],
+  ])
+  const events = await collect(runChat(MESSAGES, CONTEXT, [tool]))
+  expect(execute).not.toHaveBeenCalled()
+  expect(events.at(-1)).toEqual({ type: "done" })
+  const reply = seen[1].messages.at(-1) as unknown as {
+    role: string
+    content: string
+  }
+  expect(reply.role).toBe("tool")
+  expect(reply.content).toContain("no card is waiting")
+})
+
+test("only the card shown right before the owner's words can be confirmed", async () => {
+  const { tool, execute, messages } = await shownCard()
+  scriptedClient([
+    [toolChunk(0, "c1", "confirm_card", "{}")],
+    [textChunk("Okay.")],
+  ])
+  // Another answer came after the card: it no longer counts.
+  await collect(
+    runChat(
+      [
+        ...messages.slice(0, 2),
+        { role: "assistant", text: "Anything else?" },
+        messages[2],
+      ],
+      CONTEXT,
+      [tool]
+    )
+  )
+  expect(execute).not.toHaveBeenCalled()
+})
+
+test("another owner's card is never noted or run", async () => {
+  const { tool, execute, messages } = await shownCard()
+  const { seen } = scriptedClient([
+    [toolChunk(0, "c1", "confirm_card", "{}")],
+    [textChunk("Okay.")],
+  ])
+  await collect(runChat(messages, { ...CONTEXT, ownerId: "u2" }, [tool]))
+  expect(execute).not.toHaveBeenCalled()
+  const sent = seen[0].messages as unknown as { content: string }[]
+  expect(
+    sent.some((m) => String(m.content).includes("still waiting for the owner"))
+  ).toBe(false)
 })
