@@ -4,8 +4,7 @@ import { useState } from "react"
 import { motion } from "motion/react"
 import { useRouter } from "next/navigation"
 
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CircleAlertIcon, InfoIcon, MailIcon } from "@/components/ui/icons"
+import { MailIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -15,28 +14,62 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
+import { AFTER_LOGIN_PATH, resetPasswordHref } from "@/lib/auth-links"
 import { LAYOUT_MOVE } from "@/lib/motion-tokens"
-import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import type { PageLanguage } from "@/lib/page-language"
+import { cn } from "@/lib/utils"
 import { emailStatus } from "../api/email-status"
 import { authWordsFor } from "../i18n"
-import { authError, type AuthError } from "../utils/auth-error"
+import {
+  authError,
+  passwordProblem,
+  type AuthError,
+} from "../utils/auth-error"
+import { AuthNotice } from "./auth-notice"
+import { AuthSubmit } from "./auth-submit"
 import { GoogleButton } from "./google-button"
 import { GoogleError } from "./google-error"
+import { PasswordField } from "./password-field"
 import { noAutofill } from "@/lib/no-autofill"
 
 type Step = "email" | "password" | "create"
 
+// A small way out of a step: quiet, so its main button stays the one main
+// action.
+function QuietAction({
+  disabled,
+  onClick,
+  className,
+  children,
+}: {
+  disabled: boolean
+  onClick: () => void
+  className?: string
+  children: React.ReactNode
+}) {
+  return (
+    <Button
+      type="button"
+      variant="link"
+      size="xs"
+      className={cn("px-0 text-muted-foreground", className)}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </Button>
+  )
+}
+
 // Email first: an existing account asks for its password, a new email asks
 // for a name and a new password. One form for both, no sign-up page.
-// After it, `onSignedIn` runs, or the screen opens `next`. Google first:
-// it leaves the page and comes back to `googleNext` (default `next`).
-// `language` picks its words. `emailLater`: Google alone at first, the email
-// form unfolds under it when asked for.
+// After it, `onSignedIn` runs, or the screen opens `next`. Google and the
+// "Forgot password" email leave the page: both come back to `googleNext`
+// (default `next`). `language` picks its words. `emailLater`: Google alone at
+// first, the email form unfolds under it when asked for.
 export function AuthForm({
-  next = "/dashboard",
+  next = AFTER_LOGIN_PATH,
   googleNext = next,
   googleErrorNext,
   googleReady = true,
@@ -76,7 +109,6 @@ export function AuthForm({
       setError(status ? { field: "email", message: "email" } : authError(null, "password"))
       return
     }
-    setError(null)
     setStep(status.exists ? "password" : "create")
   }
 
@@ -85,8 +117,9 @@ export function AuthForm({
       setError({ field: "name", message: "name" })
       return
     }
-    if (password.length < ONBOARDING_RULES.minPasswordLength) {
-      setError({ field: "password", message: "password" })
+    const problem = passwordProblem(password)
+    if (problem) {
+      setError(problem)
       return
     }
     // Null when the server could not be reached.
@@ -110,7 +143,6 @@ export function AuthForm({
       setError(mapped)
       return
     }
-    setError(null)
     if (onSignedIn) {
       await onSignedIn()
       return
@@ -119,12 +151,30 @@ export function AuthForm({
     router.refresh()
   }
 
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  // Its link opens the new password page, and that page leads back here.
+  const forgotPassword = async () => {
+    // Null when the server could not be reached.
+    const result = await authClient
+      .requestPasswordReset({
+        email: email.trim(),
+        redirectTo: resetPasswordHref({ next: googleNext, language }),
+      })
+      .catch(() => null)
+    if (!result || result.error) {
+      setError(authError(result?.error ?? null, "password"))
+      return
+    }
+    setResetSent(true)
+  }
+
+  // One request at a time, starting from a clean slate.
+  const run = async (work: () => Promise<void>) => {
     if (busy) return
+    setError(null)
+    setResetSent(false)
     setSending(true)
     try {
-      await (step === "email" ? checkEmail() : logIn())
+      await work()
     } finally {
       setSending(false)
     }
@@ -135,23 +185,6 @@ export function AuthForm({
     setPassword("")
     setError(null)
     setResetSent(false)
-  }
-
-  // Its link opens the new password page, and that page leads back here.
-  const forgotPassword = async () => {
-    if (busy) return
-    setSending(true)
-    // Null when the server could not be reached.
-    const result = await authClient
-      .requestPasswordReset({
-        email: email.trim(),
-        redirectTo: `/reset-password?${new URLSearchParams({ next, lang: language })}`,
-      })
-      .catch(() => null)
-    setSending(false)
-    const failed = !result || result.error
-    setError(failed ? authError(result?.error ?? null, "password") : null)
-    setResetSent(!failed)
   }
 
   const emailPart = (
@@ -194,77 +227,54 @@ export function AuthForm({
           </Field>
         )}
         {step !== "email" && (
-          <Field data-invalid={error?.field === "password" || undefined}>
-            <FieldLabel htmlFor="auth-password">
-              {step === "create" ? t.choosePassword : t.password}
-            </FieldLabel>
-            <Input
-              id="auth-password"
-              aria-describedby={error?.field === "password" ? "auth-password-error" : undefined}
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete={
-                step === "create" ? "new-password" : "current-password"
-              }
-              disabled={busy}
-              autoFocus={step === "password"}
-              aria-invalid={error?.field === "password" || undefined}
-            />
-            {error?.field === "password" && <FieldError id="auth-password-error">{t.errors[error.message]}</FieldError>}
-            {/* The two ways out of this step, small and quiet: Log in stays
-                the one main action, and they share a line to save room. */}
-            <div className="flex flex-wrap justify-between gap-x-4">
+          <PasswordField
+            id="auth-password"
+            label={step === "create" ? t.choosePassword : t.password}
+            value={password}
+            onChange={setPassword}
+            autoComplete={step === "create" ? "new-password" : "current-password"}
+            autoFocus={step === "password"}
+            disabled={busy}
+            error={error?.field === "password" ? t.errors[error.message] : null}
+          >
+            {/* They share a line, to save room. "Use another email" keeps its
+                side on log in and sign-up alike. */}
+            <div className="flex flex-wrap gap-x-4">
               {step === "password" && (
-                <Button
-                  type="button"
-                  variant="link"
-                  size="xs"
-                  className="px-0 text-muted-foreground"
-                  disabled={busy}
-                  onClick={() => void forgotPassword()}
-                >
+                <QuietAction disabled={busy} onClick={() => void run(forgotPassword)}>
                   {t.forgotPassword}
-                </Button>
+                </QuietAction>
               )}
-              <Button
-                type="button"
-                variant="link"
-                size="xs"
-                className="px-0 text-muted-foreground"
-                disabled={busy}
-                onClick={changeEmail}
-              >
+              <QuietAction disabled={busy} onClick={changeEmail} className="ms-auto">
                 {t.useAnotherEmail}
-              </Button>
+              </QuietAction>
             </div>
-          </Field>
+          </PasswordField>
         )}
-        {resetSent && (
-          <Alert>
-            <MailIcon />
-            <AlertDescription>{t.resetSent}</AlertDescription>
-          </Alert>
-        )}
+        {resetSent && <AuthNotice kind="mail">{t.resetSent}</AuthNotice>}
         {error?.field === "form" && (
-          <Alert variant={error.message === "existingAccount" ? "default" : "destructive"}>
-            {error.message === "existingAccount" ? <InfoIcon /> : <CircleAlertIcon />}
-            <AlertDescription>{t.errors[error.message]}</AlertDescription>
-          </Alert>
+          <AuthNotice kind={error.message === "existingAccount" ? "info" : "error"}>
+            {t.errors[error.message]}
+          </AuthNotice>
         )}
-        <Button type="submit" size="lg" disabled={busy}>
-          {busy && <Spinner data-icon="inline-start" />}
+        <AuthSubmit busy={busy}>
           {step === "email"
             ? t.continue
             : step === "create"
               ? t.createAccount
               : t.logIn}
-        </Button>
+        </AuthSubmit>
     </>
   )
 
   return (
-    <form onSubmit={(event) => void submit(event)} noValidate>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault()
+        void run(step === "email" ? checkEmail : logIn)
+      }}
+      noValidate
+    >
       <FieldGroup>
         {step === "email" && (
           <>

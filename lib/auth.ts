@@ -6,15 +6,15 @@ import { nextCookies } from "better-auth/next-js"
 import { admin, anonymous } from "better-auth/plugins"
 import { eq } from "drizzle-orm"
 import { ACCOUNT_RULES } from "./account-rules"
+import { LOGIN_PATH } from "./auth-links"
 import { db } from "./db"
 import * as authSchema from "./db/auth-schema"
 import { sendEmail } from "./email"
 import { resetPasswordEmail, verificationEmail } from "./email-templates"
 import { ONBOARDING_RULES } from "./onboarding-rules"
 import {
-  isPageLanguage,
   OWNER_LANGUAGE_COOKIE,
-  pickLanguage,
+  pickOwnerLanguage,
   type PageLanguage,
 } from "./page-language"
 
@@ -22,12 +22,10 @@ import {
 // pick, else the phone's language.
 function emailLanguage(request: Request | undefined): PageLanguage {
   const headers = request?.headers
-  const picked = parseCookies(headers?.get("cookie") ?? "").get(
-    OWNER_LANGUAGE_COOKIE
+  return pickOwnerLanguage(
+    parseCookies(headers?.get("cookie") ?? "").get(OWNER_LANGUAGE_COOKIE),
+    headers?.get("accept-language") ?? null
   )
-  return isPageLanguage(picked)
-    ? picked
-    : pickLanguage(undefined, headers?.get("accept-language") ?? null)
 }
 
 export const auth = betterAuth({
@@ -75,7 +73,7 @@ export const auth = betterAuth({
   },
   // Auth errors (OAuth state mismatch, bad callback…) land on the login
   // page instead of the default /api/auth/error page.
-  onAPIError: { errorURL: "/login" },
+  onAPIError: { errorURL: LOGIN_PATH },
   // Google login (better-auth.com/docs/authentication/google): the keys come
   // from Google Cloud > Google Auth Platform > Clients. The redirect URI
   // there is <BETTER_AUTH_URL>/api/auth/callback/google.

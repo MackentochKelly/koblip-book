@@ -6,6 +6,7 @@ import { GoogleMark, googleButtonClassName } from "@/components/google-mark"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
+import { loginHref } from "@/lib/auth-links"
 import type { PageLanguage } from "@/lib/page-language"
 import { authWordsFor } from "../i18n"
 
@@ -16,7 +17,7 @@ import { authWordsFor } from "../i18n"
 export function GoogleButton({
   callbackURL,
   language = "en",
-  errorCallbackURL = `/login?${new URLSearchParams({ next: callbackURL, lang: language })}`,
+  errorCallbackURL = loginHref({ next: callbackURL, language }),
   disabled = false,
 }: {
   callbackURL: string

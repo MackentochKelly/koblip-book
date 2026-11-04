@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
-import { GlassCard } from "@/components/glass-frame"
-import { LanguageProvider } from "@/components/language-provider"
+import { HeroCardPage, HeroPage } from "@/components/hero-card-page"
 import { claimBusiness } from "@/features/dashboard/api/actions"
 import { RememberOwnerLanguage } from "@/features/dashboard/i18n/remember-language"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
@@ -10,7 +9,6 @@ import { prepareFound } from "@/features/onboarding/api/prepare-found"
 import { GetStarted } from "@/features/onboarding/components/get-started"
 import { readSignUpLink } from "@/features/onboarding/utils/sign-up-link"
 import { AuthForm } from "@/features/owner-auth/components/auth-form"
-import { AuthPageFrame } from "@/features/owner-auth/components/auth-page-frame"
 import { authWordsFor } from "@/features/owner-auth/i18n"
 import { getSession } from "@/lib/dal"
 import { languageParam } from "@/lib/page-language"
@@ -49,42 +47,43 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const language = await getOwnerLanguage(params.lang)
   const words = authWordsFor(language)
   const googleError = typeof error === "string" ? error : null
+  const remember = linked && <RememberOwnerLanguage language={linked} />
+  if (!found) {
+    return (
+      <HeroCardPage language={language} title={words.logIn}>
+        {remember}
+        <AuthForm
+          next={target}
+          googleError={googleError}
+          language={language}
+        />
+      </HeroCardPage>
+    )
+  }
   return (
-    <LanguageProvider language={language}>
-      {linked && <RememberOwnerLanguage language={linked} />}
-      <AuthPageFrame title={found ? words.signUp : words.logIn} wide={!!found}>
-        {found ? (
-          <GetStarted
-            signedIn={signedIn}
-            claim={claimBusiness}
-            resume={finish === "__place__" ? null : finish}
-            resumePending={finish === "__place__"}
-            googleError={googleError}
-            hint={false}
-            // Not awaited: the page shows at once, the card's photo
-            // follows when the page is built.
-            start={{
-              found,
-              name: found.name,
-              address: found.address,
-              photoUrl:
-                "placeId" in found
-                  ? `/api/business-preview-photo?place=${encodeURIComponent(found.placeId)}`
-                  : `/api/business-preview-photo?business=${encodeURIComponent(found.slug)}`,
-              prepared: prepareFound(found),
-            }}
-            language={language}
-          />
-        ) : (
-          <GlassCard>
-            <AuthForm
-              next={target}
-              googleError={googleError}
-              language={language}
-            />
-          </GlassCard>
-        )}
-      </AuthPageFrame>
-    </LanguageProvider>
+    <HeroPage language={language} title={words.signUp} wide>
+      {remember}
+      <GetStarted
+        signedIn={signedIn}
+        claim={claimBusiness}
+        resume={finish === "__place__" ? null : finish}
+        resumePending={finish === "__place__"}
+        googleError={googleError}
+        hint={false}
+        // Not awaited: the page shows at once, the card's photo
+        // follows when the page is built.
+        start={{
+          found,
+          name: found.name,
+          address: found.address,
+          photoUrl:
+            "placeId" in found
+              ? `/api/business-preview-photo?place=${encodeURIComponent(found.placeId)}`
+              : `/api/business-preview-photo?business=${encodeURIComponent(found.slug)}`,
+          prepared: prepareFound(found),
+        }}
+        language={language}
+      />
+    </HeroPage>
   )
 }

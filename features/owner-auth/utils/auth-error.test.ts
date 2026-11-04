@@ -1,5 +1,6 @@
 import { expect, test } from "vitest"
-import { authError } from "./auth-error"
+import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
+import { authError, passwordProblem } from "./auth-error"
 
 for (const step of ["create", "password"] as const) {
   test.each([
@@ -40,3 +41,11 @@ for (const step of ["create", "password"] as const) {
     })
   })
 }
+
+test("every password screen uses the same limits", () => {
+  const { minPasswordLength: min, maxPasswordLength: max } = ONBOARDING_RULES
+  expect(passwordProblem("x".repeat(min - 1))).toEqual({ field: "password", message: "password" })
+  expect(passwordProblem("x".repeat(min))).toBeNull()
+  expect(passwordProblem("x".repeat(max))).toBeNull()
+  expect(passwordProblem("x".repeat(max + 1))).toEqual({ field: "password", message: "passwordTooLong" })
+})

@@ -1,11 +1,10 @@
 "use client"
 
 import { useEffect } from "react"
-import { CircleAlertIcon, InfoIcon } from "@/components/ui/icons"
 
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { PageLanguage } from "@/lib/page-language"
 import { authWordsFor, type AuthWords } from "../i18n"
+import { AuthNotice } from "./auth-notice"
 
 // What went wrong with Google sign-in, from the `error` it came back with
 // (better-auth.com/docs/concepts/users-accounts#account-linking).
@@ -42,9 +41,8 @@ export function GoogleError({
   if (SILENT.has(key)) return null
   const tip = TIPS[key]
   return (
-    <Alert variant={tip ? "default" : "destructive"}>
-      {tip ? <InfoIcon /> : <CircleAlertIcon />}
-      <AlertDescription>{tip ? t[tip] : t.fallback}</AlertDescription>
-    </Alert>
+    <AuthNotice kind={tip ? "info" : "error"}>
+      {tip ? t[tip] : t.fallback}
+    </AuthNotice>
   )
 }

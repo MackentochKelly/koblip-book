@@ -1,13 +1,12 @@
+import { LOGIN_PATH } from "@/lib/auth-links"
 import type { PageLanguage } from "@/lib/page-language"
 import type { FoundBusiness } from "../types"
 
-// The sign-up page: /login carrying the picked business, so the home page
+// The sign-up page: the login page carrying the picked business, so the home page
 // can hand the owner over to it and the page can start building theirs.
 // Google sign-in comes back to it too (`finish`): the card then makes the
 // business the owner's and opens its setup. It keeps the home page's
 // language (?lang=).
-const SIGN_UP_PATH = "/login"
-
 const PARAMS = {
   name: "name",
   address: "address",
@@ -38,7 +37,7 @@ export function signUpHref(
   }
   if (finish) params.set(PARAMS.finish, "1")
   if (language) params.set(PARAMS.language, language)
-  return `${SIGN_UP_PATH}?${params}`
+  return `${LOGIN_PATH}?${params}`
 }
 
 type SearchParams = Record<string, string | string[] | undefined>

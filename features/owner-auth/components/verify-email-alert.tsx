@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
+import { AFTER_LOGIN_PATH } from "@/lib/auth-links"
 
 // Shown until a password account opens the link from its sign-up email
 // (better-auth.com/docs/concepts/email#email-verification). Confirming lets
@@ -37,7 +38,7 @@ export function VerifyEmailAlert({
     setSending(true)
     const { error } = await authClient.sendVerificationEmail({
       email,
-      callbackURL: "/dashboard",
+      callbackURL: AFTER_LOGIN_PATH,
     })
     setSending(false)
     if (error) toast.error(labels.failed)

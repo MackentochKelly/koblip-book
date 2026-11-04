@@ -4,11 +4,10 @@ import { cookies, headers } from "next/headers"
 
 import { ownerMessagesFor } from "."
 import {
-  isPageLanguage,
   languageParam,
   OWNER_LANGUAGE_COOKIE,
-  pickLanguage,
   pickLocale,
+  pickOwnerLanguage,
 } from "@/lib/page-language"
 
 // The owner area's language: the one a link from a public page names
@@ -18,9 +17,10 @@ import {
 export async function getOwnerLanguage(linked?: string | string[]) {
   const fromLink = languageParam(linked)
   if (fromLink) return fromLink
-  const picked = (await cookies()).get(OWNER_LANGUAGE_COOKIE)?.value
-  if (isPageLanguage(picked)) return picked
-  return pickLanguage(undefined, (await headers()).get("accept-language"))
+  return pickOwnerLanguage(
+    (await cookies()).get(OWNER_LANGUAGE_COOKIE)?.value,
+    (await headers()).get("accept-language")
+  )
 }
 
 // How numbers, prices and dates read: that language in the owner's own

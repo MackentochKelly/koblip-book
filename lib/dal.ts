@@ -4,6 +4,7 @@ import { headers } from "next/headers"
 import { notFound, redirect } from "next/navigation"
 import { asc, eq } from "drizzle-orm"
 import { auth } from "./auth"
+import { loginHref } from "./auth-links"
 import { db } from "./db"
 import { businesses, teamMembers } from "./db/schema"
 
@@ -40,7 +41,7 @@ export const getSession = cache(async (): Promise<OwnerSession | null> => {
 export async function requireOwner(next?: string): Promise<OwnerSession> {
   const session = await getSession()
   if (!session) {
-    redirect("/login" + (next ? "?next=" + encodeURIComponent(next) : ""))
+    redirect(loginHref({ next }))
   }
   return session
 }
@@ -50,7 +51,7 @@ export async function requireOwner(next?: string): Promise<OwnerSession> {
 export async function requireAccount(next?: string): Promise<OwnerSession> {
   const session = await getSession()
   if (!session || session.isGuest) {
-    redirect("/login" + (next ? "?next=" + encodeURIComponent(next) : ""))
+    redirect(loginHref({ next }))
   }
   return session
 }

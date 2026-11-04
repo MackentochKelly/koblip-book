@@ -2,12 +2,13 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getSessionCookie } from "better-auth/cookies"
 
+import { LOGIN_PATH, loginHref, RESET_PASSWORD_PATH } from "@/lib/auth-links"
 import {
-  isPageLanguage,
   languageParam,
   OWNER_LANGUAGE_COOKIE,
   PAGE_LANGUAGE_HEADER,
   pickLanguage,
+  pickOwnerLanguage,
   type PageLanguage,
 } from "@/lib/page-language"
 
@@ -27,12 +28,11 @@ function pageLanguage(request: NextRequest): PageLanguage {
     return pickLanguage(searchParams.getAll("lang"), accept)
   }
   const linked =
-    pathname === "/login" || pathname === "/reset-password"
+    pathname === LOGIN_PATH || pathname === RESET_PASSWORD_PATH
       ? languageParam(searchParams.getAll("lang"))
       : null
   if (linked) return linked
-  const picked = request.cookies.get(OWNER_LANGUAGE_COOKIE)?.value
-  return isPageLanguage(picked) ? picked : pickLanguage(undefined, accept)
+  return pickOwnerLanguage(request.cookies.get(OWNER_LANGUAGE_COOKIE)?.value, accept)
 }
 
 // Optimistic cookie check only on the dashboard; every page and action
@@ -43,10 +43,9 @@ export function proxy(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/dashboard") &&
     !getSessionCookie(request)
   ) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/login"
-    url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`
-    return NextResponse.redirect(url)
+    return NextResponse.redirect(
+      new URL(loginHref({ next: request.nextUrl.pathname }), request.nextUrl.href)
+    )
   }
   const forwarded = new Headers(request.headers)
   forwarded.set(PAGE_LANGUAGE_HEADER, pageLanguage(request))

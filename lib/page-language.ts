@@ -47,6 +47,17 @@ export function pickLanguage(
   return DEFAULT_LANGUAGE
 }
 
+// The owner area's language when no link names one: the one picked on this
+// device, else the phone's, else English.
+export function pickOwnerLanguage(
+  picked: string | undefined,
+  acceptLanguage: string | null
+): PageLanguage {
+  return isPageLanguage(picked)
+    ? picked
+    : pickLanguage(undefined, acceptLanguage)
+}
+
 // Accept-Language tags by q order (ties keep their order), "_" read as "-".
 function rankedTags(acceptLanguage: string | null): string[] {
   if (!acceptLanguage) return []

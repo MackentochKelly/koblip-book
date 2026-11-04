@@ -1,5 +1,7 @@
+import { AFTER_LOGIN_PATH } from "./auth-links"
+
 // The `next` value screens pass after login. Only a same-site path is
-// safe; anything else falls back to the dashboard.
+// safe; anything else lands where a login does.
 export function safeNext(value: string | null | undefined): string {
   if (
     typeof value === "string" &&
@@ -9,5 +11,5 @@ export function safeNext(value: string | null | undefined): string {
   ) {
     return value
   }
-  return "/dashboard"
+  return AFTER_LOGIN_PATH
 }

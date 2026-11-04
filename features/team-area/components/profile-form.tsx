@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { authClient } from "@/lib/auth-client"
+import { LOGIN_PATH } from "@/lib/auth-links"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { initials } from "@/lib/initials"
 import {
@@ -203,7 +204,7 @@ export function ProfileForm({
         variant="outline"
         size="lg"
         onClick={() =>
-          authClient.signOut({ fetchOptions: { onSuccess: () => router.replace("/login") } })
+          authClient.signOut({ fetchOptions: { onSuccess: () => router.replace(LOGIN_PATH) } })
         }
       >
         <LogOutIcon data-icon="inline-start" />
