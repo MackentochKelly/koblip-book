@@ -147,12 +147,18 @@ function evalTools(): AssistantTool[] {
       total: 1,
       truncated: false,
     })),
-    immediate("create_service", async () => ({
-      created: { id: "s9", name: "X" },
-    })),
-    immediate("rename_team_member", async () => ({
-      renamed: { id: "m1", name: "Leon" },
-    })),
+    confirmable("create_service", {
+      title: "Add?",
+      summary: "X",
+      destructive: false,
+      action: "Add",
+    }),
+    confirmable("rename_team_member", {
+      title: "Rename?",
+      summary: "Leo → Leon",
+      destructive: false,
+      action: "Rename",
+    }),
     confirmable("cancel_booking", {
       title: "Cancel?",
       summary: "Ana",
@@ -565,11 +571,13 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
     )
   }, 120_000)
 
-  test("safe rename runs directly", async () => {
+  test("rename shows a card and runs nothing", async () => {
     const r = await chat("rename Leo to Leon")
     check(
-      "rename runs",
-      r.calls.some((c) => c.tool === "rename_team_member")
+      "rename asks, runs nothing",
+      r.calls.some((c) => c.tool === "rename_team_member") &&
+        r.executed.length === 0 &&
+        r.types.has("confirm")
     )
   }, 120_000)
 
