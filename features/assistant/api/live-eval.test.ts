@@ -744,11 +744,9 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
         const firstLine = turnTexts[0]?.trim() ?? ""
         const answer = turnTexts.slice(1).join("\n").trim()
         const firstLineWords = firstLine.split(/\s+/).filter(Boolean).length
-        const answerWords = answer.split(/\s+/).filter(Boolean).length
-        const shortPreamble =
-          firstLineWords >= 2 &&
-          firstLineWords <= 8 &&
-          firstLineWords < answerWords
+        // Only the line's own length: "You have 2 bookings today." is a right
+        // answer, and can be as short as the line said before it.
+        const shortPreamble = firstLineWords >= 2 && firstLineWords <= 8
         const countMatches =
           lookupCount === 2 &&
           /\b(?:2|two|dos)\b/i.test(answer) &&
@@ -777,10 +775,7 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
           countMatches,
           "Answer count must match the two returned bookings"
         ).toBe(true)
-        expect(
-          shortPreamble,
-          "Preamble must be a few words and shorter than answer"
-        ).toBe(true)
+        expect(shortPreamble, "Preamble must be a few words").toBe(true)
         expect(firstTextMs).not.toBeNull()
         expect(doneMs).not.toBeNull()
         expect(events).not.toContain("error")

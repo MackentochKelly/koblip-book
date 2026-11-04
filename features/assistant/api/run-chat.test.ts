@@ -232,6 +232,41 @@ test("typed: a lookup's step has no line", async () => {
   expect(step).not.toHaveProperty("line")
 })
 
+test("talking: only the first step uses the quicker model", async () => {
+  const { create } = scriptedClient([
+    [toolChunk(0, "a", "probe", "{}")],
+    [textChunk("Two bookings.")],
+  ])
+  await collect(
+    runChat(MESSAGES, { ...CONTEXT, voice: true }, [probe(async () => ({}))])
+  )
+  const models = create.mock.calls.map(
+    ([body]) => (body as unknown as { model: string }).model
+  )
+  expect(models).toEqual([meta.META_TALK_MODEL, meta.META_TEXT_MODEL])
+})
+
+test("talking: a tap's answer starts on the stronger model", async () => {
+  const { create } = scriptedClient([[textChunk("Done.")]])
+  await collect(
+    runChat(MESSAGES, { ...CONTEXT, voice: true, afterTap: "yes" }, [])
+  )
+  expect(create.mock.calls[0][0]).toMatchObject({
+    model: meta.META_TEXT_MODEL,
+  })
+})
+
+test("typed: every step uses the stronger model", async () => {
+  const { create } = scriptedClient([
+    [toolChunk(0, "a", "probe", "{}")],
+    [textChunk("Two bookings.")],
+  ])
+  await collect(runChat(MESSAGES, CONTEXT, [probe(async () => ({}))]))
+  for (const [body] of create.mock.calls) {
+    expect(body).toMatchObject({ model: meta.META_TEXT_MODEL })
+  }
+})
+
 test("talking says a short direct answer whole", async () => {
   scriptedClient([[textChunk("Two"), textChunk(" bookings.")]])
   const events = await collect(

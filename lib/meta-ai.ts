@@ -6,10 +6,10 @@ import { ASSISTANT_NAME } from "./assistant-rules"
 // The one place the text model name lives.
 export const META_TEXT_MODEL = "muse-spark-1.3"
 
-// The model for talking live. A talk can't wait: measured on the real prompt
-// and tools, 1.2 starts answering about a second sooner on a short phrase, and
-// more evenly. Kept only while the real-AI tests pass on it
-// (features/assistant/api/live-eval.test.ts).
+// The model for the first step of a spoken answer and the talk's own lines. A
+// talk can't wait: measured on the real prompt and tools, 1.2 starts answering
+// about a second sooner on a short phrase, and more evenly. Every step after a
+// tool uses META_TEXT_MODEL (features/assistant/api/run-chat.ts).
 export const META_TALK_MODEL = "muse-spark-1.2"
 
 // The one place the image model name lives.

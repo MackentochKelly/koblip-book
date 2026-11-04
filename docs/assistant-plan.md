@@ -466,7 +466,9 @@ accepted (no 400) and a little faster than "low".
   lead-in ("Oh,"). Since 2026-11-04 an answer starts 0.9 s after the owner's
   last sound with words heard, and is taken back if they go on, as Meta can
   wait over 3 s after a short phrase; a card's yes or no waits for Meta's final
-  words. Talking uses `META_TALK_MODEL`.
+  words. Talking uses `META_TALK_MODEL` for the first step of an answer, and
+  `META_TEXT_MODEL` for every step after a tool: on the real prompt 1.2 dropped
+  the next card in 4 of 12 runs, 1.3 in none.
 - [ ] **3. Check** (both): timings before/after, English and Spanish, a tap
   card in talking mode, typed answers still checked.
 
