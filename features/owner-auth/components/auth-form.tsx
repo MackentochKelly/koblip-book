@@ -67,6 +67,7 @@ export function AuthForm({
   const [password, setPassword] = useState("")
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<AuthError | null>(null)
+  const [resetSent, setResetSent] = useState(false)
   const busy = sending || disabled
   const [emailOpen, setEmailOpen] = useState(!emailLater)
 
@@ -134,6 +135,24 @@ export function AuthForm({
     setStep("email")
     setPassword("")
     setError(null)
+    setResetSent(false)
+  }
+
+  // Its link opens the new password page, and that page leads back here.
+  const forgotPassword = async () => {
+    if (busy) return
+    setSending(true)
+    // Null when the server could not be reached.
+    const result = await authClient
+      .requestPasswordReset({
+        email: email.trim(),
+        redirectTo: `/reset-password?${new URLSearchParams({ next, lang: language })}`,
+      })
+      .catch(() => null)
+    setSending(false)
+    const failed = !result || result.error
+    setError(failed ? authError(result?.error ?? null, "password") : null)
+    setResetSent(!failed)
   }
 
   const emailPart = (
@@ -207,7 +226,27 @@ export function AuthForm({
               aria-invalid={error?.field === "password" || undefined}
             />
             {error?.field === "password" && <FieldError id="auth-password-error">{t.errors[error.message]}</FieldError>}
+            {step === "password" && (
+              <FieldDescription>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="dark:text-foreground"
+                  disabled={busy}
+                  onClick={() => void forgotPassword()}
+                >
+                  {t.forgotPassword}
+                </Button>
+              </FieldDescription>
+            )}
           </Field>
+        )}
+        {resetSent && (
+          <Alert>
+            <MailIcon />
+            <AlertDescription>{t.resetSent}</AlertDescription>
+          </Alert>
         )}
         {error?.field === "form" && (
           <Alert variant={error.message === "existingAccount" ? "default" : "destructive"}>
