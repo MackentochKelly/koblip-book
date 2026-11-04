@@ -9,7 +9,6 @@ import { CircleAlertIcon, InfoIcon, MailIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -213,20 +212,32 @@ export function AuthForm({
               aria-invalid={error?.field === "password" || undefined}
             />
             {error?.field === "password" && <FieldError id="auth-password-error">{t.errors[error.message]}</FieldError>}
-            {step === "password" && (
-              <FieldDescription>
+            {/* The two ways out of this step, small and quiet: Log in stays
+                the one main action, and they share a line to save room. */}
+            <div className="flex flex-wrap justify-between gap-x-4">
+              {step === "password" && (
                 <Button
                   type="button"
                   variant="link"
-                  size="sm"
-                  className="dark:text-foreground"
+                  size="xs"
+                  className="px-0 text-muted-foreground"
                   disabled={busy}
                   onClick={() => void forgotPassword()}
                 >
                   {t.forgotPassword}
                 </Button>
-              </FieldDescription>
-            )}
+              )}
+              <Button
+                type="button"
+                variant="link"
+                size="xs"
+                className="px-0 text-muted-foreground"
+                disabled={busy}
+                onClick={changeEmail}
+              >
+                {t.useAnotherEmail}
+              </Button>
+            </div>
           </Field>
         )}
         {resetSent && (
@@ -249,18 +260,6 @@ export function AuthForm({
               ? t.createAccount
               : t.logIn}
         </Button>
-        {step !== "email" && (
-          <Button
-            type="button"
-            variant="link"
-            size="sm"
-            className="dark:text-foreground"
-            disabled={busy}
-            onClick={changeEmail}
-          >
-            {t.useAnotherEmail}
-          </Button>
-        )}
     </>
   )
 
