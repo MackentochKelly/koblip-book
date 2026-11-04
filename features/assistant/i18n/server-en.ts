@@ -132,6 +132,10 @@ const messages = {
   },
   // Risky tools never run from a model call; the model only relays these.
   tapFirst: {
+    createService: "adding a service needs the owner's tap first",
+    renameMember: "renaming needs the owner's tap first",
+    bookingStatus: "marking a booking needs the owner's tap first",
+    createMember: "adding a team member needs the owner's tap first",
     cancel: "cancelling needs the owner's tap first",
     deleteService: "deleting needs the owner's tap first",
     deleteMember: "removing needs the owner's tap first",
@@ -166,6 +170,14 @@ const messages = {
     automationOn: "switching an automation needs the owner's tap first",
   },
   cards: {
+    createService: "Add this service?",
+    renameMember: "Rename this team member?",
+    bookingStatus: {
+      completed: "Mark this booking as done?",
+      no_show: "Mark this booking as a no-show?",
+      confirmed: "Mark this booking as booked again?",
+    },
+    createMember: "Add this team member?",
     cancel: "Cancel this booking?",
     deleteService: "Delete this service?",
     deleteMember: "Remove this team member?",
@@ -205,6 +217,14 @@ const messages = {
     automationOff: "Turn this automation off?",
   },
   actions: {
+    createService: "Add",
+    renameMember: "Rename",
+    bookingStatus: {
+      completed: "Mark done",
+      no_show: "Mark no-show",
+      confirmed: "Mark booked",
+    },
+    createMember: "Add",
     cancelBooking: "Cancel booking",
     deleteService: "Delete",
     deleteMember: "Remove",
@@ -278,6 +298,30 @@ const messages = {
     unknown: "Could not delete: unknown service.",
     failed: (error: string) => `Could not delete the service (${error}).`,
     done: "Deleted the service.",
+  },
+  createService: {
+    failed: (error: string) => `Could not add the service (${error}).`,
+    done: (name: string) => `Added the service ${name}.`,
+  },
+  renameMember: {
+    unknown: "Could not rename: unknown team member.",
+    failed: (error: string) => `Could not rename the team member (${error}).`,
+    done: (name: string) => `Renamed to ${name}.`,
+  },
+  bookingStatus: {
+    unknown: "Could not update: unknown booking.",
+    cancelled: "Not updated: that booking was cancelled.",
+    notStarted: "Not updated: that booking hasn't started yet.",
+    failed: (error: string) => `Could not update the booking (${error}).`,
+    done: {
+      completed: "Marked as done.",
+      no_show: "Marked as no-show.",
+      confirmed: "Marked as booked.",
+    },
+  },
+  createMember: {
+    failed: (error: string) => `Could not add the team member (${error}).`,
+    done: (name: string) => `Added ${name} to the team.`,
   },
   updateService: {
     unknown: "Could not change: unknown service.",
@@ -493,6 +537,12 @@ const messages = {
     queryInvalid: (max: number) => `query must be 1-${max} characters`,
     nameInvalid: (max: number) => `name must be 1-${max} characters`,
     nothingToChange: "Nothing to change.",
+    servicesFull: (max: number) =>
+      `there are already ${max} services, the most a business can have`,
+    teamFull: (max: number) =>
+      `there are already ${max} team members, the most a business can have`,
+    bookingNotStarted:
+      "that booking hasn't started yet, so it can't be marked completed or no_show",
     minutesInvalid: (options: string) => `minutes must be one of ${options}`,
     priceInvalid: "priceMinor must be null or an integer within range",
     descriptionInvalid: (max: number) =>

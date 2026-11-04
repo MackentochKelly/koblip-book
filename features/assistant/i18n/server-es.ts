@@ -129,6 +129,10 @@ const messages: typeof en = {
       "No pude confirmar si se hizo. Revisa la página para estar seguro.",
   },
   tapFirst: {
+    createService: "agregar un servicio necesita tu toque primero",
+    renameMember: "renombrar necesita tu toque primero",
+    bookingStatus: "marcar una reserva necesita tu toque primero",
+    createMember: "agregar a un miembro del equipo necesita tu toque primero",
     cancel: "cancelar necesita tu toque primero",
     deleteService: "eliminar necesita tu toque primero",
     deleteMember: "eliminar necesita tu toque primero",
@@ -164,6 +168,14 @@ const messages: typeof en = {
     automationOn: "cambiar una automatización necesita tu toque primero",
   },
   cards: {
+    createService: "¿Agregar este servicio?",
+    renameMember: "¿Renombrar a este miembro del equipo?",
+    bookingStatus: {
+      completed: "¿Marcar esta reserva como lista?",
+      no_show: "¿Marcar esta reserva como no vino?",
+      confirmed: "¿Marcar esta reserva como reservada otra vez?",
+    },
+    createMember: "¿Agregar a este miembro del equipo?",
     cancel: "¿Cancelar esta reserva?",
     deleteService: "¿Eliminar este servicio?",
     deleteMember: "¿Eliminar a este miembro?",
@@ -203,6 +215,14 @@ const messages: typeof en = {
     automationOff: "¿Desactivar esta automatización?",
   },
   actions: {
+    createService: "Agregar",
+    renameMember: "Renombrar",
+    bookingStatus: {
+      completed: "Marcar lista",
+      no_show: "Marcar no vino",
+      confirmed: "Marcar reservada",
+    },
+    createMember: "Agregar",
     cancelBooking: "Cancelar reserva",
     deleteService: "Eliminar",
     deleteMember: "Eliminar",
@@ -275,6 +295,32 @@ const messages: typeof en = {
     unknown: "No se pudo eliminar: servicio desconocido.",
     failed: (error: string) => `No se pudo eliminar el servicio (${error}).`,
     done: "Servicio eliminado.",
+  },
+  createService: {
+    failed: (error: string) => `No se pudo agregar el servicio (${error}).`,
+    done: (name: string) => `Se agregó el servicio ${name}.`,
+  },
+  renameMember: {
+    unknown: "No se pudo renombrar: miembro del equipo desconocido.",
+    failed: (error: string) =>
+      `No se pudo renombrar al miembro del equipo (${error}).`,
+    done: (name: string) => `Nuevo nombre: ${name}.`,
+  },
+  bookingStatus: {
+    unknown: "No se pudo actualizar: reserva desconocida.",
+    cancelled: "Sin cambios: esa reserva está cancelada.",
+    notStarted: "Sin cambios: esa reserva aún no ha empezado.",
+    failed: (error: string) => `No se pudo actualizar la reserva (${error}).`,
+    done: {
+      completed: "Marcada como lista.",
+      no_show: "Marcada como no vino.",
+      confirmed: "Marcada como reservada.",
+    },
+  },
+  createMember: {
+    failed: (error: string) =>
+      `No se pudo agregar al miembro del equipo (${error}).`,
+    done: (name: string) => `Se agregó a ${name} al equipo.`,
   },
   updateService: {
     unknown: "No se pudo cambiar: servicio desconocido.",
@@ -493,6 +539,12 @@ const messages: typeof en = {
     queryInvalid: (max: number) => `query debe tener 1-${max} caracteres`,
     nameInvalid: (max: number) => `name debe tener 1-${max} caracteres`,
     nothingToChange: "No hay nada que cambiar.",
+    servicesFull: (max: number) =>
+      `ya hay ${max} servicios, el máximo por negocio`,
+    teamFull: (max: number) =>
+      `ya hay ${max} miembros del equipo, el máximo por negocio`,
+    bookingNotStarted:
+      "esa reserva aún no ha empezado, así que no se puede marcar completed ni no_show",
     minutesInvalid: (options: string) => `minutes debe ser uno de ${options}`,
     priceInvalid: "priceMinor debe ser null o un entero dentro del rango",
     descriptionInvalid: (max: number) =>

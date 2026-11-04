@@ -102,7 +102,6 @@ import {
   getServiceNameTranslations,
   getTranslationStatus,
 } from "@/features/dashboard/api/translation-queries"
-import { logAssistantAction } from "@/features/assistant/api/audit-log"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import {
   getAvailability,
@@ -134,6 +133,7 @@ import type {
   OwnerBooking,
   OwnerPolicyPoint,
   PolicyPointInput,
+  ServiceInput,
 } from "@/features/dashboard/types"
 import type { Automation } from "@/features/dashboard/types/automations"
 
@@ -146,6 +146,11 @@ const STATUSES = ["confirmed", "cancelled", "completed", "no_show"] as const
 // list_bookings' plain day choice, as days from today.
 const DAY_OFFSETS = { yesterday: -1, today: 0, tomorrow: 1 } as const
 const SETTABLE_STATUSES = ["confirmed", "completed", "no_show"] as const
+type SettableStatus = (typeof SETTABLE_STATUSES)[number]
+
+function settableStatus(value: unknown): SettableStatus | null {
+  return SETTABLE_STATUSES.find((status) => status === value) ?? null
+}
 
 // YYYY-MM-DD of today in the business timezone.
 function zonedToday(now: number, timeZone: string): string {
@@ -725,19 +730,6 @@ export function buildAssistantTools(
   const t = serverMessagesFor(language)
   // The owner area's own names for policies, messages and automations.
   const ownerWords = ownerMessagesFor(language)
-  // Every write is audited with a server-built summary, ok and failed.
-  // Best-effort: a failed row never breaks the owner's action.
-  const audit = async (
-    tool: string,
-    summary: string,
-    status: "ok" | "failed"
-  ): Promise<void> => {
-    try {
-      await logAssistantAction({ businessId, ownerId, tool, summary, status })
-    } catch {
-      // The action already happened; the row is nice to have.
-    }
-  }
   // The booking to cancel, by id, only when the bookings screen would let
   // the owner cancel it (confirmed, not started yet). Describe and execute
   // both use this.
@@ -1318,6 +1310,83 @@ export function buildAssistantTools(
     const { business, team } = await getOwnerBusiness(businessId)
     const member = team.find((m) => m.id === a.memberId)
     return member ? { business, member } : { error: t.errors.memberUnknown }
+  }
+  // Shared checks for create_service: the card and the tap read the same.
+  const checkCreateServiceArgs = (
+    args: unknown
+  ): ServiceInput | { error: string } => {
+    const a = asRecord(args)
+    const name = a && validName(a.name, BOOKING_RULES.maxServiceName)
+    if (!name) {
+      return { error: t.errors.nameInvalid(BOOKING_RULES.maxServiceName) }
+    }
+    const durationMinutes = a && validMinutes(a.minutes)
+    if (!durationMinutes) {
+      return {
+        error: t.errors.minutesInvalid(
+          (BOOKING_RULES.serviceMinutes as readonly number[]).join(", ")
+        ),
+      }
+    }
+    const priceMinor =
+      a && "priceMinor" in a ? validPriceMinor(a.priceMinor) : "invalid"
+    if (priceMinor === "invalid") {
+      return { error: t.errors.priceInvalid }
+    }
+    const description = a ? validDescription(a.description) : "invalid"
+    if (description === "invalid") {
+      return {
+        error: t.errors.descriptionInvalid(BOOKING_RULES.maxServiceDescription),
+      }
+    }
+    return { name, description, durationMinutes, priceMinor }
+  }
+  // Shared checks for rename_team_member.
+  const checkRenameArgs = async (
+    args: unknown
+  ): Promise<{ member: TeamRow; name: string } | { error: string }> => {
+    const found = await findMember(args)
+    if ("error" in found) {
+      return found
+    }
+    const name = validName(asRecord(args)?.name, BOOKING_RULES.maxTeamName)
+    if (!name) {
+      return { error: t.errors.nameInvalid(BOOKING_RULES.maxTeamName) }
+    }
+    if (name === found.member.name) {
+      return { error: t.errors.nothingToChange }
+    }
+    return { member: found.member, name }
+  }
+  // The card for set_booking_status, under setBookingStatus's own rules, so
+  // no card shows for a change the tap would refuse.
+  const checkBookingStatusArgs = async (
+    args: unknown
+  ): Promise<
+    { booking: OwnerBooking; status: SettableStatus } | { error: string }
+  > => {
+    const a = asRecord(args)
+    if (!a || typeof a.bookingId !== "string" || a.bookingId === "") {
+      return { error: t.errors.bookingIdRequired }
+    }
+    const status = settableStatus(a.status)
+    if (!status) {
+      return { error: t.errors.statusInvalid }
+    }
+    const booking = await getBooking(businessId, a.bookingId)
+    if (!booking) {
+      return { error: t.errors.bookingUnknown }
+    }
+    if (booking.status === "cancelled") {
+      return { error: t.errors.bookingCancelled }
+    }
+    if (status !== "confirmed" && booking.startAt > new Date().toISOString()) {
+      return { error: t.errors.bookingNotStarted }
+    }
+    if (booking.status === status) {
+      return { error: t.errors.nothingToChange }
+    }
+    return { booking, status }
   }
   // Shared checks for save_policy. An empty body removes the policy.
   const checkPolicyArgs = (
@@ -2200,7 +2269,7 @@ export function buildAssistantTools(
       definition: {
         name: "create_service",
         description:
-          "Create a service. Price is in minor units of the business currency (null = no price).",
+          "Create a service. Price is in minor units of the business currency (null = no price). Needs the owner's tap.",
         parameters: schema(
           {
             name: {
@@ -2222,51 +2291,51 @@ export function buildAssistantTools(
           },
           ["name", "minutes", "priceMinor"]
         ),
-        needsConfirm: false,
+        needsConfirm: true,
+        resultKind: "services",
       },
       label: t.steps.createService,
       doneLabel: t.stepsDone.createService,
-      run: async (args: unknown) => {
-        const a = asRecord(args)
-        const name = a && validName(a.name, BOOKING_RULES.maxServiceName)
-        if (!name) {
-          return bad(t.errors.nameInvalid(BOOKING_RULES.maxServiceName))
-        }
-        const minutes = a && validMinutes(a.minutes)
-        if (!minutes) {
-          return bad(
-            t.errors.minutesInvalid(
-              (BOOKING_RULES.serviceMinutes as readonly number[]).join(", ")
-            )
-          )
-        }
-        const price =
-          a && "priceMinor" in a ? validPriceMinor(a.priceMinor) : "invalid"
-        if (price === "invalid") {
-          return bad(t.errors.priceInvalid)
-        }
-        const description = a ? validDescription(a.description) : "invalid"
-        if (description === "invalid") {
-          return bad(
-            t.errors.descriptionInvalid(BOOKING_RULES.maxServiceDescription)
-          )
-        }
-        const result = await createService(businessId, {
-          name,
-          description,
-          durationMinutes: minutes,
-          priceMinor: price,
-        })
-        if (!result.ok) {
-          await audit(
-            "create_service",
-            `create "${name}" failed: ${result.error}`,
-            "failed"
-          )
-          return { error: result.error }
-        }
-        await audit("create_service", `created "${name}"`, "ok")
-        return { created: { id: result.id, name } }
+      run: async () => ({ error: t.tapFirst.createService }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const checked = checkCreateServiceArgs(args)
+          if ("error" in checked) {
+            return checked
+          }
+          const { business, services } = await getOwnerBusiness(businessId)
+          if (services.length >= BOOKING_RULES.maxServices) {
+            return { error: t.errors.servicesFull(BOOKING_RULES.maxServices) }
+          }
+          return {
+            title: t.cards.createService,
+            action: t.actions.createService,
+            summary: [
+              checked.name,
+              t.booking.minutes(checked.durationMinutes),
+              priceText(t, checked.priceMinor, business.currency),
+              ...(checked.description ? [checked.description] : []),
+            ].join(" · "),
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const checked = checkCreateServiceArgs(args)
+          if ("error" in checked) {
+            return {
+              ok: false,
+              doneText: t.createService.failed(checked.error),
+            }
+          }
+          const result = await createService(businessId, checked)
+          if (!result.ok) {
+            return {
+              ok: false,
+              doneText: t.createService.failed(result.error),
+            }
+          }
+          return { ok: true, doneText: t.createService.done(checked.name) }
+        },
       },
     },
     {
@@ -2370,7 +2439,8 @@ export function buildAssistantTools(
     {
       definition: {
         name: "rename_team_member",
-        description: "Rename a team member. Use the id from list_team.",
+        description:
+          "Rename a team member. Use the id from list_team. Needs the owner's tap.",
         parameters: schema(
           {
             memberId: { type: "string", description: "Id from list_team" },
@@ -2381,37 +2451,54 @@ export function buildAssistantTools(
           },
           ["memberId", "name"]
         ),
-        needsConfirm: false,
+        needsConfirm: true,
+        resultKind: "team",
       },
       label: t.steps.renameMember,
       doneLabel: t.stepsDone.renameMember,
-      run: async (args: unknown) => {
-        const a = asRecord(args)
-        if (!a || typeof a.memberId !== "string" || a.memberId === "") {
-          return bad(t.errors.memberIdRequired)
-        }
-        const name = validName(a.name, BOOKING_RULES.maxTeamName)
-        if (!name) {
-          return bad(t.errors.nameInvalid(BOOKING_RULES.maxTeamName))
-        }
-        const result = await renameTeamMember(businessId, a.memberId, name)
-        if (!result.ok) {
-          await audit(
-            "rename_team_member",
-            `rename failed: ${result.error}`,
-            "failed"
+      run: async () => ({ error: t.tapFirst.renameMember }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const checked = await checkRenameArgs(args)
+          if ("error" in checked) {
+            return checked
+          }
+          return {
+            title: t.cards.renameMember,
+            action: t.actions.renameMember,
+            summary: `${checked.member.name} → ${checked.name}`,
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const checked = await checkRenameArgs(args)
+          if ("error" in checked) {
+            return {
+              ok: false,
+              doneText:
+                checked.error === t.errors.memberUnknown ||
+                checked.error === t.errors.memberIdRequired
+                  ? t.renameMember.unknown
+                  : t.renameMember.failed(checked.error),
+            }
+          }
+          const result = await renameTeamMember(
+            businessId,
+            checked.member.id,
+            checked.name
           )
-          return { error: result.error }
-        }
-        await audit("rename_team_member", `renamed to "${name}"`, "ok")
-        return { renamed: { id: a.memberId, name } }
+          if (!result.ok) {
+            return { ok: false, doneText: t.renameMember.failed(result.error) }
+          }
+          return { ok: true, doneText: t.renameMember.done(checked.name) }
+        },
       },
     },
     {
       definition: {
         name: "set_booking_status",
         description:
-          "Mark a booking confirmed, completed or no_show. Use the id from list_bookings. Cannot cancel.",
+          "Mark a booking confirmed, completed or no_show. Use the id from list_bookings. Cannot cancel. Needs the owner's tap.",
         parameters: schema(
           {
             bookingId: { type: "string", description: "Id from list_bookings" },
@@ -2419,37 +2506,52 @@ export function buildAssistantTools(
           },
           ["bookingId", "status"]
         ),
-        needsConfirm: false,
+        needsConfirm: true,
+        resultKind: "bookings",
       },
       label: t.steps.setBookingStatus,
       doneLabel: t.stepsDone.setBookingStatus,
-      run: async (args: unknown) => {
-        const a = asRecord(args)
-        if (!a || typeof a.bookingId !== "string" || a.bookingId === "") {
-          return bad(t.errors.bookingIdRequired)
-        }
-        if (
-          !SETTABLE_STATUSES.includes(
-            a.status as (typeof SETTABLE_STATUSES)[number]
-          )
-        ) {
-          return bad(t.errors.statusInvalid)
-        }
-        const result = await setBookingStatus(
-          businessId,
-          a.bookingId,
-          a.status as (typeof SETTABLE_STATUSES)[number]
-        )
-        if (!result.ok) {
-          await audit(
-            "set_booking_status",
-            `${a.bookingId} failed: ${result.error}`,
-            "failed"
-          )
-          return { error: result.error }
-        }
-        await audit("set_booking_status", `${a.bookingId} -> ${a.status}`, "ok")
-        return { updated: { id: a.bookingId, status: a.status } }
+      run: async () => ({ error: t.tapFirst.bookingStatus }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const checked = await checkBookingStatusArgs(args)
+          if ("error" in checked) {
+            return checked
+          }
+          const { booking, status } = checked
+          return {
+            title: t.cards.bookingStatus[status],
+            action: t.actions.bookingStatus[status],
+            summary: `${booking.customerName} · ${booking.serviceName} · ${formatDay(booking.date, t.locale)} · ${formatClock(booking.time, t.locale)}`,
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const a = asRecord(args)
+          const status = settableStatus(a?.status)
+          if (
+            !a ||
+            typeof a.bookingId !== "string" ||
+            a.bookingId === "" ||
+            !status
+          ) {
+            return { ok: false, doneText: t.bookingStatus.unknown }
+          }
+          const result = await setBookingStatus(businessId, a.bookingId, status)
+          if (!result.ok) {
+            const refusals: Record<string, string> = {
+              not_found: t.bookingStatus.unknown,
+              cancelled: t.bookingStatus.cancelled,
+              not_started: t.bookingStatus.notStarted,
+            }
+            return {
+              ok: false,
+              doneText:
+                refusals[result.error] ?? t.bookingStatus.failed(result.error),
+            }
+          }
+          return { ok: true, doneText: t.bookingStatus.done[status] }
+        },
       },
     },
     {
@@ -2630,29 +2732,53 @@ export function buildAssistantTools(
     {
       definition: {
         name: "create_team_member",
-        description: `Add a team member. Name is 1-${BOOKING_RULES.maxTeamName} characters.`,
+        description: `Add a team member. Name is 1-${BOOKING_RULES.maxTeamName} characters. Needs the owner's tap.`,
         parameters: schema({ name: { type: "string" } }, ["name"]),
-        needsConfirm: false,
+        needsConfirm: true,
+        resultKind: "team",
       },
       label: t.steps.createMember,
       doneLabel: t.stepsDone.createMember,
-      run: async (args: unknown) => {
-        const a = asRecord(args)
-        const name = a && validName(a.name, BOOKING_RULES.maxTeamName)
-        if (!name) {
-          return bad(t.errors.nameInvalid(BOOKING_RULES.maxTeamName))
-        }
-        const result = await createTeamMember(businessId, name)
-        if (!result.ok) {
-          await audit(
-            "create_team_member",
-            `create "${name}" failed: ${result.error}`,
-            "failed"
+      run: async () => ({ error: t.tapFirst.createMember }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const name = validName(
+            asRecord(args)?.name,
+            BOOKING_RULES.maxTeamName
           )
-          return { error: result.error }
-        }
-        await audit("create_team_member", `created "${name}"`, "ok")
-        return { created: { id: result.id, name } }
+          if (!name) {
+            return { error: t.errors.nameInvalid(BOOKING_RULES.maxTeamName) }
+          }
+          const { team } = await getOwnerBusiness(businessId)
+          if (team.length >= BOOKING_RULES.maxTeam) {
+            return { error: t.errors.teamFull(BOOKING_RULES.maxTeam) }
+          }
+          return {
+            title: t.cards.createMember,
+            action: t.actions.createMember,
+            summary: name,
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const name = validName(
+            asRecord(args)?.name,
+            BOOKING_RULES.maxTeamName
+          )
+          if (!name) {
+            return {
+              ok: false,
+              doneText: t.createMember.failed(
+                t.errors.nameInvalid(BOOKING_RULES.maxTeamName)
+              ),
+            }
+          }
+          const result = await createTeamMember(businessId, name)
+          if (!result.ok) {
+            return { ok: false, doneText: t.createMember.failed(result.error) }
+          }
+          return { ok: true, doneText: t.createMember.done(name) }
+        },
       },
     },
     {

@@ -105,9 +105,6 @@ vi.mock("@/features/booking/api/get-availability", () => ({
 vi.mock("@/features/booking/api/create-owner-booking", () => ({
   createOwnerBooking: vi.fn(),
 }))
-vi.mock("@/features/assistant/api/audit-log", () => ({
-  logAssistantAction: vi.fn(),
-}))
 vi.mock("@/features/dashboard/api/customers", () => ({
   getCustomers: vi.fn(),
   getCustomerBookings: vi.fn(),
@@ -189,8 +186,6 @@ const { getAvailability, getMoveAvailability } =
   await import("@/features/booking/api/get-availability")
 const { createOwnerBooking } =
   await import("@/features/booking/api/create-owner-booking")
-const { logAssistantAction } =
-  await import("@/features/assistant/api/audit-log")
 const { getCustomers, getCustomerBookings } =
   await import("@/features/dashboard/api/customers")
 const { getBusinessPhotos, getServiceTeams } =
@@ -231,6 +226,10 @@ test("every needsConfirm tool carries its result kind", () => {
     ["update_addon_group", "services"],
     ["delete_addon_group", "services"],
     ["update_business_details", "settings"],
+    ["create_service", "services"],
+    ["rename_team_member", "team"],
+    ["set_booking_status", "bookings"],
+    ["create_team_member", "team"],
     ["move_booking", "bookings"],
     ["add_customer", "customers"],
     ["set_member_hours", "team"],
@@ -1104,15 +1103,26 @@ test("a hostile customer name comes back as plain data", async () => {
   )
 })
 
-test("create_service happy path calls the action with minor units", async () => {
+test("create_service shows a card and adds on the tap only", async () => {
   vi.mocked(createService).mockResolvedValue({ ok: true, id: "s1" })
-  const result = await byName("create_service").run({
+  const tool = byName("create_service")
+  const args = {
     name: " Cut ",
     minutes: 30,
     priceMinor: 2500,
     description: "Sharp.",
+  }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Add this service?",
+    action: "Add",
+    summary: "Cut · 30 min · €25.00 · Sharp.",
+    destructive: false,
   })
-  expect(result).toEqual({ created: { id: "s1", name: "Cut" } })
+  expect(createService).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: true,
+    doneText: "Added the service Cut.",
+  })
   expect(createService).toHaveBeenCalledWith("b1", {
     name: "Cut",
     description: "Sharp.",
@@ -1121,7 +1131,7 @@ test("create_service happy path calls the action with minor units", async () => 
   })
 })
 
-test("create_service rejects bad arguments without calling the action", async () => {
+test("create_service rejects bad arguments with no card and no change", async () => {
   const tool = byName("create_service")
   for (const args of [
     { name: "", minutes: 30, priceMinor: 100 },
@@ -1130,19 +1140,39 @@ test("create_service rejects bad arguments without calling the action", async ()
     { name: "Cut", minutes: 30 },
     { name: "Cut", minutes: 30, priceMinor: 100, description: "x".repeat(301) },
   ]) {
-    expect(await tool.run(args)).toEqual({ error: expect.any(String) })
+    expect(await tool.confirm!.describe(args)).toEqual({
+      error: expect.any(String),
+    })
+    expect((await tool.confirm!.execute(args)).ok).toBe(false)
   }
   expect(createService).not.toHaveBeenCalled()
 })
 
-test("create_service passes action errors back as data", async () => {
+test("create_service shows no card once the list is full", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue({
+    business: BUSINESS,
+    hours: [],
+    services: Array.from({ length: 50 }, (_, i) => ({ id: `s${i}` })),
+    team: [],
+  } as never)
+  expect(
+    await byName("create_service").confirm!.describe({
+      name: "Cut",
+      minutes: 30,
+      priceMinor: 100,
+    })
+  ).toEqual({ error: expect.stringContaining("already 50") })
+})
+
+test("create_service reports action errors on the tap", async () => {
   vi.mocked(createService).mockResolvedValue({ ok: false, error: "invalid" })
-  const result = await byName("create_service").run({
-    name: "Cut",
-    minutes: 30,
-    priceMinor: 100,
-  })
-  expect(result).toEqual({ error: "invalid" })
+  expect(
+    await byName("create_service").confirm!.execute({
+      name: "Cut",
+      minutes: 30,
+      priceMinor: 100,
+    })
+  ).toEqual({ ok: false, doneText: "Could not add the service (invalid)." })
 })
 
 function mockServiceShop() {
@@ -1286,92 +1316,41 @@ test("update_service execute reports action errors", async () => {
   expect(done.doneText).toContain("not_found")
 })
 
-test("rename_team_member happy path and errors", async () => {
-  vi.mocked(renameTeamMember).mockResolvedValue({ ok: true })
-  const result = await byName("rename_team_member").run({
-    memberId: "m1",
-    name: " Ana ",
-  })
-  expect(result).toEqual({ renamed: { id: "m1", name: "Ana" } })
-  expect(renameTeamMember).toHaveBeenCalledWith("b1", "m1", "Ana")
-  expect(
-    await byName("rename_team_member").run({ memberId: "m1", name: "" })
-  ).toEqual({
-    error: expect.any(String),
-  })
-  vi.mocked(renameTeamMember).mockResolvedValue({
-    ok: false,
-    error: "not_found",
-  })
-  expect(
-    await byName("rename_team_member").run({ memberId: "nope", name: "Bo" })
-  ).toEqual({
-    error: "not_found",
-  })
-})
-
-test("set_booking_status allows safe states, never cancelled", async () => {
-  vi.mocked(setBookingStatus).mockResolvedValue({ ok: true })
-  const result = await byName("set_booking_status").run({
-    bookingId: "k1",
-    status: "completed",
-  })
-  expect(result).toEqual({ updated: { id: "k1", status: "completed" } })
-  expect(setBookingStatus).toHaveBeenCalledWith("b1", "k1", "completed")
-  expect(
-    await byName("set_booking_status").run({
-      bookingId: "k1",
-      status: "cancelled",
-    })
-  ).toEqual({ error: expect.any(String) })
-  expect(setBookingStatus).toHaveBeenCalledTimes(1)
-  vi.mocked(setBookingStatus).mockResolvedValue({
-    ok: false,
-    error: "not_started",
-  })
-  expect(
-    await byName("set_booking_status").run({
-      bookingId: "k1",
-      status: "no_show",
-    })
-  ).toEqual({ error: "not_started" })
-})
-
 test("write tools ignore a smuggled businessId", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
   vi.mocked(createService).mockResolvedValue({ ok: true, id: "s1" })
   vi.mocked(renameTeamMember).mockResolvedValue({ ok: true })
   vi.mocked(setBookingStatus).mockResolvedValue({ ok: true })
-  const tools = buildAssistantTools("b1", "u1", "en")
-  await tools
-    .find((t) => t.definition.name === "create_service")!
-    .run({
-      name: "Cut",
-      minutes: 30,
-      priceMinor: 100,
-      businessId: "evil",
-    })
-  await tools
-    .find((t) => t.definition.name === "rename_team_member")!
-    .run({
-      memberId: "m1",
-      name: "Bo",
-      businessId: "evil",
-    })
-  await tools
-    .find((t) => t.definition.name === "set_booking_status")!
-    .run({
-      bookingId: "k1",
-      status: "completed",
-      businessId: "evil",
-    })
+  vi.mocked(createTeamMember).mockResolvedValue({ ok: true, id: "m9" })
+  const businessId = "evil"
+  await byName("create_service").confirm!.execute({
+    name: "Cut",
+    minutes: 30,
+    priceMinor: 100,
+    businessId,
+  })
+  await byName("rename_team_member").confirm!.execute({
+    memberId: "m1",
+    name: "Bo",
+    businessId,
+  })
+  await byName("set_booking_status").confirm!.execute({
+    bookingId: "k1",
+    status: "completed",
+    businessId,
+  })
+  await byName("create_team_member").confirm!.execute({
+    name: "Cy",
+    businessId,
+  })
   for (const mock of [
     vi.mocked(createService),
     vi.mocked(renameTeamMember),
     vi.mocked(setBookingStatus),
+    vi.mocked(createTeamMember),
   ]) {
-    for (const call of mock.mock.calls) {
-      expect(call[0]).toBe("b1")
-    }
+    expect(mock).toHaveBeenCalledTimes(1)
+    expect(mock.mock.calls[0][0]).toBe("b1")
   }
 })
 
@@ -1564,21 +1543,6 @@ const ADDON_CREATE = {
     { name: "Dye", description: null, priceMinor: 900, durationMinutes: 15 },
   ],
 }
-
-test("create_team_member creates and refuses a blank name", async () => {
-  const tool = byName("create_team_member")
-  expect(tool.definition.needsConfirm).toBe(false)
-  vi.mocked(createTeamMember).mockResolvedValue({ ok: true, id: "m9" })
-  expect(await tool.run({ name: "Cy" })).toEqual({
-    created: { id: "m9", name: "Cy" },
-  })
-  expect(createTeamMember).toHaveBeenCalledWith("b1", "Cy")
-  expect(await tool.run({ name: "  " })).toEqual({
-    error: expect.any(String),
-  })
-  vi.mocked(createTeamMember).mockResolvedValue({ ok: false, error: "taken" })
-  expect(await tool.run({ name: "Cy" })).toEqual({ error: "taken" })
-})
 
 test("set_service_team describes, executes and refuses unknown ids", async () => {
   mockTeamShop()
@@ -2586,61 +2550,6 @@ test("businessId comes from the closure, never from model arguments", async () =
   expect(names).not.toContain("businessId")
 })
 
-test("direct writes log audit rows, ok and failed", async () => {
-  vi.mocked(createService).mockResolvedValue({ ok: true, id: "s1" })
-  await byName("create_service").run({
-    name: "Cut",
-    minutes: 30,
-    priceMinor: 100,
-  })
-  expect(logAssistantAction).toHaveBeenCalledWith({
-    businessId: "b1",
-    ownerId: "u1",
-    tool: "create_service",
-    summary: 'created "Cut"',
-    status: "ok",
-  })
-  vi.mocked(createService).mockResolvedValue({ ok: false, error: "invalid" })
-  await byName("create_service").run({
-    name: "Cut",
-    minutes: 30,
-    priceMinor: 100,
-  })
-  expect(logAssistantAction).toHaveBeenCalledWith({
-    businessId: "b1",
-    ownerId: "u1",
-    tool: "create_service",
-    summary: 'create "Cut" failed: invalid',
-    status: "failed",
-  })
-  vi.mocked(setBookingStatus).mockResolvedValue({
-    ok: false,
-    error: "not_started",
-  })
-  await byName("set_booking_status").run({
-    bookingId: "k1",
-    status: "completed",
-  })
-  expect(logAssistantAction).toHaveBeenCalledWith({
-    businessId: "b1",
-    ownerId: "u1",
-    tool: "set_booking_status",
-    summary: "k1 failed: not_started",
-    status: "failed",
-  })
-})
-
-test("a failed audit write does not break the action", async () => {
-  vi.mocked(createService).mockResolvedValue({ ok: true, id: "s1" })
-  vi.mocked(logAssistantAction).mockRejectedValueOnce(new Error("db down"))
-  const result = await byName("create_service").run({
-    name: "Cut",
-    minutes: 30,
-    priceMinor: 100,
-  })
-  expect(result).toEqual({ created: { id: "s1", name: "Cut" } })
-})
-
 test("capped list results stay bounded for the model", async () => {
   const big = (i: number) => ({
     id: `id-${i}`,
@@ -2738,7 +2647,7 @@ test("spanish validation errors are server-built sentences", async () => {
     range: "soon",
   })
   expect(badRange).toEqual({ error: "range debe ser upcoming o past" })
-  const missing = await byNameLang("create_service", "es").run({})
+  const missing = await byNameLang("create_service", "es").confirm!.describe({})
   expect(missing).toEqual({ error: "name debe tener 1-80 caracteres" })
 })
 
@@ -2777,6 +2686,10 @@ function ownerData(overrides: Record<string, unknown> = {}) {
 
 // One card each: every change waits for the tap, none runs from the model.
 const CHANGES: [string, string][] = [
+  ["create_service", "services"],
+  ["rename_team_member", "team"],
+  ["set_booking_status", "bookings"],
+  ["create_team_member", "team"],
   ["move_booking", "bookings"],
   ["add_customer", "customers"],
   ["set_member_hours", "team"],
@@ -3727,4 +3640,245 @@ test("spanish cards for the new tools use the owner area's own names", async () 
       body: "",
     })
   ).toMatchObject({ title: "¿Quitar esta política?", action: "Quitar" })
+})
+
+// A new tool that changes something has to be added here on purpose: only
+// lookups and suggestions may run with no card.
+test("only lookups and suggestions run without the tap", () => {
+  const noTap = buildAssistantTools("b1", "u1", "en")
+    .filter((tool) => !tool.definition.needsConfirm)
+    .map((tool) => tool.definition.name)
+    .sort()
+  expect(noTap).toEqual([
+    "booking_stats",
+    "business_overview",
+    "find_customer",
+    "find_free_times",
+    "improve_details",
+    "list_addons",
+    "list_bookings",
+    "list_customers",
+    "list_policies",
+    "list_services",
+    "list_team",
+    "suggest_addons",
+    "suggest_services",
+    "whatsapp_settings",
+  ])
+})
+
+test("every change says it needs the tap, so the prompt's rule covers it", () => {
+  for (const tool of buildAssistantTools("b1", "u1", "en")) {
+    if (tool.definition.needsConfirm) {
+      expect(tool.definition.description).toContain("owner's tap")
+    }
+  }
+})
+
+test("rename_team_member shows old and new names and renames on the tap only", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
+  vi.mocked(renameTeamMember).mockResolvedValue({ ok: true })
+  const tool = byName("rename_team_member")
+  const args = { memberId: "m1", name: " Ana " }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Rename this team member?",
+    action: "Rename",
+    summary: "Kelly → Ana",
+    destructive: false,
+  })
+  expect(renameTeamMember).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: true,
+    doneText: "Renamed to Ana.",
+  })
+  expect(renameTeamMember).toHaveBeenCalledWith("b1", "m1", "Ana")
+})
+
+test("rename_team_member refuses what it cannot do", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
+  const tool = byName("rename_team_member")
+  expect(await tool.confirm!.describe({ memberId: "m1", name: "" })).toEqual({
+    error: expect.stringContaining("name must be"),
+  })
+  expect(
+    await tool.confirm!.describe({ memberId: "m1", name: "Kelly" })
+  ).toEqual({ error: "Nothing to change." })
+  expect(await tool.confirm!.describe({ memberId: "nope", name: "Bo" })).toEqual({
+    error: expect.stringContaining("unknown team member"),
+  })
+  expect(await tool.confirm!.execute({ memberId: "nope", name: "Bo" })).toEqual({
+    ok: false,
+    doneText: "Could not rename: unknown team member.",
+  })
+  expect(renameTeamMember).not.toHaveBeenCalled()
+  vi.mocked(renameTeamMember).mockResolvedValue({
+    ok: false,
+    error: "not_found",
+  })
+  expect(await tool.confirm!.execute({ memberId: "m1", name: "Bo" })).toEqual({
+    ok: false,
+    doneText: "Could not rename the team member (not_found).",
+  })
+})
+
+// A booking the owner can mark: confirmed, and it has already started.
+const STARTED = {
+  ...(CANCELLABLE as object),
+  startAt: "2000-01-01T09:00:00.000Z",
+} as never
+
+test("set_booking_status names the new state and marks on the tap only", async () => {
+  vi.mocked(getBooking).mockResolvedValue(STARTED)
+  vi.mocked(setBookingStatus).mockResolvedValue({ ok: true })
+  const tool = byName("set_booking_status")
+  const summary = "Ana · Cut · Thursday, October 29 · 10:00 AM"
+  expect(
+    await tool.confirm!.describe({ bookingId: "k1", status: "completed" })
+  ).toEqual({
+    title: "Mark this booking as done?",
+    action: "Mark done",
+    summary,
+    destructive: false,
+  })
+  expect(
+    await tool.confirm!.describe({ bookingId: "k1", status: "no_show" })
+  ).toEqual({
+    title: "Mark this booking as a no-show?",
+    action: "Mark no-show",
+    summary,
+    destructive: false,
+  })
+  vi.mocked(getBooking).mockResolvedValue({
+    ...(STARTED as object),
+    status: "completed",
+  } as never)
+  expect(
+    await tool.confirm!.describe({ bookingId: "k1", status: "confirmed" })
+  ).toEqual({
+    title: "Mark this booking as booked again?",
+    action: "Mark booked",
+    summary,
+    destructive: false,
+  })
+  expect(setBookingStatus).not.toHaveBeenCalled()
+  expect(
+    await tool.confirm!.execute({ bookingId: "k1", status: "no_show" })
+  ).toEqual({ ok: true, doneText: "Marked as no-show." })
+  expect(setBookingStatus).toHaveBeenCalledWith("b1", "k1", "no_show")
+})
+
+test("set_booking_status shows no card for a change the tap would refuse", async () => {
+  const tool = byName("set_booking_status")
+  const describe = (status: string) =>
+    tool.confirm!.describe({ bookingId: "k1", status })
+  vi.mocked(getBooking).mockResolvedValue(STARTED)
+  // Cancelling has its own tool and its own card.
+  expect(await describe("cancelled")).toEqual({
+    error: expect.stringContaining("status must be"),
+  })
+  expect(await describe("confirmed")).toEqual({ error: "Nothing to change." })
+  vi.mocked(getBooking).mockResolvedValue(CANCELLABLE as never)
+  expect(await describe("completed")).toEqual({
+    error: expect.stringContaining("hasn't started"),
+  })
+  expect(await describe("no_show")).toEqual({
+    error: expect.stringContaining("hasn't started"),
+  })
+  vi.mocked(getBooking).mockResolvedValue({
+    ...(STARTED as object),
+    status: "cancelled",
+  } as never)
+  expect(await describe("completed")).toEqual({
+    error: expect.stringContaining("cancelled"),
+  })
+  vi.mocked(getBooking).mockResolvedValue(null)
+  expect(await describe("completed")).toEqual({
+    error: expect.stringContaining("unknown booking"),
+  })
+  expect(await tool.confirm!.describe({ status: "completed" })).toEqual({
+    error: expect.stringContaining("bookingId"),
+  })
+  expect(setBookingStatus).not.toHaveBeenCalled()
+})
+
+test("set_booking_status explains a refusal on the tap", async () => {
+  const tool = byName("set_booking_status")
+  const args = { bookingId: "k1", status: "completed" }
+  for (const [error, doneText] of [
+    ["not_found", "Could not update: unknown booking."],
+    ["cancelled", "Not updated: that booking was cancelled."],
+    ["not_started", "Not updated: that booking hasn't started yet."],
+    ["invalid", "Could not update the booking (invalid)."],
+  ]) {
+    vi.mocked(setBookingStatus).mockResolvedValue({ ok: false, error } as never)
+    expect(await tool.confirm!.execute(args)).toEqual({ ok: false, doneText })
+  }
+  vi.mocked(setBookingStatus).mockClear()
+  expect(
+    await tool.confirm!.execute({ bookingId: "k1", status: "cancelled" })
+  ).toEqual({ ok: false, doneText: "Could not update: unknown booking." })
+  expect(setBookingStatus).not.toHaveBeenCalled()
+})
+
+test("create_team_member shows a card and adds on the tap only", async () => {
+  vi.mocked(createTeamMember).mockResolvedValue({ ok: true, id: "m9" })
+  const tool = byName("create_team_member")
+  expect(await tool.confirm!.describe({ name: " Cy " })).toEqual({
+    title: "Add this team member?",
+    action: "Add",
+    summary: "Cy",
+    destructive: false,
+  })
+  expect(createTeamMember).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute({ name: " Cy " })).toEqual({
+    ok: true,
+    doneText: "Added Cy to the team.",
+  })
+  expect(createTeamMember).toHaveBeenCalledWith("b1", "Cy")
+})
+
+test("create_team_member refuses a blank name and a full team", async () => {
+  const tool = byName("create_team_member")
+  expect(await tool.confirm!.describe({ name: "  " })).toEqual({
+    error: expect.stringContaining("name must be"),
+  })
+  expect((await tool.confirm!.execute({ name: "  " })).ok).toBe(false)
+  expect(createTeamMember).not.toHaveBeenCalled()
+  vi.mocked(getOwnerBusiness).mockResolvedValue(
+    ownerData({ team: Array.from({ length: 20 }, () => KELLY) })
+  )
+  expect(await tool.confirm!.describe({ name: "Cy" })).toEqual({
+    error: expect.stringContaining("already 20"),
+  })
+  vi.mocked(createTeamMember).mockResolvedValue({ ok: false, error: "invalid" })
+  expect(await tool.confirm!.execute({ name: "Cy" })).toEqual({
+    ok: false,
+    doneText: "Could not add the team member (invalid).",
+  })
+})
+
+test("spanish cards for the older changes", async () => {
+  vi.mocked(getBooking).mockResolvedValue(STARTED)
+  expect(
+    await byNameLang("set_booking_status", "es").confirm!.describe({
+      bookingId: "k1",
+      status: "completed",
+    })
+  ).toMatchObject({
+    title: "¿Marcar esta reserva como lista?",
+    action: "Marcar lista",
+  })
+  expect(
+    await byNameLang("create_team_member", "es").confirm!.describe({
+      name: "Cy",
+    })
+  ).toEqual({
+    title: "¿Agregar a este miembro del equipo?",
+    action: "Agregar",
+    summary: "Cy",
+    destructive: false,
+  })
+  expect(
+    await byNameLang("create_service", "es").run({ name: "Corte" })
+  ).toEqual({ error: "agregar un servicio necesita tu toque primero" })
 })
