@@ -137,6 +137,24 @@ import type {
 } from "@/features/dashboard/types"
 import type { Automation } from "@/features/dashboard/types/automations"
 
+// The same service twice: same name, whatever its capitals, same time and same
+// price. One name at two lengths or prices is a real choice, and stays allowed.
+function sameService(
+  existing: {
+    name: string
+    durationMinutes: number
+    priceMinor: number | null
+  },
+  wanted: { name: string; durationMinutes: number; priceMinor: number | null }
+): boolean {
+  return (
+    existing.name.trim().toLocaleLowerCase() ===
+      wanted.name.trim().toLocaleLowerCase() &&
+    existing.durationMinutes === wanted.durationMinutes &&
+    existing.priceMinor === wanted.priceMinor
+  )
+}
+
 type OwnerData = Awaited<ReturnType<typeof getOwnerBusiness>>
 type TeamRow = OwnerData["team"][number]
 
@@ -2307,6 +2325,9 @@ export function buildAssistantTools(
           if (services.length >= BOOKING_RULES.maxServices) {
             return { error: t.errors.servicesFull(BOOKING_RULES.maxServices) }
           }
+          if (services.some((service) => sameService(service, checked))) {
+            return { error: t.errors.serviceExists(checked.name) }
+          }
           return {
             title: t.cards.createService,
             action: t.actions.createService,
@@ -2325,6 +2346,17 @@ export function buildAssistantTools(
             return {
               ok: false,
               doneText: t.createService.failed(checked.error),
+            }
+          }
+          // Two cards can wait for the same service, or one come after another
+          // was tapped; the card's own check is from when it was made.
+          const { services } = await getOwnerBusiness(businessId)
+          if (services.some((service) => sameService(service, checked))) {
+            return {
+              ok: false,
+              doneText: t.createService.failed(
+                t.errors.serviceExists(checked.name)
+              ),
             }
           }
           const result = await createService(businessId, checked)

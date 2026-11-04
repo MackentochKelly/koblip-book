@@ -561,6 +561,28 @@ describe.skipIf(!LIVE || KEY === "")("talking to Koblip (RUN_LIVE_EVALS=1)", () 
     expect(last.text).not.toBe("")
   }, 300_000)
 
+  test.each(["Yes, go ahead", "Yes"])(
+    "a yes with no card runs nothing and claims nothing (%s)",
+    async (heard) => {
+      const r = await talk([{ role: "owner", text: heard }])
+      expect(r.card).toBeUndefined()
+      expect(r.executed).toEqual([])
+      expect(r.text).not.toBe("")
+      expect(r.text).not.toMatch(
+        /going ahead|\bdone\b|expired|closed|went through|all set/i
+      )
+    },
+    90_000
+  )
+
+  test("words that promise a lookup do not end the answer", async () => {
+    const r = await talk([
+      { role: "owner", text: "How many bookings do I have tomorrow?" },
+    ])
+    expect(r.calls).toContain("list_bookings")
+    expect(r.text).toMatch(/\b(2|two)\b/i)
+  }, 90_000)
+
   test("after a tap it says what happened and carries on", async () => {
     const tools = [
       ...evalTools().filter((t) => t.definition.name !== "create_service"),
@@ -720,6 +742,7 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
       let firstTextMs: number | null = null
       let doneMs: number | null = null
       const events: string[] = []
+      let saidLine = ""
       const today = new Intl.DateTimeFormat("en-CA", { timeZone: ZONE }).format(
         Date.now()
       )
@@ -740,6 +763,7 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
           tools
         )) {
           events.push(event.type)
+          if (event.type === "step" && event.line) saidLine = event.line
           if (
             event.type === "text" &&
             event.delta.trim() &&
@@ -754,9 +778,11 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
         const firstLine = turnTexts[0]?.trim() ?? ""
         const answer = turnTexts.slice(1).join("\n").trim()
         const firstLineWords = firstLine.split(/\s+/).filter(Boolean).length
-        // Only the line's own length: "You have 2 bookings today." is a right
-        // answer, and can be as short as the line said before it.
-        const shortPreamble = firstLineWords >= 2 && firstLineWords <= 8
+        // What is said, not what was written: a long line is left unsaid. Only
+        // its own length counts, as "You have 2 bookings today." is a right
+        // answer and can be as short as the line before it.
+        const saidWords = saidLine.split(/\s+/).filter(Boolean).length
+        const shortPreamble = saidWords <= 8
         const countMatches =
           lookupCount === 2 &&
           /\b(?:2|two|dos)\b/i.test(answer) &&
@@ -785,7 +811,7 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
           countMatches,
           "Answer count must match the two returned bookings"
         ).toBe(true)
-        expect(shortPreamble, "Preamble must be a few words").toBe(true)
+        expect(shortPreamble, "The line said must be a few words").toBe(true)
         expect(firstTextMs).not.toBeNull()
         expect(doneMs).not.toBeNull()
         expect(events).not.toContain("error")
