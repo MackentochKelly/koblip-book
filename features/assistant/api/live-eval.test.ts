@@ -128,9 +128,19 @@ function immediate(
   }
 }
 
+interface EvalCard {
+  title: string
+  summary: string
+  destructive: boolean
+  action: string
+}
+
+// A change: the model calling it makes a card, so that is the call `calls`
+// records. It counts as run only through `execute`, or through `run` if the
+// loop ever skipped the card.
 function confirmable(
   name: string,
-  card: { title: string; summary: string; destructive: boolean; action: string }
+  card: EvalCard | ((args: unknown) => EvalCard)
 ): AssistantTool {
   return {
     definition: {
@@ -141,9 +151,15 @@ function confirmable(
     },
     label: `${name}…`,
     doneLabel: name,
-    run: async () => ({ error: "needs tap" }),
+    run: async () => {
+      executed.push(name)
+      return { error: "needs tap" }
+    },
     confirm: {
-      describe: async () => card,
+      describe: async (args: unknown) => {
+        calls.push({ tool: name, args })
+        return typeof card === "function" ? card(args) : card
+      },
       execute: async () => {
         executed.push(name)
         return { ok: true, doneText: `${name} done` }
@@ -241,6 +257,7 @@ const WRITE_TOOLS = new Set([
   "cancel_booking",
   "delete_service",
   "create_booking",
+  "move_booking",
 ])
 
 async function chat(prompt: string, context: RunChatContext = CONTEXT) {
@@ -317,11 +334,14 @@ async function talk(
 
 // A booking card with real facts built from its arguments, as the app does.
 function bookingCard(): AssistantTool {
-  const tool = confirmable("create_booking", {
-    title: "",
-    summary: "",
-    destructive: false,
-    action: "Book",
+  const tool = confirmable("create_booking", (args) => {
+    const { name, service, time } = args as Record<string, string>
+    return {
+      title: "Book",
+      summary: `${name} · ${service}\nFriday, Nov 6 · ${time}\nLeo · 30 min · $25`,
+      destructive: false,
+      action: "Book",
+    }
   })
   return {
     ...tool,
@@ -339,29 +359,17 @@ function bookingCard(): AssistantTool {
         required: ["service", "time", "name"],
       },
     },
-    confirm: {
-      ...tool.confirm!,
-      describe: async (args: unknown) => {
-        const { name, service, time } = args as Record<string, string>
-        return {
-          title: "Book",
-          summary: `${name} · ${service}\nFriday, Nov 6 · ${time}\nLeo · 30 min · $25`,
-          destructive: false,
-          action: "Book",
-        }
-      },
-    },
   }
 }
 
 // A tool that takes a name, so one request can make several different cards.
 function addService(): AssistantTool {
-  const tool = confirmable("create_service", {
-    title: "",
-    summary: "",
+  const tool = confirmable("create_service", (args) => ({
+    title: "Add service",
+    summary: String((args as { name?: unknown }).name),
     destructive: false,
     action: "Add",
-  })
+  }))
   return {
     ...tool,
     definition: {
@@ -375,12 +383,6 @@ function addService(): AssistantTool {
     },
     confirm: {
       ...tool.confirm!,
-      describe: async (args: unknown) => ({
-        title: "Add service",
-        summary: String((args as { name?: unknown }).name),
-        destructive: false,
-        action: "Add",
-      }),
       // Word for word what the real tool says it did.
       execute: async (args: unknown) => {
         executed.push("create_service")
@@ -999,10 +1001,10 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
       "Book customer Ana for Men's Haircut tomorrow at 10:00, anyone on the team is fine"
     )
     check(
-      "booking flow reads times then asks",
-      r.calls.some((c) => c.tool === "find_free_times") &&
+      "booking flow ends in a card, runs nothing",
+      r.calls.some((c) => c.tool === "create_booking") &&
         r.executed.length === 0 &&
-        (r.types.has("confirm") || /confirm.*\?/i.test(r.text))
+        r.types.has("confirm")
     )
   }, 120_000)
 
