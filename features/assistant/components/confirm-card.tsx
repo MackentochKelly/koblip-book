@@ -50,11 +50,16 @@ export function ConfirmCard({
       <ItemMedia variant="icon">
         {confirm.destructive ? <AlertCircleIcon /> : <SparklesIcon />}
       </ItemMedia>
-      <ItemContent>
-        <ItemTitle>{confirm.title}</ItemTitle>
-        <ItemDescription>{confirm.summary}</ItemDescription>
+      {/* The owner decides from these words, so they always show in full.
+          Where the words and buttons don't fit side by side (a phone, the
+          small chat panel), the buttons drop under them. */}
+      <ItemContent className="flex-[1_1_--spacing(56)]">
+        <ItemTitle className="line-clamp-none">{confirm.title}</ItemTitle>
+        <ItemDescription className="line-clamp-none">
+          {confirm.summary}
+        </ItemDescription>
       </ItemContent>
-      <ItemActions>
+      <ItemActions className="ml-auto">
         <Button
           variant="outline"
           size="sm"
