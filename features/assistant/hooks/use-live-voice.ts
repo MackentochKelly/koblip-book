@@ -11,7 +11,7 @@ import {
 import { useWakeLock } from "@/hooks/use-wake-lock"
 import { audioLevel } from "@/lib/audio-level"
 import { VOICE_RULES } from "@/lib/voice-rules"
-import type { AnswerListener } from "../types"
+import type { AnswerListener, CardAnswer } from "../types"
 import {
   LISTEN_FRAME_SAMPLES,
   LiveVoiceSession,
@@ -23,6 +23,7 @@ import {
 import { createFramer, createResampler, floatToPcm16 } from "../utils/pcm"
 import { PcmPlayer } from "../utils/pcm-player"
 import { openSpeech } from "../utils/speak-client"
+import { fetchVoiceGreeting, fetchVoiceLines } from "../utils/voice-lines-client"
 
 export type { LiveVoiceError, LiveVoiceState }
 
@@ -56,13 +57,10 @@ export function useLiveVoice({
   businessId,
   busy,
   send,
+  resume,
   stopAnswer,
   onCutOff,
   onWithdraw,
-  confirmLine,
-  fillers,
-  cutIns,
-  greeting,
   onError,
 }: {
   businessId: string
@@ -71,6 +69,8 @@ export function useLiveVoice({
     text: string,
     options: { voice: boolean; listen: AnswerListener }
   ) => Promise<Reply | null>
+  // Asks for an answer right after a tap on a card, with nothing new said.
+  resume: (answer: CardAnswer, listen: AnswerListener) => Promise<Reply | null>
   // Stops an answer that is still being written (the owner said more, or
   // ended talking mode).
   stopAnswer: () => void
@@ -78,15 +78,6 @@ export function useLiveVoice({
   onCutOff: (heard: string) => void
   // Takes the last question and its unfinished answer off the chat.
   onWithdraw: () => void
-  // Said after an answer that waits for a tap on the screen.
-  confirmLine: string
-  // Said when an answer's check could not back it.
-  // Short lines for a slow answer ("Hmm, let me see.").
-  fillers: readonly string[]
-  // Put in front of the answer when it cuts the first line off ("Oh,").
-  cutIns: readonly string[]
-  // Said once when talking starts.
-  greeting: string
   onError: (error: LiveVoiceError) => void
 }) {
   const supported = useLiveVoiceSupported()
@@ -104,26 +95,20 @@ export function useLiveVoice({
   const latest = useRef({
     busy,
     send,
+    resume,
     stopAnswer,
     onCutOff,
     onWithdraw,
-    confirmLine,
-    fillers,
-    cutIns,
-    greeting,
     onError,
   })
   useEffect(() => {
     latest.current = {
       busy,
       send,
+      resume,
       stopAnswer,
       onCutOff,
       onWithdraw,
-      confirmLine,
-        fillers,
-      cutIns,
-      greeting,
       onError,
     }
   })
@@ -152,6 +137,9 @@ export function useLiveVoice({
     } catch {
       return fail("mic_denied")
     }
+    // Written from here, so the hello is ready about when the socket opens.
+    const greeting = fetchVoiceGreeting(businessId)
+    const lines = fetchVoiceLines(businessId)
     try {
       await context.audioWorklet.addModule("/voice-capture-worklet.js")
     } catch {
@@ -169,6 +157,7 @@ export function useLiveVoice({
     const current = new LiveVoiceSession({
       send: (text, listen) =>
         latest.current.send(text, { voice: true, listen }),
+      resume: (answer, listen) => latest.current.resume(answer, listen),
       busy: () => latest.current.busy,
       cancelAnswer: () => latest.current.stopAnswer(),
       openSpeech: ({ onAudio, onDone, onError }) =>
@@ -202,11 +191,7 @@ export function useLiveVoice({
         for (const track of stream.getTracks()) track.stop()
         void context.close()
       },
-      confirmLine: latest.current.confirmLine,
-      fillers: latest.current.fillers,
-      cutIns: latest.current.cutIns,
       random: Math.random,
-      greeting: latest.current.greeting,
       onState: setState,
       onCaption: setCaption,
       onError: (error) => latest.current.onError(error),
@@ -221,6 +206,8 @@ export function useLiveVoice({
       },
     })
     session.current = current
+    void greeting.then((written) => current.greetingReady(written))
+    void lines.then((written) => current.linesReady(written))
 
     socket.onopen = () => current.opened()
     socket.onmessage = (message) => {
@@ -274,9 +261,9 @@ export function useLiveVoice({
     session.current?.said(text)
   }, [])
 
-  // A tapped card's result, said out loud.
-  const announce = useCallback((text: string) => {
-    session.current?.announce(text)
+  // A tap on a card, and what it did: said out loud, and carried on from.
+  const tapped = useCallback((text: string, answer: CardAnswer) => {
+    session.current?.tapped(text, answer)
   }, [])
 
   // The screen stays on while talking, like a phone call.
@@ -303,7 +290,7 @@ export function useLiveVoice({
     start,
     end,
     say,
-    announce,
+    tapped,
     getInputVolume,
     getOutputVolume,
     getVoiceFrequencies,

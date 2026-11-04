@@ -3472,22 +3472,9 @@ export function buildAssistantTools(
           if ("error" in checked) {
             return checked
           }
-          const services = [checked.service.name, ...checked.extras.names]
           return {
             title: t.cards.book,
             action: t.actions.book,
-            spoken: t.booking.ask(
-              checked.name,
-              // Said as words ("Skin Fade and Beard"), not "+".
-              new Intl.ListFormat(t.locale, { type: "conjunction" }).format(
-                services
-              ),
-              t.booking.at(
-                formatDay(checked.date, t.locale),
-                formatClock(checked.time, t.locale)
-              ),
-              t.actions.book
-            ),
             summary:
               `${checked.name} · ${[checked.service.name, ...checked.extras.names].join(" + ")} · ` +
               `${formatDay(checked.date, t.locale)} · ${formatClock(checked.time, t.locale)} · ` +

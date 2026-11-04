@@ -26,12 +26,18 @@ export const VOICE_RULES = {
   // Speak-token mints per owner per minute.
   maxSpeakTokensPerMinutePerOwner: 30,
   // Talking mode: if nothing has been said this long after the owner
-  // finished, say a short waiting line ("Hmm, let me see."). A lookup says
-  // it at once. At most one per answer.
+  // finished, say a short waiting line. A lookup says it at once. At most
+  // one per answer.
   // ElevenLabs recommends 3 s for this "soft timeout":
   // https://elevenlabs.io/docs/agents-platform/customization/conversation-flow
   fillerAfterMs: 3000,
-  // A new waiting line ("Let me check.") or lead-in word ("Oh,") is never
-  // one of the last this many said in the talk, so it never repeats.
-  freshLines: 3,
+  // How long after the listening socket opens a hello may still be said;
+  // later than this, talking just starts without one.
+  greetingWaitMs: 6000,
+  // The lines the AI writes for each talk (features/assistant/api/voice-lines.ts).
+  // Each is said once at most, so these are also how many a talk can use.
+  voiceLinesTimeoutMs: 15_000,
+  voiceLinesMaxTokens: 4000,
+  voiceLineCounts: { fillers: 10, cutIns: 6 },
+  voiceLineMaxChars: { greeting: 80, filler: 40, cutIn: 16 },
 } as const

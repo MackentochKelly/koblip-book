@@ -1,3 +1,7 @@
+// The assistant's own name: what it calls itself and answers to, what the
+// screen calls it, and the word the live hearing listens out for.
+export const ASSISTANT_NAME = "Koblip"
+
 // The model name lives only in lib/meta-ai.ts (META_TEXT_MODEL).
 export const ASSISTANT_RULES = {
   maxSteps: 8,
@@ -50,6 +54,9 @@ export const ASSISTANT_RULES = {
   // (and a sentence has ended), so a short line written before a tool call
   // never shows. Longer answers stream from there.
   holdChars: 160,
+  // Talking: a sentence with at least this many letters is never said twice
+  // in one chat. Shorter ones ("Okay, done.") are fine to hear again.
+  minRepeatLetters: 12,
   // Total wall time for one chat request, model calls and tools together.
   maxRequestMs: 120_000,
   // How long after a page load the floating globe shows its ideas.

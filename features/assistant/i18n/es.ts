@@ -1,3 +1,5 @@
+import { ASSISTANT_NAME } from "@/lib/assistant-rules"
+
 import type en from "./en"
 
 const messages: typeof en = {
@@ -73,13 +75,13 @@ const messages: typeof en = {
     closeIdea: "Cerrar",
   },
   composer: {
-    placeholder: "Pregunta o dime qué hacer",
+    placeholder: `Pregunta o dile a ${ASSISTANT_NAME}`,
     label: "Mensaje",
     send: "Enviar",
     stop: "Detener",
     micDenied: "Permite el micrófono para hablar.",
     voiceIntro: {
-      title: "Habla con tu asistente",
+      title: `Habla con ${ASSISTANT_NAME}`,
       speak:
         "Habla con naturalidad. Te responde en voz alta y lo escribe todo en el chat.",
       tap: "Los cambios siguen necesitando tu sí: toca el botón o dilo.",
@@ -95,19 +97,6 @@ const messages: typeof en = {
       talking: "Hablando…",
       end: "Terminar",
       waveform: "Nivel de voz",
-      confirmLine: "Para hacerlo, toca el botón en la pantalla.",
-      greeting: "¡Hola! ¿En qué te ayudo?",
-      fillers: [
-        "Déjame revisar.",
-        "Un momento.",
-        "Un segundo.",
-        "Déjame ver.",
-        "A ver, déjame mirar.",
-        "Ahora lo reviso.",
-        "Dame un momento.",
-        "Lo busco ahora.",
-      ],
-      cutIns: ["Ah,", "Bueno,", "Oh, sí,", "Mira,", "A ver,"],
     },
   },
   confirm: {

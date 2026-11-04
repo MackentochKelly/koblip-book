@@ -120,6 +120,10 @@ const messages = {
     tooMany: "too many pending confirmations, answer one first",
     noCard:
       "no card is waiting for a yes (it was answered or expired); make the change again with its tool",
+    noCardToDecline:
+      "no card is waiting (it was answered or expired), so there is nothing to close",
+    oneCard:
+      "only one card at a time: the first one is on the screen; make the next after the owner answers it",
     askInvalid:
       "no buttons: options must be 2 or more names copied exactly from this turn's tool results; otherwise ask in plain words and list the options",
     stopped:
@@ -267,9 +271,6 @@ const messages = {
     at: (day: string, time: string) => `${day} at ${time}`,
     booked: (name: string, service: string, when: string) =>
       `Done! ${name} is booked for ${service} on ${when}.`,
-    // Said out loud with the booking card while talking.
-    ask: (name: string, service: string, when: string, action: string) =>
-      `Book ${name} for ${service} on ${when}? Say yes or tap ${action}.`,
     declined: "Okay, I didn't book it.",
     couldNotBook: (reason: string) => `Could not book: ${reason}.`,
     conflictClosed: "the business is closed then",

@@ -5,9 +5,47 @@
 import { afterAll, describe, expect, test, vi } from "vitest"
 
 vi.mock("server-only", () => ({}))
+// Cards live in memory here, like the fake tools: nothing reaches a database.
+vi.mock("./pending-actions", () => {
+  type Card = {
+    id: string
+    ownerId: string
+    businessId: string
+    toolName: string
+    args: unknown
+  }
+  const cards = new Map<string, Card>()
+  return {
+    storePendingAction: async (input: Omit<Card, "id">) => {
+      const id = crypto.randomUUID()
+      cards.set(id, { id, ...input })
+      return { id }
+    },
+    peekPendingAction: async (id: string) => cards.get(id) ?? null,
+    takePendingAction: async (
+      id: string,
+      ownerId: string,
+      businessId: string
+    ) => {
+      const card = cards.get(id)
+      if (!card) return "expired"
+      if (card.ownerId !== ownerId || card.businessId !== businessId) {
+        return "not_allowed"
+      }
+      cards.delete(id)
+      return card
+    },
+  }
+})
+vi.mock("./audit-log", () => ({ logAssistantAction: async () => {} }))
 
-import type { AssistantTool } from "../types"
+import type {
+  AssistantMessage,
+  AssistantStreamEvent,
+  AssistantTool,
+} from "../types"
 import { runChat, type RunChatContext } from "./run-chat"
+import { writeGreeting, writeWaitingLines } from "./voice-lines"
 import { getMetaAiClient } from "@/lib/meta-ai"
 
 const LIVE = process.env.RUN_LIVE_EVALS === "1"
@@ -229,12 +267,393 @@ async function chat(prompt: string, context: RunChatContext = CONTEXT) {
   return { calls: [...calls], executed: [...executed], types: seen, text }
 }
 
+// One spoken answer, the way talking live asks for it.
+async function talk(
+  messages: AssistantMessage[],
+  context: RunChatContext = CONTEXT,
+  tools: AssistantTool[] = evalTools()
+) {
+  calls.length = 0
+  executed.length = 0
+  const events: AssistantStreamEvent[] = []
+  const started = Date.now()
+  let cardAt = 0
+  for await (const event of runChat(
+    messages,
+    { ...context, now: Date.now(), voice: true },
+    tools
+  )) {
+    if (event.type === "confirm") cardAt = Date.now()
+    events.push(event)
+  }
+  const text = events
+    .flatMap((event) => (event.type === "text" ? [event.delta] : []))
+    .join("")
+    .trim()
+  console.log(
+    JSON.stringify({
+      heard: messages.at(-1)?.text,
+      said: text,
+      tools: calls.map((call) => call.tool),
+      ran: executed,
+      events: [...new Set(events.map((event) => event.type))],
+      ms: Date.now() - started,
+      msAfterCard: cardAt ? Date.now() - cardAt : undefined,
+    })
+  )
+  return {
+    events,
+    text,
+    calls: calls.map((call) => call.tool),
+    executed: [...executed],
+    card: events.find(
+      (event): event is Extract<AssistantStreamEvent, { type: "confirm" }> =>
+        event.type === "confirm"
+    ),
+    has: (type: AssistantStreamEvent["type"]) =>
+      events.some((event) => event.type === type),
+  }
+}
+
+// A booking card with real facts built from its arguments, as the app does.
+function bookingCard(): AssistantTool {
+  const tool = confirmable("create_booking", {
+    title: "",
+    summary: "",
+    destructive: false,
+    action: "Book",
+  })
+  return {
+    ...tool,
+    definition: {
+      ...tool.definition,
+      description:
+        "Book a customer: the service, the day and time, and the customer's name. Needs the owner's yes.",
+      parameters: {
+        type: "object",
+        properties: {
+          service: { type: "string" },
+          time: { type: "string", description: "Like 3:00 PM" },
+          name: { type: "string", description: "The customer's name" },
+        },
+        required: ["service", "time", "name"],
+      },
+    },
+    confirm: {
+      ...tool.confirm!,
+      describe: async (args: unknown) => {
+        const { name, service, time } = args as Record<string, string>
+        return {
+          title: "Book",
+          summary: `${name} · ${service}\nFriday, Nov 6 · ${time}\nLeo · 30 min · $25`,
+          destructive: false,
+          action: "Book",
+        }
+      },
+    },
+  }
+}
+
+// A tool that takes a name, so one request can make several different cards.
+function addService(): AssistantTool {
+  const tool = confirmable("create_service", {
+    title: "",
+    summary: "",
+    destructive: false,
+    action: "Add",
+  })
+  return {
+    ...tool,
+    definition: {
+      ...tool.definition,
+      description: "Add one new service, by name. Needs the owner's yes.",
+      parameters: {
+        type: "object",
+        properties: { name: { type: "string" } },
+        required: ["name"],
+      },
+    },
+    confirm: {
+      ...tool.confirm!,
+      describe: async (args: unknown) => ({
+        title: "Add service",
+        summary: String((args as { name?: unknown }).name),
+        destructive: false,
+        action: "Add",
+      }),
+    },
+  }
+}
+
 const rows: { name: string; pass: boolean }[] = []
 
 function check(name: string, pass: boolean) {
   rows.push({ name, pass })
   expect(pass, name).toBe(true)
 }
+
+describe.skipIf(!LIVE || KEY === "")("talking to Koblip (RUN_LIVE_EVALS=1)", () => {
+  test.each([
+    ["en", "Hey Koblip, what's on for tomorrow?"],
+    ["en", "Koblip, what do I have tomorrow?"],
+    ["en", "Hey Cobleep, what's on for tomorrow?"],
+    ["es", "Oye Koblip, ¿qué tengo para mañana?"],
+  ] as const)("called by name, it just answers (%s: %s)", async (language, heard) => {
+    const r = await talk([{ role: "owner", text: heard }], {
+      ...CONTEXT,
+      language,
+    })
+    expect(r.calls).toContain("list_bookings")
+    expect(r.text).not.toBe("")
+    expect(r.text).not.toMatch(/my name|me llamo|mi nombre/i)
+  }, 90_000)
+
+  test.each([
+    ["en", "What's your name?"],
+    ["es", "¿Cómo te llamas?"],
+  ] as const)("knows its name (%s)", async (language, heard) => {
+    const r = await talk([{ role: "owner", text: heard }], {
+      ...CONTEXT,
+      language,
+    })
+    expect(r.text).toMatch(/Koblip/)
+    expect(r.calls).toEqual([])
+  }, 90_000)
+
+  test("only its name: greets back, looks nothing up", async () => {
+    const r = await talk([{ role: "owner", text: "Hey Koblip" }])
+    expect(r.text).not.toBe("")
+    expect(r.calls).toEqual([])
+    expect(r.card).toBeUndefined()
+  }, 90_000)
+
+  test.each([
+    ["en", "Book Ana for a men's haircut this Friday at 3 PM"],
+    ["es", "Reserva a Ana un Men's Haircut este viernes a las 3 de la tarde"],
+  ] as const)("says a card in its own words, nothing done yet (%s)", async (language, heard) => {
+    const r = await talk(
+      [{ role: "owner", text: heard }],
+      { ...CONTEXT, language },
+      [...evalTools().filter((t) => t.definition.name !== "create_booking"), bookingCard()]
+    )
+    expect(r.card).toBeDefined()
+    expect(r.executed).toEqual([])
+    expect(r.text).toMatch(/Ana/)
+    expect(r.text).toMatch(/3|three|tres/i)
+    expect(r.text).not.toMatch(
+      /\b(is booked|has been|all set|done|listo|reservada|está reservad)\b/i
+    )
+  }, 90_000)
+
+  const SAY_CARD: AssistantMessage = {
+    role: "owner",
+    text: "Book Ana for a men's haircut this Friday at 3 PM",
+  }
+  const SAY_CARD_ES: AssistantMessage = {
+    role: "owner",
+    text: "Reserva a Ana un Men's Haircut este viernes a las 3 de la tarde",
+  }
+  async function answerCard(heard: string, language: "en" | "es") {
+    const tools = [
+      ...evalTools().filter((t) => t.definition.name !== "create_booking"),
+      bookingCard(),
+    ]
+    const context = { ...CONTEXT, language }
+    const asked = language === "es" ? SAY_CARD_ES : SAY_CARD
+    const first = await talk([asked], context, tools)
+    expect(first.card).toBeDefined()
+    return talk(
+      [
+        asked,
+        { role: "assistant", text: first.text, waiting: first.card!.id },
+        { role: "owner", text: heard },
+      ],
+      context,
+      tools
+    )
+  }
+
+  test.each([
+    ["en", "Yes"],
+    ["en", "Yes, confirm"],
+    ["en", "Yeah, go ahead"],
+    ["en", "Sure, do it"],
+    ["en", "Okay, book it"],
+    ["en", "Koblip, yes"],
+    ["es", "Sí"],
+    ["es", "Sí, confírmalo"],
+    ["es", "Dale, hazlo"],
+  ] as const)("a yes in words runs it, then says so (%s: %s)", async (language, heard) => {
+    const r = await answerCard(heard, language)
+    expect(r.has("accepted")).toBe(true)
+    expect(r.executed).toEqual(["create_booking"])
+    expect(r.text).not.toBe("")
+    expect(r.text).not.toContain("create_booking done")
+  }, 120_000)
+
+  test.each([
+    ["en", "No"],
+    ["en", "No, leave it"],
+    ["en", "Never mind"],
+    ["en", "Don't do it"],
+    ["es", "No"],
+    ["es", "Mejor no, déjalo"],
+  ] as const)("a no in words closes it, nothing runs (%s: %s)", async (language, heard) => {
+    const r = await answerCard(heard, language)
+    expect(r.has("declined")).toBe(true)
+    expect(r.has("accepted")).toBe(false)
+    expect(r.executed).toEqual([])
+    expect(r.text).not.toBe("")
+  }, 120_000)
+
+  test.each([
+    ["en", "Wait, make it 5 PM instead"],
+    ["en", "How much does a men's haircut cost?"],
+    ["es", "Espera, mejor a las 5"],
+  ] as const)("neither yes nor no: nothing runs (%s: %s)", async (language, heard) => {
+    const r = await answerCard(heard, language)
+    expect(r.has("accepted")).toBe(false)
+    expect(r.executed).toEqual([])
+  }, 120_000)
+
+  test("several changes go one card at a time until all are done", async () => {
+    const tools = [
+      ...evalTools().filter((t) => t.definition.name !== "create_service"),
+      addService(),
+    ]
+    const history: AssistantMessage[] = [
+      { role: "owner", text: "Add three services: Facial, Massage and Manicure" },
+    ]
+    const added: string[] = []
+    for (let i = 0; i < 3; i += 1) {
+      const r = await talk(history, CONTEXT, tools)
+      const cards = r.events.filter((event) => event.type === "confirm")
+      expect(cards, `one card in answer ${i + 1}`).toHaveLength(1)
+      expect(r.text).not.toBe("")
+      added.push(r.card!.summary)
+      // What the app sends back: an answered card's outcome, then the words.
+      const outcome = r.events.flatMap((event) =>
+        event.type === "result" ? [event.text] : []
+      )
+      history.push(
+        {
+          role: "assistant",
+          text: [...outcome, r.text].join("\n\n"),
+          waiting: r.card!.id,
+        },
+        { role: "owner", text: "Yes" }
+      )
+    }
+    expect(added.sort()).toEqual(["Facial", "Manicure", "Massage"])
+    const last = await talk(history, CONTEXT, tools)
+    expect(last.executed).toEqual(["create_service"])
+    expect(last.card).toBeUndefined()
+    expect(last.text).not.toBe("")
+  }, 300_000)
+
+  test("after a tap it says what happened and carries on", async () => {
+    const tools = [
+      ...evalTools().filter((t) => t.definition.name !== "create_service"),
+      addService(),
+    ]
+    const r = await talk(
+      [
+        { role: "owner", text: "Add two services: Facial and Massage" },
+        { role: "assistant", text: "Want me to add Facial?" },
+        { role: "assistant", text: "Done! Facial is added." },
+      ],
+      { ...CONTEXT, afterTap: "yes" },
+      tools
+    )
+    expect(r.card?.summary).toBe("Massage")
+    expect(r.text).not.toBe("")
+    expect(r.text).not.toBe("Done! Facial is added.")
+    expect(r.executed).toEqual([])
+  }, 90_000)
+
+  test("a tap with nothing left just says it", async () => {
+    const r = await talk(
+      [
+        { role: "owner", text: "Add a service called Facial" },
+        { role: "assistant", text: "Want me to add Facial?" },
+        { role: "assistant", text: "Done! Facial is added." },
+      ],
+      { ...CONTEXT, afterTap: "yes" }
+    )
+    expect(r.card).toBeUndefined()
+    expect(r.text).not.toBe("")
+    expect(r.text).not.toBe("Done! Facial is added.")
+  }, 90_000)
+
+  test("a tapped no: it says so and makes no card", async () => {
+    const r = await talk(
+      [
+        { role: "owner", text: "Add a service called Facial" },
+        { role: "assistant", text: "Want me to add Facial?" },
+        { role: "assistant", text: "Okay, nothing was changed." },
+      ],
+      { ...CONTEXT, afterTap: "no" }
+    )
+    expect(r.card).toBeUndefined()
+    expect(r.text).not.toBe("")
+    expect(r.executed).toEqual([])
+  }, 90_000)
+
+  test("asked what it is, it says it's an AI", async () => {
+    const r = await talk([
+      { role: "owner", text: "Are you a real person?" },
+    ])
+    expect(r.text).toMatch(/\bAI\b|assistant|not a (real )?person/i)
+  }, 90_000)
+
+  test("the same question twice gets different words", async () => {
+    const history: AssistantMessage[] = [
+      { role: "owner", text: "How many services do I have?" },
+    ]
+    const first = await talk(history)
+    history.push(
+      { role: "assistant", text: first.text },
+      { role: "owner", text: "Sorry, how many services do I have?" }
+    )
+    const second = await talk(history)
+    expect(second.text).not.toBe("")
+    expect(second.text.toLowerCase()).not.toBe(first.text.toLowerCase())
+  }, 120_000)
+
+  test("what it doesn't know, it says so", async () => {
+    const r = await talk([
+      { role: "owner", text: "What did Ana's dog eat this morning?" },
+    ])
+    expect(r.text).not.toBe("")
+    expect(r.text.split(/[.!?]+\s/).length).toBeLessThanOrEqual(3)
+  }, 90_000)
+
+  test.each(["en", "es"] as const)("writes its own lines for a talk (%s)", async (language) => {
+    const context = {
+      businessName: "Eval Salon",
+      timeZone: ZONE,
+      now: Date.now(),
+      language,
+    }
+    let started = Date.now()
+    const greeting = await writeGreeting(context)
+    const greetingMs = Date.now() - started
+    started = Date.now()
+    const lines = await writeWaitingLines(context)
+    console.log(
+      JSON.stringify({
+        language,
+        greetingMs,
+        linesMs: Date.now() - started,
+        greeting,
+        lines,
+      })
+    )
+    expect(greeting).toBeTruthy()
+    expect(lines?.fillers.length).toBeGreaterThanOrEqual(6)
+    expect(lines?.cutIns.length).toBeGreaterThanOrEqual(4)
+  }, 60_000)
+})
 
 describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
   test.each([

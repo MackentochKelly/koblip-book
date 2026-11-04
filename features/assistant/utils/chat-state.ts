@@ -29,8 +29,6 @@ export interface ChatConfirm {
   summary: string
   destructive: boolean
   action: string
-  // Said out loud while talking, in place of the plain tap line.
-  spoken?: string
   state: ConfirmState
 }
 
@@ -171,7 +169,6 @@ export function applyEvent(
             summary: event.summary,
             destructive: event.destructive,
             action: event.action,
-            ...(event.spoken ? { spoken: event.spoken } : {}),
             state: "pending",
           },
         ],
@@ -203,6 +200,9 @@ export function applyEvent(
     // An earlier card the owner said yes to in words: done like a tap.
     case "accepted":
       return resolveConfirm(items, event.id, "accepted")
+    // Or no: it closes, like a tap on its other button.
+    case "declined":
+      return resolveConfirm(items, event.id, "declined")
     default:
       return items
   }
@@ -240,10 +240,11 @@ export function fromMessages(messages: AssistantMessage[]): ChatItem[] {
 }
 
 // The words of one item; a tapped action's result counts as words, so
-// the assistant knows on the next question what was done.
+// the assistant knows on the next question what was done. The result comes
+// first, as it happened: talking, the words after it are about what's next.
 export function wordsOf(item: ChatItem): string {
   if (item.role === "owner" || !item.result) return item.text
-  return [item.text, item.result.text]
+  return [item.result.text, item.text]
     .filter((part) => part.trim())
     .join("\n\n")
 }
@@ -282,7 +283,7 @@ export function toMessages(
 // Saved chats carry this number. Raise it whenever ChatItem changes:
 // a chat saved by another version starts fresh instead of breaking the
 // screen.
-export const CHAT_STORAGE_VERSION = 9
+export const CHAT_STORAGE_VERSION = 10
 
 const isText = (value: unknown): value is string => typeof value === "string"
 

@@ -99,10 +99,15 @@ export async function POST(request: Request) {
     typeof body === "object" && body !== null
       ? (body as { voice?: unknown }).voice
       : undefined
+  const afterTap =
+    typeof body === "object" && body !== null
+      ? (body as { afterTap?: unknown }).afterTap
+      : undefined
   if (
     typeof businessId !== "string" ||
     !isValidMessages(messages) ||
-    (voice !== undefined && typeof voice !== "boolean")
+    (voice !== undefined && typeof voice !== "boolean") ||
+    (afterTap !== undefined && afterTap !== "yes" && afterTap !== "no")
   ) {
     return Response.json({ error: "bad_request" }, { status: 400 })
   }
@@ -140,6 +145,8 @@ export async function POST(request: Request) {
             businessId: owned.business.id,
             language,
             voice: voice === true,
+            // Only for a talk: it says what a tap did out loud.
+            afterTap: voice === true ? afterTap : undefined,
           },
           buildAssistantTools(owned.business.id, session.userId, language),
           { signal: budget.signal }

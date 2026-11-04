@@ -8,6 +8,7 @@ import type {
   AssistantConfirmRequest,
   AssistantRequest,
   AssistantStreamEvent,
+  CardAnswer,
 } from "../types"
 import {
   clearHandOff,
@@ -151,7 +152,8 @@ export function useAssistantChat(
   const ask = async (
     history: ChatItem[],
     voice = false,
-    listen?: AnswerListener
+    listen?: AnswerListener,
+    afterTap?: CardAnswer
   ) => {
     const controller = new AbortController()
     asking.current = controller
@@ -165,6 +167,7 @@ export function useAssistantChat(
           businessId,
           messages: toMessages(history, ASSISTANT_RULES.maxHistoryMessages),
           ...(voice ? { voice: true } : {}),
+          ...(afterTap ? { afterTap } : {}),
         },
         controller.signal
       ),
@@ -206,6 +209,13 @@ export function useAssistantChat(
     ]
     setItems(next)
     return ask(next, options?.voice === true, options?.listen)
+  }
+
+  // Talking, right after a tap on a card: an answer with nothing new said,
+  // which says what the tap did and carries on.
+  const resume = async (answer: CardAnswer, listen: AnswerListener) => {
+    if (busy) return null
+    return ask(items, true, listen, answer)
   }
 
   // Try the last message again, without the half-written reply.
@@ -274,6 +284,7 @@ export function useAssistantChat(
     error,
     chatId,
     send,
+    resume,
     retry,
     answer,
     reset,
