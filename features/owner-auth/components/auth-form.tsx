@@ -176,19 +176,6 @@ export function AuthForm({
             autoFocus={emailLater}
             aria-invalid={error?.field === "email" || undefined}
           />
-          {step !== "email" && (
-            <FieldDescription>
-              <Button
-                type="button"
-                variant="link"
-                size="sm"
-                className="dark:text-foreground"
-                onClick={changeEmail}
-              >
-                {t.useAnotherEmail}
-              </Button>
-            </FieldDescription>
-          )}
           {error?.field === "email" && <FieldError id="auth-email-error">{t.errors[error.message]}</FieldError>}
         </Field>
         {step === "create" && (
@@ -262,6 +249,18 @@ export function AuthForm({
               ? t.createAccount
               : t.logIn}
         </Button>
+        {step !== "email" && (
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="dark:text-foreground"
+            disabled={busy}
+            onClick={changeEmail}
+          >
+            {t.useAnotherEmail}
+          </Button>
+        )}
     </>
   )
 
