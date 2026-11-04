@@ -11,6 +11,11 @@ export const ONBOARDING_RULES = {
   // Native timeout excludes time awaiting permission/visibility (W3C).
   locationWaitMs: 15_000,
   locationTimeoutMs: 60_000,
+  // How long a read keeps going after "position unavailable", which is often
+  // only "no fix yet", before saying it couldn't find the visitor.
+  locationRetryMs: 10_000,
+  // This device has seen the "Search near" panel (a yes/no, never coordinates).
+  locationAskedKey: "koblip-search-near-asked",
   minInput: 2,
   maxInput: 100,
   // Home search text width at 375px: 219px in Inter 16px. A measured

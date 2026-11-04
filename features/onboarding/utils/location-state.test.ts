@@ -8,14 +8,16 @@ import {
 test.each([
   ["checking", false, true, false, "none"],
   ["prompt", false, true, true, "none"],
+  ["ready", false, true, false, "none"],
   ["denied-site", false, false, true, "none"],
-  ["denied-other", false, true, true, "settings"],
+  ["refused", false, false, false, "off"],
+  ["denied-other", false, true, false, "settings"],
   ["unsupported", false, false, true, "none"],
   ["reading", true, true, false, "none"],
   ["found", false, true, false, "none"],
-  ["unanswered", false, true, true, "waiting"],
-  ["timed-out", false, true, true, "timeout"],
-  ["failed", false, true, true, "not-found"],
+  ["unanswered", false, true, false, "waiting"],
+  ["timed-out", false, true, false, "timeout"],
+  ["failed", false, true, false, "not-found"],
   ["city", false, true, false, "none"],
 ] as const)(
   "%s defines both controls, search taps and the Alert",
@@ -51,6 +53,21 @@ test("unavailable position never implies a settings problem; pending is not a fa
     "waiting"
   )
 })
+
+test.each(["prompt", "denied-site", "unsupported"] as const)(
+  "%s: once this device has seen the panel, search runs and nothing opens by itself",
+  (phase) => {
+    const state = { ...INITIAL_LOCATION, phase }
+    expect(locationView(state)).toMatchObject({
+      openOnSearch: true,
+      search: false,
+    })
+    expect(locationView(state, true)).toMatchObject({
+      openOnSearch: false,
+      search: true,
+    })
+  }
+)
 
 test("a picked city keeps the native location button hidden after a site refusal", () => {
   expect(

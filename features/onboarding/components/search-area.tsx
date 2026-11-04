@@ -47,7 +47,6 @@ export function SearchAreaPanel({
   pending,
   canLocate,
   locationAlert,
-  finalFocus,
   words: t,
 }: {
   open: boolean
@@ -60,8 +59,6 @@ export function SearchAreaPanel({
   // False once the browser won't give a location: cities only.
   canLocate: boolean
   locationAlert: LocationAlert
-  // Where focus goes on close (Base UI Dialog.Popup `finalFocus`).
-  finalFocus: boolean | React.RefObject<HTMLElement | null>
   words: OnboardingWords["area"]
 }) {
   const [query, setQuery] = useState("")
@@ -114,6 +111,30 @@ export function SearchAreaPanel({
     onPick({ label: city.name, center })
   }
 
+  // The app's error look (shadcn Alert, read out as it appears). A wait or a
+  // visitor's own no isn't an error, so those keep the calm look.
+  const calm = locationAlert === "waiting" || locationAlert === "off"
+  const alert =
+    locationAlert !== "none" && !locating ? (
+      <Alert
+        variant={calm ? "default" : "destructive"}
+        role={calm ? "status" : "alert"}
+      >
+        <AlertCircleIcon />
+        <AlertDescription>
+          {
+            {
+              settings: t.turnOnLocation,
+              off: t.locationOff,
+              waiting: t.waiting,
+              timeout: t.timeout,
+              "not-found": t.notFound,
+            }[locationAlert]
+          }
+        </AlertDescription>
+      </Alert>
+    ) : null
+
   return (
     <Dialog
       open={open}
@@ -121,7 +142,7 @@ export function SearchAreaPanel({
         if (!next) onClose()
       }}
     >
-      <DialogContent className="sm:max-w-sm" finalFocus={finalFocus}>
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader className="items-center gap-0 text-center">
           {/* The app's moving colour globe, with a glass pin on it. */}
           <div className="relative mt-2 mb-4 size-28">
@@ -140,10 +161,10 @@ export function SearchAreaPanel({
           <DialogTitle className="text-xl leading-tight">{t.title}</DialogTitle>
           <DialogDescription>{t.helper}</DialogDescription>
         </DialogHeader>
-        {canLocate && (
-          <>
-            <div className="mb-2 flex flex-col items-center">
-              {/* Shakes a few times as the window opens, so the eye finds it. */}
+        {(canLocate || alert) && (
+          <div className="mb-2 flex flex-col items-center gap-3">
+            {canLocate && (
+              // Shakes a few times as the window opens, so the eye finds it.
               <motion.div animate={NUDGE}>
                 <Button
                   size="lg"
@@ -162,32 +183,14 @@ export function SearchAreaPanel({
                   {t.useLocation}
                 </Button>
               </motion.div>
-              {/* The app's error look (shadcn Alert, read out as it appears). */}
-              {locationAlert !== "none" && !locating && (
-                <Alert
-                  variant={
-                    locationAlert === "waiting" ? "default" : "destructive"
-                  }
-                  role={locationAlert === "waiting" ? "status" : "alert"}
-                  className="mt-3"
-                >
-                  <AlertCircleIcon />
-                  <AlertDescription>
-                    {locationAlert === "settings"
-                      ? t.turnOnLocation
-                      : locationAlert === "waiting"
-                        ? t.waiting
-                        : locationAlert === "timeout"
-                          ? t.timeout
-                          : t.notFound}
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-            <FieldSeparator className="*:data-[slot=field-separator-content]:bg-popover">
-              {t.or}
-            </FieldSeparator>
-          </>
+            )}
+            {alert}
+          </div>
+        )}
+        {canLocate && (
+          <FieldSeparator className="*:data-[slot=field-separator-content]:bg-popover">
+            {t.or}
+          </FieldSeparator>
         )}
         <div className="flex flex-col gap-3">
           <SearchField

@@ -14,8 +14,19 @@ let get: ReturnType<
   >
 >
 
+// Node 25 ships its own localStorage, which hides jsdom's and does not work
+// without --localstorage-file, so each test gets a plain in-memory one.
+function memoryStorage() {
+  const items = new Map<string, string>()
+  return {
+    getItem: (key: string) => items.get(key) ?? null,
+    setItem: (key: string, value: string) => void items.set(key, value),
+  }
+}
+
 beforeEach(() => {
   vi.useFakeTimers()
+  vi.stubGlobal("localStorage", memoryStorage())
   permission = Object.assign(new EventTarget(), {
     state: "granted",
   }) as PermissionStatus
@@ -34,11 +45,20 @@ afterEach(() => {
   cleanup()
   vi.useRealTimers()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
+// The page has loaded and nobody has tapped anything.
 async function show() {
   const hook = renderHook(() => useSearchLocation())
   await act(async () => {})
+  return hook
+}
+
+// The first tap in the search box, with the browser reporting location allowed.
+async function showReading() {
+  const hook = await show()
+  act(() => hook.result.current.askLocation())
   return hook
 }
 
@@ -55,17 +75,39 @@ async function error(code: number, index = 0) {
     get.mock.calls[index][1]({
       code,
       PERMISSION_DENIED: 1,
+      POSITION_UNAVAILABLE: 2,
+      TIMEOUT: 3,
     } as GeolocationPositionError)
   )
 }
 
-test.each(["prompt", "denied"] as const)(
-  "%s permission never starts an automatic request",
+function changePermission(state: PermissionState) {
+  act(() => {
+    Object.assign(permission, { state })
+    permission.dispatchEvent(new Event("change"))
+  })
+}
+
+test.each(["granted", "prompt", "denied"] as const)(
+  "%s permission: loading the page reads nothing and opens nothing",
   async (state) => {
     Object.assign(permission, { state })
     const { result } = await show()
+    act(() => {
+      vi.advanceTimersByTime(ONBOARDING_RULES.locationTimeoutMs)
+    })
     expect(get).not.toHaveBeenCalled()
-    act(() => result.current.askLocation())
+    expect(result.current.open).toBe(false)
+    expect(result.current.view.alert).toBe("none")
+  }
+)
+
+test.each(["prompt", "denied"] as const)(
+  "%s permission: the first search tap opens the panel and reads nothing",
+  async (state) => {
+    Object.assign(permission, { state })
+    const { result } = await showReading()
+    expect(get).not.toHaveBeenCalled()
     expect(result.current.open).toBe(true)
     expect(result.current.state.phase).toBe(
       state === "prompt" ? "prompt" : "denied-site"
@@ -74,8 +116,61 @@ test.each(["prompt", "denied"] as const)(
   }
 )
 
-test("granted reading starts on mount; found stops both indicators and keeps search closed", async () => {
-  const { result } = await show()
+test.each(["prompt", "denied"] as const)(
+  "%s permission: the panel asks once, then search just runs",
+  async (state) => {
+    Object.assign(permission, { state })
+    const { result } = await showReading()
+    expect(result.current.view.search).toBe(true)
+    act(() => result.current.closePanel())
+    act(() => result.current.askLocation())
+    expect(result.current.open).toBe(false)
+    expect(result.current.view.search).toBe(true)
+  }
+)
+
+test("a reload remembers the panel was seen", async () => {
+  Object.assign(permission, { state: "prompt" })
+  const first = await showReading()
+  expect(first.result.current.open).toBe(true)
+  first.unmount()
+  const { result } = await showReading()
+  expect(result.current.open).toBe(false)
+  expect(result.current.view.search).toBe(true)
+  expect(localStorage.getItem(ONBOARDING_RULES.locationAskedKey)).toBe("1")
+})
+
+test("blocked storage still asks only once in this page load", async () => {
+  vi.stubGlobal("localStorage", {
+    getItem: () => null,
+    setItem: () => {
+      throw new DOMException("blocked", "SecurityError")
+    },
+  })
+  Object.assign(permission, { state: "prompt" })
+  const { result } = await showReading()
+  expect(result.current.open).toBe(true)
+  act(() => result.current.closePanel())
+  act(() => result.current.askLocation())
+  expect(result.current.open).toBe(false)
+  expect(result.current.view.search).toBe(true)
+})
+
+test("a tap during the permission check is answered once, when the check ends", async () => {
+  Object.assign(permission, { state: "prompt" })
+  const { result } = renderHook(() => useSearchLocation())
+  act(() => result.current.askLocation())
+  expect(result.current.open).toBe(false)
+  await act(async () => {})
+  expect(result.current.open).toBe(true)
+  act(() => result.current.closePanel())
+  changePermission("denied")
+  changePermission("prompt")
+  expect(result.current.open).toBe(false)
+})
+
+test("first tap reads an allowed location; found stops both indicators and keeps search closed", async () => {
+  const { result } = await showReading()
   expect(get).toHaveBeenCalledTimes(1)
   expect(get).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), {
     maximumAge: ONBOARDING_RULES.locationMaxAgeMs,
@@ -93,8 +188,8 @@ test("granted reading starts on mount; found stops both indicators and keeps sea
   expect(result.current.open).toBe(false)
 })
 
-test("no answer stops animation, offers cities and accepts a late success", async () => {
-  const { result } = await show()
+test("no answer stops the spinner without opening anything, and a late success still counts", async () => {
+  const { result } = await showReading()
   act(() => {
     vi.advanceTimersByTime(ONBOARDING_RULES.locationWaitMs)
   })
@@ -106,6 +201,8 @@ test("no answer stops animation, offers cities and accepts a late success", asyn
     pending: true,
   })
   act(() => result.current.askLocation())
+  expect(result.current.open).toBe(false)
+  act(() => result.current.openPanel())
   expect(result.current.open).toBe(true)
   success()
   expect(result.current.state.phase).toBe("found")
@@ -113,7 +210,7 @@ test("no answer stops animation, offers cities and accepts a late success", asyn
 })
 
 test("retry while still acquiring does not start another request", async () => {
-  const { result } = await show()
+  const { result } = await showReading()
   act(() => {
     vi.advanceTimersByTime(ONBOARDING_RULES.locationWaitMs)
   })
@@ -125,23 +222,118 @@ test("retry while still acquiring does not start another request", async () => {
   expect(result.current.view.busy).toBe(false)
 })
 
-test.each([2, 3])(
-  "native failure %i clears both controls and offers the existing retry Alert",
+test.each([1, 2, 3])(
+  "a quiet read failing with %i shows nothing, lets search run and does not retry by itself",
   async (code) => {
-    const { result } = await show()
+    const { result } = await showReading()
     await error(code)
-    expect(result.current.state.phase).toBe(code === 3 ? "timed-out" : "failed")
+    act(() => {
+      vi.advanceTimersByTime(ONBOARDING_RULES.locationRetryMs)
+    })
+    expect(result.current.state.phase).toBe("ready")
+    expect(result.current.open).toBe(false)
     expect(result.current.view).toMatchObject({
       busy: false,
       canLocate: true,
-      alert: code === 3 ? "timeout" : "not-found",
+      alert: "none",
+      search: true,
+    })
+    act(() => result.current.askLocation())
+    expect(result.current.open).toBe(false)
+    expect(get).toHaveBeenCalledTimes(1)
+  }
+)
+
+test("a quiet read failing while the panel is open says so, and closing first keeps it quiet", async () => {
+  const watched = await showReading()
+  act(() => watched.result.current.openPanel())
+  await error(1)
+  expect(watched.result.current.state.phase).toBe("denied-other")
+  expect(watched.result.current.view.alert).toBe("settings")
+  watched.unmount()
+  get.mockClear()
+
+  const { result } = await showReading()
+  act(() => result.current.openPanel())
+  act(() => result.current.closePanel())
+  await error(1)
+  expect(result.current.state.phase).toBe("ready")
+  expect(result.current.view.alert).toBe("none")
+})
+
+test("the panel's button still works after a quiet read failed", async () => {
+  const { result } = await showReading()
+  await error(1)
+  get.mockReturnValue(18)
+  act(() => result.current.openPanel())
+  expect(result.current.view.alert).toBe("none")
+  act(() => result.current.locate())
+  expect(get).toHaveBeenCalledTimes(2)
+  success(1)
+  expect(result.current.state.phase).toBe("found")
+  expect(result.current.open).toBe(false)
+})
+
+test.each([
+  [2, "failed", "not-found"],
+  [3, "timed-out", "timeout"],
+] as const)(
+  "a tapped read failing with %i says %s, never that location is blocked",
+  async (code, phase, alert) => {
+    const { result } = await show()
+    act(() => result.current.openPanel())
+    act(() => result.current.locate())
+    await error(code)
+    act(() => {
+      vi.advanceTimersByTime(ONBOARDING_RULES.locationRetryMs)
+    })
+    expect(result.current.state.phase).toBe(phase)
+    expect(result.current.view).toMatchObject({
+      busy: false,
+      canLocate: true,
+      alert,
     })
     expect(result.current.open).toBe(true)
   }
 )
 
-test("denial with a browser grant offers checks without claiming an OS cause", async () => {
+test("position unavailable keeps the read going, so a late position still counts", async () => {
   const { result } = await show()
+  act(() => result.current.locate())
+  await error(2)
+  expect(result.current.state.phase).toBe("reading")
+  expect(navigator.geolocation.clearWatch).not.toHaveBeenCalled()
+  act(() => {
+    vi.advanceTimersByTime(ONBOARDING_RULES.locationRetryMs - 1)
+  })
+  success()
+  expect(result.current.state.phase).toBe("found")
+  expect(navigator.geolocation.clearWatch).toHaveBeenCalledExactlyOnceWith(17)
+  act(() => {
+    vi.advanceTimersByTime(ONBOARDING_RULES.locationRetryMs)
+  })
+  expect(result.current.state.phase).toBe("found")
+})
+
+test("repeated position unavailable gives up once, counted from the first", async () => {
+  const { result } = await show()
+  act(() => result.current.locate())
+  await error(2)
+  act(() => {
+    vi.advanceTimersByTime(ONBOARDING_RULES.locationRetryMs - 1)
+  })
+  await error(2)
+  expect(result.current.state.phase).toBe("reading")
+  await act(async () => {
+    vi.advanceTimersByTime(1)
+  })
+  expect(result.current.state.phase).toBe("failed")
+  expect(navigator.geolocation.clearWatch).toHaveBeenCalledExactlyOnceWith(17)
+})
+
+test("a tapped denial with a browser grant points to the device, and keeps the button", async () => {
+  const { result } = await show()
+  act(() => result.current.locate())
   await error(1)
   expect(result.current.state.phase).toBe("denied-other")
   expect(result.current.view).toMatchObject({
@@ -151,20 +343,25 @@ test("denial with a browser grant offers checks without claiming an OS cause", a
   })
 })
 
-test("a denied browser report hides location and offers cities", async () => {
-  const { result } = await show()
-  Object.assign(permission, { state: "denied" })
-  await error(1)
-  expect(result.current.state.phase).toBe("denied-site")
-  expect(result.current.view).toMatchObject({
-    busy: false,
-    canLocate: false,
-    alert: "none",
-  })
-})
+test.each(["denied", "prompt"] as const)(
+  "a tapped denial while the browser reports %s is a calm note with cities only",
+  async (state) => {
+    const { result } = await show()
+    act(() => result.current.locate())
+    Object.assign(permission, { state })
+    await error(1)
+    expect(result.current.state.phase).toBe("refused")
+    expect(result.current.view).toMatchObject({
+      busy: false,
+      canLocate: false,
+      alert: "off",
+      search: true,
+    })
+  }
+)
 
 test("a city picked while waiting cancels acquisition and ignores late callbacks", async () => {
-  const { result } = await show()
+  const { result } = await showReading()
   act(() => {
     vi.advanceTimersByTime(ONBOARDING_RULES.locationWaitMs)
   })
@@ -182,19 +379,15 @@ test("a city picked while waiting cancels acquisition and ignores late callbacks
   expect(result.current.view).toMatchObject({ busy: false, alert: "none" })
 })
 
-test("permission revocation retires late reads and restores prompt behavior when reset", async () => {
-  const { result } = await show()
-  act(() => {
-    Object.assign(permission, { state: "denied" })
-    permission.dispatchEvent(new Event("change"))
-  })
+test("permission revocation retires late reads, opens nothing, and restores prompt behavior when reset", async () => {
+  const { result } = await showReading()
+  changePermission("denied")
   success()
   expect(result.current.state.phase).toBe("denied-site")
-  act(() => {
-    Object.assign(permission, { state: "prompt" })
-    permission.dispatchEvent(new Event("change"))
-  })
+  expect(result.current.open).toBe(false)
+  changePermission("prompt")
   expect(result.current.state.phase).toBe("prompt")
+  expect(result.current.open).toBe(false)
   act(() => result.current.askLocation())
   expect(result.current.open).toBe(true)
 })
@@ -212,11 +405,21 @@ test("an unsupported permission query waits for an explicit button request", asy
 })
 
 test("unmount clears the deadline and ignores late callbacks", async () => {
-  const { result, unmount } = await show()
+  const { result, unmount } = await showReading()
   unmount()
   success()
   act(() => {
     vi.advanceTimersByTime(ONBOARDING_RULES.locationWaitMs)
+  })
+  expect(result.current.state.phase).toBe("reading")
+})
+
+test("unmount clears a read still retrying after position unavailable", async () => {
+  const { result, unmount } = await showReading()
+  await error(2)
+  unmount()
+  await act(async () => {
+    vi.advanceTimersByTime(ONBOARDING_RULES.locationRetryMs)
   })
   expect(result.current.state.phase).toBe("reading")
 })
@@ -228,10 +431,7 @@ test("granting a prompt after the UI deadline does not duplicate its pending req
   act(() => {
     vi.advanceTimersByTime(ONBOARDING_RULES.locationWaitMs)
   })
-  act(() => {
-    Object.assign(permission, { state: "granted" })
-    permission.dispatchEvent(new Event("change"))
-  })
+  changePermission("granted")
   expect(get).toHaveBeenCalledTimes(1)
   success()
   expect(result.current.state.phase).toBe("found")
@@ -240,15 +440,11 @@ test("granting a prompt after the UI deadline does not duplicate its pending req
 test.each(["success", "error", "city", "revoke", "unmount"] as const)(
   "%s cancels the browser watch",
   async (action) => {
-    const { result, unmount } = await show()
+    const { result, unmount } = await showReading()
     if (action === "success") success()
     if (action === "error") await error(3)
     if (action === "city") act(() => result.current.cancelForCity())
-    if (action === "revoke")
-      act(() => {
-        Object.assign(permission, { state: "denied" })
-        permission.dispatchEvent(new Event("change"))
-      })
+    if (action === "revoke") changePermission("denied")
     if (action === "unmount") unmount()
     expect(navigator.geolocation.clearWatch).toHaveBeenCalledExactlyOnceWith(17)
   }
@@ -256,6 +452,7 @@ test.each(["success", "error", "city", "revoke", "unmount"] as const)(
 
 test("retry after native timeout ignores queued callbacks from the cancelled watch", async () => {
   const { result } = await show()
+  act(() => result.current.locate())
   await error(3)
   get.mockReturnValue(18)
   act(() => result.current.locate())
@@ -270,6 +467,7 @@ test("retry after native timeout ignores queued callbacks from the cancelled wat
 
 test("late permission lookup cannot overwrite a city selection", async () => {
   const { result } = await show()
+  act(() => result.current.locate())
   let resolve!: (status: PermissionStatus) => void
   vi.spyOn(navigator.permissions, "query").mockReturnValue(
     new Promise((done) => {

@@ -32,11 +32,30 @@ vi.mock("@/features/owner-auth/components/auth-form", () => ({
 // The search panel's globe draws with WebGL, which jsdom has not got.
 vi.mock("@/components/voice-globe", () => ({ VoiceGlobe: () => null }))
 
+// "Position unavailable" fails at once here; the hook's tests cover the wait.
+vi.mock("@/lib/onboarding-rules", async (original) => {
+  const rules = await original<typeof import("@/lib/onboarding-rules")>()
+  return {
+    ONBOARDING_RULES: { ...rules.ONBOARDING_RULES, locationRetryMs: 0 },
+  }
+})
+
 const { GetStarted } = await import("./get-started")
 
 const suggested = "photography studio near Brockton, MA, USA"
 
+// Node 25 ships its own localStorage, which hides jsdom's and does not work
+// without --localstorage-file, so each test gets a plain in-memory one.
+function memoryStorage() {
+  const items = new Map<string, string>()
+  return {
+    getItem: (key: string) => items.get(key) ?? null,
+    setItem: (key: string, value: string) => void items.set(key, value),
+  }
+}
+
 beforeEach(() => {
+  vi.stubGlobal("localStorage", memoryStorage())
   window.matchMedia = vi.fn().mockReturnValue({
     matches: false,
     addEventListener: vi.fn(),
@@ -62,6 +81,7 @@ afterEach(() => {
   vi.clearAllMocks()
   vi.restoreAllMocks()
   vi.useRealTimers()
+  vi.unstubAllGlobals()
 })
 
 async function showSuggestedSearch() {
@@ -197,22 +217,51 @@ test("opening Anywhere directly respects an existing refusal", async () => {
   ).toBeNull()
 })
 
-test("the panel comes back on every tap until a place is picked", async () => {
+test("the panel asks once: after closing it, a tap just searches", async () => {
   mockLocation("prompt")
   tapSearch()
   await screen.findByRole("button", { name: "Use my current location" })
 
   fireEvent.click(screen.getByRole("button", { name: "Close" }))
-  await waitFor(() =>
-    expect(
-      screen.queryByRole("button", { name: "Use my current location" })
-    ).toBeNull()
-  )
-  fireEvent.focus(screen.getByRole("searchbox", { name: "Your business name" }))
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+  const box = screen.getByRole("searchbox", { name: "Your business name" })
+  fireEvent.focus(box)
+  fireEvent.click(box)
+  fireEvent.change(box, { target: { value: "Studio" } })
 
-  expect(
-    await screen.findByRole("button", { name: "Use my current location" })
-  ).toBeTruthy()
+  await waitFor(() =>
+    expect(search.searchBusinesses).toHaveBeenCalledWith(
+      expect.objectContaining({ input: "Studio", near: undefined })
+    )
+  )
+  expect(screen.queryByRole("dialog")).toBeNull()
+})
+
+test("closing the panel puts focus back in the search box without reopening it", async () => {
+  mockLocation("prompt")
+  render(<GetStarted signedIn={false} claim={vi.fn()} language="en" />)
+  await act(async () => {})
+  const box = screen.getByRole("searchbox")
+  act(() => box.focus())
+  fireEvent.click(await screen.findByRole("button", { name: "Close" }))
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+  await waitFor(() => expect(document.activeElement).toBe(box))
+  expect(screen.queryByRole("dialog")).toBeNull()
+})
+
+test("after a reload the panel stays closed and the search runs", async () => {
+  mockLocation("prompt")
+  tapSearch()
+  await screen.findByRole("button", { name: "Use my current location" })
+  cleanup()
+
+  tapSearch()
+  await act(async () => {})
+  fireEvent.change(screen.getByRole("searchbox"), {
+    target: { value: "Studio" },
+  })
+  await waitFor(() => expect(search.searchBusinesses).toHaveBeenCalled())
+  expect(screen.queryByRole("dialog")).toBeNull()
 })
 
 function mockLocationError(code: 1 | 2 | 3) {
@@ -222,7 +271,12 @@ function mockLocationError(code: 1 | 2 | 3) {
       clearWatch: vi.fn(),
       watchPosition: vi.fn(
         (_found: PositionCallback, failed: PositionErrorCallback) =>
-          failed({ code, PERMISSION_DENIED: 1 } as GeolocationPositionError)
+          failed({
+            code,
+            PERMISSION_DENIED: 1,
+            POSITION_UNAVAILABLE: 2,
+            TIMEOUT: 3,
+          } as GeolocationPositionError)
       ),
     },
     configurable: true,
@@ -257,12 +311,19 @@ test("a no at the browser's prompt leaves the cities only", async () => {
     ).toBeNull()
   )
   expect(screen.getByRole("searchbox", { name: "Search a city" })).toBeTruthy()
+  expect(screen.getByRole("status").textContent).toBe(
+    "Location is off. Turn it on in your browser and device settings and reload, or pick a city."
+  )
+  expect(screen.queryByRole("alert")).toBeNull()
 })
 
-test("a granted read starts on mount and never opens a panel while pending", async () => {
+test("an allowed location is not read until the first tap, and no panel opens while it reads", async () => {
   const { get, succeed } = pendingLocation()
   render(<GetStarted signedIn={false} claim={vi.fn()} language="en" />)
-  await waitFor(() => expect(get).toHaveBeenCalledTimes(1))
+  await act(async () => {})
+  expect(get).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole("searchbox"))
+  expect(get).toHaveBeenCalledTimes(1)
   await waitFor(() =>
     expect(
       screen.getByRole("button", { name: /Anywhere/ }).hasAttribute("disabled")
@@ -353,18 +414,56 @@ test("a location timeout keeps the retry action", async () => {
   )
 })
 
-test("OS denial with a browser grant keeps retry and device guidance", async () => {
+// The browser says Allow but the device says no: quiet until someone asks.
+async function allowedButRefused(language: "en" | "es") {
   mockLocationError(1)
   const status = await navigator.permissions.query({ name: "geolocation" })
   Object.assign(status, { state: "granted" })
-  tapSearch()
+  render(<GetStarted signedIn={false} claim={vi.fn()} language={language} />)
+  await act(async () => {})
+}
+
+test("a reload never opens the panel or an error, even when the device refuses", async () => {
+  await allowedButRefused("en")
+  expect(screen.queryByRole("dialog")).toBeNull()
+  const read = navigator.geolocation.watchPosition
+  expect(read).not.toHaveBeenCalled()
+
+  fireEvent.focus(screen.getByRole("searchbox"))
+  await waitFor(() => expect(read).toHaveBeenCalledTimes(1))
+  await act(async () => {})
+  expect(screen.queryByRole("dialog")).toBeNull()
+  expect(screen.queryByRole("alert")).toBeNull()
+  expect(screen.getByRole("button", { name: "Anywhere" })).toBeTruthy()
+
+  fireEvent.change(screen.getByRole("searchbox"), {
+    target: { value: "Studio" },
+  })
+  await waitFor(() => expect(search.searchBusinesses).toHaveBeenCalled())
+  expect(screen.queryByRole("dialog")).toBeNull()
+})
+
+test("a tap on the button then says where to look, in the visitor's language", async () => {
+  await allowedButRefused("en")
+  fireEvent.click(screen.getByRole("button", { name: "Anywhere" }))
   const use = await screen.findByRole("button", {
     name: "Use my current location",
   })
-  await screen.findByRole("alert")
+  expect(screen.queryByRole("alert")).toBeNull()
   fireEvent.click(use)
-  await waitFor(() =>
-    expect(screen.getByRole("alert").textContent).toContain("device settings")
+  expect((await screen.findByRole("alert")).textContent).toBe(
+    "Turn on location for this browser in your device settings and reload, or pick a city."
+  )
+  expect(use.isConnected).toBe(true)
+  cleanup()
+
+  await allowedButRefused("es")
+  fireEvent.click(screen.getByRole("button", { name: "En cualquier lugar" }))
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Usar mi ubicación actual" })
+  )
+  expect((await screen.findByRole("alert")).textContent).toBe(
+    "Activa la ubicación del navegador en los ajustes del dispositivo y recarga, o elige una ciudad."
   )
 })
 
@@ -378,7 +477,9 @@ test("permission changes update the open panel and remove the listener on unmoun
     Object.assign(status, { state: "granted" })
     status.dispatchEvent(new Event("change"))
   })
-  expect(await screen.findByRole("button", { name: /Near me/ })).toBeTruthy()
+  expect(
+    await screen.findByRole("button", { name: "Use my current location" })
+  ).toBeTruthy()
   cleanup()
   expect(remove).toHaveBeenCalledWith("change", expect.any(Function))
 })
@@ -479,7 +580,7 @@ test("changing language translates an already selected current location", async 
 
 test("unmount retires background location callbacks", async () => {
   const { get, succeed } = pendingLocation()
-  render(<GetStarted signedIn={false} claim={vi.fn()} language="en" />)
+  tapSearch()
   await waitFor(() => expect(get).toHaveBeenCalledTimes(1))
   cleanup()
   succeed()
@@ -511,10 +612,16 @@ test("a late error after closing cannot reopen the panel", async () => {
   )
   fireEvent.click(screen.getByRole("button", { name: "Close" }))
   await act(async () =>
-    get.mock.calls[0][1]({ code: 3 } as GeolocationPositionError)
+    get.mock.calls[0][1]({ code: 3, TIMEOUT: 3 } as GeolocationPositionError)
   )
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-  fireEvent.click(screen.getByRole("searchbox", { name: "Your business name" }))
+  const box = screen.getByRole("searchbox", { name: "Your business name" })
+  fireEvent.click(box)
+  expect(screen.queryByRole("dialog")).toBeNull()
+  fireEvent.click(screen.getByRole("button", { name: "Anywhere" }))
+  expect((await screen.findByRole("alert")).textContent).toBe(
+    "Location timed out. Try again or pick a city."
+  )
   fireEvent.click(
     await screen.findByRole("button", { name: "Use my current location" })
   )
@@ -587,7 +694,7 @@ test("typing while granted location is pending searches and reruns near the retu
       address: "Brockton",
     },
   ])
-  render(<GetStarted signedIn={false} claim={vi.fn()} language="en" />)
+  tapSearch()
   await waitFor(() => expect(get).toHaveBeenCalledTimes(1))
   fireEvent.change(screen.getByRole("searchbox"), {
     target: { value: "Studio" },
@@ -621,18 +728,20 @@ test("typing while granted location is pending searches and reruns near the retu
   expect(screen.queryByRole("button", { name: /Faraway studio/ })).toBeNull()
 })
 
-test.each([2, 3] as const)(
-  "an automatic granted read failure %i opens the existing error panel",
+test.each([1, 2, 3] as const)(
+  "a quiet read failing with %i opens no panel and shows no error",
   async (code) => {
     mockLocationError(code)
     const status = await navigator.permissions.query({ name: "geolocation" })
     Object.assign(status, { state: "granted" })
-    render(<GetStarted signedIn={false} claim={vi.fn()} language="en" />)
-    expect((await screen.findByRole("alert")).textContent).toBe(
-      code === 3
-        ? "Location timed out. Try again or pick a city."
-        : "Couldn't find you. Try again or pick a city."
+    tapSearch()
+    await waitFor(() =>
+      expect(navigator.geolocation.watchPosition).toHaveBeenCalledTimes(1)
     )
+    await act(async () => new Promise((done) => setTimeout(done)))
+    expect(screen.queryByRole("dialog")).toBeNull()
+    expect(screen.queryByRole("alert")).toBeNull()
+    expect(screen.getByRole("button", { name: "Anywhere" })).toBeTruthy()
   }
 )
 
@@ -659,7 +768,7 @@ test("a later permission grant does not replace a city the visitor already picke
 test("both controls stop at the wait limit, keep one pending request, and accept a late location", async () => {
   vi.useFakeTimers()
   const { get, succeed } = pendingLocation()
-  render(<GetStarted signedIn={false} claim={vi.fn()} language="en" />)
+  tapSearch()
   await act(async () => {})
   const pill = screen.getByRole("button", { name: /Anywhere/ })
   expect(pill.hasAttribute("disabled")).toBe(false)
@@ -671,6 +780,8 @@ test("both controls stop at the wait limit, keep one pending request, and accept
   expect(pill.textContent).toBe("Anywhere")
   expect(get).toHaveBeenCalledTimes(1)
   fireEvent.click(screen.getByRole("searchbox"))
+  expect(screen.queryByRole("dialog")).toBeNull()
+  fireEvent.click(pill)
   expect(screen.getByRole("status").textContent).toBe(
     "Taking longer than expected. You can pick a city."
   )
@@ -691,7 +802,7 @@ test.each([false, true])(
   async (expired) => {
     vi.useFakeTimers()
     const { get, succeed } = pendingLocation()
-    render(<GetStarted signedIn={false} claim={vi.fn()} language="en" />)
+    tapSearch()
     await act(async () => {})
     expect(get).toHaveBeenCalledTimes(1)
     if (expired) {
@@ -724,7 +835,7 @@ test("unmount clears the display timer for a pending location read", async () =>
   const { get } = pendingLocation()
   const schedule = vi.spyOn(globalThis, "setTimeout")
   const clear = vi.spyOn(globalThis, "clearTimeout")
-  render(<GetStarted signedIn={false} claim={vi.fn()} language="en" />)
+  tapSearch()
   await waitFor(() => expect(get).toHaveBeenCalledTimes(1))
   const index = schedule.mock.calls.findIndex(
     ([, delay]) => delay === ONBOARDING_RULES.locationWaitMs

@@ -39,7 +39,9 @@ const en = {
     waiting: "Taking longer than expected. You can pick a city.",
     timeout: "Location timed out. Try again or pick a city.",
     turnOnLocation:
-      "Location access was blocked. Check browser and device settings, or pick a city.",
+      "Turn on location for this browser in your device settings and reload, or pick a city.",
+    locationOff:
+      "Location is off. Turn it on in your browser and device settings and reload, or pick a city.",
     or: "or pick a city",
     city: "Search a city",
   },
@@ -105,7 +107,9 @@ const es: OnboardingWords = {
     waiting: "Está tardando más de lo esperado. Puedes elegir una ciudad.",
     timeout: "Se agotó el tiempo. Inténtalo de nuevo o elige una ciudad.",
     turnOnLocation:
-      "Acceso bloqueado. Revisa los ajustes del navegador y del dispositivo, o elige una ciudad.",
+      "Activa la ubicación del navegador en los ajustes del dispositivo y recarga, o elige una ciudad.",
+    locationOff:
+      "Ubicación desactivada. Actívala en los ajustes del navegador y del dispositivo y recarga, o elige una ciudad.",
     or: "o elige una ciudad",
     city: "Busca una ciudad",
   },
