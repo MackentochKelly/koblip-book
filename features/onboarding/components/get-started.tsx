@@ -563,7 +563,6 @@ function FindBusiness({
   const { area } = location.state
   const { askLocation } = location
   const canSearch = location.view.search
-  const areaButtonRef = useRef<HTMLButtonElement>(null)
   const { current: sessionToken, renew } = useSessionToken()
   const needle = useDebounced(query.trim(), ONBOARDING_RULES.debounceMs)
 
@@ -653,12 +652,7 @@ function FindBusiness({
   return (
     <div className={cn("flex flex-col gap-3", expanded && "min-h-0 flex-1")}>
       <div className="flex items-center gap-2">
-        <Button
-          ref={areaButtonRef}
-          variant="outline"
-          size="sm"
-          onClick={location.openPanel}
-        >
+        <Button variant="outline" size="sm" onClick={location.openPanel}>
           {location.view.busy ? (
             <Spinner data-icon="inline-start" />
           ) : area ? (
@@ -773,10 +767,6 @@ function FindBusiness({
         pending={location.view.pending}
         canLocate={location.view.canLocate}
         locationAlert={location.view.alert}
-        // Picked a place: focus goes back where it was (the search box, ready
-        // to type). Closed without one: to the "Anywhere" button, so the
-        // search box doesn't take focus and reopen the panel.
-        finalFocus={area ? true : areaButtonRef}
         words={t.area}
       />
     </div>
