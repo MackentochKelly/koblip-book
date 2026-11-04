@@ -12,13 +12,19 @@ import type { SpeechError } from "./speak-client"
 // Talking mode, like ChatGPT voice: the owner speaks, Meta hears it live
 // (through our /api/voice/listen relay), the assistant answers in the chat,
 // and ElevenLabs reads the answer out sentence by sentence while it is
-// still being written. If it stays quiet too long, one short line is said,
-// once per answer. If the answer is ready while that line (or one written
-// before a lookup) is still playing, it is cut off mid-word and the answer
-// comes in at once. Every word is the AI's own: the answers, and a set of
-// lines it writes when the talk starts (api/voice-lines.ts), each said once
-// at most. After a tap on a card, the AI says what it did and carries on.
-// Talking over it stops it; new words while it thinks start a fresh answer.
+// still being written. Before a real lookup the AI's own line says what it is
+// checking, and nothing is said otherwise, so a waiting line is never a lie.
+// If the answer is ready while that line is still playing, it is cut off
+// mid-word and the answer comes in at once. Every word is the AI's own. After
+// a tap on a card, the AI says what it did and carries on. Talking over it
+// stops it; new words while it thinks start a fresh answer.
+//
+// Meta can wait over 3 s after a short phrase before it calls the turn done,
+// with no setting for that. So after a short silence with words already heard,
+// the answer starts on those words, and is taken back without a sound if the
+// owner goes on (ElevenLabs' `speculative_turn` does the same,
+// https://elevenlabs.io/docs/api-reference/agents/get). A yes or no to a waiting
+// card always waits for Meta's final words: nothing is confirmed on a guess.
 // Sources: docs/assistant-plan.md, sections 11 and 12.
 //
 // This class only decides what happens when; the microphone, the sockets
@@ -40,6 +46,16 @@ export type ListenEvent =
   | { type: "speechEnd"; turnId: number }
   | { type: "speechComplete"; turnId: number; transcript: string }
   | { type: "error"; code: ErrorCode }
+
+// Where one answer's time went, in ms, numbers only.
+export interface VoiceTiming {
+  // What started it: a short silence, Meta's final words, a tap on the screen,
+  // the talk opening (the hello), or an early start taken back.
+  how: "early" | "final" | "tap" | "hello" | "takenBack"
+  heardMs: number // last sound from the owner until the answer was asked for
+  firstWordsMs: number // asked until its first words or lookup line
+  firstSoundMs: number // asked until its first sound
+}
 
 // One answer's voice, open from the moment the assistant starts thinking.
 export interface Speech {
@@ -83,6 +99,14 @@ export interface LiveVoiceParts {
   close: () => void
   // 0 to 1, like Math.random (tests pass their own).
   random: () => number
+  // A card is on the screen, waiting for its yes or no.
+  cardWaiting: () => boolean
+  // The clock, when the talk was tapped open, and the owner's last sound on it
+  // (null: none yet).
+  now: () => number
+  startedAt: number
+  lastVoiceAt: () => number | null
+  onTiming: (timing: VoiceTiming) => void
   onState: (state: LiveVoiceState) => void
   onCaption: (text: string) => void
   onError: (error: LiveVoiceError) => void
@@ -118,6 +142,16 @@ function whatTheScreenSays(reply: Reply | null): string {
   return [reply.result?.text ?? "", ...cards].filter(Boolean).join(" ")
 }
 
+// The same words, whatever Meta's capitals and punctuation ("hey" and "Hey,").
+function sameWords(a: string, b: string): boolean {
+  const plain = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim()
+  return plain(a) === plain(b)
+}
+
 export class LiveVoiceSession {
   private ended = false
   // The lines written for this talk. Each is said once at most, then gone;
@@ -125,7 +159,6 @@ export class LiveVoiceSession {
   private greeting = ""
   // Too late for a hello: the owner has spoken, or the wait is over.
   private started = false
-  private fillers: string[] = []
   private cutIns: string[] = []
   private socketOpen = false
   private greetingTimer: ReturnType<typeof setTimeout> | undefined
@@ -142,9 +175,22 @@ export class LiveVoiceSession {
   private spoke = false
   private speechDone = false
   private written = ""
-  private filler: ReturnType<typeof setTimeout> | undefined
-  // This answer has said its waiting line.
-  private waited = false
+  // Lookup lines said in this talk: never the same one twice.
+  private lookupLines = new Set<string>()
+  // The words heard so far in this turn, until Meta's final ones.
+  private partial = ""
+  // An answer started on `words` before Meta's final ones; `prior` is what
+  // was waiting to be asked before them.
+  private early: { words: string; prior: string } | null = null
+  // What the next answer is started by.
+  private startedBy: VoiceTiming["how"] = "tap"
+  // This answer's clock, until its first sound is reported.
+  private clock: {
+    how: VoiceTiming["how"]
+    heardMs: number
+    askedAt: number
+    firstWordsMs: number | null
+  } | null = null
   // The line said before a lookup, on its own voice so the
   // answer can cut it off: ElevenLabs can only stop audio by closing the
   // socket (https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket).
@@ -188,7 +234,6 @@ export class LiveVoiceSession {
   // The waiting lines for this talk came; null: it goes on without them.
   linesReady(lines: VoiceLines | null) {
     if (this.ended || !lines) return
-    this.fillers = [...lines.fillers]
     this.cutIns = [...lines.cutIns]
   }
 
@@ -198,7 +243,13 @@ export class LiveVoiceSession {
     this.greeting = ""
     this.started = true
     clearTimeout(this.greetingTimer)
-    this.openVoice(this.turn, false)
+    this.openVoice()
+    this.clock = {
+      how: "hello",
+      heardMs: 0,
+      askedAt: this.parts.startedAt,
+      firstWordsMs: this.parts.now() - this.parts.startedAt,
+    }
     this.say(words)
     this.speech?.finish()
   }
@@ -207,26 +258,115 @@ export class LiveVoiceSession {
     if (this.ended) return
     switch (event.type) {
       case "transcript":
+        // The words an answer already started on: nothing new.
+        if (this.early && sameWords(event.transcript, this.early.words)) break
+        this.partial = event.transcript
         this.parts.onCaption(event.transcript)
-        if (event.transcript.trim()) this.started = true
+        if (!event.transcript.trim()) break
+        this.started = true
+        // The owner went on after the short silence: that answer never was.
+        // Unless the owner is still quiet: then Meta's words just caught up
+        // with what was said, and these are the words to answer.
+        if (this.early) {
+          this.takeBackEarly()
+          if (this.ownerIsQuiet()) this.quiet()
+          else this.parts.onState("listening")
+        }
         // The owner talked over the voice: stop it and listen. Only real
         // words count, not the start of any sound, so a cough or a door
         // doesn't cut it off ("Only respond to clear audio", OpenAI's
         // Realtime prompting guide). Words still being written stay on
         // screen only.
-        if (event.transcript.trim() && (this.speech || this.parts.playing())) {
+        else if (this.speech || this.parts.playing()) {
           this.cutOff()
           this.parts.onState("listening")
         }
+        // Words that came after the owner went quiet.
+        if (this.ownerIsQuiet()) this.quiet()
         break
       case "speechComplete":
         this.parts.onCaption("")
-        this.said(event.transcript)
+        this.partial = ""
+        this.heardAll(event.transcript)
         break
       case "error":
         this.parts.onError(event.code)
         this.end()
         break
+    }
+  }
+
+  // The owner went quiet for a moment after real words: answer them now,
+  // without waiting for Meta to call the turn done.
+  quiet() {
+    if (this.ended || this.early || this.parts.cardWaiting()) return
+    const words = this.partial.trim()
+    if (!words) return
+    // What `said` will ask together with these words, if they are taken back.
+    const prior =
+      this.thinking && this.parts.heard() === ""
+        ? [this.asked, this.queued].filter(Boolean).join(" ")
+        : this.queued
+    this.early = { words, prior }
+    this.partial = ""
+    this.parts.onCaption("")
+    this.startedBy = "early"
+    this.said(words)
+  }
+
+  private ownerIsQuiet(): boolean {
+    const last = this.parts.lastVoiceAt()
+    return (
+      last !== null &&
+      this.parts.now() - last >= VOICE_RULES.earlyAnswerAfterQuietMs
+    )
+  }
+
+  // Meta's final words for this turn. The same as an early start: that answer
+  // stands. Different: it is taken back and these are asked instead.
+  private heardAll(words: string) {
+    const early = this.early
+    if (early && (!words.trim() || sameWords(words, early.words))) {
+      this.early = null
+      return
+    }
+    if (early) {
+      this.takeBackEarly()
+      this.parts.onState("thinking")
+    }
+    this.startedBy = "final"
+    this.said(words)
+  }
+
+  // An early start was wrong: silently gone if nothing of it was heard,
+  // otherwise it is a cut-off like any other.
+  private takeBackEarly() {
+    const early = this.early
+    if (!early) return
+    this.early = null
+    this.queued = early.prior
+    this.startedBy = "tap"
+    this.parts.onTiming({
+      how: "takenBack",
+      heardMs: 0,
+      firstWordsMs: 0,
+      firstSoundMs: 0,
+    })
+    if (this.thinking) {
+      this.turn += 1
+      this.thinking = false
+      this.asked = ""
+      if (this.parts.heard() === "") {
+        this.answering = false
+        this.stopSpeaking()
+        this.parts.cancelAnswer()
+        this.parts.withdraw()
+      } else {
+        this.cutOff()
+        this.parts.cancelAnswer()
+      }
+    } else if (this.speech || this.parts.playing()) {
+      this.cutOff()
     }
   }
 
@@ -299,8 +439,10 @@ export class LiveVoiceSession {
     if (this.ended || this.thinking || this.speech || this.parts.playing()) {
       return
     }
-    if (this.queued) void this.ask()
-    else if (this.tap) void this.carryOn()
+    // Words still being said go with what they join, once they are done.
+    if (this.queued) {
+      if (!this.partial.trim()) void this.ask()
+    } else if (this.tap) void this.carryOn()
   }
 
   end() {
@@ -308,6 +450,7 @@ export class LiveVoiceSession {
     this.ended = true
     this.queued = ""
     this.tap = null
+    this.early = null
     clearTimeout(this.greetingTimer)
     this.cutOff()
     this.parts.close()
@@ -326,7 +469,6 @@ export class LiveVoiceSession {
   }
 
   private stopSpeaking() {
-    clearTimeout(this.filler)
     this.firstLine?.speech.cancel()
     this.firstLine = null
     this.speech?.cancel()
@@ -342,7 +484,9 @@ export class LiveVoiceSession {
     this.queued = ""
     this.tap = null
     this.asked = text
-    await this.answer((listen) => this.parts.send(text, listen), "")
+    const how = this.startedBy
+    this.startedBy = "tap"
+    await this.answer((listen) => this.parts.send(text, listen), "", how)
   }
 
   private async carryOn() {
@@ -352,7 +496,8 @@ export class LiveVoiceSession {
     this.asked = ""
     await this.answer(
       (listen) => this.parts.resume(tap.answer, listen),
-      tap.words
+      tap.words,
+      "tap"
     )
   }
 
@@ -360,31 +505,43 @@ export class LiveVoiceSession {
   // says about the reply, only if the model gives no words of its own.
   private async answer(
     send: (listen: AnswerListener) => Promise<Reply | null>,
-    plain: string
+    plain: string,
+    how: VoiceTiming["how"]
   ) {
     this.turn += 1
     const turn = this.turn
     this.thinking = true
     this.lookedUp = false
-    this.waited = false
     this.answering = true
     this.written = ""
     this.parts.forgetHeard()
     this.parts.onState("thinking")
-    this.openVoice(turn)
+    this.openVoice()
+    const askedAt = this.parts.now()
+    const lastVoiceAt = this.parts.lastVoiceAt()
+    this.clock = {
+      how,
+      heardMs:
+        how === "early" || how === "final"
+          ? Math.max(0, askedAt - (lastVoiceAt ?? askedAt))
+          : 0,
+      askedAt,
+      firstWordsMs: null,
+    }
 
     const reply = await send({
       onText: (delta) => {
         if (turn !== this.turn) return
+        this.markFirstWords()
         this.written += delta
         const { sentences, rest } = takeSentences(this.written)
         this.written = rest
         for (const sentence of sentences) this.sayAnswer(sentence)
       },
-      onLookup: () => {
+      onLookup: (line) => {
         if (turn !== this.turn || this.lookedUp) return
         this.lookedUp = true
-        this.keepFirstLine(turn)
+        this.keepFirstLine(line)
       },
     })
     // Talked over: the newer question is already on its way.
@@ -394,7 +551,6 @@ export class LiveVoiceSession {
     const last = this.written.trim()
     this.written = ""
     if (last) this.sayAnswer(last)
-    clearTimeout(this.filler)
     if (!this.speech) return this.next()
     if (!this.spoke) {
       const words = [plain, whatTheScreenSays(reply)].filter(Boolean).join(" ")
@@ -409,14 +565,15 @@ export class LiveVoiceSession {
   }
 
   // Opens the voice while the assistant thinks, so the first sentence
-  // plays at once, and says a short line if it stays quiet too long.
-  private openVoice(turn: number, withFiller = true) {
+  // plays at once.
+  private openVoice() {
     // A voice still going (the hello) gives way to the answer.
     if (this.speech) this.stopSpeaking()
     this.spoke = false
     this.speechDone = false
     const speech = this.parts.openSpeech({
       onAudio: () => {
+        this.reportTiming()
         if (this.firstLine?.speech === speech) {
           this.firstLine.heard = true
           this.parts.onState("talking")
@@ -447,42 +604,53 @@ export class LiveVoiceSession {
       // Said the first line; now waiting for the rest of the answer.
       else if (this.thinking) this.parts.onState("thinking")
     })
-    if (withFiller) {
-      this.filler = setTimeout(() => {
-        if (this.spoke || turn !== this.turn || this.speech !== speech) return
-        this.sayWaitLine(turn)
-      }, VOICE_RULES.fillerAfterMs)
-    }
   }
 
   // A lookup started: what was said so far is the first line, on its own
-  // voice so the answer can cut it off. With nothing said yet, the waiting
-  // line comes now rather than after the quiet wait. One per answer.
-  private keepFirstLine(turn: number) {
+  // voice so the answer can cut it off. With nothing said yet, the AI's own
+  // line for this lookup comes now. One per answer, and never one said before
+  // in this talk (the chat doesn't keep them, so the model can't see them).
+  private keepFirstLine(line?: string) {
     if (!this.speech) return
     if (this.written.trim()) this.say(this.written)
     this.written = ""
-    if (this.spoke) this.splitFirstLine(turn)
-    else this.sayWaitLine(turn)
-  }
-
-  // A short waiting line, on its own voice so the answer can cut it off
-  // mid-word.
-  private sayWaitLine(turn: number) {
-    if (this.waited || this.fillers.length === 0) return
-    this.waited = true
-    this.say(this.takeLine(this.fillers))
-    this.splitFirstLine(turn)
+    const said = line?.toLowerCase().trim() ?? ""
+    if (!this.spoke && line && !this.lookupLines.has(said)) {
+      this.lookupLines.add(said)
+      this.markFirstWords()
+      this.say(line)
+    }
+    if (this.spoke) this.splitFirstLine()
   }
 
   // What this voice has said becomes the first line, and the answer gets
-  // a new voice with no waiting line of its own.
-  private splitFirstLine(turn: number) {
+  // a new voice.
+  private splitFirstLine() {
     if (!this.speech || !this.spoke) return
     this.speech.finish()
     this.firstLine = { speech: this.speech, heard: false, arrived: false }
     this.speech = null
-    this.openVoice(turn, false)
+    this.openVoice()
+  }
+
+  private markFirstWords() {
+    if (this.clock && this.clock.firstWordsMs === null) {
+      this.clock.firstWordsMs = this.parts.now() - this.clock.askedAt
+    }
+  }
+
+  // The first sound of an answer: where its time went.
+  private reportTiming() {
+    const clock = this.clock
+    if (!clock) return
+    this.clock = null
+    const firstSoundMs = this.parts.now() - clock.askedAt
+    this.parts.onTiming({
+      how: clock.how,
+      heardMs: clock.heardMs,
+      firstWordsMs: clock.firstWordsMs ?? firstSoundMs,
+      firstSoundMs,
+    })
   }
 
   // The answer's words. If the first line is still going, it stops there
@@ -509,7 +677,6 @@ export class LiveVoiceSession {
   private say(text: string) {
     if (!this.speech) return
     this.spoke = true
-    clearTimeout(this.filler)
     this.speech.say(text)
   }
 
@@ -522,7 +689,7 @@ export class LiveVoiceSession {
     if (this.ended || this.thinking) return
     this.answering = false
     this.parts.onPlayerIdle(() => {})
-    if (this.queued) {
+    if (this.queued && !this.partial.trim()) {
       this.parts.onState("thinking")
       return void this.ask()
     }

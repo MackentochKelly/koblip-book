@@ -130,7 +130,7 @@ export function useAssistantChat(
         else {
           if (event.type === "text") listen?.onText(event.delta)
           if (event.type === "step" && event.status === "running") {
-            listen?.onLookup()
+            listen?.onLookup(event.line)
           }
           latest = applyEvent(latest, event, replyId)
           setItems((current) => applyEvent(current, event, replyId))

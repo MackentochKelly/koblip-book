@@ -22,7 +22,9 @@ import {
 } from "../utils/live-voice-session"
 import { createFramer, createResampler, floatToPcm16 } from "../utils/pcm"
 import { PcmPlayer } from "../utils/pcm-player"
+import { createSilenceWatch } from "../utils/silence-watch"
 import { openSpeech } from "../utils/speak-client"
+import { sendVoiceTiming } from "../utils/voice-timing-client"
 import { fetchVoiceGreeting, fetchVoiceLines } from "../utils/voice-lines-client"
 
 export type { LiveVoiceError, LiveVoiceState }
@@ -56,6 +58,7 @@ export type LiveVoice = ReturnType<typeof useLiveVoice>
 export function useLiveVoice({
   businessId,
   busy,
+  cardWaiting,
   send,
   resume,
   stopAnswer,
@@ -65,6 +68,8 @@ export function useLiveVoice({
 }: {
   businessId: string
   busy: boolean
+  // A card is on the screen, waiting for its yes or no.
+  cardWaiting: boolean
   send: (
     text: string,
     options: { voice: boolean; listen: AnswerListener }
@@ -94,6 +99,7 @@ export function useLiveVoice({
   // The props as last drawn, for the session's callbacks.
   const latest = useRef({
     busy,
+    cardWaiting,
     send,
     resume,
     stopAnswer,
@@ -104,6 +110,7 @@ export function useLiveVoice({
   useEffect(() => {
     latest.current = {
       busy,
+      cardWaiting,
       send,
       resume,
       stopAnswer,
@@ -121,8 +128,11 @@ export function useLiveVoice({
   const start = useCallback(async () => {
     if (session.current) return
     setState("connecting")
+    const startedAt = performance.now()
     // Made inside the tap, so phones let it play sound.
     const context = new AudioContext()
+    // Written from the tap, so the hello is ready about when the talk opens.
+    const greeting = fetchVoiceGreeting(businessId)
     const fail = (error: LiveVoiceError, stream?: MediaStream) => {
       for (const track of stream?.getTracks() ?? []) track.stop()
       void context.close()
@@ -137,8 +147,6 @@ export function useLiveVoice({
     } catch {
       return fail("mic_denied")
     }
-    // Written from here, so the hello is ready about when the socket opens.
-    const greeting = fetchVoiceGreeting(businessId)
     const lines = fetchVoiceLines(businessId)
     try {
       await context.audioWorklet.addModule("/voice-capture-worklet.js")
@@ -153,6 +161,7 @@ export function useLiveVoice({
     )
     const speaker = new PcmPlayer(context)
     player.current = speaker
+    const silence = createSilenceWatch(() => session.current?.quiet())
 
     const current = new LiveVoiceSession({
       send: (text, listen) =>
@@ -192,6 +201,11 @@ export function useLiveVoice({
         void context.close()
       },
       random: Math.random,
+      cardWaiting: () => latest.current.cardWaiting,
+      now: () => performance.now(),
+      startedAt,
+      lastVoiceAt: () => silence.lastVoiceAt(),
+      onTiming: (timing) => sendVoiceTiming(businessId, timing),
       onState: setState,
       onCaption: setCaption,
       onError: (error) => latest.current.onError(error),
@@ -232,6 +246,7 @@ export function useLiveVoice({
     capture.port.onmessage = (message: MessageEvent<Float32Array>) => {
       const samples = message.data
       inputLevel.current = audioLevel(samples)
+      silence.hear(inputLevel.current, performance.now())
       if (socket.readyState !== WebSocket.OPEN) return
       for (const pcm of frame(floatToPcm16(resample(samples)))) {
         socket.send(pcm.buffer)

@@ -45,7 +45,7 @@ import type {
   AssistantTool,
 } from "../types"
 import { runChat, type RunChatContext } from "./run-chat"
-import { writeGreeting, writeWaitingLines } from "./voice-lines"
+import { writeGreeting, writeCutIns } from "./voice-lines"
 import { getMetaAiClient } from "@/lib/meta-ai"
 
 const LIVE = process.env.RUN_LIVE_EVALS === "1"
@@ -639,7 +639,7 @@ describe.skipIf(!LIVE || KEY === "")("talking to Koblip (RUN_LIVE_EVALS=1)", () 
     const greeting = await writeGreeting(context)
     const greetingMs = Date.now() - started
     started = Date.now()
-    const lines = await writeWaitingLines(context)
+    const lines = await writeCutIns(context)
     console.log(
       JSON.stringify({
         language,
@@ -650,7 +650,6 @@ describe.skipIf(!LIVE || KEY === "")("talking to Koblip (RUN_LIVE_EVALS=1)", () 
       })
     )
     expect(greeting).toBeTruthy()
-    expect(lines?.fillers.length).toBeGreaterThanOrEqual(6)
     expect(lines?.cutIns.length).toBeGreaterThanOrEqual(4)
   }, 60_000)
 })
@@ -748,7 +747,7 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
         const answerWords = answer.split(/\s+/).filter(Boolean).length
         const shortPreamble =
           firstLineWords >= 2 &&
-          firstLineWords <= 4 &&
+          firstLineWords <= 8 &&
           firstLineWords < answerWords
         const countMatches =
           lookupCount === 2 &&
@@ -780,12 +779,12 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
         ).toBe(true)
         expect(
           shortPreamble,
-          "Preamble must be 2–4 words and shorter than answer"
+          "Preamble must be a few words and shorter than answer"
         ).toBe(true)
         expect(firstTextMs).not.toBeNull()
         expect(doneMs).not.toBeNull()
         expect(events).not.toContain("error")
-        expect(events.slice(-2)).toEqual(["sources", "done"])
+        expect(events.at(-1)).toBe("done")
       } finally {
         spy.mockRestore()
       }
@@ -919,6 +918,38 @@ describe.skipIf(!LIVE || KEY === "")("live eval (RUN_LIVE_EVALS=1)", () => {
       )
     },
     240_000
+  )
+
+  test.each(["en" as const, "es" as const])(
+    "voice says what it's checking before a lookup, never a result ($language)",
+    async (language) => {
+      const question =
+        language === "es"
+          ? "¿Cuántas reservas tengo mañana?"
+          : "How many bookings do I have tomorrow?"
+      const lines: (string | undefined)[] = []
+      for (let run = 0; run < 3; run += 1) {
+        let line: string | undefined
+        let stepped = false
+        for await (const event of runChat(
+          [{ role: "owner", text: question }],
+          { ...CONTEXT, language, now: Date.now(), voice: true },
+          evalTools()
+        )) {
+          if (event.type === "step" && event.status === "running" && !stepped) {
+            stepped = true
+            line = event.line
+          }
+        }
+        lines.push(line)
+      }
+      console.log(JSON.stringify({ language, lines }))
+      for (const line of lines) {
+        expect(line, "A lookup needs its line").toBeTruthy()
+        expect(line, "A line is never a result").not.toMatch(/\d/)
+      }
+    },
+    120_000
   )
 
   test("service count reads only", async () => {

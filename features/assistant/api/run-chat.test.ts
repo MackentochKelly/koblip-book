@@ -180,6 +180,58 @@ test("talking never says words written before a lookup", async () => {
   )
 })
 
+test("talking: words before a lookup come as its line, off the screen", async () => {
+  scriptedClient([
+    [textChunk("Checking today."), toolChunk(0, "a", "probe", "{}")],
+    [textChunk("Two bookings.")],
+  ])
+  const events = await collect(
+    runChat(MESSAGES, { ...CONTEXT, voice: true }, [probe(async () => ({}))])
+  )
+  expect(events).toContainEqual({
+    type: "step",
+    id: "a",
+    label: "Probing…",
+    status: "running",
+    line: "Checking today.",
+  })
+  expect(events.filter((e) => (e as { type: string }).type === "text")).toEqual(
+    [{ type: "text", delta: "Two bookings." }]
+  )
+})
+
+test("talking: a lookup line that repeats an earlier answer isn't said", async () => {
+  scriptedClient([
+    [textChunk("Checking today."), toolChunk(0, "a", "probe", "{}")],
+    [textChunk("Two bookings.")],
+  ])
+  const events = await collect(
+    runChat(
+      [
+        { role: "owner", text: "Today?" },
+        { role: "assistant", text: "Checking today." },
+        { role: "owner", text: "Again?" },
+      ],
+      { ...CONTEXT, voice: true },
+      [probe(async () => ({}))]
+    )
+  )
+  const step = events.find((e) => (e as { type: string }).type === "step")
+  expect(step).not.toHaveProperty("line")
+})
+
+test("typed: a lookup's step has no line", async () => {
+  scriptedClient([
+    [textChunk("Checking today."), toolChunk(0, "a", "probe", "{}")],
+    [textChunk("Two bookings.")],
+  ])
+  const events = await collect(
+    runChat(MESSAGES, CONTEXT, [probe(async () => ({}))])
+  )
+  const step = events.find((e) => (e as { type: string }).type === "step")
+  expect(step).not.toHaveProperty("line")
+})
+
 test("talking says a short direct answer whole", async () => {
   scriptedClient([[textChunk("Two"), textChunk(" bookings.")]])
   const events = await collect(

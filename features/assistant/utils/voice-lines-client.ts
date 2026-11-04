@@ -2,7 +2,7 @@ import type { VoiceLines } from "../types"
 
 // What the AI wrote for this talk (POST /api/assistant/voice-lines). Null when
 // the server could not answer: the talk goes on without it.
-async function read(businessId: string, part: "greeting" | "waiting") {
+async function read(businessId: string, part: "greeting" | "cutIns") {
   try {
     const response = await fetch("/api/assistant/voice-lines", {
       method: "POST",
@@ -27,5 +27,5 @@ export async function fetchVoiceGreeting(
 export async function fetchVoiceLines(
   businessId: string
 ): Promise<VoiceLines | null> {
-  return (await read(businessId, "waiting")) as VoiceLines | null
+  return (await read(businessId, "cutIns")) as VoiceLines | null
 }

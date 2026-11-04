@@ -28,6 +28,7 @@ export type AssistantStreamEvent =
       id: string
       label: string
       status: "running" | "done" | "failed"
+      line?: string // talking: the AI's own words said while a lookup runs
     } // small chip, e.g. "Finding bookings…"
   | {
       type: "confirm"
@@ -104,7 +105,6 @@ export interface AssistantRequest {
 // What the assistant says while it works in one talk, written by the AI when
 // the talk starts, in the owner's language.
 export interface VoiceLines {
-  fillers: string[] // said while an answer is slow; each once at most
   cutIns: string[] // said before an answer that cuts a waiting line off; each once at most
 }
 
@@ -160,10 +160,10 @@ export interface ConfirmCard {
 }
 
 // Hears an answer while it is written (talking mode): its words, and the
-// moment a lookup starts, which ends the line said before it.
+// moment a lookup starts, with the AI's own line for it if it wrote one.
 export interface AnswerListener {
   onText: (delta: string) => void
-  onLookup: () => void
+  onLookup: (line?: string) => void
   // The answer's check, run after it ended, could not back it.
 }
 
