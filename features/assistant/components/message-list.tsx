@@ -79,8 +79,9 @@ const RESULT_PAGES: Record<ResultKind, string> = {
   flows: "/automations/flows",
 }
 
-// What a tapped action did, as one line that opens the page it changed.
-function ResultLine({
+// What a tapped action did, in full (it names what was done and when), as a
+// line that opens the page it changed.
+export function ResultLine({
   result,
   businessId,
 }: {
@@ -94,7 +95,7 @@ function ResultLine({
           <TraceIcon>
             {result.ok ? <CircleCheckIcon /> : <AlertCircleIcon />}
           </TraceIcon>
-          <TraceTitle>{result.text}</TraceTitle>
+          <TraceTitle className="whitespace-normal!">{result.text}</TraceTitle>
           <TraceIcon>
             <ChevronRightIcon />
           </TraceIcon>
@@ -159,7 +160,7 @@ function StepIcon({ status }: { status: ChatStep["status"] }) {
 // the step it is on while it works, "Checked 3 things" after. Open while
 // it works, then it folds away; a tap opens it again. `children` (what
 // the answer was based on) are more lines of the same list, under the steps.
-function WorkSteps({
+export function WorkSteps({
   steps,
   labels,
   children,
