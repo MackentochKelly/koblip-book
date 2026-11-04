@@ -5,7 +5,19 @@ import type { MemoryRow } from "./utils/memory"
 // One JSON object per line.
 // Which owner page a confirmed change belongs to, for the result link.
 export type ResultKind =
-  "bookings" | "services" | "team" | "hours" | "customers" | "settings"
+  | "bookings"
+  | "services"
+  | "team"
+  | "hours"
+  | "customers"
+  | "settings"
+  | "photos"
+  | "policies"
+  | "theme"
+  | "spanish"
+  | "messages"
+  | "timing"
+  | "flows"
 export type SourceKind = "bookings" | "services" | "team" | "customers"
 export type AssistantStreamEvent =
   | { type: "text"; delta: string } // words appearing in the reply
