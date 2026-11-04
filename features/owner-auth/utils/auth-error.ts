@@ -1,4 +1,5 @@
 import type { authClient } from "@/lib/auth-client"
+import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import type { AuthWords } from "../i18n"
 
 type ErrorCode = keyof typeof authClient.$ERROR_CODES
@@ -17,6 +18,18 @@ const FIELDS = {
   INVALID_PASSWORD: { field: "password", message: "invalidPassword" },
   INVALID_EMAIL: { field: "email", message: "email" },
 } satisfies Partial<Record<ErrorCode, AuthError>>
+
+// The same rule on every screen a password is typed, before asking the
+// server: Better Auth's limits, set from these rules (lib/auth.ts).
+export function passwordProblem(password: string): AuthError | null {
+  if (password.length < ONBOARDING_RULES.minPasswordLength) {
+    return { field: "password", message: "password" }
+  }
+  if (password.length > ONBOARDING_RULES.maxPasswordLength) {
+    return { field: "password", message: "passwordTooLong" }
+  }
+  return null
+}
 
 export function authError(
   error: { code?: string; status: number } | null,

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { isPageLanguage, pickLanguage, pickLocale } from "./page-language"
+import {
+  isPageLanguage,
+  pickLanguage,
+  pickLocale,
+  pickOwnerLanguage,
+} from "./page-language"
 
 describe("isPageLanguage", () => {
   it("accepts only en and es", () => {
@@ -68,5 +73,15 @@ describe("pickLocale", () => {
     expect(pickLocale("es", "es")).toBe("es-US")
     expect(pickLocale("en", null)).toBe("en-US")
     expect(pickLocale("es", "not a tag,*")).toBe("es-US")
+  })
+})
+
+describe("pickOwnerLanguage", () => {
+  it("takes the owner's pick, then the phone's language, then English", () => {
+    expect(pickOwnerLanguage("es", "en-US")).toBe("es")
+    expect(pickOwnerLanguage("en", "es-MX")).toBe("en")
+    expect(pickOwnerLanguage(undefined, "es-MX")).toBe("es")
+    expect(pickOwnerLanguage("fr", "es-MX")).toBe("es")
+    expect(pickOwnerLanguage(undefined, null)).toBe("en")
   })
 })

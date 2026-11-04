@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
+import { loginHref } from "@/lib/auth-links"
 import { deleteAccount } from "../api/delete-actions"
 import { useOwnerMessages } from "../i18n/provider"
 
@@ -38,7 +39,7 @@ export function AccountSection({
   const [pending, startTransition] = useTransition()
   const logInAgain = async () => {
     await authClient.signOut()
-    router.replace(`/login?next=${encodeURIComponent(returnTo)}`)
+    router.replace(loginHref({ next: returnTo }))
     router.refresh()
   }
   const remove = () =>

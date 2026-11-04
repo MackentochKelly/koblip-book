@@ -10,6 +10,7 @@ import {
   getTeamAreaLanguage,
   getTeamAreaLocale,
 } from "@/features/team-area/i18n/server"
+import { loginHref } from "@/lib/auth-links"
 import { getSession } from "@/lib/dal"
 import { readTeamInvite } from "@/lib/team-invites"
 
@@ -58,7 +59,7 @@ export default async function JoinPage({ params }: PageProps<"/join/[token]">) {
           <Button
             size="lg"
             nativeButton={false}
-            render={<Link href={`/login?next=${encodeURIComponent(`/join/${token}`)}`} />}
+            render={<Link href={loginHref({ next: `/join/${token}` })} />}
           >
             {t.logIn}
           </Button>

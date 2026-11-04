@@ -3,17 +3,20 @@
 import Link from "next/link"
 import { useState } from "react"
 
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { CircleAlertIcon, InfoIcon } from "@/components/ui/icons"
-import { Input } from "@/components/ui/input"
-import { Spinner } from "@/components/ui/spinner"
+import { FieldGroup } from "@/components/ui/field"
 import { authClient } from "@/lib/auth-client"
-import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
+import { loginHref } from "@/lib/auth-links"
 import type { PageLanguage } from "@/lib/page-language"
 import { authWordsFor } from "../i18n"
-import { authError, type AuthError } from "../utils/auth-error"
+import {
+  authError,
+  passwordProblem,
+  type AuthError,
+} from "../utils/auth-error"
+import { AuthNotice } from "./auth-notice"
+import { AuthSubmit } from "./auth-submit"
+import { PasswordField } from "./password-field"
 
 // One new password, from the link in the "Forgot password" email. Its end
 // states, a changed password or a dead link, each lead back to log in.
@@ -38,11 +41,9 @@ export function ResetPasswordForm({
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (sending || !token) return
-    if (password.length < ONBOARDING_RULES.minPasswordLength) {
-      setError({ field: "password", message: "password" })
-      return
-    }
-    setError(null)
+    const problem = passwordProblem(password)
+    setError(problem)
+    if (problem) return
     setSending(true)
     // Null when the server could not be reached.
     const result = await authClient
@@ -63,20 +64,13 @@ export function ResetPasswordForm({
   if (ended) {
     return (
       <FieldGroup>
-        <Alert>
-          <InfoIcon />
-          <AlertDescription>
-            {ended === "changed" ? t.passwordChanged : t.linkExpired}
-          </AlertDescription>
-        </Alert>
+        <AuthNotice kind="info">
+          {ended === "changed" ? t.passwordChanged : t.linkExpired}
+        </AuthNotice>
         <Button
           size="lg"
           nativeButton={false}
-          render={
-            <Link
-              href={`/login?${new URLSearchParams({ next, lang: language })}`}
-            />
-          }
+          render={<Link href={loginHref({ next, language })} />}
         >
           {ended === "changed" ? t.logIn : t.backToLogIn}
         </Button>
@@ -84,39 +78,23 @@ export function ResetPasswordForm({
     )
   }
 
-  const passwordError = error?.field === "password"
   return (
     <form onSubmit={(event) => void submit(event)} noValidate>
       <FieldGroup>
-        <Field data-invalid={passwordError || undefined}>
-          <FieldLabel htmlFor="new-password">{t.password}</FieldLabel>
-          <Input
-            id="new-password"
-            type="password"
-            autoComplete="new-password"
-            autoFocus
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            disabled={sending}
-            aria-invalid={passwordError || undefined}
-            aria-describedby={passwordError ? "new-password-error" : undefined}
-          />
-          {passwordError && (
-            <FieldError id="new-password-error">
-              {t.errors[error.message]}
-            </FieldError>
-          )}
-        </Field>
-        {error && !passwordError && (
-          <Alert variant="destructive">
-            <CircleAlertIcon />
-            <AlertDescription>{t.errors[error.message]}</AlertDescription>
-          </Alert>
+        <PasswordField
+          id="new-password"
+          label={t.password}
+          value={password}
+          onChange={setPassword}
+          autoComplete="new-password"
+          autoFocus
+          disabled={sending}
+          error={error?.field === "password" ? t.errors[error.message] : null}
+        />
+        {error && error.field !== "password" && (
+          <AuthNotice kind="error">{t.errors[error.message]}</AuthNotice>
         )}
-        <Button type="submit" size="lg" disabled={sending}>
-          {sending && <Spinner data-icon="inline-start" />}
-          {t.savePassword}
-        </Button>
+        <AuthSubmit busy={sending}>{t.savePassword}</AuthSubmit>
       </FieldGroup>
     </form>
   )

@@ -1,10 +1,8 @@
 import type { Metadata } from "next"
 
-import { GlassCard } from "@/components/glass-frame"
-import { LanguageProvider } from "@/components/language-provider"
+import { HeroCardPage } from "@/components/hero-card-page"
 import { RememberOwnerLanguage } from "@/features/dashboard/i18n/remember-language"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
-import { AuthPageFrame } from "@/features/owner-auth/components/auth-page-frame"
 import { ResetPasswordForm } from "@/features/owner-auth/components/reset-password-form"
 import { authWordsFor } from "@/features/owner-auth/i18n"
 import { languageParam } from "@/lib/page-language"
@@ -29,17 +27,13 @@ export default async function ResetPasswordPage({
   const linked = languageParam(lang)
   const language = await getOwnerLanguage(lang)
   return (
-    <LanguageProvider language={language}>
+    <HeroCardPage language={language} title={authWordsFor(language).newPassword}>
       {linked && <RememberOwnerLanguage language={linked} />}
-      <AuthPageFrame title={authWordsFor(language).newPassword}>
-        <GlassCard>
-          <ResetPasswordForm
-            token={typeof token === "string" ? token : null}
-            next={safeNext(typeof next === "string" ? next : undefined)}
-            language={language}
-          />
-        </GlassCard>
-      </AuthPageFrame>
-    </LanguageProvider>
+      <ResetPasswordForm
+        token={typeof token === "string" ? token : null}
+        next={safeNext(typeof next === "string" ? next : undefined)}
+        language={language}
+      />
+    </HeroCardPage>
   )
 }

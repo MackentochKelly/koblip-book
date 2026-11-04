@@ -31,6 +31,7 @@ import { Highlighter } from "@/components/ui/highlighter"
 import { claimBusiness } from "@/features/dashboard/api/actions"
 import { GetStarted } from "@/features/onboarding/components/get-started"
 import { onboardingWordsFor } from "@/features/onboarding/i18n"
+import { AFTER_LOGIN_PATH, loginHref } from "@/lib/auth-links"
 import { getSession } from "@/lib/dal"
 import { fontDisplay, fontSerif } from "@/lib/fonts"
 import { messagesFor } from "@/lib/i18n"
@@ -81,7 +82,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                 nativeButton={false}
                 render={
                   <Link
-                    href={signedIn ? "/dashboard" : `/login?lang=${language}`}
+                    href={signedIn ? AFTER_LOGIN_PATH : loginHref({ language })}
                   />
                 }
               >

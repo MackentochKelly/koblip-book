@@ -175,6 +175,51 @@ for (const language of ["en", "es"] as const) {
   })
 }
 
+test("forgot password from the sign-up card comes back to that card", async () => {
+  authClient.requestPasswordReset.mockResolvedValue({ data: { status: true }, error: null })
+  const t = authWordsFor("en")
+  render(<AuthForm googleNext="/login?business=ana&finish=1" />)
+  fireEvent.change(screen.getByLabelText(t.email), {
+    target: { value: "owner@example.com" },
+  })
+  fireEvent.click(screen.getByRole("button", { name: t.continue }))
+  fireEvent.click(await screen.findByRole("button", { name: t.forgotPassword }))
+
+  await screen.findByText(t.resetSent)
+  const asked = authClient.requestPasswordReset.mock.calls[0][0] as { redirectTo: string }
+  expect(
+    new URL(asked.redirectTo, "https://book.example.com").searchParams.get("next")
+  ).toBe("/login?business=ana&finish=1")
+})
+
+test("trying to log in clears the news about the link", async () => {
+  authClient.requestPasswordReset.mockResolvedValue({ data: { status: true }, error: null })
+  const { t, forgot } = await atPasswordStep("en")
+  fireEvent.click(forgot)
+  await screen.findByText(t.resetSent)
+
+  fireEvent.change(screen.getByLabelText(t.password), {
+    target: { value: "short" },
+  })
+  fireEvent.click(screen.getByRole("button", { name: t.logIn }))
+
+  expect(await screen.findByText(t.errors.password)).toBeTruthy()
+  expect(screen.queryByText(t.resetSent)).toBeNull()
+})
+
+test("sign-up has the same quiet way back as log in", async () => {
+  emailStatus.mockResolvedValue({ ok: true, exists: false })
+  const t = authWordsFor("en")
+  render(<AuthForm />)
+  fireEvent.change(screen.getByLabelText(t.email), {
+    target: { value: "new@example.com" },
+  })
+  fireEvent.click(screen.getByRole("button", { name: t.continue }))
+  fireEvent.click(await screen.findByRole("button", { name: t.useAnotherEmail }))
+
+  expect(await screen.findByRole("button", { name: t.continue })).toBeTruthy()
+})
+
 test("forgot password says so when there were too many tries", async () => {
   authClient.requestPasswordReset.mockResolvedValue({
     data: null,
