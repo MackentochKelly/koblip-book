@@ -49,7 +49,7 @@ All calls go through the Meta Model API; the model names live in one place, [`li
 
 | Model | What it does in Koblip Book | Code |
 | --- | --- | --- |
-| **Muse Spark** (`muse-spark-1.3`, and `muse-spark-1.2` when talking live) | The owner's assistant: reads and manages bookings, services and hours with 25 tools, plus 2 of its own for asking the owner and hearing a yes, by text or voice. Changes wait for the owner's approval on a confirm card | [`run-chat.ts`](features/assistant/api/run-chat.ts) |
+| **Muse Spark** (`muse-spark-1.3`, and `muse-spark-1.2` for the first step of a spoken answer) | The owner's assistant: reads and manages bookings, services and hours with 25 tools, plus 2 of its own for asking the owner and hearing a yes, by text or voice. Changes wait for the owner's approval on a confirm card | [`run-chat.ts`](features/assistant/api/run-chat.ts) |
 | **Muse Spark** | Writes a business's "About" text from its Google Maps details during setup | [`write-about.ts`](features/place-import/api/write-about.ts) |
 | **Muse Spark** | Suggests services and add-on groups for a new business | [`actions.ts`](features/dashboard/api/actions.ts), [`addon-actions.ts`](features/dashboard/api/addon-actions.ts) |
 | **Muse Spark** | Drafts a new business's starter services, extras, prices, team and policies during setup | [`draft-catalog.ts`](features/starter-catalog/api/draft-catalog.ts), [`draft-policies.ts`](features/starter-catalog/api/draft-policies.ts) |

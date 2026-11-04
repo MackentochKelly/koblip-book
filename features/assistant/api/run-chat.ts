@@ -427,11 +427,18 @@ export async function* runChat(
     // `speakOnly`: the turn after a card, which can only say it. Tools are
     // left out, as no tool_choice but "auto" is documented
     // (https://dev.meta.ai/docs/api-reference/chat-completions/schemas).
-    const modelCall = async (speakOnly: boolean) => {
+    // `firstStep`: nothing has run for this answer yet. Talking, only that step
+    // uses the quicker model, as it sets how soon the owner hears anything. After
+    // a tool, deciding what comes next needs the stronger one: measured on the
+    // real prompt, 1.2 dropped the next card in 4 of 12 runs, 1.3 in none.
+    const modelCall = async (speakOnly: boolean, firstStep: boolean) => {
       const create = () =>
         client.chat.completions.create(
           {
-            model: context.voice === true ? META_TALK_MODEL : META_TEXT_MODEL,
+            model:
+              context.voice === true && firstStep
+                ? META_TALK_MODEL
+                : META_TEXT_MODEL,
             messages: history,
             ...(speakOnly
               ? {}
@@ -502,7 +509,11 @@ export async function* runChat(
       // before a lookup are said while it runs, as the step's `line`, so the
       // owner hears what is really being checked (OpenAI's Realtime prompting
       // guide: a short line before a tool call).
-      const stream = await modelCall(speakOnly)
+      // A tap's answer starts from the card's outcome: a tool already ran.
+      const stream = await modelCall(
+        speakOnly,
+        turn === 0 && context.afterTap === undefined
+      )
       // Keep the full turn for history while sending each delta immediately.
       let text = ""
       // This turn's words on screen, and the ones still held back.
