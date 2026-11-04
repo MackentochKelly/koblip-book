@@ -57,6 +57,11 @@ export function AssistantChat({
   const live = useLiveVoice({
     businessId,
     busy: chat.busy,
+    cardWaiting: chat.items.some(
+      (item) =>
+        item.role === "assistant" &&
+        item.confirms.some((card) => card.state === "pending")
+    ),
     send: chat.send,
     resume: chat.resume,
     stopAnswer: chat.stop,

@@ -5,13 +5,13 @@ vi.mock("server-only", () => ({}))
 
 const create = vi.fn()
 vi.mock("@/lib/meta-ai", () => ({
-  META_TEXT_MODEL: "model",
+  META_TALK_MODEL: "model",
   getMetaAiClient: vi.fn(() => ({ chat: { completions: { create } } })),
 }))
 
 const { getMetaAiClient } = await import("@/lib/meta-ai")
 const { VOICE_RULES } = await import("@/lib/voice-rules")
-const { writeGreeting, writeWaitingLines } = await import("./voice-lines")
+const { writeGreeting, writeCutIns } = await import("./voice-lines")
 
 const CONTEXT = {
   businessName: "Salon",
@@ -62,37 +62,31 @@ test("a hello too long, empty, or not JSON is no hello", async () => {
   await expect(writeGreeting(CONTEXT)).resolves.toBeNull()
 })
 
-test("waiting lines keep only usable ones, each once", async () => {
+test("cut-in words keep only usable ones, each once", async () => {
   answers({
-    fillers: [
-      "Let me look.",
-      "let me look.",
-      " One moment. ",
+    cutIns: [
+      "Oh,",
+      "oh,",
+      " Right, ",
       "",
       7,
-      "x".repeat(VOICE_RULES.voiceLineMaxChars.filler + 1),
+      "x".repeat(VOICE_RULES.voiceLineMaxChars.cutIn + 1),
     ],
-    cutIns: ["Oh,", "x".repeat(VOICE_RULES.voiceLineMaxChars.cutIn + 1)],
   })
-  await expect(writeWaitingLines(CONTEXT)).resolves.toEqual({
-    fillers: ["Let me look.", "One moment."],
-    cutIns: ["Oh,"],
+  await expect(writeCutIns(CONTEXT)).resolves.toEqual({
+    cutIns: ["Oh,", "Right,"],
   })
 })
 
-test("never more lines than asked for", async () => {
-  answers({
-    fillers: Array.from({ length: 40 }, (_, i) => `Line ${i}.`),
-    cutIns: Array.from({ length: 40 }, (_, i) => `W${i},`),
-  })
-  const lines = await writeWaitingLines(CONTEXT)
-  expect(lines?.fillers).toHaveLength(VOICE_RULES.voiceLineCounts.fillers)
+test("never more cut-in words than asked for", async () => {
+  answers({ cutIns: Array.from({ length: 40 }, (_, i) => `W${i},`) })
+  const lines = await writeCutIns(CONTEXT)
   expect(lines?.cutIns).toHaveLength(VOICE_RULES.voiceLineCounts.cutIns)
 })
 
 test("the budget leaves room past the model's reasoning", async () => {
-  answers({ fillers: [], cutIns: [] })
-  await writeWaitingLines(CONTEXT)
+  answers({ cutIns: [] })
+  await writeCutIns(CONTEXT)
   expect(create.mock.calls[0][0]).toMatchObject({
     max_completion_tokens: VOICE_RULES.voiceLinesMaxTokens,
   })
@@ -100,7 +94,7 @@ test("the budget leaves room past the model's reasoning", async () => {
 
 test("a failed call or no AI gives nothing, and never throws", async () => {
   create.mockRejectedValueOnce(new Error("down"))
-  await expect(writeWaitingLines(CONTEXT)).resolves.toBeNull()
+  await expect(writeCutIns(CONTEXT)).resolves.toBeNull()
   create.mockRejectedValueOnce(new Error("down"))
   await expect(writeGreeting(CONTEXT)).resolves.toBeNull()
   vi.mocked(getMetaAiClient).mockReturnValueOnce(null)

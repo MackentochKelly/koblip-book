@@ -25,12 +25,20 @@ export const VOICE_RULES = {
   speakTokenType: "ttd_websocket",
   // Speak-token mints per owner per minute.
   maxSpeakTokensPerMinutePerOwner: 30,
-  // Talking mode: if nothing has been said this long after the owner
-  // finished, say a short waiting line. A lookup says it at once. At most
-  // one per answer.
-  // ElevenLabs recommends 3 s for this "soft timeout":
-  // https://elevenlabs.io/docs/agents-platform/customization/conversation-flow
-  fillerAfterMs: 3000,
+  // Talking mode: this long after the owner's last sound, with words already
+  // heard, the answer starts without waiting for Meta to call the turn done.
+  // Measured on real talks: Meta's final words for a full sentence come within
+  // about 850 ms, so a sentence never starts early on half its words, while a
+  // short phrase, which Meta holds for over 3 s, saves more than 2 s.
+  earlyAnswerAfterQuietMs: 900,
+  // What counts as the owner's sound: audioLevel at least this, and this many
+  // times the room's own level. The room's level follows the quietest moments
+  // and creeps up by this share per reading, so a steady noise stops counting.
+  minVoiceLevel: 0.03,
+  voiceOverRoom: 3,
+  roomLevelRise: 0.0005,
+  // Timing reports per owner per minute (numbers only, for the server log).
+  maxTimingReportsPerMinutePerOwner: 60,
   // How long after the listening socket opens a hello may still be said;
   // later than this, talking just starts without one.
   greetingWaitMs: 6000,
@@ -38,6 +46,6 @@ export const VOICE_RULES = {
   // Each is said once at most, so these are also how many a talk can use.
   voiceLinesTimeoutMs: 15_000,
   voiceLinesMaxTokens: 4000,
-  voiceLineCounts: { fillers: 10, cutIns: 6 },
-  voiceLineMaxChars: { greeting: 80, filler: 40, cutIn: 16 },
+  voiceLineCounts: { cutIns: 6 },
+  voiceLineMaxChars: { greeting: 80, cutIn: 16 },
 } as const

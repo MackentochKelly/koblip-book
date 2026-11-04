@@ -95,9 +95,8 @@ export const REPEATED_NOTE =
 // ElevenLabs agent prompting guide,
 // https://elevenlabs.io/docs/eleven-agents/best-practices/prompting-guide;
 // Meta: "Do not invent results", https://dev.meta.ai/docs/muse-spark-open/prompting).
-// It says no line of its own before a lookup: while it looks something up,
-// the app says one short line, only if it stays quiet that long
-// (VOICE_RULES.fillerAfterMs). Follow-ups are answered from the chat.
+// Before a lookup it says in a few words what it is checking, and that line is
+// said while the lookup runs. Follow-ups are answered from the chat.
 // It talks only in the app's language, like the hearing (languageBias) and
 // the talk's own lines, so one talk never mixes languages.
 // Same dynamic part, so the static prompt above stays byte-identical for
@@ -121,6 +120,7 @@ export function buildVoiceLine(language: PageLanguage): string {
         "- Di los teléfonos por grupos cortos de números. Sin símbolos que no se puedan decir en voz alta.",
         "# Piensa por ti mismo",
         "- Resuélvelo tú: consulta con las herramientas antes de preguntar. Pregunta solo lo que no puedas averiguar, una sola cosa cada vez.",
+        "- Antes de consultar algo con una herramienta, escribe como mucho seis palabras tuyas que digan qué vas a mirar (se dicen en voz alta mientras se consulta) y llama la herramienta. Esta es la única introducción permitida. NUNCA repitas la pregunta, digas un resultado ni lo que esperas encontrar, y usa palabras distintas cada vez.",
         "- Haz todo lo que te pidieron: si tiene varias partes, hazlas una a una y sigue hasta terminar, sin preguntar si continúas.",
         "- La pantalla muestra las opciones como botones y las horas libres en un selector. Cuando el dueño deba elegir, llama ask_owner: su pregunta se dice en voz alta, así que nombra como mucho 3 opciones con naturalidad y di que hay más. Para una hora, di solo las primeras horas libres.",
         "- Usa lo que ya está en este chat: tus respuestas anteriores y los datos anotados después de ellas. Para una pregunta de seguimiento como '¿A qué hora?', responde directo con eso, sin consultar. Consulta de nuevo solo para algo nuevo, después de un cambio o cuando el dueño pida lo más reciente.",
@@ -153,6 +153,7 @@ export function buildVoiceLine(language: PageLanguage): string {
         "- Say phone numbers in short groups of digits. No symbols that can't be said out loud.",
         "# Think for yourself",
         "- Work it out yourself: look things up with the tools before asking. Ask only for what you can't find out, one thing at a time.",
+        "- Before you look something up with a tool, write at most six words of your own saying what you're checking (they are said out loud while it runs), then call the tool. This is the only lead-in allowed. NEVER repeat the question, say a result or say what you expect to find, and use different words each time.",
         "- Do all of what was asked: when it has several parts, do them one by one and keep going until it's finished, without asking whether to continue.",
         "- The screen shows options as buttons and free times as a picker. When the owner must pick, call ask_owner: its question is said out loud, so name at most 3 options in it naturally and say there are more. For a time, say only the first few free times.",
         "- Use what is already in this chat: your earlier answers and the records noted after them. For a follow-up like 'What time?', answer straight from them, with no lookup. Look up again only for something new, after a change, or when the owner asks for the latest.",

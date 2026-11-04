@@ -3,7 +3,7 @@ import "server-only"
 import type OpenAI from "openai"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type { PageLanguage } from "@/lib/page-language"
-import { META_TEXT_MODEL, getMetaAiClient } from "@/lib/meta-ai"
+import { META_TALK_MODEL, META_TEXT_MODEL, getMetaAiClient } from "@/lib/meta-ai"
 import type {
   AssistantMessage,
   AssistantStreamEvent,
@@ -431,7 +431,7 @@ export async function* runChat(
       const create = () =>
         client.chat.completions.create(
           {
-            model: META_TEXT_MODEL,
+            model: context.voice === true ? META_TALK_MODEL : META_TEXT_MODEL,
             messages: history,
             ...(speakOnly
               ? {}
@@ -498,8 +498,10 @@ export async function* runChat(
     }
     for (let turn = 0; turn < ASSISTANT_RULES.maxSteps; turn += 1) {
       // Each turn's first words are held, typed and talking alike: words
-      // written before a tool call (a note to itself, a "Let me check")
-      // never show or get said. Talking says its own waiting line instead.
+      // written before a tool call never show on screen. Talking, the ones
+      // before a lookup are said while it runs, as the step's `line`, so the
+      // owner hears what is really being checked (OpenAI's Realtime prompting
+      // guide: a short line before a tool call).
       const stream = await modelCall(speakOnly)
       // Keep the full turn for history while sending each delta immediately.
       let text = ""
@@ -789,11 +791,13 @@ export async function* runChat(
           continue
         }
         const stepId = call.id.slice(0, 64) || `call-${turn}-${i}`
+        const line = context.voice === true && i === 0 ? held.trim() : ""
         yield {
           type: "step",
           id: stepId,
           label: tool?.label ?? t.steps.working,
           status: "running",
+          ...(line !== "" && !repeatsEarlier(line, messages) ? { line } : {}),
         }
         let result: unknown
         let ok = true

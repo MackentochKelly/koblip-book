@@ -14,7 +14,7 @@ vi.mock("@/features/dashboard/i18n/server", () => ({
 }))
 vi.mock("@/features/assistant/api/voice-lines", () => ({
   writeGreeting: vi.fn(),
-  writeWaitingLines: vi.fn(),
+  writeCutIns: vi.fn(),
 }))
 
 const { getSession } = await import("@/lib/dal")
@@ -22,7 +22,7 @@ const { ownedBusiness } =
   await import("@/features/dashboard/api/owned-business")
 const { checkAssistantRateLimit } =
   await import("@/features/assistant/api/rate-limit")
-const { writeGreeting, writeWaitingLines } =
+const { writeGreeting, writeCutIns } =
   await import("@/features/assistant/api/voice-lines")
 const { POST } = await import("./route")
 
@@ -42,7 +42,7 @@ beforeEach(() => {
   } as never)
   vi.mocked(checkAssistantRateLimit).mockReturnValue(true)
   vi.mocked(writeGreeting).mockReset()
-  vi.mocked(writeWaitingLines).mockReset()
+  vi.mocked(writeCutIns).mockReset()
 })
 
 test("the hello, in the owner's language from the cookie, never the body", async () => {
@@ -53,22 +53,22 @@ test("the hello, in the owner's language from the cookie, never the body", async
     businessName: "Salon",
     language: "es",
   })
-  expect(writeWaitingLines).not.toHaveBeenCalled()
+  expect(writeCutIns).not.toHaveBeenCalled()
 })
 
-test("the waiting lines", async () => {
-  const lines = { fillers: ["Un momento."], cutIns: ["Mira,"] }
-  vi.mocked(writeWaitingLines).mockResolvedValue(lines)
-  const res = await post({ businessId: "b1", part: "waiting" })
+test("the cut-in words", async () => {
+  const lines = { cutIns: ["Mira,"] }
+  vi.mocked(writeCutIns).mockResolvedValue(lines)
+  const res = await post({ businessId: "b1", part: "cutIns" })
   expect(await res.json()).toEqual(lines)
   expect(writeGreeting).not.toHaveBeenCalled()
 })
 
 test("503 when the AI could not write them", async () => {
   vi.mocked(writeGreeting).mockResolvedValue(null)
-  vi.mocked(writeWaitingLines).mockResolvedValue(null)
+  vi.mocked(writeCutIns).mockResolvedValue(null)
   expect((await post({ businessId: "b1", part: "greeting" })).status).toBe(503)
-  expect((await post({ businessId: "b1", part: "waiting" })).status).toBe(503)
+  expect((await post({ businessId: "b1", part: "cutIns" })).status).toBe(503)
 })
 
 test("guards: logged out, rate limited, bad body, another owner's business", async () => {

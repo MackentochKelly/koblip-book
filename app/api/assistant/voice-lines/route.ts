@@ -1,8 +1,8 @@
 import { checkAssistantRateLimit } from "@/features/assistant/api/rate-limit"
 import { isCrossSiteRequest } from "@/features/assistant/api/request-guard"
 import {
+  writeCutIns,
   writeGreeting,
-  writeWaitingLines,
 } from "@/features/assistant/api/voice-lines"
 import { ownedBusiness } from "@/features/dashboard/api/owned-business"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
@@ -11,7 +11,7 @@ import { getSession } from "@/lib/dal"
 
 export const runtime = "nodejs"
 
-// What one talk says around its answers: its hello, or its waiting lines. Same
+// What one talk says around its answers: its hello, or its cut-in words. Same
 // guards as the chat, from the same per-owner budget. 503 when the AI could not
 // write them: the talk goes on without them.
 export async function POST(request: Request) {
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   ) as { businessId?: unknown; part?: unknown }
   if (
     typeof businessId !== "string" ||
-    (part !== "greeting" && part !== "waiting")
+    (part !== "greeting" && part !== "cutIns")
   ) {
     return Response.json({ error: "bad_request" }, { status: 400 })
   }
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       ? Response.json({ greeting })
       : Response.json({ error: "unavailable" }, { status: 503 })
   }
-  const lines = await writeWaitingLines(context, request.signal)
+  const lines = await writeCutIns(context, request.signal)
   return lines
     ? Response.json(lines)
     : Response.json({ error: "unavailable" }, { status: 503 })

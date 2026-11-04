@@ -438,8 +438,6 @@ accepted (no 400) and a little faster than "low".
   Spark; "minimal" is the shortest pass)
 - Prompt caching: https://dev.meta.ai/docs/prompt-caching (automatic,
   stable prefix first, `prompt_cache_key`)
-- ElevenLabs soft timeout (filler after ~3 s, no time words like "one
-  second"): https://elevenlabs.io/docs/agents-platform/customization/conversation-flow
 - ElevenLabs pre-tool speech ("Let me check that for you..." before a tool):
   https://elevenlabs.io/docs/eleven-agents/customization/tools/tool-configuration/tool-call-sounds.md
 - ElevenLabs latency (stream LLM text into the socket):
@@ -452,20 +450,23 @@ accepted (no 400) and a little faster than "low".
 - [x] **1. Server** (Codex): talking mode uses `reasoning_effort`
   "minimal" and skips the answer check; every answer streams as it is
   written; typed answers are checked after they show (a failed check adds
-  the "not double-checked" notice, no hidden retry). Since 2026-11-02 the
-  model no longer says a line before a lookup: the voice screen says the
-  waiting line instead (step 2), so it never stacks with the model's own
-  words, and a follow-up is answered from the chat without a lookup. Talking
-  holds each turn's first words like typed answers, so words written before
-  a tool call are never said. A waiting card goes back with its answer, and a
+  the "not double-checked" notice, no hidden retry). Since 2026-11-04 the
+  model's own few words before a lookup are the only waiting line, said while
+  it runs (the step's `line`), so it always says what is really being checked,
+  and a follow-up is answered from the chat without a lookup. Talking holds
+  each turn's first words like typed answers, and words before a card are
+  never said. A waiting card goes back with its answer, and a
   clear yes in words runs it like a tap (confirm_card). Since A3
   (docs/plans/assistant-fixes.md), talking mode is checked too, after the
   answer, and a failed check is said out loud once the voice is free.
 - [x] **2. Voice screen** (Claude): speak the answer while it streams; open
-  the speaking connection while it thinks; a short waiting line, picked at
-  random and never one of the last few, as soon as a lookup starts or if it
-  is still quiet after 3 s (at most one per answer). The answer cuts it
-  off mid-word with a short lead-in ("Oh,").
+  the speaking connection while it thinks; the model's line as soon as a
+  lookup starts, and no timed line, so nothing is said without a real lookup
+  (at most one per answer). The answer cuts it off mid-word with a short
+  lead-in ("Oh,"). Since 2026-11-04 an answer starts 0.9 s after the owner's
+  last sound with words heard, and is taken back if they go on, as Meta can
+  wait over 3 s after a short phrase; a card's yes or no waits for Meta's final
+  words. Talking uses `META_TALK_MODEL`.
 - [ ] **3. Check** (both): timings before/after, English and Spanish, a tap
   card in talking mode, typed answers still checked.
 

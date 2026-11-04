@@ -1,23 +1,19 @@
 import "server-only"
 
 import { ASSISTANT_NAME, ASSISTANT_RULES } from "@/lib/assistant-rules"
-import { META_TEXT_MODEL, getMetaAiClient } from "@/lib/meta-ai"
+import { META_TALK_MODEL, getMetaAiClient } from "@/lib/meta-ai"
 import type { PageLanguage } from "@/lib/page-language"
 import { VOICE_RULES } from "@/lib/voice-rules"
 import type { VoiceLines } from "../types"
 import { zonedNow } from "./run-chat"
 
 // What one talk says around its answers, written by the AI when the talk
-// starts: a hello, short lines for a slow answer, and small words before an
-// answer that cuts one off. A new set each talk, each line said once at most,
-// so they never become a pattern. ElevenLabs makes its own filler lines the
-// same way, from a small model
-// (https://elevenlabs.io/docs/agents-platform/customization/conversation-flow).
-// No sample lines here: a model "strongly closely follows" them
+// starts: a hello, and small words before an answer that cuts a lookup's line
+// off. A new set each talk, each line said once at most, so they never become a
+// pattern. No sample lines here: a model "strongly closely follows" them
 // (https://developers.openai.com/cookbook/examples/realtime_prompting_guide).
-// The hello is its own call, as the waiting lines take the model several
-// seconds and the hello can't wait. Null when the AI can't: talking then just
-// has no hello, or no waiting lines.
+// The hello is its own call, as it can't wait for anything else. Null when the
+// AI can't: talking then just has no hello, or no cut-in words.
 
 const counts = VOICE_RULES.voiceLineCounts
 const maxChars = VOICE_RULES.voiceLineMaxChars
@@ -44,7 +40,7 @@ async function writeJson(
   try {
     const completion = await client.chat.completions.create(
       {
-        model: META_TEXT_MODEL,
+        model: META_TALK_MODEL,
         messages: [{ role: "user", content: prompt }],
         response_format: {
           type: "json_schema",
@@ -102,31 +98,28 @@ export async function writeGreeting(
   return usable([answer?.greeting], maxChars.greeting, 1)[0] ?? null
 }
 
-export async function writeWaitingLines(
+export async function writeCutIns(
   context: VoiceLinesContext,
   signal?: AbortSignal
 ): Promise<VoiceLines | null> {
   const answer = await writeJson(
-    "voice_waiting_lines",
+    "voice_cut_ins",
     [
-      `${ASSISTANT_NAME} is an AI assistant talking out loud with the owner of a business. Write the short things it says while it works.`,
+      `${ASSISTANT_NAME} is an AI assistant talking out loud with the owner of a business.`,
       styleOf(context.language),
-      `fillers: ${counts.fillers} different lines said while checking something for the owner, each at most ${maxChars.filler} characters, most of them 2 to 5 words, each ending in a full stop. They only mean "I'm checking" or "give me a moment". Each must fit any question, so NEVER name what is being looked at (no screen, file, system, data, records). NEVER about being there or staying with the owner, NEVER thanks or sorry, NEVER a promise, a result or how soon it will be.`,
-      `cutIns: ${counts.cutIns} different words of one or two words, each at most ${maxChars.cutIn} characters and ending in a comma, said when stopping mid-sentence because the answer was just found. They go right before the answer, so NEVER a word that disagrees or changes the subject.`,
+      `cutIns: ${counts.cutIns} different words of one or two words, each at most ${maxChars.cutIn} characters and ending in a comma, said when stopping mid-sentence because the answer was just found. They go right before the answer, so NEVER a word that disagrees, changes the subject or asks to wait.`,
     ].join("\n"),
     {
       type: "object",
       properties: {
-        fillers: { type: "array", items: { type: "string" } },
         cutIns: { type: "array", items: { type: "string" } },
       },
-      required: ["fillers", "cutIns"],
+      required: ["cutIns"],
     },
     signal
   )
   if (!answer) return null
   return {
-    fillers: usable(answer.fillers, maxChars.filler, counts.fillers),
     cutIns: usable(answer.cutIns, maxChars.cutIn, counts.cutIns),
   }
 }
