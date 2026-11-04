@@ -13,6 +13,9 @@ export const ASSISTANT_RULES = {
   // Shorter voice reasoning: https://dev.meta.ai/docs/reasoning
   reasoningEffort: "low",
   voiceReasoningEffort: "minimal",
+  // Talking: the longest line said while a lookup runs. The prompt asks for six
+  // words but can't promise it; a longer line is left unsaid.
+  maxLookupLineWords: 8,
   // Choice buttons: how many options (a full day of 15-minute times; the
   // screen shows the first 6 and "N more"), and how long one option is.
   maxChoices: 48,

@@ -470,7 +470,10 @@ accepted (no 400) and a little faster than "low".
   `META_TEXT_MODEL` for every step after a tool: on the real prompt 1.2 dropped
   the next card in 4 of 12 runs, 1.3 in none. After a yes the
   outcome goes back with `CARD_DONE_NOTE`, and code refuses the same card as the
-  one waiting or one this reply just ran (`repeatedCard` in `run-chat.ts`).
+  one waiting or one this reply just ran (`repeatedCard` in `run-chat.ts`). An answer
+  with no tool gets one check turn while it is said (`CHECK_WORDS_NOTE`): only a
+  tool call counts, so a promise gets its lookup and nothing extra is said. A
+  lookup line over `maxLookupLineWords` is left unsaid.
 - [ ] **3. Check** (both): timings before/after, English and Spanish, a tap
   card in talking mode, typed answers still checked.
 

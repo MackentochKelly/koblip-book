@@ -20,6 +20,7 @@ import {
   buildSystemPrompt,
   buildVoiceLine,
   CARD_DONE_NOTE,
+  CHECK_WORDS_NOTE,
   CARD_SHOWN_NOTE,
   REPEATED_NOTE,
   INTERRUPTED_REPLY_NOTE,
@@ -448,6 +449,8 @@ export async function* runChat(
   // is still owed. Words for a card closed by a no, if no others get said.
   let reached = context.afterTap !== undefined
   let unsaid: string | null = null
+  // Talking: this turn only checks the words already said, see CHECK_WORDS_NOTE.
+  let checking = false
   try {
     // `speakOnly`: the turn after a card, which can only say it. Tools are
     // left out, as no tool_choice but "auto" is documented
@@ -513,6 +516,7 @@ export async function* runChat(
     let reworded = false
     let toolsRan = false
     let textSent = false
+    let checked = false
     // Cards the owner's yes ran during this reply.
     const ranThisReply: CardChange[] = []
     // Records looked up this request, by kind in first-looked-up order.
@@ -580,7 +584,8 @@ export async function* runChat(
         if (!delta) {
           continue
         }
-        if (delta.content) {
+        // A check turn's words are never said: only a tool call counts.
+        if (delta.content && !checking) {
           text += delta.content
           if (shown !== "") {
             yield* show(delta.content)
@@ -641,6 +646,27 @@ export async function* runChat(
         return
       }
       if (calls.length === 0) {
+        // Talking, an answer with no tool may be only a promise ("Checking
+        // your bookings.") or a claim of a card nobody made: the model does
+        // this now and then, and only it can tell. It checks while its words
+        // are said. The line break lets the last sentence be said now, as
+        // speech holds an unfinished one until more comes.
+        if (
+          context.voice === true &&
+          !checked &&
+          !toolsRan &&
+          !reached &&
+          text.trim() !== ""
+        ) {
+          checked = true
+          checking = true
+          yield { type: "text", delta: "\n\n" }
+          history.push(
+            { role: "assistant", content: text },
+            { role: "developer", content: CHECK_WORDS_NOTE }
+          )
+          continue
+        }
         if (!toolsRan) {
           yield { type: "done" }
           return
@@ -667,6 +693,7 @@ export async function* runChat(
         yield { type: "done" }
         return
       }
+      checking = false
       // Full assistant message first, then one tool message per call,
       // in order, with the matching id.
       const toolCalls: OpenAI.Chat.ChatCompletionMessageFunctionToolCall[] =
@@ -854,7 +881,11 @@ export async function* runChat(
           id: stepId,
           label: tool?.label ?? t.steps.working,
           status: "running",
-          ...(line !== "" && !repeatsEarlier(line, messages) ? { line } : {}),
+          ...(line !== "" &&
+          line.split(/\s+/).length <= ASSISTANT_RULES.maxLookupLineWords &&
+          !repeatsEarlier(line, messages)
+            ? { line }
+            : {}),
         }
         let result: unknown
         let ok = true
@@ -940,7 +971,12 @@ export async function* runChat(
       return
     }
     // The card or the outcome already reached the owner: talking mode says
-    // what it shows, so the only thing lost is the model's own words.
+    // what it shows, so the only thing lost is the model's own words. A check
+    // that failed loses nothing: the answer was already said.
+    if (checking) {
+      yield { type: "done" }
+      return
+    }
     if (reached) {
       if (unsaid !== null) yield { type: "text", delta: unsaid }
       yield { type: "done" }

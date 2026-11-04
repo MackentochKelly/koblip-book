@@ -544,6 +544,8 @@ const messages = {
     nothingToChange: "Nothing to change.",
     servicesFull: (max: number) =>
       `there are already ${max} services, the most a business can have`,
+    serviceExists: (name: string) =>
+      `there is already a service called ${name} with the same time and price`,
     teamFull: (max: number) =>
       `there are already ${max} team members, the most a business can have`,
     bookingNotStarted:

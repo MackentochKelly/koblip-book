@@ -1131,6 +1131,38 @@ test("create_service shows a card and adds on the tap only", async () => {
   })
 })
 
+test("create_service refuses the same service twice, card and tap alike", async () => {
+  vi.mocked(createService).mockReset()
+  vi.mocked(getOwnerBusiness).mockResolvedValue(
+    ownerData({
+      services: [{ name: "cut", durationMinutes: 30, priceMinor: 2500 }],
+    })
+  )
+  const tool = byName("create_service")
+  const args = { name: " Cut ", minutes: 30, priceMinor: 2500 }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    error: "there is already a service called Cut with the same time and price",
+  })
+  expect(await tool.confirm!.execute(args)).toMatchObject({ ok: false })
+  expect(createService).not.toHaveBeenCalled()
+})
+
+test("create_service allows one name at another length or price", async () => {
+  vi.mocked(createService).mockResolvedValue({ ok: true, id: "s2" })
+  vi.mocked(getOwnerBusiness).mockResolvedValue(
+    ownerData({
+      services: [{ name: "Cut", durationMinutes: 30, priceMinor: 2500 }],
+    })
+  )
+  expect(
+    await byName("create_service").confirm!.execute({
+      name: "Cut",
+      minutes: 60,
+      priceMinor: 2500,
+    })
+  ).toMatchObject({ ok: true })
+})
+
 test("create_service rejects bad arguments with no card and no change", async () => {
   const tool = byName("create_service")
   for (const args of [

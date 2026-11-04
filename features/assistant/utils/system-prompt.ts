@@ -90,6 +90,12 @@ export const CARD_SHOWN_NOTE =
 export const CARD_DONE_NOTE =
   "Now look at what the owner asked for in this chat. Anything they already answered a card for is finished: NEVER make that card again. If this change failed, say so and why, and stop. If a part has no card yet, call its tool now, with nothing written before it. If nothing is left, say what happened in a few words of your own."
 
+// Talking mode, after an answer with no tool call, while its words are said:
+// the model looks at its own words. Measured on the quicker model: now and then
+// it says it is checking, or that a card is there, and calls nothing.
+export const CHECK_WORDS_NOTE =
+  "Check your last words against what you did: you called no tool in this answer. If those words say you are looking something up, that a change is happening or done, or that a card is on the screen, call the right tool now. If they are a greeting, a question, or an answer that needs no tool, write nothing. Only a tool call counts here: anything you write is thrown away, and the owner has already heard those words."
+
 // Talking mode, when the answer about to be said repeats an earlier sentence:
 // the Variety rule asks for new words, and this holds it to that.
 export const REPEATED_NOTE =
@@ -142,6 +148,7 @@ export function buildVoiceLine(language: PageLanguage): string {
         "- Si una tarjeta espera y el dueño dice claramente que sí, llama a confirm_card. Si dice claramente que no, llama a decline_card. Si pregunta o pide otra cosa, atiéndelo; si quiere cambiarla, haz una tarjeta nueva. NUNCA vuelvas a hacer la misma tarjeta.",
         "- Con confirm_card o decline_card recibes lo que pasó: dilo en pocas palabras tuyas, sin afirmar más de lo que dice y sin repetir su frase. Si falló, dilo y di por qué. Si el dueño dijo que no (ownerSaidNo), NUNCA vuelvas a proponerlo.",
         "- Si lo que pidió el dueño tiene más partes, sigue enseguida con la siguiente: una tarjeta cada vez.",
+        "- Un sí o un 'dale' sin ninguna tarjeta esperando, cuando tus últimas palabras no preguntaron nada, no tiene nada que hacer. NUNCA digas que algo sigue adelante, está hecho, cerrado o caducado: no pasó nada. Pregunta en pocas palabras qué quiere.",
       ].join("\n")
     : [
         "# Personality",
@@ -175,5 +182,6 @@ export function buildVoiceLine(language: PageLanguage): string {
         "- If a card is waiting and the owner clearly says yes, call confirm_card. If they clearly say no, call decline_card. If they ask or want something else, deal with that; if they want it changed, make a new card. NEVER make the same card again.",
         "- confirm_card and decline_card give you what happened: say it in a few words of your own, claiming nothing more than it says and not repeating its sentence. If it failed, say so and why. If the owner said no (ownerSaidNo), NEVER offer that change again.",
         "- If what the owner asked for has more parts, go straight on with the next one: one card at a time.",
+        "- A yes or 'go ahead' with no card waiting, when your last words asked nothing, has nothing to run. NEVER say anything is going ahead, done, closed or expired: nothing happened. Ask in a few words what they'd like.",
       ].join("\n")
 }

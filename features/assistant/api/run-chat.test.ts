@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, test, vi } from "vitest"
 
-import { CARD_DONE_NOTE } from "../utils/system-prompt"
+import { CARD_DONE_NOTE, CHECK_WORDS_NOTE } from "../utils/system-prompt"
 
 vi.mock("server-only", () => ({}))
 // The loop only stores cards; the store itself (the database) has its own
@@ -202,6 +202,95 @@ test("talking: words before a lookup come as its line, off the screen", async ()
   )
 })
 
+test("talking: a lookup line that runs long isn't said", async () => {
+  scriptedClient([
+    [
+      textChunk("You asked how many bookings today, so I'll pull the list."),
+      toolChunk(0, "a", "probe", "{}"),
+    ],
+    [textChunk("Two bookings.")],
+  ])
+  const events = await collect(
+    runChat(MESSAGES, { ...CONTEXT, voice: true }, [probe(async () => ({}))])
+  )
+  expect(events).toContainEqual({
+    type: "step",
+    id: "a",
+    label: "Probing…",
+    status: "running",
+  })
+})
+
+test("talking: words that only promise a lookup get the lookup, said once", async () => {
+  const run = vi.fn(async () => ({}))
+  const { seen } = scriptedClient([
+    [textChunk("Checking your bookings.")],
+    [textChunk("ignored"), toolChunk(0, "a", "probe", "{}")],
+    [textChunk("Two bookings.")],
+  ])
+  const events = await collect(
+    runChat(MESSAGES, { ...CONTEXT, voice: true }, [probe(run)])
+  )
+  expect(run).toHaveBeenCalledTimes(1)
+  expect(events.filter((e) => (e as { type: string }).type === "text")).toEqual(
+    [
+      { type: "text", delta: "Checking your bookings." },
+      { type: "text", delta: "\n\n" },
+      { type: "text", delta: "\n\n" },
+      { type: "text", delta: "Two bookings." },
+    ]
+  )
+  expect(events).toContainEqual({
+    type: "step",
+    id: "a",
+    label: "Probing…",
+    status: "running",
+  })
+  const sent = seen[1].messages as unknown as { content: string }[]
+  expect(sent.some((m) => m.content === CHECK_WORDS_NOTE)).toBe(true)
+})
+
+test("talking: a check with no tool call says nothing more", async () => {
+  const { create } = scriptedClient([
+    [textChunk("Hey, what do you need?")],
+    [textChunk("All good, nothing to do.")],
+  ])
+  const events = await collect(
+    runChat(MESSAGES, { ...CONTEXT, voice: true }, [])
+  )
+  expect(events).toEqual([
+    { type: "text", delta: "Hey, what do you need?" },
+    { type: "text", delta: "\n\n" },
+    { type: "done" },
+  ])
+  expect(create).toHaveBeenCalledTimes(2)
+})
+
+test("talking: a check that fails costs nothing, the answer was said", async () => {
+  const create = vi
+    .fn()
+    .mockResolvedValueOnce(
+      (async function* () {
+        yield textChunk("Hey, what do you need?")
+      })()
+    )
+    .mockRejectedValue(new Error("down"))
+  vi.spyOn(meta, "getMetaAiClient").mockReturnValue({
+    chat: { completions: { create } },
+  } as never)
+  const events = await collect(
+    runChat(MESSAGES, { ...CONTEXT, voice: true }, [])
+  )
+  expect(events.at(-1)).toEqual({ type: "done" })
+  expect(events).not.toContainEqual(expect.objectContaining({ type: "error" }))
+})
+
+test("typed answers get no check", async () => {
+  const { create } = scriptedClient([[textChunk("Two bookings.")]])
+  await collect(runChat(MESSAGES, CONTEXT, []))
+  expect(create).toHaveBeenCalledTimes(1)
+})
+
 test("talking: a lookup line that repeats an earlier answer isn't said", async () => {
   scriptedClient([
     [textChunk("Checking today."), toolChunk(0, "a", "probe", "{}")],
@@ -276,6 +365,7 @@ test("talking says a short direct answer whole", async () => {
   )
   expect(events).toEqual([
     { type: "text", delta: "Two bookings." },
+    { type: "text", delta: "\n\n" },
     { type: "done" },
   ])
 })
@@ -1289,7 +1379,8 @@ test.each([false, true])(
             : scenario === "silent"
               ? `${INTERRUPTED_BEFORE_WORDS_NOTE}\nStingray?`
               : "Stingray?"
-        expect(body.messages.at(-1)).toEqual({
+        // Talking, the check turn adds to this same list afterwards.
+        expect(body.messages.filter((m) => m.role === "user").at(-1)).toEqual({
           role: "user",
           content: expected,
         })
@@ -1932,18 +2023,23 @@ test("talking: a repeat of an earlier sentence is sent back before it is said", 
   const events = await collect(runChat(ASKED_AGAIN, VOICE, []))
   expect(events).toEqual([
     { type: "text", delta: "There are two, Cut and Fade." },
+    { type: "text", delta: "\n\n" },
     { type: "done" },
   ])
-  expect(create).toHaveBeenCalledTimes(2)
-  const note = (seen[1].messages as unknown as { content: string }[]).at(-1)
-  expect(note?.content).toContain("word for word")
+  expect(create).toHaveBeenCalledTimes(3)
+  const sent = seen[1].messages as unknown as { content: string }[]
+  expect(sent.some((m) => m.content?.includes("word for word"))).toBe(true)
 })
 
 test("talking: it asks for new words once, then says what it has", async () => {
   const { create } = scriptedClient([[textChunk(SAID)]])
   const events = await collect(runChat(ASKED_AGAIN, VOICE, []))
-  expect(events).toEqual([{ type: "text", delta: SAID }, { type: "done" }])
-  expect(create).toHaveBeenCalledTimes(2)
+  expect(events).toEqual([
+    { type: "text", delta: SAID },
+    { type: "text", delta: "\n\n" },
+    { type: "done" },
+  ])
+  expect(create).toHaveBeenCalledTimes(3)
 })
 
 test("talking: a card's words get new words too, still with no tools", async () => {
@@ -1974,7 +2070,8 @@ test("short words are fine to hear again, and typed answers are never sent back"
       []
     )
   )
-  expect(short.create).toHaveBeenCalledTimes(1)
+  // The answer and its check: no asking for new words.
+  expect(short.create).toHaveBeenCalledTimes(2)
   const typed = scriptedClient([[textChunk(SAID)]])
   await collect(runChat(ASKED_AGAIN, CONTEXT, []))
   expect(typed.create).toHaveBeenCalledTimes(1)

@@ -547,6 +547,8 @@ const messages: typeof en = {
     nothingToChange: "No hay nada que cambiar.",
     servicesFull: (max: number) =>
       `ya hay ${max} servicios, el máximo por negocio`,
+    serviceExists: (name: string) =>
+      `ya hay un servicio llamado ${name} con el mismo tiempo y precio`,
     teamFull: (max: number) =>
       `ya hay ${max} miembros del equipo, el máximo por negocio`,
     bookingNotStarted:
