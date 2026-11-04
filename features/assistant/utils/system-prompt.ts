@@ -83,6 +83,13 @@ export const INTERRUPTED_BEFORE_WORDS_NOTE =
 export const CARD_SHOWN_NOTE =
   "The card is on the owner's screen and nothing has changed yet. Now say out loud, in one short sentence of your own words, the way a coworker would and not like reading a form, exactly what will change, with its names, days, times and prices, and ask for their yes as a real question. If it removes something or can't be undone, say so plainly. For long wording give only the gist: the rest is on the screen. Word it differently from anything you have already said in this chat, with a different opening and a different way of asking. NEVER say it is done."
 
+// Talking mode, with the outcome of a card the owner said yes to, where the
+// model decides what comes next. Measured on the real prompt: without it the
+// model can spend most of its tokens working this out (10 s and more), then
+// stop early or make a finished card again.
+export const CARD_DONE_NOTE =
+  "Now look at what the owner asked for in this chat. Anything they already answered a card for is finished: NEVER make that card again. If this change failed, say so and why, and stop. If a part has no card yet, call its tool now, with nothing written before it. If nothing is left, say what happened in a few words of your own."
+
 // Talking mode, when the answer about to be said repeats an earlier sentence:
 // the Variety rule asks for new words, and this holds it to that.
 export const REPEATED_NOTE =
