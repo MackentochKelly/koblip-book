@@ -381,6 +381,14 @@ function addService(): AssistantTool {
         destructive: false,
         action: "Add",
       }),
+      // Word for word what the real tool says it did.
+      execute: async (args: unknown) => {
+        executed.push("create_service")
+        return {
+          ok: true,
+          doneText: `Added the service ${String((args as { name?: unknown }).name)}.`,
+        }
+      },
     },
   }
 }

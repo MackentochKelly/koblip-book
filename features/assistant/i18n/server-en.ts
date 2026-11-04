@@ -124,6 +124,10 @@ const messages = {
       "no card is waiting (it was answered or expired), so there is nothing to close",
     oneCard:
       "only one card at a time: the first one is on the screen; make the next after the owner answers it",
+    cardStillWaiting:
+      "no new card was made: this same card is still waiting. If the owner said yes, call confirm_card. If they said no, call decline_card",
+    cardAlreadyRan:
+      "no new card was made: the owner already said yes to this same change and it ran. Go on with anything else they asked for, or say it is done",
     askInvalid:
       "no buttons: options must be 2 or more names copied exactly from this turn's tool results; otherwise ask in plain words and list the options",
     stopped:

@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { expect, test, vi } from "vitest"
 
+import { CARD_DONE_NOTE } from "../utils/system-prompt"
+
 vi.mock("server-only", () => ({}))
 // The loop only stores cards; the store itself (the database) has its own
 // tests in pending-actions.test.ts.
@@ -1545,14 +1547,7 @@ test("talking: no words for a card ends cleanly, with no fixed line", async () =
 
 test("talking: a free-times picker never shows with the card", async () => {
   scriptedClient([
-    [
-      toolChunk(
-        0,
-        "c0",
-        "find_free_times",
-        "{}"
-      ),
-    ],
+    [toolChunk(0, "c0", "find_free_times", "{}")],
     [toolChunk(0, "c1", "cancel_booking", "{}")],
     [textChunk("Okay?")],
   ])
@@ -1629,7 +1624,11 @@ test("talking: a yes in words goes back to the model, which says it", async () =
     { type: "done" },
   ])
   const [result] = toolMessages(seen[1].messages)
-  expect(JSON.parse(result.content)).toEqual({ ok: true, outcome: "Booked." })
+  expect(JSON.parse(result.content)).toEqual({
+    ok: true,
+    outcome: "Booked.",
+    next: CARD_DONE_NOTE,
+  })
 })
 
 test("talking: a failed change is told to the model as failed", async () => {
@@ -1663,6 +1662,51 @@ test("talking: after a yes it carries on with the next card", async () => {
   expect(cards).toHaveLength(1)
   expect(cards[0].id).not.toBe(id)
   expect(events.at(-2)).toEqual({ type: "text", delta: "And Leo's, okay?" })
+})
+
+test("the same card as the one waiting is not made again, and a yes still runs it", async () => {
+  const { id, tool, execute, messages } = await shownCard()
+  const { seen } = scriptedClient([
+    [toolChunk(0, "c1", "cancel_booking", '{"bookingId":"k1"}')],
+    [toolChunk(0, "c2", "confirm_card", "{}")],
+    [textChunk("Ana's cancelled.")],
+  ])
+  const events = await collect(runChat(messages, VOICE, [tool]))
+  expect(
+    (events as { type: string }[]).filter((e) => e.type === "confirm")
+  ).toEqual([])
+  expect(events).toContainEqual({ type: "accepted", id })
+  expect(execute).toHaveBeenCalledTimes(1)
+  const [refused] = toolMessages(seen[1].messages)
+  expect(JSON.parse(refused.content).error).toContain("confirm_card")
+})
+
+test("a different card from the one waiting is still made", async () => {
+  const { tool, messages } = await shownCard()
+  scriptedClient([
+    [toolChunk(0, "c1", "cancel_booking", '{"bookingId":"k2"}')],
+    [textChunk("Leo's instead, okay?")],
+  ])
+  const events = await collect(runChat(messages, VOICE, [tool]))
+  expect(
+    (events as { type: string }[]).filter((e) => e.type === "confirm")
+  ).toHaveLength(1)
+})
+
+test("talking: a card the yes just ran is not made again", async () => {
+  const { tool, execute, messages } = await shownCard()
+  const { seen } = scriptedClient([
+    [toolChunk(0, "c1", "confirm_card", "{}")],
+    [toolChunk(0, "c2", "cancel_booking", '{"bookingId":"k1"}')],
+    [textChunk("Ana's cancelled.")],
+  ])
+  const events = await collect(runChat(messages, VOICE, [tool]))
+  expect(
+    (events as { type: string }[]).filter((e) => e.type === "confirm")
+  ).toEqual([])
+  expect(execute).toHaveBeenCalledTimes(1)
+  const [, refused] = toolMessages(seen[2].messages)
+  expect(JSON.parse(refused.content).error).toContain("already said yes")
 })
 
 test("talking: one yes runs one card, however often it is called", async () => {
@@ -1816,6 +1860,7 @@ test("a tap reads as the owner's turn and the card's own call, with its outcome"
   expect(call.tool_calls?.[0].function.name).toBe("confirm_card")
   expect(JSON.parse(result.content ?? "")).toEqual({
     outcome: "Done! Ana is booked.",
+    next: CARD_DONE_NOTE,
   })
 })
 

@@ -122,6 +122,10 @@ const messages: typeof en = {
       "no hay ninguna tarjeta esperando (ya se respondió o caducó), así que no hay nada que cerrar",
     oneCard:
       "solo una tarjeta a la vez: la primera está en pantalla; haz la siguiente cuando el dueño la responda",
+    cardStillWaiting:
+      "no se hizo ninguna tarjeta nueva: esta misma tarjeta sigue esperando. Si el dueño dijo que sí, llama a confirm_card. Si dijo que no, llama a decline_card",
+    cardAlreadyRan:
+      "no se hizo ninguna tarjeta nueva: el dueño ya dijo que sí a este mismo cambio y se hizo. Sigue con lo demás que pidió, o di que ya está",
     askInvalid:
       "sin botones: las opciones deben ser 2 o más nombres copiados tal cual de los resultados de herramientas de este turno; si no, pregunta con palabras y enumera las opciones",
     stopped: "Eso llevó demasiados pasos. ¿Puedes preguntar algo más concreto?",

@@ -1,5 +1,6 @@
 import "server-only"
 
+import { isDeepStrictEqual } from "node:util"
 import type OpenAI from "openai"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type { PageLanguage } from "@/lib/page-language"
@@ -18,6 +19,7 @@ import {
   buildLanguageLine,
   buildSystemPrompt,
   buildVoiceLine,
+  CARD_DONE_NOTE,
   CARD_SHOWN_NOTE,
   REPEATED_NOTE,
   INTERRUPTED_REPLY_NOTE,
@@ -145,6 +147,28 @@ function freeTimesOf(data: unknown): FreeTimes | null {
   }
 }
 
+type CardChange = { toolName: string; args: unknown }
+
+// Whether a tool call would make a card that already exists: the one waiting,
+// or one this reply just ran. Unreadable arguments are left to the card's own
+// check, which reports them.
+function repeatedCard(
+  call: { function: { name: string; arguments: string } },
+  waiting: CardChange | null,
+  ran: CardChange[]
+): "waiting" | "ran" | null {
+  let args: unknown
+  try {
+    args = JSON.parse(call.function.arguments)
+  } catch {
+    return null
+  }
+  const same = (card: CardChange): boolean =>
+    card.toolName === call.function.name && isDeepStrictEqual(card.args, args)
+  if (waiting && same(waiting)) return "waiting"
+  return ran.some(same) ? "ran" : null
+}
+
 // A tap reads as the owner's turn and the same call a yes or no in words
 // makes, with the outcome as its result, so the answer goes on exactly as it
 // does after those. Anything less and the model reads past it to the owner's
@@ -177,6 +201,7 @@ function tapTurn(
       content: JSON.stringify({
         ...(answer === "no" ? { ownerSaidNo: true } : {}),
         outcome,
+        ...(answer === "yes" ? { next: CARD_DONE_NOTE } : {}),
       }),
     },
   ]
@@ -488,6 +513,8 @@ export async function* runChat(
     let reworded = false
     let toolsRan = false
     let textSent = false
+    // Cards the owner's yes ran during this reply.
+    const ranThisReply: CardChange[] = []
     // Records looked up this request, by kind in first-looked-up order.
     // A repeat lookup keeps the highest count; empty kinds stay out.
     const sources = new Map<SourceKind, number>()
@@ -686,6 +713,7 @@ export async function* runChat(
           let outcome: { ok: boolean; text: string }
           if (accept) {
             yield { type: "accepted", id: taken.id }
+            ranThisReply.push(taken)
             outcome = { ok: false, text: t.confirm.unknown }
             for await (const event of runPending(taken, pendingTool, t)) {
               if (event.type === "result") {
@@ -715,6 +743,7 @@ export async function* runChat(
               ok: outcome.ok,
               ...(accept ? {} : { ownerSaidNo: true }),
               outcome: outcome.text,
+              ...(accept && outcome.ok ? { next: CARD_DONE_NOTE } : {}),
             }),
           })
           continue
@@ -771,6 +800,23 @@ export async function* runChat(
               role: "tool",
               tool_call_id: call.id,
               content: JSON.stringify({ error: t.loop.oneCard }),
+            })
+            continue
+          }
+          // The prompt says never to make a card again but can't promise it:
+          // measured, a yes sometimes came back as the same card. The same
+          // tool with the same arguments goes back to the model instead.
+          const repeated = repeatedCard(call, waiting, ranThisReply)
+          if (repeated) {
+            history.push({
+              role: "tool",
+              tool_call_id: call.id,
+              content: JSON.stringify({
+                error:
+                  repeated === "waiting"
+                    ? t.loop.cardStillWaiting
+                    : t.loop.cardAlreadyRan,
+              }),
             })
             continue
           }
