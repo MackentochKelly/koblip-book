@@ -2,10 +2,10 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getSessionCookie } from "better-auth/cookies"
 
-import { OWNER_LANGUAGE_COOKIE } from "@/features/dashboard/i18n/language"
 import {
   isPageLanguage,
   languageParam,
+  OWNER_LANGUAGE_COOKIE,
   PAGE_LANGUAGE_HEADER,
   pickLanguage,
   type PageLanguage,
@@ -13,8 +13,8 @@ import {
 
 // The language a page is shown in, as its own page picks it: a business,
 // home or legal page from ?lang= or the phone's language, the owner area
-// from the owner's pick or the phone's language. The login page keeps the
-// language a public page's link names (?lang=) first.
+// from the owner's pick or the phone's language. The login and new password
+// pages keep the language their link names (?lang=) first.
 function pageLanguage(request: NextRequest): PageLanguage {
   const { pathname, searchParams } = request.nextUrl
   const accept = request.headers.get("accept-language")
@@ -27,7 +27,9 @@ function pageLanguage(request: NextRequest): PageLanguage {
     return pickLanguage(searchParams.getAll("lang"), accept)
   }
   const linked =
-    pathname === "/login" ? languageParam(searchParams.getAll("lang")) : null
+    pathname === "/login" || pathname === "/reset-password"
+      ? languageParam(searchParams.getAll("lang"))
+      : null
   if (linked) return linked
   const picked = request.cookies.get(OWNER_LANGUAGE_COOKIE)?.value
   return isPageLanguage(picked) ? picked : pickLanguage(undefined, accept)

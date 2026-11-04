@@ -8,6 +8,7 @@ const { authClient, emailStatus } = vi.hoisted(() => ({
       social: vi.fn(),
     },
     signUp: { email: vi.fn() },
+    requestPasswordReset: vi.fn(),
   },
   emailStatus: vi.fn(async () => ({ ok: true, exists: true })),
 }))
@@ -26,6 +27,7 @@ beforeEach(() => {
   emailStatus.mockReset().mockResolvedValue({ ok: true, exists: true })
   authClient.signIn.email.mockReset().mockRejectedValue(new Error("offline"))
   authClient.signUp.email.mockReset()
+  authClient.requestPasswordReset.mockReset()
 })
 
 test("the login email is the field password managers fill", () => {
@@ -145,3 +147,63 @@ for (const language of ["en", "es"] as const) {
     expect(authClient.signIn.email).not.toHaveBeenCalled()
   })
 }
+
+async function atPasswordStep(language: "en" | "es", next?: string) {
+  const t = authWordsFor(language)
+  render(<AuthForm language={language} next={next} />)
+  fireEvent.change(screen.getByLabelText(t.email), {
+    target: { value: "owner@example.com" },
+  })
+  fireEvent.click(screen.getByRole("button", { name: t.continue }))
+  return {
+    t,
+    forgot: await screen.findByRole("button", { name: t.forgotPassword }),
+  }
+}
+
+for (const language of ["en", "es"] as const) {
+  test(`${language}: forgot password asks for the link, keeping the language and the way back`, async () => {
+    authClient.requestPasswordReset.mockResolvedValue({ data: { status: true }, error: null })
+    const { t, forgot } = await atPasswordStep(language, "/connect")
+    fireEvent.click(forgot)
+
+    expect(await screen.findByText(t.resetSent)).toBeTruthy()
+    expect(authClient.requestPasswordReset).toHaveBeenCalledWith({
+      email: "owner@example.com",
+      redirectTo: `/reset-password?next=%2Fconnect&lang=${language}`,
+    })
+  })
+}
+
+test("forgot password says so when there were too many tries", async () => {
+  authClient.requestPasswordReset.mockResolvedValue({
+    data: null,
+    error: { status: 429 },
+  })
+  const { t, forgot } = await atPasswordStep("en")
+  fireEvent.click(forgot)
+
+  expect(await screen.findByText(t.errors.tooManyTries)).toBeTruthy()
+  expect(screen.queryByText(t.resetSent)).toBeNull()
+})
+
+test("forgot password says so when the server can't be reached", async () => {
+  authClient.requestPasswordReset.mockRejectedValue(new Error("offline"))
+  const { t, forgot } = await atPasswordStep("en")
+  fireEvent.click(forgot)
+
+  expect(await screen.findByText(t.errors.connection)).toBeTruthy()
+})
+
+test("a new account has no forgot password link", async () => {
+  emailStatus.mockResolvedValue({ ok: true, exists: false })
+  const t = authWordsFor("en")
+  render(<AuthForm />)
+  fireEvent.change(screen.getByLabelText(t.email), {
+    target: { value: "new@example.com" },
+  })
+  fireEvent.click(screen.getByRole("button", { name: t.continue }))
+  await screen.findByLabelText(t.choosePassword)
+
+  expect(screen.queryByRole("button", { name: t.forgotPassword })).toBeNull()
+})

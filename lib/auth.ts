@@ -1,29 +1,71 @@
 import "server-only"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
+import { parseCookies } from "better-auth/cookies"
 import { nextCookies } from "better-auth/next-js"
 import { admin, anonymous } from "better-auth/plugins"
+import { eq } from "drizzle-orm"
 import { ACCOUNT_RULES } from "./account-rules"
 import { db } from "./db"
 import * as authSchema from "./db/auth-schema"
 import { sendEmail } from "./email"
-import { verificationEmail } from "./email-templates"
+import { resetPasswordEmail, verificationEmail } from "./email-templates"
 import { ONBOARDING_RULES } from "./onboarding-rules"
+import {
+  isPageLanguage,
+  OWNER_LANGUAGE_COOKIE,
+  pickLanguage,
+  type PageLanguage,
+} from "./page-language"
+
+// An email speaks the language of the screen that asked for it: the owner's
+// pick, else the phone's language.
+function emailLanguage(request: Request | undefined): PageLanguage {
+  const headers = request?.headers
+  const picked = parseCookies(headers?.get("cookie") ?? "").get(
+    OWNER_LANGUAGE_COOKIE
+  )
+  return isPageLanguage(picked)
+    ? picked
+    : pickLanguage(undefined, headers?.get("accept-language") ?? null)
+}
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   database: drizzleAdapter(db, { provider: "sqlite", schema: authSchema }),
+  // Emails go out without being awaited, so a request's timing can't tell
+  // which addresses have accounts
+  // (better-auth.com/docs/authentication/email-password#request-password-reset).
   emailAndPassword: {
     enabled: true,
     minPasswordLength: ONBOARDING_RULES.minPasswordLength,
     maxPasswordLength: ONBOARDING_RULES.maxPasswordLength,
+    resetPasswordTokenExpiresIn: ACCOUNT_RULES.passwordResetMinutes * 60,
+    sendResetPassword: ({ user, url }, request) => {
+      const content = resetPasswordEmail(url, emailLanguage(request))
+      void sendEmail({ to: user.email, ...content })
+      return Promise.resolve()
+    },
+    // Anyone who signed up with another person's email before them loses
+    // the way in: the password is replaced and their sessions end.
+    revokeSessionsOnPasswordReset: true,
+    // Only the mailbox's owner gets this link, and whoever had a password
+    // or session before is out by now, so the email counts as confirmed and
+    // Google can join the account.
+    onPasswordReset: async ({ user }) => {
+      if (user.emailVerified) return
+      await db
+        .update(authSchema.user)
+        .set({ emailVerified: true })
+        .where(eq(authSchema.user.id, user.id))
+    },
   },
   // Password sign-ups verify their email so Google can later join the
   // same account (accountLinking stays strict). Owners are NOT blocked
   // before verification: claiming keeps working straight after sign-up.
   emailVerification: {
-    sendVerificationEmail: ({ user, url }) => {
-      const content = verificationEmail(url)
+    sendVerificationEmail: ({ user, url }, request) => {
+      const content = verificationEmail(url, emailLanguage(request))
       void sendEmail({ to: user.email, ...content })
       return Promise.resolve()
     },

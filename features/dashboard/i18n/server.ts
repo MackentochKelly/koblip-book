@@ -3,10 +3,10 @@ import "server-only"
 import { cookies, headers } from "next/headers"
 
 import { ownerMessagesFor } from "."
-import { OWNER_LANGUAGE_COOKIE } from "./language"
 import {
   isPageLanguage,
   languageParam,
+  OWNER_LANGUAGE_COOKIE,
   pickLanguage,
   pickLocale,
 } from "@/lib/page-language"

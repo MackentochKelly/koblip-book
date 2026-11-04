@@ -7,6 +7,10 @@ export const DEFAULT_LANGUAGE: PageLanguage = "en"
 // Set by proxy.ts on every page request: the page's language, for <html lang>.
 export const PAGE_LANGUAGE_HEADER = "x-page-language"
 
+// The owner's pick, remembered on this device for a year. Without one, the
+// phone's language (Accept-Language), else English.
+export const OWNER_LANGUAGE_COOKIE = "owner-lang"
+
 export function isPageLanguage(value: unknown): value is PageLanguage {
   return value === "en" || value === "es"
 }

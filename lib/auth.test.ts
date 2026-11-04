@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
 import { eq } from "drizzle-orm"
-import { user } from "@/lib/db/schema"
+import { session, user } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
 
@@ -79,4 +79,109 @@ test("following the verification link verifies the email", async () => {
     .from(user)
     .where(eq(user.email, "new-owner@example.com"))
   expect(row?.emailVerified).toBe(true)
+})
+
+function sentLink(): string {
+  const call = sendEmailMock.mock.calls.at(-1)?.[0] as
+    | { text: string }
+    | undefined
+  return call?.text.match(/https?:\/\/\S+/)?.[0] ?? ""
+}
+
+test("a reset link replaces the password, ends old sessions and confirms the email", async () => {
+  const { auth } = await import("./auth")
+  const { db } = await import("@/lib/db")
+  const email = "stuck-owner@example.com"
+
+  const signedUp = await auth.api.signUpEmail({
+    body: { name: "Stuck Owner", email, password: "old-password-123" },
+    headers: new Headers(),
+  })
+  const [before] = await db
+    .select({ emailVerified: user.emailVerified })
+    .from(user)
+    .where(eq(user.email, email))
+  expect(before?.emailVerified).toBe(false)
+
+  sendEmailMock.mockClear()
+  await auth.api.requestPasswordReset({
+    body: { email, redirectTo: "/reset-password?lang=en" },
+    headers: new Headers(),
+  })
+  const token = new URL(sentLink()).pathname.split("/").at(-1) as string
+  expect(token).toBeTruthy()
+
+  await auth.api.resetPassword({
+    body: { newPassword: "new-password-123", token },
+    headers: new Headers(),
+  })
+
+  const [after] = await db
+    .select({ emailVerified: user.emailVerified })
+    .from(user)
+    .where(eq(user.email, email))
+  expect(after?.emailVerified).toBe(true)
+  await expect(
+    db.select().from(session).where(eq(session.userId, signedUp.user.id))
+  ).resolves.toEqual([])
+  await expect(
+    auth.api.signInEmail({
+      body: { email, password: "old-password-123" },
+      headers: new Headers(),
+    })
+  ).rejects.toThrow()
+  await expect(
+    auth.api.signInEmail({
+      body: { email, password: "new-password-123" },
+      headers: new Headers(),
+    })
+  ).resolves.toMatchObject({ user: { email } })
+})
+
+test("a reset link works once", async () => {
+  const { auth } = await import("./auth")
+  const email = "stuck-owner@example.com"
+
+  sendEmailMock.mockClear()
+  await auth.api.requestPasswordReset({ body: { email }, headers: new Headers() })
+  const token = new URL(sentLink()).pathname.split("/").at(-1) as string
+  await auth.api.resetPassword({
+    body: { newPassword: "another-password-123", token },
+    headers: new Headers(),
+  })
+  await expect(
+    auth.api.resetPassword({
+      body: { newPassword: "stolen-password-123", token },
+      headers: new Headers(),
+    })
+  ).rejects.toThrow()
+})
+
+test.each([
+  ["owner-lang=es", "en-US", "Confirma tu correo"],
+  ["owner-lang=en", "es-MX", "Confirm your email"],
+  ["", "es-MX", "Confirma tu correo"],
+  ["", "fr", "Confirm your email"],
+])("the email follows the owner's pick, then the phone: cookie %j, phone %j", async (cookie, phone, subject) => {
+  const { auth } = await import("./auth")
+
+  sendEmailMock.mockClear()
+  await auth.handler(
+    new Request("http://test.local/api/auth/sign-up/email", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: "http://test.local",
+        cookie,
+        "accept-language": phone,
+      },
+      body: JSON.stringify({
+        name: "New Owner",
+        email: `${crypto.randomUUID()}@example.com`,
+        password: "password123",
+      }),
+    })
+  )
+  const call = sendEmailMock.mock.calls.at(-1)?.[0] as { subject: string }
+  expect(call.subject).toBe(subject)
 })

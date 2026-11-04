@@ -44,7 +44,13 @@ ssh "$HOST" "set -e
   if ! git merge-base --is-ancestor HEAD $SHA; then
     echo 'FAILED: the server is on a commit that is not part of main.'
     exit 1
-  fi"
+  fi
+  for key in SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS EMAIL_FROM; do
+    if ! grep -qE \"^\$key=.+\" .env.production; then
+      echo \"FAILED: .env.production has no \$key, so the app can't send email.\"
+      exit 1
+    fi
+  done"
 if [ "$(ssh "$HOST" "git -C $APP rev-parse HEAD")" = "$SHA" ]; then
   echo "==> Already live: ${SHA:0:7}"
   exit 0

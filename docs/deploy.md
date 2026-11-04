@@ -13,7 +13,7 @@ Never run `npm run build` on the server. It has one core and 4 GB of memory, and
 On your machine ([scripts/deploy.sh](../scripts/deploy.sh)):
 
 1. Takes a lock, so only one deploy runs at a time.
-2. Stops if the server has local changes or is on a commit that is not part of `main`.
+2. Stops if the server has local changes, is on a commit that is not part of `main`, or has no email settings in `.env.production`.
 3. Exports a clean copy of `main` to `~/.cache/koblip-book-deploy`, so uncommitted work can't ship.
 4. Runs lint, tests and the production build, which includes the type check, with the server's Node.js version.
 5. Uploads the build to the server. The live site has not been touched yet.
@@ -42,3 +42,5 @@ To undo a release that works but behaves badly, revert the commit on `main` and 
 The app's PM2 setup lives in [ecosystem.config.cjs](../ecosystem.config.cjs): one fork instance, running `server.mjs` directly. `BOOK_PM2_NAME` still overrides the app name: the release script passes it when PM2 reads the file. Rollback uses the restored commit's file, or starts through `npm start` if that older commit has none.
 
 Secrets stay in `.env.production` on the server, and the app reads them when it runs. Only `NEXT_PUBLIC_*` values are baked into the build. The script reads those from the server's file, so changing one needs a new deploy.
+
+Email goes through Amazon SES over SMTP. The `SMTP_*` values and `EMAIL_FROM` live in `.env.production`. `SMTP_HOST` names the SES region the credentials were made for, and `EMAIL_FROM` must use a domain verified in that region. While the SES account is in its sandbox, mail only reaches verified addresses; production access is requested in the [SES console](https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html). A quoted value is required when it has spaces, because the release script sources this file.

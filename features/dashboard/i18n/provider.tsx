@@ -3,9 +3,13 @@
 import { createContext, use, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 
-import { DEFAULT_LOCALES, type PageLanguage } from "@/lib/page-language"
+import {
+  DEFAULT_LOCALES,
+  OWNER_LANGUAGE_COOKIE,
+  type PageLanguage,
+} from "@/lib/page-language"
 import { ownerMessagesFor } from "."
-import { OWNER_LANGUAGE_COOKIE, OWNER_LANGUAGE_MAX_AGE } from "./language"
+import { OWNER_LANGUAGE_MAX_AGE } from "./language"
 
 const LanguageContext = createContext<PageLanguage>("en")
 // How numbers, prices and dates read (see ./server getOwnerLocale).
