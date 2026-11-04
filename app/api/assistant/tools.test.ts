@@ -1993,8 +1993,6 @@ test("create_booking happy path stores a card with a server weekday", async () =
     destructive: false,
     action: "Book",
     // Said out loud while talking: what the tap will do.
-    spoken:
-      "Book Ana for Cut on Thursday, January 1 at 10:00 AM? Say yes or tap Book.",
     args: STORED_BOOKING,
   })
   expect((card as { summary: string }).summary).toContain("Ana · Cut")
@@ -2484,15 +2482,16 @@ test("buildVoiceLine speaks briefly in both languages", async () => {
     "Variety",
     "Cut off",
     "Unclear words",
-    "Facts",
-    "Changes that need a tap",
+    "Think for yourself",
+    "What you don't know",
+    "Cards",
   ])
     expect(en).toContain(`# ${heading}`)
   expect(en).toContain("NEVER say the same sentence twice in this chat")
   // No line of its own before a lookup; follow-ups come from the chat.
   expect(en).not.toContain("# Before a lookup")
   expect(en).toContain("For a follow-up like 'What time?'")
-  expect(en).toContain("write nothing; the app says it out loud")
+  expect(en).toContain("with nothing written before it")
   const es = buildVoiceLine("es")
   for (const heading of [
     "Personalidad",
@@ -2501,14 +2500,15 @@ test("buildVoiceLine speaks briefly in both languages", async () => {
     "Variedad",
     "Te cortaron",
     "Palabras poco claras",
-    "Datos",
-    "Cambios que necesitan un toque",
+    "Piensa por ti mismo",
+    "Lo que no sabes",
+    "Tarjetas",
   ])
     expect(es).toContain(`# ${heading}`)
   expect(es).toContain("NUNCA digas la misma frase dos veces en este chat")
   expect(es).not.toContain("# Antes de una consulta")
   expect(es).toContain("Para una pregunta de seguimiento como '¿A qué hora?'")
-  expect(es).toContain("no escribas nada; la aplicación")
+  expect(es).toContain("sin escribir nada antes")
 })
 
 test("the prompt carries the Markdown formatting rule", async () => {

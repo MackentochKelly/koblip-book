@@ -8,6 +8,7 @@ import type {
   AssistantMessage,
   AssistantStreamEvent,
   AssistantTool,
+  CardAnswer,
   DescribedConfirm,
   SourceKind,
 } from "../types"
@@ -17,12 +18,18 @@ import {
   buildLanguageLine,
   buildSystemPrompt,
   buildVoiceLine,
+  CARD_SHOWN_NOTE,
+  REPEATED_NOTE,
   INTERRUPTED_REPLY_NOTE,
   INTERRUPTED_BEFORE_WORDS_NOTE,
 } from "../utils/system-prompt"
 import { memoryRow, type MemoryRow } from "../utils/memory"
 import { ASK_OWNER_TOOL, askOf } from "./ask-owner"
-import { CONFIRM_CARD_TOOL, waitingCardNote } from "./confirm-card"
+import {
+  CONFIRM_CARD_TOOL,
+  DECLINE_CARD_TOOL,
+  waitingCardNote,
+} from "./confirm-card"
 import {
   peekPendingAction,
   storePendingAction,
@@ -38,6 +45,9 @@ export interface RunChatContext {
   businessId: string
   language: PageLanguage // owner's language, read once per request
   voice?: boolean // talking mode: short spoken answers, same tools
+  // Talking mode, right after a tap on a card's button: the last message says
+  // what it did, and the answer says that and carries on.
+  afterTap?: CardAnswer
 }
 
 interface CollectedCall {
@@ -135,8 +145,64 @@ function freeTimesOf(data: unknown): FreeTimes | null {
   }
 }
 
+// A tap reads as the owner's turn and the same call a yes or no in words
+// makes, with the outcome as its result, so the answer goes on exactly as it
+// does after those. Anything less and the model reads past it to the owner's
+// last words, the request itself, and makes the same card again (live eval).
+function tapTurn(
+  answer: CardAnswer,
+  outcome: string
+): OpenAI.Chat.ChatCompletionMessageParam[] {
+  const id = "card-tap"
+  const tool = answer === "yes" ? CONFIRM_CARD_TOOL : DECLINE_CARD_TOOL
+  return [
+    {
+      role: "user",
+      content: `(The owner tapped ${answer} on the card.)`,
+    },
+    {
+      role: "assistant",
+      content: null,
+      tool_calls: [
+        {
+          id,
+          type: "function",
+          function: { name: tool.name, arguments: "{}" },
+        },
+      ],
+    },
+    {
+      role: "tool",
+      tool_call_id: id,
+      content: JSON.stringify({
+        ...(answer === "no" ? { ownerSaidNo: true } : {}),
+        outcome,
+      }),
+    },
+  ]
+}
+
+// The sentences of a text as plain letters and digits, so spoken words compare
+// with written ones. Very short ones ("Okay.") are nothing to hear twice.
+function sentencesOf(text: string): string[] {
+  return text
+    .split(/(?<=[.!?…])\s+|\n+/)
+    .map((sentence) =>
+      sentence.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "")
+    )
+    .filter((sentence) => sentence.length >= ASSISTANT_RULES.minRepeatLetters)
+}
+
+// Whether these words would say a sentence already said in this chat.
+function repeatsEarlier(words: string, messages: AssistantMessage[]): boolean {
+  const said = new Set(
+    messages.flatMap((m) => (m.role === "assistant" ? sentencesOf(m.text) : []))
+  )
+  return sentencesOf(words).some((sentence) => said.has(sentence))
+}
+
 // Today in the business timezone, for the system prompt.
-function zonedNow(
+export function zonedNow(
   now: number,
   timeZone: string
 ): { date: string; time: string; weekday: string } {
@@ -175,7 +241,7 @@ async function* handleConfirmCall(
   argsText: string,
   callId: string,
   history: OpenAI.Chat.ChatCompletionMessageParam[]
-): AsyncGenerator<AssistantStreamEvent, boolean> {
+): AsyncGenerator<AssistantStreamEvent, DescribedConfirm | null> {
   const t = serverMessagesFor(context.language)
   const fail = (message: string): void => {
     history.push({
@@ -189,18 +255,18 @@ async function* handleConfirmCall(
     args = JSON.parse(argsText)
   } catch {
     fail(t.loop.invalidArgs)
-    return false
+    return null
   }
   let card: DescribedConfirm | { error: string }
   try {
     card = await confirm.describe(args)
   } catch {
     fail(t.loop.lookupFailed)
-    return false
+    return null
   }
   if ("error" in card) {
     fail(card.error)
-    return false
+    return null
   }
   const stored = await storePendingAction({
     ownerId: context.ownerId,
@@ -210,7 +276,7 @@ async function* handleConfirmCall(
   })
   if ("error" in stored) {
     fail(t.loop.tooMany)
-    return false
+    return null
   }
   yield {
     type: "confirm",
@@ -219,9 +285,8 @@ async function* handleConfirmCall(
     summary: card.summary,
     destructive: card.destructive,
     action: card.action,
-    ...(card.spoken ? { spoken: card.spoken } : {}),
   }
-  return true
+  return card
 }
 
 // The tool loop. Streams text live, runs tool calls with a step chip each,
@@ -247,24 +312,26 @@ export async function* runChat(
   }
   const t = serverMessagesFor(context.language)
   const byName = new Map(tools.map((t) => [t.definition.name, t]))
-  // ask_owner and confirm_card are the loop's own tools, typed and talking
-  // alike: talking mode shows the same buttons while the question is said.
-  // Always offered, so the prompt prefix stays the same for the cache.
+  // ask_owner, confirm_card and decline_card are the loop's own tools, typed
+  // and talking alike: talking mode shows the same buttons while the question
+  // is said. Always offered, so the prompt prefix stays the same for the cache.
   const offered = [
     ...tools.map((tool) => tool.definition),
     ASK_OWNER_TOOL,
     CONFIRM_CARD_TOOL,
+    DECLINE_CARD_TOOL,
   ]
   // The card the owner was shown just before their last words, if it is
   // still stored for them: noted after that answer, and the only card
-  // confirm_card can run.
+  // confirm_card and decline_card can answer. Answered once, so no second
+  // call in the same reply can touch a card.
   const waitingAt = messages.length - 2
   const waitingId =
     messages.at(-1)?.role === "owner" ? messages[waitingAt]?.waiting : undefined
   const stored = waitingId
     ? await peekPendingAction(waitingId).catch(() => null)
     : null
-  const waiting =
+  let waiting =
     stored?.ownerId === context.ownerId &&
     stored.businessId === context.businessId
       ? stored
@@ -303,6 +370,13 @@ export async function* runChat(
     },
     ...messages.flatMap(
       (m, index): OpenAI.Chat.ChatCompletionMessageParam[] => {
+        if (
+          context.afterTap &&
+          m.role === "assistant" &&
+          index === messages.length - 1
+        ) {
+          return tapTurn(context.afterTap, m.text)
+        }
         const previous = messages[index - 1]
         const note =
           m.role === "owner"
@@ -344,30 +418,42 @@ export async function* runChat(
     )
   }
 
+  // Talking: something has reached the owner (a card, or an answered card's
+  // outcome), so a turn with no words after it is no failure and no answer
+  // is still owed. Words for a card closed by a no, if no others get said.
+  let reached = context.afterTap !== undefined
+  let unsaid: string | null = null
   try {
-    const modelCall = async () => {
+    // `speakOnly`: the turn after a card, which can only say it. Tools are
+    // left out, as no tool_choice but "auto" is documented
+    // (https://dev.meta.ai/docs/api-reference/chat-completions/schemas).
+    const modelCall = async (speakOnly: boolean) => {
       const create = () =>
         client.chat.completions.create(
           {
             model: META_TEXT_MODEL,
             messages: history,
-            tools: offered.map((definition) => ({
-              type: "function",
-              function: {
-                name: definition.name,
-                description: definition.description,
-                parameters: definition.parameters,
-              },
-            })),
+            ...(speakOnly
+              ? {}
+              : {
+                  tools: offered.map((definition) => ({
+                    type: "function" as const,
+                    function: {
+                      name: definition.name,
+                      description: definition.description,
+                      parameters: definition.parameters,
+                    },
+                  })),
+                  // One call per turn: the model reads each result (e.g.
+                  // find_free_times) before it can ask for the next tool.
+                  parallel_tool_calls: false,
+                }),
             stream: true,
             stream_options: { include_usage: true },
             reasoning_effort:
               context.voice === true
                 ? ASSISTANT_RULES.voiceReasoningEffort
                 : ASSISTANT_RULES.reasoningEffort,
-            // One call per turn: the model reads each result (e.g.
-            // find_free_times) before it can ask for the next tool.
-            parallel_tool_calls: false,
             max_completion_tokens: ASSISTANT_RULES.maxCompletionTokens,
             // Stable app string so repeated prefixes route together.
             prompt_cache_key: "koblip-owner-assistant",
@@ -389,6 +475,10 @@ export async function* runChat(
       }
     }
     let stopAfterReply = false
+    // Talking: a card was just shown, and the next turn says it out loud.
+    let speakOnly = false
+    // Talking: words that repeated an earlier sentence were sent back, once.
+    let reworded = false
     let toolsRan = false
     let textSent = false
     // Records looked up this request, by kind in first-looked-up order.
@@ -410,7 +500,7 @@ export async function* runChat(
       // Each turn's first words are held, typed and talking alike: words
       // written before a tool call (a note to itself, a "Let me check")
       // never show or get said. Talking says its own waiting line instead.
-      const stream = await modelCall()
+      const stream = await modelCall(speakOnly)
       // Keep the full turn for history while sending each delta immediately.
       let text = ""
       // This turn's words on screen, and the ones still held back.
@@ -481,16 +571,41 @@ export async function* runChat(
         }
       }
       // Words held to the end of a turn without a tool call are its answer.
+      // Talking, they are not said yet, so a repeat of an earlier sentence can
+      // still get new words: the prompt asks for that, but can't promise it.
+      if (
+        calls.length === 0 &&
+        held !== "" &&
+        context.voice === true &&
+        !reworded &&
+        repeatsEarlier(held, messages)
+      ) {
+        reworded = true
+        history.push(
+          { role: "assistant", content: held },
+          { role: "developer", content: REPEATED_NOTE }
+        )
+        continue
+      }
       if (calls.length === 0 && held !== "") {
         yield* show(held)
         held = ""
+      }
+      if (unsaid !== null && text.trim() === "" && calls.length === 0) {
+        yield { type: "text", delta: unsaid }
+      }
+      // The card's words end the reply, as the card alone does when typed.
+      if (speakOnly) {
+        yield* memoryEvent()
+        yield { type: "done" }
+        return
       }
       if (calls.length === 0) {
         if (!toolsRan) {
           yield { type: "done" }
           return
         }
-        if (text.trim() === "") {
+        if (text.trim() === "" && !reached) {
           yield {
             type: "text",
             delta: t.loop.stopped,
@@ -527,9 +642,15 @@ export async function* runChat(
       })
       for (let i = 0; i < toolCalls.length; i += 1) {
         const call = toolCalls[i]
-        if (call.function.name === CONFIRM_CARD_TOOL.name) {
-          // A clear yes in words runs the waiting card like a tap: taken
-          // once, stored args only, and the reply is its result.
+        if (
+          call.function.name === CONFIRM_CARD_TOOL.name ||
+          call.function.name === DECLINE_CARD_TOOL.name
+        ) {
+          // A clear yes in words runs the waiting card like a tap, a clear no
+          // closes it: taken once, stored args only. Typed, the reply ends
+          // there. Talking, the outcome goes back to the model, which says it
+          // in its own words and carries on with anything left.
+          const accept = call.function.name === CONFIRM_CARD_TOOL.name
           const taken = waiting
             ? await takePendingAction(
                 waiting.id,
@@ -541,15 +662,49 @@ export async function* runChat(
             history.push({
               role: "tool",
               tool_call_id: call.id,
-              content: JSON.stringify({ error: t.loop.noCard }),
+              content: JSON.stringify({
+                error: accept ? t.loop.noCard : t.loop.noCardToDecline,
+              }),
             })
             continue
           }
-          yield { type: "accepted", id: taken.id }
-          yield* runPending(taken, byName.get(taken.toolName), t)
-          yield* memoryEvent()
-          yield { type: "done" }
-          return
+          waiting = null
+          const pendingTool = byName.get(taken.toolName)
+          let outcome: { ok: boolean; text: string }
+          if (accept) {
+            yield { type: "accepted", id: taken.id }
+            outcome = { ok: false, text: t.confirm.unknown }
+            for await (const event of runPending(taken, pendingTool, t)) {
+              if (event.type === "result") {
+                outcome = { ok: event.ok, text: event.text }
+              }
+              yield event
+            }
+          } else {
+            yield { type: "declined", id: taken.id }
+            outcome = {
+              ok: true,
+              text: pendingTool?.confirm?.declinedText ?? t.confirm.unchanged,
+            }
+          }
+          if (context.voice !== true) {
+            if (!accept) yield { type: "text", delta: outcome.text }
+            yield* memoryEvent()
+            yield { type: "done" }
+            return
+          }
+          reached = true
+          if (!accept) unsaid = outcome.text
+          history.push({
+            role: "tool",
+            tool_call_id: call.id,
+            content: JSON.stringify({
+              ok: outcome.ok,
+              ...(accept ? {} : { ownerSaidNo: true }),
+              outcome: outcome.text,
+            }),
+          })
+          continue
         }
         if (call.function.name === ASK_OWNER_TOOL.name) {
           // The question and its buttons end the reply at once. Options
@@ -597,7 +752,16 @@ export async function* runChat(
         }
         const tool = byName.get(call.function.name)
         if (tool?.definition.needsConfirm && tool.confirm) {
-          const stored = yield* handleConfirmCall(
+          // Talking, cards go one at a time: each is said and answered.
+          if (context.voice === true && speakOnly) {
+            history.push({
+              role: "tool",
+              tool_call_id: call.id,
+              content: JSON.stringify({ error: t.loop.oneCard }),
+            })
+            continue
+          }
+          const card = yield* handleConfirmCall(
             context,
             tool.definition.name,
             tool.confirm,
@@ -605,7 +769,21 @@ export async function* runChat(
             call.id,
             history
           )
-          if (stored) {
+          if (card && context.voice === true) {
+            reached = true
+            speakOnly = true
+            history.push({
+              role: "tool",
+              tool_call_id: call.id,
+              content: JSON.stringify({
+                waitingForOwner: true,
+                title: card.title,
+                summary: card.summary,
+                action: card.action,
+                destructive: card.destructive,
+              }),
+            })
+          } else if (card) {
             stopAfterReply = true
           }
           continue
@@ -684,15 +862,27 @@ export async function* runChat(
         yield { type: "done" }
         return
       }
+      if (speakOnly) {
+        history.push({ role: "developer", content: CARD_SHOWN_NOTE })
+      }
     }
-    yield {
-      type: "text",
-      delta: t.loop.stopped,
+    if (!reached) {
+      yield {
+        type: "text",
+        delta: t.loop.stopped,
+      }
     }
     yield* memoryEvent()
     yield { type: "done" }
   } catch {
     if (opts?.signal?.aborted) {
+      return
+    }
+    // The card or the outcome already reached the owner: talking mode says
+    // what it shows, so the only thing lost is the model's own words.
+    if (reached) {
+      if (unsaid !== null) yield { type: "text", delta: unsaid }
+      yield { type: "done" }
       return
     }
     yield { type: "error", code: "unavailable" }

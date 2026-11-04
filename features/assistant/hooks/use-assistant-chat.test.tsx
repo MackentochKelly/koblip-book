@@ -61,3 +61,30 @@ test("a tapped action's result lands on the reply on screen", async () => {
   expect(result.current.items).toHaveLength(1)
   expect(lastReply(result.current.items)?.result?.text).toBe("Booked.")
 })
+
+test("after a tap, talking asks with nothing new said and the tap's answer", async () => {
+  const chat = vi.fn(() =>
+    events({ type: "text", delta: "Ana's booked." }, { type: "done" })
+  )
+  const { result } = await renderChat({ ...transport, chat })
+  await act(async () => {
+    await result.current.send("Book Ana")
+  })
+  await act(async () => {
+    await result.current.answer("c1", true)
+  })
+  chat.mockClear()
+  const listen = { onText: vi.fn(), onLookup: vi.fn() }
+  await act(async () => {
+    await result.current.resume("yes", listen)
+  })
+  expect(chat).toHaveBeenCalledTimes(1)
+  const [request] = chat.mock.calls[0] as unknown as [
+    { voice?: boolean; afterTap?: string; messages: { text: string }[] },
+  ]
+  expect(request.voice).toBe(true)
+  expect(request.afterTap).toBe("yes")
+  expect(request.messages.at(-1)?.text).toBe("Booked.")
+  expect(listen.onText).toHaveBeenCalledWith("Ana's booked.")
+  expect(lastReply(result.current.items)?.text).toBe("Ana's booked.")
+})

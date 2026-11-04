@@ -1,17 +1,23 @@
 import { VOICE_RULES } from "@/lib/voice-rules"
 
-import type { AnswerListener, AssistantStreamEvent } from "../types"
+import type {
+  AnswerListener,
+  AssistantStreamEvent,
+  CardAnswer,
+  VoiceLines,
+} from "../types"
 import type { ChatItem } from "./chat-state"
 import type { SpeechError } from "./speak-client"
 
 // Talking mode, like ChatGPT voice: the owner speaks, Meta hears it live
 // (through our /api/voice/listen relay), the assistant answers in the chat,
 // and ElevenLabs reads the answer out sentence by sentence while it is
-// still being written. If it stays quiet too long, one short line is said
-// ("Let me check."), once per answer, picked at random. If the answer is
-// ready while that line (or one written before a lookup) is still playing,
-// it is cut off mid-word and the answer comes in at once ("Let me… oh,
-// you've got 2 today"). After a tap on a card, its result is said too.
+// still being written. If it stays quiet too long, one short line is said,
+// once per answer. If the answer is ready while that line (or one written
+// before a lookup) is still playing, it is cut off mid-word and the answer
+// comes in at once. Every word is the AI's own: the answers, and a set of
+// lines it writes when the talk starts (api/voice-lines.ts), each said once
+// at most. After a tap on a card, the AI says what it did and carries on.
 // Talking over it stops it; new words while it thinks start a fresh answer.
 // Sources: docs/assistant-plan.md, sections 11 and 12.
 //
@@ -46,6 +52,8 @@ export interface LiveVoiceParts {
   // Sends the turn to the assistant; `listen` hears the words as they are
   // written and when a lookup starts; resolves with the reply.
   send: (text: string, listen: AnswerListener) => Promise<Reply | null>
+  // Asks for an answer with nothing new said, right after a tap on a card.
+  resume: (answer: CardAnswer, listen: AnswerListener) => Promise<Reply | null>
   // Cancels the answer still being written (the owner said more).
   cancelAnswer: () => void
   // True while an answer is still being written. It must come from the
@@ -73,21 +81,8 @@ export interface LiveVoiceParts {
   withdraw: () => void
   // Closes the microphone and the listening socket.
   close: () => void
-  // Said after an answer that waits for a tap on its card, when the card
-  // brings no words of its own.
-  confirmLine: string
-  // Said once the voice is free when an answer's check could not back it.
-  // Short natural lines for a slow answer ("Let me check."); at most one
-  // per answer, picked at random.
-  fillers: readonly string[]
-  // Put in front of an answer that cuts the first line off ("Oh,"),
-  // picked at random.
-  cutIns: readonly string[]
   // 0 to 1, like Math.random (tests pass their own).
   random: () => number
-  // Said once when talking starts, like an ElevenLabs agent's first
-  // message.
-  greeting: string
   onState: (state: LiveVoiceState) => void
   onCaption: (text: string) => void
   onError: (error: LiveVoiceError) => void
@@ -113,8 +108,29 @@ export function takeSentences(text: string): {
   return { sentences, rest: text.slice(start) }
 }
 
+// What the screen already says about a reply, for when the model had no words
+// of its own: an answered card's outcome, and a waiting card's own text.
+function whatTheScreenSays(reply: Reply | null): string {
+  if (!reply) return ""
+  const cards = reply.confirms
+    .filter((card) => card.state === "pending")
+    .map((card) => `${card.title}: ${card.summary.replace(/\n+/g, ", ")}`)
+  return [reply.result?.text ?? "", ...cards].filter(Boolean).join(" ")
+}
+
 export class LiveVoiceSession {
   private ended = false
+  // The lines written for this talk. Each is said once at most, then gone;
+  // with none left, the talk just goes on without.
+  private greeting = ""
+  // Too late for a hello: the owner has spoken, or the wait is over.
+  private started = false
+  private fillers: string[] = []
+  private cutIns: string[] = []
+  private socketOpen = false
+  private greetingTimer: ReturnType<typeof setTimeout> | undefined
+  // What a tap on a card did, until the answer that says so can start.
+  private tap: { words: string; answer: CardAnswer } | null = null
   // What the owner said that the assistant has not been asked yet.
   private queued = ""
   // An answer is being written.
@@ -127,11 +143,9 @@ export class LiveVoiceSession {
   private speechDone = false
   private written = ""
   private filler: ReturnType<typeof setTimeout> | undefined
-  // This answer has said its waiting line ("Let me check.").
+  // This answer has said its waiting line.
   private waited = false
-  // The last waiting lines and lead-in words said, newest last.
-  private recentFillers: string[] = []
-  // The line said before a lookup ("Let me check…"), on its own voice so the
+  // The line said before a lookup, on its own voice so the
   // answer can cut it off: ElevenLabs can only stop audio by closing the
   // socket (https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket).
   // Null once it has finished playing or was cut off.
@@ -141,7 +155,6 @@ export class LiveVoiceSession {
     arrived: boolean
   } | null = null
   private lookedUp = false
-  private recentCutIns: string[] = []
   // An answer is being written or spoken (not the hello).
   private answering = false
   // The words of the question being answered.
@@ -153,12 +166,40 @@ export class LiveVoiceSession {
     parts.onState("connecting")
   }
 
-  // The listening socket is open: say hello, then listen.
+  // The listening socket is open: say hello if it is written by now, then
+  // listen. A hello that comes too late is dropped: the owner has started.
   opened() {
     if (this.ended) return
     this.parts.onState("listening")
+    this.socketOpen = true
+    this.greetingTimer = setTimeout(() => {
+      this.started = true
+    }, VOICE_RULES.greetingWaitMs)
+    this.greet()
+  }
+
+  // The hello for this talk came, if the owner hasn't started without it.
+  greetingReady(words: string | null) {
+    if (this.ended || !words || this.started) return
+    this.greeting = words
+    this.greet()
+  }
+
+  // The waiting lines for this talk came; null: it goes on without them.
+  linesReady(lines: VoiceLines | null) {
+    if (this.ended || !lines) return
+    this.fillers = [...lines.fillers]
+    this.cutIns = [...lines.cutIns]
+  }
+
+  private greet() {
+    if (!this.socketOpen || !this.greeting || this.answering) return
+    const words = this.greeting
+    this.greeting = ""
+    this.started = true
+    clearTimeout(this.greetingTimer)
     this.openVoice(this.turn, false)
-    this.say(this.parts.greeting)
+    this.say(words)
     this.speech?.finish()
   }
 
@@ -167,6 +208,7 @@ export class LiveVoiceSession {
     switch (event.type) {
       case "transcript":
         this.parts.onCaption(event.transcript)
+        if (event.transcript.trim()) this.started = true
         // The owner talked over the voice: stop it and listen. Only real
         // words count, not the start of any sound, so a cough or a door
         // doesn't cut it off ("Only respond to clear audio", OpenAI's
@@ -196,6 +238,7 @@ export class LiveVoiceSession {
     if (this.ended) return
     const text = words.trim()
     if (!text) return
+    this.started = true
     if (!this.thinking && (this.speech || this.parts.playing())) {
       this.cutOff()
       this.parts.onState("listening")
@@ -212,7 +255,7 @@ export class LiveVoiceSession {
         // ("Yeah," … "Kelly"). Ask again with all of it, as one
         // question, like OpenAI Realtime's interrupt_response.
         this.answering = false
-        this.queued = `${this.asked} ${this.queued}`
+        this.queued = [this.asked, this.queued].filter(Boolean).join(" ")
         this.stopSpeaking()
         this.parts.cancelAnswer()
         this.parts.withdraw()
@@ -227,15 +270,19 @@ export class LiveVoiceSession {
     void this.ask()
   }
 
-  // Says what a tap on a card did ("Done! Sophia is booked…"), then
-  // listens. An answer on its way goes first, so this is skipped then.
-  announce(words: string) {
+  // The owner tapped a card, and `words` say what it did. The AI says that in
+  // its own words and carries on with anything left of what they asked for
+  // (`words` itself only if it can't). What was being said stops, and is no
+  // cut-off: it is the card's own words, already answered. Words on their way
+  // go first, so this is skipped then.
+  tapped(words: string, answer: CardAnswer) {
     if (this.ended || this.thinking || this.queued) return
     const text = words.trim()
     if (!text) return
-    this.openVoice(this.turn, false)
-    this.say(text)
-    this.speech?.finish()
+    this.answering = false
+    this.stopSpeaking()
+    this.tap = { words: text, answer }
+    this.idle()
   }
 
   // The listening socket closed by itself. 1000: the session reached its
@@ -253,12 +300,15 @@ export class LiveVoiceSession {
       return
     }
     if (this.queued) void this.ask()
+    else if (this.tap) void this.carryOn()
   }
 
   end() {
     if (this.ended) return
     this.ended = true
     this.queued = ""
+    this.tap = null
+    clearTimeout(this.greetingTimer)
     this.cutOff()
     this.parts.close()
     this.parts.onCaption("")
@@ -290,7 +340,28 @@ export class LiveVoiceSession {
     if (!this.queued || this.thinking || this.parts.busy()) return
     const text = this.queued
     this.queued = ""
+    this.tap = null
     this.asked = text
+    await this.answer((listen) => this.parts.send(text, listen), "")
+  }
+
+  private async carryOn() {
+    const tap = this.tap
+    if (!tap || this.thinking || this.parts.busy()) return
+    this.tap = null
+    this.asked = ""
+    await this.answer(
+      (listen) => this.parts.resume(tap.answer, listen),
+      tap.words
+    )
+  }
+
+  // One answer, said as it is written. `plain` is said, with what the screen
+  // says about the reply, only if the model gives no words of its own.
+  private async answer(
+    send: (listen: AnswerListener) => Promise<Reply | null>,
+    plain: string
+  ) {
     this.turn += 1
     const turn = this.turn
     this.thinking = true
@@ -302,7 +373,7 @@ export class LiveVoiceSession {
     this.parts.onState("thinking")
     this.openVoice(turn)
 
-    const reply = await this.parts.send(text, {
+    const reply = await send({
       onText: (delta) => {
         if (turn !== this.turn) return
         this.written += delta
@@ -320,23 +391,15 @@ export class LiveVoiceSession {
     if (this.ended || turn !== this.turn) return
     this.thinking = false
 
-    // The last words, and when a card waits, what it will do and that it
-    // needs a tap (the card's own words when it has them).
-    const waiting = reply?.confirms.filter((c) => c.state === "pending") ?? []
-    const tapLine =
-      waiting.length === 0
-        ? ""
-        : waiting.length === 1 && waiting[0].spoken
-          ? waiting[0].spoken
-          : this.parts.confirmLine
-    // A yes in words ran a card: its result is the answer's last words.
-    const rest = [this.written, reply?.result?.text ?? "", tapLine]
-      .join(" ")
-      .trim()
+    const last = this.written.trim()
     this.written = ""
-    if (rest) this.sayAnswer(rest)
+    if (last) this.sayAnswer(last)
     clearTimeout(this.filler)
     if (!this.speech) return this.next()
+    if (!this.spoke) {
+      const words = [plain, whatTheScreenSays(reply)].filter(Boolean).join(" ")
+      if (words) this.sayAnswer(words)
+    }
     if (!this.spoke) {
       // Nothing to say (no words came): close the voice and listen.
       this.stopSpeaking()
@@ -381,11 +444,10 @@ export class LiveVoiceSession {
       if (this.speech !== speech) return
       if (this.firstLine?.arrived) this.firstLine = null
       if (this.speechDone) this.afterSpeech()
-      // Said "Let me check…"; now waiting for the rest of the answer.
+      // Said the first line; now waiting for the rest of the answer.
       else if (this.thinking) this.parts.onState("thinking")
     })
-    const { fillers } = this.parts
-    if (withFiller && fillers.length > 0) {
+    if (withFiller) {
       this.filler = setTimeout(() => {
         if (this.spoke || turn !== this.turn || this.speech !== speech) return
         this.sayWaitLine(turn)
@@ -404,13 +466,12 @@ export class LiveVoiceSession {
     else this.sayWaitLine(turn)
   }
 
-  // A short waiting line at random, on its own voice so the answer can cut
-  // it off mid-word.
+  // A short waiting line, on its own voice so the answer can cut it off
+  // mid-word.
   private sayWaitLine(turn: number) {
-    const { fillers } = this.parts
-    if (this.waited || fillers.length === 0) return
+    if (this.waited || this.fillers.length === 0) return
     this.waited = true
-    this.say(this.pickFresh(fillers, this.recentFillers))
+    this.say(this.takeLine(this.fillers))
     this.splitFirstLine(turn)
   }
 
@@ -425,33 +486,24 @@ export class LiveVoiceSession {
   }
 
   // The answer's words. If the first line is still going, it stops there
-  // and the answer comes in with a short word ("Oh, you've got 2 today").
+  // and the answer comes in with a short word.
   private sayAnswer(text: string) {
     const first = this.firstLine
     if (first) {
       this.firstLine = null
       first.speech.cancel()
       this.parts.stopPlaying()
-      const { cutIns } = this.parts
-      if (first.heard && cutIns.length > 0) {
-        text = `${this.pickFresh(cutIns, this.recentCutIns)} ${text}`
+      if (first.heard && this.cutIns.length > 0) {
+        text = `${this.takeLine(this.cutIns)} ${text}`
       }
     }
     this.say(text)
   }
 
-  // A line at random, never one of the last few said (VOICE_RULES.freshLines),
-  // so a talk never falls into a pattern.
-  private pickFresh(lines: readonly string[], recent: string[]): string {
-    const fresh = lines.filter((line) => !recent.includes(line))
-    const from = fresh.length > 0 ? fresh : lines
-    const line = from[Math.floor(this.parts.random() * from.length)]
-    recent.push(line)
-    recent.splice(
-      0,
-      recent.length - Math.min(VOICE_RULES.freshLines, lines.length - 1)
-    )
-    return line
+  // A line at random, and gone from the pool: never said twice in a talk.
+  private takeLine(pool: string[]): string {
+    const at = Math.floor(this.parts.random() * pool.length)
+    return pool.splice(at, 1)[0]
   }
 
   private say(text: string) {

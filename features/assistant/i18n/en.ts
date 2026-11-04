@@ -1,5 +1,7 @@
 // The chat screen's words. The server writes its own lines (step chips,
 // card titles); these are the ones the screen itself shows.
+import { ASSISTANT_NAME } from "@/lib/assistant-rules"
+
 const messages = {
   title: "Assistant",
   back: "Back",
@@ -77,14 +79,14 @@ const messages = {
     closeIdea: "Close",
   },
   composer: {
-    placeholder: "Ask or tell me what to do",
+    placeholder: `Ask or tell ${ASSISTANT_NAME}`,
     label: "Message",
     send: "Send",
     stop: "Stop",
     micDenied: "Allow the microphone to speak.",
     // The first-tap intro to talking live.
     voiceIntro: {
-      title: "Talk to your assistant",
+      title: `Talk to ${ASSISTANT_NAME}`,
       speak:
         "Talk naturally. It answers out loud and writes it all in the chat.",
       tap: "Changes still need your yes: tap the button or say it.",
@@ -101,24 +103,6 @@ const messages = {
       talking: "Talking…",
       end: "End",
       waveform: "Voice level",
-      // Said out loud when an answer waits for a tap on its card.
-      confirmLine: "To do it, tap the button on the screen.",
-      // Said out loud when an answer's check could not back it.
-      // Said once when talking starts.
-      greeting: "Hi! How can I help?",
-      // Said once if an answer is slow.
-      fillers: [
-        "Let me check.",
-        "One moment.",
-        "Just a second.",
-        "Let me look.",
-        "Hmm, let me see.",
-        "Okay, checking now.",
-        "Give me a moment.",
-        "Let me pull that up.",
-      ],
-      // Put in front of the answer when it cuts the first line off.
-      cutIns: ["Oh,", "Okay,", "Ah,", "Right,", "Alright,"],
     },
   },
   confirm: {

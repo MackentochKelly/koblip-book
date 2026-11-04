@@ -118,6 +118,10 @@ const messages: typeof en = {
     tooMany: "demasiadas confirmaciones pendientes, responde una primero",
     noCard:
       "ninguna tarjeta espera un sí (ya se respondió o caducó); vuelve a hacer el cambio con su herramienta",
+    noCardToDecline:
+      "no hay ninguna tarjeta esperando (ya se respondió o caducó), así que no hay nada que cerrar",
+    oneCard:
+      "solo una tarjeta a la vez: la primera está en pantalla; haz la siguiente cuando el dueño la responda",
     askInvalid:
       "sin botones: las opciones deben ser 2 o más nombres copiados tal cual de los resultados de herramientas de este turno; si no, pregunta con palabras y enumera las opciones",
     stopped: "Eso llevó demasiados pasos. ¿Puedes preguntar algo más concreto?",
@@ -265,8 +269,6 @@ const messages: typeof en = {
     at: (day: string, time: string) => `${day} a las ${time}`,
     booked: (name: string, service: string, when: string) =>
       `¡Listo! ${name} tiene cita para ${service} el ${when}.`,
-    ask: (name: string, service: string, when: string, action: string) =>
-      `¿Reservo a ${name} para ${service} el ${when}? Di que sí o toca ${action}.`,
     declined: "Vale, no la reservé.",
     couldNotBook: (reason: string) => `No se pudo reservar: ${reason}.`,
     conflictClosed: "el negocio está cerrado a esa hora",

@@ -354,3 +354,37 @@ test("a yes in words marks the earlier card done, and its result lands on the ne
   expect(card.role === "assistant" && card.confirms[0].state).toBe("accepted")
   expect(reply.role === "assistant" && reply.result?.text).toBe("Done!")
 })
+
+test("a no in words closes the earlier card, like a tap on its other button", () => {
+  let items: ChatItem[] = [{ id: "o1", role: "owner", text: "Book Ana" }, replyTo("r0")]
+  items = applyEvent(
+    items,
+    {
+      type: "confirm",
+      id: "c1",
+      title: "Book",
+      summary: "Ana",
+      destructive: false,
+      action: "Book",
+    },
+    "r0"
+  )
+  items = [...items, { id: "o2", role: "owner", text: "No" }, replyTo()]
+  items = applyEvent(items, { type: "declined", id: "c1" }, R)
+  const card = items[1]
+  expect(card.role === "assistant" && card.confirms[0].state).toBe("declined")
+  expect(toMessages(items, 10).some((m) => m.waiting)).toBe(false)
+})
+
+test("an answered card's outcome goes before the words said after it", () => {
+  let items: ChatItem[] = [{ id: "o1", role: "owner", text: "Yes" }, replyTo()]
+  items = applyEvent(
+    items,
+    { type: "result", ok: true, text: "Facial is added.", kind: "services" },
+    R
+  )
+  items = applyEvent(items, { type: "text", delta: "Massage next, okay?" }, R)
+  expect(toMessages(items, 10).at(-1)?.text).toBe(
+    "Facial is added.\n\nMassage next, okay?"
+  )
+})

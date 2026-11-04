@@ -179,6 +179,38 @@ test("voice true reaches runChat, absent stays false", async () => {
   expect((later[later.length - 1]?.[1] as { voice: boolean }).voice).toBe(false)
 })
 
+test("a tap's answer reaches runChat, only while talking", async () => {
+  const body = {
+    businessId: "b1",
+    messages: [
+      { role: "owner", text: "hi" },
+      { role: "assistant", text: "Done!" },
+    ],
+  }
+  const lastContext = () =>
+    vi.mocked(runChat).mock.lastCall?.[1] as { afterTap?: string }
+  await POST(post({ ...body, voice: true, afterTap: "yes" }))
+  expect(lastContext().afterTap).toBe("yes")
+  await POST(post({ ...body, voice: true, afterTap: "no" }))
+  expect(lastContext().afterTap).toBe("no")
+  await POST(post({ ...body, afterTap: "yes" }))
+  expect(lastContext().afterTap).toBeUndefined()
+})
+
+test("any other tap answer is a bad request", async () => {
+  for (const afterTap of [true, "maybe", 1]) {
+    const res = await POST(
+      post({
+        businessId: "b1",
+        messages: [{ role: "owner", text: "hi" }],
+        voice: true,
+        afterTap,
+      })
+    )
+    expect(res.status).toBe(400)
+  }
+})
+
 test("a non-boolean voice is a bad request", async () => {
   const res = await POST(
     post({

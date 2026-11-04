@@ -1,6 +1,8 @@
 import "server-only"
 import OpenAI from "openai"
 
+import { ASSISTANT_NAME } from "./assistant-rules"
+
 // The one place the text model name lives.
 export const META_TEXT_MODEL = "muse-spark-1.3"
 
@@ -13,11 +15,14 @@ export const META_VOICE_MODEL = "muse-voice-transcribe-1.0"
 
 // The one place the live-hearing handshake lives (schema fields only,
 // no key). The check route sends it to the relay per owner language.
+// `keywords` biases hearing toward words it would otherwise mishear, like
+// the assistant's name (https://dev.meta.ai/docs/api-reference/voice/schemas).
 export const VOICE_HANDSHAKE = {
   audioEncoding: "PCM_24KHZ",
   model: META_VOICE_MODEL,
   mode: "ENDPOINTING",
   partialMode: "CUMULATIVE",
+  keywords: [ASSISTANT_NAME],
 } as const
 
 let sharedClient: OpenAI | null = null

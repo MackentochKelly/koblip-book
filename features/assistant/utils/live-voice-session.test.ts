@@ -2,7 +2,7 @@ import { afterEach, expect, test, vi } from "vitest"
 
 import { VOICE_RULES } from "@/lib/voice-rules"
 
-import type { AnswerListener } from "../types"
+import type { AnswerListener, CardAnswer } from "../types"
 
 import {
   LiveVoiceSession,
@@ -73,6 +73,20 @@ function setup() {
           })
         })
     ),
+    resume: vi.fn(
+      (_answer: CardAnswer, listen: AnswerListener) =>
+        new Promise<Reply | null>((resolve) => {
+          busy = true
+          answers.push({
+            write: listen.onText,
+            lookup: listen.onLookup,
+            resolve: (r) => {
+              busy = false
+              resolve(r)
+            },
+          })
+        })
+    ),
     busy: () => busy,
     cancelAnswer: vi.fn(),
     openSpeech: (handlers) => {
@@ -105,17 +119,19 @@ function setup() {
     onCutOff: vi.fn(),
     withdraw: vi.fn(),
     close: vi.fn(),
-    confirmLine: "Tap the button on the screen.",
-    fillers: ["Hmm, let me see.", "Okay, almost there."],
-    cutIns: ["Oh,"],
     random: () => 0,
-    greeting: "Hi! What can I do for you?",
     onState: (state) => void states.push(state),
     onCaption: vi.fn(),
     onError: vi.fn(),
     onEnd: vi.fn(),
   }
   const session = new LiveVoiceSession(parts)
+  // The lines the AI wrote for this talk.
+  session.linesReady({
+    fillers: ["Hmm, let me see.", "Okay, almost there.", "One moment."],
+    cutIns: ["Oh,", "Right,"],
+  })
+  session.greetingReady("Hi! What can I do for you?")
   return {
     session,
     parts,
@@ -360,12 +376,24 @@ test("after the first line it shows thinking until more words come", () => {
   expect(t.states.slice(-2)).toEqual(["talking", "thinking"])
 })
 
-test("an answer waiting for a tap says so", async () => {
+test("a card the model has no words for: what the screen says is said", async () => {
   const t = setup()
   t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Book Ana" })
-  t.answers[0].resolve(reply("", true))
+  const answer = reply("", true)
+  answer.confirms[0].summary = "Ana · Cut\nFriday · 3 PM"
+  t.answers[0].resolve(answer)
   await flush()
-  expect(t.voices[0].said).toEqual(["Tap the button on the screen."])
+  expect(t.voices[0].said).toEqual(["Book: Ana · Cut, Friday · 3 PM"])
+})
+
+test("the model's own words about a card are all that is said", async () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Book Ana" })
+  t.answers[0].write("That's Ana on Friday at 3, okay? ")
+  t.answers[0].resolve(reply("That's Ana on Friday at 3, okay?", true))
+  await flush()
+  expect(t.voices[0].said).toEqual(["That's Ana on Friday at 3, okay?"])
+  expect(t.voices[0].finished).toBe(true)
 })
 
 test("a slow answer gets one short line, once", () => {
@@ -415,10 +443,11 @@ test("the answer cuts the slow-answer line off mid-word", () => {
   expect(t.voices[1].said).toEqual(["Oh, You have 2 today."])
 })
 
-test("waiting lines are picked at random, never the last one again", async () => {
+test("each waiting line is said once in a talk, then there are none", async () => {
   vi.useFakeTimers()
   const t = setup()
-  for (const [turn, question] of ["One?", "Two?", "Three?"].entries()) {
+  const questions = ["One?", "Two?", "Three?", "Four?", "Five?"]
+  for (const [turn, question] of questions.entries()) {
     t.session.hear({
       type: "speechComplete",
       turnId: turn + 1,
@@ -431,26 +460,90 @@ test("waiting lines are picked at random, never the last one again", async () =>
     t.playerIdle()
     for (const voice of t.voices) voice.done()
   }
-  const said = t.voices.flatMap((voice) => voice.said)
-  const lines = said.filter((line) =>
-    ["Hmm, let me see.", "Okay, almost there."].includes(line)
-  )
-  // random() is always 0 here: the first fresh line each time.
-  expect(lines).toEqual([
-    "Hmm, let me see.",
-    "Okay, almost there.",
-    "Hmm, let me see.",
-  ])
+  const lines = t.voices
+    .flatMap((voice) => voice.said)
+    .filter((line) => line !== "Sure." && !line.endsWith(" Sure."))
+  expect(lines).toEqual(["Hmm, let me see.", "Okay, almost there.", "One moment."])
 })
 
-test("a card with its own words says them instead of the plain tap line", async () => {
+test("a cut-in word is said once in a talk, then the answer comes plain", async () => {
+  vi.useFakeTimers()
   const t = setup()
-  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Book Ana" })
-  const answer = reply("", true)
-  answer.confirms[0].spoken = "Book Ana at 3 PM? Say yes or tap Book."
-  t.answers[0].resolve(answer)
-  await flush()
-  expect(t.voices[0].said).toEqual(["Book Ana at 3 PM? Say yes or tap Book."])
+  const said: string[] = []
+  for (const [turn, question] of ["One?", "Two?", "Three?"].entries()) {
+    t.session.hear({
+      type: "speechComplete",
+      turnId: turn + 1,
+      transcript: question,
+    })
+    vi.advanceTimersByTime(VOICE_RULES.fillerAfterMs)
+    const voices = t.voices.length
+    t.setPlaying(true)
+    t.voices[voices - 2].audio()
+    t.answers[turn].write("Sure. ")
+    said.push(...t.voices[voices - 1].said)
+    t.answers[turn].resolve(reply("Sure."))
+    await vi.runAllTimersAsync()
+    t.setPlaying(false)
+    t.playerIdle()
+    for (const voice of t.voices) voice.done()
+  }
+  expect(said).toEqual(["Oh, Sure.", "Right, Sure.", "Sure."])
+})
+
+test("with no lines written, a slow answer just stays quiet", () => {
+  vi.useFakeTimers()
+  const t = setup()
+  t.session.linesReady({ fillers: [], cutIns: [] })
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Today?" })
+  t.answers[0].lookup()
+  vi.advanceTimersByTime(VOICE_RULES.fillerAfterMs * 2)
+  expect(t.voices.flatMap((voice) => voice.said)).toEqual([])
+})
+
+test("no hello comes when the owner has already started", () => {
+  const t = setup()
+  t.session.opened()
+  t.voices.length = 0
+  const late = new LiveVoiceSession(t.parts)
+  late.opened()
+  late.hear({ type: "transcript", transcript: "What's" })
+  late.greetingReady("Hello!")
+  expect(t.voices).toEqual([])
+})
+
+test("no hello after too long a wait", () => {
+  vi.useFakeTimers()
+  const t = setup()
+  t.session.opened()
+  t.voices.length = 0
+  const late = new LiveVoiceSession(t.parts)
+  late.opened()
+  vi.advanceTimersByTime(VOICE_RULES.greetingWaitMs)
+  late.greetingReady("Hello!")
+  expect(t.voices).toEqual([])
+})
+
+test("a hello written after the socket opened is still said", () => {
+  const t = setup()
+  t.session.opened()
+  t.voices.length = 0
+  const late = new LiveVoiceSession(t.parts)
+  late.opened()
+  expect(t.voices).toEqual([])
+  late.greetingReady("Hello!")
+  expect(t.voices[0].said).toEqual(["Hello!"])
+})
+
+test("a talk with no hello written just listens", () => {
+  const t = setup()
+  t.session.opened()
+  t.voices.length = 0
+  const late = new LiveVoiceSession(t.parts)
+  late.opened()
+  late.greetingReady(null)
+  expect(t.voices).toEqual([])
+  expect(t.states.at(-1)).toBe("listening")
 })
 
 test("a yes in words says the card's result", async () => {
@@ -463,20 +556,95 @@ test("a yes in words says the card's result", async () => {
   expect(t.voices[0].said).toEqual(["Done! Ana is booked."])
 })
 
-test("a tapped card's result is said, then it listens", () => {
+test("after a tap the model says what it did, in its own words", async () => {
   const t = setup()
-  t.session.announce("Done! Ana is booked.")
-  expect(t.voices[0].said).toEqual(["Done! Ana is booked."])
-  expect(t.voices[0].finished).toBe(true)
+  t.session.tapped("Done! Ana is booked.", "yes")
+  expect(t.parts.resume).toHaveBeenCalledWith("yes", expect.any(Object))
+  t.answers[0].write("Ana's all set. ")
+  t.answers[0].resolve(reply("Ana's all set."))
+  await flush()
+  expect(t.voices[0].said).toEqual(["Ana's all set."])
+  expect(t.parts.send).not.toHaveBeenCalled()
   t.voices[0].done()
   expect(t.states.at(-1)).toBe("listening")
 })
 
-test("no result is said over an answer on its way", () => {
+test("after a tap the model can say the next card", async () => {
+  const t = setup()
+  t.session.tapped("Facial is added.", "yes")
+  t.answers[0].write("Now Massage, is that okay? ")
+  t.answers[0].resolve(reply("Now Massage, is that okay?", true))
+  await flush()
+  expect(t.voices[0].said).toEqual(["Now Massage, is that okay?"])
+})
+
+test("a tap's words are said when the model has none", async () => {
+  const t = setup()
+  t.session.tapped("Okay, nothing was changed.", "no")
+  expect(t.parts.resume).toHaveBeenCalledWith("no", expect.any(Object))
+  t.answers[0].resolve(null)
+  await flush()
+  expect(t.voices[0].said).toEqual(["Okay, nothing was changed."])
+})
+
+test("a tap with no words (it failed) asks nothing", () => {
+  const t = setup()
+  t.session.tapped("  ", "yes")
+  expect(t.parts.resume).not.toHaveBeenCalled()
+})
+
+test("a tap while the card is being said stops it, with no cut-off", async () => {
+  const t = setup()
+  t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Book Ana" })
+  t.answers[0].write("Ana on Friday at 3, okay? ")
+  t.answers[0].resolve(reply("Ana on Friday at 3, okay?", true))
+  await flush()
+  t.setPlaying(true)
+  t.setHeard("Ana on Friday")
+  t.session.tapped("Done! Ana is booked.", "yes")
+  expect(t.parts.stopPlaying).toHaveBeenCalled()
+  expect(t.parts.onCutOff).not.toHaveBeenCalled()
+  expect(t.voices[0].cancelled).toBe(true)
+  expect(t.parts.resume).toHaveBeenCalledTimes(1)
+})
+
+test("a tap waits for the screen to catch up", () => {
+  const t = setup()
+  t.setBusy(true)
+  t.session.tapped("Done! Ana is booked.", "yes")
+  expect(t.parts.resume).not.toHaveBeenCalled()
+  t.setBusy(false)
+  t.session.idle()
+  expect(t.parts.resume).toHaveBeenCalledTimes(1)
+})
+
+test("no tap talk over an answer on its way", () => {
   const t = setup()
   t.session.hear({ type: "speechComplete", turnId: 1, transcript: "Hi" })
-  t.session.announce("Done! Ana is booked.")
-  expect(t.voices[0].said).toEqual([])
+  t.session.tapped("Done! Ana is booked.", "yes")
+  expect(t.parts.resume).not.toHaveBeenCalled()
+})
+
+test("words said while a tap waits go first, and the tap's talk is dropped", () => {
+  const t = setup()
+  t.setBusy(true)
+  t.session.tapped("Done! Ana is booked.", "yes")
+  t.session.said("What's next?")
+  t.setBusy(false)
+  t.session.idle()
+  expect(t.parts.send).toHaveBeenLastCalledWith("What's next?", expect.any(Object))
+  expect(t.parts.resume).not.toHaveBeenCalled()
+})
+
+test("words before any answer after a tap: only those words are asked", async () => {
+  const t = setup()
+  t.session.tapped("Done! Ana is booked.", "yes")
+  t.session.said("And Leo?")
+  expect(t.parts.withdraw).toHaveBeenCalled()
+  t.answers[0].resolve(reply(""))
+  await flush()
+  t.session.idle()
+  expect(t.parts.send).toHaveBeenLastCalledWith("And Leo?", expect.any(Object))
 })
 
 test("no extra line when words came in time", () => {

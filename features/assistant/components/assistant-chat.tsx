@@ -58,13 +58,10 @@ export function AssistantChat({
     businessId,
     busy: chat.busy,
     send: chat.send,
+    resume: chat.resume,
     stopAnswer: chat.stop,
     onCutOff: chat.cutOff,
     onWithdraw: chat.withdraw,
-    confirmLine: messages.composer.live.confirmLine,
-    fillers: messages.composer.live.fillers,
-    cutIns: messages.composer.live.cutIns,
-    greeting: messages.composer.live.greeting,
     onError: (error) => {
       // The voice is gone from ElevenLabs: stop and ask for another.
       if (error === "no_voice") {
@@ -97,12 +94,14 @@ export function AssistantChat({
     if (live.state !== "off") live.say(text)
     else void chat.send(text)
   }
-  // A tap on a card. While talking live, what it did is said out loud
-  // ("Done! Sophia is booked…"), so the talk never just goes quiet.
+  // A tap on a card. While talking live, what it did is said out loud and
+  // the talk carries on from there, so it never just goes quiet.
   const answer = (id: string, accept: boolean) => {
     const talking = live.state !== "off"
     void chat.answer(id, accept).then((reply) => {
-      if (talking && reply) live.announce(wordsOf(reply))
+      if (talking && reply) {
+        live.tapped(wordsOf(reply), accept ? "yes" : "no")
+      }
     })
   }
   // Full screen on a phone only; on a computer it sits in the page.

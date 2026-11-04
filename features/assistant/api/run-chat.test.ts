@@ -131,6 +131,7 @@ test("plain answer sends one text event then done, with tools offered", async ()
     "probe",
     "ask_owner",
     "confirm_card",
+    "decline_card",
   ])
   expect(body.stream).toBe(true)
   expect(body.reasoning_effort).toBe("low")
@@ -983,6 +984,7 @@ test("talking mode asks with buttons too, the question said out loud", async () 
     "probe",
     "ask_owner",
     "confirm_card",
+    "decline_card",
   ])
   expect(body.messages[0].content).toContain("ask_owner")
   expect(events.slice(-3)).toEqual([
@@ -1380,4 +1382,468 @@ test("another owner's card is never noted or run", async () => {
   expect(
     sent.some((m) => String(m.content).includes("still waiting for the owner"))
   ).toBe(false)
+})
+
+// Talking: nothing about a card is a fixed line. The model says it, and an
+// answered card's outcome goes back to the model, which carries on.
+const VOICE = { ...CONTEXT, voice: true }
+const cardTool = () =>
+  risky(async () => ({
+    title: "Cancel booking",
+    summary: "Ana · Friday · 3:00 PM",
+    destructive: true,
+    action: "Cancel booking",
+  }))
+const toolMessages = (messages: unknown[]) =>
+  (messages as { role: string; content: string }[]).filter(
+    (m) => m.role === "tool"
+  )
+
+test("talking: the model says the card, on a turn with no tools", async () => {
+  const { seen, create } = scriptedClient([
+    [toolChunk(0, "c1", "cancel_booking", '{"bookingId":"k1"}')],
+    [textChunk("That cancels Ana on Friday at 3, okay?")],
+  ])
+  const events = await collect(runChat(MESSAGES, VOICE, [cardTool()]))
+  expect(events).toEqual([
+    expect.objectContaining({ type: "confirm", title: "Cancel booking" }),
+    { type: "text", delta: "That cancels Ana on Friday at 3, okay?" },
+    { type: "done" },
+  ])
+  expect(create).toHaveBeenCalledTimes(2)
+  const first = seen[0] as unknown as { tools?: unknown[] }
+  const second = seen[1] as unknown as {
+    tools?: unknown[]
+    parallel_tool_calls?: boolean
+    messages: { role: string; content: string }[]
+  }
+  expect(first.tools).toBeDefined()
+  expect(second.tools).toBeUndefined()
+  expect(second.parallel_tool_calls).toBeUndefined()
+  // Every call answered with its own tool message, with the card's facts.
+  const [result] = toolMessages(second.messages)
+  expect(JSON.parse(result.content)).toEqual({
+    waitingForOwner: true,
+    title: "Cancel booking",
+    summary: "Ana · Friday · 3:00 PM",
+    action: "Cancel booking",
+    destructive: true,
+  })
+  const note = second.messages.at(-1)
+  expect(note?.role).toBe("developer")
+  expect(note?.content).toContain("nothing has changed yet")
+  expect(note?.content).toContain("NEVER say it is done")
+})
+
+test("typed: the card still ends the reply with no more model calls", async () => {
+  const { create } = scriptedClient([
+    [toolChunk(0, "c1", "cancel_booking", "{}")],
+  ])
+  const events = await collect(runChat(MESSAGES, CONTEXT, [cardTool()]))
+  expect(events).toEqual([
+    expect.objectContaining({ type: "confirm" }),
+    { type: "done" },
+  ])
+  expect(create).toHaveBeenCalledTimes(1)
+})
+
+test("talking: no words for a card ends cleanly, with no fixed line", async () => {
+  scriptedClient([[toolChunk(0, "c1", "cancel_booking", "{}")], []])
+  const events = await collect(runChat(MESSAGES, VOICE, [cardTool()]))
+  expect(events).toEqual([
+    expect.objectContaining({ type: "confirm" }),
+    { type: "done" },
+  ])
+})
+
+test("talking: a free-times picker never shows with the card", async () => {
+  scriptedClient([
+    [
+      toolChunk(
+        0,
+        "c0",
+        "find_free_times",
+        "{}"
+      ),
+    ],
+    [toolChunk(0, "c1", "cancel_booking", "{}")],
+    [textChunk("Okay?")],
+  ])
+  const events = await collect(
+    runChat(MESSAGES, VOICE, [
+      probe(
+        async () => ({
+          service: "Cut",
+          teamMember: null,
+          days: [{ date: "2026-10-29", times: ["10:00"] }],
+        }),
+        "find_free_times"
+      ),
+      cardTool(),
+    ])
+  )
+  expect((events as { type: string }[]).map((e) => e.type)).not.toContain(
+    "times"
+  )
+})
+
+test("talking: the card stands if saying it fails", async () => {
+  const create = vi
+    .fn()
+    .mockResolvedValueOnce(
+      (async function* () {
+        yield toolChunk(0, "c1", "cancel_booking", "{}")
+      })()
+    )
+    .mockRejectedValueOnce(Object.assign(new Error("bad"), { status: 400 }))
+  vi.spyOn(meta, "getMetaAiClient").mockReturnValue({
+    chat: { completions: { create } },
+  } as never)
+  const events = await collect(runChat(MESSAGES, VOICE, [cardTool()]))
+  expect(events).toEqual([
+    expect.objectContaining({ type: "confirm" }),
+    { type: "done" },
+  ])
+})
+
+test("talking: one card at a time, a second call in the turn gets no card", async () => {
+  const { seen } = scriptedClient([
+    [
+      toolChunk(0, "c1", "cancel_booking", "{}"),
+      toolChunk(1, "c2", "cancel_booking", "{}"),
+    ],
+    [textChunk("Okay?")],
+  ])
+  const events = await collect(runChat(MESSAGES, VOICE, [cardTool()]))
+  expect(
+    (events as { type: string }[]).filter((e) => e.type === "confirm")
+  ).toHaveLength(1)
+  const results = toolMessages(seen[1].messages)
+  expect(results).toHaveLength(2)
+  expect(JSON.parse(results[1].content)).toEqual({
+    error: expect.stringContaining("one card at a time"),
+  })
+})
+
+test("talking: a yes in words goes back to the model, which says it", async () => {
+  const { id, tool, execute, messages } = await shownCard()
+  const { seen } = scriptedClient([
+    [toolChunk(0, "c1", "confirm_card", "{}")],
+    [textChunk("Ana's cancelled.")],
+  ])
+  const events = await collect(runChat(messages, VOICE, [tool]))
+  expect(execute).toHaveBeenCalledTimes(1)
+  expect(events).toEqual([
+    { type: "accepted", id },
+    expect.objectContaining({ type: "step", status: "running" }),
+    expect.objectContaining({ type: "step", status: "done" }),
+    { type: "result", ok: true, text: "Booked.", kind: "bookings" },
+    { type: "text", delta: "Ana's cancelled." },
+    { type: "done" },
+  ])
+  const [result] = toolMessages(seen[1].messages)
+  expect(JSON.parse(result.content)).toEqual({ ok: true, outcome: "Booked." })
+})
+
+test("talking: a failed change is told to the model as failed", async () => {
+  const { tool, messages } = await shownCard(
+    vi.fn(async () => ({ ok: false, doneText: "That time is taken." }))
+  )
+  const { seen } = scriptedClient([
+    [toolChunk(0, "c1", "confirm_card", "{}")],
+    [textChunk("That time just went.")],
+  ])
+  await collect(runChat(messages, VOICE, [tool]))
+  const [result] = toolMessages(seen[1].messages)
+  expect(JSON.parse(result.content)).toEqual({
+    ok: false,
+    outcome: "That time is taken.",
+  })
+})
+
+test("talking: after a yes it carries on with the next card", async () => {
+  const { id, tool, execute, messages } = await shownCard()
+  scriptedClient([
+    [toolChunk(0, "c1", "confirm_card", "{}")],
+    [toolChunk(0, "c2", "cancel_booking", '{"bookingId":"k2"}')],
+    [textChunk("And Leo's, okay?")],
+  ])
+  const events = await collect(runChat(messages, VOICE, [tool]))
+  expect(execute).toHaveBeenCalledTimes(1)
+  const cards = (events as { type: string; id: string }[]).filter(
+    (e) => e.type === "confirm"
+  )
+  expect(cards).toHaveLength(1)
+  expect(cards[0].id).not.toBe(id)
+  expect(events.at(-2)).toEqual({ type: "text", delta: "And Leo's, okay?" })
+})
+
+test("talking: one yes runs one card, however often it is called", async () => {
+  const { tool, execute, messages } = await shownCard()
+  const { seen } = scriptedClient([
+    [toolChunk(0, "c1", "confirm_card", "{}")],
+    [toolChunk(0, "c2", "confirm_card", "{}")],
+    [textChunk("Done.")],
+  ])
+  await collect(runChat(messages, VOICE, [tool]))
+  expect(execute).toHaveBeenCalledTimes(1)
+  const results = toolMessages(seen[2].messages)
+  expect(JSON.parse(results[1].content)).toEqual({
+    error: expect.stringContaining("no card is waiting"),
+  })
+})
+
+test("talking: no words after a yes, or a failed call, ends cleanly", async () => {
+  const { tool, messages } = await shownCard()
+  scriptedClient([[toolChunk(0, "c1", "confirm_card", "{}")], []])
+  const events = await collect(runChat(messages, VOICE, [tool]))
+  expect(events.at(-1)).toEqual({ type: "done" })
+  expect(
+    (events as { type: string }[]).filter((e) => e.type === "text")
+  ).toEqual([])
+
+  const second = await shownCard()
+  const create = vi
+    .fn()
+    .mockResolvedValueOnce(
+      (async function* () {
+        yield toolChunk(0, "c1", "confirm_card", "{}")
+      })()
+    )
+    .mockRejectedValueOnce(Object.assign(new Error("bad"), { status: 400 }))
+  vi.spyOn(meta, "getMetaAiClient").mockReturnValue({
+    chat: { completions: { create } },
+  } as never)
+  const failed = await collect(runChat(second.messages, VOICE, [second.tool]))
+  expect(failed.at(-1)).toEqual({ type: "done" })
+  expect((failed as { type: string }[]).map((e) => e.type)).not.toContain(
+    "error"
+  )
+})
+
+test("typed: a no in words closes the card and says nothing changed", async () => {
+  const { id, tool, execute, messages } = await shownCard()
+  const { create } = scriptedClient([
+    [toolChunk(0, "c1", "decline_card", "{}")],
+  ])
+  const events = await collect(runChat(messages, CONTEXT, [tool]))
+  expect(execute).not.toHaveBeenCalled()
+  expect(events).toEqual([
+    { type: "declined", id },
+    { type: "text", delta: "Okay, nothing was changed." },
+    { type: "done" },
+  ])
+  expect(create).toHaveBeenCalledTimes(1)
+  expect(await peekPendingAction(id)).toBeNull()
+})
+
+test("a no uses the card's own words when it has them", async () => {
+  const { id, tool, messages } = await shownCard()
+  ;(tool.confirm as { declinedText?: string }).declinedText =
+    "Okay, I didn't book it."
+  scriptedClient([[toolChunk(0, "c1", "decline_card", "{}")]])
+  const events = await collect(runChat(messages, CONTEXT, [tool]))
+  expect(events).toEqual([
+    { type: "declined", id },
+    { type: "text", delta: "Okay, I didn't book it." },
+    { type: "done" },
+  ])
+})
+
+test("talking: a no goes back to the model, which says it", async () => {
+  const { id, tool, execute, messages } = await shownCard()
+  const { seen } = scriptedClient([
+    [toolChunk(0, "c1", "decline_card", "{}")],
+    [textChunk("Left it as it was.")],
+  ])
+  const events = await collect(runChat(messages, VOICE, [tool]))
+  expect(execute).not.toHaveBeenCalled()
+  expect(events).toEqual([
+    { type: "declined", id },
+    { type: "text", delta: "Left it as it was." },
+    { type: "done" },
+  ])
+  const [result] = toolMessages(seen[1].messages)
+  expect(JSON.parse(result.content)).toEqual({
+    ok: true,
+    ownerSaidNo: true,
+    outcome: "Okay, nothing was changed.",
+  })
+})
+
+test("talking: a no with no words from the model still says something", async () => {
+  const { id, tool, messages } = await shownCard()
+  scriptedClient([[toolChunk(0, "c1", "decline_card", "{}")], []])
+  const events = await collect(runChat(messages, VOICE, [tool]))
+  expect(events).toEqual([
+    { type: "declined", id },
+    { type: "text", delta: "Okay, nothing was changed." },
+    { type: "done" },
+  ])
+})
+
+test("decline_card with no card waiting closes nothing and goes back to the model", async () => {
+  const { tool, execute } = await shownCard()
+  const { seen } = scriptedClient([
+    [toolChunk(0, "c1", "decline_card", "{}")],
+    [textChunk("Nothing's waiting.")],
+  ])
+  const events = await collect(runChat(MESSAGES, CONTEXT, [tool]))
+  expect(execute).not.toHaveBeenCalled()
+  expect((events as { type: string }[]).map((e) => e.type)).not.toContain(
+    "declined"
+  )
+  const [result] = toolMessages(seen[1].messages)
+  expect(JSON.parse(result.content)).toEqual({
+    error: expect.stringContaining("nothing to close"),
+  })
+})
+
+test("a tap reads as the owner's turn and the card's own call, with its outcome", async () => {
+  const { seen } = scriptedClient([[textChunk("Ana's booked.")]])
+  const events = await collect(
+    runChat(
+      [
+        { role: "owner", text: "Book Ana" },
+        { role: "assistant", text: "Ana on Friday, okay?" },
+        { role: "assistant", text: "Done! Ana is booked." },
+      ],
+      { ...VOICE, afterTap: "yes" },
+      []
+    )
+  )
+  expect(events).toEqual([
+    { type: "text", delta: "Ana's booked." },
+    { type: "done" },
+  ])
+  const sent = seen[0].messages as unknown as {
+    role: string
+    content: string | null
+    tool_calls?: { function: { name: string } }[]
+  }[]
+  const [owner, call, result] = sent.slice(-3)
+  expect(owner).toEqual({
+    role: "user",
+    content: "(The owner tapped yes on the card.)",
+  })
+  expect(call.tool_calls?.[0].function.name).toBe("confirm_card")
+  expect(JSON.parse(result.content ?? "")).toEqual({
+    outcome: "Done! Ana is booked.",
+  })
+})
+
+test("a tapped no reads as decline_card, and is marked as the owner's no", async () => {
+  const { seen } = scriptedClient([[textChunk("Left it.")]])
+  await collect(
+    runChat(
+      [
+        { role: "owner", text: "Book Ana" },
+        { role: "assistant", text: "Okay, nothing was changed." },
+      ],
+      { ...VOICE, afterTap: "no" },
+      []
+    )
+  )
+  const sent = seen[0].messages as unknown as {
+    role: string
+    content: string
+    tool_calls?: { function: { name: string } }[]
+  }[]
+  const [, call, result] = sent.slice(-3)
+  expect(call.tool_calls?.[0].function.name).toBe("decline_card")
+  expect(JSON.parse(result.content)).toEqual({
+    ownerSaidNo: true,
+    outcome: "Okay, nothing was changed.",
+  })
+})
+
+test("a tap's words can't run a card, and a failed call is no error", async () => {
+  const { id, tool, execute } = await shownCard()
+  const create = vi
+    .fn()
+    .mockResolvedValueOnce(
+      (async function* () {
+        yield toolChunk(0, "c1", "confirm_card", "{}")
+      })()
+    )
+    .mockRejectedValueOnce(Object.assign(new Error("bad"), { status: 400 }))
+  vi.spyOn(meta, "getMetaAiClient").mockReturnValue({
+    chat: { completions: { create } },
+  } as never)
+  const events = await collect(
+    runChat(
+      [
+        { role: "owner", text: "Cancel Ana" },
+        { role: "assistant", text: "", waiting: id },
+        { role: "assistant", text: "Done!" },
+      ],
+      { ...VOICE, afterTap: "yes" },
+      [tool]
+    )
+  )
+  expect(execute).not.toHaveBeenCalled()
+  expect(events.at(-1)).toEqual({ type: "done" })
+})
+
+const SAID = "You have 2 services, Cut and Fade."
+const ASKED_AGAIN = [
+  { role: "owner" as const, text: "How many services?" },
+  { role: "assistant" as const, text: SAID },
+  { role: "owner" as const, text: "Sorry, how many?" },
+]
+
+test("talking: a repeat of an earlier sentence is sent back before it is said", async () => {
+  const { seen, create } = scriptedClient([
+    [textChunk("you have 2 services: cut and fade.")],
+    [textChunk("There are two, Cut and Fade.")],
+  ])
+  const events = await collect(runChat(ASKED_AGAIN, VOICE, []))
+  expect(events).toEqual([
+    { type: "text", delta: "There are two, Cut and Fade." },
+    { type: "done" },
+  ])
+  expect(create).toHaveBeenCalledTimes(2)
+  const note = (seen[1].messages as unknown as { content: string }[]).at(-1)
+  expect(note?.content).toContain("word for word")
+})
+
+test("talking: it asks for new words once, then says what it has", async () => {
+  const { create } = scriptedClient([[textChunk(SAID)]])
+  const events = await collect(runChat(ASKED_AGAIN, VOICE, []))
+  expect(events).toEqual([{ type: "text", delta: SAID }, { type: "done" }])
+  expect(create).toHaveBeenCalledTimes(2)
+})
+
+test("talking: a card's words get new words too, still with no tools", async () => {
+  const { seen, create } = scriptedClient([
+    [toolChunk(0, "c1", "cancel_booking", "{}")],
+    [textChunk(SAID)],
+    [textChunk("Cancelling Ana, okay?")],
+  ])
+  const events = await collect(runChat(ASKED_AGAIN, VOICE, [cardTool()]))
+  expect(create).toHaveBeenCalledTimes(3)
+  expect((seen[2] as unknown as { tools?: unknown }).tools).toBeUndefined()
+  expect(events.at(-2)).toEqual({
+    type: "text",
+    delta: "Cancelling Ana, okay?",
+  })
+})
+
+test("short words are fine to hear again, and typed answers are never sent back", async () => {
+  const short = scriptedClient([[textChunk("Okay, done.")]])
+  await collect(
+    runChat(
+      [
+        { role: "owner", text: "a" },
+        { role: "assistant", text: "Okay, done." },
+        { role: "owner", text: "b" },
+      ],
+      VOICE,
+      []
+    )
+  )
+  expect(short.create).toHaveBeenCalledTimes(1)
+  const typed = scriptedClient([[textChunk(SAID)]])
+  await collect(runChat(ASKED_AGAIN, CONTEXT, []))
+  expect(typed.create).toHaveBeenCalledTimes(1)
 })

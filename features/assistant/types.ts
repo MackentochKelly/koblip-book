@@ -36,9 +36,9 @@ export type AssistantStreamEvent =
       summary: string
       destructive: boolean
       action: string // the button's word, e.g. "Book", "Delete"
-      spoken?: string // said out loud while talking, in place of the plain tap line
     } // card with the action button and Cancel
   | { type: "accepted"; id: string } // an earlier card the owner said yes to in words; its result follows
+  | { type: "declined"; id: string } // an earlier card the owner said no to in words; nothing changed
   | { type: "memory"; rows: MemoryRow[] } // records this answer looked up, sent back with it next time
   | { type: "choices"; options: string[] } // quick answers; a tap sends one
   | {
@@ -88,11 +88,24 @@ export interface AssistantChat {
   messages: AssistantMessage[]
 }
 
+export type CardAnswer = "yes" | "no"
+
 // Request for POST /api/assistant.
 export interface AssistantRequest {
   businessId: string
   messages: AssistantMessage[]
   voice?: boolean // talking mode: short spoken answers
+  // Talking mode, right after a tap on a card's yes or no button: nothing new
+  // was said, so the answer says what the tap did (the last message) and
+  // carries on with what is left.
+  afterTap?: CardAnswer
+}
+
+// What the assistant says while it works in one talk, written by the AI when
+// the talk starts, in the owner's language.
+export interface VoiceLines {
+  fillers: string[] // said while an answer is slow; each once at most
+  cutIns: string[] // said before an answer that cuts a waiting line off; each once at most
 }
 
 // Request for POST /api/assistant/confirm (tap on a confirm card).
@@ -144,9 +157,6 @@ export interface ConfirmCard {
   summary: string
   destructive: boolean
   action: string // the button's word, e.g. "Book", "Delete"
-  // What the card will do, as a question said out loud while talking
-  // ("Book Sophia for Skin Fade…? Say yes or tap Book.").
-  spoken?: string
 }
 
 // Hears an answer while it is written (talking mode): its words, and the

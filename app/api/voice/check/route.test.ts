@@ -70,6 +70,7 @@ test("200 with the English handshake and limits, never a key", async () => {
       model: "muse-voice-transcribe-1.0",
       mode: "ENDPOINTING",
       partialMode: "CUMULATIVE",
+      keywords: ["Koblip"],
       languageBias: ["English"],
     },
     maxSessionSeconds: 600,
