@@ -197,7 +197,7 @@ const en = {
         { q: "Is it free?", a: "Yes, it's free for now. No card needed." },
         {
           q: "What do I need to start?",
-          a: "Just your business on Google Maps. We build your page from it.",
+          a: "Just your business on Google Maps. Koblip builds your page from it.",
         },
         {
           q: "Which businesses can use it?",
@@ -724,7 +724,7 @@ const es: Messages = {
         { q: "¿Es gratis?", a: "Sí, por ahora es gratis. Sin tarjeta." },
         {
           q: "¿Qué necesito para empezar?",
-          a: "Solo tu negocio en Google Maps. Creamos tu página a partir de él.",
+          a: "Solo tu negocio en Google Maps. Koblip crea tu página a partir de él.",
         },
         {
           q: "¿Qué negocios pueden usarlo?",
