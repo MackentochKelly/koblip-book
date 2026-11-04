@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { readFileSync } from "node:fs"
 import { beforeEach, expect, test, vi } from "vitest"
 
 vi.mock("server-only", () => ({}))
@@ -24,6 +25,9 @@ vi.mock("@/features/dashboard/api/actions", () => ({
   saveHours: vi.fn(),
   createTeamMember: vi.fn(),
   updateBusinessDetails: vi.fn(),
+  reorderServices: vi.fn(),
+  reorderTeam: vi.fn(),
+  suggestServices: vi.fn(),
 }))
 vi.mock("@/features/dashboard/api/team-services", () => ({
   setServiceTeam: vi.fn(),
@@ -33,12 +37,70 @@ vi.mock("@/features/dashboard/api/addon-actions", () => ({
   createAddonGroup: vi.fn(),
   updateAddonGroup: vi.fn(),
   deleteAddonGroup: vi.fn(),
+  reorderAddonGroups: vi.fn(),
+  suggestAddonGroups: vi.fn(),
+}))
+vi.mock("@/features/booking/api/move-owner-booking", () => ({
+  moveOwnerBooking: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/customer-actions", () => ({
+  addCustomer: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/member-hours", () => ({
+  saveTeamMemberWithHours: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/team-access-actions", () => ({
+  sendTeamInvite: vi.fn(),
+  removeTeamAccess: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/improve-details", () => ({
+  improveDetails: vi.fn(),
+}))
+vi.mock("@/features/starter-catalog/api/prepare-actions", () => ({
+  drawTeamPhoto: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/translation-actions", () => ({
+  translateBusiness: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/photo-actions", () => ({
+  deleteBusinessPhoto: vi.fn(),
+  reorderBusinessPhotos: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/policy-actions", () => ({
+  savePolicy: vi.fn(),
+  savePolicyPoint: vi.fn(),
+  removePolicyPoint: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/policy-queries", () => ({
+  getPolicies: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/theme-actions", () => ({
+  activateTheme: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/notification-actions", () => ({
+  setMessageOn: vi.fn(),
+  saveNotificationSettings: vi.fn(),
+  saveMessageWording: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/notifications", () => ({
+  notificationMessagesFor: vi.fn(),
+  notificationSettingsFor: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/automation-actions", () => ({
+  setAutomationOn: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/automation-queries", () => ({
+  automationsFor: vi.fn(),
+}))
+vi.mock("@/lib/platform-settings", () => ({
+  notificationRules: vi.fn(),
 }))
 vi.mock("@/features/dashboard/api/booking-actions", () => ({
   setBookingStatus: vi.fn(),
 }))
 vi.mock("@/features/booking/api/get-availability", () => ({
   getAvailability: vi.fn(),
+  getMoveAvailability: vi.fn(),
 }))
 vi.mock("@/features/booking/api/create-owner-booking", () => ({
   createOwnerBooking: vi.fn(),
@@ -76,17 +138,54 @@ const {
   deleteService,
   deleteTeamMember,
   renameTeamMember,
+  reorderServices,
+  reorderTeam,
   saveHours,
+  suggestServices,
   updateBusinessDetails,
   updateService,
 } = await import("@/features/dashboard/api/actions")
 const { setMemberServices, setServiceTeam } =
   await import("@/features/dashboard/api/team-services")
-const { createAddonGroup, deleteAddonGroup, updateAddonGroup } =
-  await import("@/features/dashboard/api/addon-actions")
+const {
+  createAddonGroup,
+  deleteAddonGroup,
+  reorderAddonGroups,
+  suggestAddonGroups,
+  updateAddonGroup,
+} = await import("@/features/dashboard/api/addon-actions")
+const { moveOwnerBooking } =
+  await import("@/features/booking/api/move-owner-booking")
+const { addCustomer } =
+  await import("@/features/dashboard/api/customer-actions")
+const { saveTeamMemberWithHours } =
+  await import("@/features/dashboard/api/member-hours")
+const { removeTeamAccess, sendTeamInvite } =
+  await import("@/features/dashboard/api/team-access-actions")
+const { improveDetails } =
+  await import("@/features/dashboard/api/improve-details")
+const { drawTeamPhoto } =
+  await import("@/features/starter-catalog/api/prepare-actions")
+const { translateBusiness } =
+  await import("@/features/dashboard/api/translation-actions")
+const { deleteBusinessPhoto, reorderBusinessPhotos } =
+  await import("@/features/dashboard/api/photo-actions")
+const { removePolicyPoint, savePolicy, savePolicyPoint } =
+  await import("@/features/dashboard/api/policy-actions")
+const { getPolicies } = await import("@/features/dashboard/api/policy-queries")
+const { activateTheme } = await import("@/features/dashboard/api/theme-actions")
+const { saveMessageWording, saveNotificationSettings, setMessageOn } =
+  await import("@/features/dashboard/api/notification-actions")
+const { notificationMessagesFor, notificationSettingsFor } =
+  await import("@/features/dashboard/api/notifications")
+const { setAutomationOn } =
+  await import("@/features/dashboard/api/automation-actions")
+const { automationsFor } =
+  await import("@/features/dashboard/api/automation-queries")
+const { notificationRules } = await import("@/lib/platform-settings")
 const { setBookingStatus } =
   await import("@/features/dashboard/api/booking-actions")
-const { getAvailability } =
+const { getAvailability, getMoveAvailability } =
   await import("@/features/booking/api/get-availability")
 const { createOwnerBooking } =
   await import("@/features/booking/api/create-owner-booking")
@@ -132,6 +231,26 @@ test("every needsConfirm tool carries its result kind", () => {
     ["update_addon_group", "services"],
     ["delete_addon_group", "services"],
     ["update_business_details", "settings"],
+    ["move_booking", "bookings"],
+    ["add_customer", "customers"],
+    ["set_member_hours", "team"],
+    ["invite_team_member", "team"],
+    ["remove_team_access", "team"],
+    ["draw_team_photo", "team"],
+    ["translate_page", "spanish"],
+    ["delete_photo", "photos"],
+    ["reorder_photos", "photos"],
+    ["reorder_services", "services"],
+    ["reorder_team", "team"],
+    ["reorder_addons", "services"],
+    ["save_policy", "policies"],
+    ["save_policy_point", "policies"],
+    ["remove_policy_point", "policies"],
+    ["change_theme", "theme"],
+    ["turn_message_on_off", "messages"],
+    ["save_reminder_settings", "timing"],
+    ["change_message_wording", "messages"],
+    ["turn_automation_on_off", "flows"],
   ]
   expect(
     tools
@@ -2371,14 +2490,11 @@ test("a hostile customer name is only data in the booking card", async () => {
   expect(vi.mocked(createOwnerBooking)).not.toHaveBeenCalled()
 })
 
-test("no reschedule tool exists and the prompt says so", async () => {
+test("the prompt sends a move to move_booking", async () => {
   const names = buildAssistantTools("b1", "u1", "en").map(
     (t) => t.definition.name
   )
-  expect(names).not.toContain("reschedule_booking")
-  expect(names.some((n) => n.includes("resched") || n.includes("move"))).toBe(
-    false
-  )
+  expect(names).toContain("move_booking")
   const { buildClockLine, buildSystemPrompt } =
     await import("@/features/assistant/utils/system-prompt")
   const prompt = buildSystemPrompt("Salon", { tools: [] })
@@ -2388,7 +2504,8 @@ test("no reschedule tool exists and the prompt says so", async () => {
     weekday: "Wednesday",
     timeZone: "Europe/Madrid",
   })
-  expect(prompt).toContain("no rescheduling")
+  expect(prompt).toContain("call move_booking")
+  expect(prompt).not.toContain("no rescheduling")
   expect(clock).toBe("Today is Wednesday, 2026-10-28, 09:00 (Europe/Madrid).")
 })
 
@@ -2623,4 +2740,991 @@ test("spanish validation errors are server-built sentences", async () => {
   expect(badRange).toEqual({ error: "range debe ser upcoming o past" })
   const missing = await byNameLang("create_service", "es").run({})
   expect(missing).toEqual({ error: "name debe tener 1-80 caracteres" })
+})
+
+// The tools that wrap the owner area's own actions.
+
+const FUTURE_BOOKING = {
+  ...(CANCELLABLE as object),
+  teamMemberId: "m1",
+} as never
+
+const KELLY = {
+  id: "m1",
+  name: "Kelly",
+  phone: "+34600000000",
+  email: "kelly@example.com",
+  description: "Stylist",
+  about: "Ten years cutting hair.",
+  languages: ["es", "en"],
+  photoUrl: null,
+  userId: null,
+}
+
+function ownerData(overrides: Record<string, unknown> = {}) {
+  return {
+    business: { ...BUSINESS, theme: "luma", setupFinishedAt: 1, description: "Hi" },
+    hours: [],
+    services: [
+      { id: "s1", name: "Cut" },
+      { id: "s2", name: "Beard" },
+    ],
+    team: [KELLY, { ...KELLY, id: "m2", name: "Sam" }],
+    memberHours: [],
+    ...overrides,
+  } as never
+}
+
+// One card each: every change waits for the tap, none runs from the model.
+const CHANGES: [string, string][] = [
+  ["move_booking", "bookings"],
+  ["add_customer", "customers"],
+  ["set_member_hours", "team"],
+  ["invite_team_member", "team"],
+  ["remove_team_access", "team"],
+  ["draw_team_photo", "team"],
+  ["translate_page", "spanish"],
+  ["delete_photo", "photos"],
+  ["reorder_photos", "photos"],
+  ["reorder_services", "services"],
+  ["reorder_team", "team"],
+  ["reorder_addons", "services"],
+  ["save_policy", "policies"],
+  ["save_policy_point", "policies"],
+  ["remove_policy_point", "policies"],
+  ["change_theme", "theme"],
+  ["turn_message_on_off", "messages"],
+  ["save_reminder_settings", "timing"],
+  ["change_message_wording", "messages"],
+  ["turn_automation_on_off", "flows"],
+]
+
+test.each(CHANGES)("%s waits for the tap", async (name, kind) => {
+  const tool = byName(name)
+  expect(tool.definition.needsConfirm).toBe(true)
+  expect(tool.definition.resultKind).toBe(kind)
+  expect(tool.confirm).toBeDefined()
+  expect(await tool.run({})).toEqual({ error: expect.any(String) })
+})
+
+test("the actions kept out of the assistant stay out", () => {
+  const source = readFileSync(
+    new URL("./tools.ts", import.meta.url),
+    "utf8"
+  )
+  for (const banned of [
+    "deleteAccount",
+    "claimBusiness",
+    "submitMessageToMeta",
+    "submitDraftsToMeta",
+    "features/admin",
+  ]) {
+    expect(source).not.toContain(banned)
+  }
+})
+
+test("move_booking card turns the day into a date and moves on tap only", async () => {
+  vi.mocked(getBooking).mockResolvedValue(FUTURE_BOOKING)
+  vi.mocked(getMoveAvailability).mockResolvedValue({
+    days: [{ date: "2099-10-30", times: ["11:00"] }],
+  })
+  const tool = byName("move_booking")
+  const card = (await tool.confirm!.describe({
+    bookingId: "k1",
+    date: "2099-10-30",
+    time: "11:00",
+  })) as { summary: string; args: unknown }
+  expect(card).toMatchObject({
+    title: "Move this booking?",
+    action: "Move",
+    destructive: false,
+    summary:
+      "Ana · Cut · Thursday, October 29 at 10:00 AM → Friday, October 30 at 11:00 AM",
+    args: { bookingId: "k1", date: "2099-10-30", time: "11:00" },
+  })
+  expect(vi.mocked(moveOwnerBooking)).not.toHaveBeenCalled()
+  vi.mocked(moveOwnerBooking).mockResolvedValue({ status: "moved" })
+  expect(await tool.confirm!.execute(card.args)).toEqual({
+    ok: true,
+    doneText: "Moved the booking to Friday, October 30 at 11:00 AM.",
+  })
+  expect(vi.mocked(moveOwnerBooking)).toHaveBeenCalledWith({
+    businessId: "b1",
+    bookingId: "k1",
+    date: "2099-10-30",
+    time: "11:00",
+    allowConflict: false,
+  })
+})
+
+test("move_booking refuses a taken time, a started booking and no change", async () => {
+  vi.mocked(getBooking).mockResolvedValue(FUTURE_BOOKING)
+  vi.mocked(getMoveAvailability).mockResolvedValue({
+    days: [{ date: "2099-10-30", times: ["11:00"] }],
+  })
+  const tool = byName("move_booking")
+  expect(
+    await tool.confirm!.describe({
+      bookingId: "k1",
+      date: "2099-10-30",
+      time: "12:00",
+    })
+  ).toEqual({ error: expect.stringContaining("11:00 AM") })
+  expect(
+    await tool.confirm!.describe({
+      bookingId: "k1",
+      date: "2099-10-29",
+      time: "10:00",
+    })
+  ).toEqual({ error: "Nothing to change." })
+  vi.mocked(getBooking).mockResolvedValue({
+    ...(CANCELLABLE as object),
+    startAt: "2000-01-01T09:00:00.000Z",
+  } as never)
+  expect(
+    await tool.confirm!.describe({
+      bookingId: "k1",
+      date: "2099-10-30",
+      time: "11:00",
+    })
+  ).toEqual({ error: expect.stringContaining("cannot be moved") })
+})
+
+test("move_booking reports a time taken by the tap", async () => {
+  vi.mocked(moveOwnerBooking).mockResolvedValue({
+    status: "conflict",
+    reason: "busy",
+  })
+  expect(
+    await byName("move_booking").confirm!.execute({
+      bookingId: "k1",
+      date: "2099-10-30",
+      time: "11:00",
+    })
+  ).toEqual({
+    ok: false,
+    doneText: "Could not move: that time was just taken.",
+  })
+})
+
+test("add_customer shows the card and says when they exist", async () => {
+  const tool = byName("add_customer")
+  const args = { name: " Ana ", phone: " +34600000000 " }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Add this customer?",
+    action: "Add",
+    summary: "Ana · +34600000000",
+    destructive: false,
+  })
+  expect(vi.mocked(addCustomer)).not.toHaveBeenCalled()
+  vi.mocked(addCustomer).mockResolvedValue({ ok: false, error: "exists" })
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: false,
+    doneText: "That customer is already on your list.",
+  })
+  expect(vi.mocked(addCustomer)).toHaveBeenCalledWith("b1", {
+    name: "Ana",
+    phone: "+34600000000",
+  })
+  expect(await tool.confirm!.describe({ name: "Ana", phone: "abc" })).toEqual({
+    error: "bad phone number",
+  })
+})
+
+const WEEK = [{ weekday: 1, opensAt: "09:00", closesAt: "13:00" }]
+
+test("set_member_hours changes the hours and nothing else about them", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
+  vi.mocked(saveTeamMemberWithHours).mockResolvedValue({ ok: true, id: "m1" })
+  const tool = byName("set_member_hours")
+  const args = { memberId: "m1", rows: WEEK }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Change working hours?",
+    action: "Save",
+    summary: "Kelly · Monday 9:00 AM–1:00 PM",
+    destructive: true,
+  })
+  expect(vi.mocked(saveTeamMemberWithHours)).not.toHaveBeenCalled()
+  // Their profile changed after the card showed: the tap keeps the new one.
+  vi.mocked(getOwnerBusiness).mockResolvedValue(
+    ownerData({ team: [{ ...KELLY, about: "Edited after the card." }] })
+  )
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: true,
+    doneText: "Working hours updated.",
+  })
+  expect(vi.mocked(saveTeamMemberWithHours)).toHaveBeenCalledWith(
+    "b1",
+    "m1",
+    {
+      name: "Kelly",
+      phone: "+34600000000",
+      email: "kelly@example.com",
+      description: "Stylist",
+      about: "Edited after the card.",
+      languages: ["es", "en"],
+    },
+    WEEK
+  )
+})
+
+test("set_member_hours follows the business hours with null, never an empty week", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue(
+    ownerData({ memberHours: [{ teamMemberId: "m1", ...WEEK[0] }] })
+  )
+  const tool = byName("set_member_hours")
+  expect(
+    await tool.confirm!.describe({ memberId: "m1", rows: null })
+  ).toMatchObject({ summary: "Kelly · Same as business hours" })
+  expect(await tool.confirm!.describe({ memberId: "m1", rows: [] })).toEqual({
+    error: expect.stringContaining("rows"),
+  })
+  expect(await tool.confirm!.describe({ memberId: "m1" })).toEqual({
+    error: expect.stringContaining("rows"),
+  })
+  expect(await tool.confirm!.describe({ memberId: "m1", rows: WEEK })).toEqual({
+    error: "Nothing to change.",
+  })
+  expect(
+    await tool.confirm!.describe({ memberId: "nope", rows: null })
+  ).toEqual({ error: expect.stringContaining("unknown team member") })
+})
+
+test("invite_team_member names who is emailed and keeps the link out of the chat", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
+  const url = "https://koblip.test/join/secret-token"
+  vi.mocked(sendTeamInvite).mockResolvedValue({
+    ok: true,
+    url,
+    emailedTo: "kelly@example.com",
+  })
+  const tool = byName("invite_team_member")
+  expect(await tool.confirm!.describe({ memberId: "m1" })).toEqual({
+    title: "Invite this team member?",
+    action: "Send invite",
+    summary: "Kelly · kelly@example.com",
+    destructive: false,
+  })
+  expect(vi.mocked(sendTeamInvite)).not.toHaveBeenCalled()
+  const sent = await tool.confirm!.execute({ memberId: "m1" })
+  expect(sent).toEqual({ ok: true, doneText: "Invite sent to Kelly." })
+  vi.mocked(sendTeamInvite).mockResolvedValue({ ok: true, url, emailedTo: null })
+  const lost = await tool.confirm!.execute({ memberId: "m1" })
+  expect(lost.ok).toBe(false)
+  expect(JSON.stringify([sent, lost])).not.toContain("secret-token")
+})
+
+test("invite_team_member refuses someone joined or with no email", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue(
+    ownerData({
+      team: [
+        { ...KELLY, userId: "u9" },
+        { ...KELLY, id: "m2", email: null },
+      ],
+    })
+  )
+  const tool = byName("invite_team_member")
+  expect(await tool.confirm!.describe({ memberId: "m1" })).toEqual({
+    error: expect.stringContaining("already joined"),
+  })
+  expect(await tool.confirm!.describe({ memberId: "m2" })).toEqual({
+    error: expect.stringContaining("no email"),
+  })
+  expect(await tool.confirm!.execute({ memberId: "m2" })).toEqual({
+    ok: false,
+    doneText: expect.stringContaining("no email"),
+  })
+  expect(vi.mocked(sendTeamInvite)).not.toHaveBeenCalled()
+})
+
+test("remove_team_access only runs for someone with access", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue(
+    ownerData({ team: [{ ...KELLY, userId: "u9" }, { ...KELLY, id: "m2" }] })
+  )
+  vi.mocked(removeTeamAccess).mockResolvedValue({ ok: true })
+  const tool = byName("remove_team_access")
+  expect(await tool.confirm!.describe({ memberId: "m1" })).toEqual({
+    title: "Remove this person's access?",
+    action: "Remove access",
+    summary: "Kelly",
+    destructive: true,
+  })
+  expect(await tool.confirm!.describe({ memberId: "m2" })).toEqual({
+    error: expect.stringContaining("no access"),
+  })
+  // The action answers ok for any id, so an unknown one must not reach it.
+  expect(await tool.confirm!.execute({ memberId: "nope" })).toEqual({
+    ok: false,
+    doneText: expect.stringContaining("unknown"),
+  })
+  expect(vi.mocked(removeTeamAccess)).not.toHaveBeenCalled()
+  expect((await tool.confirm!.execute({ memberId: "m1" })).ok).toBe(true)
+})
+
+test("suggest tools hand back ideas and save nothing, with no card", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
+  const services = [{ name: "Cut", description: null, durationMinutes: 30 }]
+  vi.mocked(suggestServices).mockResolvedValue({ ok: true, services })
+  vi.mocked(suggestAddonGroups).mockResolvedValue({ ok: true, groups: [] })
+  vi.mocked(improveDetails).mockResolvedValue({
+    ok: true,
+    name: "Salon",
+    description: "A warm salon.",
+  })
+  for (const name of ["suggest_services", "suggest_addons", "improve_details"]) {
+    expect(byName(name).definition.needsConfirm).toBe(false)
+    expect(byName(name).confirm).toBeUndefined()
+  }
+  expect(await byName("suggest_services").run({})).toEqual({
+    services,
+    saved: false,
+  })
+  expect(vi.mocked(suggestServices)).toHaveBeenCalledWith("b1", "en")
+  expect(await byName("suggest_addons").run({})).toEqual({
+    groups: [],
+    saved: false,
+  })
+  expect(await byName("improve_details").run({})).toEqual({
+    name: "Salon",
+    description: "A warm salon.",
+    saved: false,
+  })
+  expect(vi.mocked(improveDetails)).toHaveBeenCalledWith("b1", {
+    name: "Salon",
+    description: "Hi",
+  })
+  expect(vi.mocked(createService)).not.toHaveBeenCalled()
+  expect(vi.mocked(updateBusinessDetails)).not.toHaveBeenCalled()
+  vi.mocked(suggestServices).mockResolvedValue({ ok: false, error: "ai_off" })
+  expect(await byName("suggest_services").run({})).toEqual({
+    error: "AI suggestions are off right now",
+  })
+})
+
+test("draw_team_photo follows the action's rules before showing a card", async () => {
+  const setup = { ...BUSINESS, setupFinishedAt: null }
+  vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData({ business: setup }))
+  vi.mocked(drawTeamPhoto).mockResolvedValue({
+    ok: true,
+    photoUrl: "/photo.webp",
+  })
+  const tool = byName("draw_team_photo")
+  expect(await tool.confirm!.describe({ memberId: "m1" })).toEqual({
+    title: "Draw a photo for this team member?",
+    action: "Draw",
+    summary: "Kelly",
+    destructive: false,
+  })
+  expect(vi.mocked(drawTeamPhoto)).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute({ memberId: "m1" })).toEqual({
+    ok: true,
+    doneText: "Photo drawn.",
+  })
+  vi.mocked(getOwnerBusiness).mockResolvedValue(
+    ownerData({
+      business: setup,
+      team: [{ ...KELLY, photoUrl: "/kelly.webp" }],
+    })
+  )
+  expect(await tool.confirm!.describe({ memberId: "m1" })).toEqual({
+    error: expect.stringContaining("never replaced"),
+  })
+  vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
+  expect(await tool.confirm!.describe({ memberId: "m1" })).toEqual({
+    error: expect.stringContaining("during setup"),
+  })
+})
+
+test("translate_page shows what waits and refuses when there is nothing", async () => {
+  const tool = byName("translate_page")
+  vi.mocked(getTranslationStatus).mockResolvedValue({
+    language: "es",
+    enabled: true,
+    total: 10,
+    upToDate: 7,
+  })
+  expect(await tool.confirm!.describe({})).toEqual({
+    title: "Translate your page to Spanish?",
+    action: "Translate",
+    summary: "3 texts to translate",
+    destructive: false,
+  })
+  expect(vi.mocked(translateBusiness)).not.toHaveBeenCalled()
+  vi.mocked(translateBusiness).mockResolvedValue({ ok: true, translated: 3 })
+  expect(await tool.confirm!.execute({})).toEqual({
+    ok: true,
+    doneText: "Translated 3 texts.",
+  })
+  vi.mocked(getTranslationStatus).mockResolvedValue({
+    language: "es",
+    enabled: true,
+    total: 10,
+    upToDate: 10,
+  })
+  expect(await tool.confirm!.describe({})).toEqual({
+    error: "the Spanish page is already up to date",
+  })
+})
+
+const PHOTOS = [
+  { id: "p1", url: "/1.webp" },
+  { id: "p2", url: "/2.webp" },
+  { id: "p3", url: "/3.webp" },
+]
+
+test("delete_photo deletes the photo the card named, whatever moves after", async () => {
+  vi.mocked(getBusinessPhotos).mockResolvedValue(PHOTOS)
+  vi.mocked(deleteBusinessPhoto).mockResolvedValue({ ok: true })
+  const tool = byName("delete_photo")
+  const card = (await tool.confirm!.describe({ position: 2 })) as {
+    args: unknown
+  }
+  expect(card).toMatchObject({
+    title: "Delete this photo?",
+    summary: "Photo 2 of 3",
+    destructive: true,
+    args: { photoId: "p2" },
+  })
+  expect(vi.mocked(deleteBusinessPhoto)).not.toHaveBeenCalled()
+  await tool.confirm!.execute(card.args)
+  expect(vi.mocked(deleteBusinessPhoto)).toHaveBeenCalledWith("b1", "p2")
+  expect(await tool.confirm!.describe({ position: 4 })).toEqual({
+    error: expect.stringContaining("1 to 3"),
+  })
+})
+
+test("reorder_photos needs every photo once and stores the photos", async () => {
+  vi.mocked(getBusinessPhotos).mockResolvedValue(PHOTOS)
+  vi.mocked(reorderBusinessPhotos).mockResolvedValue({ ok: true })
+  const tool = byName("reorder_photos")
+  const card = (await tool.confirm!.describe({ order: [3, 1, 2] })) as {
+    args: unknown
+  }
+  expect(card).toMatchObject({
+    summary: "New order: photos 3, 1, 2",
+    args: { photoIds: ["p3", "p1", "p2"] },
+  })
+  expect(vi.mocked(reorderBusinessPhotos)).not.toHaveBeenCalled()
+  await tool.confirm!.execute(card.args)
+  expect(vi.mocked(reorderBusinessPhotos)).toHaveBeenCalledWith("b1", [
+    "p3",
+    "p1",
+    "p2",
+  ])
+  // The action itself lets a repeated photo through, so it stops here.
+  for (const order of [[1, 1, 2], [1, 2], "1,2,3"]) {
+    expect(await tool.confirm!.describe({ order })).toEqual({
+      error: expect.stringContaining("exactly once"),
+    })
+  }
+  expect(await tool.confirm!.describe({ order: [1, 2, 3] })).toEqual({
+    error: "Nothing to change.",
+  })
+})
+
+test("the reorder tools show the new order and need the whole list", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
+  vi.mocked(getAddonGroups).mockResolvedValue([
+    { id: "g1", name: "Wash" },
+    { id: "g2", name: "Style" },
+  ] as never)
+  const cases = [
+    {
+      tool: "reorder_services",
+      argument: "serviceIds",
+      ids: ["s2", "s1"],
+      summary: "Beard, Cut",
+      action: reorderServices,
+      doneText: "Service order updated.",
+    },
+    {
+      tool: "reorder_team",
+      argument: "memberIds",
+      ids: ["m2", "m1"],
+      summary: "Sam, Kelly",
+      action: reorderTeam,
+      doneText: "Team order updated.",
+    },
+    {
+      tool: "reorder_addons",
+      argument: "groupIds",
+      ids: ["g2", "g1"],
+      summary: "Style, Wash",
+      action: reorderAddonGroups,
+      doneText: "Extras order updated.",
+    },
+  ]
+  for (const { tool: name, argument, ids, summary, action, doneText } of cases) {
+    const tool = byName(name)
+    vi.mocked(action).mockResolvedValue({ ok: true })
+    expect(await tool.confirm!.describe({ [argument]: ids })).toMatchObject({
+      summary,
+      action: "Save",
+      destructive: false,
+    })
+    expect(vi.mocked(action)).not.toHaveBeenCalled()
+    expect(await tool.confirm!.describe({ [argument]: [ids[0]] })).toEqual({
+      error: expect.stringContaining("exactly once"),
+    })
+    expect(
+      await tool.confirm!.describe({ [argument]: [...ids].reverse() })
+    ).toEqual({ error: "Nothing to change." })
+    expect(await tool.confirm!.execute({ [argument]: ids })).toEqual({
+      ok: true,
+      doneText,
+    })
+    expect(vi.mocked(action)).toHaveBeenCalledWith("b1", ids)
+  }
+})
+
+const POLICIES = {
+  texts: { booking: "Old text", terms: "", privacy: "" },
+  points: [
+    { id: "q1", icon: "clock", title: "Arrive early", body: "Ten minutes." },
+  ],
+} as never
+
+test("save_policy shows the whole text, and an empty one removes it", async () => {
+  vi.mocked(getPolicies).mockResolvedValue(POLICIES)
+  vi.mocked(savePolicy).mockResolvedValue({ ok: true })
+  const tool = byName("save_policy")
+  expect(
+    await tool.confirm!.describe({ kind: "booking", body: " New text " })
+  ).toEqual({
+    title: "Save this policy?",
+    action: "Save",
+    summary: "Booking policy · New text",
+    destructive: false,
+  })
+  expect(vi.mocked(savePolicy)).not.toHaveBeenCalled()
+  expect(await tool.confirm!.describe({ kind: "booking", body: "" })).toEqual({
+    title: "Remove this policy?",
+    action: "Remove",
+    summary: "Booking policy",
+    destructive: true,
+  })
+  expect(
+    await tool.confirm!.execute({ kind: "booking", body: "" })
+  ).toEqual({ ok: true, doneText: "Policy removed." })
+  expect(await tool.confirm!.describe({ kind: "terms", body: "" })).toEqual({
+    error: "Nothing to change.",
+  })
+  expect(await tool.confirm!.describe({ kind: "nope", body: "x" })).toEqual({
+    error: expect.stringContaining("kind"),
+  })
+  expect(
+    await tool.confirm!.describe({ kind: "terms", body: "x".repeat(3001) })
+  ).toEqual({ error: expect.stringContaining("3000") })
+})
+
+test("save_policy_point adds one, or changes only the given fields", async () => {
+  vi.mocked(getPolicies).mockResolvedValue(POLICIES)
+  vi.mocked(savePolicyPoint).mockResolvedValue({ ok: true })
+  const tool = byName("save_policy_point")
+  const adding = { icon: "card", title: "Pay", body: "Pay at the visit." }
+  expect(await tool.confirm!.describe(adding)).toEqual({
+    title: "Add this key point?",
+    action: "Add",
+    summary: "Pay · Pay at the visit.",
+    destructive: false,
+  })
+  expect(vi.mocked(savePolicyPoint)).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute(adding)).toEqual({
+    ok: true,
+    doneText: "Key point added.",
+  })
+  expect(vi.mocked(savePolicyPoint)).toHaveBeenCalledWith("b1", null, adding)
+  const changing = { pointId: "q1", title: "Be on time" }
+  expect(await tool.confirm!.describe(changing)).toMatchObject({
+    title: "Change this key point?",
+    summary: "Arrive early → Be on time · Ten minutes.",
+  })
+  await tool.confirm!.execute(changing)
+  expect(vi.mocked(savePolicyPoint)).toHaveBeenLastCalledWith("b1", "q1", {
+    icon: "clock",
+    title: "Be on time",
+    body: "Ten minutes.",
+  })
+  expect(await tool.confirm!.describe({ pointId: "nope" })).toEqual({
+    error: expect.stringContaining("list_policies"),
+  })
+  expect(await tool.confirm!.describe({ title: "No icon", body: "x" })).toEqual({
+    error: expect.stringContaining("icon"),
+  })
+  vi.mocked(getPolicies).mockResolvedValue({
+    texts: {},
+    points: [1, 2, 3, 4].map((n) => ({
+      id: `q${n}`,
+      icon: "info",
+      title: `P${n}`,
+      body: "x",
+    })),
+  } as never)
+  expect(await tool.confirm!.describe(adding)).toEqual({
+    error: expect.stringContaining("already 4"),
+  })
+})
+
+test("remove_policy_point only runs for a point that exists", async () => {
+  vi.mocked(getPolicies).mockResolvedValue(POLICIES)
+  vi.mocked(removePolicyPoint).mockResolvedValue({ ok: true })
+  const tool = byName("remove_policy_point")
+  expect(await tool.confirm!.describe({ pointId: "q1" })).toEqual({
+    title: "Remove this key point?",
+    action: "Remove",
+    summary: "Arrive early · Ten minutes.",
+    destructive: true,
+  })
+  expect(await tool.confirm!.describe({ pointId: "nope" })).toEqual({
+    error: expect.stringContaining("list_policies"),
+  })
+  // The action answers ok for any id, so an unknown one must not reach it.
+  expect((await tool.confirm!.execute({ pointId: "nope" })).ok).toBe(false)
+  expect(vi.mocked(removePolicyPoint)).not.toHaveBeenCalled()
+  expect((await tool.confirm!.execute({ pointId: "q1" })).ok).toBe(true)
+})
+
+test("change_theme only turns on a theme that is ready", async () => {
+  const tool = byName("change_theme")
+  vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
+  expect(await tool.confirm!.describe({ theme: "vega" })).toEqual({
+    error: "Vega is coming soon; ready now: Luma",
+  })
+  expect(await tool.confirm!.describe({ theme: "luma" })).toEqual({
+    error: "Nothing to change.",
+  })
+  expect(await tool.confirm!.describe({ theme: "nope" })).toEqual({
+    error: expect.stringContaining("theme must be"),
+  })
+  vi.mocked(getOwnerBusiness).mockResolvedValue(
+    ownerData({ business: { ...BUSINESS, theme: "vega" } })
+  )
+  expect(await tool.confirm!.describe({ theme: "luma" })).toEqual({
+    title: "Change the theme?",
+    action: "Change",
+    summary: "Vega → Luma",
+    destructive: false,
+  })
+  expect(vi.mocked(activateTheme)).not.toHaveBeenCalled()
+  vi.mocked(activateTheme).mockResolvedValue({ ok: true })
+  expect(await tool.confirm!.execute({ theme: "luma" })).toEqual({
+    ok: true,
+    doneText: "Theme changed.",
+  })
+  expect(vi.mocked(activateTheme)).toHaveBeenCalledWith("b1", "luma")
+})
+
+const SETTINGS = {
+  ownerPhone: "+34600000000",
+  ownerLanguage: "en",
+  reminders: [1440, 120],
+  quietStart: "21:00",
+  quietEnd: "08:00",
+  turnedOff: ["reminder"],
+  freeTextInWindow: true,
+  cantCome: "alertOnly",
+  thankYouReply: true,
+} as never
+
+test("turn_message_on_off names the message and skips no change", async () => {
+  vi.mocked(notificationSettingsFor).mockResolvedValue(SETTINGS)
+  vi.mocked(setMessageOn).mockResolvedValue({ ok: true })
+  const tool = byName("turn_message_on_off")
+  expect(
+    await tool.confirm!.describe({ message: "reminder", on: true })
+  ).toEqual({
+    title: "Turn this message on?",
+    action: "Turn on",
+    summary: "Reminder",
+    destructive: false,
+  })
+  expect(
+    await tool.confirm!.describe({ message: "confirmed", on: false })
+  ).toMatchObject({
+    title: "Turn this message off?",
+    action: "Turn off",
+    summary: "Booking confirmed",
+  })
+  expect(vi.mocked(setMessageOn)).not.toHaveBeenCalled()
+  expect(
+    await tool.confirm!.describe({ message: "reminder", on: false })
+  ).toEqual({ error: "Nothing to change." })
+  expect(await tool.confirm!.describe({ message: "nope", on: true })).toEqual({
+    error: expect.stringContaining("unknown message"),
+  })
+  expect(
+    await tool.confirm!.execute({ message: "reminder", on: true })
+  ).toEqual({ ok: true, doneText: "Reminder is on." })
+  expect(vi.mocked(setMessageOn)).toHaveBeenCalledWith("b1", "reminder", true)
+})
+
+test("save_reminder_settings puts the given fields over what is saved", async () => {
+  vi.mocked(notificationSettingsFor).mockResolvedValue(SETTINGS)
+  vi.mocked(notificationRules).mockResolvedValue({
+    reminderChoices: [30, 60, 120, 1440],
+    maxReminders: 3,
+  } as never)
+  vi.mocked(saveNotificationSettings).mockResolvedValue({ ok: true })
+  const tool = byName("save_reminder_settings")
+  const args = { reminders: [30, 1440], quietEnd: "09:00" }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Change reminder settings?",
+    action: "Save",
+    summary:
+      "Reminders · 24 h, 2 h → 24 h, 30 min · Quiet until · 8:00 AM → 9:00 AM",
+    destructive: false,
+  })
+  expect(vi.mocked(saveNotificationSettings)).not.toHaveBeenCalled()
+  await tool.confirm!.execute(args)
+  expect(vi.mocked(saveNotificationSettings)).toHaveBeenCalledWith("b1", {
+    ownerPhone: "+34600000000",
+    ownerLanguage: "en",
+    reminders: [1440, 30],
+    quietStart: "21:00",
+    quietEnd: "09:00",
+    freeTextInWindow: true,
+    cantCome: "alertOnly",
+    thankYouReply: true,
+  })
+  expect(await tool.confirm!.describe({ reminders: [45] })).toEqual({
+    error: expect.stringContaining("30, 60, 120, 1440"),
+  })
+  expect(await tool.confirm!.describe({ reminders: [30, 60, 120, 1440] })).toEqual({
+    error: expect.stringContaining("at most 3"),
+  })
+  expect(await tool.confirm!.describe({ quietStart: "9pm" })).toEqual({
+    error: expect.stringContaining("HH:mm"),
+  })
+  expect(await tool.confirm!.describe({ cantCome: "nope" })).toEqual({
+    error: expect.stringContaining("cantCome"),
+  })
+  expect(await tool.confirm!.describe({ quietEnd: "08:00" })).toEqual({
+    error: "Nothing to change.",
+  })
+})
+
+function messageItem(
+  buttons: { action: string; label: string }[],
+  overrides: Record<string, unknown> = {}
+) {
+  const text = {
+    wording: {
+      header: "Reminder",
+      body: "Hi {name}, a reminder of your {service} at {business} on {date} at {time}. See you soon!",
+      footer: "Reply here",
+    },
+    buttons,
+    isDefault: false,
+    approved: null,
+    review: "approved",
+    reason: null,
+  }
+  return [
+    {
+      message: "reminder",
+      on: true,
+      editable: true,
+      texts: { en: text, es: text },
+      ...overrides,
+    },
+  ] as never
+}
+
+const BOOK_BUTTONS = [
+  { action: "confirm", label: "I'll be there" },
+  { action: "cantCome", label: "Can't make it" },
+]
+
+test("change_message_wording changes the given part and keeps the rest", async () => {
+  const mine = [{ action: "confirm", label: "Yes, coming" }]
+  vi.mocked(notificationMessagesFor).mockResolvedValue(messageItem(mine))
+  vi.mocked(saveMessageWording).mockResolvedValue({ ok: true })
+  const tool = byName("change_message_wording")
+  const args = { message: "reminder", language: "en", footer: "Call us" }
+  const card = (await tool.confirm!.describe(args)) as { summary: string }
+  expect(card).toMatchObject({
+    title: "Change this message's wording?",
+    action: "Save",
+    destructive: false,
+  })
+  expect(card.summary).toContain("Reminder · English")
+  expect(card.summary).toContain("Call us")
+  expect(card.summary).toContain("Goes to Meta only when you submit it.")
+  expect(vi.mocked(saveMessageWording)).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: true,
+    doneText: "Saved as a draft. Submit it to Meta on the Messages page.",
+  })
+  // The owner's own buttons go back with it: null would reset them.
+  expect(vi.mocked(saveMessageWording)).toHaveBeenCalledWith(
+    "b1",
+    "reminder",
+    "en",
+    {
+      header: "Reminder",
+      body: "Hi {name}, a reminder of your {service} at {business} on {date} at {time}. See you soon!",
+      footer: "Call us",
+    },
+    mine
+  )
+})
+
+test("change_message_wording leaves the default buttons as default", async () => {
+  vi.mocked(notificationMessagesFor).mockResolvedValue(messageItem(BOOK_BUTTONS))
+  vi.mocked(saveMessageWording).mockResolvedValue({ ok: true })
+  await byName("change_message_wording").confirm!.execute({
+    message: "reminder",
+    language: "en",
+    footer: "Call us",
+  })
+  expect(vi.mocked(saveMessageWording).mock.calls[0][4]).toBeNull()
+})
+
+test("change_message_wording refuses words that would never send or Meta refuses", async () => {
+  vi.mocked(notificationMessagesFor).mockResolvedValue(messageItem(BOOK_BUTTONS))
+  const tool = byName("change_message_wording")
+  const unknown = await tool.confirm!.describe({
+    message: "reminder",
+    language: "en",
+    body: "Hi there {nope}, see you soon my friend!",
+  })
+  expect(unknown).toEqual({
+    error: expect.stringContaining("{name}"),
+  })
+  expect(
+    await tool.confirm!.describe({
+      message: "reminder",
+      language: "en",
+      footer: "Reply here",
+    })
+  ).toEqual({ error: "Nothing to change." })
+  expect(
+    await tool.confirm!.describe({ message: "reminder", language: "fr" })
+  ).toEqual({ error: "language must be en or es" })
+  // Koblip's number sends its own fixed words, so a change would never go.
+  vi.mocked(notificationMessagesFor).mockResolvedValue(
+    messageItem(BOOK_BUTTONS, { editable: false })
+  )
+  expect(
+    await tool.confirm!.describe({
+      message: "reminder",
+      language: "en",
+      footer: "Call us",
+    })
+  ).toEqual({ error: expect.stringContaining("Koblip's number") })
+  expect(vi.mocked(saveMessageWording)).not.toHaveBeenCalled()
+})
+
+test("change_message_wording can go back to the original words", async () => {
+  vi.mocked(notificationMessagesFor).mockResolvedValue(messageItem(BOOK_BUTTONS))
+  vi.mocked(saveMessageWording).mockResolvedValue({ ok: true })
+  const tool = byName("change_message_wording")
+  const args = { message: "reminder", language: "es", useDefault: true }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Go back to the original wording?",
+    action: "Go back",
+    summary: "Reminder · Spanish",
+    destructive: true,
+  })
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: true,
+    doneText: "Back to the original wording.",
+  })
+  expect(vi.mocked(saveMessageWording)).toHaveBeenCalledWith(
+    "b1",
+    "reminder",
+    "es",
+    null,
+    null
+  )
+})
+
+test("turn_automation_on_off names it and explains the own-number rule", async () => {
+  vi.mocked(automationsFor).mockResolvedValue([
+    { id: "a1", trigger: "firstMessage", on: false },
+  ] as never)
+  const tool = byName("turn_automation_on_off")
+  const args = { automationId: "a1", on: true }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Turn this automation on?",
+    action: "Turn on",
+    summary: "Welcome",
+    destructive: false,
+  })
+  expect(vi.mocked(setAutomationOn)).not.toHaveBeenCalled()
+  vi.mocked(setAutomationOn).mockResolvedValue({
+    ok: false,
+    error: "noOwnNumber",
+  })
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: false,
+    doneText: "That works on your own WhatsApp number only.",
+  })
+  vi.mocked(setAutomationOn).mockResolvedValue({ ok: true })
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: true,
+    doneText: "Welcome is on.",
+  })
+  expect(vi.mocked(setAutomationOn)).toHaveBeenLastCalledWith("b1", "a1", true)
+  expect(
+    await tool.confirm!.describe({ automationId: "a1", on: false })
+  ).toEqual({ error: "Nothing to change." })
+  expect(
+    await tool.confirm!.describe({ automationId: "nope", on: true })
+  ).toEqual({ error: expect.stringContaining("whatsapp_settings") })
+})
+
+test("list_policies and whatsapp_settings read what the changes need", async () => {
+  vi.mocked(getPolicies).mockResolvedValue(POLICIES)
+  expect(byName("list_policies").definition.needsConfirm).toBe(false)
+  expect(await byName("list_policies").run({})).toEqual(POLICIES)
+  vi.mocked(notificationSettingsFor).mockResolvedValue(SETTINGS)
+  vi.mocked(notificationRules).mockResolvedValue({
+    reminderChoices: [30, 60],
+    maxReminders: 3,
+  } as never)
+  vi.mocked(notificationMessagesFor).mockResolvedValue(messageItem(BOOK_BUTTONS))
+  vi.mocked(automationsFor).mockResolvedValue([
+    { id: "a1", trigger: "firstMessage", on: false },
+  ] as never)
+  expect(byName("whatsapp_settings").definition.needsConfirm).toBe(false)
+  const read = (await byName("whatsapp_settings").run({})) as {
+    settings: { remindersText: string[]; quietEndText: string }
+    reminderChoices: number[]
+    messages: { name: string; fields: string[]; texts: { en: unknown } }[]
+    automations: unknown[]
+  }
+  expect(read.settings.remindersText).toEqual(["24 h", "2 h"])
+  expect(read.settings.quietEndText).toBe("8:00 AM")
+  expect(read.reminderChoices).toEqual([30, 60])
+  expect(read.messages[0].name).toBe("Reminder")
+  expect(read.messages[0].fields).toContain("name")
+  expect(read.messages[0].texts.en).toMatchObject({
+    footer: "Reply here",
+    review: "approved",
+  })
+  expect(read.automations).toEqual([{ id: "a1", name: "Welcome", on: false }])
+})
+
+test("spanish cards for the new tools use the owner area's own names", async () => {
+  vi.mocked(notificationSettingsFor).mockResolvedValue(SETTINGS)
+  expect(
+    await byNameLang("turn_message_on_off", "es").confirm!.describe({
+      message: "reminder",
+      on: true,
+    })
+  ).toEqual({
+    title: "¿Activar este mensaje?",
+    action: "Activar",
+    summary: "Recordatorio",
+    destructive: false,
+  })
+  expect(byNameLang("move_booking", "es").label).toBe("Moviendo reserva…")
+  vi.mocked(getPolicies).mockResolvedValue(POLICIES)
+  expect(
+    await byNameLang("save_policy", "es").confirm!.describe({
+      kind: "booking",
+      body: "",
+    })
+  ).toMatchObject({ title: "¿Quitar esta política?", action: "Quitar" })
 })

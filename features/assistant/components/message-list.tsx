@@ -70,6 +70,13 @@ const RESULT_PAGES: Record<ResultKind, string> = {
   hours: "/settings/hours",
   customers: "/customers",
   settings: "/settings",
+  photos: "/settings/portfolio",
+  policies: "/settings/policies",
+  theme: "/settings/theme",
+  spanish: "/settings/spanish",
+  messages: "/automations/messages",
+  timing: "/automations/timing",
+  flows: "/automations/flows",
 }
 
 // What a tapped action did, as one line that opens the page it changed.
