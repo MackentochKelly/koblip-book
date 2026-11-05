@@ -3,11 +3,11 @@ import { MapPinIcon, WebsiteIcon } from "@/components/ui/icons"
 import { Item, ItemContent, ItemMedia } from "@/components/ui/item"
 import { cn } from "@/lib/utils"
 
-// Where the business is, on a soft chip with a pin.
+// Where the business is, on a chip with the same outline as the share button.
 export function BusinessAddress({ children }: { children: React.ReactNode }) {
   return (
     <Item
-      variant="muted"
+      variant="outline"
       size="xs"
       className="mt-1 w-fit max-w-full flex-nowrap gap-2 px-2.5 py-1.5 text-xs"
     >
@@ -30,7 +30,7 @@ export function BusinessWebsite({
 }) {
   return (
     <Item
-      variant="muted"
+      variant="outline"
       size="xs"
       className={cn(
         touchArea,
