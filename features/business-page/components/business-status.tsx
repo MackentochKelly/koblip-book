@@ -22,9 +22,5 @@ export function BusinessStatus({
     return <Badge variant="destructive">{m.closed}</Badge>
   }
   if (open === null) return null
-  return (
-    <Badge variant={open ? "secondary" : "outline"}>
-      {open ? m.openNow : m.closedNow}
-    </Badge>
-  )
+  return <Badge variant="outline">{open ? m.openNow : m.closedNow}</Badge>
 }
