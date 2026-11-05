@@ -16,14 +16,14 @@ export function BusinessStatus({
 }) {
   const m = messagesFor(language).status
   if (status === "temporarily_closed") {
-    return <Badge variant="outline">{m.temporarilyClosed}</Badge>
+    return <Badge variant="destructive">{m.temporarilyClosed}</Badge>
   }
   if (status === "closed") {
     return <Badge variant="destructive">{m.closed}</Badge>
   }
   if (open === null) return null
   return (
-    <Badge variant={open ? "success" : "outline"}>
+    <Badge variant={open ? "success" : "destructive"}>
       {open ? m.openNow : m.closedNow}
     </Badge>
   )
