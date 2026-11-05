@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 export function AboutPreview({ text }: { text: string }) {
   const m = useMessages()
   return (
-    <div className="-mt-4 flex flex-col items-start gap-1">
+    <div className="-mt-4 flex flex-col items-start">
       <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
         {text}
       </p>
