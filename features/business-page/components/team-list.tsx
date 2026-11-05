@@ -7,6 +7,14 @@ import { initials } from "@/lib/initials"
 import type { PageLanguage } from "@/lib/page-language"
 import type { TeamMember } from "../types"
 
+function firstName(name: string) {
+  return name.trim().split(/\s+/)[0] ?? name
+}
+
+function lastName(name: string) {
+  return name.trim().split(/\s+/).slice(1).join(" ")
+}
+
 // The team, like Fresha: each person opens their own profile.
 export function TeamList({
   slug,
@@ -38,12 +46,30 @@ export function TeamList({
                 {initials(member.name)}
               </AvatarFallback>
             </Avatar>
-            <span className="flex flex-col items-center gap-0.5 text-center">
-              <span className="line-clamp-2 text-sm leading-tight">{member.name}</span>
-              {member.description && (
-                <span className="line-clamp-1 text-xs text-muted-foreground">
+            {/* Like Fresha: the first name a little bold, then the job title
+                in small grey (the last name stands in when there is none).
+                Screen readers hear the full name in one piece. */}
+            <span className="flex w-full flex-col items-center gap-0.5 text-center">
+              <span className="sr-only">{member.name}</span>
+              <span
+                aria-hidden="true"
+                className="w-full truncate text-sm leading-tight font-medium"
+              >
+                {firstName(member.name)}
+              </span>
+              {member.description ? (
+                <span className="w-full truncate text-xs text-muted-foreground">
                   {member.description}
                 </span>
+              ) : (
+                lastName(member.name) && (
+                  <span
+                    aria-hidden="true"
+                    className="w-full truncate text-xs text-muted-foreground"
+                  >
+                    {lastName(member.name)}
+                  </span>
+                )
               )}
             </span>
           </Link>
