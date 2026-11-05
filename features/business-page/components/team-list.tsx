@@ -40,7 +40,7 @@ export function TeamList({
             href={`/b/${slug}/team/${member.id}?lang=${language}`}
             className="flex w-20 shrink-0 flex-col items-center gap-2 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
           >
-            <Avatar className="size-18 after:mix-blend-normal dark:after:mix-blend-normal">
+            <Avatar className="size-18 after:border-2 after:mix-blend-normal dark:after:mix-blend-normal">
               {member.photoUrl && <AvatarImage src={member.photoUrl} alt="" />}
               <AvatarFallback className="text-xl">
                 {initials(member.name)}
