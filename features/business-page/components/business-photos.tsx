@@ -84,6 +84,12 @@ export function BusinessPhotos({ photos }: { photos: PagePhoto[] }) {
           </CarouselItem>
         ))}
       </CarouselContent>
+      {/* A soft dark fade at the photo's foot, so the dots and the
+          counter read on any photo, even a white one. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-photo-scrim/60 to-transparent md:hidden"
+      />
       <Badge
         variant="secondary"
         className="pointer-events-none absolute right-2 bottom-2 bg-background/60 tabular-nums ring-1 ring-foreground/5 backdrop-blur-2xl backdrop-saturate-150 md:hidden"
