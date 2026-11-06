@@ -44,7 +44,7 @@ const itemVariants = cva(
         muted: "border-transparent bg-muted/50",
         // The soft grey box with the hairline edge (--hairline, like
         // Apple's) and the faint card shadow, Card's "muted" twin.
-        box: "rounded-4xl border-(length:--hairline) border-border bg-muted/50 shadow-card",
+        box: "rounded-2xl border-(length:--hairline) border-border bg-muted/50 shadow-card",
       },
       size: {
         default: "gap-3.5 px-4 py-3.5",
