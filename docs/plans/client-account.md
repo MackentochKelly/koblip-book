@@ -62,7 +62,7 @@ Same rules as above: shared parts only (`PageSection`, `Item`, `Empty`, `BottomP
 | C14 | My places (D13): query, page, menu item, empty state | C10 | `app/(customer)/account/places/`, `features/customer-account/api/places.ts`, `features/customer-account/components/places-list.tsx`, `features/customer-account/nav.ts` | Done (Nov 6, see commit) |
 | C15 | Reviews, data (D15): table, migration, rules, save/edit action, bell ask on the timer, admin list | C11 | `lib/db/schema.ts` (reviews), `drizzle/`, `lib/review-rules.ts`, `features/reviews/api/`, `features/admin/` (reviews screen) | Done (Nov 6, see commit) |
 | C16 | Reviews, screens (D15): stars on the booking page, owner's Reviews tab with hide, average and latest on the business page | C15 | `features/reviews/components/`, the owner Customers page, `features/business-page/` (reviews section) | Done (Nov 6, see commit) |
-| C17 | Reminder channel (D16): setting, email reminders on the timer, admin view | – | `lib/db/schema.ts` (channel), `drizzle/`, `features/customer-account/components/settings-form.tsx`, `lib/client-reminders.ts` | To do |
+| C17 | Reminder channel (D16): setting, email reminders on the timer, admin view | – | `lib/db/schema.ts` (channel), `drizzle/`, `features/customer-account/components/settings-form.tsx`, `lib/client-reminders.ts` | Working on: M Kelly B, Nov 6 |
 | C18 | Checks: phone and computer, light and dark, English and Spanish, typecheck, lint, tests, build | all | – | To do |
 
 Order: C10 → C11 → C12 + C13 → C14 → C15 → C16 → C17 → C18.
