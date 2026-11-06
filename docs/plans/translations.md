@@ -10,13 +10,21 @@ task starts, no paid service is turned on and no bulk translation runs until
 the owner says go.
 How to use this file: [Plans](README.md).
 
-## Language scope (owner to confirm)
+## Language scope (chosen by the owner, 2026-11-06)
 
-- **Source:** English. Everything is written in English first.
-- **At launch:** English and Spanish, the two languages the app has today.
-- **Later:** any language Google supports (about 194 for the NMT model).
-  Each new language is added only after the owner approves it and its cost
-  (task G8).
+| Language | In the app | Sent to Google as | Money and dates |
+| --- | --- | --- | --- |
+| English (source) | `en` | — | `en-US` |
+| Spanish | `es` | `es` | `es-US` |
+| Portuguese (Brazil) | `pt` | `pt-BR` | `pt-BR` |
+| French | `fr` | `fr-FR` | `fr-FR` |
+
+- Everything is written in English first.
+- A browser in any Portuguese gets Brazilian Portuguese; any French gets
+  French (France). The visitor's own region still sets how money and dates
+  look (`pickLocale`).
+- Later: any other language Google supports (about 194 for the NMT model),
+  each only after the owner approves it and its cost.
 
 ## What is there today (audit, 2026-11-06)
 
@@ -74,14 +82,14 @@ not read):
 
 | Job | Characters | Cost |
 | --- | --- | --- |
-| Interface words into one new language | about 60,000 to 90,000 | Free inside the monthly allowance; at most about $2 |
+| Interface words into Portuguese and French | about 120,000 to 180,000 (60,000–90,000 each) | Free inside one month's allowance; at most about $4 |
 | Spanish interface words | 0: today's hand-written Spanish is kept | $0 |
-| One business's texts into one language | about 4,000 to 10,000 | 100 businesses ≈ 0.4–1M: free to about $10. 1,000 businesses ≈ 4–10M: about $70–190 |
-| Everyday edits | Only changed texts; the same text is translated once and reused | Usually inside the free 500,000 |
+| One business's texts into Spanish, Portuguese and French | about 12,000 to 30,000 (4,000–10,000 per language) | One-time backfill: 100 businesses ≈ 1.2–3M, about $14–50. 1,000 businesses ≈ 12–30M, about $230–590 |
+| Everyday edits | Only changed texts, into 3 languages; the same text is translated once and reused | Usually inside the free 500,000 |
 
-Every extra language multiplies the business-text cost. Safeguards: a daily
-character quota and a budget alert in Google Cloud, and a daily limit per
-business in the app (demo guests can save too).
+Safeguards: a daily character quota and a budget alert in Google Cloud, and a
+daily limit per business in the app (demo guests can save too). The backfill
+runs in monthly parts if the owner wants to stay inside the free allowance.
 
 ## Google setup the owner does (G0)
 
@@ -109,13 +117,13 @@ The developer never creates accounts or handles keys.
 | G3 | Business texts on Google: every save adds only changed texts (business details, services, categories, extras, policies with the owner's own title, team, the team area's profile) and removals clean up; Meta translation code removed; Settings → Spanish removed (`/settings/spanish` goes to Settings); the assistant's `translate_page` and its Spanish count removed; services still found by their Spanish name | G2 | To do |
 | G4 | Interface words: one shared message system (next-intl, ICU: plurals, fields, `Intl` dates, numbers and money); every word file moved to it, one feature at a time; words typed into code moved too; English stays in code; a sync puts every word into `translation_entries`; today's Spanish comes in as Manual so it is kept; pages read their language from the database through a cache, with English as the fallback | G2 | To do |
 | G5 | Admin "Translations", using the existing admin layout and parts: Interface and Business texts tabs; search; filters for language, page or business, and state; pages of results; English beside the translation; states Missing, Waiting, Failed, Automatic, Edited, Needs review; edit and save, Reset to Google, Retry; history. Admins only; every change logged | G2 | To do |
-| G6 | Coverage check (`npm run i18n:check` and a test): every word has every language; fields and plural forms match English; no English left on a Spanish page; a long pseudo-language to test layouts | G4 | To do |
+| G6 | Coverage check (`npm run i18n:check` and a test): every word has every language; fields and plural forms match English (French and Portuguese have their own plural rules); no English left on a page in another language; a long pseudo-language to test layouts | G4 | To do |
 | G7 | Backfill, only after the owner's go on the cost: a dry run counts the characters first; then Google re-translates every text Meta made and fills the gaps. Meta's text stays on the page until Google's arrives | G3, G0 | To do |
-| G8 | More languages, each approved by the owner: widen the language list (types, `en`/`es` database enums, language menus, language from the browser), emails, legal pages with "translated automatically; the English version applies", WhatsApp templates that the owner submits to Meta, and which languages the voice can speak | G4, G0 | To do |
+| G8 | Portuguese and French: widen the language list (`PageLanguage`, `en`/`es` database enums, language menus, language from the browser, `DEFAULT_LOCALES`), the owner area's and the public page's language menus, emails, legal pages with "translated automatically; the English version applies", WhatsApp templates that the owner submits to Meta, and which languages the assistant's voice can speak. Later languages follow the same steps | G4, G0 | To do |
 | G9 | Tests and live checks: automatic update after an edit, manual edit kept, missing, failed and retry, fields kept, plurals; every screen at 375px and 1280px, light and dark, in each language; report anything not checked | G3–G6 | To do |
 
-Build order: G2, then G3, then G5, then G4 one feature at a time, then G6,
-G9, G7. G8 starts per language. G4 touches every screen: never build it at
+Build order: G2, then G3, then G5, then G4 one feature at a time, then G8
+(Portuguese and French), then G6, G9, G7. G4 touches every screen: never build it at
 the same time as another session working on the same screens. The policies
 work in the categories session also changes `policy-actions.ts` and adds the
 owner's own policy title.
@@ -124,6 +132,8 @@ owner's own policy title.
 
 | What | Why | Who, date |
 | --- | --- | --- |
+| Languages: English (source), Spanish, Portuguese (Brazil), French | Owner's choice | Owner, 2026-11-06 |
+| French is France French (`fr-FR`); Canadian French can come later as its own language | Google lists both; one French first keeps cost and checks small | Developer, 2026-11-06 |
 | Google Cloud Translation Advanced (v3), NMT model | Google's choice for new projects; service accounts with roles, no API keys; the free 500,000 characters a month | Developer, 2026-11-06 |
 | No Meta for translating, not even as a fallback | Owner's rule. When Google fails, the text waits or shows Failed, and the English shows | Owner, 2026-11-06 |
 | Edited translations are never overwritten | When the English changes, they stay and show Needs review | Developer, 2026-11-06 |
