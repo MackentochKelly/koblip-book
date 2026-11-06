@@ -4,7 +4,8 @@ import { ArrowDownIcon, ArrowUpIcon } from "@/components/ui/icons"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { FitText } from "@/components/fit-text"
-import { type Tone, ToneIcon } from "@/components/tone-icon"
+import { Sparkline } from "@/components/sparkline"
+import { type Tone, TONE_TEXT, ToneIcon } from "@/components/tone-icon"
 import { cn } from "cn"
 
 export interface Stat {
@@ -14,6 +15,9 @@ export interface Stat {
   label: string
   // A number, or a part like Money for amounts.
   value: React.ReactNode
+  // The number day by day over its period, oldest first (real counts that
+  // add up to it), drawn as a small line under it.
+  trend?: number[]
   // Whole percent against the period before; null hides the badge.
   change?: number | null
   // False for numbers that should go down, like no-shows.
@@ -36,7 +40,8 @@ const COLUMNS = [
 // moved against the period before beside it (green when it went the right
 // way), and a big icon on a soft coloured circle at the right, centred
 // beside both, with the same inset on both sides. A number too long for its
-// room shrinks to fit rather than run into the icon (FitText). With an
+// room shrinks to fit rather than run into the icon (FitText). Under them,
+// when given, its days as a small line in the icon's colour. With an
 // `href` (the strip's, or a number's own) the number opens that page, and
 // each box lights up on its own under the mouse.
 export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
@@ -91,6 +96,17 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
                   {stat.icon}
                 </ToneIcon>
               </dd>
+              {stat.trend && (
+                <dd
+                  aria-hidden
+                  className={cn(
+                    "col-span-2 mt-2 h-8",
+                    TONE_TEXT[stat.tone ?? "primary"]
+                  )}
+                >
+                  <Sparkline values={stat.trend} />
+                </dd>
+              )}
             </div>
           )
         })}

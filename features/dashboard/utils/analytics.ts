@@ -56,15 +56,35 @@ export function periodSummary(
     returning: 0,
   }))
   const dayIndex = new Map(daily.map((day, index) => [day.date, index]))
+  // The four key numbers day by day, oldest first, from the same bookings:
+  // each adds up to its number for the period.
+  const perDay = () => Array.from({ length: days }, () => 0)
+  const series = {
+    bookings: perDay(),
+    revenue: perDay(),
+    newCustomers: perDay(),
+    noShows: perDay(),
+  }
+  const counted = new Set<string>()
   // Bookings per weekday, Monday first.
   const weekdays = Array.from({ length: 7 }, () => 0)
   const perService = new Map<string, number>()
   const perCategory = new Map<string, number>()
   for (const booking of current) {
-    const day = daily[dayIndex.get(booking.date) ?? -1]
+    const index = dayIndex.get(booking.date) ?? -1
+    const day = daily[index]
     if (day) {
       if (isNew(booking)) day.newCustomers += 1
       else day.returning += 1
+      series.bookings[index] += 1
+      if (isEarned(booking, now))
+        series.revenue[index] += booking.priceMinor ?? 0
+      if (booking.status === "no_show") series.noShows[index] += 1
+      // A new customer once, on the day of their first booking.
+      if (isNew(booking) && !counted.has(booking.customerKey)) {
+        counted.add(booking.customerKey)
+        series.newCustomers[index] += 1
+      }
     }
     const sunday0 = new Date(`${booking.date}T00:00:00Z`).getUTCDay()
     weekdays[(sunday0 + 6) % 7] += 1
@@ -90,6 +110,7 @@ export function periodSummary(
       noShows: noShows(current),
     },
     daily,
+    series,
     weekdays,
     topServices: topOf(perService),
     // Null when the business has no categories.

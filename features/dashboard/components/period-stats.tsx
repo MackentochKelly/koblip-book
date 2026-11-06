@@ -40,6 +40,7 @@ export function PeriodStats({
           href: bookingsHref,
           value: number.format(summary.bookings.current),
           change: percentChange(summary.bookings),
+          trend: summary.series.bookings,
         },
         {
           icon: <BanknoteIcon />,
@@ -53,6 +54,7 @@ export function PeriodStats({
             />
           ),
           change: percentChange(summary.revenue),
+          trend: summary.series.revenue,
         },
         {
           icon: <UserPlusIcon />,
@@ -60,6 +62,7 @@ export function PeriodStats({
           label: a.newCustomers,
           value: number.format(summary.newCustomers.current),
           change: percentChange(summary.newCustomers),
+          trend: summary.series.newCustomers,
         },
         {
           icon: <CalendarX2Icon />,
@@ -67,6 +70,7 @@ export function PeriodStats({
           label: a.noShows,
           value: number.format(summary.noShows.current),
           change: percentChange(summary.noShows),
+          trend: summary.series.noShows,
           upIsGood: false,
         },
       ]}

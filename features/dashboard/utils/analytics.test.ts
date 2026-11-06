@@ -48,6 +48,12 @@ test("the last 7 days against the 7 before, cancelled and future left out", () =
     newCustomers: 1,
     returning: 0,
   })
+  expect(summary.series).toEqual({
+    bookings: [1, 0, 0, 0, 0, 0, 1],
+    revenue: [0, 0, 0, 0, 0, 0, 1000],
+    newCustomers: [0, 0, 0, 0, 0, 0, 1],
+    noShows: [1, 0, 0, 0, 0, 0, 0],
+  })
   // 2026-10-31 is a Saturday, 2026-10-25 a Sunday.
   expect(summary.weekdays).toEqual([0, 0, 0, 0, 0, 1, 1])
 })
