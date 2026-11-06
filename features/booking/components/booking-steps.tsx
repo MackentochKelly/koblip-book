@@ -470,11 +470,7 @@ export function BookingSummary({
     <Card className={cn("border bg-muted/50 ring-0", className)}>
       {/* Like a Wallet pass: a calendar and the name on top, then when, big. */}
       <CardHeader className="flex items-center gap-3">
-        <Avatar size="lg">
-          <AvatarFallback>
-            <CalendarIcon className="size-5" />
-          </AvatarFallback>
-        </Avatar>
+        <CalendarIcon aria-hidden="true" className="size-5 shrink-0" />
         <CardTitle className="min-w-0 truncate">{page.name}</CardTitle>
       </CardHeader>
       {(service || slot) && (
