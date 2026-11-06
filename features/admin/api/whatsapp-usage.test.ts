@@ -22,6 +22,11 @@ vi.mock("@/lib/dal", () => ({
   })),
 }))
 
+// Beta pays for Pro; Alpha is on Free.
+vi.mock("@/lib/plan-access", () => ({
+  businessPlan: vi.fn(async (id: string) => (id === "b" ? "pro" : "free")),
+}))
+
 const { getWhatsappUsage } = await import("./whatsapp-usage")
 const { saveKoblipLimit } = await import("./whatsapp-usage-actions")
 
@@ -93,18 +98,19 @@ afterAll(() => {
 
 test("this month's Koblip templates per business it may send for, most first", async () => {
   const usage = await getWhatsappUsage(NOW)
-  expect(usage).toMatchObject({ month: "2026-11-01T00:00:00.000Z", limit: 300, changed: false })
+  expect(usage).toMatchObject({ month: "2026-11-01T00:00:00.000Z", limit: 30, changed: false })
+  // Each business has its plan's limit.
   expect(usage.businesses).toEqual([
-    { id: "b", name: "Beta", sent: 2, ownLimit: null, limit: 300 },
-    { id: "a", name: "Alpha", sent: 0, ownLimit: null, limit: 300 },
+    { id: "b", name: "Beta", sent: 2, ownLimit: null, limit: 200 },
+    { id: "a", name: "Alpha", sent: 0, ownLimit: null, limit: 30 },
   ])
 })
 
-test("the limit changes for everyone or one business, each change logged", async () => {
+test("Free's limit or one business's changes, each change logged", async () => {
   expect(await saveKoblipLimit(null, 100)).toEqual({ ok: true })
   expect(await saveKoblipLimit("b", 2)).toEqual({ ok: true })
   let usage = await getWhatsappUsage(NOW)
-  expect(usage).toMatchObject({ limit: 100, defaultLimit: 300, changed: true })
+  expect(usage).toMatchObject({ limit: 100, defaultLimit: 30, changed: true })
   expect(usage.businesses.map(({ id, ownLimit, limit }) => [id, ownLimit, limit])).toEqual([
     ["b", 2, 2],
     ["a", null, 100],
@@ -113,11 +119,11 @@ test("the limit changes for everyone or one business, each change logged", async
   expect(await saveKoblipLimit("b", -1)).toEqual({ ok: false, error: "invalid" })
   expect(await saveKoblipLimit("missing", 5)).toEqual({ ok: false, error: "invalid" })
 
-  // Back to everyone's, and everyone's back to the default.
+  // Back to its plan's, and Free's back to the default.
   expect(await saveKoblipLimit("b", null)).toEqual({ ok: true })
   expect(await saveKoblipLimit(null, null)).toEqual({ ok: true })
   usage = await getWhatsappUsage(NOW)
-  expect(usage.businesses[0]).toMatchObject({ id: "b", ownLimit: null, limit: 300 })
+  expect(usage.businesses[0]).toMatchObject({ id: "b", ownLimit: null, limit: 200 })
 
   const log = await db.select().from(platformSettingChanges)
   expect(log.map(({ businessId, before, after }) => [businessId, before, after])).toEqual([

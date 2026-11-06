@@ -125,6 +125,9 @@ How to use this file: [Plans](README.md).
 - **O2. Trial.** No trial: Pro starts when paid.
 - **O3. Free stays free.** Everything free today stays free forever; Pro
   adds the "Soon" features and higher limits.
+- **O4. Messages from Koblip's number.** Free: 30 template messages a
+  month. Pro: 200. Both are admin rules (WhatsApp rules, Usage); a
+  business's own limit, set by the admin, wins over its plan's.
 
 ## Tasks
 
@@ -139,7 +142,7 @@ How to use this file: [Plans](README.md).
 | P5b | Locked entry points: a plan badge on the menu's Analytics, Widgets and assistant pages (they open the "Part of Pro" screen); the floating assistant and Home's assistant box hide | P5a | Done (2026-11-06) |
 | P5e | Plan badge on Settings' tabs (Theme) and in Search; the phone tab bar's assistant button hides when the assistant is locked | P5b | Done (2026-11-06) |
 | P5c | Downgrades stop background work for every checked feature (S15): Google Calendar sync and busy times, the own WhatsApp number, the team area; automations already did | P5a | Done (2026-11-06) |
-| P5d | `koblipMonthlyTemplates` per plan (Pro limit in `lib/subscription-rules.ts`) | P2, O3 | To do |
+| P5d | Monthly templates on Koblip's number by plan (O4): rules `koblipMonthlyTemplates` (Free) and `koblipMonthlyTemplatesPro`, `koblipTemplateLimit()` in `lib/koblip-usage.ts`; the sender and Admin → Usage read it | P2, O3 | Done (2026-11-06) |
 | P6 | Emails: payment failed, back to Free (Better Auth hooks) | P2 | To do |
 | P7 | Admin screen Subscriptions: every business's plan, status, renewal date, Stripe links, history; admin can give Pro for free (a 100% coupon in Stripe, logged) | P2 | To do |
 | P8 | Home pricing: Pro's button opens sign-up then Checkout; "Soon" goes; prices read from `lib/pricing-rules.ts` | P4, O3 | To do |
@@ -155,6 +158,7 @@ How to use this file: [Plans](README.md).
 | 2026-11-06 | Backend dev | S10: defaults and the change log |
 | 2026-11-06 | Owner | Plans page: no change log; group chips; the app's switcher |
 | 2026-11-06 | Owner | O1–O3: $19/month or $190/year; no trial; free stays free |
+| 2026-11-06 | Owner | O4: 30 template messages a month on Free, 200 on Pro |
 | 2026-11-06 | Backend dev | S14: prices before tax; Pro product and prices made in the Stripe sandbox |
 | 2026-11-06 | Backend dev | S15: what a downgrade stops; other features get checks only when they move to a paid plan |
 | 2026-11-06 | Backend dev | S11, S12: nothing locks before billing; only checked features move |

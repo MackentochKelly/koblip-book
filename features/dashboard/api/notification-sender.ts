@@ -6,7 +6,7 @@ import { createTranslator } from "next-intl"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { notification, notify } from "@/lib/in-app-notifications"
-import { koblipTemplatesSent, usageMonth } from "@/lib/koblip-usage"
+import { koblipTemplateLimit, koblipTemplatesSent, usageMonth } from "@/lib/koblip-usage"
 import {
   bookings,
   automationEvents,
@@ -680,12 +680,17 @@ async function sendMessage({
   let text = inWindow && (buttonsFit || !approved)
 
   // Koblip's number sends a business at most its monthly templates (D3,
-  // K6); past that, inside the window the words still go alone (free).
+  // K6; its plan's, or its own); past that, inside the window the words
+  // still go alone (free).
   // The owner's bell hears once a month when the limit is near and when it
   // is reached.
   if (sender === "koblip" && !text) {
-    const { koblipMonthlyTemplates: limit, koblipLimitNearPercent } = await notificationRules(businessId)
-    const sent = await koblipTemplatesSent(businessId, now)
+    const rules = await notificationRules()
+    const { koblipLimitNearPercent } = rules
+    const [limit, sent] = await Promise.all([
+      koblipTemplateLimit(businessId, rules),
+      koblipTemplatesSent(businessId, now),
+    ])
     const month = usageMonth(now).start.slice(0, 7)
     if (sent >= limit) {
       await notify(businessId, "koblipLimitReached", { sent, limit }, { dedupeKey: `koblipLimitReached:${month}` })

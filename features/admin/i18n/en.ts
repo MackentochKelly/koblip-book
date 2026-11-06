@@ -40,7 +40,7 @@ const words = {
     },
     soon: "Coming soon",
     usage: {
-      everyone: "Limit for every business",
+      everyone: "Limit on Free",
       perMonth:
         "{n, plural, one {# template message a month} other {# template messages a month}}",
       byDefault: "Default: {n, number}",
@@ -53,7 +53,7 @@ const words = {
       limitFor: "Limit for {name}",
       limit: "Template messages a month",
       hint: "Normal messages inside 24 hours don't count.",
-      useEveryone: "Use everyone's limit",
+      useEveryone: "Use the plan's limit",
       useDefault: "Use default",
       save: "Save",
       saved: "Saved",
@@ -290,7 +290,8 @@ const words = {
         maxBody: "Longest text",
         maxFooter: "Longest footer",
         minWordsPerField: "Words needed per field",
-        koblipMonthlyTemplates: "Template messages per month on Koblip's number",
+        koblipMonthlyTemplates: "Template messages per month on Koblip's number, Free",
+        koblipMonthlyTemplatesPro: "Template messages per month on Koblip's number, Pro",
         koblipLimitNearPercent: "Warn the owner at this share of the Koblip limit",
         inAppKeepDays: "Keep notifications for",
         inAppPageSize: "Notifications per page",

@@ -45,9 +45,11 @@ export const NOTIFICATION_RULES = {
   // on 2026-10-30 it refused bodies with 2 words per field and took 2.2.
   minWordsPerField: 2,
   // Template messages one business may send from Koblip's number each
-  // calendar month (Koblip pays Meta for them; D3). Normal messages inside
-  // 24 hours do not count.
-  koblipMonthlyTemplates: 300,
+  // calendar month (Koblip pays Meta for them; D3): on Free, and on Pro
+  // (docs/plans/subscriptions.md, O4). Normal messages inside 24 hours do
+  // not count. A business's own limit, set by the admin, wins over both.
+  koblipMonthlyTemplates: 30,
+  koblipMonthlyTemplatesPro: 200,
   // The owner hears the Koblip limit is near at this share of it (percent).
   koblipLimitNearPercent: 80,
   // The owner's bell (docs/plans/in-app-notifications.md): notifications are
@@ -116,6 +118,7 @@ export const NOTIFICATION_RULE_CHECKS: Record<NotificationRuleKey, (value: unkno
   maxFooter: (value) => wholeAtLeast(1)(value) && (value as number) <= 60,
   minWordsPerField: (value) => typeof value === "number" && Number.isFinite(value) && value >= 0,
   koblipMonthlyTemplates: wholeAtLeast(0),
+  koblipMonthlyTemplatesPro: wholeAtLeast(0),
   koblipLimitNearPercent: (value) => wholeAtLeast(1)(value) && (value as number) <= 100,
   inAppKeepDays: wholeAtLeast(1),
   inAppPageSize: (value) => wholeAtLeast(1)(value) && (value as number) <= 100,
