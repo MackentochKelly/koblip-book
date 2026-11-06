@@ -3,6 +3,8 @@ import Link from "next/link"
 import { PageSection } from "@/components/page-section"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { StoreIcon } from "@/components/ui/icons"
 import {
@@ -10,10 +12,12 @@ import {
   ItemActions,
   ItemContent,
   ItemDescription,
+  ItemFooter,
   ItemGroup,
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
+import { rescheduleHref } from "@/lib/customer-auth-path"
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import type { Messages } from "@/lib/i18n"
@@ -83,8 +87,21 @@ function BookingRow({
           <Badge variant="destructive">{m.account.cancelled}</Badge>
         )}
         {price && <span className="text-sm tabular-nums">{price}</span>}
-        {ahead && <CantComeButton booking={booking} />}
       </ItemActions>
+      {ahead && booking.cantCome && (
+        <ItemFooter className="justify-end">
+          <ButtonGroup>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link href={rescheduleHref(booking.id, language)} />}
+            >
+              {m.account.reschedule}
+            </Button>
+            <CantComeButton booking={booking} />
+          </ButtonGroup>
+        </ItemFooter>
+      )}
     </Item>
   )
 }

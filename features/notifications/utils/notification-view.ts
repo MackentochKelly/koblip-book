@@ -26,6 +26,7 @@ export function titleOf(
     case "customerCancelled":
     case "customerConfirmed":
     case "customerCantCome":
+    case "customerMoved":
     case "customerReplied":
     case "messageFailed":
       return t.kinds[item.kind](who(item, t))
@@ -90,6 +91,7 @@ export const CHOICE_GROUPS = [
       "newBooking",
       "customerConfirmed",
       "customerCantCome",
+      "customerMoved",
       "customerCancelled",
     ],
   },

@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq, gte, inArray, lte, ne } from "drizzle-orm"
+import { and, eq, gte, lte, ne } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { requireOwner } from "@/lib/dal"
@@ -13,7 +13,6 @@ import {
   businessHours,
   teamMemberHours,
   businesses,
-  notificationSends,
 } from "@/lib/db/schema"
 import type { OwnerMoveInput, OwnerMoveResult } from "@/types/owner-booking"
 import {
@@ -29,6 +28,7 @@ import {
 } from "../utils/owner-time"
 import { addDays, zonedInstant, zonedToday } from "../utils/zoned-time"
 import { inBookingTurn } from "./booking-turn"
+import { moveWrites } from "./move-writes"
 
 // The owner moves a booking that has not started to a later day or time,
 // with the same person and length. Same opening-hours and busy checks as
@@ -96,7 +96,6 @@ export async function moveOwnerBooking(
       if (Date.parse(booking.startAt) === startInstant) {
         return { status: "moved" } as const
       }
-      const endInstant = startInstant + booking.durationMinutes * 60_000
 
       if (!input.allowConflict) {
         const startMinute = toMinutes(input.time)
@@ -168,38 +167,7 @@ export async function moveOwnerBooking(
         }
       }
 
-      await saveAll([
-        db
-          .update(bookings)
-          .set({
-            startAt: new Date(startInstant).toISOString(),
-            endAt: new Date(endInstant).toISOString(),
-            moves: booking.moves + 1,
-          })
-          .where(eq(bookings.id, booking.id)),
-        db
-          .update(notificationSends)
-          .set({ state: "skipped", reason: "moved" })
-          .where(
-            and(
-              eq(notificationSends.bookingId, booking.id),
-              eq(notificationSends.state, "pending"),
-              inArray(notificationSends.message, ["reminder", "changed"])
-            )
-          ),
-        // A confirmation still waiting goes with the new time, so it counts
-        // as telling the customer of this move.
-        db
-          .update(notificationSends)
-          .set({ moves: booking.moves + 1 })
-          .where(
-            and(
-              eq(notificationSends.bookingId, booking.id),
-              eq(notificationSends.state, "pending"),
-              eq(notificationSends.message, "confirmed")
-            )
-          ),
-      ])
+      await saveAll(moveWrites(booking, startInstant))
       return { status: "moved" } as const
     })
 

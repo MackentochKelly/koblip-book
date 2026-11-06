@@ -74,14 +74,12 @@ beforeAll(async () => {
   process.env.DATABASE_URL = `file:${join(dir, "test.db")}`
   const { migrate } = await import("drizzle-orm/libsql/migrator")
   await migrate(db, { migrationsFolder: "drizzle" })
-  await db
-    .insert(user)
-    .values({
-      id: "u1",
-      name: "Owner",
-      email: "owner@example.com",
-      emailVerified: false,
-    })
+  await db.insert(user).values({
+    id: "u1",
+    name: "Owner",
+    email: "owner@example.com",
+    emailVerified: false,
+  })
   await db.insert(businesses).values({
     id: "biz",
     slug: "shop",

@@ -3,7 +3,11 @@ import { and, count, desc, eq, isNull, lt, or, type SQL } from "drizzle-orm"
 
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
-import { businesses, inAppNotificationSettings, inAppNotifications } from "@/lib/db/schema"
+import {
+  businesses,
+  inAppNotificationSettings,
+  inAppNotifications,
+} from "@/lib/db/schema"
 import { notificationRules } from "@/lib/platform-settings"
 import { IN_APP_KINDS } from "@/types/in-app-notifications"
 import type { InAppChoice, InAppFeed, InAppPage } from "../types/notifications"
@@ -26,7 +30,10 @@ function after(cursor: string | undefined): SQL | undefined {
   )
 }
 
-export async function notificationPageFor(userId: string, cursor?: string): Promise<InAppPage> {
+export async function notificationPageFor(
+  userId: string,
+  cursor?: string
+): Promise<InAppPage> {
   const { inAppPageSize } = await notificationRules()
   const rows = await db
     .select({
@@ -45,11 +52,14 @@ export async function notificationPageFor(userId: string, cursor?: string): Prom
     .where(and(ownedBy(userId), after(cursor)))
     .orderBy(desc(inAppNotifications.createdAt), desc(inAppNotifications.id))
     .limit(inAppPageSize + 1)
-  const items = rows.slice(0, inAppPageSize).map(({ readAt, ...row }) => ({ ...row, read: !!readAt }))
+  const items = rows
+    .slice(0, inAppPageSize)
+    .map(({ readAt, ...row }) => ({ ...row, read: !!readAt }))
   const last = items.at(-1)
   return {
     items,
-    nextCursor: rows.length > inAppPageSize && last ? `${last.at}|${last.id}` : null,
+    nextCursor:
+      rows.length > inAppPageSize && last ? `${last.at}|${last.id}` : null,
   }
 }
 
@@ -62,8 +72,14 @@ export async function unreadCountFor(userId: string): Promise<number> {
   return row.n
 }
 
-export async function feedFor(userId: string, cursor?: string): Promise<InAppFeed> {
-  const [unread, page] = await Promise.all([unreadCountFor(userId), notificationPageFor(userId, cursor)])
+export async function feedFor(
+  userId: string,
+  cursor?: string
+): Promise<InAppFeed> {
+  const [unread, page] = await Promise.all([
+    unreadCountFor(userId),
+    notificationPageFor(userId, cursor),
+  ])
   return { unread, page }
 }
 
@@ -80,14 +96,22 @@ export async function getNotificationPage(cursor?: string) {
 
 // The owner's choices for one of their businesses (N3): every kind, all on
 // until turned off. Null when the business is not theirs.
-export async function getNotificationChoices(businessId: string): Promise<InAppChoice[] | null> {
+export async function getNotificationChoices(
+  businessId: string
+): Promise<InAppChoice[] | null> {
   const session = await requireOwner()
   const [row] = await db
     .select({ turnedOff: inAppNotificationSettings.turnedOff })
     .from(businesses)
-    .leftJoin(inAppNotificationSettings, eq(inAppNotificationSettings.businessId, businesses.id))
+    .leftJoin(
+      inAppNotificationSettings,
+      eq(inAppNotificationSettings.businessId, businesses.id)
+    )
     .where(and(eq(businesses.id, businessId), ownedBy(session.userId)))
     .limit(1)
   if (!row) return null
-  return IN_APP_KINDS.map((kind) => ({ kind, on: !row.turnedOff?.includes(kind) }))
+  return IN_APP_KINDS.map((kind) => ({
+    kind,
+    on: !row.turnedOff?.includes(kind),
+  }))
 }

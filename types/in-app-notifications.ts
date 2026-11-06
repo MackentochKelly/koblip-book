@@ -7,6 +7,7 @@ export const IN_APP_KINDS = [
   "customerCancelled",
   "customerConfirmed",
   "customerCantCome",
+  "customerMoved",
   "customerReplied",
   "messageFailed",
   "templateApproved",

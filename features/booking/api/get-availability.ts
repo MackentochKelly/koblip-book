@@ -1,6 +1,7 @@
 import "server-only"
 import { and, asc, eq, gte, lte, ne } from "drizzle-orm"
 import { BOOKING_RULES } from "@/lib/booking-rules"
+import { customerKey } from "@/lib/customer-key"
 import { db } from "@/lib/db"
 import { googleBusyTimes } from "@/lib/google-calendar-busy"
 import {
@@ -125,6 +126,48 @@ export async function getMoveAvailability(
   if (!booking || booking.status !== "confirmed") {
     return null
   }
+  return moveAvailability(business, booking)
+}
+
+// A booking with its business, for moving it.
+type Business = typeof businesses.$inferSelect
+type Booking = typeof bookings.$inferSelect
+
+// The customer's own booking still ahead and confirmed (the phone they
+// signed in with: lib/customer-key.ts), with its business; null otherwise.
+export async function customerBookingToMove(
+  bookingId: string,
+  phone: string
+): Promise<{ business: Business; booking: Booking } | null> {
+  const [row] = await db
+    .select({ business: businesses, booking: bookings })
+    .from(bookings)
+    .innerJoin(businesses, eq(businesses.id, bookings.businessId))
+    .where(
+      and(
+        eq(bookings.id, bookingId),
+        eq(bookings.customerKey, customerKey(phone, ""))
+      )
+    )
+    .limit(1)
+  if (
+    !row ||
+    row.business.isDemo ||
+    row.booking.status !== "confirmed" ||
+    Date.parse(row.booking.startAt) <= Date.now()
+  ) {
+    return null
+  }
+  return row
+}
+
+// The free times to move a booking to: the same person (or, for "anyone",
+// whoever does the service) and length, its own time not counted as
+// taken, under the online booking rules (notice, days ahead).
+export async function moveAvailability(
+  business: Business,
+  booking: Booking
+): Promise<Availability> {
   const [hourRows, teamRows, linkRows, memberHourRows] = await Promise.all([
     db
       .select()

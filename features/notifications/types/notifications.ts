@@ -33,4 +33,5 @@ export type InAppActionResult = { ok: true } | { ok: false; error: "not_found" }
 // The owner's choices for one business (N3): every kind, on or off.
 export type InAppChoice = { kind: InAppKind; on: boolean }
 
-export type InAppChoiceResult = { ok: true } | { ok: false; error: "not_found" | "invalid" }
+export type InAppChoiceResult =
+  { ok: true } | { ok: false; error: "not_found" | "invalid" }

@@ -6,16 +6,15 @@ import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { useMessages, usePageLanguage } from "@/components/language-provider"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { CUSTOMER_SIGN_IN_PATH } from "@/lib/customer-auth-path"
 import { cantCome } from "../api/cant-come"
 import type { MyBooking } from "../types"
 
-// An upcoming booking's "I can't come", asked once more before it goes:
-// "Cancel" where the business lets customers cancel, else "Can't make it",
-// which tells the owner and keeps the booking.
+// An upcoming booking's red "Cancel", asked once more before it goes. It
+// cancels where the business lets customers cancel; else the dialog says
+// it tells the owner they can't make it, and the booking stays.
 export function CantComeButton({ booking }: { booking: MyBooking }) {
   const m = useMessages()
   const t = m.account
@@ -26,7 +25,11 @@ export function CantComeButton({ booking }: { booking: MyBooking }) {
 
   if (!booking.cantCome) return null
   if (booking.cantCome === "alertOnly" && booking.saidCantCome) {
-    return <Badge variant="secondary">{t.told}</Badge>
+    return (
+      <Button variant="outline" disabled>
+        {t.told}
+      </Button>
+    )
   }
   const cancels = booking.cantCome === "cancel"
 
@@ -46,9 +49,14 @@ export function CantComeButton({ booking }: { booking: MyBooking }) {
 
   return (
     <>
-      <Button variant="outline" disabled={busy} onClick={() => setAsking(true)}>
+      <Button
+        variant="outline"
+        className="text-destructive hover:text-destructive"
+        disabled={busy}
+        onClick={() => setAsking(true)}
+      >
         {busy && <Spinner data-icon="inline-start" />}
-        {cancels ? t.cancel : t.cantCome}
+        {t.cancel}
       </Button>
       <ConfirmDialog
         open={asking}

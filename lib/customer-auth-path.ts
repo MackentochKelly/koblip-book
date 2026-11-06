@@ -6,6 +6,10 @@ export const CUSTOMER_AUTH_PATH = "/api/customer-auth"
 export const MY_BOOKINGS_PATH = "/my-bookings"
 export const CUSTOMER_SIGN_IN_PATH = "/my-bookings/sign-in"
 
+export function rescheduleHref(bookingId: string, language: string): string {
+  return `${MY_BOOKINGS_PATH}/${encodeURIComponent(bookingId)}/reschedule?lang=${language}`
+}
+
 // The phone a customer just booked with, kept in the tab (sessionStorage)
 // so "Manage your booking" opens sign-in with it filled in, never in the
 // address.
