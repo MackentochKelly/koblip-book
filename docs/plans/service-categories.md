@@ -43,15 +43,32 @@ How to use this file: [Plans](README.md).
 | Task | What | Needs | Status |
 | --- | --- | --- | --- |
 | C1 | This plan | | Done (2026-11-06) |
-| C2 | Schema + migration: `service_categories` (id, business, name, position), `services.category_id` (null = Other, ON DELETE SET NULL); rules; actions to create, rename, remove, reorder; `createService`/`updateService` take `categoryId`; owner query returns categories; tests | C1 | To do |
-| C3 | Owner Services screen: groups under category headings with ⋮ (Add a service, Edit, Move up, Move down, Remove), Other last; Add category (computer header, phone list foot); category panel; Category field in the service form; removal says services move to Other | C2 | To do |
+| C2 | Schema + migration: `service_categories` (id, business, name, position), `services.category_id` (null = Other, ON DELETE SET NULL); rules; actions to create, rename, remove, reorder; `createService`/`updateService` take `categoryId`; owner query returns categories; the one shared grouping helper `lib/service-groups.ts` (groups in order, Other last, empty groups left out for customers); every new EN/ES word below, in all word files; the `ServiceSuggestion` shape with its category; tests | C1 | To do |
+| C3 | Owner Services screen: groups under category headings with ⋮ (Add a service, Edit, Move up, Move down, Remove), Other last; Add category (computer header, phone list foot); category panel; Category field in the service form; removal says services move to Other; the Suggest panel shows and saves each suggestion's category | C2 | To do |
 | C4 | Public page and booking: category tabs over the service preview (team profile too); booking service step in sections with jump tabs (scroll-spy moves to `hooks/use-scroll-spy.ts`); category names in Spanish | C2 | To do |
 | C5 | Owner pickers grouped by category: add-booking service, bookings Services filter, Extras "Offered with" | C2 | To do |
-| C6 | Meta AI: the starter catalog gives each service a category (saved only with 2 or more), `replaceCatalog` clears old ones; Suggest services puts each in an existing or new category; demo sample grouped | C2 | To do |
+| C6 | Meta AI, server side only: the starter catalog gives each service a category (saved only with 2 or more), `replaceCatalog` clears old ones; `suggestServices` returns an existing or new category for each; demo sample grouped | C2 | To do |
 | C7 | Assistant: `list_services` shows categories; `create_service`/`update_service` take one; confirm-card tools to create, rename, remove and reorder categories | C2 | To do |
 | C8 | Admin "Service categories": every business's categories with their service count; Remove | C2 | To do |
 | C9 | Optional: a category colour that becomes the Google Calendar colour of its services that have none | C3 | Decision |
 | C10 | Optional: "Top categories" in Analytics | C2 | Decision |
+
+## Build order (several builders, asked by the owner 2026-11-06)
+
+1. C2 alone: everything else builds on it.
+2. Then five builders at once, each only in its own files, none commits:
+   C3 (`features/dashboard/components/services-view.tsx`, `list-footer.tsx`);
+   C4 (`features/business-page`, `features/booking`, `hooks/use-scroll-spy.ts`,
+   translation files); C5 + C8 (`add-booking-panel.tsx`, `bookings-table.tsx`,
+   `extras-view.tsx`, `app/(admin)`, `features/admin`); C6
+   (`features/starter-catalog`, `lib/starter-catalog-rules.ts`,
+   `suggestServices` in `actions.ts`, `features/demo`); C7
+   (`app/api/assistant`, `features/assistant`). Word files and
+   `lib/service-groups.ts` are only read, never changed, in this phase.
+   Each builder runs only its own tests.
+3. One full run at the end (typecheck, lint, tests, build), the UI
+   checklist at 375px and 1280px, light and dark, EN and ES, screenshots to
+   the owner, then the commits.
 
 ## Words (waiting for the owner's yes)
 
@@ -81,3 +98,5 @@ How to use this file: [Plans](README.md).
 | No "Featured" tab on the public page | There is no featured flag | M Kelly B, 2026-11-06 |
 | One Services filter, grouped by category | One filter instead of two | M Kelly B, 2026-11-06 |
 | Starter catalog saves categories only when there are 2 or more | A one-kind business stays flat; a draft never fails on categories | M Kelly B, 2026-11-06 |
+| One grouping helper in `lib/` and all words written in C2 | Four parts group services; features can't import each other, and parallel builders must not edit the same files | M Kelly B, 2026-11-06 |
+| The Suggest panel's category is C3's, C6 stays server side | The panel lives in the Services screen file C3 owns | M Kelly B, 2026-11-06 |
