@@ -3,6 +3,7 @@ import { ArrowDownIcon, ArrowUpIcon } from "@/components/ui/icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
+import { FitText } from "@/components/fit-text"
 import { type Tone, ToneIcon } from "@/components/tone-icon"
 import { cn } from "cn"
 
@@ -30,13 +31,14 @@ const COLUMNS = [
 ]
 
 // Key numbers in one card, split by thin lines: two across on a phone, four
-// on a computer. Each box has its label at the top left, the number right
-// under it with how it moved against the period before beside it (green
-// when it went the right way), and its icon on a soft coloured circle at
-// the right, centred beside both (a little smaller on a phone, so the
-// label and number keep their room). With an `href` (the strip's, or a
-// number's own) the number opens that page, and each box lights up on its
-// own under the mouse.
+// on a computer. Each box has its label at the top left (on two lines when
+// it needs them, never cut off), the number right under it with how it
+// moved against the period before beside it (green when it went the right
+// way), and a big icon on a soft coloured circle at the right, centred
+// beside both, with the same inset on both sides. A number too long for its
+// room shrinks to fit rather than run into the icon (FitText). With an
+// `href` (the strip's, or a number's own) the number opens that page, and
+// each box lights up on its own under the mouse.
 export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
   return (
     <Card className="gap-0 py-0">
@@ -53,7 +55,7 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
             <div
               key={stat.label}
               className={cn(
-                "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 bg-card px-3 py-4 md:gap-x-3 md:p-5",
+                "grid grid-cols-[minmax(0,1fr)_auto] content-center items-center gap-x-2 gap-y-1 bg-card p-4 md:gap-x-3 md:px-6 md:py-5",
                 link &&
                   "relative transition-colors hover:bg-muted has-[a:focus-visible]:bg-muted has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50 has-[a:focus-visible]:ring-inset"
               )}
@@ -63,20 +65,18 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
                   // The label is the box's link; it covers the whole box.
                   <Link
                     href={link}
-                    className="min-w-0 truncate outline-none after:absolute after:inset-0 max-md:text-sm"
+                    className="min-w-0 outline-none after:absolute after:inset-0 max-md:text-sm"
                   >
                     {stat.label}
                   </Link>
                 ) : (
-                  <span className="min-w-0 truncate max-md:text-sm">
-                    {stat.label}
-                  </span>
+                  <span className="min-w-0 max-md:text-sm">{stat.label}</span>
                 )}
               </dt>
               <dd className="col-start-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="text-2xl font-semibold tracking-tight tabular-nums md:text-3xl">
+                <FitText className="text-2xl font-semibold tracking-tight tabular-nums md:text-3xl">
                   {stat.value}
-                </span>
+                </FitText>
                 <Change
                   change={stat.change ?? null}
                   upIsGood={stat.upIsGood ?? true}
@@ -84,7 +84,10 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
               </dd>
               {/* Only a picture, so screen readers skip it. */}
               <dd aria-hidden className="col-start-2 row-span-2 row-start-1">
-                <ToneIcon tone={stat.tone} className="md:size-10">
+                <ToneIcon
+                  tone={stat.tone}
+                  className="size-11 md:size-13 [&_svg]:size-6 md:[&_svg]:size-6.5"
+                >
                   {stat.icon}
                 </ToneIcon>
               </dd>
