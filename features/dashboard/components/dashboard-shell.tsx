@@ -205,10 +205,11 @@ export function DashboardShell({
                     render={<Link href={assistantHref} />}
                   >
                     {/* The composer's voice wave on the globe, in the globe's
-                        near-white light. */}
+                        near-white light, a little see-through so the globe's
+                        colours tint it. */}
                     <span className="grid size-full place-items-center *:col-start-1 *:row-start-1">
                       <VoiceGlobe className="size-full" />
-                      <AudioLinesIcon className="relative size-5 text-primary-foreground" />
+                      <AudioLinesIcon className="relative size-5 text-primary-foreground/85" />
                     </span>
                   </Button>
                 )}
