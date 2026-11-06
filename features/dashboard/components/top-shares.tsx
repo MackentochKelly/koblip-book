@@ -20,27 +20,30 @@ const SHADES = [
   "bg-chart-5",
 ]
 
-// What people book most over the period: one bar split by service, then
-// each service with its share. Past the top five, the rest show as one.
-export function TopServices({
-  services,
+// What people book most over the period, by service or by category: one
+// bar split by item, then each item with its share. Past the top five, the
+// rest show as one (null name).
+export function TopShares({
+  title,
+  items,
   period,
 }: {
-  services: { name: string | null; count: number }[]
+  title: string
+  items: { name: string | null; count: number }[]
   period: string
 }) {
   const m = useOwnerMessages()
   const a = m.bookings.analytics
   const number = new Intl.NumberFormat(m.locale)
   const percent = new Intl.NumberFormat(m.locale, { style: "percent" })
-  const total = services.reduce((sum, service) => sum + service.count, 0)
+  const total = items.reduce((sum, item) => sum + item.count, 0)
   const shade = (index: number, name: string | null) =>
     name === null ? "bg-muted-foreground/30" : SHADES[index % SHADES.length]
 
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>{a.topServices}</CardTitle>
+        <CardTitle>{title}</CardTitle>
         <CardDescription>{period}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-6">
@@ -53,32 +56,32 @@ export function TopServices({
         ) : (
           <>
             <div className="flex h-3 gap-1" aria-hidden>
-              {services.map((service, index) => (
+              {items.map((item, index) => (
                 <div
-                  key={service.name ?? ""}
-                  className={cn("rounded-full", shade(index, service.name))}
-                  style={{ width: `${(service.count / total) * 100}%` }}
+                  key={item.name ?? ""}
+                  className={cn("rounded-full", shade(index, item.name))}
+                  style={{ width: `${(item.count / total) * 100}%` }}
                 />
               ))}
             </div>
             <ul className="grid grid-cols-2 gap-x-4 gap-y-3">
-              {services.map((service, index) => (
-                <li key={service.name ?? ""} className="flex min-w-0 gap-2">
+              {items.map((item, index) => (
+                <li key={item.name ?? ""} className="flex min-w-0 gap-2">
                   <span
                     className={cn(
                       "mt-1 h-3 w-1 shrink-0 rounded-full",
-                      shade(index, service.name)
+                      shade(index, item.name)
                     )}
                   />
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate text-muted-foreground">
-                      {service.name ?? a.otherServices}
+                      {item.name ?? a.otherServices}
                     </span>
                     <span className="font-medium tabular-nums">
-                      {number.format(service.count)}
+                      {number.format(item.count)}
                       <span className="font-normal text-muted-foreground">
                         {" · "}
-                        {percent.format(service.count / total)}
+                        {percent.format(item.count / total)}
                       </span>
                     </span>
                   </span>

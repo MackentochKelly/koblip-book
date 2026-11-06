@@ -167,6 +167,7 @@ const bookings: typeof en = {
     showUpSplit: (showed: string, missed: string) =>
       `${showed} vinieron · ${missed} faltaron`,
     topServices: "Servicios más pedidos",
+    topCategories: "Categorías más pedidas",
     otherServices: "Todo lo demás",
     busiestDays: "Días más ocupados",
     comingUp: "Lo que viene",

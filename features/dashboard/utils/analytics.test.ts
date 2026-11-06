@@ -61,6 +61,27 @@ test("a longer period takes in more and names the top services", () => {
   ])
 })
 
+test("top categories only once there are categories, Other included", () => {
+  expect(
+    periodSummary(rows, firstVisit, "2026-10-31", 30, NOW).topCategories
+  ).toBeNull()
+  // Cut is in Hair; Beard has no category.
+  const categoryOf = (row: OwnerBooking) =>
+    row.serviceName === "Cut" ? "Hair" : "Other"
+  const { topCategories } = periodSummary(
+    rows,
+    firstVisit,
+    "2026-10-31",
+    30,
+    NOW,
+    categoryOf
+  )
+  expect(topCategories).toEqual([
+    { name: "Hair", count: 3 },
+    { name: "Other", count: 2 },
+  ])
+})
+
 test("services past the top five are grouped as one", () => {
   const many = ["A", "B", "C", "D", "E", "F", "G"].map((name) =>
     booking("2026-10-31", "confirmed", "p:1", name)

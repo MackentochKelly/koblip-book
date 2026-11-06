@@ -172,6 +172,7 @@ const bookings = {
     showUpSplit: (showed: string, missed: string) =>
       `${showed} showed up · ${missed} missed`,
     topServices: "Top services",
+    topCategories: "Top categories",
     otherServices: "Everything else",
     busiestDays: "Busiest days",
     comingUp: "Coming up",

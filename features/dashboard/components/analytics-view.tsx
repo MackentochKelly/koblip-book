@@ -18,21 +18,23 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { addDaysTo, formatWeekdayShort } from "@/lib/format-booking-time"
+import { cn } from "@/lib/utils"
 import { useOwnerMessages } from "../i18n/provider"
 import { type Period, PERIODS, type PeriodSummary } from "../utils/analytics"
 import { BookingsAreaChart } from "./bookings-area-chart"
 import { ComingUpCard } from "./coming-up-card"
 import { PeriodStats } from "./period-stats"
 import { ShowUpChart } from "./show-up-chart"
-import { TopServices } from "./top-services"
+import { TopShares } from "./top-shares"
 
 // A Monday, so the busiest-days bars can be named Monday first.
 const A_MONDAY = "2024-01-01"
 
 // Everything about how the business is doing. One tab at the top picks the
 // period (7 days, 30 days, 3 months) for all of it: the key numbers against
-// the period before, bookings per day, show-ups, top services and busiest
-// days. Then what is coming up. On a phone the top bar names the page.
+// the period before, bookings per day, show-ups, top services (and top
+// categories once there are categories) and busiest days. Then what is
+// coming up. On a phone the top bar names the page.
 export function AnalyticsView({
   periods,
   currency,
@@ -71,9 +73,26 @@ export function AnalyticsView({
       </div>
       <PeriodStats summary={summary} currency={currency} />
       <BookingsAreaChart daily={summary.daily} />
-      <div className="grid gap-6 lg:grid-cols-3">
+      {/* Four cards two by two with Top categories, else three in a row. */}
+      <div
+        className={cn(
+          "grid gap-6",
+          summary.topCategories ? "lg:grid-cols-2" : "lg:grid-cols-3"
+        )}
+      >
         <ShowUpChart showUp={summary.showUp} period={label} />
-        <TopServices services={summary.topServices} period={label} />
+        <TopShares
+          title={a.topServices}
+          items={summary.topServices}
+          period={label}
+        />
+        {summary.topCategories && (
+          <TopShares
+            title={a.topCategories}
+            items={summary.topCategories}
+            period={label}
+          />
+        )}
         <BusiestDays weekdays={summary.weekdays} period={label} />
       </div>
       <ComingUpCard

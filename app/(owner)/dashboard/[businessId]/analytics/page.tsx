@@ -15,6 +15,7 @@ import {
   periodSummary,
 } from "@/features/dashboard/utils/analytics"
 import { bookingsPerDay } from "@/features/dashboard/utils/bookings-per-day"
+import type { OwnerBooking } from "@/features/dashboard/types"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { addDaysTo, todayIn } from "@/lib/format-booking-time"
 
@@ -26,7 +27,7 @@ export default async function AnalyticsPage({
   params,
 }: PageProps<"/dashboard/[businessId]/analytics">) {
   const { businessId } = await params
-  const { business } = await getOwnerBusiness(businessId)
+  const { business, services, categories } = await getOwnerBusiness(businessId)
   const today = todayIn(business.timezone)
   // The longest period and the one before it, so each can be compared.
   const longest = Math.max(...PERIODS)
@@ -40,10 +41,25 @@ export default async function AnalyticsPage({
     past.map((booking) => booking.customerKey)
   )
   const now = new Date().toISOString()
+  // Top categories once there are categories: a booking counts in its
+  // service's category, or Other with none or a service since removed.
+  const other = (await getOwnerMessages()).catalog.categories.other
+  const categoryName = new Map(categories.map(({ id, name }) => [id, name]))
+  const serviceCategory = new Map(
+    services.map(({ id, categoryId }) => [
+      id,
+      categoryId ? categoryName.get(categoryId) : undefined,
+    ])
+  )
+  const categoryOf =
+    categories.length > 0
+      ? (booking: OwnerBooking) =>
+          (booking.serviceId && serviceCategory.get(booking.serviceId)) || other
+      : undefined
   const periods = Object.fromEntries(
     PERIODS.map((days) => [
       days,
-      periodSummary(past, firstVisits, today, days, now),
+      periodSummary(past, firstVisits, today, days, now, categoryOf),
     ])
   ) as Record<Period, PeriodSummary>
   return (

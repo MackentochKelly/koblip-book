@@ -6,8 +6,8 @@ import type { OwnerBooking } from "../types"
 export const PERIODS = [7, 30, 90] as const
 export type Period = (typeof PERIODS)[number]
 
-// How many services Top services names.
-const TOP_SERVICES = 5
+// How many services Top services names, and categories Top categories.
+const TOP_SHOWN = 5
 
 // One number for this period and the same number for the period before.
 export interface Trend {
@@ -21,12 +21,15 @@ export interface Trend {
 // nowhere. `firstVisit` maps a customer to the day they first booked, so a
 // booking on that day is a new customer's. Revenue is the price of every
 // confirmed or completed booking that has ended by `now` (ISO string).
+// `categoryOf` names a booking's service category, Other included, when
+// the business has categories (docs/plans/service-categories.md, C10).
 export function periodSummary(
   bookings: OwnerBooking[],
   firstVisit: Record<string, string>,
   today: string,
   days: number,
-  now: string
+  now: string,
+  categoryOf?: (booking: OwnerBooking) => string
 ) {
   const start = addDaysTo(today, 1 - days)
   const previousStart = addDaysTo(start, -days)
@@ -56,6 +59,7 @@ export function periodSummary(
   // Bookings per weekday, Monday first.
   const weekdays = Array.from({ length: 7 }, () => 0)
   const perService = new Map<string, number>()
+  const perCategory = new Map<string, number>()
   for (const booking of current) {
     const day = daily[dayIndex.get(booking.date) ?? -1]
     if (day) {
@@ -64,17 +68,9 @@ export function periodSummary(
     }
     const sunday0 = new Date(`${booking.date}T00:00:00Z`).getUTCDay()
     weekdays[(sunday0 + 6) % 7] += 1
-    perService.set(
-      booking.serviceName,
-      (perService.get(booking.serviceName) ?? 0) + 1
-    )
+    addOne(perService, booking.serviceName)
+    if (categoryOf) addOne(perCategory, categoryOf(booking))
   }
-  const ranked = [...perService]
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)
-  const others = ranked
-    .slice(TOP_SERVICES)
-    .reduce((sum, service) => sum + service.count, 0)
 
   return {
     bookings: trend((rows) => rows.length),
@@ -95,12 +91,30 @@ export function periodSummary(
     },
     daily,
     weekdays,
-    // The top five, then everything else as one (null name).
-    topServices: [
-      ...ranked.slice(0, TOP_SERVICES),
-      ...(others > 0 ? [{ name: null, count: others }] : []),
-    ] as { name: string | null; count: number }[],
+    topServices: topOf(perService),
+    // Null when the business has no categories.
+    topCategories: categoryOf ? topOf(perCategory) : null,
   }
+}
+
+function addOne(counts: Map<string, number>, name: string) {
+  counts.set(name, (counts.get(name) ?? 0) + 1)
+}
+
+// The top five, most booked first, then everything else as one (null name).
+function topOf(
+  counts: Map<string, number>
+): { name: string | null; count: number }[] {
+  const ranked = [...counts]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+  const others = ranked
+    .slice(TOP_SHOWN)
+    .reduce((sum, item) => sum + item.count, 0)
+  return [
+    ...ranked.slice(0, TOP_SHOWN),
+    ...(others > 0 ? [{ name: null, count: others }] : []),
+  ]
 }
 
 export type PeriodSummary = ReturnType<typeof periodSummary>
