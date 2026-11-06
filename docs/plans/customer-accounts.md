@@ -6,8 +6,8 @@ Customers use the same account and the same login page as everyone else (`/login
 
 - **One sign-in** (`lib/auth.ts`): Better Auth with Google, email and password, and the phone-number plugin (a code on WhatsApp). A new phone makes an account, named from its latest booking.
 - **Login UI** (`features/owner-auth/components/auth-form.tsx`): "Continue with Google", then a "More options" menu (email, phone) whose pick unfolds under it. The code step is shadcn's `InputOTP` and checks itself once full (`components/phone-code-form.tsx`, shared).
-- **My bookings** (`/my-bookings`): signed out → the login page, coming back here. Signed in without a phone (Google, email) → "Add your phone" with a code, then the bookings. Upcoming bookings can be moved or cancelled.
-- **"You're booked"**: "Manage your booking" replaces "Done" while phone codes can be sent; the phone is kept in the tab so phone sign-in opens filled in.
+- **My bookings** (`/my-bookings`): signed out → the one login page, coming back here; signed in → the account's bookings (D8). Upcoming bookings can be moved or cancelled.
+- **"You're booked"**: "Manage your booking" replaces "Done"; the phone and the booking's claim are kept in the tab, so phone sign-in opens filled in and the booking joins the account.
 
 ## Next
 
@@ -23,4 +23,5 @@ Customers use the same account and the same login page as everyone else (`/login
 - **D4. Placeholder email.** Better Auth needs one; an account made by phone gets `<digits>@phone.invalid` (a reserved domain, RFC 2606), never mailed and never shown: the app shows the phone instead (`OwnerSession.contact`).
 - **D5. Google photos are not stored** (Google's terms), so a booking shows the business's own first photo, else the shop icon.
 - **D6. One account for everyone** (M Kelly B, Nov 5). Owners, team and customers share `/login` and Better Auth's `user` table; phone sign-in is one shared feature. Migration `0051_one_sign_in` drops the `customer_*` tables (never deployed) and adds `phone_number` and `phone_number_verified` to `user`.
-- **D7. Bookings join by the verified phone.** Bookings keep no email, so My bookings needs the account's phone, proved by a code; a Google or email account adds it once.
+- **D7 (replaced by D8). Bookings join by the verified phone.** Dropped on Nov 6: the owner wants no "Add your phone" step, only the one login.
+- **D8. Bookings join the account** (M Kelly B, Nov 6). Booked signed in, the booking is the account's (`bookings.customer_user_id`). Booked signed out, it gets a one-time secret kept in the tab (only its SHA-256 is stored); "Manage your booking" opens the one login page and My bookings claims it for the account logged in. My bookings also shows bookings made with the account's verified phone, and is open without phone codes.
