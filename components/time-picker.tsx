@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+
 import { DayStrip } from "@/components/day-strip"
 import {
   Accordion,
@@ -69,6 +71,17 @@ export function TimePicker({
     }),
   })).filter((group) => group.times.length > 0)
 
+  // Until the person opens or closes a part on this day, the part with the
+  // picked time is open, else the soonest one with free times. Worked out
+  // on each render, so it stays right when the times arrive after the day.
+  const [opened, setOpened] = useState<{
+    date: string
+    parts: string[]
+  } | null>(null)
+  const smart =
+    groups.find((group) => time && group.times.includes(time)) ?? groups[0]
+  const open = opened?.date === date ? opened.parts : smart ? [smart.key] : []
+
   return (
     <div className="flex min-w-0 flex-col gap-5">
       <DayStrip
@@ -86,15 +99,9 @@ export function TimePicker({
       />
 
       <p className="text-sm font-medium">{formatDay(date, locale)}</p>
-      {/* A new day opens the part with the picked time, else the first. */}
       <Accordion
-        key={date}
-        defaultValue={[
-          (
-            groups.find((group) => time && group.times.includes(time)) ??
-            groups[0]
-          )?.key,
-        ]}
+        value={open}
+        onValueChange={(parts) => setOpened({ date, parts })}
       >
         {groups.map((group) => (
           <AccordionItem key={group.key} value={group.key}>
