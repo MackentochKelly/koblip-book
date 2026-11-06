@@ -9,6 +9,7 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 
+import { PageSection } from "@/components/page-section"
 import { SortableList } from "@/components/sortable-list"
 import { Button } from "@/components/ui/button"
 import {
@@ -34,23 +35,32 @@ import { WIDGETS, type WidgetId, type WidgetLayout } from "../widgets"
 const GRID = "grid gap-6 md:gap-y-10 lg:grid-cols-2"
 const FULL = "lg:col-span-2"
 
+// A widget that draws nothing (Get the app, once installed) hides with its
+// name.
+const HIDES_EMPTY = "has-[>[data-widget]:empty]:hidden"
+
 const span = (id: WidgetId) =>
   WIDGETS.find((widget) => widget.id === id)?.size === "full" ? FULL : undefined
 
-// Home's widgets in the owner's order. Edit widgets (at the foot, like the
-// iPhone's widget list) lets each one be dragged by its handle or taken off
-// with its X; Add widget opens the Widgets page for the rest; Done ends it.
-// While editing, the widgets themselves don't react to taps.
+// Home's widgets in the owner's order, each under its name like an Apple
+// app's sections (an `actions` link, like View all, beside the name; a
+// widget with nothing to show hides with its name). Edit widgets (at the
+// foot, like the iPhone's widget list) lets each one be dragged by its
+// handle or taken off with its X; Add widget opens the Widgets page for the
+// rest; Done ends it. While editing, the widgets themselves don't react to
+// taps.
 export function WidgetBoard({
   businessId,
   layout: savedLayout,
   device: savedDevice,
   widgets,
+  actions,
 }: {
   businessId: string
   layout: WidgetLayout
   device: boolean
   widgets: Record<WidgetId, React.ReactNode>
+  actions?: Partial<Record<WidgetId, React.ReactNode>>
 }) {
   const t = useOwnerMessages().widgets
   const [editing, setEditing] = useState(false)
@@ -88,13 +98,17 @@ export function WidgetBoard({
     return (
       <div className={GRID}>
         {shown.map((id) => (
-          <section
+          <PageSection
             key={id}
-            aria-label={t.names[id]}
-            className={cn("grid min-w-0 empty:hidden", span(id))}
+            id={`widget-${id}`}
+            title={t.names[id]}
+            action={actions?.[id]}
+            className={cn("min-w-0", HIDES_EMPTY, span(id))}
           >
-            {widgets[id]}
-          </section>
+            <div data-widget className="grid flex-1">
+              {widgets[id]}
+            </div>
+          </PageSection>
         ))}
         <Button
           variant="ghost"
@@ -121,11 +135,15 @@ export function WidgetBoard({
         rowClassName={span}
       >
         {(id, handle) => (
-          <section
-            aria-label={t.names[id]}
-            className="relative grid h-full min-w-0 rounded-4xl outline-2 outline-offset-4 outline-border outline-dashed"
+          <PageSection
+            id={`widget-${id}`}
+            title={t.names[id]}
+            className={cn(
+              "relative h-full min-w-0 rounded-4xl outline-2 outline-offset-4 outline-border outline-dashed",
+              HIDES_EMPTY
+            )}
           >
-            <div inert className="grid">
+            <div inert data-widget className="grid flex-1">
               {widgets[id]}
             </div>
             <div className="absolute top-2 right-2 flex gap-1 rounded-full border bg-background p-1">
@@ -139,7 +157,7 @@ export function WidgetBoard({
                 <XIcon />
               </Button>
             </div>
-          </section>
+          </PageSection>
         )}
       </SortableList>
       <div className="flex flex-col gap-2 md:flex-row md:justify-center">

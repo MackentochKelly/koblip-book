@@ -4,7 +4,7 @@ import Image from "next/image"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { DownloadIcon } from "@/components/ui/icons"
 import {
   Item,
@@ -29,9 +29,6 @@ export function InstallAppCard() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{t.names.install}</CardTitle>
-      </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <Item variant="muted">
           <ItemMedia variant="image">

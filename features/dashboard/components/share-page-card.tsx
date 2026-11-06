@@ -4,7 +4,7 @@ import { ExternalLinkIcon, LinkIcon, ShareIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Item,
   ItemContent,
@@ -30,9 +30,6 @@ export function SharePageCard({ slug, name }: { slug: string; name: string }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{m.widgets.names.share}</CardTitle>
-      </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <Item variant="muted">
           <ItemMedia variant="icon">

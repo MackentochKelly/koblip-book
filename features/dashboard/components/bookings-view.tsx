@@ -236,7 +236,7 @@ export function BookingsView({
                 onOpen={panels.open}
               />
             ),
-            chart: <ComingUpCard {...widgets.comingUp} />,
+            chart: <ComingUpCard {...widgets.comingUp} titled={false} />,
             newCustomers: (
               <NewCustomersCard
                 customers={widgets.newCustomers}
@@ -247,6 +247,14 @@ export function BookingsView({
             install: <InstallAppCard />,
           } satisfies Record<WidgetId, React.ReactNode>
         }
+        actions={{
+          newCustomers: (
+            <ViewAllLink
+              href={`/dashboard/${businessId}/customers`}
+              label={m.widgets.viewAll}
+            />
+          ),
+        }}
       />
 
       {!emptyAdd && (

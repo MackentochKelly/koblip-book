@@ -2,7 +2,7 @@
 
 import { ChevronRightIcon, ClockIcon } from "@/components/ui/icons"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Item,
   ItemActions,
@@ -28,15 +28,15 @@ export function NextBookingCard({
   const t = m.widgets
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{t.names.next}</CardTitle>
-      </CardHeader>
       <CardContent>
         {booking ? (
           <Item
             variant="muted"
             render={
-              <button type="button" onClick={() => onOpen(booking, Date.now())} />
+              <button
+                type="button"
+                onClick={() => onOpen(booking, Date.now())}
+              />
             }
             className="w-full text-left"
           >

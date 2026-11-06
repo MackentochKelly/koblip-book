@@ -5,16 +5,9 @@ import Link from "next/link"
 import { Fragment } from "react"
 import { ContactIcon, PhoneIcon, WhatsAppIcon } from "@/components/ui/icons"
 
-import { ViewAllLink } from "@/components/view-all-link"
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +31,8 @@ import { useOwnerMessages } from "../i18n/provider"
 
 // The New customers widget: who booked for the first time lately, newest
 // first, each with a ⋮ menu (open them on the Customers page, call or
-// WhatsApp them), and View all for the Customers page.
+// WhatsApp them). Its View all, for the Customers page, sits beside the
+// widget's name (Home's actions).
 export function NewCustomersCard({
   customers,
   href,
@@ -55,12 +49,6 @@ export function NewCustomersCard({
   const t = m.widgets
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{t.names.newCustomers}</CardTitle>
-        <CardAction>
-          <ViewAllLink href={href} label={t.viewAll} />
-        </CardAction>
-      </CardHeader>
       <CardContent>
         {customers.length > 0 ? (
           <ItemGroup>
