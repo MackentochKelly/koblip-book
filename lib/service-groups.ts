@@ -2,6 +2,10 @@
 // grouping every screen uses: each category in its order with its services
 // in theirs, then Other (no category, or one that is gone) last. Both lists
 // come in their saved order, as every query reads them.
+// Other's key where a category id goes, like a filter's choice (ids are
+// UUIDs, so it never clashes with one).
+export const OTHER_GROUP = "other"
+
 export interface ServiceGroup<S, C> {
   // Null for Other.
   category: C | null

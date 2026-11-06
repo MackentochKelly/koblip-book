@@ -1,11 +1,11 @@
 import { expect, test } from "vitest"
+import { OTHER_GROUP } from "@/lib/service-groups"
 import type { OwnerBooking } from "../types"
 import {
   bookingActions,
   bookingState,
   byStatus,
   matchBookings,
-  OTHER_CATEGORY,
   statusCounts,
 } from "./booking-filters"
 
@@ -86,8 +86,8 @@ test("a category filter keeps its services' bookings, Other those with none", ()
     )
   expect(ids([])).toEqual(["future", "ended", "done", "gone"])
   expect(ids(["hair"])).toEqual(["future", "done", "gone"])
-  expect(ids([OTHER_CATEGORY])).toEqual(["ended"])
-  expect(ids(["hair", OTHER_CATEGORY])).toHaveLength(4)
+  expect(ids([OTHER_GROUP])).toEqual(["ended"])
+  expect(ids(["hair", OTHER_GROUP])).toHaveLength(4)
 })
 
 test("what can be done depends on the time and status", () => {

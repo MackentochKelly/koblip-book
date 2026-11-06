@@ -1,3 +1,4 @@
+import { OTHER_GROUP } from "@/lib/service-groups"
 import type { OwnerBooking } from "../types"
 
 // What a booking is now, for the Bookings page's status tabs: a booked one
@@ -24,15 +25,11 @@ export interface BookingFilters {
   search: string
   status: StatusFilter
   // Empty: every category / every service / every team member. Categories
-  // are category ids, OTHER_CATEGORY for Other.
+  // are category ids, OTHER_GROUP for Other.
   categoryIds: string[]
   serviceIds: string[]
   teamIds: string[]
 }
-
-// Other in the Categories filter: a booking whose service has no category,
-// or is gone (docs/plans/service-categories.md).
-export const OTHER_CATEGORY = "other"
 
 export const NO_FILTERS: BookingFilters = {
   search: "",
@@ -61,7 +58,8 @@ export function matchBookings(
   return bookings.filter((booking) => {
     if (
       filters.categoryIds.length > 0 &&
-      !filters.categoryIds.includes(categoryOf(booking) ?? OTHER_CATEGORY)
+      // Other: a service with no category, or one that is gone.
+      !filters.categoryIds.includes(categoryOf(booking) ?? OTHER_GROUP)
     )
       return false
     if (

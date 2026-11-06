@@ -23,12 +23,12 @@ import {
   byStatus,
   matchBookings,
   NO_FILTERS,
-  OTHER_CATEGORY,
   STATUS_FILTERS,
   statusCounts,
 } from "../utils/booking-filters"
 import { RANGE_PRESETS, presetOf, presetRange } from "../utils/booking-range"
 import { serviceSelectOptions } from "../utils/service-options"
+import { OTHER_GROUP } from "@/lib/service-groups"
 import { BookingList } from "./booking-list"
 import type { useBookingPanels } from "./booking-panels"
 
@@ -103,7 +103,7 @@ export function BookingsTable({
     ...categories.map(({ id, name }) => ({ value: id, label: name })),
     ...(services.some((service) => !service.categoryId) ||
     bookings.some((booking) => categoryOf(booking) === null)
-      ? [{ value: OTHER_CATEGORY, label: m.catalog.categories.other }]
+      ? [{ value: OTHER_GROUP, label: m.catalog.categories.other }]
       : []),
   ]
   const teamOptions = team.map(({ id, name }) => ({ value: id, label: name }))

@@ -164,6 +164,29 @@ test("with categories each group has its heading, Other last", () => {
   ).toBeNull()
 })
 
+test("the Categories filter shows only the ticked ones, Other included", async () => {
+  view(
+    [service("Fade", "c1"), service("Wax"), service("Gel", "c2")],
+    [hair, nails]
+  )
+  const filter = screen.getByRole("combobox", { name: "Categories" })
+  fireEvent.click(filter)
+  // A real click starts on the item (Base UI ignores one that doesn't).
+  for (const name of ["Nails", "Other"]) {
+    const option = await screen.findByRole("option", { name })
+    fireEvent.pointerDown(option, { pointerType: "mouse" })
+    fireEvent.click(option)
+  }
+  await waitFor(() => expect(headings()).toEqual(["Nails", "Other"]))
+  fireEvent.click(screen.getByRole("button", { name: "Clear" }))
+  expect(headings()).toEqual(["Hair", "Nails", "Other"])
+})
+
+test("without categories there is no Categories filter", () => {
+  view([service("Fade"), service("Wax")])
+  expect(screen.queryByRole("combobox", { name: "Categories" })).toBeNull()
+})
+
 test("a service moves inside its group, with every id sent", async () => {
   view([service("Fade", "c1"), service("Wax"), service("Trim", "c1")], [hair])
   pick(row("Fade"), "Move down")

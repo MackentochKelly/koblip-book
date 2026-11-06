@@ -64,7 +64,13 @@ import {
   type GoogleEventColor,
 } from "@/lib/google-calendar-colors"
 import { parsePrice } from "@/lib/parse-price"
-import { groupServices, inGroupOrder, showsGroups } from "@/lib/service-groups"
+import {
+  groupServices,
+  inGroupOrder,
+  OTHER_GROUP,
+  showsGroups,
+} from "@/lib/service-groups"
+import { ListFilters } from "@/components/list-filters"
 import {
   createService,
   deleteService,
@@ -175,6 +181,8 @@ export function ServicesView({
   const [categoryTaken, setCategoryTaken] = useState(false)
   const [removingCategory, setRemovingCategory] =
     useState<OwnerServiceCategory | null>(null)
+  // The categories ticked in the filter (OTHER_GROUP for Other); none = all.
+  const [shownCategories, setShownCategories] = useState<string[]>([])
 
   const openForm = (
     service: ServiceRow | "new",
@@ -203,6 +211,22 @@ export function ServicesView({
   // one group of every service, shown as the flat list it always was.
   const groups = groupServices(services, categories, { keepEmpty: true })
   const grouped = showsGroups(groups)
+  // The Categories filter: every group there is, in order. A ticked one
+  // since removed no longer counts.
+  const groupKey = (category: OwnerServiceCategory | null) =>
+    category?.id ?? OTHER_GROUP
+  const categoryOptions = groups.map(({ category }) => ({
+    value: groupKey(category),
+    label: category?.name ?? k.other,
+  }))
+  const ticked = shownCategories.filter((key) =>
+    categoryOptions.some((option) => option.value === key)
+  )
+  const shows = (category: OwnerServiceCategory | null) =>
+    ticked.length === 0 || ticked.includes(groupKey(category))
+  const shownCount = groups
+    .filter(({ category }) => shows(category))
+    .reduce((sum, group) => sum + group.services.length, 0)
   // Up or down inside its group; the server gets every service in the new
   // shown order.
   const move = (groupIndex: number, index: number, by: number) => {
@@ -423,6 +447,39 @@ export function ServicesView({
         listClassName="w-full md:w-fit"
       />
 
+      {view === "services" && grouped && (
+        <ListFilters
+          filters={[
+            {
+              key: "categories",
+              label: k.filter,
+              control: (
+                <AppSelect
+                  multiple
+                  options={categoryOptions}
+                  value={ticked}
+                  onValueChange={setShownCategories}
+                  placeholder={k.filter}
+                  aria-label={k.filter}
+                  className="w-full md:w-auto"
+                />
+              ),
+            },
+          ]}
+          count={ticked.length > 0 ? 1 : 0}
+          onClear={() => setShownCategories([])}
+          rowClear={
+            ticked.length > 0 ? () => setShownCategories([]) : undefined
+          }
+          words={{
+            filters: k.filters,
+            clearAll: k.clearAll,
+            clear: k.clear,
+            showResults: k.showResults(shownCount),
+          }}
+        />
+      )}
+
       {view === "extras" ? (
         <ExtrasView
           businessId={businessId}
@@ -438,40 +495,44 @@ export function ServicesView({
           phoneSuggest={phoneSuggest}
         />
       ) : grouped ? (
-        // Each category under its heading, every service shown.
-        groups.map(({ category, services: list }, groupIndex) => (
-          <section key={category?.id ?? "other"} className="flex flex-col gap-3">
-            {/* As tall as the ⋮ button, so Other's heading lines up too. */}
-            <div className="flex min-h-8 items-center justify-between gap-3">
-              <h2 className="flex min-w-0 items-center gap-2 text-sm font-medium text-muted-foreground">
-                {googleCalendar &&
-                  isGoogleEventColor(category?.calendarColor) && (
-                    <GoogleEventDot color={category.calendarColor} />
-                  )}
-                {category?.name ?? k.other}
-              </h2>
-              {/* Every category has its group, so its index is its own. */}
-              {category && categoryMenu(category, groupIndex)}
-            </div>
-            {/* Only a category can be empty: Other shows only with services. */}
-            {category && list.length === 0 ? (
-              <Button
-                variant="outline"
-                className="self-start"
-                onClick={() => openForm("new", category.id)}
-              >
-                <PlusIcon data-icon="inline-start" />
-                {t.addService}
-              </Button>
-            ) : (
-              <ItemGroup className="gap-3">
-                {list.map((service, index) =>
-                  serviceItem(service, groupIndex, index, list.length)
+        // Each category under its heading, every service shown; the filter
+        // hides the others, each keeping its own index for its menus.
+        groups.map(
+          ({ category, services: list }, groupIndex) =>
+            shows(category) && (
+              <section key={groupKey(category)} className="flex flex-col gap-3">
+                {/* As tall as the ⋮ button, so Other's heading lines up too. */}
+                <div className="flex min-h-8 items-center justify-between gap-3">
+                  <h2 className="flex min-w-0 items-center gap-2 text-sm font-medium text-muted-foreground">
+                    {googleCalendar &&
+                      isGoogleEventColor(category?.calendarColor) && (
+                        <GoogleEventDot color={category.calendarColor} />
+                      )}
+                    {category?.name ?? k.other}
+                  </h2>
+                  {/* Every category has its group, so its index is its own. */}
+                  {category && categoryMenu(category, groupIndex)}
+                </div>
+                {/* Only a category can be empty: Other shows only with services. */}
+                {category && list.length === 0 ? (
+                  <Button
+                    variant="outline"
+                    className="self-start"
+                    onClick={() => openForm("new", category.id)}
+                  >
+                    <PlusIcon data-icon="inline-start" />
+                    {t.addService}
+                  </Button>
+                ) : (
+                  <ItemGroup className="gap-3">
+                    {list.map((service, index) =>
+                      serviceItem(service, groupIndex, index, list.length)
+                    )}
+                  </ItemGroup>
                 )}
-              </ItemGroup>
-            )}
-          </section>
-        ))
+              </section>
+            )
+        )
       ) : services.length === 0 ? (
         <Empty className="border">
           <EmptyHeader>

@@ -86,6 +86,13 @@ const catalog = {
     removed: "Category removed",
     // Under "Remove Hair?".
     movesToOther: "Its services move to Other.",
+    // The Services screen's filter (C12).
+    filter: "Categories",
+    filters: "Filters",
+    clearAll: "Clear all",
+    clear: "Clear",
+    showResults: (count: number) =>
+      count === 1 ? "Show 1 service" : `Show ${count} services`,
   },
   extras: {
     suggested: "Suggested extras",
