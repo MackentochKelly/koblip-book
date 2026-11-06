@@ -1,4 +1,8 @@
-import type { services, teamMembers } from "@/lib/db/schema"
+import type {
+  serviceCategories,
+  services,
+  teamMembers,
+} from "@/lib/db/schema"
 import { directionsUrl } from "@/lib/directions-url"
 import type { PolicyKind, PolicyPointIcon } from "@/lib/policy-rules"
 import { checkAddons } from "../utils/addons"
@@ -8,7 +12,12 @@ type TeamMemberRow = typeof teamMembers.$inferSelect
 
 export type BookingService = Pick<
   ServiceRow,
-  "id" | "name" | "durationMinutes" | "priceMinor"
+  "id" | "name" | "durationMinutes" | "priceMinor" | "categoryId"
+>
+// A group of services (Hair, Nails…), named in the page's language.
+export type BookingServiceCategory = Pick<
+  typeof serviceCategories.$inferSelect,
+  "id" | "name"
 >
 export type BookingMember = Pick<
   TeamMemberRow,
@@ -45,6 +54,9 @@ export interface BookingPage {
   timeZone: string
   currency: string
   services: BookingService[]
+  // In the owner's order; a service's categoryId points to one, null for
+  // Other (docs/plans/service-categories.md).
+  serviceCategories: BookingServiceCategory[]
   team: BookingMember[]
   // serviceId → the members who do it; missing = everyone.
   serviceTeams: Record<string, string[]>
@@ -136,6 +148,7 @@ export function toBookingPage(data: {
   }
   photos: { url: string }[]
   services: ServiceRow[]
+  serviceCategories: BookingServiceCategory[]
   team: BookingMember[]
   serviceTeams: Record<string, string[]>
   addonGroups: BookingAddonGroup[]
@@ -153,11 +166,18 @@ export function toBookingPage(data: {
     phone: data.business.phone,
     timeZone: data.business.timezone,
     currency: data.business.currency,
-    services: data.services.map(({ id, name, durationMinutes, priceMinor }) => ({
+    services: data.services.map(
+      ({ id, name, durationMinutes, priceMinor, categoryId }) => ({
+        id,
+        name,
+        durationMinutes,
+        priceMinor,
+        categoryId,
+      })
+    ),
+    serviceCategories: data.serviceCategories.map(({ id, name }) => ({
       id,
       name,
-      durationMinutes,
-      priceMinor,
     })),
     team: data.team.map(({ id, name, photoUrl, description }) => ({
       id,

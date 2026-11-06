@@ -4,6 +4,7 @@ import type {
   businessHours,
   businessPhotos,
   businesses,
+  serviceCategories,
   services,
   teamMembers,
 } from "@/lib/db/schema"
@@ -21,6 +22,11 @@ export type Business = typeof businesses.$inferSelect & {
 }
 export type BusinessHour = typeof businessHours.$inferSelect
 export type Service = typeof services.$inferSelect
+// A group of services (Hair, Nails…), named in the page's language.
+export type ServiceCategory = Pick<
+  typeof serviceCategories.$inferSelect,
+  "id" | "name"
+>
 // What customers see of a person: never their phone or email.
 export type TeamMember = Pick<
   typeof teamMembers.$inferSelect,
@@ -55,6 +61,9 @@ export interface BusinessPageData {
   business: Business
   hours: BusinessHour[]
   services: Service[]
+  // In the owner's order (docs/plans/service-categories.md); each service's
+  // categoryId points to one, null for Other.
+  serviceCategories: ServiceCategory[]
   team: TeamMember[]
   photos: PagePhoto[]
   reviews: PageReview[]

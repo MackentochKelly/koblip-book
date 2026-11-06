@@ -4,7 +4,13 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
 import { eq } from "drizzle-orm"
-import { businesses, services, translations, user } from "@/lib/db/schema"
+import {
+  businesses,
+  serviceCategories,
+  services,
+  translations,
+  user,
+} from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
@@ -199,4 +205,37 @@ test("returns not_found for someone else's business", async () => {
     error: "not_found",
   })
   expect(createMock).not.toHaveBeenCalled()
+})
+
+test("translates a service category's name, and drops it once the category is removed", async () => {
+  fresh()
+  const { db } = await import("@/lib/db")
+  await db.insert(businesses).values({
+    id: "biz-groups",
+    slug: "groups-shop",
+    name: "Groups Shop",
+    timezone: "America/Santo_Domingo",
+    currency: "DOP",
+    ownerId: "u1",
+  })
+  await db.insert(serviceCategories).values({
+    id: "cat-hair",
+    businessId: "biz-groups",
+    name: "Haircuts",
+    position: 0,
+  })
+  expect(await translateBusiness("biz-groups")).toEqual({
+    ok: true,
+    translated: 1,
+  })
+  expect(
+    (await rows()).find((row) => row.entityId === "cat-hair")
+  ).toMatchObject({
+    field: "service_category.name",
+    sourceText: "Haircuts",
+    text: "ES Haircuts",
+  })
+  await db.delete(serviceCategories).where(eq(serviceCategories.id, "cat-hair"))
+  expect((await translateBusiness("biz-groups")).ok).toBe(true)
+  expect((await rows()).some((row) => row.entityId === "cat-hair")).toBe(false)
 })

@@ -1,9 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 
 import { useMessages } from "@/components/language-provider"
 import { PageSection } from "@/components/page-section"
+import { ViewTabs } from "@/components/view-tabs"
 import {
   Item,
   ItemActions,
@@ -12,13 +14,17 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import type { Service } from "../types"
+import type { Service, ServiceCategory } from "../types"
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
+import { groupServices, showsGroups } from "@/lib/service-groups"
 import { BookButton } from "./book-button"
 
 // How many services the page shows before See all, which opens booking.
 const SERVICES_PREVIEW = 3
+
+// The tab of the services in no category; category ids never take it.
+const OTHER = "other"
 
 const plain = (text: string) =>
   text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "")
@@ -57,8 +63,11 @@ function ServiceFacts({
 // What the business sells, like Fresha: a few cards, then See all. With
 // booking on, each card has its own Book button. On a team member's profile
 // the buttons book with them (`memberId`), from that page (`fromAway`).
+// With two or more groups of services (docs/plans/service-categories.md),
+// tabs over the cards show one group's first few at a time.
 export function ServiceList({
   services,
+  serviceCategories,
   currency,
   slug,
   bookable,
@@ -66,6 +75,7 @@ export function ServiceList({
   fromAway,
 }: {
   services: Service[]
+  serviceCategories: ServiceCategory[]
   currency: string
   slug: string
   bookable: boolean
@@ -73,8 +83,19 @@ export function ServiceList({
   fromAway?: boolean
 }) {
   const m = useMessages()
+  const groups = groupServices(services, serviceCategories)
+  const tabs =
+    showsGroups(groups) && groups.length >= 2
+      ? groups.map((group) => ({
+          id: group.category?.id ?? OTHER,
+          label: group.category?.name ?? m.sections.otherServices,
+          services: group.services,
+        }))
+      : null
+  const [picked, setPicked] = useState<string | null>(null)
   if (services.length === 0) return null
-  const shown = services.slice(0, SERVICES_PREVIEW)
+  const tab = tabs && (tabs.find((item) => item.id === picked) ?? tabs[0])
+  const shown = (tab ? tab.services : services).slice(0, SERVICES_PREVIEW)
   const more = services.length > shown.length
   return (
     // A gray band like Fresha's: edge to edge on a phone, a rounded box on a
@@ -84,6 +105,14 @@ export function ServiceList({
       title={m.sections.services}
       className="-mx-4 bg-muted px-4 py-6 dark:bg-card md:mx-0 md:rounded-2xl md:p-6"
     >
+      {tabs && tab && (
+        <ViewTabs
+          views={tabs}
+          value={tab.id}
+          onChange={setPicked}
+          ariaLabel={m.sections.serviceCategories}
+        />
+      )}
       <ItemGroup className="gap-3">
         {shown.map((service) => (
           <Item key={service.id} variant="outline" className="bg-background">

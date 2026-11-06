@@ -113,6 +113,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
             <SectionTabs sections={sections} />
             <ServiceList
               services={services}
+              serviceCategories={data.serviceCategories}
               currency={business.currency}
               slug={business.slug}
               bookable={bookable}

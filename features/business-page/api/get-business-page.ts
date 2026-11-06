@@ -11,6 +11,7 @@ import {
   businessPolicyPoints,
   businesses,
   serviceAddonGroups,
+  serviceCategories,
   services,
   teamMemberServices,
   teamMembers,
@@ -198,6 +199,7 @@ async function loadBusinessPage(
   const [
     hours,
     serviceRows,
+    categoryRows,
     team,
     ownPhotos,
     teamLinks,
@@ -218,6 +220,11 @@ async function loadBusinessPage(
         .from(services)
         .where(eq(services.businessId, business.id))
         .orderBy(asc(services.position)),
+      db
+        .select({ id: serviceCategories.id, name: serviceCategories.name })
+        .from(serviceCategories)
+        .where(eq(serviceCategories.businessId, business.id))
+        .orderBy(asc(serviceCategories.position)),
       db
         .select({
           id: teamMembers.id,
@@ -298,11 +305,13 @@ async function loadBusinessPage(
     ;(serviceTeams[link.serviceId] ??= []).push(link.teamMemberId)
   }
 
-  // Spanish: replace About, category and each service's name/description with its
-  // up-to-date translation where there is one. A translation counts only
-  // while its sourceText still equals the current English text exactly.
+  // Spanish: replace About, category, each service's name/description and
+  // each service category's name with its up-to-date translation where there
+  // is one. A translation counts only while its sourceText still equals the
+  // current English text exactly.
   let pageBusiness = business
   let pageServices = serviceRows
+  let pageCategories = categoryRows
   let pageTeam = team
   let pagePoints = pointRows
   if (language === "es") {
@@ -337,6 +346,12 @@ async function loadBusinessPage(
         }
       }
       return next
+    })
+    pageCategories = categoryRows.map((category) => {
+      const row = byKey.get(`${category.id}\nservice_category.name`)
+      return row && row.sourceText === category.name
+        ? { ...category, name: row.text }
+        : category
     })
     pageTeam = team.map((member) => {
       const row = member.description
@@ -451,6 +466,7 @@ async function loadBusinessPage(
     business: liveBusiness,
     hours,
     services: pageServices,
+    serviceCategories: pageCategories,
     team: pageTeam,
     photos,
     reviews: extras.reviews,

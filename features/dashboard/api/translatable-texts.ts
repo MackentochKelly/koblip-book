@@ -8,6 +8,7 @@ import {
   type businesses,
   businessPolicies,
   businessPolicyPoints,
+  serviceCategories,
   services,
   teamMembers,
   translations,
@@ -19,8 +20,15 @@ import { collectTranslatableTexts, pendingTranslations } from "../utils/translat
 export async function loadTranslatableTexts(
   business: Pick<typeof businesses.$inferSelect, "id" | "description" | "category">
 ) {
-  const [serviceRows, addonGroupRows, addonOptionRows, teamRows, policyRows, pointRows] =
-    await Promise.all([
+  const [
+    serviceRows,
+    addonGroupRows,
+    addonOptionRows,
+    teamRows,
+    policyRows,
+    pointRows,
+    categoryRows,
+  ] = await Promise.all([
     db
       .select({
         id: services.id,
@@ -61,6 +69,10 @@ export async function loadTranslatableTexts(
       })
       .from(businessPolicyPoints)
       .where(eq(businessPolicyPoints.businessId, business.id)),
+    db
+      .select({ id: serviceCategories.id, name: serviceCategories.name })
+      .from(serviceCategories)
+      .where(eq(serviceCategories.businessId, business.id)),
   ])
   const existing = await db
     .select()
@@ -79,15 +91,17 @@ export async function loadTranslatableTexts(
     { groups: addonGroupRows, options: addonOptionRows },
     teamRows,
     policyRows,
-    pointRows
+    pointRows,
+    categoryRows
   )
   const pending = pendingTranslations(all, existing)
 
-  // Rows whose business, service, add-on group, add-on option, team
-  // member, policy or policy point no longer exists.
+  // Rows whose business, service, service category, add-on group, add-on
+  // option, team member, policy or policy point no longer exists.
   const liveIds = new Set([
     business.id,
     ...serviceRows.map((service) => service.id),
+    ...categoryRows.map((category) => category.id),
     ...addonGroupRows.map((group) => group.id),
     ...addonOptionRows.map((option) => option.id),
     ...teamRows.map((member) => member.id),

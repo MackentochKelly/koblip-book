@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
 import {
   businesses,
+  serviceCategories,
   services,
   teamMemberServices,
   teamMembers,
@@ -169,4 +170,22 @@ test("Spanish keeps the English category when its translation is stale or missin
   await db.insert(translations).values({ businessId: "biz-stale", entityId: "biz-stale", field: "business.category", language: "es", sourceText: "Barber shop", text: "Barbería" })
   expect((await getBusinessPage("stale-category", "es"))?.business.category).toBe("Photography studio")
   expect((await getBusinessPage("missing-category", "es"))?.business.category).toBe("Photography studio")
+})
+
+test("Spanish names a service category from its up-to-date translation, else in English", async () => {
+  const { db } = await import("@/lib/db")
+  await db.insert(businesses).values({ id: "biz-groups", slug: "groups-shop", name: "Groups Shop", timezone: "America/Santo_Domingo", currency: "DOP" })
+  await db.insert(serviceCategories).values([
+    { id: "cat-hair", businessId: "biz-groups", name: "Haircuts", position: 0 },
+    { id: "cat-nails", businessId: "biz-groups", name: "Nails", position: 1 },
+  ])
+  await db.insert(translations).values([
+    { businessId: "biz-groups", entityId: "cat-hair", field: "service_category.name", language: "es", sourceText: "Haircuts", text: "Cortes" },
+    { businessId: "biz-groups", entityId: "cat-nails", field: "service_category.name", language: "es", sourceText: "Manicure", text: "Manicura" },
+  ])
+  expect((await getBusinessPage("groups-shop", "es"))?.serviceCategories).toEqual([
+    { id: "cat-hair", name: "Cortes" },
+    { id: "cat-nails", name: "Nails" },
+  ])
+  expect((await getBusinessPage("groups-shop", "en"))?.serviceCategories.map((category) => category.name)).toEqual(["Haircuts", "Nails"])
 })

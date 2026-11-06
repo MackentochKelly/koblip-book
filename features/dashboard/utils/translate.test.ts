@@ -255,3 +255,33 @@ test("the prompt treats a category as a short business-type label", async () => 
   expect(request.messages[0].content).toContain("short business-type label, not a business name")
   expect(request.messages[1].content).toContain(JSON.stringify({ id, text: "Photography studio" }))
 })
+
+test("collectTranslatableTexts collects each service category's name", () => {
+  expect(
+    collectTranslatableTexts("biz-1", null, null, [], undefined, [], [], [], [
+      { id: "cat-1", name: "Haircuts" },
+      { id: "cat-2", name: "Nails" },
+    ])
+  ).toEqual([
+    { id: translationId("cat-1", "service_category.name"), entityId: "cat-1", field: "service_category.name", text: "Haircuts" },
+    { id: translationId("cat-2", "service_category.name"), entityId: "cat-2", field: "service_category.name", text: "Nails" },
+  ])
+})
+
+test("drops a service category name longer than a category name may be", async () => {
+  fresh()
+  const fits = translationId("cat-1", "service_category.name")
+  const long = translationId("cat-2", "service_category.name")
+  createMock.mockResolvedValue(
+    reply([
+      { id: fits, text: "Cortes" },
+      { id: long, text: "x".repeat(41) },
+    ])
+  )
+  expect(
+    await translateTexts([
+      { id: fits, text: "Haircuts" },
+      { id: long, text: "Nails" },
+    ])
+  ).toEqual(new Map([[fits, "Cortes"]]))
+})

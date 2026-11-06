@@ -1,0 +1,162 @@
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import type { BookingPage, BookingService } from "./booking-page"
+import { ServiceStep } from "./booking-steps"
+
+const service = (
+  id: string,
+  categoryId: string | null = null
+): BookingService => ({
+  id,
+  name: id,
+  durationMinutes: 30,
+  priceMinor: null,
+  categoryId,
+})
+
+const page = (
+  services: BookingService[],
+  serviceCategories: BookingPage["serviceCategories"] = []
+): BookingPage => ({
+  slug: "shop",
+  name: "Shop",
+  photoUrl: null,
+  address: null,
+  directionsUrl: null,
+  phone: null,
+  timeZone: "America/Santo_Domingo",
+  currency: "DOP",
+  services,
+  serviceCategories,
+  team: [],
+  serviceTeams: {},
+  addonGroups: [],
+  whatsapp: false,
+  manageBookings: false,
+  policies: { documents: [], points: [] },
+})
+
+const categories = [
+  { id: "hair", name: "Hair" },
+  { id: "nails", name: "Nails" },
+]
+
+let reduceMotion = false
+const scrollIntoView = vi.fn()
+
+beforeEach(() => {
+  // jsdom has none of these; the jump tabs use them.
+  reduceMotion = false
+  window.matchMedia = vi.fn().mockImplementation(() => ({
+    matches: reduceMotion,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }))
+  Element.prototype.scrollTo = vi.fn()
+  Element.prototype.scrollIntoView = scrollIntoView
+  scrollIntoView.mockClear()
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
+})
+
+afterEach(cleanup)
+
+const names = (groups: HTMLElement[]) =>
+  groups.map((group) => group.querySelector("legend")?.textContent)
+
+describe("ServiceStep", () => {
+  it("without categories is the flat list of choices, no titles or tabs", () => {
+    const { container } = render(
+      <ServiceStep
+        page={page([service("Cut"), service("Trim")])}
+        mode="drawer"
+        value=""
+        onChange={() => {}}
+      />
+    )
+    expect(screen.getAllByRole("radio")).toHaveLength(2)
+    expect(container.querySelector("fieldset")).toBeNull()
+    expect(screen.queryByRole("tablist")).toBeNull()
+  })
+
+  it("puts each group under its title in one choice, Other last, with jump tabs", () => {
+    const onChange = vi.fn()
+    const { container } = render(
+      <ServiceStep
+        page={page(
+          [
+            service("Polish", "nails"),
+            service("Wash"),
+            service("Cut", "hair"),
+          ],
+          categories
+        )}
+        mode="page"
+        value=""
+        onChange={onChange}
+      />
+    )
+    const groups = [...container.querySelectorAll("fieldset")]
+    expect(names(groups)).toEqual(["Hair", "Nails", "Other"])
+    expect(
+      within(groups[0]).getAllByRole("radio")
+    ).toHaveLength(1)
+    // One choice across the groups.
+    expect(screen.getAllByRole("radiogroup")).toHaveLength(1)
+    const tabs = screen.getByRole("tablist", { name: "Service categories" })
+    expect(
+      within(tabs)
+        .getAllByRole("tab")
+        .map((tab) => tab.textContent)
+    ).toEqual(["Hair", "Nails", "Other"])
+
+    fireEvent.click(within(tabs).getByRole("tab", { name: "Nails" }))
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: "smooth",
+      block: "start",
+    })
+    expect(scrollIntoView.mock.contexts[0]).toBe(groups[1])
+  })
+
+  it("jumps without the slide when Reduce Motion is on", () => {
+    reduceMotion = true
+    render(
+      <ServiceStep
+        page={page([service("Cut", "hair"), service("Wash")], categories)}
+        mode="drawer"
+        value=""
+        onChange={() => {}}
+      />
+    )
+    fireEvent.click(screen.getByRole("tab", { name: "Hair" }))
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: "auto",
+      block: "start",
+    })
+  })
+
+  it("leaves out empty groups, and shows no tabs for a single group", () => {
+    // Booked from a team member who only does nails.
+    const { container } = render(
+      <ServiceStep
+        page={page([service("Polish", "nails")], categories)}
+        mode="drawer"
+        value=""
+        onChange={() => {}}
+      />
+    )
+    expect(names([...container.querySelectorAll("fieldset")])).toEqual([
+      "Nails",
+    ])
+    expect(screen.queryByRole("tablist")).toBeNull()
+  })
+})

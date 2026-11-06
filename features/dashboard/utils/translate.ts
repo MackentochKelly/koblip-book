@@ -13,6 +13,7 @@ export type TranslationField =
   | "business.category"
   | "service.name"
   | "service.description"
+  | "service_category.name"
   | "addon_group.prompt"
   | "addon.name"
   | "addon.description"
@@ -50,10 +51,10 @@ export function translationId(
 }
 
 // Every text that needs a Spanish translation: About and category (if any) + every
-// service name + every service description (if any) + every add-on group
-// prompt + every add-on option name + every add-on option description
-// (if any) + every team member's job title and About (if any) + policies
-// and their key points.
+// service name + every service description (if any) + every service
+// category's name + every add-on group prompt + every add-on option name +
+// every add-on option description (if any) + every team member's job title
+// and About (if any) + policies and their key points.
 export function collectTranslatableTexts(
   businessId: string,
   businessDescription: string | null,
@@ -62,7 +63,8 @@ export function collectTranslatableTexts(
   addonRows: AddonTranslatableRows = { groups: [], options: [] },
   teamRows: { id: string; description: string | null; about?: string | null }[] = [],
   policyRows: { id: string; body: string }[] = [],
-  pointRows: { id: string; title: string; body: string }[] = []
+  pointRows: { id: string; title: string; body: string }[] = [],
+  serviceCategoryRows: { id: string; name: string }[] = []
 ): TranslatableText[] {
   const all: TranslatableText[] = []
   if (businessDescription && businessDescription.trim() !== "") {
@@ -96,6 +98,14 @@ export function collectTranslatableTexts(
         text: service.description,
       })
     }
+  }
+  for (const category of serviceCategoryRows) {
+    all.push({
+      id: translationId(category.id, "service_category.name"),
+      entityId: category.id,
+      field: "service_category.name",
+      text: category.name,
+    })
   }
   for (const group of addonRows.groups) {
     all.push({
@@ -238,6 +248,9 @@ function limitForId(id: string): number {
   const field = id.slice(id.lastIndexOf(":") + 1)
   if (field === "service.name") {
     return BOOKING_RULES.maxServiceName
+  }
+  if (field === "service_category.name") {
+    return BOOKING_RULES.maxServiceCategoryName
   }
   if (field === "addon.name") {
     return BOOKING_RULES.maxAddonName

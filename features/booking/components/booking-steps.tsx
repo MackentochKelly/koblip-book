@@ -1,12 +1,13 @@
 "use client"
 
-import { Fragment, useEffect, useState } from "react"
+import { Fragment, useCallback, useEffect, useRef, useState } from "react"
 import { CalendarIcon, CalendarX2Icon, UsersIcon } from "@/components/ui/icons"
 
 import { InfoTip } from "@/components/info-tip"
 import { PolicyPointIcon } from "@/components/policy-point-icon"
 import { useMessages } from "@/components/language-provider"
 import { TimePicker } from "@/components/time-picker"
+import { ViewTabs } from "@/components/view-tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -49,12 +50,16 @@ import {
 } from "@/components/ui/item"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useElementHeight } from "@/hooks/use-element-height"
+import { scrollParent, useScrollSpy } from "@/hooks/use-scroll-spy"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { formatClock, formatDay, todayIn } from "@/lib/format-booking-time"
 import type { Messages } from "@/lib/i18n"
 import { initials } from "@/lib/initials"
+import { groupServices, showsGroups } from "@/lib/service-groups"
+import { cn } from "@/lib/utils"
 import type { Availability } from "../types"
 import {
   bookingTotals,
@@ -80,45 +85,190 @@ export function priceLabel(
     : formatPrice(priceMinor, currency, m.locale)
 }
 
-// Step 1: the services as choice cards (shadcn's RadioGroup + Field).
+// How far under the pinned category tabs (px) a group's top counts as
+// reached: past where a tab's jump lands it.
+const GROUP_REACHED = 32
+
+// The element id of a group of services, which its tab jumps to.
+const groupId = (category: { id: string } | null) =>
+  `service-group-${category?.id ?? "other"}`
+
+// Step 1: the services as choice cards (shadcn's RadioGroup + Field). With
+// service categories (docs/plans/service-categories.md), one titled set of
+// cards per group, like the extras; with two or more groups, tabs pinned at
+// the top jump to a group and follow the one in view, like the business
+// page's section tabs. In the phone's sheet (`mode` "drawer") the sheet's
+// list scrolls; on the booking page the page does, under its header.
 export function ServiceStep({
   page,
+  mode,
   value,
   onChange,
 }: {
   page: BookingPage
+  mode: "page" | "drawer"
   value: string
   onChange: (id: string) => void
 }) {
   const m = useMessages()
-  return (
+  const groups = groupServices(page.services, page.serviceCategories)
+  const grouped = showsGroups(groups)
+  const sections =
+    grouped && groups.length >= 2
+      ? groups.map((group) => ({
+          id: groupId(group.category),
+          label: group.category?.name ?? m.sections.otherServices,
+        }))
+      : []
+  const tabbed = sections.length > 0
+  const bar = useRef<HTMLDivElement | null>(null)
+  const [measureBar, barHeight] = useElementHeight()
+  const barRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      bar.current = node
+      const stop = measureBar(node)
+      return () => {
+        bar.current = null
+        stop?.()
+      }
+    },
+    [measureBar]
+  )
+  const active = useScrollSpy(
+    sections.map((section) => section.id),
+    {
+      line: () =>
+        (bar.current?.getBoundingClientRect().bottom ?? 0) + GROUP_REACHED,
+      inside: bar,
+    }
+  )
+  // A pressed tab stays marked until the customer scrolls by hand: the last
+  // groups of a short list can't scroll up to the tabs, so the scroll alone
+  // would mark another one.
+  const [pressed, setPressed] = useState<string | null>(null)
+  useEffect(() => {
+    if (!pressed) return
+    const scroller = scrollParent(bar.current) ?? window
+    const release = () => setPressed(null)
+    const inputs = ["wheel", "touchmove", "keydown"] as const
+    for (const type of inputs) {
+      scroller.addEventListener(type, release, { passive: true })
+    }
+    return () => {
+      for (const type of inputs) scroller.removeEventListener(type, release)
+    }
+  }, [pressed])
+  const card = (service: BookingService) => {
+    const price = priceLabel(service.priceMinor, page.currency, m)
+    return (
+      <FieldLabel
+        variant="box"
+        key={service.id}
+        htmlFor={`service-${service.id}`}
+      >
+        <Field orientation="horizontal">
+          <FieldContent>
+            <FieldTitle>{service.name}</FieldTitle>
+            <FieldDescription>
+              {formatDuration(service.durationMinutes)}
+              {price && ` · ${price}`}
+            </FieldDescription>
+          </FieldContent>
+          <RadioGroupItem
+            value={service.id}
+            id={`service-${service.id}`}
+            // A focused choice scrolls clear of the pinned tabs.
+            className={cn(
+              tabbed &&
+                "scroll-mt-[calc(var(--pin-top)+var(--tabs-height)+--spacing(6))]"
+            )}
+          />
+        </Field>
+      </FieldLabel>
+    )
+  }
+
+  const list = (
     <RadioGroup
       value={value}
       onValueChange={(next) => onChange(String(next))}
       aria-label={m.booking.titles.service}
+      className={cn(grouped && "gap-7")}
     >
-      {page.services.map((service) => {
-        const price = priceLabel(service.priceMinor, page.currency, m)
-        return (
-          <FieldLabel
-            variant="box"
-            key={service.id}
-            htmlFor={`service-${service.id}`}
-          >
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldTitle>{service.name}</FieldTitle>
-                <FieldDescription>
-                  {formatDuration(service.durationMinutes)}
-                  {price && ` · ${price}`}
-                </FieldDescription>
-              </FieldContent>
-              <RadioGroupItem value={service.id} id={`service-${service.id}`} />
-            </Field>
-          </FieldLabel>
-        )
-      })}
+      {grouped
+        ? groups.map((group) => (
+            <FieldSet
+              key={groupId(group.category)}
+              id={groupId(group.category)}
+              // Where a group lands when its tab is pressed: just under
+              // the pinned tabs.
+              className={cn(
+                tabbed &&
+                  "scroll-mt-[calc(var(--pin-top)+var(--tabs-height)+--spacing(4))]"
+              )}
+            >
+              <FieldLegend>
+                {group.category?.name ?? m.sections.otherServices}
+              </FieldLegend>
+              <FieldGroup className="gap-3">
+                {group.services.map(card)}
+              </FieldGroup>
+            </FieldSet>
+          ))
+        : page.services.map(card)}
     </RadioGroup>
+  )
+  if (!tabbed) return list
+
+  const sheet = mode === "drawer"
+  const current =
+    sections.find((section) => section.id === pressed)?.id ??
+    active ??
+    sections[0].id
+  return (
+    <div
+      // --pin-top: where the tabs pin, from the top of what scrolls: the
+      // sheet's own edge, or under the booking page's header.
+      className={cn(
+        "flex flex-col gap-4",
+        sheet
+          ? "[--pin-top:--spacing(0)]"
+          : "[--pin-top:calc(--spacing(14)+var(--safe-top))]"
+      )}
+      style={
+        { "--tabs-height": `${barHeight ?? 0}px` } as React.CSSProperties
+      }
+    >
+      {/* Edge to edge on the sheet's or the page's colour, so the cards
+          slide under it. A pinned box stops at its list's padding (the
+          sheet's p-4), so -top-4 takes it up to the sheet's edge. */}
+      <div
+        ref={barRef}
+        className={cn(
+          "sticky z-10 -mx-4 pt-2",
+          sheet ? "-top-4 bg-popover" : "top-(--pin-top) bg-background md:mx-0"
+        )}
+      >
+        <ViewTabs
+          variant="line"
+          listClassName={sheet ? "px-4" : "px-4 md:px-0"}
+          views={sections}
+          value={current}
+          onChange={(id) => {
+            setPressed(id)
+            const reduce = window.matchMedia(
+              "(prefers-reduced-motion: reduce)"
+            ).matches
+            document.getElementById(id)?.scrollIntoView({
+              behavior: reduce ? "auto" : "smooth",
+              block: "start",
+            })
+          }}
+          ariaLabel={m.sections.serviceCategories}
+        />
+      </div>
+      {list}
+    </div>
   )
 }
 

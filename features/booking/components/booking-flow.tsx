@@ -322,6 +322,7 @@ export function BookingFlow({
   const services = (
     <ServiceStep
       page={shownPage}
+      mode={mode}
       value={service?.id ?? ""}
       onChange={(id) => {
         setSlot(null)

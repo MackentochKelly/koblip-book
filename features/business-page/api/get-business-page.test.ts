@@ -7,6 +7,7 @@ import {
   businessHours,
   businessPhotos,
   businesses,
+  serviceCategories,
   services,
   teamMembers,
 } from "@/lib/db/schema"
@@ -36,6 +37,10 @@ beforeAll(async () => {
     timezone: "America/Santo_Domingo",
     currency: "DOP",
   })
+  await db.insert(serviceCategories).values([
+    { id: "cat-2", businessId: "biz-1", name: "Nails", position: 1 },
+    { id: "cat-1", businessId: "biz-1", name: "Hair", position: 0 },
+  ])
   await db.insert(services).values([
     {
       id: "svc-1",
@@ -44,6 +49,7 @@ beforeAll(async () => {
       durationMinutes: 30,
       priceMinor: 1000,
       position: 2,
+      categoryId: "cat-2",
     },
     {
       id: "svc-2",
@@ -154,5 +160,20 @@ test("returns the business with children in order", async () => {
     [0, "10:00", "14:00"],
     [1, "09:00", "12:00"],
     [1, "14:00", "18:00"],
+  ])
+})
+
+test("returns the service categories in order, each service with its own", async () => {
+  const data = await getBusinessPage("demo-salon")
+  expect(data?.serviceCategories).toEqual([
+    { id: "cat-1", name: "Hair" },
+    { id: "cat-2", name: "Nails" },
+  ])
+  expect(
+    data?.services.map((service) => [service.name, service.categoryId])
+  ).toEqual([
+    ["First", null],
+    ["Second", null],
+    ["Third", "cat-2"],
   ])
 })

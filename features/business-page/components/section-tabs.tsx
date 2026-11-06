@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 
 import { useMessages } from "@/components/language-provider"
 import { ViewTabs, type ViewTab } from "@/components/view-tabs"
+import { useScrollSpy } from "@/hooks/use-scroll-spy"
 import { cn } from "@/lib/utils"
 
 // Just under the pinned tabs, where a section heading lands when its tab is pressed.
@@ -16,11 +17,12 @@ export function SectionTabs({ sections }: { sections: ViewTab<string>[] }) {
   const m = useMessages()
   const ref = useRef<HTMLDivElement>(null)
   const [pinned, setPinned] = useState(false)
-  const [active, setActive] = useState<string | null>(null)
-  const key = sections.map((section) => section.id).join(",")
+  const ids = sections.map((section) => section.id)
+  const active = useScrollSpy(ids, { line: ACTIVE_LINE })
+  const key = ids.join(",")
 
+  // Pinned once the page has scrolled them to the top.
   useEffect(() => {
-    const ids = key.split(",")
     const update = () => {
       const element = ref.current
       if (element) {
@@ -28,21 +30,6 @@ export function SectionTabs({ sections }: { sections: ViewTab<string>[] }) {
           window.scrollY > 0 && element.getBoundingClientRect().top <= 1
         )
       }
-      let current: string | null = null
-      for (const id of ids) {
-        const section = document.getElementById(id)
-        if (section && section.getBoundingClientRect().top <= ACTIVE_LINE)
-          current = id
-      }
-      // At the very end the last section may never reach the line: it is the one in view.
-      const page = document.documentElement
-      if (
-        window.scrollY > 0 &&
-        window.scrollY + window.innerHeight >= page.scrollHeight - 2
-      ) {
-        current = ids.at(-1) ?? current
-      }
-      setActive(current)
     }
     update()
     window.addEventListener("scroll", update, { passive: true })

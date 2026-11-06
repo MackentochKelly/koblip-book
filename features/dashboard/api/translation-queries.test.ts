@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
 import {
   businesses,
+  serviceCategories,
   services,
   teamMembers,
   translations,
@@ -129,4 +130,19 @@ test("a team member's About is pending until translated and again when changed",
   expect(await getTranslationStatus("biz-team")).toMatchObject({ total: 1, upToDate: 1 })
   await db.update(teamMembers).set({ about: "Twelve years of fades." }).where(eq(teamMembers.id, "tm-about"))
   expect(await getTranslationStatus("biz-team")).toMatchObject({ total: 1, upToDate: 0 })
+})
+
+test("a service category's name counts, and is up to date once translated", async () => {
+  const { db } = await import("@/lib/db")
+  await db.insert(businesses).values({
+    id: "biz-groups", slug: "groups-shop", name: "Groups Shop",
+    timezone: "America/Santo_Domingo", currency: "DOP", ownerId: "u1",
+  })
+  await db.insert(serviceCategories).values({ id: "cat-hair", businessId: "biz-groups", name: "Haircuts", position: 0 })
+  expect(await getTranslationStatus("biz-groups")).toMatchObject({ total: 1, upToDate: 0 })
+  await db.insert(translations).values({
+    businessId: "biz-groups", entityId: "cat-hair", field: "service_category.name",
+    language: "es", sourceText: "Haircuts", text: "Cortes",
+  })
+  expect(await getTranslationStatus("biz-groups")).toMatchObject({ total: 1, upToDate: 1 })
 })
