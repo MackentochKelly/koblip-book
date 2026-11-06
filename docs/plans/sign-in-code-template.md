@@ -1,6 +1,8 @@
 # Sign-in code template (draft)
 
-The WhatsApp message that carries phone sign-in codes ([customer-accounts.md](customer-accounts.md), Next 1). **Draft only: nothing goes to Meta until the owner says yes.**
+The WhatsApp message that carries phone sign-in codes ([customer-accounts.md](customer-accounts.md), Next 1).
+
+**Status (Nov 5): blocked by Meta.** The owner said yes and it was submitted from Koblip's workspace (WABA 2325968508142257). Meta refused with code 10, subcode 2388185: "This WhatsApp business account does not have permission to create message template". Meta only allows `AUTHENTICATION` templates for verified businesses (some reports also mention a daily message volume). Nothing was saved in Chat. Next: verify the business in Meta Business Manager (Security Center → Business verification), then submit again. Sending codes in a `UTILITY` template instead would break Meta's rules, so it isn't an option.
 
 ## The template
 
