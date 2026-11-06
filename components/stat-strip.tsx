@@ -55,7 +55,7 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
             <div
               key={stat.label}
               className={cn(
-                "grid grid-cols-[minmax(0,1fr)_auto] content-center items-center gap-x-2 gap-y-1 bg-card p-4 md:gap-x-3 md:px-6 md:py-5",
+                "grid grid-cols-[minmax(0,1fr)_auto] content-center items-center gap-x-2 gap-y-1 bg-card p-4 md:gap-x-3 md:px-8 md:py-6",
                 link &&
                   "relative transition-colors hover:bg-muted has-[a:focus-visible]:bg-muted has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50 has-[a:focus-visible]:ring-inset"
               )}
