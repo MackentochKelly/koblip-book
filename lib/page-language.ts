@@ -21,6 +21,8 @@ export const PAGE_LANGUAGE_HEADER = "x-page-language"
 // The owner's pick, remembered on this device for a year. Without one, the
 // phone's language (Accept-Language), else English.
 export const OWNER_LANGUAGE_COOKIE = "owner-lang"
+// How long the app's language pick is remembered on this device: a year.
+export const OWNER_LANGUAGE_MAX_AGE = 60 * 60 * 24 * 365
 
 export function isPageLanguage(value: unknown): value is PageLanguage {
   return (PAGE_LANGUAGES as readonly unknown[]).includes(value)

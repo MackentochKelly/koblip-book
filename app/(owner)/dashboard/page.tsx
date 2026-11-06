@@ -4,7 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server"
 
 import { claimBusiness } from "@/features/dashboard/api/actions"
 import { getMyBusinesses } from "@/features/dashboard/api/queries"
-import { AccountMenu } from "@/features/dashboard/components/account-menu"
+import { AccountMenu } from "@/components/account-menu"
 import { StartScreen } from "@/features/dashboard/components/start-screen"
 import { LAST_BUSINESS_COOKIE } from "@/features/dashboard/last-business"
 import { GetStarted } from "@/features/onboarding/components/get-started"

@@ -3,12 +3,16 @@
 import { createContext, use, useEffect } from "react"
 import { useRouter } from "next/navigation"
 
-import { OWNER_LANGUAGE_COOKIE, type PageLanguage } from "@/lib/page-language"
-import { OWNER_LANGUAGE_MAX_AGE } from "./language"
+import {
+  OWNER_LANGUAGE_COOKIE,
+  OWNER_LANGUAGE_MAX_AGE,
+  type PageLanguage,
+} from "@/lib/page-language"
 
 const LanguageContext = createContext<PageLanguage>("en")
 
-// The owner area's language, picked on the server (see ./server), so the
+// The app areas' language (owner, team, client), picked on the server
+// (features/dashboard/i18n/server.ts), so the
 // first paint is already in it. Its words come from next-intl
 // (useTranslations, i18n/request.ts); this keeps <html lang> and the
 // language switch.

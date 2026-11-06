@@ -24,11 +24,11 @@ import {
 import { NAV_GROUPS, NOT_IN_MENU, navFeature } from "../navigation"
 import type { LockedPlans } from "../types"
 import type { OwnedBusiness } from "../types"
-import type { Owner } from "./account-menu"
+import type { Owner } from "@/components/account-menu"
 import { BusinessSwitcher } from "./business-switcher"
 import { useCommandMenu } from "./command-menu"
 import { NAV_ICON_SIZE, NavMain } from "@/components/nav-main"
-import { NavUser } from "./nav-user"
+import { NavUser } from "@/components/nav-user"
 
 // The owner area's menu, built like Koblip Sales' AppSidebar (shadcn
 // sidebar-07): the business switcher and Search on top, the pages in

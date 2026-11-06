@@ -1,5 +1,5 @@
 import { WordsProvider } from "@/components/words-provider"
-import { OwnerLanguageProvider } from "@/features/dashboard/i18n/provider"
+import { OwnerLanguageProvider } from "@/components/app-language"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 
 // Every owner page (login, setup, dashboard) speaks the owner's language.

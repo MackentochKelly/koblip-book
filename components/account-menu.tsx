@@ -29,7 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useOwnerLanguage } from "@/features/dashboard/i18n/provider"
+import { useOwnerLanguage } from "@/components/app-language"
 import { authClient } from "@/lib/auth-client"
 import {
   isPageLanguage,
@@ -39,6 +39,8 @@ import {
 import { initials } from "@/lib/initials"
 import { cn } from "@/lib/utils"
 
+// Who is logged in, in any app area (owner, team, client). Its words are
+// the owner area's shell words (owner.shell), which every area loads.
 export interface Owner {
   name: string
   // The account's email, else its phone.

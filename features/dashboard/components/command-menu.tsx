@@ -24,10 +24,10 @@ import {
 } from "@/components/ui/command"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { LANGUAGE_NAMES, PAGE_LANGUAGES } from "@/lib/page-language"
-import { useOwnerLanguage } from "../i18n/provider"
+import { useOwnerLanguage } from "@/components/app-language"
 import { NAV_GROUPS, navFeature } from "../navigation"
 import type { LockedPlans } from "../types"
-import { THEMES, useSignOut } from "./account-menu"
+import { THEMES, useSignOut } from "@/components/account-menu"
 
 const CommandMenuContext = createContext<(open: boolean) => void>(() => {})
 

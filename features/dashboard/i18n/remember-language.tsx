@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 
 import type { PageLanguage } from "@/lib/page-language"
-import { useOwnerLanguage } from "./provider"
+import { useOwnerLanguage } from "@/components/app-language"
 
 // A link from a public page names its language (the home page's): it
 // becomes the owner's pick on this device, so sign-up, log-in and the

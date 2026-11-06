@@ -12,7 +12,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { AccountMenuContent, OwnerAvatar, type Owner } from "./account-menu"
+import {
+  AccountMenuContent,
+  OwnerAvatar,
+  type Owner,
+} from "@/components/account-menu"
 
 // The menu's footer, as in Koblip Sales' NavUser: who is logged in, opening
 // the same account menu as the top bar's photo, as wide as the button and
@@ -22,7 +26,7 @@ export function NavUser({
   settingsHref,
 }: {
   owner: Owner
-  settingsHref: string
+  settingsHref?: string
 }) {
   const { isMobile } = useSidebar()
   return (
