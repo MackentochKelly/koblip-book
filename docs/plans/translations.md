@@ -1,0 +1,134 @@
+# Translations (Google Cloud Translation)
+
+The whole app is translated by Google Cloud Translation, by itself, whenever
+English text is created or changed. That covers interface words and each
+business's own texts. Admins see and fix every translation. Meta is never
+used to translate, not even as a fallback. The Settings → Spanish screen and
+its Translate button go away.
+Asked by the owner (2026-11-06); replaces the "Automatic Spanish" plan. No
+task starts, no paid service is turned on and no bulk translation runs until
+the owner says go.
+How to use this file: [Plans](README.md).
+
+## Language scope (owner to confirm)
+
+- **Source:** English. Everything is written in English first.
+- **At launch:** English and Spanish, the two languages the app has today.
+- **Later:** any language Google supports (about 194 for the NMT model).
+  Each new language is added only after the owner approves it and its cost
+  (task G8).
+
+## What is there today (audit, 2026-11-06)
+
+| Text source | Where | Today |
+| --- | --- | --- |
+| Interface words | 20 word files: `features/*/i18n`, `lib/i18n.ts`, `lib/app-words.ts`, `lib/email-templates.ts`, `features/legal/content.ts`, `features/onboarding/i18n.ts`, `features/owner-auth/i18n.ts`… About 3,800 strings, about 85,000 characters (English and Spanish together) | Spanish written by hand. Plurals and fields are TypeScript functions (`(n) => \`${n} to translate\``) |
+| Words typed straight into code | `app/(public)/b/[slug]/error.tsx`, `not-found.tsx`, page titles "Koblip Book", "Admin" | English only |
+| Business texts | `translations` table: About, business type, services, service categories, extras, team job title and About, policies, policy points | Meta AI (`muse-spark-1.3`, `features/dashboard/utils/translate.ts`), only at sign-up, in two scripts, or when the owner taps Translate or asks the assistant (`translate_page`) |
+| Owner's own message wording | `notification_texts`, `koblip_notification_texts` (one row per language) | Written by the owner in each language. WhatsApp sends them as templates that Meta approves per language |
+| Dates, numbers, prices | `lib/page-language.ts` `pickLocale`, `Intl` | Already locale-aware |
+| Languages | `PageLanguage = "en" \| "es"`, and `en`/`es` enums in the database | Fixed to two |
+
+About 4,000 characters of business text per business today (local data: 6
+businesses, at most 4,600). No Google translation code or key exists: Google
+is used only for sign-in, Calendar and Maps/Places.
+
+## Not translated
+
+- Business, people and brand names (Koblip, WhatsApp, Google…), addresses,
+  links, emails and phone numbers.
+- Fields like `{name}` and `{service}`, sent to Google wrapped in
+  `<span translate="no">` and checked after the translation comes back.
+- What customers and owners type to each other (notes, chat replies).
+- The assistant's spoken and written answers: Meta AI writes them directly
+  in the owner's language. That is writing, not translating. Its fixed words
+  (buttons, cards) are interface words, translated by Google.
+- WhatsApp message templates: each language needs Meta's approval. The
+  owner submits them (G8).
+
+## How others do it
+
+| Topic | What they do | Source |
+| --- | --- | --- |
+| Which Google API | Advanced (v3) for new projects; it accepts only service accounts, not API keys | [API overview](https://docs.cloud.google.com/translate/docs/api-overview), [Editions](https://docs.cloud.google.com/translate/docs/editions) |
+| Least access | `roles/cloudtranslate.user` translates; admin and editor give more | [Access control](https://docs.cloud.google.com/translate/docs/access-control) |
+| Login from our own server | Keyless Workload Identity Federation first; a service account key only when federation is not possible; you keep the key safe | [ADC outside Google Cloud](https://docs.cloud.google.com/docs/authentication/set-up-adc-on-premises) |
+| Setup | One project per environment, billing on, `translate.googleapis.com` on, set a daily quota (unlimited by default) | [Setup](https://docs.cloud.google.com/translate/docs/setup) |
+| Limits | 6,000,000 characters a minute; 30,000 per request at most, 5,000 recommended | [Quotas](https://docs.cloud.google.com/translate/quotas) |
+| Keep words as they are | `translate="no"` or `class="notranslate"` in `text/html` requests; still billed | [Troubleshooting](https://docs.cloud.google.com/translate/troubleshooting) |
+| Changed English | Machine translations update when the source changes; changed content is flagged as out of date | [Shopify](https://help.shopify.com/en/manual/international/languages/translate-adapt-app/automatic-translation), [Shopify API](https://shopify.dev/docs/api/admin-graphql/latest/objects/translation) |
+| Manual edits | Kept when the source changes and marked for review; approved ones are never overwritten | [Crowdin](https://support.crowdin.com/version-management/), [Crowdin workflow](https://discourse.gbif.org/t/crowdin-translation-workflow/537) |
+| Plurals and fields | ICU message syntax (`{count, plural, one {…} other {…}}`), plural forms from `Intl.PluralRules`; messages can be loaded from any source | [next-intl](https://next-intl.dev/docs/usage/translations), [next-intl config](https://next-intl.dev/docs/usage/configuration) |
+| Next.js | Language from `Accept-Language` or a cookie; work after the response with `after()` | `node_modules/next/dist/docs/01-app/02-guides/internationalization.md`, `…/04-functions/after.md` |
+
+## Price (checked 2026-11-06, [Google pricing](https://cloud.google.com/translate/pricing))
+
+| Item | Price |
+| --- | --- |
+| NMT model (what we use) | First 500,000 characters a month free (a $10 monthly credit, shared by Basic and Advanced), then **$20 per million characters** |
+| Translation LLM | $10 per million in plus $10 per million out |
+| What counts | Every character sent, spaces and HTML tags included; words marked "do not translate" too; an empty request counts as 1 |
+
+Estimates. The number of live businesses was not checked (production was
+not read):
+
+| Job | Characters | Cost |
+| --- | --- | --- |
+| Interface words into one new language | about 60,000 to 90,000 | Free inside the monthly allowance; at most about $2 |
+| Spanish interface words | 0: today's hand-written Spanish is kept | $0 |
+| One business's texts into one language | about 4,000 to 10,000 | 100 businesses ≈ 0.4–1M: free to about $10. 1,000 businesses ≈ 4–10M: about $70–190 |
+| Everyday edits | Only changed texts; the same text is translated once and reused | Usually inside the free 500,000 |
+
+Every extra language multiplies the business-text cost. Safeguards: a daily
+character quota and a budget alert in Google Cloud, and a daily limit per
+business in the app (demo guests can save too).
+
+## Google setup the owner does (G0)
+
+The developer never creates accounts or handles keys.
+
+1. Two Google Cloud projects: one for testing, one for production.
+2. Billing on for each, with a budget alert (for example $10 a month).
+3. Turn on the Cloud Translation API (`translate.googleapis.com`).
+4. Set a daily character quota (for example 1,000,000).
+5. A service account, for example `koblip-translate`, with only
+   `roles/cloudtranslate.user`.
+6. A key for it: our server is not on Google Cloud and has no identity
+   provider for keyless login. Put the key file on the server outside the
+   app folder, readable only by the app, and its path in `.env.local` as
+   `GOOGLE_APPLICATION_CREDENTIALS`, plus `GOOGLE_CLOUD_PROJECT`. Never in
+   the repo, never in the browser.
+
+## Tasks
+
+| Task | What | Needs | Status |
+| --- | --- | --- | --- |
+| G0 | Owner: Google setup above, and go for the cost | G1 | To do |
+| G1 | This plan | | Done (2026-11-06) |
+| G2 | Engine in `lib/translations/` (server only): the `@google-cloud/translate` v3 client, NMT model, `text/html` with fields wrapped in `translate="no"` and checked on return, requests of 5,000 characters at most; reuse of earlier translations; `translation_entries` (interface or business, page or business, key, language, English, its fingerprint, translation, Google's own version, state, attempts, next try, error) and `translation_history` (who, when, before, after, why), with a migration that keeps today's rows; a queue: saving adds work and `after()` starts it, and a timer in `instrumentation.ts` picks up what is left; retries at 1 min, 5 min, 30 min and 2 h, then Failed. A fake Google in development and tests | G1 | To do |
+| G3 | Business texts on Google: every save adds only changed texts (business details, services, categories, extras, policies with the owner's own title, team, the team area's profile) and removals clean up; Meta translation code removed; Settings → Spanish removed (`/settings/spanish` goes to Settings); the assistant's `translate_page` and its Spanish count removed; services still found by their Spanish name | G2 | To do |
+| G4 | Interface words: one shared message system (next-intl, ICU: plurals, fields, `Intl` dates, numbers and money); every word file moved to it, one feature at a time; words typed into code moved too; English stays in code; a sync puts every word into `translation_entries`; today's Spanish comes in as Manual so it is kept; pages read their language from the database through a cache, with English as the fallback | G2 | To do |
+| G5 | Admin "Translations", using the existing admin layout and parts: Interface and Business texts tabs; search; filters for language, page or business, and state; pages of results; English beside the translation; states Missing, Waiting, Failed, Automatic, Edited, Needs review; edit and save, Reset to Google, Retry; history. Admins only; every change logged | G2 | To do |
+| G6 | Coverage check (`npm run i18n:check` and a test): every word has every language; fields and plural forms match English; no English left on a Spanish page; a long pseudo-language to test layouts | G4 | To do |
+| G7 | Backfill, only after the owner's go on the cost: a dry run counts the characters first; then Google re-translates every text Meta made and fills the gaps. Meta's text stays on the page until Google's arrives | G3, G0 | To do |
+| G8 | More languages, each approved by the owner: widen the language list (types, `en`/`es` database enums, language menus, language from the browser), emails, legal pages with "translated automatically; the English version applies", WhatsApp templates that the owner submits to Meta, and which languages the voice can speak | G4, G0 | To do |
+| G9 | Tests and live checks: automatic update after an edit, manual edit kept, missing, failed and retry, fields kept, plurals; every screen at 375px and 1280px, light and dark, in each language; report anything not checked | G3–G6 | To do |
+
+Build order: G2, then G3, then G5, then G4 one feature at a time, then G6,
+G9, G7. G8 starts per language. G4 touches every screen: never build it at
+the same time as another session working on the same screens. The policies
+work in the categories session also changes `policy-actions.ts` and adds the
+owner's own policy title.
+
+## Decisions
+
+| What | Why | Who, date |
+| --- | --- | --- |
+| Google Cloud Translation Advanced (v3), NMT model | Google's choice for new projects; service accounts with roles, no API keys; the free 500,000 characters a month | Developer, 2026-11-06 |
+| No Meta for translating, not even as a fallback | Owner's rule. When Google fails, the text waits or shows Failed, and the English shows | Owner, 2026-11-06 |
+| Edited translations are never overwritten | When the English changes, they stay and show Needs review | Developer, 2026-11-06 |
+| Automatic translations update when the English changes | As Shopify does | Developer, 2026-11-06 |
+| Today's hand-written Spanish words are kept as Edited | They are checked already; it also costs nothing | Developer, 2026-11-06 |
+| next-intl with ICU messages for interface words | The standard for Next.js; plurals and fields are text that Google can translate, not code; messages can come from the database | Developer, 2026-11-06 |
+| Saving never waits for Google | The queue and `after()` do the work after the save | Developer, 2026-11-06 |
+| One Google project per environment | Google's advice | Developer, 2026-11-06 |
