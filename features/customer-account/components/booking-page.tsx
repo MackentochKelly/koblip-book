@@ -24,6 +24,7 @@ import {
 import { rescheduleHref } from "@/lib/my-bookings-links"
 import { languageOf } from "@/lib/page-language"
 import type { MyBooking } from "../types"
+import { AddToCalendar } from "./add-to-calendar"
 import { BusinessAvatar, useBookingFacts } from "./booking-facts"
 import { CantComeButton } from "./cant-come-button"
 
@@ -35,7 +36,8 @@ function mapsHref(business: MyBooking["business"]) {
 }
 
 // One of the client's bookings (docs/plans/client-account.md, D11): the
-// business and where it is, the visit, then its one action: move or call
+// business and where it is, the visit (with Add to calendar while it's
+// ahead), then its one action: move or call
 // it off while it's ahead, book again once it's over or cancelled.
 export function BookingPage({ booking }: { booking: MyBooking }) {
   const t = useTranslations("public")
@@ -109,6 +111,8 @@ export function BookingPage({ booking }: { booking: MyBooking }) {
         action={
           booking.cancelled ? (
             <Badge variant="destructive">{t("account.cancelled")}</Badge>
+          ) : booking.ahead ? (
+            <AddToCalendar booking={booking} />
           ) : undefined
         }
       >

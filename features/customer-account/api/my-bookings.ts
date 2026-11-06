@@ -59,6 +59,7 @@ async function loadBookings(
     .select({
       id: bookings.id,
       startAt: bookings.startAt,
+      endAt: bookings.endAt,
       status: bookings.status,
       moves: bookings.moves,
       serviceName: bookings.serviceName,
@@ -168,6 +169,14 @@ async function loadBookings(
       cancelled,
       ahead: start > now && !cancelled,
       note: row.note,
+      calendar: {
+        id: row.id,
+        title: `${row.serviceName} · ${row.business.name}`,
+        startAt: row.startAt,
+        endAt: row.endAt,
+        location: row.business.address ?? row.business.name,
+        details: row.note,
+      },
       cantCome: open ? (cantCome.get(row.business.id) ?? null) : null,
       saidCantCome: said.has(`${row.id}:${row.moves}`),
       serviceName: row.serviceName,

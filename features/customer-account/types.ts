@@ -1,3 +1,5 @@
+import type { CalendarEvent } from "@/lib/booking-calendar"
+
 // One booking on the customer's own page.
 export interface MyBooking {
   id: string
@@ -8,6 +10,8 @@ export interface MyBooking {
   ahead: boolean
   // What the customer wrote when booking.
   note: string | null
+  // The visit as a calendar event (D12).
+  calendar: CalendarEvent
   // Still ahead and confirmed: what "Can't make it" does at this business
   // (cancels, or tells the owner), and whether they already said it.
   cantCome: "cancel" | "alertOnly" | null

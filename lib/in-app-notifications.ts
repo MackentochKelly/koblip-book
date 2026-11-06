@@ -5,6 +5,7 @@ import type { BatchItem } from "drizzle-orm/batch"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { bookings, businesses, inAppNotificationSettings, inAppNotifications, user } from "@/lib/db/schema"
+import { accountBookingHref } from "@/lib/my-bookings-links"
 import { notificationRules } from "@/lib/platform-settings"
 import type { ClientInAppKind, InAppData, OwnerInAppKind } from "@/types/in-app-notifications"
 
@@ -91,8 +92,6 @@ type ClientBooking = Pick<
   "id" | "businessId" | "moves" | "serviceName" | "startAt" | "customerUserId" | "customerKey"
 >
 
-// The client account's page their notifications open.
-export const CLIENT_LINK = "/account"
 
 // The customer key an account's proved phone gives (lib/customer-key.ts):
 // "p:" and the phone's digits.
@@ -116,7 +115,8 @@ function clientInsert(booking: ClientBooking, kind: ClientInAppKind) {
       audience: "client",
       bookingId: booking.id,
       data: { serviceName: booking.serviceName, startAt: booking.startAt },
-      link: CLIENT_LINK,
+      // The booking's own page in the client account (D11).
+      link: accountBookingHref(booking.id),
       dedupeKey: `client:${kind}:${booking.id}:${booking.moves}`,
     })
     .onConflictDoNothing()

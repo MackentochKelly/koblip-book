@@ -232,6 +232,9 @@ const words = {
       price: "Price",
       note: "Your note",
       map: "Map",
+      addToCalendar: "Add to calendar",
+      calendarFile: "Calendar file (.ics)",
+      googleCalendar: "Google Calendar",
     },
   },
   // The home page (Koblip Book's own page for owners).
