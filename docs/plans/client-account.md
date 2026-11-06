@@ -55,8 +55,8 @@ Same rules as above: shared parts only (`PageSection`, `Item`, `Empty`, `BottomP
 
 | ID | Task | Needs | Files it owns | Status |
 | --- | --- | --- | --- | --- |
-| C10 | Empty states (D14): Bookings gets "Find a business" | – | `features/customer-account/components/my-bookings-list.tsx`, `lib/i18n/en/public.ts` (account) | To do |
-| C11 | Booking page (D11): route, query, page, rows link to it | – | `app/(customer)/account/bookings/`, `features/customer-account/api/booking.ts`, `features/customer-account/components/booking-page.tsx` | To do |
+| C10 | Empty states (D14): Bookings gets "Find a business" | – | `features/customer-account/components/my-bookings-list.tsx`, `lib/i18n/en/public.ts` (account) | Working on: M Kelly B, Nov 6 |
+| C11 | Booking page (D11): route, query, page, rows link to it | – | `app/(customer)/account/bookings/`, `features/customer-account/api/booking.ts`, `features/customer-account/components/booking-page.tsx` | Working on: M Kelly B, Nov 6 |
 | C12 | Notifications open the booking (D11) | C11 | `lib/in-app-notifications.ts` (`CLIENT_LINK`) | To do |
 | C13 | Add to calendar (D12): `.ics` route and the menu on the booking page | C11 | `app/api/account/bookings/`, `lib/booking-calendar.ts` | To do |
 | C14 | My places (D13): query, page, menu item, empty state | C10 | `app/(customer)/account/places/`, `features/customer-account/api/places.ts`, `features/customer-account/components/places-list.tsx`, `features/customer-account/nav.ts` | To do |
