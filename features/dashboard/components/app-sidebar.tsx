@@ -21,7 +21,8 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { NAV_GROUPS, NOT_IN_MENU } from "../navigation"
+import { NAV_GROUPS, NOT_IN_MENU, navFeature } from "../navigation"
+import type { LockedPlans } from "../types"
 import type { OwnedBusiness } from "../types"
 import type { Owner } from "./account-menu"
 import { BusinessSwitcher } from "./business-switcher"
@@ -38,13 +39,17 @@ export function AppSidebar({
   business,
   businesses,
   owner,
+  lockedPlans,
 }: {
   business: { id: string; name: string }
   businesses: OwnedBusiness[]
   owner: Owner
+  // The features this business's plan lacks, each with the plan that has it.
+  lockedPlans: LockedPlans
 }) {
   const pathname = usePathname()
   const t = useTranslations("owner.shell")
+  const plans = useTranslations("app.planLocked.plans")
   const { isMobile, setOpenMobile } = useSidebar()
   const openCommandMenu = useCommandMenu()
   const base = `/dashboard/${business.id}`
@@ -103,7 +108,10 @@ export function AppSidebar({
               .filter((item) => !NOT_IN_MENU.includes(item.key))
               .map((item) => {
                 const href = base + item.path
+                const feature = navFeature(item)
+                const needs = feature ? lockedPlans[feature] : undefined
                 return {
+                  badge: needs ? plans(needs) : undefined,
                   href,
                   // Home is Dashboard on a computer; the phone's menu keeps
                   // Home, like its tab.

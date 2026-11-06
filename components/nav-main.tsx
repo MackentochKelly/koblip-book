@@ -7,6 +7,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
@@ -18,6 +19,8 @@ export interface NavItem {
   label: string
   icon: Icon
   active: boolean
+  // A short word beside the label, such as the plan a page needs.
+  badge?: string
 }
 
 // The sidebar's icons at 20px (shadcn's stock 16px read light beside the
@@ -63,6 +66,7 @@ export function NavMain({
               <NavIcon icon={item.active ? filledIcon(item.icon) : item.icon} />
               <span>{item.label}</span>
             </SidebarMenuButton>
+            {item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
           </SidebarMenuItem>
         ))}
       </SidebarMenu>

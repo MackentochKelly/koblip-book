@@ -11,6 +11,7 @@ import {
   UsersIcon,
   ZapIcon,
 } from "@/components/ui/icons"
+import type { PlanFeatureKey } from "@/lib/plan-features"
 
 // The owner area's pages, in the menu's groups (like Koblip Sales'
 // config/navigation). The ☰ menu and the search list both read it; a new
@@ -26,9 +27,9 @@ export const NAV_GROUPS = [
     items: [
       { path: "", key: "home", icon: LayoutDashboardIcon },
       { path: "/bookings", key: "bookings", icon: CalendarDaysIcon },
-      { path: "/analytics", key: "analytics", icon: ChartColumnIcon },
+      { path: "/analytics", key: "analytics", icon: ChartColumnIcon, feature: "analytics" },
       { path: "/customers", key: "customers", icon: ContactIcon },
-      { path: "/assistant", key: "assistant", icon: SparklesIcon },
+      { path: "/assistant", key: "assistant", icon: SparklesIcon, feature: "assistantChat" },
     ],
   },
   // Set once, changed now and then.
@@ -43,12 +44,18 @@ export const NAV_GROUPS = [
   {
     key: "workspace",
     items: [
-      { path: "/widgets", key: "widgets", icon: LayoutGridIcon },
+      { path: "/widgets", key: "widgets", icon: LayoutGridIcon, feature: "widgets" },
       { path: "/integrations", key: "integrations", icon: PuzzleIcon },
       { path: "/settings", key: "settings", icon: SettingsIcon },
     ],
   },
 ] as const
+
+// The plan feature a menu page needs, for its plan badge when the
+// business's plan doesn't have it (docs/plans/subscriptions.md, P5b).
+export function navFeature(item: NavItem): PlanFeatureKey | undefined {
+  return "feature" in item ? item.feature : undefined
+}
 
 // The page a path is on, for the top bar's title: the menu page whose path
 // starts it (the longest one, so Home only matches itself). Sub-pages, like

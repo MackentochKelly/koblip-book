@@ -1,3 +1,4 @@
+import type { Plan, PlanFeatureKey } from "@/lib/plan-features"
 import type { CancelReason } from "@/lib/booking-rules"
 import type { PolicyKind, PolicyPointIcon } from "@/lib/policy-rules"
 import type { GoogleEventColor } from "@/lib/google-calendar-colors"
@@ -48,3 +49,7 @@ export interface OwnerPolicy { id: string; kind: PolicyKind | null; title: strin
 export interface OwnerPolicies { policies: OwnerPolicy[]; points: OwnerPolicyPoint[] }
 export interface OwnPolicyInput { title: string; body: string }
 export interface PolicyPointInput { icon: PolicyPointIcon; title: string; body: string }
+
+// The features a business's plan lacks, each with the lowest plan that has
+// it (docs/plans/subscriptions.md, P5b).
+export type LockedPlans = Partial<Record<PlanFeatureKey, Plan>>

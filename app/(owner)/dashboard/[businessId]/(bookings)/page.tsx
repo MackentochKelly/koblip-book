@@ -29,6 +29,7 @@ import {
   findOwnerFreeTimes,
 } from "@/features/booking/api/owner-free-times"
 import { LiveRefresh } from "@/components/live-refresh"
+import { hasFeature } from "@/lib/plan-access"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { addDaysTo, todayIn } from "@/lib/format-booking-time"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
@@ -115,7 +116,9 @@ export default async function BookingsPage({ params }: Props) {
         // Check your details step confirms what came from Google Maps.)
         setup={settingUp ? <SetupList steps={steps} /> : undefined}
         assistant={
-          <AskCard businessId={businessId} />
+          (await hasFeature(businessId, "assistantChat")) ? (
+            <AskCard businessId={businessId} />
+          ) : undefined
         }
         summary={periodSummary(lastDays, firstVisits, today, 7, now)}
         widgets={{

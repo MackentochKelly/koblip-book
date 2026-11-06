@@ -33,7 +33,7 @@ import {
   LAST_BUSINESS_COOKIE,
   LAST_BUSINESS_MAX_AGE,
 } from "../last-business"
-import type { OwnedBusiness } from "../types"
+import type { LockedPlans, OwnedBusiness } from "../types"
 import { AppSidebar } from "./app-sidebar"
 import { CommandMenuProvider } from "./command-menu"
 import { type TabBarAction, TabBarActionContext } from "./tab-bar-action"
@@ -107,10 +107,12 @@ export function DashboardShell({
   owner,
   bell,
   assistantFloat,
+  lockedPlans,
   children,
 }: {
   business: { id: string; slug: string; name: string }
   businesses: OwnedBusiness[]
+  lockedPlans: LockedPlans
   owner: { name: string; contact: string; image: string | null }
   bell?: React.ReactNode
   assistantFloat?: React.ReactNode
@@ -169,6 +171,7 @@ export function DashboardShell({
               business={business}
               businesses={businesses}
               owner={owner}
+              lockedPlans={lockedPlans}
             />
             <AppInset className={cn(assistantOpen && "md:h-dvh")}>
               <TopBar
