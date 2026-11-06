@@ -12,10 +12,11 @@ export interface FilterChip<T extends string> {
 const ALL = "filter-chips:all"
 
 // A list's filter as one row of chips that scrolls sideways: shadcn's
-// ToggleGroup, several on at once, All first (on when none is, and tapping
-// it turns the others off). The chips are as tall as the tabs, with their
-// padding; a chip that is on is filled with the main colour, like a chosen
-// time in the time picker, so it clearly shows the list is filtered. The
+// ToggleGroup, one chip on at a time, All first (on when no other is).
+// Tapping a chip picks it instead of the one before; tapping the one that is
+// on leaves it on. They set the size the controls around them follow
+// (lib/control-size); a chip that is on is filled with the main colour, like
+// a chosen time in the time picker, so it clearly shows the filter. The
 // row fades at an edge only while more chips lie past it; its padding keeps
 // each chip's 44px touch area and focus ring inside the scrolling box,
 // which clips what overflows. It bleeds into the page's side padding on the
@@ -33,12 +34,11 @@ export function FilterChips<T extends string>({
   // The All chip's words.
   all: string
   options: readonly FilterChip<T>[]
-  // The chips that are on; none = All.
-  value: readonly T[]
-  onValueChange: (value: T[]) => void
+  // The chip that is on; null = All.
+  value: T | null
+  onValueChange: (value: T | null) => void
   className?: string
 }) {
-  const allOn = value.length === 0
   return (
     <div
       className={cn(
@@ -47,20 +47,16 @@ export function FilterChips<T extends string>({
       )}
     >
       <ToggleGroup
-        multiple
         variant="outline"
         aria-label={label}
-        value={allOn ? [ALL] : value}
-        onValueChange={(next) =>
+        value={[value ?? ALL]}
+        onValueChange={(next) => {
+          // Empty when the chip that is on was tapped again: it stays on.
+          if (next.length === 0) return
           onValueChange(
-            // All just turned on: every other chip goes off.
-            !allOn && next.includes(ALL)
-              ? []
-              : options
-                  .map((option) => option.value)
-                  .filter((item) => next.includes(item))
+            options.find((option) => option.value === next[0])?.value ?? null
           )
-        }
+        }}
       >
         {[{ value: ALL, label: all }, ...options].map((option) => (
           <ToggleGroupItem

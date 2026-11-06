@@ -53,7 +53,7 @@ How to use this file: [Plans](README.md).
 | C9 | Optional: a category colour that becomes the Google Calendar colour of its services that have none | C3 | Done (2026-11-06) |
 | C10 | Optional: "Top categories" in Analytics | C2 | Done (2026-11-06) |
 | C11 | A Categories filter on the Bookings list, beside Services (Other included), only once there are categories; asked by the owner 2026-11-06 | C5 | Done (2026-11-06) |
-| C12 | Under the owner Services screen's tabs, one row: category chips that filter the list (All first, several at once, Other included; the row scrolls sideways and fades only where more chips lie), then one Categories button fixed at its end for a panel that manages them all (each one's ⋮: Add a service, Edit, Move up, Move down, Remove; Add category at its foot). The list is one plain list in the categories' order, with no headings; asked by the owner 2026-11-06 | C3 | Done (2026-11-06) |
+| C12 | Under the owner Services screen's tabs, one row: category chips that filter the list (All first, one at a time, Other included; the row scrolls sideways and fades only where more chips lie), then one Categories button fixed at its end for a panel that manages them all (each one's ⋮: Add a service, Edit, Move up, Move down, Remove; Add category at its foot). The list is one plain list in the categories' order, with no headings; asked by the owner 2026-11-06 | C3 | Done (2026-11-06) |
 
 ## Build order (several builders, asked by the owner 2026-11-06)
 
@@ -105,6 +105,8 @@ How to use this file: [Plans](README.md).
 | One Services filter, grouped by category | One filter instead of two | M Kelly B, 2026-11-06 |
 | The Services screen's categories: chips to filter, in view, and one Categories button that manages them, in place of the headings with their ⋮ and the Add category buttons; nothing is deleted, every action moved into its panel | The owner's design: visible filter chips plus one place to manage, the services in a clean list | M Kelly B, 2026-11-06 |
 | The chips and the Categories button are as tall as the tabs (36px) with their padding, on a touch screen too; their tap areas stay 44px, invisibly | Sizes consistent with the tabs, as the owner asked; Apple's 44px minimum still met | M Kelly B, 2026-11-06 |
+| One chip on at a time: picking one replaces the last, All shows every service, tapping the chip that is on keeps it on | The owner's correction, replacing several at once | M Kelly B, 2026-11-06 |
+| The chips set the size: the tabs, Categories, Edit and ⋮ match them (36px, 14px words, 16px icons; text buttons as wide as their words, ⋮ square) through one shared `lib/control-size.ts` | The owner asked to size everything to the chips, one source so the page stays even; tap areas stay 44px | M Kelly B, 2026-11-06 |
 | In that panel, Edit, Add category and Remove open on top of it and come back to it; Add a service closes it first | Stacked sheets like iOS; the service form also opens from the list, so it stays the list's own | M Kelly B, 2026-11-06 |
 | Also a Categories filter on Bookings (C11), next to the grouped Services filter | The owner asked to pick a whole category at once; the help pages of Fresha and Square show no such filter | M Kelly B, 2026-11-06 |
 | Starter catalog saves categories only when there are 2 or more | A one-kind business stays flat; a draft never fails on categories | M Kelly B, 2026-11-06 |

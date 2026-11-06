@@ -63,6 +63,8 @@ import {
   isGoogleEventColor,
   type GoogleEventColor,
 } from "@/lib/google-calendar-colors"
+import { CONTROL_SIZE } from "@/lib/control-size"
+import { cn } from "@/lib/utils"
 import { parsePrice } from "@/lib/parse-price"
 import {
   groupServices,
@@ -182,10 +184,10 @@ export function ServicesView({
   const [categoryTaken, setCategoryTaken] = useState(false)
   const [removingCategory, setRemovingCategory] =
     useState<OwnerServiceCategory | null>(null)
-  // The Categories panel, and the chips that are on (a category's id,
-  // OTHER_GROUP for Other); none = All.
+  // The Categories panel, and the chip that is on (a category's id,
+  // OTHER_GROUP for Other); null = All.
   const [categoriesOpen, setCategoriesOpen] = useState(false)
-  const [shownCategories, setShownCategories] = useState<string[]>([])
+  const [shownCategory, setShownCategory] = useState<string | null>(null)
 
   const openForm = (
     service: ServiceRow | "new",
@@ -222,11 +224,11 @@ export function ServicesView({
     value: groupKey(category),
     label: category?.name ?? k.other,
   }))
-  const ticked = shownCategories.filter((key) =>
-    categoryOptions.some((option) => option.value === key)
-  )
+  const shown = categoryOptions.some((option) => option.value === shownCategory)
+    ? shownCategory
+    : null
   const shows = (category: OwnerServiceCategory | null) =>
-    ticked.length === 0 || ticked.includes(groupKey(category))
+    shown === null || groupKey(category) === shown
   // With categories, one list of every service the filter shows, in the
   // categories' order; each keeps its group's index for Move up and down.
   const rows = groups.flatMap(({ category, services: list }, groupIndex) =>
@@ -315,11 +317,19 @@ export function ServicesView({
           </ItemDescription>
         </ItemContent>
         <ItemActions>
-          <Button variant="outline" size="sm" onClick={() => openForm(service)}>
+          <Button
+            variant="outline"
+            className={CONTROL_SIZE.button}
+            onClick={() => openForm(service)}
+          >
             {c.edit}
           </Button>
           <DropdownMenu>
-            <MoreMenuTrigger label={c.more} />
+            <MoreMenuTrigger
+              label={c.more}
+              size="icon"
+              className={CONTROL_SIZE.icon}
+            />
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
                 <DropdownMenuItem
@@ -390,7 +400,9 @@ export function ServicesView({
         value={view}
         onChange={setView}
         ariaLabel={t.tabs.label}
-        listClassName="w-full md:w-fit"
+        // As tall as the chips under them.
+        listClassName={cn("w-full md:w-fit", CONTROL_SIZE.tabsList)}
+        triggerClassName={CONTROL_SIZE.tab}
       />
 
       {/* The category chips, which scroll, then the Categories button that
@@ -402,16 +414,14 @@ export function ServicesView({
               label={k.title}
               all={k.all}
               options={categoryOptions}
-              value={ticked}
-              onValueChange={setShownCategories}
+              value={shown}
+              onValueChange={setShownCategory}
               className="min-w-0 flex-1"
             />
           )}
           <Button
             variant="outline"
-            // As tall as the chips and the tabs on a touch screen too; its
-            // tap area stays 44px.
-            className="ml-auto pointer-coarse:min-h-9"
+            className={cn("ml-auto", CONTROL_SIZE.button)}
             onClick={() => setCategoriesOpen(true)}
           >
             <TagIcon data-icon="inline-start" />
@@ -451,7 +461,7 @@ export function ServicesView({
               <EmptyTitle>{k.noneShown}</EmptyTitle>
             </EmptyHeader>
             <EmptyContent>
-              <Button variant="outline" onClick={() => setShownCategories([])}>
+              <Button variant="outline" onClick={() => setShownCategory(null)}>
                 {k.allServices}
               </Button>
             </EmptyContent>

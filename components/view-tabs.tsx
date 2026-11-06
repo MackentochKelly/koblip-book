@@ -27,6 +27,7 @@ export function ViewTabs<T extends string>({
   variant = "default",
   className,
   listClassName,
+  triggerClassName,
 }: {
   views: ViewTab<T>[]
   value: T
@@ -35,6 +36,8 @@ export function ViewTabs<T extends string>({
   variant?: "default" | "line"
   className?: string
   listClassName?: string
+  // Each tab's, like a size from lib/control-size.
+  triggerClassName?: string
 }) {
   const line = variant === "line"
   // Like big apps: the open tab slides into the middle of the row, so a tab
@@ -75,7 +78,7 @@ export function ViewTabs<T extends string>({
             <TabsTrigger
               key={view.id}
               value={view.id}
-              className={TAB_TOUCH_AREA}
+              className={cn(TAB_TOUCH_AREA, triggerClassName)}
             >
               {view.icon}
               {view.label}

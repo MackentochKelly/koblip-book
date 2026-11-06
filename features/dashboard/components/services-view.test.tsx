@@ -178,7 +178,7 @@ test("with categories it is one list in their order, Other last", () => {
   expect(screen.queryByRole("button", { name: /^Show/ })).toBeNull()
 })
 
-test("the chips show only the ones that are on, Other included", async () => {
+test("one chip at a time picks what the list shows, All shows all", async () => {
   view(
     [service("Fade", "c1"), service("Wax"), service("Gel", "c2")],
     [hair, nails]
@@ -189,22 +189,28 @@ test("the chips show only the ones that are on, Other included", async () => {
       .getAllByRole("button")
       .map((button) => button.textContent)
   ).toEqual(["All", "Hair", "Nails", "Other"])
-  expect(chip("All").getAttribute("aria-pressed")).toBe("true")
+  // The one chip that is on.
+  const on = () =>
+    within(chips)
+      .getAllByRole("button")
+      .filter((button) => button.getAttribute("aria-pressed") === "true")
+      .map((button) => button.textContent)
+  expect(on()).toEqual(["All"])
   fireEvent.click(chip("Nails"))
+  await waitFor(() => expect(names()).toEqual(["Gel"]))
+  expect(on()).toEqual(["Nails"])
+  // Another chip takes its place.
   fireEvent.click(chip("Other"))
-  await waitFor(() => expect(names()).toEqual(["Gel", "Wax"]))
-  expect(chip("Nails").getAttribute("aria-pressed")).toBe("true")
-  expect(chip("All").getAttribute("aria-pressed")).toBe("false")
-  // All shows every one again and turns the others off.
+  await waitFor(() => expect(names()).toEqual(["Wax"]))
+  expect(on()).toEqual(["Other"])
+  // Tapping the one that is on leaves it on.
+  fireEvent.click(chip("Other"))
+  expect(on()).toEqual(["Other"])
+  expect(names()).toEqual(["Wax"])
+  // All shows every one again.
   fireEvent.click(chip("All"))
   await waitFor(() => expect(names()).toEqual(["Fade", "Gel", "Wax"]))
-  expect(chip("Nails").getAttribute("aria-pressed")).toBe("false")
-  // So does turning the last one off.
-  fireEvent.click(chip("Hair"))
-  await waitFor(() => expect(names()).toEqual(["Fade"]))
-  fireEvent.click(chip("Hair"))
-  await waitFor(() => expect(names()).toEqual(["Fade", "Gel", "Wax"]))
-  expect(chip("All").getAttribute("aria-pressed")).toBe("true")
+  expect(on()).toEqual(["All"])
 })
 
 test("only empty categories on: nothing here, All services back", async () => {
