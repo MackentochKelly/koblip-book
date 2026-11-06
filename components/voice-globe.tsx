@@ -59,7 +59,7 @@ export function VoiceGlobe({
             dark), then the shade (--primary). */}
         <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_32%_26%,color-mix(in_oklch,var(--primary-foreground)_85%,transparent),transparent_20%),radial-gradient(circle_at_70%_80%,color-mix(in_oklch,var(--primary-foreground)_30%,transparent),transparent_24%),radial-gradient(circle_closest-side,transparent_90%,color-mix(in_oklch,var(--primary-foreground)_45%,transparent)_100%),radial-gradient(circle_at_42%_38%,transparent_50%,color-mix(in_oklch,var(--primary)_35%,transparent)_80%)]" />
         {edge && (
-          <div className="pointer-events-none absolute inset-0 rounded-full inset-ring-(length:--hairline) inset-ring-primary/60" />
+          <div className="pointer-events-none absolute inset-0 rounded-full inset-ring-(length:--hairline) inset-ring-primary/40" />
         )}
       </div>
     </div>
