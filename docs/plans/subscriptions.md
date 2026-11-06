@@ -76,6 +76,17 @@ How to use this file: [Plans](README.md).
 - **S7. Failed payment**: Stripe's Smart Retries, then the subscription ends
   and the business drops back to Free. Nothing is deleted; Pro settings
   stay stored and wake up again on resubscribing. (Backend dev)
+- **S9. Features by plan first** (owner, 2026-11-06). One list of every
+  feature in code (`lib/plan-features.ts`), and an admin screen (Admin →
+  Plans) that sets, for each feature, the lowest plan that has it. Pro
+  always has everything Free has. Until P1 ships, no feature checks a plan:
+  every business keeps everything. Big teams call this entitlements;
+  Stripe has the same idea (Entitlements), and ours stays the source of
+  truth so a plan change needs no Stripe edit. (Backend dev)
+- **S10. Defaults**: every built feature on Free; every "Coming soon"
+  feature on Pro (as the home page says). Stored choices go over the
+  defaults; a feature removed from the list drops its stored row's effect.
+  Every change is logged (who, when, before, after). (Backend dev)
 - **S8. Secrets** `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` only in
   `.env.local`; Stripe test mode on the Mac, live keys only on the server.
 
@@ -93,11 +104,12 @@ How to use this file: [Plans](README.md).
 
 | Task | What | Needs | Status |
 | --- | --- | --- | --- |
+| P0 | Feature list (`lib/plan-features.ts`), `plan_features` and `plan_feature_changes` tables, `featurePlans()` and `setFeaturePlan()` (`lib/plan-access.ts`), Admin → Plans with each feature's plan and the change log | | Done (2026-11-06) |
 | P1 | Packages: `better-auth` and `@better-auth/stripe` 1.7.18, `stripe` ^23; plugin in `lib/auth.ts` and `stripeClient` in `lib/auth-client.ts`, plan list in `lib/subscription-rules.ts`; migration for `subscription` and `user.stripeCustomerId` | O1, O2 | To do |
 | P2 | `authorizeReference` (owner of the business only) and `businessPlan()` in `lib/dal.ts`, with tests | P1 | To do |
 | P3 | Stripe set-up doc `docs/billing.md`: product, prices with lookup keys, tax code `txcd_10103001`, Stripe Tax, portal settings, webhook URL and events, test clocks | P1 | To do |
 | P4 | Owner screen Settings → Plan (`features/billing`): current plan, trial days left, Upgrade (Checkout), Manage billing (portal); its own ESLint zone; 4 languages | P2 | To do |
-| P5 | Pro gates: `businessPlan()` on each Pro feature and on `koblipMonthlyTemplates` (Pro limit in `lib/subscription-rules.ts`) | P2, O3 | To do |
+| P5 | Plan checks: each feature asks `businessPlan()` and `featurePlans()` (P0) before it runs; also `koblipMonthlyTemplates` (Pro limit in `lib/subscription-rules.ts`) | P0, P2, O3 | To do |
 | P6 | Emails: trial ends in 3 days, payment failed, back to Free (Better Auth hooks + `customer.subscription.trial_will_end`) | P2 | To do |
 | P7 | Admin screen Subscriptions: every business's plan, status, trial end, Stripe links, history; admin can give Pro for free (a 100% coupon in Stripe, logged) | P2 | To do |
 | P8 | Home pricing: Pro's button opens sign-up then Checkout; "Soon" goes; prices read from `lib/pricing-rules.ts` | P4, O3 | To do |
@@ -109,3 +121,5 @@ How to use this file: [Plans](README.md).
 | Date | Who | Decision |
 | --- | --- | --- |
 | 2026-11-06 | Backend dev | S1–S8 above, from the docs and the audit |
+| 2026-11-06 | Owner | S9: features-by-plan screen first |
+| 2026-11-06 | Backend dev | S10: defaults and the change log |

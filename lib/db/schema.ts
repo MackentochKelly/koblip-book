@@ -10,6 +10,7 @@ import {
 import { sql } from "drizzle-orm"
 import { CANCEL_REASONS } from "../booking-rules"
 import { PAGE_LANGUAGES, type PageLanguage } from "../page-language"
+import { PLANS } from "../plan-features"
 import { POLICY_KINDS, POLICY_POINT_ICONS } from "../policy-rules"
 import { DEFAULT_THEME, type ThemeId } from "../theme-rules"
 import {
@@ -1013,6 +1014,33 @@ export const platformSettingChanges = sqliteTable(
       .$defaultFn(() => new Date().toISOString()),
   },
   (table) => [index("platform_setting_changes_changed_at_idx").on(table.changedAt)]
+)
+
+// The admin's choice of the lowest plan that has a feature
+// (lib/plan-access.ts); a feature with no row uses its default in
+// lib/plan-features.ts.
+export const planFeatures = sqliteTable("plan_features", {
+  featureKey: text().primaryKey(),
+  plan: text({ enum: PLANS }).notNull(),
+  updatedBy: text().references(() => user.id, { onDelete: "set null" }),
+  ...timestamps(),
+})
+
+// Every change to a feature's plan: who, when, and the plan before and after
+// (null = the default).
+export const planFeatureChanges = sqliteTable(
+  "plan_feature_changes",
+  {
+    id: integer().primaryKey({ autoIncrement: true }),
+    featureKey: text().notNull(),
+    before: text({ enum: PLANS }),
+    after: text({ enum: PLANS }),
+    changedBy: text().references(() => user.id, { onDelete: "set null" }),
+    changedAt: text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (table) => [index("plan_feature_changes_changed_at_idx").on(table.changedAt)]
 )
 
 // The WhatsApp timer's last check (features/dashboard/api/notification-timer.ts):
