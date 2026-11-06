@@ -18,6 +18,7 @@ current.
 | [Message editing](message-editing.md) | To do |
 | [WhatsApp automations](whatsapp-automations.md) | Done |
 | [Customer accounts](customer-accounts.md) | In progress |
+| [Service categories](service-categories.md) | In progress |
 
 ## How to work with a plan
 
