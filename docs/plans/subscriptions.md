@@ -107,6 +107,15 @@ How to use this file: [Plans](README.md).
   `koblip_pro` (tax code `txcd_10103001`), prices `koblip_pro_monthly`
   ($19/month) and `koblip_pro_yearly` ($190/year). Live mode gets the same
   in P3. (Backend dev)
+- **S15. A downgrade stops what runs on its own, not only the screens.**
+  Google Calendar sends and reads nothing and its busy times block nothing;
+  messages go from Koblip's number instead of the business's own; the team
+  area and its saves lock; automations already only run with the plan.
+  Nothing is deleted, so all of it picks up again on upgrading (S7). A
+  feature still without a check (bookings, services, the booking page…)
+  gets one only when it moves to a paid plan; today's checked list covers
+  what Pro is meant to hold. When more page themes ship, the public page
+  falls back to the default theme without `pageThemes`. (Backend dev)
 - **S8. Secrets** `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` only in
   `.env.local`; Stripe test mode on the Mac, live keys only on the server.
 
@@ -129,7 +138,7 @@ How to use this file: [Plans](README.md).
 | P5a | Plan checks for 11 features (page, actions, routes): analytics, widgets, page themes, more than one business, assistant by typing and by voice, AI writing, WhatsApp automations, own WhatsApp number, team accounts, Google Calendar | P0 | Done (2026-11-06) |
 | P5b | Locked entry points: a plan badge on the menu's Analytics, Widgets and assistant pages (they open the "Part of Pro" screen); the floating assistant and Home's assistant box hide | P5a | Done (2026-11-06) |
 | P5e | Plan badge on Settings' tabs (Theme) and in Search; the phone tab bar's assistant button hides when the assistant is locked | P5b | Done (2026-11-06) |
-| P5c | Plan checks for the other built features, one at a time; Google Calendar sync and automations stop on a downgrade | P5a | To do |
+| P5c | Downgrades stop background work for every checked feature (S15): Google Calendar sync and busy times, the own WhatsApp number, the team area; automations already did | P5a | Done (2026-11-06) |
 | P5d | `koblipMonthlyTemplates` per plan (Pro limit in `lib/subscription-rules.ts`) | P2, O3 | To do |
 | P6 | Emails: payment failed, back to Free (Better Auth hooks) | P2 | To do |
 | P7 | Admin screen Subscriptions: every business's plan, status, renewal date, Stripe links, history; admin can give Pro for free (a 100% coupon in Stripe, logged) | P2 | To do |
@@ -147,4 +156,5 @@ How to use this file: [Plans](README.md).
 | 2026-11-06 | Owner | Plans page: no change log; group chips; the app's switcher |
 | 2026-11-06 | Owner | O1–O3: $19/month or $190/year; no trial; free stays free |
 | 2026-11-06 | Backend dev | S14: prices before tax; Pro product and prices made in the Stripe sandbox |
+| 2026-11-06 | Backend dev | S15: what a downgrade stops; other features get checks only when they move to a paid plan |
 | 2026-11-06 | Backend dev | S11, S12: nothing locks before billing; only checked features move |

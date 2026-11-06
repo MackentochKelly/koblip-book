@@ -8,6 +8,7 @@ import {
   koblipChatConnection,
   notificationSettings,
 } from "@/lib/db/schema"
+import { hasFeature } from "@/lib/plan-access"
 
 // A Chat connection that can send: working, with a WhatsApp number, and
 // allowed to use templates.
@@ -28,7 +29,7 @@ function canSend(row: {
 // and not every customer message turned off on its WhatsApp page. The
 // booking forms ask for consent only then.
 export async function offersWhatsapp(businessId: string): Promise<boolean> {
-  const [[business], [own], [koblip]] = await Promise.all([
+  const [[business], [connected], [koblip], ownAllowed] = await Promise.all([
     db
       .select({
         ownerId: businesses.ownerId,
@@ -53,8 +54,11 @@ export async function offersWhatsapp(businessId: string): Promise<boolean> {
       )
       .limit(1),
     db.select().from(koblipChatConnection).limit(1),
+    hasFeature(businessId, "whatsappOwnNumber"),
   ])
   if (!business) return false
+  // Its own number sends only while its plan has it (as the sender does).
+  const own = ownAllowed ? connected : undefined
   const koblipServes =
     !!koblip && canSend(koblip) && !!business.ownerId && !business.isDemo
   if (!(own && canSend(own)) && !koblipServes) return false

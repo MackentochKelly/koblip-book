@@ -18,6 +18,7 @@ import {
 } from "@/lib/db/schema"
 import type { NotificationRules } from "@/lib/notification-rules"
 import { DEFAULT_LOCALES } from "@/lib/page-language"
+import { hasFeature } from "@/lib/plan-access"
 import { notificationRules } from "@/lib/platform-settings"
 import { wordsFor } from "@/lib/translations/interface-words"
 import { whatsappDigits } from "@/lib/whatsapp-phone"
@@ -118,21 +119,26 @@ type WindowCheck = {
 // approved every message it has on, in each language, or when the person's
 // 24-hour window with it is open and a normal message may go (D35); else
 // Koblip's; else its own as it stands (normal messages in the window,
-// approved templates). "wait" when a connection must be renewed first; null
+// approved templates). Its own only while its plan has it. "wait" when a
+// connection must be renewed first; null
 // when none can send. Without a recipient (the page), only approval counts.
 async function lineFor(
   businessId: string,
   turnedOff: BookingMessage[],
   recipient?: WindowCheck
 ): Promise<Line | "wait" | null> {
-  const [[own], koblip] = await Promise.all([
+  const [[connected], ownAllowed, koblip] = await Promise.all([
     db.select().from(chatConnections).where(eq(chatConnections.businessId, businessId)).limit(1),
+    hasFeature(businessId, "whatsappOwnNumber"),
     db
       .select()
       .from(koblipChatConnection)
       .limit(1)
       .then(async ([row]) => (row && (await koblipMayServe(businessId)) ? row : null)),
   ])
+  // A plan without the own number sends from Koblip's; the connection stays
+  // for when the plan has it again (S7).
+  const own = ownAllowed ? connected : undefined
   const ownLine: Line | null =
     own && chatConnectionUsable(own) && own.phoneNumberId
       ? {

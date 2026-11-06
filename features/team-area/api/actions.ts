@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { getSession, requireTeamMember } from "@/lib/dal"
+import { hasFeature } from "@/lib/plan-access"
 import { db } from "@/lib/db"
 import { teamMembers } from "@/lib/db/schema"
 import { joinWithTeamInvite } from "@/lib/team-invites"
@@ -18,6 +19,14 @@ import { translateBusinessSoon } from "@/lib/translations/business-texts"
 import { deletePhoto, savePhoto } from "@/lib/uploads"
 import type { PhotoResult } from "@/types/photo"
 
+// The team member's seat, or null when the business's plan no longer has
+// team accounts: the area shows it as locked, so only a stale page gets
+// here, and it hears the seat isn't there to change.
+async function openSeat(teamMemberId: string) {
+  const { seat } = await requireTeamMember(teamMemberId)
+  return (await hasFeature(seat.business.id, "teamAccounts")) ? seat : null
+}
+
 // A team member saves their own profile: job title, about, languages and
 // their numbers from before Koblip. Their name, services and prices stay
 // the owner's.
@@ -26,7 +35,8 @@ export async function saveMyProfile(
   profile: TeamProfile & StartingCounts
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (typeof teamMemberId !== "string") return { ok: false, error: "not_found" }
-  const { seat } = await requireTeamMember(teamMemberId)
+  const seat = await openSeat(teamMemberId)
+  if (!seat) return { ok: false, error: "not_found" }
   const checked = checkTeamProfile(profile)
   if (!checked.ok) return checked
   const counts = checkStartingCounts(profile)
@@ -61,7 +71,8 @@ export async function setMyPhoto(
   formData: FormData
 ): Promise<PhotoResult<{ photoUrl: string }>> {
   if (typeof teamMemberId !== "string") return { ok: false, error: "not_found" }
-  const { seat } = await requireTeamMember(teamMemberId)
+  const seat = await openSeat(teamMemberId)
+  if (!seat) return { ok: false, error: "not_found" }
   const saved = await savePhoto(formData.get("file") as File)
   if (!saved.ok) return { ok: false, error: saved.error }
   try {
@@ -82,7 +93,8 @@ export async function setMyPhoto(
 // A team member takes their own photo off.
 export async function removeMyPhoto(teamMemberId: string): Promise<PhotoResult> {
   if (typeof teamMemberId !== "string") return { ok: false, error: "not_found" }
-  const { seat } = await requireTeamMember(teamMemberId)
+  const seat = await openSeat(teamMemberId)
+  if (!seat) return { ok: false, error: "not_found" }
   await db
     .update(teamMembers)
     .set({ photoUrl: null })

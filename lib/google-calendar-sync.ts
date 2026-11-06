@@ -19,6 +19,7 @@ import { refreshGoogleBusy } from "@/lib/google-calendar-busy"
 import { ensureGoogleChannels } from "@/lib/google-calendar-channels"
 import { eventOf, eventWordsFor, type EventPlace, type GoogleEvent } from "@/lib/google-calendar-event"
 import { GOOGLE_CALENDAR_RULES } from "@/lib/google-calendar-rules"
+import { hasFeature } from "@/lib/plan-access"
 import { runInTurn } from "@/lib/run-in-turn"
 
 // Sends bookings to Google Calendar (G2 in docs/plans/google-calendar.md):
@@ -127,6 +128,9 @@ async function syncConnection(connectionId: string, busy: "when_due" | "now" = "
     .where(eq(googleCalendarConnections.id, connectionId))
     .limit(1)
   if (!row || row.connection.needsReconnect) return
+  // A business whose plan no longer has Google Calendar sends nothing; the
+  // connection stays, so it picks up again on upgrading (S7).
+  if (!(await hasFeature(row.connection.businessId, "googleCalendar"))) return
   const { connection, timeZone } = row
   const place: EventPlace = {
     businessId: connection.businessId,

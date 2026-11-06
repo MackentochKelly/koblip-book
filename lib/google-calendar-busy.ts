@@ -6,6 +6,7 @@ import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { googleCalendarBusy, googleCalendarConnections, teamMembers } from "@/lib/db/schema"
 import { GOOGLE_SCOPES, googleCalendarApi, googleTurnKey } from "@/lib/google-calendar"
+import { hasFeature } from "@/lib/plan-access"
 import { runInTurn } from "@/lib/run-in-turn"
 
 // Busy times from Google Calendar (G3 in docs/plans/google-calendar.md). They
@@ -71,6 +72,7 @@ type FreeBusy = {
 export async function refreshGoogleBusy(connectionId: string) {
   const [row] = await db
     .select({
+      businessId: googleCalendarConnections.businessId,
       scopes: googleCalendarConnections.scopes,
       needsReconnect: googleCalendarConnections.needsReconnect,
       busyCalendarIds: googleCalendarConnections.busyCalendarIds,
@@ -79,6 +81,9 @@ export async function refreshGoogleBusy(connectionId: string) {
     .where(eq(googleCalendarConnections.id, connectionId))
     .limit(1)
   if (!row) return
+  // Not in the business's plan: nothing is read (googleBusyTimes ignores
+  // the kept ones meanwhile).
+  if (!(await hasFeature(row.businessId, "googleCalendar"))) return
   const checkedAt = new Date().toISOString()
   const done = db
     .update(googleCalendarConnections)
@@ -146,6 +151,8 @@ export async function googleBusyTimes(
   from: string,
   to: string
 ): Promise<GoogleBusyTime[]> {
+  // A plan without Google Calendar blocks no times with it.
+  if (!(await hasFeature(businessId, "googleCalendar"))) return []
   const connections = await db
     .select({
       id: googleCalendarConnections.id,

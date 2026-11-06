@@ -14,6 +14,13 @@ import {
 
 vi.mock("server-only", () => ({}))
 
+// Each test's plan: every feature, unless a test takes the own number away.
+const plan = vi.hoisted(() => ({ ownNumber: true }))
+vi.mock("@/lib/plan-access", () => ({
+  hasFeature: async (_businessId: string, key: string) =>
+    key !== "whatsappOwnNumber" || plan.ownNumber,
+}))
+
 const { offersWhatsapp } = await import("./whatsapp-offer")
 
 let dir: string
@@ -38,6 +45,7 @@ beforeAll(async () => {
 })
 
 beforeEach(async () => {
+  plan.ownNumber = true
   await db.delete(notificationSettings)
   await db.delete(chatConnections)
   await db.delete(koblipChatConnection)
@@ -115,4 +123,12 @@ test("every customer message turned off: no consent asked", async () => {
     turnedOff: ["confirmed", "reminder", "changed", "cancelled"],
   })
   expect(await offersWhatsapp("biz")).toBe(false)
+})
+
+test("a plan without the own number sends only from Koblip's", async () => {
+  await connectOwn()
+  plan.ownNumber = false
+  expect(await offersWhatsapp("biz")).toBe(false)
+  await connectKoblip()
+  expect(await offersWhatsapp("biz")).toBe(true)
 })
