@@ -1,7 +1,7 @@
 import "server-only"
 import { cache } from "react"
 import { notFound } from "next/navigation"
-import { and, desc, eq, notInArray } from "drizzle-orm"
+import { and, desc, eq, isNotNull, notInArray } from "drizzle-orm"
 
 import { requireAccount } from "@/lib/dal"
 import { db } from "@/lib/db"
@@ -54,6 +54,10 @@ export async function getBilling(businessId: string): Promise<Billing> {
       .where(
         and(
           eq(subscription.referenceId, businessId),
+          // The Stripe plugin saves a placeholder row when Upgrade opens
+          // Checkout; only a subscription Stripe made has an id, so an
+          // abandoned Checkout leaves nothing to manage.
+          isNotNull(subscription.stripeSubscriptionId),
           notInArray(subscription.status, ENDED)
         )
       )

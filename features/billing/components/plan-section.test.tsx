@@ -45,7 +45,7 @@ test("on Free: Free is current, and Upgrade buys the period picked", async () =>
   fireEvent.click(screen.getByRole("button", { name: "Upgrade" }))
   await waitFor(() =>
     expect(subscription.upgrade).toHaveBeenCalledWith(
-      expect.objectContaining({ plan: "pro", annual: true, referenceId: "b1" })
+      expect.objectContaining({ plan: "pro", annual: true, referenceId: "b1", locale: "en" })
     )
   )
   expect(screen.queryByRole("button", { name: "Manage billing" })).toBeNull()

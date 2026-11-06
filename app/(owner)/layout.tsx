@@ -14,6 +14,7 @@ export default async function OwnerLayout({
         namespaces={[
           "app",
           "assistant",
+          "billing",
           "notifications",
           "onboarding",
           "owner",

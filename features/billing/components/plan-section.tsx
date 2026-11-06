@@ -21,6 +21,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
 import { formatPrice } from "@/lib/format-price"
+import { languageOf } from "@/lib/page-language"
 import type { Billing } from "../types"
 
 type Period = "monthly" | "yearly"
@@ -44,6 +45,8 @@ export function PlanSection({
   const plans = useTranslations("app.planLocked.plans")
   const format = useFormatter()
   const locale = useLocale()
+  // Stripe's pages take the app's language (en, es, pt, fr), not a region.
+  const stripeLocale = languageOf(locale)
   const [period, setPeriod] = useState<Period>("monthly")
   const [pending, startTransition] = useTransition()
   const here = `/dashboard/${businessId}/settings/plan`
@@ -65,7 +68,7 @@ export function PlanSection({
         referenceId: businessId,
         successUrl: here,
         cancelUrl: here,
-        locale,
+        locale: stripeLocale,
       })
     )
   const manage = () =>
@@ -73,7 +76,7 @@ export function PlanSection({
       authClient.subscription.billingPortal({
         referenceId: businessId,
         returnUrl: here,
-        locale,
+        locale: stripeLocale,
       })
     )
 
