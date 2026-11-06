@@ -247,6 +247,8 @@ const whatsapp: typeof en = {
   searchLabel: "Buscar por nombre o teléfono del cliente",
   messageFilter: "Mensaje",
   stateFilter: "Estado",
+  filters: "Filtros",
+  showResults: "Ver resultados",
   allMessages: "Todos los mensajes",
   allStates: "Cualquier estado",
   noneFound: "Ningún mensaje coincide",

@@ -22,6 +22,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { AppSelect } from "@/components/app-select"
+import { ListFilters } from "@/components/list-filters"
 import { cn } from "@/lib/utils"
 import { IN_APP_KINDS } from "@/types/in-app-notifications"
 import type { AdminNotification, AdminNotifications } from "../api/notifications"
@@ -79,35 +80,64 @@ export function AdminNotificationsList({
       empty={rows.length === 0 && !filtered && choices.length === 0 ? t.none : null}
     >
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 md:flex">
-          <FilterSelect
-            label={t.businessFilter}
-            value={filter.businessId}
-            items={[
-              { value: ANY, label: t.allBusinesses },
-              ...businesses.map(({ id, name }) => ({ value: id, label: name })),
-            ]}
-            onChange={(businessId) => show({ ...filter, businessId })}
-          />
-          <FilterSelect
-            label={t.kindFilter}
-            value={filter.kind}
-            items={[
-              { value: ANY, label: t.allKinds },
-              ...IN_APP_KINDS.map((kind) => ({ value: kind, label: t.kinds[kind] })),
-            ]}
-            onChange={(kind) => show({ ...filter, kind: kind as NotificationFilter["kind"] })}
-          />
-          <FilterSelect
-            label={t.readFilter}
-            value={filter.read}
-            items={[
-              { value: ANY, label: t.allStates },
-              ...NOTIFICATION_READ_FILTERS.map((read) => ({ value: read, label: t[read] })),
-            ]}
-            onChange={(read) => show({ ...filter, read: read as NotificationFilter["read"] })}
-          />
-        </div>
+        <ListFilters
+          filters={[
+            {
+              key: "business",
+              label: t.businessFilter,
+              control: (
+                <FilterSelect
+                  label={t.businessFilter}
+                  value={filter.businessId}
+                  items={[
+                    { value: ANY, label: t.allBusinesses },
+                    ...businesses.map(({ id, name }) => ({ value: id, label: name })),
+                  ]}
+                  onChange={(businessId) => show({ ...filter, businessId })}
+                />
+              ),
+            },
+            {
+              key: "kind",
+              label: t.kindFilter,
+              control: (
+                <FilterSelect
+                  label={t.kindFilter}
+                  value={filter.kind}
+                  items={[
+                    { value: ANY, label: t.allKinds },
+                    ...IN_APP_KINDS.map((kind) => ({ value: kind, label: t.kinds[kind] })),
+                  ]}
+                  onChange={(kind) => show({ ...filter, kind: kind as NotificationFilter["kind"] })}
+                />
+              ),
+            },
+            {
+              key: "read",
+              label: t.readFilter,
+              control: (
+                <FilterSelect
+                  label={t.readFilter}
+                  value={filter.read}
+                  items={[
+                    { value: ANY, label: t.allStates },
+                    ...NOTIFICATION_READ_FILTERS.map((read) => ({ value: read, label: t[read] })),
+                  ]}
+                  onChange={(read) => show({ ...filter, read: read as NotificationFilter["read"] })}
+                />
+              ),
+            },
+          ]}
+          count={[filter.businessId, filter.kind, filter.read].filter(Boolean).length}
+          onClear={() => show({})}
+          rowClear={filtered ? () => show({}) : undefined}
+          words={{
+            filters: t.filters,
+            clearAll: t.clearFilters,
+            clear: t.clearFilters,
+            showResults: t.showResults,
+          }}
+        />
 
         <div aria-busy={pending} className={cn("transition-opacity", pending && "opacity-60")}>
           {rows.length === 0 ? (

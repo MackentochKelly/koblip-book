@@ -249,6 +249,8 @@ const whatsapp = {
   searchLabel: "Search by customer name or phone",
   messageFilter: "Message",
   stateFilter: "Status",
+  filters: "Filters",
+  showResults: "Show results",
   allMessages: "All messages",
   allStates: "Any status",
   noneFound: "No messages match",

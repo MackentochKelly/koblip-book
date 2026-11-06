@@ -3,11 +3,10 @@
 import { useState } from "react"
 
 import { DateRangePicker, type DayRangeValue } from "@/components/date-range-picker"
-import { FilterChecks, FilterSheet } from "@/components/filter-sheet"
+import { ListFilters } from "@/components/list-filters"
 import { ViewTabs } from "@/components/view-tabs"
 import { SearchField } from "@/components/search-field"
 import { Button } from "@/components/ui/button"
-import { FieldLegend, FieldSet } from "@/components/ui/field"
 import {
   Empty,
   EmptyContent,
@@ -15,7 +14,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
-import { CalendarDaysIcon, XIcon } from "@/components/ui/icons"
+import { CalendarDaysIcon } from "@/components/ui/icons"
 import { AppSelect } from "@/components/app-select"
 import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
@@ -96,30 +95,22 @@ export function BookingsTable({
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      {/* A computer: search, dates and filters in one row. A phone: search
-          and one Filters button for a sheet with the rest. */}
-      <div className="flex items-center gap-2 md:flex-wrap">
-        <SearchField
-          className="min-w-0 flex-1 md:w-80 md:flex-none"
-          value={filters.search}
-          onChange={(event) => set({ search: event.target.value })}
-          placeholder={t.search}
-          aria-label={t.search}
-        />
-        <div className="md:hidden">
-          <FilterSheet
-            label={t.filters}
-            count={filterCount}
-            clearLabel={t.clearAll}
-            onClear={() => {
-              set({ status: NO_FILTERS.status, serviceIds: [], teamIds: [] })
-              if (!usualDates) onRangeChange(presetRange("around", today))
-            }}
-            doneLabel={t.showResults(total)}
-          >
-            {/* A phone picks the status here, a computer from tabs. */}
-            <FieldSet>
-              <FieldLegend variant="label">{t.status}</FieldLegend>
+      <ListFilters
+        search={
+          <SearchField
+            className="min-w-0 flex-1 md:w-80 md:flex-none"
+            value={filters.search}
+            onChange={(event) => set({ search: event.target.value })}
+            placeholder={t.search}
+            aria-label={t.search}
+          />
+        }
+        filters={[
+          {
+            // A computer picks the status from the tabs under the row.
+            key: "status",
+            label: t.status,
+            control: (
               <AppSelect
                 value={filters.status}
                 onValueChange={(status) => set({ status })}
@@ -130,9 +121,13 @@ export function BookingsTable({
                 aria-label={t.status}
                 className="w-full"
               />
-            </FieldSet>
-            <FieldSet>
-              <FieldLegend variant="label">{t.dates}</FieldLegend>
+            ),
+            rowControl: null,
+          },
+          {
+            key: "dates",
+            label: t.dates,
+            control: (
               <DateRangePicker
                 value={range}
                 onChange={onRangeChange}
@@ -141,66 +136,73 @@ export function BookingsTable({
                 choices={rangeChoices}
                 className="w-full justify-start"
               />
-            </FieldSet>
-            {services.length > 1 && (
-              <FilterChecks
-                id="filter-services"
-                legend={t.services}
-                options={serviceOptions}
-                value={filters.serviceIds}
-                onChange={(serviceIds) => set({ serviceIds })}
+            ),
+            rowControl: (
+              <DateRangePicker
+                value={range}
+                onChange={onRangeChange}
+                locale={m.locale}
+                label={t.dates}
+                choices={rangeChoices}
               />
-            )}
-            {hasTeam && (
-              <FilterChecks
-                id="filter-team"
-                legend={t.team}
-                options={teamOptions}
-                value={filters.teamIds}
-                onChange={(teamIds) => set({ teamIds })}
-              />
-            )}
-          </FilterSheet>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 max-md:hidden">
-          <DateRangePicker
-            value={range}
-            onChange={onRangeChange}
-            locale={m.locale}
-            label={t.dates}
-            choices={rangeChoices}
-          />
-          {services.length > 1 && (
-            <AppSelect
-              multiple
-              options={serviceOptions}
-              value={filters.serviceIds}
-              onValueChange={(serviceIds) => set({ serviceIds })}
-              placeholder={t.services}
-              aria-label={t.services}
-            />
-          )}
-          {hasTeam && (
-            <AppSelect
-              multiple
-              options={teamOptions}
-              value={filters.teamIds}
-              onValueChange={(teamIds) => set({ teamIds })}
-              placeholder={t.team}
-              aria-label={t.team}
-            />
-          )}
-          {filtered && (
-            <Button
-              variant="ghost"
-              onClick={() => set({ ...NO_FILTERS, status: filters.status })}
-            >
-              {t.clear}
-              <XIcon data-icon="inline-end" />
-            </Button>
-          )}
-        </div>
-      </div>
+            ),
+          },
+          ...(services.length > 1
+            ? [
+                {
+                  key: "services",
+                  label: t.services,
+                  control: (
+                    <AppSelect
+                      multiple
+                      options={serviceOptions}
+                      value={filters.serviceIds}
+                      onValueChange={(serviceIds) => set({ serviceIds })}
+                      placeholder={t.services}
+                      aria-label={t.services}
+                      className="w-full md:w-auto"
+                    />
+                  ),
+                },
+              ]
+            : []),
+          ...(hasTeam
+            ? [
+                {
+                  key: "team",
+                  label: t.team,
+                  control: (
+                    <AppSelect
+                      multiple
+                      options={teamOptions}
+                      value={filters.teamIds}
+                      onValueChange={(teamIds) => set({ teamIds })}
+                      placeholder={t.team}
+                      aria-label={t.team}
+                      className="w-full md:w-auto"
+                    />
+                  ),
+                },
+              ]
+            : []),
+        ]}
+        count={filterCount}
+        onClear={() => {
+          set({ status: NO_FILTERS.status, serviceIds: [], teamIds: [] })
+          if (!usualDates) onRangeChange(presetRange("around", today))
+        }}
+        rowClear={
+          filtered
+            ? () => set({ ...NO_FILTERS, status: filters.status })
+            : undefined
+        }
+        words={{
+          filters: t.filters,
+          clearAll: t.clearAll,
+          clear: t.clear,
+          showResults: t.showResults(total),
+        }}
+      />
 
       <ViewTabs
         views={statusTabs}

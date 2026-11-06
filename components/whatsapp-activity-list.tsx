@@ -25,6 +25,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { AppSelect } from "@/components/app-select"
+import { ListFilters } from "@/components/list-filters"
 import { Spinner } from "@/components/ui/spinner"
 import { noAutofill } from "@/lib/no-autofill"
 import { cn } from "@/lib/utils"
@@ -51,6 +52,9 @@ export type ActivityLabels = {
   searchLabel: string
   messageFilter: string
   stateFilter: string
+  filters: string
+  // The phone's filters sheet closes on it.
+  showResults: string
   allMessages: string
   allStates: string
   noneFound: string
@@ -118,6 +122,9 @@ export function WhatsappActivityList({
   const [query, setQuery] = useState(filter.search ?? "")
   const [pending, startTransition] = useTransition()
   const filtered = !!(filter.message || filter.automations || filter.state || filter.search)
+  // The Filters count: the message picked and the status picked.
+  const filterCount =
+    (filter.message || filter.automations ? 1 : 0) + (filter.state ? 1 : 0)
   const formatters = new Map<string, Intl.DateTimeFormat>()
   const when = (row: { at: string; timeZone?: string }) => {
     const zone = row.timeZone ?? timeZone
@@ -140,6 +147,9 @@ export function WhatsappActivityList({
     startTransition(() => {
       router.replace(`${pathname}${activityQuery(next)}`, { scroll: false })
     })
+  // Clears the picks, keeping the search.
+  const clearPicks = () =>
+    show({ ...filter, message: undefined, automations: undefined, state: undefined })
 
   const messageItems = [
     { value: ANY, label: t.allMessages },
@@ -174,56 +184,79 @@ export function WhatsappActivityList({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2 md:flex-row">
-        {/* Search runs on Enter, like a mail search: one query per search. */}
-        <form
-          role="search"
-          className="md:flex-1"
-          onSubmit={(event) => {
-            event.preventDefault()
-            show({ ...filter, search: query.trim() || undefined })
-          }}
-        >
-          <SearchField
-            {...noAutofill("activity")}
-            enterKeyHint="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t.search}
-            aria-label={t.searchLabel}
-          />
-        </form>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:flex">
-          <AppSelect
-            options={messageItems}
-            value={filter.message ?? (filter.automations ? AUTOMATIONS : ANY)}
-            onValueChange={(value) =>
-              show({
-                ...filter,
-                automations: value === AUTOMATIONS || undefined,
-                message:
-                  value === ANY || value === AUTOMATIONS
-                    ? undefined
-                    : (value as ActivityFilter["message"]),
-              })
-            }
-            className="w-full md:w-auto"
-            aria-label={t.messageFilter}
-          />
-          <AppSelect
-            options={stateItems}
-            value={filter.state ?? ANY}
-            onValueChange={(value) =>
-              show({
-                ...filter,
-                state: value === ANY ? undefined : (value as ActivityFilter["state"]),
-              })
-            }
-            className="w-full md:w-auto"
-            aria-label={t.stateFilter}
-          />
-        </div>
-      </div>
+      <ListFilters
+        search={
+          // Search runs on Enter, like a mail search: one query per search.
+          <form
+            role="search"
+            className="min-w-0 flex-1"
+            onSubmit={(event) => {
+              event.preventDefault()
+              show({ ...filter, search: query.trim() || undefined })
+            }}
+          >
+            <SearchField
+              {...noAutofill("activity")}
+              enterKeyHint="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t.search}
+              aria-label={t.searchLabel}
+            />
+          </form>
+        }
+        filters={[
+          {
+            key: "message",
+            label: t.messageFilter,
+            control: (
+              <AppSelect
+                options={messageItems}
+                value={filter.message ?? (filter.automations ? AUTOMATIONS : ANY)}
+                onValueChange={(value) =>
+                  show({
+                    ...filter,
+                    automations: value === AUTOMATIONS || undefined,
+                    message:
+                      value === ANY || value === AUTOMATIONS
+                        ? undefined
+                        : (value as ActivityFilter["message"]),
+                  })
+                }
+                className="w-full md:w-auto"
+                aria-label={t.messageFilter}
+              />
+            ),
+          },
+          {
+            key: "state",
+            label: t.stateFilter,
+            control: (
+              <AppSelect
+                options={stateItems}
+                value={filter.state ?? ANY}
+                onValueChange={(value) =>
+                  show({
+                    ...filter,
+                    state: value === ANY ? undefined : (value as ActivityFilter["state"]),
+                  })
+                }
+                className="w-full md:w-auto"
+                aria-label={t.stateFilter}
+              />
+            ),
+          },
+        ]}
+        count={filterCount}
+        onClear={clearPicks}
+        rowClear={filterCount > 0 ? clearPicks : undefined}
+        words={{
+          filters: t.filters,
+          clearAll: t.clearFilters,
+          clear: t.clearFilters,
+          showResults: t.showResults,
+        }}
+      />
 
       <div aria-busy={pending} className={cn("transition-opacity", pending && "opacity-60")}>
         {entries.length === 0 ? (
