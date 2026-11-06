@@ -179,9 +179,9 @@
     /* Plain news, neither good nor bad (a stat's blue icon): 3:1 or more on
        the card in light and dark. */
     --info: oklch(0.55 0.2 255);
-    /* The owner area's page, behind its white cards: Apple's light page
-       grey (apple.com's #F5F5F7), a touch lighter than its apps' #F2F2F7. */
-    --app-background: oklch(0.971 0.0027 286.4);
+    /* The owner area's page, behind its white cards: a very light grey with
+       Apple's cool touch, lighter than apple.com's #F5F5F7. */
+    --app-background: oklch(0.98 0.0018 286.4);
     /* Something went through ("Booked"): as light as it goes with white
        words still passing AA (4.5:1). */
     --success: oklch(0.56 0.14 150);
