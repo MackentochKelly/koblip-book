@@ -380,12 +380,8 @@
   :root:not(.dark) [data-surface="app"] [data-slot="empty"] {
     @apply bg-card shadow-card;
   }
-  /* Tabs tracks get a faint edge, drawn inside so a scrolling tab row
-     cannot clip it. */
-  [data-surface="app"] [data-slot="tabs-list"][data-variant="default"] {
-    @apply inset-ring-(length:--hairline) inset-ring-border/60;
-  }
-  /* The open tab inside it gets the same edge. */
+  /* The open tab gets a faint edge (the track around it has none), drawn
+     inside so a scrolling tab row cannot clip it. */
   [data-surface="app"]
     [data-slot="tabs-list"][data-variant="default"]
     [data-slot="tabs-trigger"][data-active] {
