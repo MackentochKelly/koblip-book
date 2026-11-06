@@ -111,6 +111,7 @@ export function ServiceList({
           value={tab.id}
           onChange={setPicked}
           ariaLabel={m.sections.serviceCategories}
+          variant="chips"
         />
       )}
       <ItemGroup className="gap-3">

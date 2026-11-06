@@ -12,11 +12,18 @@ export interface ViewTab<T extends string> {
   icon?: React.ReactNode
 }
 
+// `chips`: each tab outlined on its own with no track around them, the open
+// one filled with the main colour, like the filter chips (FilterChips).
+const CHIP_LIST =
+  "gap-2 bg-transparent p-0 in-data-[surface=app]:bg-transparent"
+const CHIP_TAB =
+  "border-border! bg-background data-active:border-primary! data-active:bg-primary data-active:text-primary-foreground data-active:hover:bg-primary/80 data-active:hover:text-primary-foreground in-data-[surface=app]:data-active:bg-primary dark:data-active:bg-primary dark:data-active:text-primary-foreground dark:data-active:hover:text-primary-foreground dark:in-data-[surface=app]:data-active:bg-primary"
+
 // The app's one row of tabs. A row that runs out of room scrolls sideways
 // with no bar and fades the edge where more tabs hide. `line`: plain words
 // with a bar under the open one; the row draws the one line under it.
-// Each tab is a filter chip's size, with a 44px tap area on a touch screen
-// (lib/control-size).
+// `chips`: see above. Each tab is a filter chip's size, with a 44px tap
+// area on a touch screen (lib/control-size).
 export function ViewTabs<T extends string>({
   views,
   value,
@@ -30,11 +37,12 @@ export function ViewTabs<T extends string>({
   value: T
   onChange: (id: T) => void
   ariaLabel: string
-  variant?: "default" | "line"
+  variant?: "default" | "line" | "chips"
   className?: string
   listClassName?: string
 }) {
   const line = variant === "line"
+  const chips = variant === "chips"
   // Like big apps: the open tab slides into the middle of the row, so a tab
   // opened by scrolling the page is never hidden or faded at the edge.
   const row = useRef<HTMLDivElement>(null)
@@ -65,10 +73,14 @@ export function ViewTabs<T extends string>({
         className="-my-1.5 no-scrollbar min-w-0 flex-1 scroll-fade-x overflow-x-auto py-1.5 whitespace-nowrap"
       >
         <TabsList
-          variant={variant}
+          variant={line ? "line" : "default"}
           aria-label={ariaLabel}
           className={cn(
-            line ? "min-w-full justify-start" : CONTROL_SIZE.tabsList,
+            line
+              ? "min-w-full justify-start"
+              : chips
+                ? CHIP_LIST
+                : CONTROL_SIZE.tabsList,
             listClassName
           )}
         >
@@ -76,7 +88,7 @@ export function ViewTabs<T extends string>({
             <TabsTrigger
               key={view.id}
               value={view.id}
-              className={CONTROL_SIZE.tab}
+              className={cn(CONTROL_SIZE.tab, chips && CHIP_TAB)}
             >
               {view.icon}
               {view.label}
