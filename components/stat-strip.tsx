@@ -60,7 +60,7 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
                   "relative transition-colors hover:bg-muted has-[a:focus-visible]:bg-muted has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50 has-[a:focus-visible]:ring-inset"
               )}
             >
-              <dt className="flex font-medium">
+              <dt className="flex font-medium text-muted-foreground">
                 {link ? (
                   // The label is the box's link; it covers the whole box.
                   <Link
