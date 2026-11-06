@@ -1,6 +1,12 @@
 "use client"
 
 import { DayStrip } from "@/components/day-strip"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 
@@ -17,8 +23,9 @@ export interface FreeDay {
 }
 
 // A sideways row of days with the month one tap away, then the picked
-// day's free times grouped into morning, afternoon and evening. Used by
-// the booking page's time step and the assistant's "When?".
+// day's free times folded into morning, afternoon and evening (shadcn's
+// Accordion), one open at a time, so a long day stays short. Used by the
+// booking page's time step, rescheduling and the assistant's "When?".
 export function TimePicker({
   days,
   date,
@@ -52,6 +59,7 @@ export function TimePicker({
   )
   const times = days.find((day) => day.date === date)?.times ?? []
   const groups = DAY_PARTS.map((part, index) => ({
+    key: part.key,
     label: labels[part.key],
     times: times.filter((value) => {
       const hour = Number(value.slice(0, 2))
@@ -78,36 +86,51 @@ export function TimePicker({
       />
 
       <p className="text-sm font-medium">{formatDay(date, locale)}</p>
-      {groups.map((group) => (
-        <section
-          key={group.label}
-          aria-label={group.label}
-          className="flex flex-col gap-2"
-        >
-          <h3 className="text-sm text-muted-foreground">{group.label}</h3>
-          <ToggleGroup
-            variant="outline"
-            aria-label={labels.timesOf(group.label)}
-            value={time ? [time] : []}
-            onValueChange={(value) => {
-              if (value[0]) onTimeChange(value[0])
-            }}
-            className="grid w-full grid-cols-3 sm:grid-cols-4"
-          >
-            {group.times.map((value) => (
-              <ToggleGroupItem
-                key={value}
-                value={value}
-                // The chosen time is filled with the main colour, like a
-                // checked radio or switch, so the tap clearly took.
-                className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+      {/* A new day opens the part with the picked time, else the first. */}
+      <Accordion
+        key={date}
+        defaultValue={[
+          (
+            groups.find((group) => time && group.times.includes(time)) ??
+            groups[0]
+          )?.key,
+        ]}
+      >
+        {groups.map((group) => (
+          <AccordionItem key={group.key} value={group.key}>
+            <AccordionTrigger>
+              <span className="flex-1">{group.label}</span>
+              <span className="font-normal whitespace-nowrap text-muted-foreground tabular-nums">
+                {formatClock(group.times[0], locale)} –{" "}
+                {formatClock(group.times[group.times.length - 1], locale)}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <ToggleGroup
+                variant="outline"
+                aria-label={labels.timesOf(group.label)}
+                value={time ? [time] : []}
+                onValueChange={(value) => {
+                  if (value[0]) onTimeChange(value[0])
+                }}
+                className="grid w-full grid-cols-3 sm:grid-cols-4"
               >
-                {formatClock(value, locale)}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </section>
-      ))}
+                {group.times.map((value) => (
+                  <ToggleGroupItem
+                    key={value}
+                    value={value}
+                    // The chosen time is filled with the main colour, like a
+                    // checked radio or switch, so the tap clearly took.
+                    className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                  >
+                    {formatClock(value, locale)}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
     </div>
   )
 }
