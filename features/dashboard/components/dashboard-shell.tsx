@@ -50,8 +50,8 @@ const PHONE_LEFT = ["", "/bookings"]
 const PHONE_RIGHT = ["/services", "/team"]
 
 // The tab bar's middle button, the assistant's or a page's +: a 44 px
-// circle, the globe inside the app's hairline (a little darker than the
-// cards' edge so it reads around the globe), with a 2 px gap.
+// circle inside the app's hairline (a little darker than the cards' edge so
+// it reads around the globe), with a 2 px gap.
 const MIDDLE_BUTTON =
   "size-11 rounded-full border-(length:--hairline) border-foreground/20 p-0.5 hover:bg-transparent dark:hover:bg-transparent"
 
@@ -172,8 +172,8 @@ export function DashboardShell({
             {PHONE_LEFT.map((path) => tab(path))}
             <div className="relative flex min-h-14 items-center justify-center">
               {/* The assistant's globe (the computer's floating one), or the
-                  open page's + on that same globe, spinning from one to the
-                  other. */}
+                  open page's + on the app's grey icon fill, spinning from one
+                  to the other. */}
               <SpinSwap swapKey={addPage ? "add" : "assistant"}>
                 {addPage ? (
                   <Button
@@ -188,9 +188,10 @@ export function DashboardShell({
                     aria-disabled={action ? undefined : true}
                     onClick={action?.onClick}
                   >
-                    <span className="relative grid size-full place-items-center">
-                      <VoiceGlobe className="absolute inset-0 size-full" />
-                      <PlusIcon className="relative size-6 text-primary-foreground" />
+                    {/* The app's icon fill (an empty state's icon): grey,
+                        dark in dark mode, with the icon in the text colour. */}
+                    <span className="grid size-full place-items-center rounded-full bg-muted text-foreground">
+                      <PlusIcon className="size-6" />
                     </span>
                   </Button>
                 ) : (
