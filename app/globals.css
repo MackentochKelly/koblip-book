@@ -380,13 +380,6 @@
   :root:not(.dark) [data-surface="app"] [data-slot="empty"] {
     @apply bg-card shadow-card;
   }
-  /* The open tab gets a faint edge (the track around it has none), drawn
-     inside so a scrolling tab row cannot clip it. */
-  [data-surface="app"]
-    [data-slot="tabs-list"][data-variant="default"]
-    [data-slot="tabs-trigger"][data-active] {
-    @apply inset-ring-(length:--hairline) inset-ring-border/60;
-  }
   /* The phone's status bar height, which the booking page's pinned bars
      keep clear of: the phone's own (viewport-fit=cover in app/layout.tsx),
      or the demo phone's when the page runs in it (the home page sets it on
