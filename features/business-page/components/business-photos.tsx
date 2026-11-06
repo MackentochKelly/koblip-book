@@ -5,6 +5,7 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { XIcon } from "@/components/ui/icons"
 
+import { CarouselDots } from "@/components/carousel-dots"
 import { useMessages } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -89,6 +90,11 @@ export function BusinessPhotos({ photos }: { photos: PagePhoto[] }) {
       >
         {current + 1}/{total}
       </Badge>
+      <CarouselDots
+        total={total}
+        current={current}
+        className="absolute bottom-3 left-1/2 -translate-x-1/2 md:hidden"
+      />
       <CarouselPrevious className="left-3 hidden md:inline-flex" />
       <CarouselNext className="right-3 hidden md:inline-flex" />
       {open !== null && (
