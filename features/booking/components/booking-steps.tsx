@@ -607,21 +607,16 @@ export function BookingTotal({
   )
 }
 
-// The last step: the business's key points as cards, then one box that
-// agrees to them and to its policies (each a link, opened in a new tab so
-// the booking stays as it is). Confirm waits for the box.
+// The last step: the business's key points as cards, then one line saying
+// that booking agrees to them and to its policies (each a link, opened in a
+// new tab so the booking stays as it is), like Fresha. No box ticked in
+// advance: confirming under the line is the agreement.
 export function PoliciesStep({
   slug,
   policies,
-  agreed,
-  onAgreedChange,
-  sending,
 }: {
   slug: string
   policies: BookingPolicies
-  agreed: boolean
-  onAgreedChange: (agreed: boolean) => void
-  sending: boolean
 }) {
   const m = useMessages()
   const language = m.locale.startsWith("es") ? "es" : "en"
@@ -667,27 +662,15 @@ export function PoliciesStep({
           ))}
         </ItemGroup>
       )}
-      <FieldLabel htmlFor="booking-agree">
-        <Field orientation="horizontal">
-          <Checkbox
-            id="booking-agree"
-            checked={agreed}
-            disabled={sending}
-            onCheckedChange={(on) => onAgreedChange(on === true)}
-          />
-          <FieldContent>
-            <FieldTitle className="block font-normal">
-              {sentence ? (
-                <>
-                  {m.booking.agreeTo} {sentence}
-                </>
-              ) : (
-                m.booking.agreeToThese
-              )}
-            </FieldTitle>
-          </FieldContent>
-        </Field>
-      </FieldLabel>
+      <p className="text-sm text-muted-foreground">
+        {sentence ? (
+          <>
+            {m.booking.agreeTo} {sentence}.
+          </>
+        ) : (
+          m.booking.agreeToThese
+        )}
+      </p>
     </div>
   )
 }

@@ -90,7 +90,6 @@ export function BookingFlow({
   // Confirm looks ready only once both are typed, like Continue before it.
   const detailsFilled = Boolean(details.name.trim() && details.phone.trim())
   const [detailsError, setDetailsError] = useState<DetailsError>(null)
-  const [agreed, setAgreed] = useState(false)
   const withPolicies = hasBookingPolicies(page.policies)
   const [closing, setClosing] = useState(false)
 
@@ -102,7 +101,6 @@ export function BookingFlow({
     setClosing(false)
     setBooked(null)
     setSlot(null)
-    setAgreed(false)
   }
   const open = wanted && !closing
 
@@ -239,7 +237,6 @@ export function BookingFlow({
   const submit = async (details: BookingDetails) => {
     if (sending || !service || !slot) return
     if (!checkDetails(details)) return
-    if (withPolicies && !agreed) return
     setSending(true)
     const result = await createBooking({
       slug: page.slug,
@@ -250,7 +247,9 @@ export function BookingFlow({
       time: slot.time,
       name: details.name,
       phone: details.phone,
-      acceptedPolicies: withPolicies && agreed,
+      // Confirming on the policies step, under the line that says booking
+      // agrees to them, is the agreement.
+      acceptedPolicies: withPolicies,
       language: m.locale.startsWith("es") ? "es" : "en",
     }).catch(() => ({ status: "failed" as const }))
     setSending(false)
@@ -293,7 +292,7 @@ export function BookingFlow({
     ) : step === "details" ? (
       confirm(!detailsFilled, { type: "submit", form: DETAILS_FORM })
     ) : step === "policies" ? (
-      confirm(!agreed, { type: "button", onClick: () => void submit(details) })
+      confirm(false, { type: "button", onClick: () => void submit(details) })
     ) : (
       <Button type="button" onClick={next} disabled={!canContinue}>
         {m.booking.continue}
@@ -392,13 +391,7 @@ export function BookingFlow({
         </>
       )}
       {step === "policies" && (
-        <PoliciesStep
-          slug={page.slug}
-          policies={page.policies}
-          agreed={agreed}
-          onAgreedChange={setAgreed}
-          sending={sending}
-        />
+        <PoliciesStep slug={page.slug} policies={page.policies} />
       )}
     </div>
   )
