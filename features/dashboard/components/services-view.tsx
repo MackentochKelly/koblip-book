@@ -18,7 +18,6 @@ import { ViewTabs } from "@/components/view-tabs"
 import { useShowFirst } from "@/hooks/use-show-first"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { MultiPick } from "@/components/multi-pick"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,13 +50,7 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { AppSelect } from "@/components/app-select"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { BOOKING_RULES } from "@/lib/booking-rules"
@@ -504,22 +497,13 @@ function ServiceForm({
         <div className="grid grid-cols-2 gap-4">
           <Field>
             <FieldLabel htmlFor="service-duration">{t.length}</FieldLabel>
-            <Select
-              items={durations}
+            <AppSelect
+              id="service-duration"
+              options={durations}
               value={duration}
-              onValueChange={(value) => value && setDuration(String(value))}
-            >
-              <SelectTrigger id="service-duration" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {durations.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={setDuration}
+              className="w-full"
+            />
           </Field>
           <Field data-invalid={invalid === "price" || undefined}>
             <FieldLabel htmlFor="service-price">{t.price}</FieldLabel>
@@ -549,16 +533,17 @@ function ServiceForm({
         {team.length > 1 && (
           <Field data-invalid={invalid === "team" || undefined}>
             <FieldLabel htmlFor="service-members">{t.whoDoesIt}</FieldLabel>
-            <MultiPick
+            <AppSelect
+              multiple
               id="service-members"
-              items={team.map((member) => ({
+              options={team.map((member) => ({
                 value: member.id,
                 label: member.name,
               }))}
               value={memberIds}
-              onChange={setMemberIds}
-              empty={c.noMatch}
+              onValueChange={setMemberIds}
               invalid={invalid === "team"}
+              className="w-full"
             />
             {invalid === "team" && <FieldError>{t.pickOne}</FieldError>}
           </Field>
@@ -566,23 +551,16 @@ function ServiceForm({
         {googleCalendar && (
           <Field>
             <FieldLabel htmlFor="service-color">{t.calendarColor}</FieldLabel>
-            <Select
-              items={colors}
+            <AppSelect
+              id="service-color"
+              options={colors.map((item) => ({
+                ...item,
+                icon: item.value !== NO_COLOR && <GoogleEventDot color={item.value} />,
+              }))}
               value={color}
               onValueChange={(value) => setColor(isGoogleEventColor(value) ? value : NO_COLOR)}
-            >
-              <SelectTrigger id="service-color" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {colors.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.value !== NO_COLOR && <GoogleEventDot color={item.value} />}
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              className="w-full"
+            />
           </Field>
         )}
       </FieldGroup>

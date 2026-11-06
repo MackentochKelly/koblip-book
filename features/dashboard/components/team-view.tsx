@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner"
 
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
-import { MultiPick } from "@/components/multi-pick"
+import { AppSelect } from "@/components/app-select"
 import { WeeklyHoursEditor } from "@/components/weekly-hours-editor"
 import { Switch } from "@/components/ui/switch"
 import { validHours, type HoursRow } from "@/lib/hours-rules"
@@ -578,16 +578,20 @@ function MemberForm({
         </Field>
         <Field>
           <FieldLabel htmlFor="member-languages">{t.languages}</FieldLabel>
-          <MultiPick
+          <AppSelect
+            multiple
             id="member-languages"
-            items={TEAM_RULES.languages.map((code) => ({
+            options={TEAM_RULES.languages.map((code) => ({
               value: code,
               label: languageName(code, m.locale),
+              disabled:
+                languages.length >= TEAM_RULES.maxLanguages &&
+                !languages.includes(code),
             }))}
             value={languages}
-            onChange={(next) => setLanguages(next.slice(0, TEAM_RULES.maxLanguages))}
+            onValueChange={setLanguages}
             placeholder={c.optional}
-            empty={t.noLanguage}
+            className="w-full"
           />
         </Field>
         <FieldSet>

@@ -24,13 +24,7 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { AppSelect } from "@/components/app-select"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { formatDuration } from "@/lib/format-duration"
@@ -122,22 +116,14 @@ export function WhatsappTiming({
         </ItemGroup>
         {!full && (
           <Field orientation="horizontal">
-            <Select
-              items={items}
+            <AppSelect
+              options={items}
               value={adding}
-              onValueChange={(value) => setAdding(value ? String(value) : null)}
-            >
-              <SelectTrigger className="flex-1" aria-label={t.addReminder}>
-                <SelectValue placeholder={t.addReminder} />
-              </SelectTrigger>
-              <SelectContent>
-                {items.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={setAdding}
+              placeholder={t.addReminder}
+              aria-label={t.addReminder}
+              className="flex-1"
+            />
             <Button
               variant="outline"
               disabled={!adding}

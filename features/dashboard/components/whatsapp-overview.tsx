@@ -31,13 +31,7 @@ import {
   OctagonXIcon,
 } from "@/components/ui/icons"
 import { PhoneInput } from "@/components/phone-input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { AppSelect } from "@/components/app-select"
 import { Spinner } from "@/components/ui/spinner"
 import { PHONE_PATTERN } from "@/lib/booking-rules"
 import { activityQuery } from "@/lib/whatsapp-activity-filter"
@@ -367,22 +361,13 @@ function TestSend({
     <Field>
       <FieldLabel htmlFor="test-message">{t.testMessage}</FieldLabel>
       <div className="flex flex-col gap-2 md:flex-row">
-        <Select
-          items={items}
+        <AppSelect
+          id="test-message"
+          options={items}
           value={message}
-          onValueChange={(value) => value && setMessage(value as BookingMessage)}
-        >
-          <SelectTrigger id="test-message" className="w-full md:flex-1">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {items.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onValueChange={setMessage}
+          className="w-full md:flex-1"
+        />
         <Button disabled={pending} onClick={send}>
           {pending && <Spinner data-icon="inline-start" />}
           {t.sendTest}

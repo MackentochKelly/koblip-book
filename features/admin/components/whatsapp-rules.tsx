@@ -23,13 +23,7 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { AppSelect } from "@/components/app-select"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import type { NotificationRuleKey } from "@/lib/notification-rules"
@@ -123,22 +117,13 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
       }))
       return (
         <Field>
-          <Select
-            items={items}
+          <AppSelect
+            options={items}
             value={input}
-            onValueChange={(value) => setInput(String(value))}
-          >
-            <SelectTrigger className="w-full" aria-label={t.names[opened.key]}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {items.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onValueChange={setInput}
+            className="w-full"
+            aria-label={t.names[opened.key]}
+          />
         </Field>
       )
     }

@@ -14,13 +14,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { AppSelect } from "@/components/app-select"
 
 // One button of a WhatsApp message: its text, what it does under it, and
 // ways to move it up or remove it. Message editors list their buttons with it.
@@ -99,18 +93,13 @@ export function AddButtonSelect<T extends string>({
   onAdd: (value: T) => void
 }) {
   return (
-    <Select items={items} value={null} onValueChange={(value) => value && onAdd(value as T)}>
-      <SelectTrigger aria-label={label}>
-        <PlusIcon />
-        <SelectValue placeholder={label} />
-      </SelectTrigger>
-      <SelectContent>
-        {items.map((item) => (
-          <SelectItem key={item.value} value={item.value}>
-            {item.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <AppSelect
+      options={items}
+      value={null}
+      onValueChange={onAdd}
+      placeholder={label}
+      aria-label={label}
+      icon={<PlusIcon />}
+    />
   )
 }

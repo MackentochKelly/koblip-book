@@ -21,13 +21,7 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { AppSelect } from "@/components/app-select"
 import { cn } from "@/lib/utils"
 import { IN_APP_KINDS } from "@/types/in-app-notifications"
 import type { AdminNotification, AdminNotifications } from "../api/notifications"
@@ -192,21 +186,12 @@ function FilterSelect({
   onChange: (value: string | undefined) => void
 }) {
   return (
-    <Select
-      items={items}
+    <AppSelect
+      options={items}
       value={value ?? ANY}
-      onValueChange={(next) => onChange(next === ANY || next === null ? undefined : String(next))}
-    >
-      <SelectTrigger className="w-full md:w-auto" aria-label={label}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {items.map((item) => (
-          <SelectItem key={item.value} value={item.value}>
-            {item.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      onValueChange={(next) => onChange(next === ANY ? undefined : next)}
+      className="w-full md:w-auto"
+      aria-label={label}
+    />
   )
 }

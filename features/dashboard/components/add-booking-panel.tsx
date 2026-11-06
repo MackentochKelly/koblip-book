@@ -29,13 +29,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { PhoneInput } from "@/components/phone-input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { AppSelect } from "@/components/app-select"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
@@ -270,48 +264,29 @@ function BookingForm({
       <FieldGroup>
         <Field data-invalid={error("service")}>
           <FieldLabel htmlFor="add-service">{t.service}</FieldLabel>
-          <Select
-            items={services}
+          <AppSelect
+            id="add-service"
+            options={services}
             value={serviceId}
             onValueChange={(value) => {
-              if (!value) return
-              setServiceId(String(value))
+              setServiceId(value)
               setMemberId(ANYONE)
               setAddonIds([])
             }}
-          >
-            <SelectTrigger id="add-service" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {services.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            className="w-full"
+          />
           {invalid === "service" && <FieldError>{t.pickService}</FieldError>}
         </Field>
         {options.team.length > 1 && (
           <Field data-invalid={error("teamMember")}>
             <FieldLabel htmlFor="add-member">{t.with}</FieldLabel>
-            <Select
-              items={members}
+            <AppSelect
+              id="add-member"
+              options={members}
               value={memberId}
-              onValueChange={(value) => value && setMemberId(String(value))}
-            >
-              <SelectTrigger id="add-member" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {members.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={setMemberId}
+              className="w-full"
+            />
             {invalid === "teamMember" && (
               <FieldError>{t.notTheirService}</FieldError>
             )}

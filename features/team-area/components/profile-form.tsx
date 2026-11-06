@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { ExternalLinkIcon, LogOutIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
-import { MultiPick } from "@/components/multi-pick"
+import { AppSelect } from "@/components/app-select"
 import { PhotoField } from "@/components/photo-upload"
 import { Button } from "@/components/ui/button"
 import {
@@ -139,16 +139,20 @@ export function ProfileForm({
           </Field>
           <Field>
             <FieldLabel htmlFor="my-languages">{p.languages}</FieldLabel>
-            <MultiPick
+            <AppSelect
+              multiple
               id="my-languages"
-              items={TEAM_RULES.languages.map((code) => ({
+              options={TEAM_RULES.languages.map((code) => ({
                 value: code,
                 label: languageName(code, t.locale),
+                disabled:
+                  languages.length >= TEAM_RULES.maxLanguages &&
+                  !languages.includes(code),
               }))}
               value={languages}
-              onChange={(next) => setLanguages(next.slice(0, TEAM_RULES.maxLanguages))}
+              onValueChange={setLanguages}
               placeholder={p.optional}
-              empty={p.noLanguage}
+              className="w-full"
             />
           </Field>
           <FieldSet>

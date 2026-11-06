@@ -24,13 +24,7 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { AppSelect } from "@/components/app-select"
 import { Spinner } from "@/components/ui/spinner"
 import { noAutofill } from "@/lib/no-autofill"
 import { cn } from "@/lib/utils"
@@ -200,8 +194,8 @@ export function WhatsappActivityList({
           />
         </form>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:flex">
-          <Select
-            items={messageItems}
+          <AppSelect
+            options={messageItems}
             value={filter.message ?? (filter.automations ? AUTOMATIONS : ANY)}
             onValueChange={(value) =>
               show({
@@ -213,20 +207,11 @@ export function WhatsappActivityList({
                     : (value as ActivityFilter["message"]),
               })
             }
-          >
-            <SelectTrigger className="w-full md:w-auto" aria-label={t.messageFilter}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {messageItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            items={stateItems}
+            className="w-full md:w-auto"
+            aria-label={t.messageFilter}
+          />
+          <AppSelect
+            options={stateItems}
             value={filter.state ?? ANY}
             onValueChange={(value) =>
               show({
@@ -234,18 +219,9 @@ export function WhatsappActivityList({
                 state: value === ANY ? undefined : (value as ActivityFilter["state"]),
               })
             }
-          >
-            <SelectTrigger className="w-full md:w-auto" aria-label={t.stateFilter}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {stateItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            className="w-full md:w-auto"
+            aria-label={t.stateFilter}
+          />
         </div>
       </div>
 

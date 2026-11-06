@@ -40,13 +40,7 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { AppSelect } from "@/components/app-select"
 import {
   Table,
   TableBody,
@@ -321,25 +315,16 @@ export function BookingList({
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">{t.rows}</span>
-                <Select
+                <AppSelect
+                  size="sm"
+                  aria-label={t.rows}
                   value={String(pageSize)}
                   onValueChange={(value) => table.setPageSize(Number(value))}
-                  items={PAGE_SIZES.map((size) => ({
+                  options={PAGE_SIZES.map((size) => ({
                     value: String(size),
                     label: String(size),
                   }))}
-                >
-                  <SelectTrigger size="sm" aria-label={t.rows}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAGE_SIZES.map((size) => (
-                      <SelectItem key={size} value={String(size)}>
-                        {size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </div>
               <span className="tabular-nums">
                 {t.page(pageIndex + 1, Math.max(1, table.getPageCount()))}

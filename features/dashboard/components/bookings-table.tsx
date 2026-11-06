@@ -3,7 +3,6 @@
 import { useState } from "react"
 
 import { DateRangePicker, type DayRangeValue } from "@/components/date-range-picker"
-import { FacetFilter } from "@/components/facet-filter"
 import { FilterChecks, FilterSheet } from "@/components/filter-sheet"
 import { ViewTabs } from "@/components/view-tabs"
 import { SearchField } from "@/components/search-field"
@@ -17,13 +16,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { CalendarDaysIcon, XIcon } from "@/components/ui/icons"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { AppSelect } from "@/components/app-select"
 import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import {
@@ -127,27 +120,16 @@ export function BookingsTable({
             {/* A phone picks the status here, a computer from tabs. */}
             <FieldSet>
               <FieldLegend variant="label">{t.status}</FieldLegend>
-              <Select
+              <AppSelect
                 value={filters.status}
-                onValueChange={(status) => {
-                  if (status) set({ status })
-                }}
-                items={statusTabs.map((tab) => ({
+                onValueChange={(status) => set({ status })}
+                options={statusTabs.map((tab) => ({
                   value: tab.id,
                   label: tab.label,
                 }))}
-              >
-                <SelectTrigger aria-label={t.status} className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusTabs.map((tab) => (
-                    <SelectItem key={tab.id} value={tab.id}>
-                      {tab.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                aria-label={t.status}
+                className="w-full"
+              />
             </FieldSet>
             <FieldSet>
               <FieldLegend variant="label">{t.dates}</FieldLegend>
@@ -189,19 +171,23 @@ export function BookingsTable({
             choices={rangeChoices}
           />
           {services.length > 1 && (
-            <FacetFilter
-              label={t.services}
+            <AppSelect
+              multiple
               options={serviceOptions}
               value={filters.serviceIds}
-              onChange={(serviceIds) => set({ serviceIds })}
+              onValueChange={(serviceIds) => set({ serviceIds })}
+              placeholder={t.services}
+              aria-label={t.services}
             />
           )}
           {hasTeam && (
-            <FacetFilter
-              label={t.team}
+            <AppSelect
+              multiple
               options={teamOptions}
               value={filters.teamIds}
-              onChange={(teamIds) => set({ teamIds })}
+              onValueChange={(teamIds) => set({ teamIds })}
+              placeholder={t.team}
+              aria-label={t.team}
             />
           )}
           {filtered && (

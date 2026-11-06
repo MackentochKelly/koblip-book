@@ -15,7 +15,6 @@ import { toast } from "sonner"
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Button } from "@/components/ui/button"
-import { MultiPick } from "@/components/multi-pick"
 import { useShowFirst } from "@/hooks/use-show-first"
 import {
   DropdownMenu,
@@ -47,13 +46,7 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { AppSelect } from "@/components/app-select"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { BOOKING_RULES } from "@/lib/booking-rules"
@@ -432,22 +425,13 @@ function ExtrasForm({
         </Field>
         <Field>
           <FieldLabel htmlFor="extras-choice">{t.customersPick}</FieldLabel>
-          <Select
-            items={choices}
+          <AppSelect
+            id="extras-choice"
+            options={choices}
             value={choice}
-            onValueChange={(value) => value && setChoice(String(value))}
-          >
-            <SelectTrigger id="extras-choice" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {choices.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onValueChange={setChoice}
+            className="w-full"
+          />
         </Field>
 
         <FieldSet>
@@ -529,27 +513,15 @@ function ExtrasForm({
                     />
                   </Field>
                   <Field>
-                    <Select
-                      items={minutesItems}
+                    <AppSelect
+                      options={minutesItems}
                       value={option.minutes}
-                      onValueChange={(value) =>
-                        value && update(option.key, { minutes: String(value) })
+                      onValueChange={(minutes) =>
+                        update(option.key, { minutes })
                       }
-                    >
-                      <SelectTrigger
-                        aria-label={t.optionTime(index + 1)}
-                        className="w-full"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {minutesItems.map((item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      aria-label={t.optionTime(index + 1)}
+                      className="w-full"
+                    />
                   </Field>
                 </div>
               </div>
@@ -590,15 +562,16 @@ function ExtrasForm({
         {services.length > 0 && (
           <Field>
             <FieldLabel htmlFor="extras-services">{t.offeredWith}</FieldLabel>
-            <MultiPick
+            <AppSelect
+              multiple
               id="extras-services"
-              items={services.map((service) => ({
+              options={services.map((service) => ({
                 value: service.id,
                 label: service.name,
               }))}
               value={serviceIds}
-              onChange={setServiceIds}
-              empty={c.noMatch}
+              onValueChange={setServiceIds}
+              className="w-full"
             />
           </Field>
         )}
