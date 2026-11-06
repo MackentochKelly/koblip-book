@@ -51,6 +51,14 @@ test("the hello comes from the model, asked in the owner's language", async () =
   answers({ greeting: "Hola" })
   await writeGreeting({ ...CONTEXT, language: "es" })
   expect(promptOf()).toContain("Spanish")
+  create.mockReset()
+  answers({ greeting: "Olá" })
+  await writeGreeting({ ...CONTEXT, language: "pt" })
+  expect(promptOf()).toContain("Write in Brazilian Portuguese, using você")
+  create.mockReset()
+  answers({ greeting: "Bonjour" })
+  await writeGreeting({ ...CONTEXT, language: "fr" })
+  expect(promptOf()).toContain("Write in French, using vous")
 })
 
 test("a hello too long, empty, or not JSON is no hello", async () => {

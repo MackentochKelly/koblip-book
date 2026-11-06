@@ -900,7 +900,7 @@ test("spanish context tells the model to reply in spanish", async () => {
   const body = create.mock.calls[0]?.[0] as {
     messages: { content: string }[]
   }
-  expect(body.messages[1]?.content).toContain("Responde en español.")
+  expect(body.messages[1]?.content).toContain("Reply in Spanish.")
 })
 
 test("spanish context asks for the server's lines in spanish", async () => {

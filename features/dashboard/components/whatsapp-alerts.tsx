@@ -21,6 +21,7 @@ import { languageOf } from "@/lib/page-language"
 import { saveNotificationSettings } from "../api/notification-actions"
 import type { NotificationMessage, NotificationSettings } from "../types/notifications"
 import type { EditorLimits } from "@/components/message-editor"
+import type { BookingField, TemplateLanguage } from "../utils/booking-templates"
 import { isCustomerMessage } from "../utils/customer-messages"
 import { WhatsappMessageList } from "./whatsapp-message-list"
 
@@ -31,11 +32,13 @@ export function WhatsappAlerts({
   messages,
   settings,
   limits,
+  examples,
 }: {
   businessId: string
   messages: NotificationMessage[]
   settings: NotificationSettings
   limits: EditorLimits
+  examples: Record<TemplateLanguage, Record<BookingField, string>>
 }) {
   const t = useTranslations("owner.whatsapp")
   const locale = useLocale()
@@ -102,6 +105,7 @@ export function WhatsappAlerts({
       <WhatsappMessageList
         businessId={businessId}
         limits={limits}
+        examples={examples}
         messages={messages.filter((item) => !isCustomerMessage(item.message))}
       />
     </div>

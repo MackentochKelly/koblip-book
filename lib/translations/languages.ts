@@ -12,10 +12,12 @@ export const TRANSLATION_LANGUAGES: readonly TranslationLanguage[] =
   )
 
 // Google's code for each language
-// (https://docs.cloud.google.com/translate/docs/languages). Portuguese is
-// "pt-BR" and French "fr-FR" once they join the page languages (G8).
+// (https://docs.cloud.google.com/translate/docs/languages): Brazilian
+// Portuguese and France French (docs/plans/translations.md, Language scope).
 export const GOOGLE_LANGUAGE_CODES: Record<TranslationLanguage, string> = {
   es: "es",
+  pt: "pt-BR",
+  fr: "fr-FR",
 }
 
 export function isTranslationLanguage(

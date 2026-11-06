@@ -117,6 +117,7 @@ test("the queue retries after the admin's waits", async () => {
     scope: "business",
     businessId: "biz",
     items: [{ key: "s1:service.name", module: "service.name", text: "Haircut" }],
+    languages: ["es"],
   })
   const down: Translator = {
     name: "google",
@@ -153,6 +154,7 @@ test("the queue keeps to the admin's daily limit per business", async () => {
     scope: "business",
     businessId: "biz",
     items: [{ key: "s1:service.description", module: "service.description", text: "x".repeat(1_200) }],
+    languages: ["es"],
   })
   const google: Translator = {
     name: "google",

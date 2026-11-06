@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { CircleCheckIcon, PlusIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
+import { AppSelect } from "@/components/app-select"
 import { AddButtonSelect, ButtonField } from "@/components/button-fields"
 import { MetaStatusBadge } from "@/components/meta-status-badge"
 import { ResponsivePanel } from "@/components/responsive-panel"
@@ -27,15 +28,17 @@ import { Textarea } from "@/components/ui/textarea"
 import { WhatsappPreview } from "@/components/whatsapp-preview"
 import { CONTROL_SIZE } from "@/lib/control-size"
 import type { NotificationRules } from "@/lib/notification-rules"
+import { LANGUAGE_NAMES, PAGE_LANGUAGES, type PageLanguage } from "@/lib/page-language"
 import { cn } from "@/lib/utils"
 import type { ButtonAction, TemplateReview } from "@/types/whatsapp"
 
 const EDITOR_FORM = "message-editor"
-const LANGUAGES = ["en", "es"] as const
+// A message is written in every page language, each its own template.
+const LANGUAGES = PAGE_LANGUAGES
 // The message's two ways out, each on its own tab.
 type Part = "normal" | "template"
 
-export type EditorLanguage = (typeof LANGUAGES)[number]
+export type EditorLanguage = PageLanguage
 
 // The limits the editor shows, from the rules (the admin may change them;
 // lib/platform-settings.ts).
@@ -77,8 +80,8 @@ export type EditorResult = { ok: true } | { ok: false; problem: string | null }
 
 export type MessageEditorLabels = {
   edit: (name: string) => string
-  english: string
-  spanish: string
+  // The language picker's name; each language is named in itself.
+  language: string
   metaReason: string
   review: Record<TemplateReview, string>
   readOnly: string
@@ -305,27 +308,21 @@ export function MessageEditor({
             {!editable && <FieldDescription>{t.readOnly}</FieldDescription>}
 
             <Field>
-              {/* The words below are in this language: a small switch on
-                  the first field's row, not a second row of tabs. It sits
-                  outside the read-only fieldset, so it always switches. */}
+              {/* The words below are in this language: a small select on
+                  the first field's row (four languages don't fit as tabs
+                  on a phone). It sits outside the read-only fieldset, so
+                  it always switches. */}
               <div className="flex items-center justify-between gap-2">
                 <FieldLabel htmlFor="message-header">{t.title}</FieldLabel>
-                <Tabs
+                <AppSelect
+                  aria-label={t.language}
                   value={language}
                   onValueChange={(value) => {
-                    setLanguage(value as EditorLanguage)
+                    setLanguage(value)
                     setProblem(null)
                   }}
-                >
-                  <TabsList className={CONTROL_SIZE.tabsList}>
-                    <TabsTrigger value="en" className={CONTROL_SIZE.tab}>
-                      {t.english}
-                    </TabsTrigger>
-                    <TabsTrigger value="es" className={CONTROL_SIZE.tab}>
-                      {t.spanish}
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                  options={LANGUAGES.map((value) => ({ value, label: LANGUAGE_NAMES[value] }))}
+                />
               </div>
               <Input
                 id="message-header"

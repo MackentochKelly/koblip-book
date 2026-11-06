@@ -7,9 +7,11 @@ import {
   useState,
   useSyncExternalStore,
 } from "react"
+import { useLocale } from "next-intl"
 
 import { useWakeLock } from "@/hooks/use-wake-lock"
 import { audioLevel } from "@/lib/audio-level"
+import { languageOf } from "@/lib/page-language"
 import { VOICE_RULES } from "@/lib/voice-rules"
 import type { AnswerListener, CardAnswer } from "../types"
 import {
@@ -86,6 +88,8 @@ export function useLiveVoice({
   onError: (error: LiveVoiceError) => void
 }) {
   const supported = useLiveVoiceSupported()
+  // The app's language, which a talk hears and speaks in from its start.
+  const language = languageOf(useLocale())
   // "off" when no session is running.
   const [state, setState] = useState<LiveVoiceState | "off">("off")
   // What Meta hears so far in this turn; empty between turns.
@@ -172,6 +176,7 @@ export function useLiveVoice({
       openSpeech: ({ onAudio, onDone, onError }) =>
         openSpeech({
           businessId,
+          language,
           onAudio: (chunk, words) => {
             speaker.play(chunk, words)
             onAudio()
@@ -262,7 +267,7 @@ export function useLiveVoice({
     microphone.connect(capture)
     microphone.connect(analyser)
     void context.resume()
-  }, [businessId])
+  }, [businessId, language])
 
   // Ending stops listening and speaking, and any answer still being
   // written (it stays in the chat as far as it got).

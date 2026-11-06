@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import type { DateRange } from "react-day-picker"
-import { es } from "react-day-picker/locale"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -13,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
+import { dayPickerLocale } from "@/lib/day-picker-locale"
 import {
   dateFromDay,
   dayFromDate,
@@ -100,7 +100,7 @@ export function DateRangePicker({
           <Separator className="md:hidden" />
           <Calendar
             mode="range"
-            locale={locale.startsWith("es") ? es : undefined}
+            locale={dayPickerLocale(locale)}
             defaultMonth={dateFromDay(value.from)}
             selected={
               draft ?? {

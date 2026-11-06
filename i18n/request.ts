@@ -47,8 +47,8 @@ async function wordsIn(language: PageLanguage) {
 export default getRequestConfig(async ({ locale }) => {
   if (locale) {
     const language = languageOf(locale)
-    // A region only for a language the app has ("es-ES"); anything else
-    // reads as the language's default, never French formats on English.
+    // A region only for a language the app has ("es-ES", "pt-PT"); anything
+    // else reads as the language's default, never German formats on English.
     const ownRegion =
       locale.includes("-") && isPageLanguage(locale.split("-")[0].toLowerCase())
     return {

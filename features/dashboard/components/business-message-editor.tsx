@@ -7,16 +7,17 @@ import {
   type EditorLimits,
   type MessageEditorItem,
 } from "@/components/message-editor"
+import { fillFields } from "@/lib/message-fields"
 import { saveMessageWording, submitMessageToMeta } from "../api/notification-actions"
 import type { NotificationMessage } from "../types/notifications"
 import {
   TEMPLATE_LANGUAGES,
   type BookingField,
+  type TemplateLanguage,
   fieldsForOwner,
   fieldsFromOwner,
   messageButtonActions,
   messageFields,
-  withExamples,
 } from "../utils/booking-templates"
 
 type Problem = keyof Messages["owner"]["whatsapp"]["problems"]
@@ -28,11 +29,14 @@ export function BusinessMessageEditor({
   businessId,
   item,
   limits,
+  examples,
   onClose,
 }: {
   businessId: string
   item: NotificationMessage | null
   limits: EditorLimits
+  // Each language's sample values, for the preview (message-words.ts).
+  examples: Record<TemplateLanguage, Record<BookingField, string>>
   onClose: () => void
 }) {
   const t = useTranslations("owner.whatsapp")
@@ -84,8 +88,7 @@ export function BusinessMessageEditor({
       item={editorItem}
       labels={{
         edit: (name) => t("edit", { name: name.toLowerCase() }),
-        english: t("english"),
-        spanish: t("spanish"),
+        language: t("language"),
         metaReason: t("metaReason"),
         review: {
           missing: t("review.missing"),
@@ -120,7 +123,7 @@ export function BusinessMessageEditor({
         failed: t("failed"),
       }}
       limits={limits}
-      preview={(body, language) => withExamples(fieldsFromOwner(body, fields), language)}
+      preview={(body, language) => fillFields(fieldsFromOwner(body, fields), examples[language])}
       onSave={async (language, draft) => {
         if (!item) return { ok: false, problem: null }
         const result = await saveMessageWording(

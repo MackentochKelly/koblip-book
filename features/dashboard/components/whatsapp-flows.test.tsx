@@ -35,6 +35,7 @@ vi.mock("@/components/flow-canvas", () => ({
 
 const { WhatsappFlows } = await import("./whatsapp-flows")
 const { welcomeDefaults } = await import("../utils/automation-defaults")
+const { WELCOME_WORDS } = await import("../api/message-words.captured")
 type Automation = import("../types/automations").Automation
 
 afterEach(() => {
@@ -46,7 +47,7 @@ const welcome = (on = false): Automation => ({
   id: "a1",
   trigger: "firstMessage",
   on,
-  ...welcomeDefaults(),
+  ...welcomeDefaults(WELCOME_WORDS),
   isDefault: true,
   updatedAt: "2026-10-31T00:00:00.000Z",
 })
@@ -115,7 +116,7 @@ test("a refused save goes back and says why", async () => {
   expect(toggle.getAttribute("aria-checked")).toBe("false")
 })
 
-test("the card opens the editor; a save sends both languages", async () => {
+test("the card opens the editor; a save sends every language", async () => {
   actions.saveAutomation.mockResolvedValue({ ok: true })
   show(welcome())
   fireEvent.click(screen.getByRole("button", { name: "Edit welcome" }))
@@ -136,7 +137,8 @@ test("the card opens the editor; a save sends both languages", async () => {
     "welcome-booking",
     "welcome-handoff",
   ])
-  expect(input.buttons[1].label).toEqual({ en: "Book", es: "Reservar" })
+  // Portuguese and French show the English until Google's words come.
+  expect(input.buttons[1].label).toEqual({ en: "Book", es: "Reservar", pt: "Book now", fr: "Book now" })
   expect(input.wording.es.body).toContain("{business}")
 })
 

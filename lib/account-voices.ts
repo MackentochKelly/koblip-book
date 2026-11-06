@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm"
 import { unstable_cache } from "next/cache"
 import { db } from "@/lib/db"
 import { ownerVoices } from "@/lib/db/schema"
+import { DEFAULT_LOCALES, isPageLanguage } from "@/lib/page-language"
 import { VOICE_RULES } from "@/lib/voice-rules"
 
 export interface AccountVoice {
@@ -18,14 +19,27 @@ export interface AccountVoice {
   previews: Record<string, string>
 }
 
+// How well a verified language's preview fits: the live speaking model's
+// first, then the app's own variety of the language (Brazilian Portuguese,
+// docs/plans/translations.md Language scope: DEFAULT_LOCALES).
+function previewFit(item: ElevenLabs.VerifiedVoiceLanguageResponseModel): number {
+  const ownLocale =
+    isPageLanguage(item.language) &&
+    item.locale?.toLowerCase() === DEFAULT_LOCALES[item.language].toLowerCase()
+  return (item.modelId === VOICE_RULES.speakModel ? 2 : 0) + (ownLocale ? 1 : 0)
+}
+
 function previewsOf(
   languages: ElevenLabs.VerifiedVoiceLanguageResponseModel[]
 ): Record<string, string> {
   const previews: Record<string, string> = {}
+  const fits: Record<string, number> = {}
   for (const item of languages) {
     if (!item.previewUrl) continue
-    if (item.modelId === VOICE_RULES.speakModel || !previews[item.language]) {
+    const fit = previewFit(item)
+    if (!(item.language in previews) || fit > fits[item.language]) {
       previews[item.language] = item.previewUrl
+      fits[item.language] = fit
     }
   }
   return previews

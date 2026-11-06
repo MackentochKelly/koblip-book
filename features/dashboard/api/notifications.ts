@@ -28,6 +28,7 @@ import {
 } from "../utils/booking-templates"
 import { koblipMessages } from "./chat-templates"
 import { chatConnectionUsable } from "./chat-oauth"
+import { allBookWords } from "./message-words"
 
 // The business's WhatsApp notification settings, or the defaults as the
 // admin set them (lib/platform-settings.ts).
@@ -81,7 +82,7 @@ function review(
 // own the business sends Koblip's ready-made set, Book's wording, which only
 // turns on or off (K4, D26), and Meta's review is that of Koblip's set (D36).
 export async function notificationMessagesFor(businessId: string): Promise<NotificationMessage[]> {
-  const [settings, texts, made, koblip, [connection]] = await Promise.all([
+  const [settings, texts, made, koblip, [connection], words] = await Promise.all([
     notificationSettingsFor(businessId),
     db.select().from(notificationTexts).where(eq(notificationTexts.businessId, businessId)),
     db.select().from(chatTemplates).where(eq(chatTemplates.businessId, businessId)),
@@ -91,6 +92,7 @@ export async function notificationMessagesFor(businessId: string): Promise<Notif
       .from(chatConnections)
       .where(eq(chatConnections.businessId, businessId))
       .limit(1),
+    allBookWords(),
   ])
   const editable = !!connection && chatConnectionUsable(connection)
   return BOOKING_MESSAGES.map((message) => ({
@@ -115,8 +117,8 @@ export async function notificationMessagesFor(businessId: string): Promise<Notif
         const text = {
           wording: mine
             ? { header: mine.header, body: mine.body, footer: mine.footer }
-            : defaultWording(message, language),
-          buttons: mine?.buttons ?? defaultButtons(message, language),
+            : defaultWording(message, words[language]),
+          buttons: mine?.buttons ?? defaultButtons(message, words[language]),
         }
         const state = mine && !template?.submitted ? "draft" : review(template?.status, template?.submitted, text)
         return [
@@ -127,7 +129,7 @@ export async function notificationMessagesFor(businessId: string): Promise<Notif
             approved: template?.status === "approved" && template.submitted ? {
               wording: { header: template.submitted.header, body: template.submitted.body, footer: template.submitted.footer },
               buttons: template.submitted.buttons,
-              preview: withExamples(template.submitted.body, language),
+              preview: withExamples(template.submitted.body, words[language]),
             } : null,
             review: state,
             reason: state === "rejected" ? template?.reason ?? null : null,

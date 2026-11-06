@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { es } from "react-day-picker/locale"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -11,6 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { dayPickerLocale } from "@/lib/day-picker-locale"
 import {
   dateFromDay,
   dayFromDate,
@@ -64,7 +64,7 @@ export function DatePicker({
         <Calendar
           mode="single"
           required
-          locale={locale.startsWith("es") ? es : undefined}
+          locale={dayPickerLocale(locale)}
           selected={dateFromDay(value)}
           defaultMonth={dateFromDay(value)}
           startMonth={min ? dateFromDay(min) : undefined}

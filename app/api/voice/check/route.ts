@@ -1,7 +1,7 @@
 import { checkAssistantRateLimit } from "@/features/assistant/api/rate-limit"
 import { ownedBusiness } from "@/features/dashboard/api/owned-business"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
-import { ASSISTANT_RULES } from "@/lib/assistant-rules"
+import { ASSISTANT_LANGUAGES, ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { getSession } from "@/lib/dal"
 import { VOICE_HANDSHAKE } from "@/lib/meta-ai"
 
@@ -36,12 +36,12 @@ export async function GET(request: Request) {
   }
 
   // 4. The owner's language, read once from the cookie (never the body),
-  // becomes the transcription language bias.
+  // becomes the transcription language bias, by Meta's name for it.
   const language = await getOwnerLanguage()
   return Response.json({
     handshake: {
       ...VOICE_HANDSHAKE,
-      languageBias: [language === "es" ? "Spanish" : "English"],
+      languageBias: [ASSISTANT_LANGUAGES[language].hearing],
     },
     maxSessionSeconds: ASSISTANT_RULES.maxVoiceSessionSeconds,
     maxBufferedBytes: ASSISTANT_RULES.voiceMaxBufferedBytes,

@@ -43,6 +43,7 @@ import type {
   OwnerFreeTimesInput,
 } from "@/types/owner-booking"
 import { noAutofill } from "@/lib/no-autofill"
+import { languageOf } from "@/lib/page-language"
 import type { OwnerServiceCategory } from "../types"
 import { serviceSelectOptions } from "../utils/service-options"
 import { BookingWhen, firstFreeDay, useFreeTimes } from "./booking-when"
@@ -270,7 +271,7 @@ function BookingForm({
           note: note.trim() || null,
           allowConflict: false,
           whatsappOptIn: options.whatsapp && !!phone.trim() && whatsappOptIn,
-          language: locale.startsWith("es") ? "es" : "en",
+          language: languageOf(locale),
         })
       }}
     >

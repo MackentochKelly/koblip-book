@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm/sqlite-core"
 import { sql } from "drizzle-orm"
 import { CANCEL_REASONS } from "../booking-rules"
+import { PAGE_LANGUAGES, type PageLanguage } from "../page-language"
 import { POLICY_KINDS, POLICY_POINT_ICONS } from "../policy-rules"
 import { DEFAULT_THEME, type ThemeId } from "../theme-rules"
 import {
@@ -426,7 +427,7 @@ export const bookings = sqliteTable(
     // The customer agreed to booking messages on WhatsApp (Meta requires
     // opt-in), and the language they booked in.
     whatsappOptIn: integer({ mode: "boolean" }).notNull().default(false),
-    language: text({ enum: ["en", "es"] }),
+    language: text({ enum: PAGE_LANGUAGES }),
     // How many times the owner moved it: each move gets its own "Booking
     // changed" message and reminders (D5).
     moves: integer().notNull().default(0),
@@ -712,7 +713,7 @@ export const chatTemplates = sqliteTable(
         "ownerFailed",
       ],
     }).notNull(),
-    language: text({ enum: ["en", "es"] }).notNull(),
+    language: text({ enum: PAGE_LANGUAGES }).notNull(),
     chatTemplateId: text().notNull(),
     status: text().notNull(),
     // Meta's words when it refused the template.
@@ -750,7 +751,7 @@ export const koblipChatTemplates = sqliteTable(
         "ownerFailed",
       ],
     }).notNull(),
-    language: text({ enum: ["en", "es"] }).notNull(),
+    language: text({ enum: PAGE_LANGUAGES }).notNull(),
     chatTemplateId: text().notNull(),
     status: text().notNull(),
     // Meta's words when it refused the template.
@@ -780,7 +781,7 @@ export const koblipChatTemplates = sqliteTable(
     retired: text({ mode: "json" }).$type<{
       chatTemplateId: string
       name: string
-      language: "en" | "es"
+      language: PageLanguage
     }[]>(),
     ...timestamps(),
   },
@@ -796,7 +797,7 @@ export const notificationSettings = sqliteTable("notification_settings", {
   // Where the owner's "New booking" alert goes (E.164), or none.
   ownerPhone: text(),
   // The language the owner's alert goes in: the one they use Book in.
-  ownerLanguage: text({ enum: ["en", "es"] }).notNull().default("en"),
+  ownerLanguage: text({ enum: PAGE_LANGUAGES }).notNull().default("en"),
   // Minutes before the visit, longest first.
   reminders: text({ mode: "json" }).$type<number[]>().notNull(),
   quietStart: text().notNull(),
@@ -845,7 +846,7 @@ export const notificationTexts = sqliteTable(
         "ownerFailed",
       ],
     }).notNull(),
-    language: text({ enum: ["en", "es"] }).notNull(),
+    language: text({ enum: PAGE_LANGUAGES }).notNull(),
     header: text().notNull(),
     body: text().notNull(),
     footer: text().notNull(),
@@ -872,7 +873,7 @@ export const koblipNotificationTexts = sqliteTable(
         "ownerFailed",
       ],
     }).notNull(),
-    language: text({ enum: ["en", "es"] }).notNull(),
+    language: text({ enum: PAGE_LANGUAGES }).notNull(),
     header: text().notNull(),
     body: text().notNull(),
     footer: text().notNull(),
@@ -1195,6 +1196,9 @@ export const googleCalendarInvites = sqliteTable(
 )
 
 
+// English and Spanish always; a later page language once it is saved.
+type SavedInLanguages<T> = Record<"en" | "es", T> & Partial<Record<PageLanguage, T>>
+
 // General automation data; a business's built-in welcome is one keyed row.
 export const automations = sqliteTable("automations", {
   id: id(),
@@ -1202,14 +1206,17 @@ export const automations = sqliteTable("automations", {
   key: text().notNull(),
   trigger: text({ enum: ["firstMessage"] }).notNull(),
   on: integer({ mode: "boolean" }).notNull().default(false),
-  wording: text({ mode: "json" }).$type<Record<"en" | "es", {
+  // Rows saved before Portuguese and French (G8 in
+  // docs/plans/translations.md) have English and Spanish only; the others
+  // are read from Book's words until the owner saves them.
+  wording: text({ mode: "json" }).$type<SavedInLanguages<{
     body: string
     handoffReply: string
     servicesIntro: string
   }>>().notNull(),
   buttons: text({ mode: "json" }).$type<{
     id: string
-    label: Record<"en" | "es", string>
+    label: SavedInLanguages<string>
     action: { type: "bookingLink" } | { type: "servicesList" } | { type: "handoff" }
   }[]>().notNull(),
   isDefault: integer({ mode: "boolean" }).notNull().default(true),
@@ -1228,7 +1235,7 @@ export const automationRuns = sqliteTable("automation_runs", {
   eventId: text(),
   customerPhone: text().notNull(),
   customerName: text(),
-  language: text({ enum: ["en", "es"] }).notNull(),
+  language: text({ enum: PAGE_LANGUAGES }).notNull(),
   step: text({ enum: ["welcome", "bookingLink", "servicesList", "serviceLink", "handoff"] }).notNull(),
   state: text({ enum: ["sent", "failed", "skipped"] }).notNull(),
   reason: text(),

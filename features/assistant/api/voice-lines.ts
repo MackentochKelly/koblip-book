@@ -1,6 +1,10 @@
 import "server-only"
 
-import { ASSISTANT_NAME, ASSISTANT_RULES } from "@/lib/assistant-rules"
+import {
+  ASSISTANT_LANGUAGES,
+  ASSISTANT_NAME,
+  ASSISTANT_RULES,
+} from "@/lib/assistant-rules"
 import { META_TALK_MODEL, getMetaAiClient } from "@/lib/meta-ai"
 import type { PageLanguage } from "@/lib/page-language"
 import { VOICE_RULES } from "@/lib/voice-rules"
@@ -25,8 +29,16 @@ export interface VoiceLinesContext {
   language: PageLanguage
 }
 
+// The language the lines are written in, and how they talk to the owner.
+const WRITTEN_IN: Record<PageLanguage, string> = {
+  en: ASSISTANT_LANGUAGES.en.name,
+  es: "neutral Spanish that sounds right in every country, using tú and never usted",
+  pt: `${ASSISTANT_LANGUAGES.pt.name}, using você`,
+  fr: `${ASSISTANT_LANGUAGES.fr.name}, using vous`,
+}
+
 const styleOf = (language: PageLanguage) =>
-  `Write in ${language === "es" ? "neutral Spanish that sounds right in every country, using tú and never usted" : "English"}, with normal punctuation: the most ordinary everyday words people really say out loud. NEVER slang, and NEVER stiff or robotic phrases.`
+  `Write in ${WRITTEN_IN[language]}, with normal punctuation: the most ordinary everyday words people really say out loud. NEVER slang, and NEVER stiff or robotic phrases.`
 
 // One call for a JSON answer. Null when it fails or isn't JSON.
 async function writeJson(

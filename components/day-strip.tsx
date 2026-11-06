@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { es } from "react-day-picker/locale"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -12,6 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { dayPickerLocale } from "@/lib/day-picker-locale"
 import {
   addDaysTo,
   dateFromDay,
@@ -126,7 +126,7 @@ export function DayStrip({
           <Calendar
             mode="single"
             required
-            locale={locale.startsWith("es") ? es : undefined}
+            locale={dayPickerLocale(locale)}
             selected={dateFromDay(value)}
             onSelect={(date) => {
               onChange(dayFromDate(date))

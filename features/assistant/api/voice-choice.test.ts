@@ -23,7 +23,9 @@ test("lists the voices with a page-language preview, and the owner's own", async
   vi.mocked(getAccountVoices).mockResolvedValue([
     voice("en1", { en: "https://x/en1-en.mp3" }),
     voice("both", { en: "https://x/both-en.mp3", es: "https://x/both-es.mp3" }),
+    voice("pt1", { pt: "https://x/pt1-pt.mp3" }),
     voice("fr1", { fr: "https://x/fr1-fr.mp3" }),
+    voice("it1", { it: "https://x/it1-it.mp3" }),
     voice("mine", { de: "https://x/mine-de.mp3" }),
   ])
   vi.mocked(getOwnerVoiceId).mockResolvedValue("mine")
@@ -32,6 +34,8 @@ test("lists the voices with a page-language preview, and the owner's own", async
   expect(choice.voices?.map((item) => item.voiceId)).toEqual([
     "en1",
     "both",
+    "pt1",
+    "fr1",
     "mine",
   ])
   // Only what the picker shows crosses to the browser.

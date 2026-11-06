@@ -23,7 +23,7 @@ import {
   user,
 } from "@/lib/db/schema"
 import { seal } from "@/lib/secret-box"
-import { BOOKING_MESSAGES, defaultWording } from "../utils/booking-templates"
+import { BOOKING_MESSAGES, TEMPLATE_LANGUAGES, defaultWording } from "../utils/booking-templates"
 
 vi.mock("server-only", () => ({}))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
@@ -34,6 +34,10 @@ vi.mock("@/lib/dal", () => ({
 // A message's length of time comes from the app's words, English here.
 const { registerEnglishWords } = await import("@/lib/translations/interface-words")
 registerEnglishWords((await import("@/i18n/messages")).default)
+const { allBookWords } = await import("./message-words")
+// Book's words as the server reads them: Spanish from the migrated
+// database, Portuguese and French in English until Google's arrive.
+let bookWords: Awaited<ReturnType<typeof allBookWords>>
 
 const { runNotifications } = await import("./notification-sender")
 const { applyChatEvent } = await import("./chat-events")
@@ -106,6 +110,7 @@ beforeAll(async () => {
   vi.stubGlobal("fetch", chat)
   const { migrate } = await import("drizzle-orm/libsql/migrator")
   await migrate(db, { migrationsFolder: "drizzle" })
+  bookWords = await allBookWords()
   closeDb = () => db.$client.close()
   await db.insert(user).values({ id: "u1", name: "Owner", email: "owner@example.com", emailVerified: false })
   await db.insert(businesses).values({
@@ -161,7 +166,8 @@ beforeEach(async () => {
   })
   await db.insert(chatTemplates).values(
     BOOKING_MESSAGES.flatMap((message) =>
-      (["en", "es"] as const).map((language) => ({
+      // The own number needs every message approved in every language (K3).
+      TEMPLATE_LANGUAGES.map((language) => ({
         businessId: "biz",
         message,
         language,
@@ -399,7 +405,7 @@ test("buttons too long for a normal message: the approved template carries them"
     businessId: "biz",
     message: "reminder",
     language: "en",
-    ...defaultWording("reminder", "en"),
+    ...defaultWording("reminder", bookWords.en),
     buttons: [{ action: "confirm", label: "Yes, I will be there!" }],
   })
   expect(await soonInWindow()).toMatchObject({ messageType: "template", template_id: "t-reminder-en" })
@@ -915,7 +921,7 @@ test("Koblip's monthly limit keeps edited long-button wording free inside the wi
     sender: "koblip",
     sentAt: later(-60).toISOString(),
   })
-  const approvedWording = defaultWording("confirmed", "es")
+  const approvedWording = defaultWording("confirmed", bookWords.es)
   await db.update(koblipChatTemplates).set({ submitted: { ...approvedWording, buttons: [] } }).where(
     and(eq(koblipChatTemplates.message, "confirmed"), eq(koblipChatTemplates.language, "es"))
   )

@@ -42,6 +42,7 @@ import {
   refreshChatTemplates,
   sendableTemplate,
 } from "./chat-templates"
+import { bookWordsFor } from "./message-words"
 import { notificationSettingsFor } from "./notifications"
 import { bookSendReceipt, duringBookSend } from "./automation-state"
 
@@ -574,6 +575,7 @@ async function deliver(
   if (Date.parse(booking.startAt) <= now.getTime()) return { state: "skipped", reason: "late" }
   if (!phone) return { state: "skipped", reason: toOwner ? "noOwnerPhone" : "noPhone" }
   const language: TemplateLanguage = toOwner ? settings.ownerLanguage : booking.language ?? "en"
+  const words = await bookWordsFor(language)
   const at = localDateTime(new Date(booking.startAt), business.timezone)
   const values = bookingValues(
     {
@@ -589,7 +591,7 @@ async function deliver(
       date: at.date,
       time: at.time,
     },
-    language,
+    words,
     await durationWords(language)
   )
 
@@ -598,7 +600,7 @@ async function deliver(
       line,
       phone,
       contactName: booking.customerName,
-      text: thankYouMessage(language, values),
+      text: thankYouMessage(words, values),
       now,
       rules,
     })
@@ -707,7 +709,7 @@ async function sendMessage({
             messageType: "template",
             template_id: approved.chatTemplateId,
             templateName: approved.template.name,
-            languageCode: approved.template.language,
+            languageCode: approved.template.metaLanguage,
             templateVariables: Object.fromEntries(
               approved.template.fields.map((field, index) => [String(index + 1), values[field]])
             ),
@@ -835,7 +837,7 @@ export async function sendTestMessage(
   )
   if (!line || line === "wait") return { state: "skipped", reason: "notConnected" }
   if (!phone) return { state: "skipped", reason: "noOwnerPhone" }
-  const values = exampleValues(settings.ownerLanguage)
+  const values = exampleValues(await bookWordsFor(settings.ownerLanguage))
   if (business) values.business = business.name
   if (business?.address) values.address = business.address
   return sendMessage({

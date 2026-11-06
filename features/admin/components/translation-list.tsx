@@ -34,6 +34,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { noAutofill } from "@/lib/no-autofill"
+import { LANGUAGE_NAMES } from "@/lib/page-language"
 import { TRANSLATION_LANGUAGES } from "@/lib/translations/languages"
 import {
   TRANSLATION_STATUSES,
@@ -125,9 +126,10 @@ export function TranslationList({
   const groupLabel = scope === "business" ? t("businessFilter") : t("pageFilter")
   const languageItems = [
     { value: ANY, label: t("allLanguages") },
+    // Each language named in itself, as in every language menu.
     ...TRANSLATION_LANGUAGES.map((language) => ({
       value: language,
-      label: words(`languages.${language}`),
+      label: LANGUAGE_NAMES[language],
     })),
   ]
   const stateItems = [

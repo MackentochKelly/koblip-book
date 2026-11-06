@@ -1,6 +1,25 @@
+import type { PageLanguage } from "./page-language"
+
 // The assistant's own name: what it calls itself and answers to, what the
 // screen calls it, and the word the live hearing listens out for.
 export const ASSISTANT_NAME = "Koblip"
+
+// The languages the assistant writes and talks in: one row per page
+// language (docs/plans/translations.md, G8). Meta AI writes its answers in
+// the language itself, so nothing here is translated:
+// - name: the language as the prompts name it.
+// - hearing: the name Meta's live hearing (muse-voice-transcribe-1.0) takes
+//   in languageBias; each is in its list of 25 languages
+//   (https://dev.meta.ai/docs/speech-to-text). The speaking model,
+//   ElevenLabs eleven_v4_turbo, speaks all of them
+//   (https://elevenlabs.io/docs/overview/models).
+// A new language needs both checked before its row is added.
+export const ASSISTANT_LANGUAGES = {
+  en: { name: "English", hearing: "English" },
+  es: { name: "Spanish", hearing: "Spanish" },
+  pt: { name: "Brazilian Portuguese", hearing: "Portuguese" },
+  fr: { name: "French", hearing: "French" },
+} as const satisfies Record<PageLanguage, { name: string; hearing: string }>
 
 // The model name lives only in lib/meta-ai.ts (META_TEXT_MODEL).
 export const ASSISTANT_RULES = {

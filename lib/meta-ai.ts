@@ -2,6 +2,7 @@ import "server-only"
 import OpenAI from "openai"
 
 import { ASSISTANT_NAME } from "./assistant-rules"
+import type { PageLanguage } from "./page-language"
 
 // The one place the text model name lives.
 export const META_TEXT_MODEL = "muse-spark-1.3"
@@ -30,6 +31,19 @@ export const VOICE_HANDSHAKE = {
   partialMode: "CUMULATIVE",
   keywords: [ASSISTANT_NAME],
 } as const
+
+// The line that has the text model write in the owner's language, for
+// what it suggests in the owner area (services, extras).
+const WRITING_LANGUAGE_LINES: Record<PageLanguage, string> = {
+  en: "Write in English.",
+  es: "Write in Spanish (Latin American, informal tú).",
+  pt: "Write in Brazilian Portuguese (informal você).",
+  fr: "Write in French (France, using vous).",
+}
+
+export function writingLanguageLine(language: PageLanguage): string {
+  return WRITING_LANGUAGE_LINES[language]
+}
 
 let sharedClient: OpenAI | null = null
 

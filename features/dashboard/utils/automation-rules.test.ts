@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { expect, test, vi } from "vitest"
 import { AUTOMATION_RULES, type AutomationRules } from "@/lib/platform-settings"
+import { WELCOME_WORDS } from "../api/message-words.captured"
 import { welcomeDefaults } from "./automation-defaults"
 import { automationProblem, type AutomationMessageInput } from "./automation-rules"
 
@@ -73,7 +74,7 @@ test("list rows are limited to ten across all sections, including with a lower s
 })
 
 test("Book's bilingual defaults and each supported outgoing message pass the same validator", () => {
-  expect(automationProblem(welcomeDefaults(), AUTOMATION_RULES)).toBeNull()
+  expect(automationProblem(welcomeDefaults(WELCOME_WORDS), AUTOMATION_RULES)).toBeNull()
   expect(automationProblem(reply(), AUTOMATION_RULES)).toBeNull()
   expect(automationProblem(link(), AUTOMATION_RULES)).toBeNull()
   expect(automationProblem(list(), AUTOMATION_RULES)).toBeNull()
@@ -81,7 +82,7 @@ test("Book's bilingual defaults and each supported outgoing message pass the sam
 
 test.each([
   { input: { ...reply(), buttons: [] }, field: "buttons" },
-  { input: { ...welcomeDefaults(), buttons: [] }, field: "buttons" },
+  { input: { ...welcomeDefaults(WELCOME_WORDS), buttons: [] }, field: "buttons" },
   { input: { ...list(), sections: [] }, field: "sections" },
   { input: changed(list(), "sections.0.rows", []), field: "sections.0.rows" },
   { input: { ...link(), label: " " }, field: "label" },
@@ -91,16 +92,16 @@ test.each([
 })
 
 test.each(["en", "es"] as const)("saved labels must be distinct in %s, ignoring case and outer spaces", (language) => {
-  const input = welcomeDefaults()
+  const input = welcomeDefaults(WELCOME_WORDS)
   input.buttons[1].label[language] = ` ${input.buttons[0].label[language].toUpperCase()} `
   expect(automationProblem(input, AUTOMATION_RULES)).toEqual({ error: "duplicateLabel", field: `buttons.1.label.${language}` })
 })
 
 test("saved button actions and ids cannot repeat", () => {
-  const sameAction = welcomeDefaults()
+  const sameAction = welcomeDefaults(WELCOME_WORDS)
   sameAction.buttons[1].action = sameAction.buttons[0].action
   expect(automationProblem(sameAction, AUTOMATION_RULES)).toEqual({ error: "badField", field: "buttons.1.action" })
-  const sameId = welcomeDefaults()
+  const sameId = welcomeDefaults(WELCOME_WORDS)
   sameId.buttons[1].id = sameId.buttons[0].id
   expect(automationProblem(sameId, AUTOMATION_RULES)).toEqual({ error: "badField", field: "buttons.1.id" })
 })
@@ -117,16 +118,16 @@ test("row ids must be unique across sections", () => {
 const savedTextCases = (["en", "es"] as const).flatMap((language) => (["body", "handoffReply", "servicesIntro"] as const).map((key) => ({ language, key })))
 test.each(savedTextCases)("saved $language $key accepts only the business field", ({ language, key }) => {
   const field = `wording.${language}.${key}`
-  expect(automationProblem(changed(welcomeDefaults(), field, "Welcome to {business}, we are happy to help."), AUTOMATION_RULES)).toBeNull()
-  expect(automationProblem(changed(welcomeDefaults(), field, "Hello {customer}, we are happy to help."), AUTOMATION_RULES)).toEqual({ error: "badField", field })
-  expect(automationProblem(changed(welcomeDefaults(), field, "Welcome to {business, we can help."), AUTOMATION_RULES)).toEqual({ error: "badField", field })
+  expect(automationProblem(changed(welcomeDefaults(WELCOME_WORDS), field, "Welcome to {business}, we are happy to help."), AUTOMATION_RULES)).toBeNull()
+  expect(automationProblem(changed(welcomeDefaults(WELCOME_WORDS), field, "Hello {customer}, we are happy to help."), AUTOMATION_RULES)).toEqual({ error: "badField", field })
+  expect(automationProblem(changed(welcomeDefaults(WELCOME_WORDS), field, "Welcome to {business, we can help."), AUTOMATION_RULES)).toEqual({ error: "badField", field })
 })
 
 test.each(savedTextCases)("saved $language $key respects its body limit", ({ language, key }) => {
   const field = `wording.${language}.${key}`
   const max = key === "servicesIntro" ? AUTOMATION_RULES.maxListBody : AUTOMATION_RULES.maxBody
-  expect(automationProblem(changed(welcomeDefaults(), field, "x".repeat(max)), AUTOMATION_RULES)).toBeNull()
-  expect(automationProblem(changed(welcomeDefaults(), field, "x".repeat(max + 1)), AUTOMATION_RULES)).toEqual({ error: "tooLong", field })
+  expect(automationProblem(changed(welcomeDefaults(WELCOME_WORDS), field, "x".repeat(max)), AUTOMATION_RULES)).toBeNull()
+  expect(automationProblem(changed(welcomeDefaults(WELCOME_WORDS), field, "x".repeat(max + 1)), AUTOMATION_RULES)).toEqual({ error: "tooLong", field })
 })
 
 test.each([null, undefined, false, 42, "hello", [], {}, { wording: null }, { wording: { en: {}, es: {} } }, { ...reply(), buttons: null }, { ...reply(), buttons: [null] }, { ...link(), url: "javascript:alert(1)" }, { ...list(), sections: null }, { ...list(), sections: [null] }, { ...list(), sections: [{ rows: [null] }] }, { ...reply(), type: "unknown" }])("malformed input is rejected without throwing: %#", (input) => {
@@ -135,8 +136,8 @@ test.each([null, undefined, false, 42, "hello", [], {}, { wording: null }, { wor
 
 test.each(["en", "es"] as const)("saved %s labels reject fields and line breaks", (language) => {
   const field = `buttons.0.label.${language}`
-  expect(automationProblem(changed(welcomeDefaults(), field, "{business}"), AUTOMATION_RULES)).toEqual({ error: "badField", field })
-  expect(automationProblem(changed(welcomeDefaults(), field, "Book\nnow"), AUTOMATION_RULES)).toEqual({ error: "badField", field })
+  expect(automationProblem(changed(welcomeDefaults(WELCOME_WORDS), field, "{business}"), AUTOMATION_RULES)).toEqual({ error: "badField", field })
+  expect(automationProblem(changed(welcomeDefaults(WELCOME_WORDS), field, "Book\nnow"), AUTOMATION_RULES)).toEqual({ error: "badField", field })
 })
 
 test("button ids cannot contain leading spaces or line breaks", () => {
@@ -146,7 +147,7 @@ test("button ids cannot contain leading spaces or line breaks", () => {
 
 
 test.each([
-  { input: changed(welcomeDefaults(), "buttons.0.action.type", ["handoff"]), field: "buttons.0.action" },
+  { input: changed(welcomeDefaults(WELCOME_WORDS), "buttons.0.action.type", ["handoff"]), field: "buttons.0.action" },
   { input: { ...list(), type: ["list"] }, field: "type" },
 ])("array-valued discriminants cannot impersonate a supported type: $field", ({ input, field }) => {
   expect(automationProblem(input, AUTOMATION_RULES)).toEqual({ error: "invalid", field })

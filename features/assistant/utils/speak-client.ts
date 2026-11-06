@@ -1,6 +1,8 @@
 import { remark } from "remark"
 import strip from "strip-markdown"
 
+import { DEFAULT_LOCALES, type PageLanguage } from "@/lib/page-language"
+
 // Speaks one answer through ElevenLabs Text to Dialogue
 // (https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket)
 // while it is still being written: each sentence is sent and flushed as
@@ -22,15 +24,28 @@ function twelveHour(match: string, hours: string, minutes: string): string {
   return `${hour % 12 === 0 ? 12 : hour % 12}:${minutes} ${hour < 12 ? "AM" : "PM"}`
 }
 
+// Whether times in this language say AM and PM, as its Text fields do
+// (the tools write them in DEFAULT_LOCALES: en-US and es-US do, pt-BR and
+// fr-FR say "17:50").
+function saysAmPm(language: PageLanguage): boolean {
+  const { hourCycle } = new Intl.DateTimeFormat(DEFAULT_LOCALES[language], {
+    hour: "numeric",
+  }).resolvedOptions()
+  return hourCycle === "h11" || hourCycle === "h12"
+}
+
 // The talking-mode prompt asks for plain speech; this is the safety net
 // in code that ElevenLabs suggests for text an LLM wrote
 // (https://elevenlabs.io/docs/best-practices/prompting/normalization):
 // stray Markdown (stars, links, lists) is stripped, separators like
-// " - " and " · " become a pause, and 24-hour times become 12-hour ones.
-export function speakableText(text: string): string {
-  return String(markdown.processSync(text))
-    .replace(/\s+[-–—·•|]\s+/g, ", ")
-    .replace(DAY_CLOCK, twelveHour)
+// " - " and " · " become a pause, and in a language that says AM and PM,
+// 24-hour times become 12-hour ones.
+export function speakableText(text: string, language: PageLanguage): string {
+  const plain = String(markdown.processSync(text)).replace(
+    /\s+[-–—·•|]\s+/g,
+    ", "
+  )
+  return (saysAmPm(language) ? plain.replace(DAY_CLOCK, twelveHour) : plain)
     .replace(/\s+/g, " ")
     .trim()
 }
@@ -54,11 +69,14 @@ export interface SpeechStream {
 
 export function openSpeech({
   businessId,
+  language,
   onAudio,
   onDone,
   onError,
 }: {
   businessId: string
+  // The talk's language: how its times are said.
+  language: PageLanguage
   // One base64 PCM chunk (VOICE_RULES.speakOutputFormat) and the words it
   // says ("" when the chunk carries none).
   onAudio: (base64: string, words: string) => void
@@ -143,7 +161,7 @@ export function openSpeech({
 
   return {
     say: (text) => {
-      const spoken = speakableText(text)
+      const spoken = speakableText(text, language)
       if (!spoken || finished) return
       // Queued words use the voice returned by the server once connected.
       send(() => ({ inputs: [{ text: `${spoken} `, voice_id: tokenVoiceId }] }))

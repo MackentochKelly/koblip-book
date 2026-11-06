@@ -13,6 +13,13 @@ import { ChatApiError } from "./chat-oauth"
 import { submitKoblipTemplate } from "./chat-templates"
 
 vi.mock("server-only", () => ({}))
+// Book's words in Portuguese and French come from the app's words.
+const { registerEnglishWords } = await import("@/lib/translations/interface-words")
+registerEnglishWords((await import("@/i18n/messages")).default)
+const { allBookWords } = await import("./message-words")
+// Book's words as the server reads them: Spanish from the migrated
+// database, Portuguese and French in English until Google's arrive.
+let book: Awaited<ReturnType<typeof allBookWords>>
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 vi.mock("@/lib/dal", () => ({ requireAdmin: vi.fn() }))
 vi.mock("./chat-templates", () => ({ submitKoblipTemplate: vi.fn() }))
@@ -26,6 +33,7 @@ beforeAll(async () => {
   process.env.DATABASE_URL = `file:${join(dir, "test.db")}`
   const { migrate } = await import("drizzle-orm/libsql/migrator")
   await migrate(db, { migrationsFolder: "drizzle" })
+  book = await allBookWords()
   await db.$client.execute("PRAGMA foreign_keys = ON")
   await db.insert(user).values({ id: admin.userId, name: admin.name, email: admin.email, emailVerified: false })
 })
@@ -46,7 +54,7 @@ afterAll(() => {
 test("saving and submitting require admin authorization before changing anything", async () => {
   const denied = new Error("Access denied")
   vi.mocked(requireAdmin).mockRejectedValue(denied)
-  await expect(saveKoblipMessage("reminder", "en", defaultWording("reminder", "en"), null)).rejects.toThrow(denied)
+  await expect(saveKoblipMessage("reminder", "en", defaultWording("reminder", book.en), null)).rejects.toThrow(denied)
   await expect(submitKoblipMessage("reminder", "en")).rejects.toThrow(denied)
   expect(await db.select().from(koblipNotificationTexts)).toEqual([])
   expect(await db.select().from(platformSettingChanges)).toEqual([])
@@ -54,7 +62,7 @@ test("saving and submitting require admin authorization before changing anything
 })
 
 test("a save trims wording and buttons, records before and after, and never submits", async () => {
-  const wording = defaultWording("reminder", "en")
+  const wording = defaultWording("reminder", book.en)
   const buttons: MessageButton[] = [{ action: "confirm", label: "Count me in" }]
   expect(await saveKoblipMessage("reminder", "en", {
     header: `  ${wording.header}  `,
@@ -76,8 +84,8 @@ test("a save trims wording and buttons, records before and after, and never subm
 })
 
 test("Use default removes both wording and buttons in one language and logs its former saved value", async () => {
-  const en = defaultWording("reminder", "en")
-  const es = defaultWording("reminder", "es")
+  const en = defaultWording("reminder", book.en)
+  const es = defaultWording("reminder", book.es)
   const buttons: MessageButton[] = [{ action: "ok", label: "Understood" }]
   await saveKoblipMessage("reminder", "en", en, buttons)
   await saveKoblipMessage("reminder", "es", es, [])
@@ -90,7 +98,7 @@ test("Use default removes both wording and buttons in one language and logs its 
 })
 
 test("invalid wording and buttons cannot overwrite the saved message or add a change-log entry", async () => {
-  const wording = defaultWording("reminder", "en")
+  const wording = defaultWording("reminder", book.en)
   await saveKoblipMessage("reminder", "en", wording, null)
   expect(await saveKoblipMessage("reminder", "en", { ...wording, body: " " }, null)).toEqual({ ok: false, error: "empty" })
   expect(await saveKoblipMessage("reminder", "en", { ...wording, body: "Hello {unknown}, your appointment awaits you here." }, null)).toEqual({ ok: false, error: "unknownField" })
@@ -102,9 +110,9 @@ test("invalid wording and buttons cannot overwrite the saved message or add a ch
 })
 
 test("unknown messages and languages are refused without persisting a record", async () => {
-  const wording = defaultWording("reminder", "en")
+  const wording = defaultWording("reminder", book.en)
   const badMessage = await saveKoblipMessage("missing" as BookingMessage, "en", wording, null)
-  const badLanguage = await saveKoblipMessage("reminder", "fr" as TemplateLanguage, wording, null)
+  const badLanguage = await saveKoblipMessage("reminder", "de" as TemplateLanguage, wording, null)
   expect(badMessage.ok).toBe(false)
   expect(badLanguage.ok).toBe(false)
   expect(await db.select().from(koblipNotificationTexts)).toEqual([])
@@ -112,7 +120,7 @@ test("unknown messages and languages are refused without persisting a record", a
 })
 
 test("a failed change-log write rolls the saved wording back", async () => {
-  const wording = defaultWording("reminder", "en")
+  const wording = defaultWording("reminder", book.en)
   await saveKoblipMessage("reminder", "en", wording, null)
   vi.mocked(requireAdmin).mockResolvedValue({ ...admin, userId: "missing-admin" })
   await expect(saveKoblipMessage("reminder", "en", { ...wording, header: "Must not persist" }, [])).rejects.toThrow()

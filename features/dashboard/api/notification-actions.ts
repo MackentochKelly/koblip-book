@@ -100,7 +100,8 @@ export async function saveNotificationSettings(
   await saveSettings(owned.business.id, {
     ...current,
     ownerPhone: phone || null,
-    ownerLanguage: input.ownerLanguage === "es" ? "es" : "en",
+    // Any other value reads as English, as before.
+    ownerLanguage: TEMPLATE_LANGUAGES.includes(input.ownerLanguage) ? input.ownerLanguage : "en",
     reminders: reminders.sort((a, b) => b - a),
     quietStart: input.quietStart,
     quietEnd: input.quietEnd,

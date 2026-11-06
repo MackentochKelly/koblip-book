@@ -1,3 +1,4 @@
+import { PAGE_LANGUAGES, type PageLanguage } from "@/lib/page-language"
 import type { AutomationRules } from "@/lib/platform-settings"
 import type { AutomationProblem } from "../types/automations"
 
@@ -42,7 +43,10 @@ function replyButtons(value: unknown, rules: AutomationRules, translated: boolea
   if (!value.length) return issue("empty", "buttons")
   if (value.length > rules.maxButtons) return issue("tooManyButtons", "buttons")
   const ids = new Set<string>()
-  const labels = { en: new Set<string>(), es: new Set<string>() }
+  const labels = Object.fromEntries(PAGE_LANGUAGES.map((language) => [language, new Set<string>()])) as Record<
+    PageLanguage,
+    Set<string>
+  >
   const actions = new Set<string>()
   for (const [index, button] of value.entries()) {
     const field = `buttons.${index}`
@@ -53,7 +57,7 @@ function replyButtons(value: unknown, rules: AutomationRules, translated: boolea
     if (ids.has(button.id as string)) return issue("badField", `${field}.id`)
     ids.add(button.id as string)
     if (translated && !object(button.label)) return issue("invalid", `${field}.label`)
-    for (const language of translated ? ["en", "es"] as const : ["en"] as const) {
+    for (const language of translated ? PAGE_LANGUAGES : (["en"] as const)) {
       const label = translated ? (button.label as ObjectValue)[language] : button.label
       const name = translated ? `${field}.label.${language}` : `${field}.label`
       const problem = textProblem(label, name, rules.maxButtonLabel, false)
@@ -81,7 +85,7 @@ export function automationProblem(input: unknown, rules: AutomationRules): Autom
   if (!object(input)) return issue("invalid", "input")
   if (!("type" in input)) {
     if (!object(input.wording)) return issue("invalid", "wording")
-    for (const language of ["en", "es"] as const) {
+    for (const language of PAGE_LANGUAGES) {
       const wording = input.wording[language]
       if (!object(wording)) return issue("invalid", `wording.${language}`)
       for (const key of ["body", "handoffReply", "servicesIntro"] as const) {

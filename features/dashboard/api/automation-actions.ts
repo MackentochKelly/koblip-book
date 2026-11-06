@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 import { db } from "@/lib/db"
+import { PAGE_LANGUAGES } from "@/lib/page-language"
 import { saveAll } from "@/lib/db/save-all"
 import { automations, chatConnections } from "@/lib/db/schema"
 import { automationRules } from "@/lib/platform-settings"
@@ -13,6 +14,7 @@ import type { AutomationButton, AutomationSaveResult, AutomationWording } from "
 import { welcomeDefaults } from "../utils/automation-defaults"
 import { automationProblem } from "../utils/automation-rules"
 import { chatConnectionUsable } from "./chat-oauth"
+import { welcomeWords } from "./message-words"
 import { getOwnerBusiness } from "./queries"
 
 const object = (value: unknown): value is Record<string, unknown> =>
@@ -24,7 +26,7 @@ const trimmed = (value: unknown) => typeof value === "string" ? value.trim() : v
 function content(input: unknown): unknown {
   if (!object(input)) return input
   const wording = object(input.wording)
-    ? Object.fromEntries((["en", "es"] as const).map((language) => {
+    ? Object.fromEntries(PAGE_LANGUAGES.map((language) => {
       const text = (input.wording as Record<string, unknown>)[language]
       return [language, object(text) ? {
         body: trimmed(text.body),
@@ -36,7 +38,9 @@ function content(input: unknown): unknown {
     if (!object(button)) return button
     return {
       id: button.id,
-      label: object(button.label) ? { en: trimmed(button.label.en), es: trimmed(button.label.es) } : button.label,
+      label: object(button.label)
+        ? Object.fromEntries(PAGE_LANGUAGES.map((language) => [language, trimmed((button.label as Record<string, unknown>)[language])]))
+        : button.label,
       action: button.action,
     }
   }) : input.buttons
@@ -73,7 +77,7 @@ export async function saveAutomation(
       // Reset is defined for Book's built-in welcome; future keys must supply
       // their own defaults rather than silently becoming another welcome.
       if (input === null && row.key !== "welcome") return { ok: false, error: "invalid" }
-      const next = input === null ? welcomeDefaults() : content(input)
+      const next = input === null ? welcomeDefaults(await welcomeWords()) : content(input)
       const problem = automationProblem(next, await automationRules())
       if (problem) return { ok: false, ...problem }
       const saved = next as { wording: AutomationWording; buttons: AutomationButton[] }

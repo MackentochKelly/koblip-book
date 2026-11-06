@@ -1,6 +1,8 @@
+import type { PageLanguage } from "@/lib/page-language"
+
 export interface AvailabilityDay { date: string; times: string[] } // date "YYYY-MM-DD", times "HH:mm", business time zone
 export interface Availability { days: AvailabilityDay[] }
-export interface BookingInput { slug: string; serviceId: string; teamMemberId: string | null; addonIds: string[]; date: string; time: string; name: string; phone: string; language?: "en" | "es"
+export interface BookingInput { slug: string; serviceId: string; teamMemberId: string | null; addonIds: string[]; date: string; time: string; name: string; phone: string; language?: PageLanguage
   // The customer ticked the box agreeing to the business's policies; needed
   // whenever the business has any.
   acceptedPolicies?: boolean }

@@ -212,6 +212,10 @@ const { getAddonGroups } =
   await import("@/features/dashboard/api/addon-queries")
 const { getServiceNameTranslations } =
   await import("@/lib/translations/business-texts")
+// Book's own message words are the app's words (bookWordsFor).
+const { registerEnglishWords } =
+  await import("@/lib/translations/interface-words")
+registerEnglishWords((await import("@/i18n/messages")).default)
 const { buildAssistantTools, toolWords } = await import("./tools")
 const { getTranslations } = await import("next-intl/server")
 
@@ -3931,7 +3935,7 @@ function messageItem(
       message: "reminder",
       on: true,
       editable: true,
-      texts: { en: text, es: text },
+      texts: { en: text, es: text, pt: text, fr: text },
       ...overrides,
     },
   ] as never
@@ -4006,8 +4010,8 @@ test("change_message_wording refuses words that would never send or Meta refuses
     })
   ).toEqual({ error: "Nothing to change." })
   expect(
-    await tool.confirm!.describe({ message: "reminder", language: "fr" })
-  ).toEqual({ error: "language must be en or es" })
+    await tool.confirm!.describe({ message: "reminder", language: "de" })
+  ).toEqual({ error: "language must be one of en, es, pt, fr" })
   // Koblip's number sends its own fixed words, so a change would never go.
   vi.mocked(notificationMessagesFor).mockResolvedValue(
     messageItem(BOOK_BUTTONS, { editable: false })

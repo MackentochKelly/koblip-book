@@ -27,8 +27,10 @@ const words = {
   errors: {
     email: "Check your email address",
     name: "Add your name",
-    password: "{min, plural, other {Use at least # characters}}",
-    passwordTooLong: "{max, plural, other {Use no more than # characters}}",
+    password:
+      "{min, plural, one {Use at least # character} other {Use at least # characters}}",
+    passwordTooLong:
+      "{max, plural, one {Use no more than # character} other {Use no more than # characters}}",
     invalidPassword: "Check your password",
     tooManyTries: "Too many tries. Wait a moment and try again.",
     connection: "Can't connect. Check your connection and try again.",

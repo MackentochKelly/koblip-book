@@ -1,3 +1,5 @@
+import type { PageLanguage } from "@/lib/page-language"
+
 export type ButtonsProblem = "tooManyButtons" | "badButton" | "sameButton"
 
 export type WordingProblem =
@@ -13,7 +15,8 @@ export type WordingProblem =
 // Koblip's ready-made WhatsApp messages as the admin reviews them (K2):
 // shared by the server code that reads them and the admin screen.
 
-export type KoblipLanguage = "en" | "es"
+// Every page language, each its own template at Meta.
+export type KoblipLanguage = PageLanguage
 
 export type KoblipMessageName =
   | "confirmed"

@@ -23,12 +23,16 @@ import {
   defaultWording,
   defaultButtons,
   koblipTemplate,
+  koblipTemplateName,
+  metaLanguage,
   withExamples,
   type BookingMessage,
   type BookingTemplate,
+  type BookWords,
   type TemplateLanguage,
 } from "../utils/booking-templates"
 import { ChatApiError, chatApi, chatConnectionUsable, koblipChatApi } from "./chat-oauth"
+import { allBookWords, bookWordsFor } from "./message-words"
 
 // Book's booking templates in the business's Koblip Chat
 // (docs/koblip-chat-integration.md, step 2), through Chat's public API the
@@ -50,14 +54,14 @@ const TEMPLATE_COUNT = BOOKING_MESSAGES.length * TEMPLATE_LANGUAGES.length
 // Every template the business has, in the owner's wording and buttons where
 // they changed them.
 async function businessTemplates(businessId: string): Promise<BookingTemplate[]> {
-  const own = await db
-    .select()
-    .from(notificationTexts)
-    .where(eq(notificationTexts.businessId, businessId))
+  const [own, words] = await Promise.all([
+    db.select().from(notificationTexts).where(eq(notificationTexts.businessId, businessId)),
+    allBookWords(),
+  ])
   return TEMPLATE_LANGUAGES.flatMap((language) =>
     BOOKING_MESSAGES.map((message) => {
       const row = own.find((item) => item.message === message && item.language === language)
-      return bookingTemplate(message, language, row, row?.buttons ?? undefined)
+      return bookingTemplate(message, words[language], row, row?.buttons ?? undefined)
     })
   )
 }
@@ -160,9 +164,10 @@ function listTemplates(call: Call, wabaId: string) {
   return call<Templates>(`/api/template?platform=whatsapp&waba_id=${encodeURIComponent(wabaId)}`)
 }
 
+// Chat lists each template with Meta's code for its language.
 function findTemplate(list: Templates, template: BookingTemplate) {
   return list.data?.find(
-    (row) => row.template_name === template.name && row.language === template.language
+    (row) => row.template_name === template.name && row.language === template.metaLanguage
   )
 }
 
@@ -271,7 +276,7 @@ async function submitTo(call: Call, wabaId: string, template: BookingTemplate) {
       `/api/template/meta-list?waba_id=${encodeURIComponent(wabaId)}`
     )
     const lost = (meta.data ?? []).find(
-      (row) => row.name === template.name && row.language === template.language
+      (row) => row.name === template.name && row.language === template.metaLanguage
     )
     if (lost) {
       await call("/api/template/sync", {
@@ -296,7 +301,7 @@ async function submitTo(call: Call, wabaId: string, template: BookingTemplate) {
       waba_id: wabaId,
       platform: "whatsapp",
       template_name: template.name,
-      language: template.language,
+      language: template.metaLanguage,
       category: "UTILITY",
       ...templateBody(template),
       save_as_draft: false,
@@ -389,7 +394,7 @@ export async function sendableTemplate(
     approved: {
       chatTemplateId: row.chatTemplateId,
       template: row.submitted
-        ? bookingTemplate(message, language, row.submitted, row.submitted.buttons)
+        ? bookingTemplate(message, await bookWordsFor(language), row.submitted, row.submitted.buttons)
         : template,
     },
   }
@@ -427,18 +432,21 @@ export async function ownTemplatesApproved(businessId: string, messages: Booking
 // The same as sendableTemplate, from Koblip's ready-made set in Koblip's own
 // workspace, for a business sending from Koblip's number.
 export async function koblipSendableTemplate(message: BookingMessage, language: TemplateLanguage) {
-  const template = await savedKoblipTemplate(message, language)
-  const [row] = await db
-    .select()
-    .from(koblipChatTemplates)
-    .where(and(eq(koblipChatTemplates.message, message), eq(koblipChatTemplates.language, language)))
-    .limit(1)
-  const live = liveKoblipTemplate(row, message, language)
+  const [template, words, [row]] = await Promise.all([
+    savedKoblipTemplate(message, language),
+    bookWordsFor(language),
+    db
+      .select()
+      .from(koblipChatTemplates)
+      .where(and(eq(koblipChatTemplates.message, message), eq(koblipChatTemplates.language, language)))
+      .limit(1),
+  ])
+  const live = liveKoblipTemplate(row, message, words)
   return {
     template,
     approved: live ? {
       chatTemplateId: live.chatTemplateId,
-      template: { ...koblipTemplate(message, language, live.submitted, live.submitted.buttons), name: live.name },
+      template: { ...koblipTemplate(message, words, live.submitted, live.submitted.buttons), name: live.name },
     } : null,
   }
 }
@@ -446,11 +454,14 @@ export async function koblipSendableTemplate(message: BookingMessage, language: 
 // Koblip's ready-made set (K2): Book's wording and buttons, the same for
 // every business, in Koblip's own workspace.
 async function koblipTemplates(saved?: (typeof koblipNotificationTexts.$inferSelect)[]): Promise<BookingTemplate[]> {
-  const texts = saved ?? await db.select().from(koblipNotificationTexts)
+  const [texts, words] = await Promise.all([
+    saved ?? db.select().from(koblipNotificationTexts),
+    allBookWords(),
+  ])
   return TEMPLATE_LANGUAGES.flatMap((language) =>
     BOOKING_MESSAGES.map((message) => {
       const row = texts.find((item) => item.message === message && item.language === language)
-      return koblipTemplate(message, language, row, row?.buttons ?? undefined)
+      return koblipTemplate(message, words[language], row, row?.buttons ?? undefined)
     })
   )
 }
@@ -482,39 +493,42 @@ async function koblipNumber() {
 
 type KoblipTemplateRow = typeof koblipChatTemplates.$inferSelect
 
-function versionName(message: BookingMessage, language: TemplateLanguage, version: number) {
-  return koblipTemplate(message, language).name.replace(/_v2$/, `_v${version}`)
+// The name is the same in every language.
+function versionName(message: BookingMessage, version: number) {
+  return koblipTemplateName(message).replace(/_v2$/, `_v${version}`)
 }
 
 // Older rows predate snapshots: use the original defaults, never a newer draft.
 function liveKoblipTemplate(
   row: KoblipTemplateRow | undefined,
   message: BookingMessage,
-  language: TemplateLanguage
+  words: BookWords
 ): NonNullable<KoblipTemplateRow["live"]> | null {
   if (row?.live) return row.live
   if (row?.status !== "approved") return null
   return {
     chatTemplateId: row.chatTemplateId,
-    name: versionName(message, language, row.version),
+    name: versionName(message, row.version),
     snapshotKnown: row.submitted !== null,
-    submitted: row.submitted ?? { ...defaultWording(message, language), buttons: defaultButtons(message, language) },
+    submitted: row.submitted ?? { ...defaultWording(message, words), buttons: defaultButtons(message, words) },
   }
 }
 
 // Recover a missing Chat copy without editing Meta's existing template.
+// Chat and Meta list each copy with Meta's code for its language.
 async function restoreKoblipTemplate(wabaId: string, name: string, language: TemplateLanguage, list: Templates) {
-  let found = list.data?.find((item) => item.template_name === name && item.language === language)
+  const code = metaLanguage(language)
+  let found = list.data?.find((item) => item.template_name === name && item.language === code)
   if (found) return found
   const meta = await koblipCall<MetaTemplates>(`/api/template/meta-list?waba_id=${encodeURIComponent(wabaId)}`)
-  const lost = meta.data?.find((item) => item.name === name && item.language === language)
+  const lost = meta.data?.find((item) => item.name === name && item.language === code)
   if (!lost) return undefined
   await koblipCall("/api/template/sync", {
     method: "POST",
     body: { waba_id: wabaId, meta_template_ids: [lost.id] },
   })
   found = (await listTemplates(koblipCall, wabaId)).data?.find(
-    (item) => item.template_name === name && item.language === language
+    (item) => item.template_name === name && item.language === code
   )
   if (!found) throw new ChatApiError(502, "template_sync_failed")
   return found
@@ -523,7 +537,7 @@ async function restoreKoblipTemplate(wabaId: string, name: string, language: Tem
 async function retireKoblipTemplates(wabaId: string) {
   const rows = await db.select().from(koblipChatTemplates)
   const inUse = new Set(rows.flatMap((row) => [
-    versionName(row.message, row.language, row.version),
+    versionName(row.message, row.version),
     ...(row.live ? [row.live.name] : []),
   ]))
   for (const row of rows) {
@@ -542,7 +556,7 @@ async function retireKoblipTemplates(wabaId: string) {
           if (!answer.data?.deleted_from_meta) {
             // Chat may have removed its copy even when Meta refused deletion.
             const meta = await koblipCall<MetaTemplates>(`/api/template/meta-list?waba_id=${encodeURIComponent(wabaId)}`)
-            if (meta.data?.some((item) => item.name === old.name && item.language === old.language)) continue
+            if (meta.data?.some((item) => item.name === old.name && item.language === metaLanguage(old.language))) continue
           }
         }
         remaining.splice(remaining.findIndex((item) => item.name === old.name && item.language === old.language), 1)
@@ -568,18 +582,18 @@ async function refreshKoblip() {
       body: { waba_id: number.wabaId, template_ids: reviewing },
     })
   }
-  const list = await listTemplates(koblipCall, number.wabaId)
+  const [list, words] = await Promise.all([listTemplates(koblipCall, number.wabaId), allBookWords()])
   // Persist all promotions before any deletion; another language may still
   // need an old name, because Chat can delete at Meta by name, across languages.
   for (const template of await koblipTemplates()) {
     const before = known.find((row) => row.message === template.message && row.language === template.language)
     const version = before?.version ?? 2
-    const name = versionName(template.message, template.language, version)
+    const name = versionName(template.message, version)
     const found = before
       ? await restoreKoblipTemplate(number.wabaId, name, template.language, list)
       : findTemplate(list, { ...template, name })
     if (!found && !before) continue
-    let live = liveKoblipTemplate(before, template.message, template.language)
+    let live = liveKoblipTemplate(before, template.message, words[template.language])
     const retired = [...(before?.retired ?? [])]
     if (live && live.name !== name) {
       const approved = await restoreKoblipTemplate(number.wabaId, live.name, template.language, list)
@@ -599,7 +613,10 @@ async function refreshKoblip() {
         chatTemplateId: found._id,
         name,
         snapshotKnown: before?.submitted != null,
-        submitted: before?.submitted ?? { ...defaultWording(template.message, template.language), buttons: defaultButtons(template.message, template.language) },
+        submitted: before?.submitted ?? {
+          ...defaultWording(template.message, words[template.language]),
+          buttons: defaultButtons(template.message, words[template.language]),
+        },
       }
     } else if (live?.name === name) {
       // A paused, removed or disabled live version must not keep sending.
@@ -656,7 +673,7 @@ export async function submitKoblipTemplate(
     const [before] = await db.select().from(koblipChatTemplates).where(koblipRowKey(message, language))
     const submitted = snapshot(template)
     let version = before?.version ?? 2
-    const live = liveKoblipTemplate(before, message, language)
+    const live = liveKoblipTemplate(before, message, await bookWordsFor(language))
     const retired = [...(before?.retired ?? [])]
     const same = before?.submitted && JSON.stringify(before.submitted) === JSON.stringify(submitted)
     // Repeated submissions need an audit entry, but no remote edit of an
@@ -673,19 +690,20 @@ export async function submitKoblipTemplate(
     // Rejected and paused copies may be edited; a deleted name cannot be
     // recreated immediately, so missing copies also advance the version.
     if (before && before.status !== "rejected" && before.status !== "paused") {
-      if (before && live?.name !== versionName(message, language, version)) {
-        retired.push({ chatTemplateId: before.chatTemplateId, name: versionName(message, language, version), language })
+      if (before && live?.name !== versionName(message, version)) {
+        retired.push({ chatTemplateId: before.chatTemplateId, name: versionName(message, version), language })
       }
       const [chat, meta] = await Promise.all([
         listTemplates(koblipCall, number.wabaId),
         koblipCall<MetaTemplates>(`/api/template/meta-list?waba_id=${encodeURIComponent(number.wabaId)}`),
       ])
       const base = template.name.replace(/_v2$/, "_v")
-      const names = [...(chat.data ?? []).filter((row) => row.language === language).map((row) => row.template_name),
-        ...(meta.data ?? []).filter((row) => row.language === language).map((row) => row.name)]
+      const code = metaLanguage(language)
+      const names = [...(chat.data ?? []).filter((row) => row.language === code).map((row) => row.template_name),
+        ...(meta.data ?? []).filter((row) => row.language === code).map((row) => row.name)]
       version = Math.max(version, ...names.filter((name) => name.startsWith(base) && /^\d+$/.test(name.slice(base.length))).map((name) => Number(name.slice(base.length)))) + 1
     }
-    template.name = versionName(message, language, version)
+    template.name = versionName(message, version)
     const chatTemplateId = await submitTo(koblipCall, number.wabaId, template)
     const row = { chatTemplateId, status: "pending", reason: null, submitted, version, live, retired }
     await saveAll([
@@ -706,9 +724,10 @@ export async function submitKoblipTemplate(
 // business gets on Koblip's number, and Meta's review, from what Book last
 // saved. A message whose wording changed since it was submitted is a draft.
 export async function koblipMessages(): Promise<KoblipMessage[]> {
-  const [rows, saved] = await Promise.all([
+  const [rows, saved, words] = await Promise.all([
     db.select().from(koblipChatTemplates),
     db.select().from(koblipNotificationTexts),
+    allBookWords(),
   ])
   const templates = await koblipTemplates(saved)
   return BOOKING_MESSAGES.map((message) => ({
@@ -719,11 +738,11 @@ export async function koblipMessages(): Promise<KoblipMessage[]> {
         const { header, body, footer, buttons } = template
         const wording = { header, body, footer }
         const row = rows.find((item) => item.message === message && item.language === language)
-        const live = liveKoblipTemplate(row, message, language)
+        const live = liveKoblipTemplate(row, message, words[language])
         const approved = live && live.snapshotKnown !== false ? {
           wording: { header: live.submitted.header, body: live.submitted.body, footer: live.submitted.footer },
           buttons: live.submitted.buttons,
-          preview: withExamples(live.submitted.body, language),
+          preview: withExamples(live.submitted.body, words[language]),
         } : null
         const isDefault = !saved.some((item) => item.message === message && item.language === language)
         const changed = row?.submitted
@@ -742,7 +761,7 @@ export async function koblipMessages(): Promise<KoblipMessage[]> {
           {
             wording,
             buttons,
-            preview: withExamples(wording.body, language),
+            preview: withExamples(wording.body, words[language]),
             isDefault,
             approved,
             review,

@@ -2,9 +2,11 @@ import { createTranslator } from "next-intl"
 import { expect, test } from "vitest"
 
 import messages from "@/i18n/messages"
+import { CAPTURED_BOOK_WORDS as words } from "../api/message-words.captured"
 import {
   BOOKING_MESSAGES,
   TEMPLATE_LANGUAGES,
+  bookWordsIn,
   bookingTemplate,
   bookingValues,
   buttonsProblem,
@@ -14,6 +16,7 @@ import {
   fieldsForOwner,
   fieldsFromOwner,
   messageButtonActions,
+  metaLanguage,
   thankYouMessage,
   withExamples,
   wordingProblem,
@@ -21,16 +24,22 @@ import {
 
 const ok = { header: "Booking confirmed", footer: "Reply here" }
 
+// The Spanish is the database's (../api/message-words.test.ts checks it);
+// the English is the code's, so it is checked here too.
+test("Book's English is the app's words, as Meta approved them", () => {
+  expect(bookWordsIn("en", messages)).toStrictEqual(words.en)
+})
+
 test("Book's own wording passes Meta's rules in both languages", () => {
   for (const language of ["en", "es"] as const) {
     for (const message of BOOKING_MESSAGES) {
-      expect(wordingProblem(message, defaultWording(message, language))).toBeNull()
+      expect(wordingProblem(message, defaultWording(message, words[language]))).toBeNull()
     }
   }
 })
 
 test("fields become Meta's numbers in the order they appear, without gaps", () => {
-  const template = bookingTemplate("confirmed", "en", {
+  const template = bookingTemplate("confirmed", words.en, {
     ...ok,
     body: "See you {date}, {name}. Your {date} visit is ready.",
   })
@@ -74,17 +83,17 @@ test("the owner reads fields in their own language", () => {
   expect(shown).toBe("Hola {nombre}, tu {servicio} el {fecha}.")
   expect(fieldsFromOwner(shown, labels)).toBe("Hola {name}, tu {service} el {date}.")
   expect(fieldsFromOwner("Hola {Nombre} {otro}", labels)).toBe("Hola {name} {otro}")
-  expect(withExamples("Hola {name}", "es")).toBe("Hola Ana")
+  expect(withExamples("Hola {name}", words.es)).toBe("Hola Ana")
 })
 
 test("Book's own buttons pass WhatsApp's rules, and reminders can be answered", () => {
-  for (const language of TEMPLATE_LANGUAGES) {
+  for (const language of ["en", "es"] as const) {
     for (const message of BOOKING_MESSAGES) {
-      expect(buttonsProblem(message, defaultButtons(message, language))).toBeNull()
+      expect(buttonsProblem(message, defaultButtons(message, words[language]))).toBeNull()
     }
   }
-  expect(defaultButtons("reminder", "en").map(({ action }) => action)).toEqual(["confirm", "cantCome"])
-  expect(bookingTemplate("reminder", "es").buttons).toEqual(defaultButtons("reminder", "es"))
+  expect(defaultButtons("reminder", words.en).map(({ action }) => action)).toEqual(["confirm", "cantCome"])
+  expect(bookingTemplate("reminder", words.es).buttons).toEqual(defaultButtons("reminder", words.es))
 })
 
 test("buttons that WhatsApp would refuse are caught first", () => {
@@ -126,7 +135,7 @@ test("every field has a value the customer can read, even when the booking lacks
     messages,
     namespace: "app.duration",
   })
-  const values = bookingValues(facts, "en", duration)
+  const values = bookingValues(facts, words.en, duration)
   expect(values.teamMember).toBe("Lucía")
   expect(values.duration).toBe("1 h 30 min")
   expect(values.price).toBe("$35.00")
@@ -134,13 +143,13 @@ test("every field has a value the customer can read, even when the booking lacks
   expect(values.phone).toBe("-")
   const bare = bookingValues(
     { ...facts, teamMemberName: null, priceMinor: null, businessAddress: " " },
-    "es",
+    words.es,
     duration
   )
   expect(bare.teamMember).toBe("nuestro equipo")
   expect(bare.price).toBe("por confirmar")
   expect(bare.address).toBe("Lumen Studio")
-  expect(bookingValues({ ...facts, priceMinor: 0 }, "en", duration).price).toBe("free")
+  expect(bookingValues({ ...facts, priceMinor: 0 }, words.en, duration).price).toBe("free")
 })
 
 test("the new fields fit the customer's messages and the owner's alert", () => {
@@ -150,11 +159,17 @@ test("the new fields fit the customer's messages and the owner's alert", () => {
   ).toBeNull()
   expect(wordingProblem("ownerNewBooking", { ...ok, body: "New booking with {teamMember} for {duration} at the shop today." })).toBeNull()
   expect(wordingProblem("ownerNewBooking", { ...ok, body: "New booking near {address} for the shop today." })).toBe("unknownField")
-  expect(withExamples("With {teamMember} for {duration}", "en")).toBe("With Sam for 45 min")
+  expect(withExamples("With {teamMember} for {duration}", words.en)).toBe("With Sam for 45 min")
 })
 
 test("the thank-you names the customer and the business", () => {
-  const values = { ...exampleValues("es"), name: "Ana", business: "Lumen" }
-  expect(thankYouMessage("es", values)).toBe("¡Gracias, Ana! Lumen recibió tu respuesta.")
-  expect(thankYouMessage("en", values)).toBe("Thanks, Ana! Lumen got your answer.")
+  const values = { ...exampleValues(words.es), name: "Ana", business: "Lumen" }
+  expect(thankYouMessage(words.es, values)).toBe("¡Gracias, Ana! Lumen recibió tu respuesta.")
+  expect(thankYouMessage(words.en, values)).toBe("Thanks, Ana! Lumen got your answer.")
+})
+
+test("every page language is a template, each under Meta's own language code", () => {
+  expect(TEMPLATE_LANGUAGES).toEqual(["en", "es", "pt", "fr"])
+  expect(TEMPLATE_LANGUAGES.map(metaLanguage)).toEqual(["en", "es", "pt_BR", "fr"])
+  expect(bookingTemplate("reminder", words.es).metaLanguage).toBe("es")
 })

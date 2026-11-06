@@ -5,8 +5,8 @@ import {
 import { koblipChatConnectionStatus } from "@/features/dashboard/api/chat-oauth"
 import { koblipMessages, refreshKoblipTemplates } from "@/features/dashboard/api/chat-templates"
 import { saveKoblipMessage, submitKoblipMessage } from "@/features/dashboard/api/koblip-template-actions"
+import { bookExamples } from "@/features/dashboard/api/message-words"
 import {
-  exampleValues,
   messageButtonActions,
   messageFields,
 } from "@/features/dashboard/utils/booking-templates"
@@ -20,10 +20,11 @@ import type { KoblipMessageName } from "@/types/koblip-messages"
 export default async function WhatsappKoblipMessagesPage() {
   await requireAdmin()
   await refreshKoblipTemplates()
-  const [connection, messages, rules] = await Promise.all([
+  const [connection, messages, rules, examples] = await Promise.all([
     koblipChatConnectionStatus(),
     koblipMessages(),
     notificationRules(),
+    bookExamples(),
   ])
   // What the shared editor needs of each message, from Book's templates.
   const info = Object.fromEntries(
@@ -32,7 +33,7 @@ export default async function WhatsappKoblipMessagesPage() {
       {
         fields: messageFields(message),
         buttonActions: messageButtonActions(message),
-        examples: { en: exampleValues("en"), es: exampleValues("es") },
+        examples,
       },
     ])
   ) as Record<KoblipMessageName, KoblipEditorInfo>

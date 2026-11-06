@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { useFormatter, useLocale, useTranslations } from "next-intl"
 
 import { LanguageMenu } from "@/components/language-menu"
@@ -6,6 +7,9 @@ import { SiteFooter } from "@/components/site-footer"
 import { StickyHeader } from "@/components/sticky-header"
 import { SiteHeader } from "@/components/site-header"
 import { WordsProvider } from "@/components/words-provider"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { LanguagesIcon } from "@/components/ui/icons"
 import {
   LEGAL_CONTACT,
   LEGAL_SECTIONS,
@@ -13,6 +17,7 @@ import {
   type LegalDoc,
 } from "@/features/legal/content"
 import { languageOf } from "@/lib/page-language"
+import { SOURCE_LANGUAGE } from "@/lib/translations/languages"
 
 // One legal page (Privacy or Terms): the home header and footer around a
 // short, readable column of sections.
@@ -33,6 +38,30 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
             <SiteHeader floating control={<LanguageMenu />} />
           </StickyHeader>
           <main className="mx-auto flex w-full max-w-prose flex-1 flex-col gap-8 px-4 pt-32 pb-12">
+            {/* Every other language is a translation of the English, which
+                is the one that applies (docs/plans/translations.md, G8).
+                The page's path is its doc's name (app/(public)/<doc>). */}
+            {language !== SOURCE_LANGUAGE && (
+              <Alert>
+                <LanguagesIcon />
+                <AlertDescription>
+                  {t("translated")}{" "}
+                  <Button
+                    variant="link"
+                    className="h-auto p-0"
+                    nativeButton={false}
+                    render={
+                      <Link
+                        href={`/${doc}?lang=${SOURCE_LANGUAGE}`}
+                        hrefLang={SOURCE_LANGUAGE}
+                      />
+                    }
+                  >
+                    {t("readEnglish")}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="flex flex-col gap-2">
               <h1 className="text-3xl font-semibold tracking-tight text-balance">
                 {t(`${doc}.title`)}

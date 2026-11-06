@@ -149,7 +149,6 @@ export function PreparingCard({
     })()
   }, [businessId, readyHref, router])
 
-  const locale = language === "es" ? "es" : "en-US"
   const prices = (summary?.services ?? [])
     .map((service) => service.priceMinor)
     .filter((price): price is number => price !== null)
@@ -158,9 +157,11 @@ export function PreparingCard({
   const detail: Record<StepId, React.ReactNode> = {
     services: summary && shortList(summary.services.map((service) => service.name), more),
     extras: summary && shortList(summary.extras, more),
+    // In the language's own price format: Intl reads "en" as the US, "pt"
+    // as Brazil and "fr" as France.
     prices:
       summary && prices.length > 0
-        ? t("from", { price: formatPrice(Math.min(...prices), summary.currency, locale) })
+        ? t("from", { price: formatPrice(Math.min(...prices), summary.currency, language) })
         : null,
     team: summary && shortList(summary.team.map((person) => person.name), more),
     photos: summary && t("photosDone", { done: photosDone, total: summary.team.length }),

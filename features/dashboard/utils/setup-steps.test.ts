@@ -30,7 +30,12 @@ function message(
     message: name,
     on,
     editable: true,
-    texts: { en: text(review, isDefault), es: text(review, isDefault) },
+    texts: {
+      en: text(review, isDefault),
+      es: text(review, isDefault),
+      pt: text(review, isDefault),
+      fr: text(review, isDefault),
+    },
   }
 }
 

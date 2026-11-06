@@ -1,5 +1,9 @@
 import { expect, test } from "vitest"
-import { buildSystemPrompt, buildVoiceLine } from "./system-prompt"
+import {
+  buildLanguageLine,
+  buildSystemPrompt,
+  buildVoiceLine,
+} from "./system-prompt"
 
 test("en voice describes the personality and limits, not lines to copy", () => {
   const line = buildVoiceLine("en")
@@ -69,4 +73,31 @@ test("a clear no closes the card, in every prompt", () => {
   expect(prompt).toContain("call decline_card")
   expect(buildVoiceLine("en")).toContain("call decline_card")
   expect(buildVoiceLine("es")).toContain("llama a decline_card")
+})
+
+test("the language line names the owner's language", () => {
+  expect(buildLanguageLine("en")).toBe("Reply in English.")
+  expect(buildLanguageLine("es")).toBe("Reply in Spanish.")
+  expect(buildLanguageLine("pt")).toBe("Reply in Brazilian Portuguese.")
+  expect(buildLanguageLine("fr")).toBe("Reply in French.")
+})
+
+test("Portuguese and French talk by the English rules, in their language", () => {
+  for (const [language, name] of [
+    ["pt", "Brazilian Portuguese"],
+    ["fr", "French"],
+  ] as const) {
+    const line = buildVoiceLine(language)
+    expect(line).toContain("You are Koblip")
+    expect(line).toContain(
+      `- Talk only in ${name}, even if the owner speaks another language: the app hears and speaks in ${name}.`
+    )
+    expect(line).toContain("call decline_card")
+    // Their Text fields say 24-hour times.
+    expect(line).toContain("as they are (like '17:50').")
+    expect(line).not.toContain("NEVER say a 24-hour time")
+    expect(line).not.toContain("English")
+  }
+  expect(buildVoiceLine("pt")).toContain("talking to the owner as você")
+  expect(buildVoiceLine("fr")).toContain("talking to the owner as vous")
 })

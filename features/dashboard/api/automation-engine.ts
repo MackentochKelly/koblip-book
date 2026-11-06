@@ -13,13 +13,16 @@ import { automationRules, notificationRules } from "@/lib/platform-settings"
 import { runInTurn } from "@/lib/run-in-turn"
 import { fillFields } from "@/lib/message-fields"
 import type { AutomationLanguage, AutomationRun } from "../types/automations"
+import { welcomeDefaults, withEveryLanguage, type WithEveryLanguage } from "../utils/automation-defaults"
 import { automationEvent, type AutomationEvent } from "../utils/automation-events"
 import { automationProblem, type AutomationMessageInput } from "../utils/automation-rules"
 import { chatApi, chatConnectionUsable } from "./chat-oauth"
+import { welcomeWords } from "./message-words"
 import { post, type Line } from "./notification-sender"
 import { automationCustomerWhere, claimAutomationEvent, pauseAutomationCustomer, bookSendReceipt, waitForBookSends } from "./automation-state"
 
-type Flow = typeof automations.$inferSelect
+// A saved flow with its words in every language (withEveryLanguage).
+type Flow = WithEveryLanguage<typeof automations.$inferSelect>
 type Connection = typeof chatConnections.$inferSelect
 type Context = {
   event: AutomationEvent
@@ -134,9 +137,13 @@ async function applyInbound(connection: Connection, event: AutomationEvent, prev
     .where(and(eq(bookings.businessId, business.id), inArray(bookings.customerKey, whatsappCustomerKeys(event.customerPhone))))
     .orderBy(desc(bookings.createdAt), desc(bookings.id)).limit(1)
   const parent = event.payload ? await parentRun(connection, event) : null
-  const flows = await db.select().from(automations).where(and(eq(automations.businessId, business.id), eq(automations.on, true)))
+  // Every language, also for a flow saved before a language came.
+  const defaults = welcomeDefaults(await welcomeWords())
+  const flows = (await db.select().from(automations).where(and(eq(automations.businessId, business.id), eq(automations.on, true))))
+    .map((flow) => withEveryLanguage(flow, defaults))
   for (const flow of flows) {
-    const language = parent?.language ?? (latestBooking?.language === "es" ? "es" : "en")
+    // The language the customer last booked in, else English.
+    const language = parent?.language ?? latestBooking?.language ?? "en"
     const context: Context = { event, connection, flow, language, name: latestBooking?.name ?? null, business }
     let step: AutomationRun["step"] = "welcome"
     try {

@@ -11,6 +11,7 @@ import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 import { notification } from "@/lib/in-app-notifications"
+import { DEFAULT_LANGUAGE, isPageLanguage } from "@/lib/page-language"
 import {
   bookingAddons,
   bookings,
@@ -259,7 +260,7 @@ export async function createBooking(
           // it sends WhatsApp booking messages: booking is the yes.
           whatsappOptIn: whatsapp,
           policiesAcceptedAt: withPolicies ? new Date(Date.now()).toISOString() : null,
-          language: input.language === "es" ? "es" : "en",
+          language: isPageLanguage(input.language) ? input.language : DEFAULT_LANGUAGE,
         }),
         ...(addonCheck.options.length > 0
           ? [

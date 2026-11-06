@@ -7,6 +7,9 @@ import { customerKey } from "@/lib/customer-key"
 import { bookings, businesses, notificationSends, user } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
+// Book's words in Portuguese and French come from the app's words.
+const { registerEnglishWords } = await import("@/lib/translations/interface-words")
+registerEnglishWords((await import("@/i18n/messages")).default)
 
 const { notificationHistoryFor } = await import("./notifications")
 

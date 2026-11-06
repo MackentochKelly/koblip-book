@@ -2,7 +2,7 @@
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from "vitest"
 import {
   businesses,
@@ -30,11 +30,17 @@ const google: Translator = {
   },
 }
 
+// The text's Spanish; an edit works the same in every language.
 async function entry() {
   const [row] = await db
     .select()
     .from(translationEntries)
-    .where(eq(translationEntries.key, "s1:service.name"))
+    .where(
+      and(
+        eq(translationEntries.key, "s1:service.name"),
+        eq(translationEntries.language, "es")
+      )
+    )
   return row
 }
 
@@ -55,6 +61,7 @@ async function english(text: string) {
     scope: "business",
     businessId: "biz",
     items: [{ key: "s1:service.name", module: "service.name", text }],
+    languages: ["es"],
   })
 }
 

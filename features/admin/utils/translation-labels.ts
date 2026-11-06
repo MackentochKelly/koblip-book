@@ -1,5 +1,6 @@
 import type { useTranslations } from "next-intl"
 
+import { LANGUAGE_NAMES } from "@/lib/page-language"
 import type { BusinessTextField } from "@/lib/translations/business-texts"
 import { isTranslationLanguage } from "@/lib/translations/languages"
 import type { TranslationStatus } from "@/lib/translations/rules"
@@ -10,13 +11,13 @@ export type TranslationWords = ReturnType<typeof useTranslations<"admin.translat
 
 // Where a text is from and what it is, in the admin's words: a business and
 // the kind of text ("Palacete · Service"), or the interface's page and the
-// word's key.
+// word's key. The language is named in itself ("Español").
 export function textLabels(
   row: Pick<TranslationRow, "scope" | "module" | "key" | "language" | "businessName">,
   t: TranslationWords
 ): { where: string; what: string; language: string } {
   const language = isTranslationLanguage(row.language)
-    ? t(`languages.${row.language}`)
+    ? LANGUAGE_NAMES[row.language]
     : row.language
   if (row.scope === "interface") {
     return { where: row.module, what: row.key, language }

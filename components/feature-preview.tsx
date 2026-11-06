@@ -51,10 +51,12 @@ export const SAMPLE_SERVICES = [
 ] as const
 
 // How the samples' numbers, prices and times read in each page language: a
-// salon in Spain, or one in the US.
+// salon in the US, Spain, Brazil or France.
 const SAMPLE_LOCALES: Record<PageLanguage, string> = {
   en: "en-US",
   es: "es-ES",
+  pt: "pt-BR",
+  fr: "fr-FR",
 }
 
 export function useSampleLocale() {

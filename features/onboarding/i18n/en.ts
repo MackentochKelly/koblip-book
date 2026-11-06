@@ -58,10 +58,11 @@ const words = {
       rating: "Rating",
       about: "About",
     },
-    openDays: "{days, plural, =7 {Open every day} other {Open # days a week}}",
-    photoCount: "{count, plural, other {# photos}}",
+    openDays:
+      "{days, plural, =7 {Open every day} one {Open # day a week} other {Open # days a week}}",
+    photoCount: "{count, plural, one {# photo} other {# photos}}",
     // `rating` comes formatted ("4.8").
-    rating: "{rating} · {reviews, plural, other {# reviews}}",
+    rating: "{rating} · {reviews, plural, one {# review} other {# reviews}}",
     aboutByMuse: "Written by Muse",
     working: "Loading",
     done: "Done",

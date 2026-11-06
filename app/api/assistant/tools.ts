@@ -41,6 +41,7 @@ import {
 import { addCustomer } from "@/features/dashboard/api/customer-actions"
 import { improveDetails } from "@/features/dashboard/api/improve-details"
 import { saveTeamMemberWithHours } from "@/features/dashboard/api/member-hours"
+import { bookWordsFor } from "@/features/dashboard/api/message-words"
 import {
   saveMessageWording,
   saveNotificationSettings,
@@ -244,9 +245,9 @@ const EXTRAS_PARAMETER = {
 // Finds a service or team member from the words the owner said ("classic
 // haircut", "Kelly"), or an id. One exact name wins; otherwise one name
 // sharing a word ("Kelly Bergen" heard for "Kelly Begin"). A service's
-// Spanish name counts too (`otherNames`). Anything else returns the names
-// to ask about. The tap card shows the full name, so the owner sees who was
-// picked.
+// names in the other languages count too (`otherNames`). Anything else
+// returns the names to ask about. The tap card shows the full name, so the
+// owner sees who was picked.
 function pickByName<
   T extends { id: string; name: string; otherNames?: string[] },
 >(list: T[], wanted: string): { found: T } | { choices: string[] } {
@@ -1679,7 +1680,11 @@ export function buildAssistantTools(
     const ownerLanguage =
       a.ownerLanguage === undefined ? current.ownerLanguage : a.ownerLanguage
     if (!TEMPLATE_LANGUAGES.includes(ownerLanguage as TemplateLanguage)) {
-      return { error: t("errors.languageInvalid") }
+      return {
+        error: t("errors.languageInvalid", {
+          languages: TEMPLATE_LANGUAGES.join(", "),
+        }),
+      }
     }
     const remindersRaw = a.reminders === undefined ? current.reminders : a.reminders
     const reminders = Array.isArray(remindersRaw)
@@ -1740,6 +1745,8 @@ export function buildAssistantTools(
         language: TemplateLanguage
         wording: Wording | null
         buttons: MessageButton[] | null
+        // Book's own buttons in this language.
+        defaults: MessageButton[]
       }
     | { error: string }
   > => {
@@ -1748,7 +1755,11 @@ export function buildAssistantTools(
       return { error: t("errors.messageUnknown") }
     }
     if (!TEMPLATE_LANGUAGES.includes(a.language as TemplateLanguage)) {
-      return { error: t("errors.languageInvalid") }
+      return {
+        error: t("errors.languageInvalid", {
+          languages: TEMPLATE_LANGUAGES.join(", "),
+        }),
+      }
     }
     const message = a.message as BookingMessage
     const language = a.language as TemplateLanguage
@@ -1761,10 +1772,11 @@ export function buildAssistantTools(
       return { error: t("errors.wordingLocked") }
     }
     const text = item.texts[language]
+    const defaults = defaultButtons(message, await bookWordsFor(language))
     if (a.useDefault === true) {
       return text.isDefault
         ? { error: t("errors.nothingToChange") }
-        : { item, language, wording: null, buttons: null }
+        : { item, language, wording: null, buttons: null, defaults }
     }
     const part = (value: unknown, saved: string): string | null =>
       value === undefined ? saved : typeof value === "string" ? value.trim() : null
@@ -1775,7 +1787,6 @@ export function buildAssistantTools(
       return { error: t("errors.wordingInvalid") }
     }
     const wording: Wording = { header, body, footer }
-    const defaults = defaultButtons(message, language)
     let buttons: MessageButton[] | null
     if (a.buttons === undefined) {
       buttons =
@@ -1814,7 +1825,7 @@ export function buildAssistantTools(
     ) {
       return { error: t("errors.nothingToChange") }
     }
-    return { item, language, wording, buttons }
+    return { item, language, wording, buttons, defaults }
   }
   // Shared checks for turn_automation_on_off.
   const checkAutomationArgs = async (
@@ -5193,7 +5204,7 @@ export function buildAssistantTools(
           if ("error" in checked) {
             return checked
           }
-          const { item, language, wording, buttons } = checked
+          const { item, language, wording, buttons, defaults } = checked
           const name = `${ownerT(`whatsapp.names.${item.message}`)} · ${t(`messageWording.languages.${language}`)}`
           if (!wording) {
             return {
@@ -5203,7 +5214,7 @@ export function buildAssistantTools(
               destructive: true,
             }
           }
-          const shown = buttons ?? defaultButtons(item.message, language)
+          const shown = buttons ?? defaults
           return {
             title: t("cards.messageWording"),
             action: t("actions.messageWording"),

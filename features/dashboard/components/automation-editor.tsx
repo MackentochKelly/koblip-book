@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
+import { AppSelect } from "@/components/app-select"
 import { AddButtonSelect, ButtonField } from "@/components/button-fields"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Button } from "@/components/ui/button"
@@ -18,11 +19,9 @@ import {
 } from "@/components/ui/field"
 import { PlusIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { WhatsappPreview } from "@/components/whatsapp-preview"
-import { CONTROL_SIZE } from "@/lib/control-size"
-import { languageOf } from "@/lib/page-language"
+import { LANGUAGE_NAMES, languageOf, PAGE_LANGUAGES } from "@/lib/page-language"
 import { saveAutomation } from "../api/automation-actions"
 import type {
   Automation,
@@ -50,13 +49,16 @@ type Problem = { error: AutomationProblem; field?: string }
 
 const newButton = (action: AutomationAction["type"]): AutomationButton => ({
   id: crypto.randomUUID(),
-  label: { en: "", es: "" },
+  label: Object.fromEntries(PAGE_LANGUAGES.map((language) => [language, ""])) as AutomationButton["label"],
   action: { type: action },
 })
 
-// Edits a flow: every word in both languages and its buttons (add, remove,
+// A field name's language: "wording.pt.body" → "pt".
+const LANGUAGE_PART = PAGE_LANGUAGES.join("|")
+
+// Edits a flow: every word in every language and its buttons (add, remove,
 // move up, rename), with the message as the customer reads it last (U2).
-// Both languages save together.
+// Every language saves together.
 export function AutomationEditor({
   businessId,
   businessName,
@@ -115,8 +117,8 @@ export function AutomationEditor({
   // A problem no single field shows, under the buttons.
   const shown = (field?: string) =>
     !!field &&
-    (/^wording\.(en|es)\.(body|handoffReply|servicesIntro)$/.test(field) ||
-      /^buttons\.\d+\.label\.(en|es)$/.test(field))
+    (new RegExp(`^wording\\.(${LANGUAGE_PART})\\.(body|handoffReply|servicesIntro)$`).test(field) ||
+      new RegExp(`^buttons\\.\\d+\\.label\\.(${LANGUAGE_PART})$`).test(field))
 
   // Puts {business} where the cursor is in the text.
   const insertBusiness = () => {
@@ -131,7 +133,7 @@ export function AutomationEditor({
     })
   }
 
-  // Saves both languages, or with null brings back Book's words. A refusal
+  // Saves every language, or with null brings back Book's words. A refusal
   // shows under its field, in its language.
   const save = (next: Draft | null) =>
     automation &&
@@ -143,7 +145,9 @@ export function AutomationEditor({
         if (!next) onClose()
         router.refresh()
       } else if (result) {
-        const other = result.field?.match(/\.(en|es)(\.|$)/)?.[1] as AutomationLanguage | undefined
+        const other = result.field?.match(new RegExp(`\\.(${LANGUAGE_PART})(\\.|$)`))?.[1] as
+          | AutomationLanguage
+          | undefined
         if (other) setLanguage(other)
         setProblem({ error: result.error, field: result.field })
       } else {
@@ -201,23 +205,16 @@ export function AutomationEditor({
           <fieldset disabled={pending} className="contents">
             <FieldGroup>
               <Field data-invalid={errorFor(`wording.${language}.body`) ? true : undefined}>
-                {/* The words below are in this language: a small switch on
+                {/* The words below are in this language: a small select on
                     the first field's row, as in the message editor. */}
                 <div className="flex items-center justify-between gap-2">
                   <FieldLabel htmlFor="automation-body">{t("text")}</FieldLabel>
-                  <Tabs
+                  <AppSelect
+                    aria-label={t("language")}
                     value={language}
-                    onValueChange={(value) => setLanguage(value as AutomationLanguage)}
-                  >
-                    <TabsList className={CONTROL_SIZE.tabsList}>
-                      <TabsTrigger value="en" className={CONTROL_SIZE.tab}>
-                        {t("english")}
-                      </TabsTrigger>
-                      <TabsTrigger value="es" className={CONTROL_SIZE.tab}>
-                        {t("spanish")}
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+                    onValueChange={setLanguage}
+                    options={PAGE_LANGUAGES.map((value) => ({ value, label: LANGUAGE_NAMES[value] }))}
+                  />
                 </div>
                 <Textarea
                   id="automation-body"

@@ -9,6 +9,14 @@ import type { AutomationRun } from "../types/automations"
 import { welcomeDefaults } from "../utils/automation-defaults"
 
 vi.mock("server-only", () => ({}))
+// Book's words in Portuguese and French come from the app's words.
+const { registerEnglishWords } = await import("@/lib/translations/interface-words")
+registerEnglishWords((await import("@/i18n/messages")).default)
+const { welcomeWords } = await import("./message-words")
+// Book's Welcome flow as the server reads it: Spanish from the migrated
+// database, Portuguese and French in English until Google's arrive.
+let words: Awaited<ReturnType<typeof welcomeWords>>
+const defaults = () => welcomeDefaults(words)
 const { ownerCheck } = vi.hoisted(() => ({ ownerCheck: vi.fn(async () => ({})) }))
 vi.mock("./queries", () => ({ getOwnerBusiness: ownerCheck }))
 const { automationRuns, automationsFor } = await import("./automation-queries")
@@ -44,6 +52,7 @@ beforeAll(async () => {
   process.env.DATABASE_URL = `file:${join(dir, "test.db")}`
   const { migrate } = await import("drizzle-orm/libsql/migrator")
   await migrate(db, { migrationsFolder: "drizzle" })
+  words = await welcomeWords()
   await db.$client.execute("PRAGMA foreign_keys = ON")
   await db.insert(user).values({ id: "admin", name: "Admin", email: "automation-query-admin@example.com", emailVerified: true })
 })
@@ -66,7 +75,7 @@ afterAll(() => {
 
 async function seedAutomations() {
   for (const businessId of ["one", "two"]) {
-    await db.insert(automations).values({ id: `${businessId}-welcome`, businessId, key: "welcome", trigger: "firstMessage", ...welcomeDefaults() })
+    await db.insert(automations).values({ id: `${businessId}-welcome`, businessId, key: "welcome", trigger: "firstMessage", ...defaults() })
   }
 }
 
@@ -83,7 +92,7 @@ test("the authorized first read initializes one disabled bilingual welcome and s
   const first = await automationsFor("one")
   expect(ownerCheck).toHaveBeenCalledWith("one")
   expect(first).toHaveLength(1)
-  expect(first[0]).toMatchObject({ trigger: "firstMessage", on: false, isDefault: true, ...welcomeDefaults() })
+  expect(first[0]).toMatchObject({ trigger: "firstMessage", on: false, isDefault: true, ...defaults() })
   expect(await automationsFor("one")).toEqual(first)
   const second = await automationsFor("two")
   expect(second[0].id).not.toBe(first[0].id)
@@ -103,7 +112,7 @@ test("run reads expose exactly the Contract fields and never another business's 
 
 test("state and automation filters combine without widening business scope", async () => {
   await seedAutomations()
-  await db.insert(automations).values({ id: "one-extra", businessId: "one", key: "extra", trigger: "firstMessage", ...welcomeDefaults() })
+  await db.insert(automations).values({ id: "one-extra", businessId: "one", key: "extra", trigger: "firstMessage", ...defaults() })
   await addRun("one-sent")
   await addRun("one-failed", { state: "failed" })
   await addRun("one-skipped", { state: "skipped" })
@@ -221,7 +230,7 @@ test("empty and whitespace-only searches leave the run list unchanged", async ()
 
 test("search combines with automation and state filters without widening tenant scope", async () => {
   await seedAutomations()
-  await db.insert(automations).values({ id: "one-extra", businessId: "one", key: "extra", trigger: "firstMessage", ...welcomeDefaults() })
+  await db.insert(automations).values({ id: "one-extra", businessId: "one", key: "extra", trigger: "firstMessage", ...defaults() })
   await addRun("match", { customerName: "Ana", state: "failed" })
   await addRun("wrong-state", { customerName: "Ana", state: "sent" })
   await addRun("wrong-automation", { customerName: "Ana", state: "failed", automationId: "one-extra" })

@@ -21,9 +21,8 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { PAGE_LANGUAGES } from "@/lib/page-language"
+import { LANGUAGE_NAMES, PAGE_LANGUAGES } from "@/lib/page-language"
 import { useOwnerLanguage } from "../i18n/provider"
-import { LANGUAGE_NAMES } from "../i18n/language"
 import { NAV_GROUPS } from "../navigation"
 import { THEMES, useSignOut } from "./account-menu"
 

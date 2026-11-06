@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
-import { es } from "react-day-picker/locale"
 
 import { DayStrip } from "@/components/day-strip"
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar"
@@ -29,6 +28,7 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
+import { dayPickerLocale } from "@/lib/day-picker-locale"
 import {
   addDaysTo,
   dateFromDay,
@@ -135,7 +135,7 @@ export function BookingsCalendar({
           <Calendar
             mode="single"
             required
-            locale={locale.startsWith("es") ? es : undefined}
+            locale={dayPickerLocale(locale)}
             month={dateFromDay(`${month}-01`)}
             onMonthChange={(date) => {
               // A new month opens on today or its 1st.

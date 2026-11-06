@@ -1,3 +1,5 @@
+import type { PageLanguage } from "@/lib/page-language"
+
 // What the owner's bell shows (docs/plans/in-app-notifications.md, N1).
 // Shared by the code that creates notifications (lib/in-app-notifications.ts)
 // and the bell (features/notifications).
@@ -31,7 +33,7 @@ export type InAppData = {
   // A WhatsApp message (BookingMessage) and its language, for Meta's review
   // and failed sends.
   message?: string
-  language?: "en" | "es"
+  language?: PageLanguage
   // Koblip-number templates sent this month and the limit.
   sent?: number
   limit?: number

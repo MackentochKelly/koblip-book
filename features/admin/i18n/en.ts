@@ -1,4 +1,3 @@
-import type { TranslationLanguage } from "@/lib/translations/languages"
 import type {
   TranslationAction,
   TranslationRuleKey,
@@ -339,8 +338,8 @@ const words = {
     koblipMessages: {
       // `name` comes in lower case: "Review booking confirmed".
       open: "Review {name}",
-      english: "English",
-      spanish: "Spanish",
+      // The language the words are in; each language is named in itself.
+      language: "Language",
       meta: "Meta",
       metaReason: "Meta's reason",
       preview: "Preview",
@@ -552,7 +551,6 @@ const words = {
       edited: "Edited",
       needs_review: "Needs review",
     } as const satisfies Record<TranslationStatus, string>,
-    languages: { es: "Spanish" } as const satisfies Record<TranslationLanguage, string>,
     // By a business text's field ("service.name"): a dot nests in next-intl,
     // so each table is its own group and `fields.service.name` still reads
     // (features/admin/utils/translation-labels.ts checks every field).

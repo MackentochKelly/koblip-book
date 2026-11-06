@@ -4,9 +4,6 @@
 // team, customers) are inserted, never translated. The audit log summaries
 // stay in English (they are for developers).
 const words = {
-  // One line in the short dynamic prompt part, so the model answers in
-  // the owner's language from the first word.
-  languageLine: "Reply in English.",
   steps: {
     overview: "Checking business…",
     services: "Listing services…",
@@ -506,13 +503,23 @@ const words = {
     on: "On",
     off: "Off",
     none: "None",
-    languages: { en: "English", es: "Spanish" },
+    languages: {
+      en: "English",
+      es: "Spanish",
+      pt: "Portuguese",
+      fr: "French",
+    },
     cantCome: { cancel: "Cancels the booking", alertOnly: "Only alerts you" },
     failed: "Could not save the settings ({error}).",
     done: "Reminder settings updated.",
   },
   messageWording: {
-    languages: { en: "English", es: "Spanish" },
+    languages: {
+      en: "English",
+      es: "Spanish",
+      pt: "Portuguese",
+      fr: "French",
+    },
     draftNote: "Goes to Meta only when you submit it.",
     failed: "Could not save the wording ({error}).",
     done: "Saved as a draft. Submit it to Meta on the Messages page.",
@@ -647,7 +654,7 @@ const words = {
     themeComingSoon: "{name} is coming soon; ready now: {ready}",
     messageUnknown: "unknown message: use a name from whatsapp_settings",
     onInvalid: "on must be true or false",
-    languageInvalid: "language must be en or es",
+    languageInvalid: "language must be one of {languages}",
     wordingLocked:
       "this business sends from Koblip's number: its wording is fixed and only turns on or off",
     remindersInvalid: "reminders must be at most {max} of these minutes: {choices}",

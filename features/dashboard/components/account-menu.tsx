@@ -30,9 +30,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useOwnerLanguage } from "@/features/dashboard/i18n/provider"
-import { LANGUAGE_NAMES } from "@/features/dashboard/i18n/language"
 import { authClient } from "@/lib/auth-client"
-import { PAGE_LANGUAGES, isPageLanguage } from "@/lib/page-language"
+import {
+  isPageLanguage,
+  LANGUAGE_NAMES,
+  PAGE_LANGUAGES,
+} from "@/lib/page-language"
 import { initials } from "@/lib/initials"
 import { cn } from "@/lib/utils"
 

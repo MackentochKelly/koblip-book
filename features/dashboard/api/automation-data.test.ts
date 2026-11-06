@@ -19,6 +19,14 @@ import { welcomeDefaults } from "../utils/automation-defaults"
 import { automationProblem } from "../utils/automation-rules"
 
 vi.mock("server-only", () => ({}))
+// Book's words in Portuguese and French come from the app's words.
+const { registerEnglishWords } = await import("@/lib/translations/interface-words")
+registerEnglishWords((await import("@/i18n/messages")).default)
+const { welcomeWords } = await import("./message-words")
+// Book's Welcome flow as the server reads it: Spanish from the migrated
+// database, Portuguese and French in English until Google's arrive.
+let words: Awaited<ReturnType<typeof welcomeWords>>
+const defaults = () => welcomeDefaults(words)
 const { readAutomations } = await import("./automation-data")
 let dir: string
 const NOW = "2026-10-31T20:00:00.000Z"
@@ -53,6 +61,7 @@ beforeAll(async () => {
   process.env.DATABASE_URL = `file:${join(dir, "test.db")}`
   const { migrate } = await import("drizzle-orm/libsql/migrator")
   await migrate(db, { migrationsFolder: "drizzle" })
+  words = await welcomeWords()
   await db.$client.execute("PRAGMA foreign_keys = ON")
   await db.insert(user).values({ id: "admin", name: "Admin", email: "automation-admin@example.com", emailVerified: true })
 })
@@ -76,18 +85,22 @@ test("a missing business has no automations and cannot create an orphaned welcom
   expect(await db.select().from(automations)).toEqual([])
 })
 
-test("first read stores one disabled welcome with complete English and Spanish defaults", async () => {
+test("first read stores one disabled welcome with complete defaults in every language", async () => {
   const [welcome] = await readAutomations("one")
+  // Portuguese and French are Google's; with none yet they read the English.
+  const english = { body: "Thanks for writing to {business}! Choose an option to get help faster.", handoffReply: "Got it, someone will answer you soon.", servicesIntro: "Choose a service to book." }
   expect(welcome).toEqual({
     id: expect.any(String), trigger: "firstMessage", on: false,
     wording: {
-      en: { body: "Thanks for writing to {business}! Choose an option to get help faster.", handoffReply: "Got it, someone will answer you soon.", servicesIntro: "Choose a service to book." },
+      en: english,
       es: { body: "¡Gracias por escribir a {business}! Elige una opción para ayudarte más rápido.", handoffReply: "Entendido, alguien te responderá pronto.", servicesIntro: "Elige un servicio para reservar." },
+      pt: english,
+      fr: english,
     },
     buttons: [
-      { id: "welcome-booking", label: { en: "Book now", es: "Reservar" }, action: { type: "bookingLink" } },
-      { id: "welcome-services", label: { en: "Our services", es: "Nuestros servicios" }, action: { type: "servicesList" } },
-      { id: "welcome-handoff", label: { en: "Talk to us", es: "Hablar con nosotros" }, action: { type: "handoff" } },
+      { id: "welcome-booking", label: { en: "Book now", es: "Reservar", pt: "Book now", fr: "Book now" }, action: { type: "bookingLink" } },
+      { id: "welcome-services", label: { en: "Our services", es: "Nuestros servicios", pt: "Our services", fr: "Our services" }, action: { type: "servicesList" } },
+      { id: "welcome-handoff", label: { en: "Talk to us", es: "Hablar con nosotros", pt: "Talk to us", fr: "Talk to us" }, action: { type: "handoff" } },
     ],
     isDefault: true, updatedAt: NOW,
   })
@@ -114,7 +127,7 @@ test("later reads preserve saved wording, reordered button identities, on/off an
   wording.en.body = "Hello from {business}, how can we help?"
   wording.es.handoffReply = "Nuestro equipo te responderá pronto."
   const buttons = [...first.buttons].reverse()
-  buttons[0] = { ...buttons[0], label: { en: "Our team", es: "Nuestro equipo" } }
+  buttons[0] = { ...buttons[0], label: { ...buttons[0].label, en: "Our team", es: "Nuestro equipo" } }
   await db.update(automations).set({ wording, buttons, on: true, isDefault: false }).where(eq(automations.id, first.id))
   const expected = { ...first, wording, buttons, on: true, isDefault: false, updatedAt: LATER }
   vi.setSystemTime("2026-11-02T20:00:00.000Z")
@@ -132,9 +145,9 @@ test("businesses receive separate rows and edits never leak into another busines
 
 test("reads return additional stored automations without overwriting them or adding another welcome", async () => {
   const [welcome] = await readAutomations("one")
-  const defaults = welcomeDefaults()
-  const wording = { ...defaults.wording, en: { ...defaults.wording.en, body: "More help from {business}." } }
-  await db.insert(automations).values({ id: "future", businessId: "one", key: "future-flow", trigger: "firstMessage", ...defaults, wording, on: true, isDefault: false })
+  const book = defaults()
+  const wording = { ...book.wording, en: { ...book.wording.en, body: "More help from {business}." } }
+  await db.insert(automations).values({ id: "future", businessId: "one", key: "future-flow", trigger: "firstMessage", ...book, wording, on: true, isDefault: false })
   const flows = await readAutomations("one")
   expect(flows).toHaveLength(2)
   expect(flows).toEqual(expect.arrayContaining([

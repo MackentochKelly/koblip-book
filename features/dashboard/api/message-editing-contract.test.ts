@@ -16,6 +16,12 @@ import type { MessageButton } from "../types/notifications"
 import { defaultButtons, defaultWording, withExamples, type TemplateLanguage } from "../utils/booking-templates"
 
 vi.mock("server-only", () => ({}))
+const { registerEnglishWords } = await import("@/lib/translations/interface-words")
+registerEnglishWords((await import("@/i18n/messages")).default)
+const { allBookWords } = await import("./message-words")
+// Book's words as the server reads them: Spanish from the migrated
+// database, Portuguese and French in English until Google's arrive.
+let book: Awaited<ReturnType<typeof allBookWords>>
 const { koblipMessages, koblipSendableTemplate } = await import("./chat-templates")
 const { notificationMessagesFor } = await import("./notifications")
 let dir: string
@@ -32,9 +38,9 @@ function submitted(language: TemplateLanguage) {
 function latest(language: TemplateLanguage) {
   return { ...submitted(language), header: language === "en" ? "Latest reminder" : "Último recordatorio", body: language === "en" ? "Latest saved message for {name} at {business}." : "Último mensaje guardado para {name} en {business}." }
 }
-function approvedView(language: TemplateLanguage) {
+function approvedView(language: (typeof languages)[number]) {
   const { buttons, ...wording } = submitted(language)
-  return { wording, buttons, preview: withExamples(wording.body, language) }
+  return { wording, buttons, preview: withExamples(wording.body, book[language]) }
 }
 async function koblipText(language: TemplateLanguage) {
   return (await koblipMessages()).find((row) => row.message === "reminder")!.texts[language]
@@ -59,6 +65,7 @@ beforeAll(async () => {
   process.env.DATABASE_URL = `file:${join(dir, "test.db")}`
   const { migrate } = await import("drizzle-orm/libsql/migrator")
   await migrate(db, { migrationsFolder: "drizzle" })
+  book = await allBookWords()
   await db.insert(businesses).values({ id: "biz", slug: "shop", name: "Shop", timezone: "America/Santo_Domingo", currency: "DOP" })
 })
 
@@ -77,7 +84,7 @@ afterAll(() => {
 
 test("unsaved Koblip messages expose defaults and no approved words in either language", async () => {
   for (const language of languages) {
-    expect(await koblipText(language)).toMatchObject({ isDefault: true, wording: defaultWording("reminder", language), buttons: defaultButtons("reminder", language), approved: null })
+    expect(await koblipText(language)).toMatchObject({ isDefault: true, wording: defaultWording("reminder", book[language]), buttons: defaultButtons("reminder", book[language]), approved: null })
     expect(await businessText(language)).toMatchObject({ isDefault: true, approved: null })
   }
 })
@@ -113,7 +120,7 @@ test("Use default changes the current words while custom approved words remain v
   }
   await db.delete(koblipNotificationTexts)
   for (const language of languages) {
-    const expected = { isDefault: true, wording: defaultWording("reminder", language), buttons: defaultButtons("reminder", language), approved: approvedView(language), review: "draft" }
+    const expected = { isDefault: true, wording: defaultWording("reminder", book[language]), buttons: defaultButtons("reminder", book[language]), approved: approvedView(language), review: "draft" }
     expect(await koblipText(language)).toMatchObject(expected)
     expect(await businessText(language)).toMatchObject(expected)
   }
@@ -154,7 +161,7 @@ test("legacy templates without a recorded submission do not present reconstructe
   expect((await businessText("en")).approved).toBeNull()
   // Keep the sender's existing fallback while withholding unverified preview words.
   expect((await koblipSendableTemplate("reminder", "en")).approved?.template)
-    .toMatchObject(defaultWording("reminder", "en"))
+    .toMatchObject(defaultWording("reminder", book.en))
   await connectOwn()
   await db.insert(chatTemplates).values({ businessId: "biz", message: "reminder", language: "en", chatTemplateId: "legacy-own", status: "approved" })
   expect((await businessText("en")).approved).toBeNull()
@@ -165,7 +172,7 @@ test("an unrecorded legacy live snapshot remains unknown while a recorded replac
     message: "reminder", language: "en", chatTemplateId: "next", version: 3,
     status: "pending", submitted: latest("en"),
     live: { chatTemplateId: "legacy", name: "koblip_booking_reminder_v2", snapshotKnown: false,
-      submitted: { ...defaultWording("reminder", "en"), buttons: defaultButtons("reminder", "en") } },
+      submitted: { ...defaultWording("reminder", book.en), buttons: defaultButtons("reminder", book.en) } },
   })
   expect((await koblipText("en")).approved).toBeNull()
   expect((await businessText("en")).approved).toBeNull()

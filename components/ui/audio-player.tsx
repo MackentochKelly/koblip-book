@@ -14,6 +14,7 @@ import {
   useState,
 } from "react"
 import * as SliderPrimitive from "@radix-ui/react-slider"
+import { useTranslations } from "next-intl"
 import {
   CheckIcon,
   PauseIcon,
@@ -387,6 +388,7 @@ interface SpinnerProps {
 }
 
 function Spinner({ className }: SpinnerProps) {
+  const t = useTranslations("app.ui")
   return (
     <div
       className={cn(
@@ -394,9 +396,9 @@ function Spinner({ className }: SpinnerProps) {
         className
       )}
       role="status"
-      aria-label="Loading"
+      aria-label={t("loading")}
     >
-      <span className="sr-only">Loading...</span>
+      <span className="sr-only">{t("loading")}</span>
     </div>
   )
 }
@@ -415,6 +417,7 @@ const PlayButton = ({
   loading,
   ...otherProps
 }: PlayButtonProps) => {
+  const t = useTranslations("app.ui")
   return (
     <Button
       {...otherProps}
@@ -423,7 +426,7 @@ const PlayButton = ({
         onClick?.(e)
       }}
       className={cn("relative", className)}
-      aria-label={playing ? "Pause" : "Play"}
+      aria-label={playing ? t("pause") : t("play")}
       type="button"
     >
       {playing ? (
@@ -538,10 +541,11 @@ export function AudioPlayerSpeed({
 }: AudioPlayerSpeedProps) {
   const player = useAudioPlayer()
   const currentSpeed = player.playbackRate
+  const t = useTranslations("app.ui")
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant={variant} size={size} className={cn(className)} aria-label="Playback speed" {...props} />}><SettingsIcon className="size-4" /></DropdownMenuTrigger>
+      <DropdownMenuTrigger render={<Button variant={variant} size={size} className={cn(className)} aria-label={t("playbackSpeed")} {...props} />}><SettingsIcon className="size-4" /></DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[120px]">
         {speeds.map((speed) => (
           <DropdownMenuItem
@@ -550,7 +554,7 @@ export function AudioPlayerSpeed({
             className="flex items-center justify-between"
           >
             <span className={speed === 1 ? "" : "font-mono"}>
-              {speed === 1 ? "Normal" : `${speed}x`}
+              {speed === 1 ? t("normalSpeed") : `${speed}x`}
             </span>
             {currentSpeed === speed && <CheckIcon className="size-4" />}
           </DropdownMenuItem>
@@ -572,12 +576,13 @@ export function AudioPlayerSpeedButtonGroup({
 }: AudioPlayerSpeedButtonGroupProps) {
   const player = useAudioPlayer()
   const currentSpeed = player.playbackRate
+  const t = useTranslations("app.ui")
 
   return (
     <div
       className={cn("flex items-center gap-1", className)}
       role="group"
-      aria-label="Playback speed controls"
+      aria-label={t("playbackSpeedControls")}
       {...props}
     >
       {speeds.map((speed) => (

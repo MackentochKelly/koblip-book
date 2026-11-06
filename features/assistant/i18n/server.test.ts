@@ -7,7 +7,6 @@ import type { ServerWords } from "../types"
 const t: ServerWords = await serverWords().getTranslations("assistantServer")
 
 test("the server's lines read as next-intl gives them", () => {
-  expect(t("languageLine")).toBe("Reply in English.")
   expect(t("steps.services")).toBe("Listing services…")
   expect(t("cards.cancel")).toBe("Cancel this booking?")
   expect(t("cancel.done")).toBe("Cancelled the booking.")

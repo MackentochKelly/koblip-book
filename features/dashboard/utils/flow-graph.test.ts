@@ -1,5 +1,6 @@
 import { expect, test } from "vitest"
 
+import { WELCOME_WORDS } from "../api/message-words.captured"
 import { welcomeDefaults } from "./automation-defaults"
 import { flowGraph } from "./flow-graph"
 
@@ -21,7 +22,7 @@ const labels = {
 }
 
 test("draws the trigger, the message and what each button does", () => {
-  const { steps, links } = flowGraph(welcomeDefaults(), "en", "Davida Salon", labels)
+  const { steps, links } = flowGraph(welcomeDefaults(WELCOME_WORDS), "en", "Davida Salon", labels)
   expect(steps.map((step) => step.title)).toEqual([
     "Customer writes",
     "Send message",
@@ -40,8 +41,8 @@ test("draws the trigger, the message and what each button does", () => {
 })
 
 test("a removed button takes its steps with it, and an unnamed one reads as what it does", () => {
-  const flow = welcomeDefaults()
-  const buttons = [{ ...flow.buttons[0], label: { en: "", es: "" } }]
+  const flow = welcomeDefaults(WELCOME_WORDS)
+  const buttons = [{ ...flow.buttons[0], label: { en: "", es: "", pt: "", fr: "" } }]
   const { steps } = flowGraph({ ...flow, buttons }, "en", "Davida Salon", labels)
   expect(steps).toHaveLength(3)
   expect(steps[1].outputs).toEqual([{ id: "welcome-booking", label: "Booking" }])

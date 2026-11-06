@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 
+import { bookExamples } from "@/features/dashboard/api/message-words"
 import {
   notificationMessagesFor,
   notificationSettingsFor,
@@ -20,16 +21,18 @@ export default async function WhatsappAlertsPage({
   const { businessId } = await params
   // Only the business's owner gets here.
   await getOwnerBusiness(businessId)
-  const [messages, settings, rules] = await Promise.all([
+  const [messages, settings, rules, examples] = await Promise.all([
     notificationMessagesFor(businessId),
     notificationSettingsFor(businessId),
     notificationRules(businessId),
+    bookExamples(),
   ])
   return (
     <WhatsappAlerts
       businessId={businessId}
       messages={messages}
       settings={settings}
+      examples={examples}
       limits={{
         maxHeader: rules.maxHeader,
         maxBody: rules.maxBody,

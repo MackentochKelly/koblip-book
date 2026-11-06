@@ -5,8 +5,13 @@ import type { PageLanguage } from "@/lib/page-language"
 const AFTERNOON_FROM = 12
 
 // When each language's evening greeting starts: "Buenas tardes" lasts until
-// about 8pm.
-export const EVENING_FROM: Record<PageLanguage, number> = { en: 18, es: 20 }
+// about 8pm; "Boa noite" and "Bonsoir" start at about 6pm, as "Good evening".
+export const EVENING_FROM: Record<PageLanguage, number> = {
+  en: 18,
+  es: 20,
+  pt: 18,
+  fr: 18,
+}
 
 export type PartOfDay = "morning" | "afternoon" | "evening"
 

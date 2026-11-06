@@ -16,7 +16,8 @@ vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }))
 vi.mock("../api/notification-actions", () => actions)
 
 const { BusinessMessageEditor } = await import("./business-message-editor")
-const { defaultButtons, defaultWording } = await import("../utils/booking-templates")
+const { defaultButtons, defaultWording, exampleValues } = await import("../utils/booking-templates")
+const { CAPTURED_BOOK_WORDS: words } = await import("../api/message-words.captured")
 type Message = import("../types/notifications").NotificationMessage
 
 afterEach(() => {
@@ -25,8 +26,8 @@ afterEach(() => {
 })
 
 const text = (language: "en" | "es", review: Message["texts"]["en"]["review"]) => ({
-  wording: defaultWording("reminder", language),
-  buttons: defaultButtons("reminder", language),
+  wording: defaultWording("reminder", words[language]),
+  buttons: defaultButtons("reminder", words[language]),
   isDefault: false,
   review,
   reason: null,
@@ -37,15 +38,23 @@ const reminder = (review: Message["texts"]["en"]["review"]): Message => ({
   message: "reminder",
   on: true,
   editable: true,
-  texts: { en: text("en", review), es: text("es", review) },
+  // Portuguese and French as Book shows them before Google's words come: English.
+  texts: { en: text("en", review), es: text("es", review), pt: text("en", review), fr: text("en", review) },
 })
+
+const examples = {
+  en: exampleValues(words.en),
+  es: exampleValues(words.es),
+  pt: exampleValues(words.en),
+  fr: exampleValues(words.en),
+}
 
 const limits = { maxHeader: 60, maxBody: 1024, maxFooter: 60, maxButtons: 3, maxButtonLabel: 20 }
 
 function open(item: Message, onClose = vi.fn()) {
   render(
     <WithWords>
-      <BusinessMessageEditor businessId="b1" item={item} limits={limits} onClose={onClose} />
+      <BusinessMessageEditor businessId="b1" item={item} limits={limits} examples={examples} onClose={onClose} />
     </WithWords>
   )
   return onClose

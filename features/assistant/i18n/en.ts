@@ -115,7 +115,6 @@ const words = {
     pause: "Pause {name}",
     // The language the voices speak in their samples.
     language: "Language",
-    languages: { en: "English", es: "Español" },
     start: "Start talking",
     setting: "Voice",
     none: "None chosen",

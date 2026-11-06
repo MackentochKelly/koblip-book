@@ -18,6 +18,19 @@ import type { Translator } from "./provider"
 
 vi.mock("server-only", () => ({}))
 
+// These tests follow Meta's Spanish to Google (G7), so they run in Spanish
+// only; the last one turns on every language.
+const languages = vi.hoisted(() => ({ only: ["es"] as string[] | null }))
+vi.mock("./languages", async (importOriginal) => {
+  const real = await importOriginal<typeof import("./languages")>()
+  return {
+    ...real,
+    get TRANSLATION_LANGUAGES() {
+      return languages.only ?? real.TRANSLATION_LANGUAGES
+    },
+  }
+})
+
 const { backfillPlan, runBackfill } = await import("./backfill")
 const { getBusinessTranslations, syncBusinessTexts } =
   await import("./business-texts")
@@ -591,4 +604,23 @@ test("the real run needs the go and Google itself", async () => {
     runBackfill({ translator: google(), confirm: false as unknown as true })
   ).rejects.toThrow("confirmed")
   expect(await snapshot()).toEqual(before)
+})
+
+test("the dry run counts every language's gaps; only Spanish has Meta's", async () => {
+  languages.only = null
+  try {
+    await service("s1", "Haircut")
+    await put("s1:service.name", "Haircut", meta("Corte"))
+    const plan = await backfillPlan(NOW)
+    const gap = { texts: 1, characters: "Haircut".length }
+    const none = { texts: 0, characters: 0 }
+    expect(plan.rows).toEqual([
+      { scope: "business", language: "es", meta: gap, fake: none, gaps: none, reused: 0, skipped: 0 },
+      { scope: "business", language: "fr", meta: none, fake: none, gaps: gap, reused: 0, skipped: 0 },
+      { scope: "business", language: "pt", meta: none, fake: none, gaps: gap, reused: 0, skipped: 0 },
+    ])
+    expect(plan).toMatchObject({ texts: 3, characters: 3 * "Haircut".length })
+  } finally {
+    languages.only = ["es"]
+  }
 })

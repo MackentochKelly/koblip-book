@@ -10,6 +10,7 @@ import {
   translationHistory,
   user,
 } from "@/lib/db/schema"
+import { TRANSLATION_LANGUAGES } from "./languages"
 import type { Translator } from "./provider"
 import { TRANSLATION_RULES } from "./rules"
 
@@ -67,11 +68,14 @@ async function entry(businessId: string, key: string) {
   return row
 }
 
+// The queue's work on one language, Spanish; every language goes the same
+// way (the last tests save in all of them).
 function sync(businessId: string, texts: Record<string, string>, removeMissing = false) {
   return syncTexts({
     scope: "business",
     businessId,
     removeMissing,
+    languages: ["es"],
     items: Object.entries(texts).map(([key, text]) => ({
       key,
       module: "service.name",
@@ -314,4 +318,35 @@ test("requests stay within Google's recommended size", () => {
   const batches = requestBatches(texts)
   // 100 texts at most; then 50 short ones and a 4,000 one share a request.
   expect(batches.map((batch) => batch.length)).toEqual([100, 51, 1, 1])
+})
+
+test("a save waits in every language, each sent to Google in its own code", async () => {
+  expect(
+    await syncTexts({
+      scope: "business",
+      businessId: "biz-a",
+      items: [{ key: "s1:service.name", module: "service.name", text: "Haircut" }],
+    })
+  ).toEqual({ added: TRANSLATION_LANGUAGES.length, changed: 0, removed: 0 })
+  const codes: string[] = []
+  const translator: Translator = {
+    name: "google",
+    async translate(htmls, googleLanguage) {
+      codes.push(googleLanguage)
+      return htmls.map((html) => `${googleLanguage}:${html}`)
+    },
+  }
+  expect(await runTranslationQueue({ now: at(0), translator })).toMatchObject({
+    translated: TRANSLATION_LANGUAGES.length,
+  })
+  expect(codes.sort()).toEqual(["es", "fr-FR", "pt-BR"])
+  const rows = await db
+    .select({ language: translationEntries.language, text: translationEntries.text })
+    .from(translationEntries)
+    .orderBy(translationEntries.language)
+  expect(rows).toEqual([
+    { language: "es", text: "es:Haircut" },
+    { language: "fr", text: "fr-FR:Haircut" },
+    { language: "pt", text: "pt-BR:Haircut" },
+  ])
 })

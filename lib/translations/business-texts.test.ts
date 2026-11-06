@@ -17,6 +17,7 @@ import {
   translationHistory,
   user,
 } from "@/lib/db/schema"
+import { TRANSLATION_LANGUAGES } from "./languages"
 import type { Translator } from "./provider"
 
 vi.mock("server-only", () => ({}))
@@ -33,15 +34,16 @@ let dir: string
 let closeDb: () => void
 let db: (typeof import("@/lib/db"))["db"]
 
-// Google stand-in: "ES:" before the text.
+// Google stand-in: Google's language code before the text ("ES:",
+// "PT-BR:", "FR-FR:").
 const google: Translator = {
   name: "google",
-  async translate(htmls) {
-    return htmls.map((html) => `ES:${html}`)
+  async translate(htmls, googleLanguage) {
+    return htmls.map((html) => `${googleLanguage.toUpperCase()}:${html}`)
   },
 }
 
-async function entries(businessId: string) {
+async function entries(businessId: string, language?: string) {
   return db
     .select({
       key: translationEntries.key,
@@ -50,7 +52,12 @@ async function entries(businessId: string) {
       text: translationEntries.text,
     })
     .from(translationEntries)
-    .where(eq(translationEntries.businessId, businessId))
+    .where(
+      and(
+        eq(translationEntries.businessId, businessId),
+        language === undefined ? undefined : eq(translationEntries.language, language)
+      )
+    )
     .orderBy(translationEntries.key)
 }
 
@@ -142,20 +149,27 @@ test("a save records every text of the business once, waiting for Google", async
   await db.insert(teamMembers).values({ id: "t1", businessId: "biz", name: "Ana", description: "Barber", about: "Ten years cutting hair.", position: 0 })
   await db.insert(businessPolicies).values({ id: "p1", businessId: "biz", kind: "booking", body: "Cancel a day ahead." })
   await db.insert(businessPolicyPoints).values({ id: "k1", businessId: "biz", icon: "clock", title: "On time", body: "Come early.", position: 0 })
-  expect(await syncBusinessTexts("biz")).toEqual({ added: 11, changed: 0, removed: 0 })
-  expect((await entries("biz")).map((row) => [row.key, row.status])).toEqual([
-    ["biz:business.category", "pending"],
-    ["biz:business.description", "pending"],
-    ["c1:service_category.name", "pending"],
-    ["g1:addon_group.prompt", "pending"],
-    ["k1:policy_point.body", "pending"],
-    ["k1:policy_point.title", "pending"],
-    ["o1:addon.name", "pending"],
-    ["p1:policy.body", "pending"],
-    ["s1:service.name", "pending"],
-    ["t1:team_member.about", "pending"],
-    ["t1:team_member.description", "pending"],
-  ])
+  // 11 texts, each waiting in every language.
+  expect(await syncBusinessTexts("biz")).toEqual({
+    added: 11 * TRANSLATION_LANGUAGES.length,
+    changed: 0,
+    removed: 0,
+  })
+  for (const language of TRANSLATION_LANGUAGES) {
+    expect((await entries("biz", language)).map((row) => [row.key, row.status])).toEqual([
+      ["biz:business.category", "pending"],
+      ["biz:business.description", "pending"],
+      ["c1:service_category.name", "pending"],
+      ["g1:addon_group.prompt", "pending"],
+      ["k1:policy_point.body", "pending"],
+      ["k1:policy_point.title", "pending"],
+      ["o1:addon.name", "pending"],
+      ["p1:policy.body", "pending"],
+      ["s1:service.name", "pending"],
+      ["t1:team_member.about", "pending"],
+      ["t1:team_member.description", "pending"],
+    ])
+  }
   // Saving again with nothing changed sends nothing.
   expect(await syncBusinessTexts("biz")).toEqual({ added: 0, changed: 0, removed: 0 })
 })
@@ -169,7 +183,9 @@ test("demo copies and missing businesses are never translated", async () => {
 test("a removed service's translations go at the next save", async () => {
   await syncBusinessTexts("biz")
   await db.delete(services).where(eq(services.id, "s1"))
-  expect(await syncBusinessTexts("biz")).toMatchObject({ removed: 1 })
+  expect(await syncBusinessTexts("biz")).toMatchObject({
+    removed: TRANSLATION_LANGUAGES.length,
+  })
   expect((await entries("biz")).map((row) => row.key)).not.toContain("s1:service.name")
 })
 
@@ -209,7 +225,10 @@ test("the assistant finds a service by its shown translated name", async () => {
   await syncBusinessTexts("biz")
   expect(await getServiceNameTranslations("biz")).toEqual([])
   await runTranslationQueue({ translator: google })
-  expect(await getServiceNameTranslations("biz")).toEqual([
+  const names = await getServiceNameTranslations("biz")
+  expect(names.sort((a, b) => a.text.localeCompare(b.text))).toEqual([
     { serviceId: "s1", sourceText: "Haircut", text: "ES:Haircut" },
+    { serviceId: "s1", sourceText: "Haircut", text: "FR-FR:Haircut" },
+    { serviceId: "s1", sourceText: "Haircut", text: "PT-BR:Haircut" },
   ])
 })

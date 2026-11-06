@@ -12,9 +12,14 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { isPageLanguage, languageOf } from "@/lib/page-language"
+import {
+  isPageLanguage,
+  LANGUAGE_NAMES,
+  languageOf,
+  PAGE_LANGUAGES,
+} from "@/lib/page-language"
 
-// The globe that switches the page between English and Spanish. Each
+// The globe that switches the page between the app's languages. Each
 // language is named in itself; the choice is kept in the address (?lang=).
 export function LanguageMenu({ className }: { className?: string }) {
   const t = useTranslations("app.languageMenu")
@@ -48,12 +53,16 @@ export function LanguageMenu({ className }: { className?: string }) {
         <DropdownMenuRadioGroup value={language} onValueChange={change}>
           {/* Picking a language closes the menu (Base UI keeps a radio
               menu open by default). */}
-          <DropdownMenuRadioItem value="en" lang="en" closeOnClick>
-            English
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="es" lang="es" closeOnClick>
-            Español
-          </DropdownMenuRadioItem>
+          {PAGE_LANGUAGES.map((code) => (
+            <DropdownMenuRadioItem
+              key={code}
+              value={code}
+              lang={code}
+              closeOnClick
+            >
+              {LANGUAGE_NAMES[code]}
+            </DropdownMenuRadioItem>
+          ))}
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>

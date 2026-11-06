@@ -88,3 +88,15 @@ test("Spanish owners bias toward Spanish", async () => {
   const body = await res.json()
   expect(body.handshake.languageBias).toEqual(["Spanish"])
 })
+
+test("Portuguese and French owners bias toward their language", async () => {
+  for (const [language, bias] of [
+    ["pt", "Portuguese"],
+    ["fr", "French"],
+  ] as const) {
+    vi.mocked(getOwnerLanguage).mockResolvedValue(language)
+    const res = await GET(new Request(URL))
+    const body = await res.json()
+    expect(body.handshake.languageBias).toEqual([bias])
+  }
+})

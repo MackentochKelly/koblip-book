@@ -11,7 +11,12 @@ import { SwitchCard } from "@/components/switch-card"
 import { ItemGroup } from "@/components/ui/item"
 import { setMessageOn } from "../api/notification-actions"
 import type { NotificationMessage, TemplateReview } from "../types/notifications"
-import type { BookingMessage } from "../utils/booking-templates"
+import {
+  TEMPLATE_LANGUAGES,
+  type BookingField,
+  type BookingMessage,
+  type TemplateLanguage,
+} from "../utils/booking-templates"
 import type { EditorLimits } from "@/components/message-editor"
 import { BusinessMessageEditor } from "./business-message-editor"
 
@@ -21,10 +26,12 @@ export function WhatsappMessageList({
   businessId,
   messages,
   limits,
+  examples,
 }: {
   businessId: string
   messages: NotificationMessage[]
   limits: EditorLimits
+  examples: Record<TemplateLanguage, Record<BookingField, string>>
 }) {
   // The open message is read from `messages`, so after a save or submit the
   // page's refresh shows Meta's new review in the editor too.
@@ -54,17 +61,18 @@ export function WhatsappMessageList({
         businessId={businessId}
         item={messages.find((item) => item.message === editing) ?? null}
         limits={limits}
+        examples={examples}
         onClose={() => setEditing(null)}
       />
     </div>
   )
 }
 
-// The review a message shows: the worse of its two languages.
+// The review a message shows: the worst of its languages.
 function reviewOf(item: NotificationMessage): TemplateReview {
-  const both = [item.texts.en.review, item.texts.es.review]
+  const all = TEMPLATE_LANGUAGES.map((language) => item.texts[language].review)
   for (const review of ["rejected", "missing", "draft", "waiting"] as const) {
-    if (both.includes(review)) return review
+    if (all.includes(review)) return review
   }
   return "approved"
 }

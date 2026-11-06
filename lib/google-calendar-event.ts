@@ -78,7 +78,9 @@ export function eventOf(
     booking.note ? t("note", { note: booking.note }) : null,
     booking.priceMinor !== null
       ? t("price", {
-          price: formatPrice(booking.priceMinor, booking.currency, place.language === "es" ? "es" : "en-US"),
+          // The language's own format: Intl reads "en" as the US, "pt" as
+          // Brazil and "fr" as France.
+          price: formatPrice(booking.priceMinor, booking.currency, place.language),
         })
       : null,
     // The bookings of that day in the owner area.

@@ -10,6 +10,7 @@ import { db } from "@/lib/db"
 import { googleBusyTimes } from "@/lib/google-calendar-busy"
 import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
+import { DEFAULT_LANGUAGE, isPageLanguage } from "@/lib/page-language"
 import {
   bookingAddons,
   bookings,
@@ -275,7 +276,7 @@ export async function createOwnerBooking(
           status: "confirmed",
           note,
           whatsappOptIn: !!phone && input.whatsappOptIn === true,
-          language: input.language === "es" ? "es" : "en",
+          language: isPageLanguage(input.language) ? input.language : DEFAULT_LANGUAGE,
         }),
         ...(addonCheck.options.length > 0
           ? [

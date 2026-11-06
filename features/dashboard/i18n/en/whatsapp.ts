@@ -1,6 +1,10 @@
+import bookWording from "./whatsapp-wording"
+
 // The Automations page: booking messages sent on WhatsApp through Koblip
 // Chat, in English as ICU messages (docs/plans/translations.md, G4).
 const whatsapp = {
+  // Book's own wording for the messages it sends (G8).
+  bookWording,
   connectTitle: "Connect Koblip Chat to send WhatsApp messages",
   connect: "Connect",
   // The page's parts: tabs, pinned under the top bar on a phone.
@@ -153,8 +157,9 @@ const whatsapp = {
   // The message's name comes lowercase.
   edit: "Edit {name}",
   turnOn: "Send {name}",
-  english: "English",
-  spanish: "Spanish",
+  // The language the words below are in; each language is named in itself
+  // (LANGUAGE_NAMES in lib/page-language.ts).
+  language: "Language",
   title: "Title",
   text: "Text",
   footer: "Footer",

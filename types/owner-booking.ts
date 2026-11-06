@@ -1,3 +1,5 @@
+import type { PageLanguage } from "@/lib/page-language"
+
 export interface OwnerBookingInput {
   businessId: string
   serviceId: string
@@ -10,7 +12,7 @@ export interface OwnerBookingInput {
   note: string | null
   allowConflict: boolean // true = the owner said "Book anyway"
   whatsappOptIn?: boolean // the customer agreed to WhatsApp booking messages
-  language?: "en" | "es" // the language their messages go in
+  language?: PageLanguage // the language their messages go in
 }
 export type OwnerBookingResult =
   | { status: "booked"; bookingId: string }

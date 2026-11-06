@@ -1,8 +1,19 @@
-export const PAGE_LANGUAGES = ["en", "es"] as const
+// The app's languages (docs/plans/translations.md, Language scope): English
+// first, then the ones Google translates it into.
+export const PAGE_LANGUAGES = ["en", "es", "pt", "fr"] as const
 
 export type PageLanguage = (typeof PAGE_LANGUAGES)[number]
 
 export const DEFAULT_LANGUAGE: PageLanguage = "en"
+
+// Each language named in itself, as Airbnb and Booking.com do: every
+// language menu and list shows these, never a translated name.
+export const LANGUAGE_NAMES: Record<PageLanguage, string> = {
+  en: "English",
+  es: "Español",
+  pt: "Português",
+  fr: "Français",
+}
 
 // Set by proxy.ts on every page request: the page's language, for <html lang>.
 export const PAGE_LANGUAGE_HEADER = "x-page-language"
@@ -12,7 +23,7 @@ export const PAGE_LANGUAGE_HEADER = "x-page-language"
 export const OWNER_LANGUAGE_COOKIE = "owner-lang"
 
 export function isPageLanguage(value: unknown): value is PageLanguage {
-  return value === "en" || value === "es"
+  return (PAGE_LANGUAGES as readonly unknown[]).includes(value)
 }
 
 // The page language a format locale is in ("es-ES" → "es"), else English.
@@ -23,8 +34,8 @@ export function languageOf(locale: string): PageLanguage {
   return isPageLanguage(primary) ? primary : DEFAULT_LANGUAGE
 }
 
-// The language a ?lang= value names ("en" or "es", the first one if
-// repeated), or null when it names none.
+// The language a ?lang= value names (one of PAGE_LANGUAGES, the first one
+// if repeated), or null when it names none.
 export function languageParam(
   param: string | string[] | undefined
 ): PageLanguage | null {
@@ -34,9 +45,9 @@ export function languageParam(
   return param?.find(isPageLanguage) ?? null
 }
 
-// The ?lang= value wins ("en" or "es", any other value is ignored); else the
-// first Accept-Language entry (by q order) that is en or es (es-MX → es);
-// else "en".
+// The ?lang= value wins (one of PAGE_LANGUAGES, any other value is
+// ignored); else the first Accept-Language entry (by q order) in one of
+// them, whatever its region (es-MX → es, pt-PT → pt, fr-CA → fr); else "en".
 export function pickLanguage(
   param: string | string[] | undefined,
   acceptLanguage: string | null
@@ -46,7 +57,7 @@ export function pickLanguage(
     return linked
   }
   for (const tag of rankedTags(acceptLanguage)) {
-    // Primary subtag only: es-MX → es.
+    // Primary subtag only: es-MX → es, pt-PT → pt.
     const primary = tag.split("-")[0].toLowerCase()
     if (isPageLanguage(primary)) {
       return primary
@@ -88,10 +99,13 @@ function rankedTags(acceptLanguage: string | null): string[] {
     .map((entry) => entry.tag)
 }
 
-// How numbers, prices and dates read when the browser names no region.
+// How numbers, prices and dates read when the browser names no region
+// (docs/plans/translations.md, Language scope).
 export const DEFAULT_LOCALES: Record<PageLanguage, string> = {
   en: "en-US",
   es: "es-US",
+  pt: "pt-BR",
+  fr: "fr-FR",
 }
 
 // A language with a region (es-ES), or null when the tag is not one Intl
@@ -115,9 +129,9 @@ function regionOf(tag: string): string | undefined {
 }
 
 // The format for `language`, from the visitor's own region: the browser's
-// tag for that language (es-ES: "1234 €"), else that language in the
-// browser's first region (English on a Spanish phone: en-ES), else the
-// language's default. Only the format changes, never the currency.
+// tag for that language (es-ES: "1234 €", pt-PT, fr-CA), else that language
+// in the browser's first region (English on a Spanish phone: en-ES), else
+// the language's default. Only the format changes, never the currency.
 export function pickLocale(
   language: PageLanguage,
   acceptLanguage: string | null

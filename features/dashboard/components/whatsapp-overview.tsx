@@ -35,7 +35,7 @@ import { PhoneInput } from "@/components/phone-input"
 import { AppSelect } from "@/components/app-select"
 import { Spinner } from "@/components/ui/spinner"
 import { PHONE_PATTERN } from "@/lib/booking-rules"
-import { languageOf } from "@/lib/page-language"
+import { LANGUAGE_NAMES, languageOf } from "@/lib/page-language"
 import { activityQuery } from "@/lib/whatsapp-activity-filter"
 import type { ActivityStats } from "@/lib/whatsapp-activity"
 import {
@@ -215,7 +215,7 @@ function StatusCard({
     drafts.map(
       (item) =>
         `${t(`names.${item.message}`)} (${list.format(
-          item.languages.map((language) => (language === "en" ? t("english") : t("spanish")))
+          item.languages.map((language) => LANGUAGE_NAMES[language])
         )})`
     )
   )

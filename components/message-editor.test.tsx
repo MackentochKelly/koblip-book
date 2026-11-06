@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, expect, test, vi } from "vitest"
 
+import { WithWords } from "@/i18n/testing"
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }))
@@ -24,8 +26,7 @@ const openTemplate = () => fireEvent.click(screen.getByRole("tab", { name: t.tem
 const labels: import("./message-editor").MessageEditorLabels = {
   ...t,
   edit: (name) => `Edit ${name}`,
-  english: "English",
-  spanish: "Spanish",
+  language: "Language",
   metaReason: "Meta's reason",
   review: { missing: "Draft", draft: "Draft", waiting: "In review", approved: "Approved", rejected: "Rejected" },
   readOnly: "Read-only",
@@ -56,21 +57,23 @@ const item = (approved: Item["texts"]["en"]["approved"]): Item => {
     editable: true,
     fields: ["name"],
     buttonActions: [],
-    texts: { en: text, es: text },
+    texts: { en: text, es: text, pt: text, fr: text },
   }
 }
 
 function open(value: Item) {
   render(
-    <MessageEditor
-      item={value}
-      labels={labels}
-      limits={limits}
-      preview={(body) => body.replace("{name}", "Ana")}
-      onSave={vi.fn()}
-      onSubmit={vi.fn()}
-      onClose={vi.fn()}
-    />
+    <WithWords>
+      <MessageEditor
+        item={value}
+        labels={labels}
+        limits={limits}
+        preview={(body) => body.replace("{name}", "Ana")}
+        onSave={vi.fn()}
+        onSubmit={vi.fn()}
+        onClose={vi.fn()}
+      />
+    </WithWords>
   )
 }
 

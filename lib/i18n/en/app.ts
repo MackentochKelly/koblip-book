@@ -108,6 +108,45 @@ const words = {
     text: "Try again in a few minutes.",
     retry: "Try again",
   },
+  // The shadcn parts in components/ui: words people see or hear (screen
+  // readers included). A part that takes a word as a prop uses its word
+  // here when the caller gives none.
+  ui: {
+    loading: "Loading",
+    close: "Close",
+    // sidebar.tsx
+    sidebar: "Sidebar",
+    sidebarDescription: "Displays the mobile sidebar.",
+    toggleSidebar: "Toggle Sidebar",
+    // carousel.tsx: what a screen reader calls the carousel and each slide.
+    carousel: "carousel",
+    slide: "slide",
+    previousSlide: "Previous slide",
+    nextSlide: "Next slide",
+    // pagination.tsx
+    pagination: "pagination",
+    previous: "Previous",
+    next: "Next",
+    previousPage: "Go to previous page",
+    nextPage: "Go to next page",
+    morePages: "More pages",
+    // message-scroller.tsx
+    scrollToEnd: "Scroll to end",
+    scrollToStart: "Scroll to start",
+    // command.tsx: CommandDialog's hidden title and description.
+    commandTitle: "Command Palette",
+    commandDescription: "Search for a command to run...",
+    // audio-player.tsx
+    play: "Play",
+    pause: "Pause",
+    playbackSpeed: "Playback speed",
+    normalSpeed: "Normal",
+    playbackSpeedControls: "Playback speed controls",
+    // voice-picker.tsx
+    selectVoice: "Select a voice...",
+    searchVoices: "Search voices...",
+    noVoice: "No voice found.",
+  },
 } as const
 
 export default words

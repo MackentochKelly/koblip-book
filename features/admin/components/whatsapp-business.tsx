@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/item"
 import { Switch } from "@/components/ui/switch"
 import { useFormatDuration } from "@/hooks/use-format-duration"
-import { languageOf } from "@/lib/page-language"
+import { languageOf, PAGE_LANGUAGES, type PageLanguage } from "@/lib/page-language"
 import {
   resetBusinessSettings,
   resetBusinessWording,
@@ -28,7 +28,7 @@ import {
 
 type Message = keyof Messages["admin"]["whatsapp"]["messages"]
 type Review = keyof Messages["admin"]["whatsapp"]["review"]
-type Language = "en" | "es"
+type Language = PageLanguage
 
 // One business's WhatsApp as its page reads it (the page passes it in from
 // the business's own WhatsApp code).
@@ -63,7 +63,7 @@ export type BusinessWhatsapp = {
   }[]
 }
 
-const LANGUAGES: readonly Language[] = ["en", "es"]
+const LANGUAGES: readonly Language[] = PAGE_LANGUAGES
 
 type Ask =
   | { kind: "disconnect" }

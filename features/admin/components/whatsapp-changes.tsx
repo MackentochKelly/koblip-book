@@ -19,6 +19,7 @@ import {
   NOTIFICATION_RULES,
   type NotificationRuleKey,
 } from "@/lib/notification-rules"
+import { isPageLanguage, LANGUAGE_NAMES } from "@/lib/page-language"
 import { BOOKING_MESSAGES } from "@/lib/whatsapp-messages"
 import type { WhatsappChange } from "../api/whatsapp-changes"
 import { formatRuleValue, type RuleWords } from "../utils/rule-values"
@@ -41,12 +42,9 @@ function describe(
     const message = BOOKING_MESSAGES.find((item) => item === value)
     return message ? t(`messages.${message}`) : String(value)
   }
+  // Each language named in itself, as every language list shows it.
   const languageName = (language: string | undefined) =>
-    language === "es"
-      ? t("koblipMessages.spanish")
-      : language === "en"
-        ? t("koblipMessages.english")
-        : null
+    isPageLanguage(language) ? LANGUAGE_NAMES[language] : null
   if (isRule(change.key)) {
     const key = change.key
     const value = (v: unknown) =>

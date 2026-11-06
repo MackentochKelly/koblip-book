@@ -1,14 +1,18 @@
+import { createTranslator, type Messages } from "next-intl"
+
 import { fieldsToLabels, fieldsFromLabels, fillFields } from "@/lib/message-fields"
 import type { ButtonsProblem, WordingProblem } from "@/types/koblip-messages"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { durationIn, type DurationWords } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
+import { DEFAULT_LOCALES, PAGE_LANGUAGES, type PageLanguage } from "@/lib/page-language"
+import { BOOKING_MESSAGES } from "@/lib/whatsapp-messages"
 import type { BookingMessage } from "@/types/whatsapp"
 import type { ButtonAction, MessageButton, OwnerAlert } from "../types/notifications"
 
-// Book's WhatsApp booking messages, as Meta templates (Utility) in English and
-// Spanish (docs/koblip-chat-integration.md, step 2). Book creates them in each
+// Book's WhatsApp booking messages, as Meta templates (Utility) in every page
+// language (docs/koblip-chat-integration.md, step 2). Book creates them in each
 // business's Koblip Chat when the owner submits them to Meta; inside the
 // 24-hour window the same words go as
 // plain text. Owners edit them with named fields ({name}, {service}…); Meta
@@ -17,7 +21,9 @@ import type { ButtonAction, MessageButton, OwnerAlert } from "../types/notificat
 // The kinds of message are shared with the admin (types/whatsapp.ts, D33).
 export type { BookingMessage } from "@/types/whatsapp"
 
-export type TemplateLanguage = "en" | "es"
+// A template in every language a customer can book in: each language is its
+// own template at Meta, reviewed on its own (docs/plans/translations.md, G8).
+export type TemplateLanguage = PageLanguage
 
 export type BookingField =
   | "name"
@@ -46,7 +52,23 @@ export function isOwnerAlert(message: string): message is OwnerAlert {
   return (OWNER_ALERTS as readonly string[]).includes(message)
 }
 
-export const TEMPLATE_LANGUAGES: readonly TemplateLanguage[] = ["en", "es"]
+export const TEMPLATE_LANGUAGES: readonly TemplateLanguage[] = PAGE_LANGUAGES
+
+// Meta's code for each language, from Meta's list
+// (developers.facebook.com/docs/whatsapp/business-management-api/
+// message-templates/supported-languages, read 2026-11-06): English "en",
+// Spanish "es", Portuguese (BR) "pt_BR", French "fr". Chat passes it to
+// Meta as it is, and lists templates with it.
+const META_LANGUAGES: Record<TemplateLanguage, string> = {
+  en: "en",
+  es: "es",
+  pt: "pt_BR",
+  fr: "fr",
+}
+
+export function metaLanguage(language: TemplateLanguage): string {
+  return META_LANGUAGES[language]
+}
 
 // The fields each message may use: the customer's messages name the business
 // and where it is, the owner's alerts give the customer's phone.
@@ -58,95 +80,92 @@ export function messageFields(message: BookingMessage): BookingField[] {
 
 export type Wording = { header: string; body: string; footer: string }
 
-const DEFAULT_WORDING: Record<TemplateLanguage, Record<BookingMessage, Wording>> = {
-  en: {
-    confirmed: {
-      header: "Booking confirmed",
-      body: "Hi {name}, your {service} at {business} is booked for {date} at {time}. We look forward to seeing you then!",
-      footer: "Reply here to talk to us",
-    },
-    reminder: {
-      header: "Appointment reminder",
-      body: "Hi {name}, a reminder of your {service} at {business} on {date} at {time}. See you soon!",
-      footer: "Reply here to talk to us",
-    },
-    changed: {
-      header: "Booking changed",
-      body: "Hi {name}, your {service} at {business} has been moved to {date} at {time}. We look forward to seeing you then!",
-      footer: "Reply here to talk to us",
-    },
-    cancelled: {
-      header: "Booking cancelled",
-      body: "Hi {name}, your {service} at {business} on {date} at {time} has been cancelled. We hope to see you soon.",
-      footer: "Reply here to talk to us",
-    },
-    ownerNewBooking: {
-      header: "New booking",
-      body: "New booking from {name}: {service} on {date} at {time}. Phone: {phone}. Open Koblip Book for details.",
-      footer: "Reply here to talk to us",
-    },
-    ownerCantCome: {
-      header: "Customer can't come",
-      body: "Your customer {name} can't make it to {service} on {date} at {time}. The booking is still on. Phone: {phone}. Open Koblip Book for details.",
-      footer: "Reply here to talk to us",
-    },
-    ownerCancelled: {
-      header: "Customer cancelled",
-      body: "Your customer {name} cancelled {service} on {date} at {time}, and the time is free again. Phone: {phone}. Open Koblip Book for details.",
-      footer: "Reply here to talk to us",
-    },
-    ownerFailed: {
-      header: "Message not sent",
-      body: "A WhatsApp message to {name} about {service} on {date} at {time} was not sent. Phone: {phone}. Open Koblip Book to see why.",
-      footer: "Reply here to talk to us",
-    },
-  },
-  es: {
-    confirmed: {
-      header: "Reserva confirmada",
-      body: "Hola {name}, tu {service} en {business} está reservado para el {date} a las {time}. ¡Te esperamos!",
-      footer: "Responde aquí para hablar con nosotros",
-    },
-    reminder: {
-      header: "Recordatorio de cita",
-      body: "Hola {name}, te recordamos tu cita de {service} en {business} el {date} a las {time}. ¡Te esperamos, hasta pronto!",
-      footer: "Responde aquí para hablar con nosotros",
-    },
-    changed: {
-      header: "Reserva cambiada",
-      body: "Hola {name}, tu cita de {service} en {business} se ha movido al {date} a las {time}. ¡Te esperamos con gusto!",
-      footer: "Responde aquí para hablar con nosotros",
-    },
-    cancelled: {
-      header: "Reserva cancelada",
-      body: "Hola {name}, tu {service} en {business} el {date} a las {time} fue cancelado. Esperamos verte pronto.",
-      footer: "Responde aquí para hablar con nosotros",
-    },
-    ownerNewBooking: {
-      header: "Nueva reserva",
-      body: "Nueva reserva de {name}: {service} el {date} a las {time}. Teléfono: {phone}. Abre Koblip Book para ver más.",
-      footer: "Responde aquí para hablar con nosotros",
-    },
-    ownerCantCome: {
-      header: "El cliente no puede venir",
-      body: "Tu cliente {name} no podrá ir a {service} el {date} a las {time}. La reserva sigue en pie. Teléfono: {phone}. Abre Koblip Book para ver más.",
-      footer: "Responde aquí para hablar con nosotros",
-    },
-    ownerCancelled: {
-      header: "El cliente canceló",
-      body: "Tu cliente {name} canceló {service} el {date} a las {time}, y la hora queda libre. Teléfono: {phone}. Abre Koblip Book para ver más.",
-      footer: "Responde aquí para hablar con nosotros",
-    },
-    ownerFailed: {
-      header: "Mensaje no enviado",
-      body: "Un mensaje de WhatsApp para {name} sobre {service} el {date} a las {time} no se envió. Teléfono: {phone}. Abre Koblip Book para ver por qué.",
-      footer: "Responde aquí para hablar con nosotros",
-    },
-  },
+// Book's own words for its messages in one language: the wording and buttons
+// a message has until the owner writes their own, the sample values Meta
+// reviews with, the words for a value a booking lacks, and the thank-you.
+export type BookWords = {
+  language: TemplateLanguage
+  // Dates, times and prices in the language's own formats, as the booking
+  // page writes them by default (DEFAULT_LOCALES in lib/page-language.ts).
+  locale: string
+  wording: Record<BookingMessage, Wording>
+  buttons: Record<ButtonAction, string>
+  examples: Record<BookingField, string>
+  missing: { teamMember: string; free: string; price: string }
+  thankYou: string
 }
 
-export function defaultWording(message: BookingMessage, language: TemplateLanguage): Wording {
-  return DEFAULT_WORDING[language][message]
+// Each field as itself: the words keep {name}, {service}… for Book to fill.
+const FIELD_TOKENS: Record<BookingField, string> = {
+  name: "{name}",
+  service: "{service}",
+  business: "{business}",
+  date: "{date}",
+  time: "{time}",
+  teamMember: "{teamMember}",
+  duration: "{duration}",
+  price: "{price}",
+  address: "{address}",
+  phone: "{phone}",
+}
+
+// The sample business, a name, so the same in every language.
+const SAMPLE_BUSINESS = "Lumen Studio"
+
+// The sample booking's length, in the app's words for a length of time.
+const SAMPLE_MINUTES = 45
+
+// Book's words in one language, from that language's app words
+// (owner.whatsapp.bookWording, ../i18n/en/whatsapp-wording.ts): the server
+// reads them with wordsFor (../api/message-words.ts, bookWordsFor), where
+// English is the code's and every other language is the database's, with
+// the English until a translation arrives.
+export function bookWordsIn(language: TemplateLanguage, messages: Messages): BookWords {
+  const locale = DEFAULT_LOCALES[language]
+  const t = createTranslator({ locale, messages, namespace: "owner.whatsapp.bookWording" })
+  const duration = createTranslator({ locale, messages, namespace: "app.duration" })
+  const footer = t("footer")
+  return {
+    language,
+    locale,
+    wording: Object.fromEntries(
+      BOOKING_MESSAGES.map((message) => [
+        message,
+        {
+          header: t(`messages.${message}.header`),
+          body: t(`messages.${message}.body`, FIELD_TOKENS),
+          footer,
+        },
+      ])
+    ) as Record<BookingMessage, Wording>,
+    buttons: {
+      confirm: t("buttons.confirm"),
+      cantCome: t("buttons.cantCome"),
+      ok: t("buttons.ok"),
+    },
+    examples: {
+      name: t("examples.name"),
+      service: t("examples.service"),
+      business: SAMPLE_BUSINESS,
+      date: t("examples.date"),
+      time: t("examples.time"),
+      teamMember: t("examples.teamMember"),
+      duration: durationIn(duration, SAMPLE_MINUTES),
+      price: t("examples.price"),
+      address: t("examples.address"),
+      phone: t("examples.phone"),
+    },
+    missing: {
+      teamMember: t("missing.teamMember"),
+      free: t("missing.free"),
+      price: t("missing.price"),
+    },
+    thankYou: t("thankYou", FIELD_TOKENS),
+  }
+}
+
+export function defaultWording(message: BookingMessage, words: BookWords): Wording {
+  return words.wording[message]
 }
 
 // The buttons a message may carry: the customer answers a reminder or a moved
@@ -156,11 +175,6 @@ export function messageButtonActions(message: BookingMessage): ButtonAction[] {
   if (isOwnerAlert(message)) return []
   if (message === "cancelled") return ["ok"]
   return ["confirm", "cantCome", "ok"]
-}
-
-const BUTTON_LABELS: Record<TemplateLanguage, Record<ButtonAction, string>> = {
-  en: { confirm: "I'll be there", cantCome: "Can't make it", ok: "OK" },
-  es: { confirm: "Ahí estaré", cantCome: "No podré ir", ok: "De acuerdo" },
 }
 
 // Book's buttons for a message (decision D7 in docs/plans/whatsapp-notifications.md).
@@ -175,8 +189,9 @@ const DEFAULT_BUTTONS: Record<BookingMessage, ButtonAction[]> = {
   ownerFailed: [],
 }
 
-export function defaultButtons(message: BookingMessage, language: TemplateLanguage): MessageButton[] {
-  return DEFAULT_BUTTONS[message].map((action) => ({ action, label: BUTTON_LABELS[language][action] }))
+export function defaultButtons(message: BookingMessage, words: BookWords): MessageButton[] {
+  const { buttons } = words
+  return DEFAULT_BUTTONS[message].map((action) => ({ action, label: buttons[action] }))
 }
 
 // What is wrong with an owner's buttons, or null. WhatsApp quick replies: at
@@ -205,34 +220,6 @@ export function buttonsProblem(message: BookingMessage, buttons: MessageButton[]
   const actions = new Set(buttons.map(({ action }) => action))
   if (labels.size < buttons.length || actions.size < buttons.length) return "sameButton"
   return null
-}
-
-// Meta reviews each template with sample values for its fields.
-const EXAMPLES: Record<TemplateLanguage, Record<BookingField, string>> = {
-  en: {
-    name: "Alex",
-    service: "Haircut",
-    business: "Lumen Studio",
-    date: "Friday, May 8",
-    time: "3:30 PM",
-    teamMember: "Sam",
-    duration: "45 min",
-    price: "$35.00",
-    address: "123 Main Street",
-    phone: "+1 555 123 4567",
-  },
-  es: {
-    name: "Ana",
-    service: "Corte de pelo",
-    business: "Lumen Studio",
-    date: "viernes 8 de mayo",
-    time: "15:30",
-    teamMember: "Lucía",
-    duration: "45 min",
-    price: "35,00 €",
-    address: "Calle Mayor 12",
-    phone: "+34 600 123 456",
-  },
 }
 
 const FIELD = /\{(\w+)\}/g
@@ -275,6 +262,8 @@ export function wordingProblem(message: BookingMessage, wording: Wording): Wordi
 export type BookingTemplate = Wording & {
   message: BookingMessage
   language: TemplateLanguage
+  // The language as Meta names it (metaLanguage), for Chat and Meta.
+  metaLanguage: string
   name: string
   buttons: MessageButton[]
   // The body in Meta's form ({{1}}…) and which field each number stands for.
@@ -311,22 +300,28 @@ const KOBLIP_NAMES: Record<BookingMessage, string> = {
   ownerFailed: "koblip_owner_message_failed_v2",
 }
 
+// The name of Koblip's copy of a message, the same in each language.
+export function koblipTemplateName(message: BookingMessage): string {
+  return KOBLIP_NAMES[message]
+}
+
 export function koblipTemplate(
   message: BookingMessage,
-  language: TemplateLanguage,
+  words: BookWords,
   wording?: Wording,
   buttons?: MessageButton[]
 ): BookingTemplate {
-  return { ...bookingTemplate(message, language, wording, buttons), name: KOBLIP_NAMES[message] }
+  return { ...bookingTemplate(message, words, wording, buttons), name: KOBLIP_NAMES[message] }
 }
 
 // One message as Chat gets it, from the owner's wording and buttons or Book's.
 export function bookingTemplate(
   message: BookingMessage,
-  language: TemplateLanguage,
-  wording: Wording = defaultWording(message, language),
-  buttons: MessageButton[] = defaultButtons(message, language)
+  words: BookWords,
+  wording: Wording = defaultWording(message, words),
+  buttons: MessageButton[] = defaultButtons(message, words)
 ): BookingTemplate {
+  const { language, examples } = words
   const fields: BookingField[] = []
   const metaBody = wording.body.replace(FIELD, (_, key: BookingField) => {
     if (!fields.includes(key)) fields.push(key)
@@ -335,6 +330,7 @@ export function bookingTemplate(
   return {
     message,
     language,
+    metaLanguage: metaLanguage(language),
     name: NAMES[message],
     header: wording.header,
     body: wording.body,
@@ -342,7 +338,7 @@ export function bookingTemplate(
     buttons,
     metaBody,
     fields,
-    examples: fields.map((field) => EXAMPLES[language][field]),
+    examples: fields.map((field) => examples[field]),
   }
 }
 
@@ -357,24 +353,13 @@ export function fieldsFromOwner(text: string, labels: Record<BookingField, strin
 }
 
 // The sample values Meta reviews with, also used for a test message.
-export function exampleValues(language: TemplateLanguage): Record<BookingField, string> {
-  return { ...EXAMPLES[language] }
+export function exampleValues(words: BookWords): Record<BookingField, string> {
+  return { ...words.examples }
 }
 
 // A message's text with sample values, as the customer would read it.
-export function withExamples(text: string, language: TemplateLanguage) {
-  return fillFields(text, EXAMPLES[language])
-}
-
-// Dates, times and prices in each language's own formats, as the booking
-// page writes them by default (DEFAULT_LOCALES in lib/page-language.ts).
-const LOCALES: Record<TemplateLanguage, string> = { en: "en-US", es: "es-US" }
-
-// The words for a value the booking does not have: Meta refuses an empty
-// template value, and the customer reads a sentence, not a dash.
-const MISSING: Record<TemplateLanguage, { teamMember: string; free: string; price: string }> = {
-  en: { teamMember: "our team", free: "free", price: "to be confirmed" },
-  es: { teamMember: "nuestro equipo", free: "gratis", price: "por confirmar" },
+export function withExamples(text: string, words: BookWords) {
+  return fillFields(text, words.examples)
 }
 
 export type BookingFacts = {
@@ -394,13 +379,14 @@ export type BookingFacts = {
 
 // Every field's value for one booking, in the reader's language: `duration`
 // is the app's words for a length of time (app.duration) in that language.
+// A value the booking does not have reads as words (`missing`): Meta refuses
+// an empty template value, and the customer reads a sentence, not a dash.
 export function bookingValues(
   facts: BookingFacts,
-  language: TemplateLanguage,
+  words: BookWords,
   duration: DurationWords
 ): Record<BookingField, string> {
-  const locale = LOCALES[language]
-  const missing = MISSING[language]
+  const { locale, missing } = words
   return {
     name: facts.customerName,
     service: facts.serviceName,
@@ -442,11 +428,6 @@ export function plainMessage(template: BookingTemplate, values: Record<BookingFi
 
 // The short thank-you after a customer taps a button (S3, D24): a normal
 // message only, since the tap opened the 24-hour window; never a template.
-const THANK_YOU: Record<TemplateLanguage, string> = {
-  en: "Thanks, {name}! {business} got your answer.",
-  es: "¡Gracias, {name}! {business} recibió tu respuesta.",
-}
-
-export function thankYouMessage(language: TemplateLanguage, values: Record<BookingField, string>) {
-  return withValues(THANK_YOU[language], values)
+export function thankYouMessage(words: BookWords, values: Record<BookingField, string>) {
+  return withValues(words.thankYou, values)
 }

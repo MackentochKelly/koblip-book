@@ -4,7 +4,12 @@ import { and, eq } from "drizzle-orm"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
-import { getMetaAiClient, isMetaAiEnabled, META_TEXT_MODEL } from "@/lib/meta-ai"
+import {
+  getMetaAiClient,
+  isMetaAiEnabled,
+  META_TEXT_MODEL,
+  writingLanguageLine,
+} from "@/lib/meta-ai"
 import { isPageLanguage, type PageLanguage } from "@/lib/page-language"
 import {
   addonGroups,
@@ -386,12 +391,6 @@ export async function reorderAddonGroups(
 const SUGGEST_ADDON_SYSTEM_MESSAGE =
   "You suggest add-on groups (extras) for a local business's booking page. Return up to 4 groups this kind of business usually offers with its services. Each group has a short name (max 60 characters), a short question shown to the customer (max 100 characters, e.g. 'Add anything?'), how many options the customer must pick (minSelect, usually 0) and may pick (maxSelect, or null for any), the ids of the business's services it fits (only ids from the list given), and 2 to 6 options. Each option has a short name (max 60 characters), an optional one-line description (max 120 characters) and the extra minutes it adds. Never include prices. Never repeat a group the business already has."
 
-function languageLine(language: PageLanguage): string {
-  return language === "es"
-    ? "Write in Spanish (Latin American, informal tú)."
-    : "Write in English."
-}
-
 function snapAddonMinutes(minutes: number): number {
   let best: number = BOOKING_RULES.addonMinutes[0]
   for (const value of BOOKING_RULES.addonMinutes) {
@@ -566,7 +565,7 @@ export async function suggestAddonGroups(
         messages: [
           {
             role: "system",
-            content: `${SUGGEST_ADDON_SYSTEM_MESSAGE} ${languageLine(lang)}`,
+            content: `${SUGGEST_ADDON_SYSTEM_MESSAGE} ${writingLanguageLine(lang)}`,
           },
           {
             role: "user",

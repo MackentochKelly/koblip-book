@@ -1,5 +1,8 @@
+import type { PageLanguage } from "@/lib/page-language"
+
 export type AutomationTrigger = "firstMessage" // more later (D1)
-export type AutomationLanguage = "en" | "es"
+// A flow's words are kept in every page language.
+export type AutomationLanguage = PageLanguage
 
 // What a button does. Each one is data, never a branch in the UI.
 export type AutomationAction =

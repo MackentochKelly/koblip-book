@@ -23,6 +23,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { fieldsFromLabels, fieldsToLabels, fillFields } from "@/lib/message-fields"
+import { PAGE_LANGUAGES } from "@/lib/page-language"
 import type { ButtonAction } from "@/types/whatsapp"
 import type {
   KoblipLanguage,
@@ -45,11 +46,11 @@ function useReviewWords(): MessageStatusLabels["review"] {
   return wordGroup(words.review, (key) => t(`review.${key}`))
 }
 
-// The review a message shows in the list: the worse of its two languages.
+// The review a message shows in the list: the worst of its languages.
 function reviewOf(item: KoblipMessage): KoblipReview {
-  const both = [item.texts.en.review, item.texts.es.review]
+  const all = PAGE_LANGUAGES.map((language) => item.texts[language].review)
   for (const review of ["rejected", "draft", "waiting"] as const) {
-    if (both.includes(review)) return review
+    if (all.includes(review)) return review
   }
   return "approved"
 }
@@ -63,8 +64,8 @@ export type KoblipEditorInfo = {
 }
 
 // WhatsApp → Koblip messages (K2): Koblip's ready-made messages, the same for
-// every business on Koblip's number. The admin edits each one in English and
-// Spanish in the shared editor (docs/plans/message-editing.md, U3), then
+// every business on Koblip's number. The admin edits each one in every page
+// language in the shared editor (docs/plans/message-editing.md, U3), then
 // submits it to Meta from Koblip's own workspace.
 export function WhatsappKoblipMessages({
   messages,
@@ -195,10 +196,9 @@ function KoblipMessageEditor({
           editable: true,
           fields: about.fields.map((field) => labels[field] ?? field),
           buttonActions: about.buttonActions,
-          texts: {
-            en: textOf(item, "en"),
-            es: textOf(item, "es"),
-          },
+          texts: Object.fromEntries(
+            PAGE_LANGUAGES.map((language) => [language, textOf(item, language)])
+          ) as MessageEditorItem["texts"],
         }
       : null
   function textOf(message: KoblipMessage, language: KoblipLanguage) {
@@ -217,8 +217,7 @@ function KoblipMessageEditor({
   const editorLabels: MessageEditorLabels = {
     // "Edit booking confirmed".
     edit: (name) => t("edit", { name: name.toLowerCase() }),
-    english: t("english"),
-    spanish: t("spanish"),
+    language: t("language"),
     metaReason: t("metaReason"),
     review,
     readOnly: t("hint"),

@@ -14,7 +14,11 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import { PAGE_LANGUAGES, type PageLanguage } from "@/lib/page-language"
+import {
+  LANGUAGE_NAMES,
+  PAGE_LANGUAGES,
+  type PageLanguage,
+} from "@/lib/page-language"
 import { cn } from "@/lib/utils"
 import type { VoiceOption } from "../types"
 import { useVoicePreview } from "./voice-preview"
@@ -23,7 +27,8 @@ import { useVoicePreview } from "./voice-preview"
 type VoiceLabel = keyof Messages["assistant"]["voice"]["labels"]
 
 // The voices, with a tab for each language they speak in their samples
-// (starting on the owner's). A tap on a row chooses the voice and plays its
+// (starting on the owner's), each named in itself (LANGUAGE_NAMES), as
+// every language menu is. A tap on a row chooses the voice and plays its
 // sample; the play button on the right only plays or stops it. The whole
 // row is the choose button (stretched over it with ::after), with the play
 // button above it as its own control, like SwitchCard. Needs a VoicePreview.
@@ -64,7 +69,7 @@ export function VoiceList({
     <div className="flex flex-col gap-3">
       {spoken.length > 1 && (
         <ViewTabs
-          views={spoken.map((id) => ({ id, label: t(`languages.${id}`) }))}
+          views={spoken.map((id) => ({ id, label: LANGUAGE_NAMES[id] }))}
           value={shown}
           onChange={(next) => {
             void preview.pause()

@@ -580,6 +580,10 @@ const words = {
   // The Privacy and Terms pages, in short plain sections.
   legal: {
     updated: "Last updated: {date}",
+    // Over the page in any language but English: only the English binds
+    // (docs/plans/translations.md, G8).
+    translated: "Translated automatically. The English version applies.",
+    readEnglish: "Read in English",
     privacy: {
       title: "Privacy Policy",
       sections: {

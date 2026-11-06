@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import type { ElevenLabs } from "@elevenlabs/elevenlabs-js"
+import { useTranslations } from "next-intl"
 import {
   CheckIcon,
   ChevronsUpDownIcon,
@@ -44,11 +45,12 @@ function VoicePicker({
   voices,
   value,
   onValueChange,
-  placeholder = "Select a voice...",
+  placeholder,
   className,
   open,
   onOpenChange,
 }: VoicePickerProps) {
+  const t = useTranslations("app.ui")
   const [internalOpen, setInternalOpen] = React.useState(false)
   const isControlled = open !== undefined
   const isOpen = isControlled ? open : internalOpen
@@ -67,13 +69,13 @@ function VoicePicker({
                               <span className="truncate">{selectedVoice.name}</span>
                             </div>
                           ) : (
-                            placeholder
+                            (placeholder ?? t("selectVoice"))
                           )}<ChevronsUpDownIcon className="ml-2 size-4 shrink-0 opacity-50" /></PopoverTrigger>
         <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
           <Command>
-            <CommandInput placeholder="Search voices..." />
+            <CommandInput placeholder={t("searchVoices")} />
             <CommandList>
-              <CommandEmpty>No voice found.</CommandEmpty>
+              <CommandEmpty>{t("noVoice")}</CommandEmpty>
               <CommandGroup>
                 {voices.map((voice) => (
                   <VoicePickerItem

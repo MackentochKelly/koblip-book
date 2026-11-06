@@ -15,6 +15,14 @@ import { seal } from "@/lib/secret-box"
 import { welcomeDefaults } from "../utils/automation-defaults"
 
 vi.mock("server-only", () => ({}))
+// Book's words in Portuguese and French come from the app's words.
+const { registerEnglishWords } = await import("@/lib/translations/interface-words")
+registerEnglishWords((await import("@/i18n/messages")).default)
+const { welcomeWords } = await import("./message-words")
+// Book's Welcome flow as the server reads it: Spanish from the migrated
+// database, Portuguese and French in English until Google's arrive.
+let words: Awaited<ReturnType<typeof welcomeWords>>
+const defaults = () => welcomeDefaults(words)
 const { runAutomations } = await import("./automation-engine")
 const { applyChatEvent } = await import("./chat-events")
 const { post } = await import("./notification-sender")
@@ -86,6 +94,7 @@ beforeAll(async () => {
   vi.stubGlobal("fetch", chat)
   const { migrate } = await import("drizzle-orm/libsql/migrator")
   await migrate(db, { migrationsFolder: "drizzle" })
+  words = await welcomeWords()
   await db.$client.execute("PRAGMA foreign_keys = ON")
   await db.insert(user).values({ id: "owner", name: "Owner", email: "engine-owner@example.test", emailVerified: true })
 })
@@ -101,7 +110,7 @@ beforeEach(async () => {
     { id: "other", slug: "other", name: "Other", timezone: "America/New_York", currency: "USD", ownerId: "owner" },
   ])
   await connected()
-  await db.insert(automations).values({ id: "welcome", businessId: "biz", key: "welcome", trigger: "firstMessage", on: true, ...welcomeDefaults() })
+  await db.insert(automations).values({ id: "welcome", businessId: "biz", key: "welcome", trigger: "firstMessage", on: true, ...defaults() })
   sent.length = 0
   sendFails = false
   sendGate = null
@@ -250,10 +259,11 @@ test("button payloads need a known sent parent, matching customer, and an existi
 })
 
 test("stored button order, labels and actions drive the welcome and subsequent choice", async () => {
-  const custom = welcomeDefaults()
+  const custom = defaults()
   custom.wording.en.body = "Hello from {business}."
-  custom.buttons = [{ id: "custom-person", label: { en: "A person", es: "Una persona" }, action: { type: "handoff" } }]
-  await db.update(automations).set(custom).where(eq(automations.id, "welcome"))
+  custom.buttons = [{ id: "custom-person", label: { ...custom.buttons[2].label, en: "A person", es: "Una persona" }, action: { type: "handoff" } }]
+  // The owner's own words, saved as saveAutomation saves them.
+  await db.update(automations).set({ ...custom, isDefault: false }).where(eq(automations.id, "welcome"))
   await welcome()
   expect(sent[0]).toMatchObject({ messageText: "Hello from Shop.", buttonParams: [{ id: "custom-person", title: "A person" }] })
   await runAutomations(tap("custom-person", "custom-handoff"), NOW)
@@ -322,12 +332,12 @@ test("latest own booking selects Spanish and replies retain their parent's langu
   await customerBooking("newer-es", "es", "2026-11-01T14:00:00.000Z")
   await customerBooking("foreign-en", "en", NOW, "other")
   await welcome()
-  expect(sent[0]).toMatchObject({ messageText: welcomeDefaults().wording.es.body.replace("{business}", "Shop"),
+  expect(sent[0]).toMatchObject({ messageText: defaults().wording.es.body.replace("{business}", "Shop"),
     buttonParams: [{ id: "welcome-booking", title: "Reservar" }, { id: "welcome-services", title: "Nuestros servicios" }, { id: "welcome-handoff", title: "Hablar con nosotros" }] })
   expect((await rows())[0].language).toBe("es")
   await customerBooking("newest-en", "en", NOW)
   await runAutomations(tap("welcome-handoff", "spanish-handoff"), NOW)
-  expect(sent[1]).toMatchObject({ messageType: "text", messageText: welcomeDefaults().wording.es.handoffReply })
+  expect(sent[1]).toMatchObject({ messageType: "text", messageText: defaults().wording.es.handoffReply })
   expect((await rows()).find((row) => row.step === "handoff")?.language).toBe("es")
 })
 
@@ -347,7 +357,7 @@ test("a choice cannot reuse a parent's provider id from another business or sour
   await db.insert(chatConnections).values({ businessId: "other", workspaceId: "other-workspace", workspaceName: "Other",
     scopes: "contacts templates conversations automations", accessToken: seal("other-access"), refreshToken: seal("other-refresh"),
     accessExpiresAt: "2099-01-01T00:00:00.000Z", phoneNumberId: "other-number", wabaId: "other-waba" })
-  await db.insert(automations).values({ id: "other-flow", businessId: "other", key: "welcome", trigger: "firstMessage", on: true, ...welcomeDefaults() })
+  await db.insert(automations).values({ id: "other-flow", businessId: "other", key: "welcome", trigger: "firstMessage", on: true, ...defaults() })
   await runAutomations({ ...tap("welcome-booking", "cross-business"), workspaceId: "other-workspace", senderId: "other-number" }, NOW)
   await runAutomations({ ...tap("welcome-booking", "wrong-number"), senderId: "other-number" }, NOW)
   await runAutomations({ ...tap("welcome-booking", "wrong-workspace"), workspaceId: "unknown-workspace" }, NOW)

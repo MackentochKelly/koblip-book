@@ -20,6 +20,13 @@ import { seal } from "@/lib/secret-box"
 import { defaultButtons, defaultWording } from "../utils/booking-templates"
 
 vi.mock("server-only", () => ({}))
+// Book's words in Portuguese and French come from the app's words.
+const { registerEnglishWords } = await import("@/lib/translations/interface-words")
+registerEnglishWords((await import("@/i18n/messages")).default)
+const { allBookWords } = await import("./message-words")
+// Book's words as the server reads them: Spanish from the migrated
+// database, Portuguese and French in English until Google's arrive.
+let book: Awaited<ReturnType<typeof allBookWords>>
 
 const {
   chatConnectionFor,
@@ -132,6 +139,7 @@ beforeAll(async () => {
   vi.stubGlobal("fetch", chat)
   const { migrate } = await import("drizzle-orm/libsql/migrator")
   await migrate(db, { migrationsFolder: "drizzle" })
+  book = await allBookWords()
   closeDb = () => db.$client.close()
   await db.insert(user).values({ id: "u1", name: "Owner", email: "owner@example.com", emailVerified: false })
   await db.insert(businesses).values({
@@ -431,7 +439,7 @@ test("saved Koblip wording and buttons send normally while the approved submitte
   stored[0].status = "APPROVED"
   await refreshKoblipTemplates()
   const approvedBefore = (await koblipSendableTemplate("reminder", "en")).approved
-  const wording = { ...defaultWording("reminder", "en"), body: "Hello {name}, your {service} at {business} is on {date} at {time}." }
+  const wording = { ...defaultWording("reminder", book.en), body: "Hello {name}, your {service} at {business} is on {date} at {time}." }
   const buttons = [{ action: "confirm" as const, label: "Count me in" }]
   await db.insert(koblipNotificationTexts).values({ message: "reminder", language: "en", ...wording, buttons })
 
@@ -446,27 +454,27 @@ test("saved Koblip wording and buttons send normally while the approved submitte
 })
 
 test("Koblip wording is independent in each language and null buttons use each language's defaults", async () => {
-  const en = { ...defaultWording("reminder", "en"), header: "Your upcoming appointment" }
-  const es = { ...defaultWording("reminder", "es"), header: "Tu próxima cita" }
+  const en = { ...defaultWording("reminder", book.en), header: "Your upcoming appointment" }
+  const es = { ...defaultWording("reminder", book.es), header: "Tu próxima cita" }
   await db.insert(koblipNotificationTexts).values([
     { message: "reminder", language: "en", ...en, buttons: null },
     { message: "reminder", language: "es", ...es, buttons: [] },
   ])
-  expect((await koblipSendableTemplate("reminder", "en")).template).toMatchObject({ ...en, buttons: defaultButtons("reminder", "en") })
+  expect((await koblipSendableTemplate("reminder", "en")).template).toMatchObject({ ...en, buttons: defaultButtons("reminder", book.en) })
   expect((await koblipSendableTemplate("reminder", "es")).template).toMatchObject({ ...es, buttons: [] })
   const reminder = (await koblipMessages()).find((row) => row.message === "reminder")!
-  expect(reminder.texts.en).toMatchObject({ wording: en, buttons: defaultButtons("reminder", "en"), review: "draft" })
+  expect(reminder.texts.en).toMatchObject({ wording: en, buttons: defaultButtons("reminder", book.en), review: "draft" })
   expect(reminder.texts.es).toMatchObject({ wording: es, buttons: [], review: "draft" })
 })
 
 test("a business using Koblip's number sees the saved Koblip wording and default buttons", async () => {
   await db.delete(chatConnections)
-  const wording = { ...defaultWording("reminder", "es"), header: "Tu próxima cita" }
+  const wording = { ...defaultWording("reminder", book.es), header: "Tu próxima cita" }
   await db.insert(koblipNotificationTexts).values({ message: "reminder", language: "es", ...wording, buttons: null })
   const reminder = (await notificationMessagesFor("biz")).find((row) => row.message === "reminder")!
   expect(reminder.editable).toBe(false)
-  expect(reminder.texts.es).toMatchObject({ wording, buttons: defaultButtons("reminder", "es"), review: "draft" })
-  expect(reminder.texts.en.wording).toEqual(defaultWording("reminder", "en"))
+  expect(reminder.texts.es).toMatchObject({ wording, buttons: defaultButtons("reminder", book.es), review: "draft" })
+  expect(reminder.texts.en.wording).toEqual(defaultWording("reminder", book.en))
 })
 
 async function approvedKoblipReminder(language: "en" | "es" = "en") {
@@ -478,7 +486,7 @@ async function approvedKoblipReminder(language: "en" | "es" = "en") {
 }
 
 async function changeKoblipReminder(language: "en" | "es" = "en", header = "Your next appointment") {
-  const wording = { ...defaultWording("reminder", language), header }
+  const wording = { ...defaultWording("reminder", book[language]), header }
   await db.insert(koblipNotificationTexts)
     .values({ message: "reminder", language, ...wording, buttons: null })
     .onConflictDoUpdate({ target: [koblipNotificationTexts.message, koblipNotificationTexts.language], set: wording })
@@ -641,7 +649,7 @@ test("Use default after submission changes normal wording immediately and waits 
   expect(original.template.header).toBe(custom.header)
   await db.delete(koblipNotificationTexts)
   const reset = await koblipSendableTemplate("reminder", "en")
-  expect(reset.template).toMatchObject({ ...defaultWording("reminder", "en"), buttons: defaultButtons("reminder", "en") })
+  expect(reset.template).toMatchObject({ ...defaultWording("reminder", book.en), buttons: defaultButtons("reminder", book.en) })
   expect(reset.approved).toEqual(original)
   expect((await koblipMessages()).find((row) => row.message === "reminder")!.texts.en.review).toBe("draft")
   await submitKoblipTemplate("reminder", "en", "u1")
@@ -650,7 +658,7 @@ test("Use default after submission changes normal wording immediately and waits 
   stored.find((row) => row._id === "t2")!.status = "APPROVED"
   await refreshKoblipTemplates()
   expect((await koblipSendableTemplate("reminder", "en")).approved!.template)
-    .toMatchObject({ ...defaultWording("reminder", "en"), buttons: defaultButtons("reminder", "en") })
+    .toMatchObject({ ...defaultWording("reminder", book.en), buttons: defaultButtons("reminder", book.en) })
 })
 
 test("an unchanged pending submit adds an audit entry without sending a remote edit", async () => {
@@ -685,7 +693,7 @@ test("submission first promotes a remotely approved pending version before creat
   expect(sendable.template).toMatchObject(wording)
   expect(sendable.approved).toMatchObject({
     chatTemplateId: "t1",
-    template: { ...defaultWording("reminder", "en"), name: "koblip_booking_reminder_v2" },
+    template: { ...defaultWording("reminder", book.en), name: "koblip_booking_reminder_v2" },
   })
   expect(created.map((row) => row.template_name)).toEqual(["koblip_booking_reminder_v2", "koblip_booking_reminder_v3"])
   expect(edited).toEqual([])
@@ -741,7 +749,7 @@ test("refreshing an imported legacy approval never calls a newer saved draft its
   expect(text).toMatchObject({ wording: draft, isDefault: false, review: "draft", approved: null })
   const sendable = await koblipSendableTemplate("reminder", "en")
   expect(sendable.template.header).toBe(draft.header)
-  expect(sendable.approved?.template.header).toBe(defaultWording("reminder", "en").header)
+  expect(sendable.approved?.template.header).toBe(defaultWording("reminder", book.en).header)
   await submitKoblipTemplate("reminder", "en", "u1")
   expect(created[0].template_name).toBe("koblip_booking_reminder_v3")
   expect((await koblipMessages()).find((row) => row.message === "reminder")!.texts.en.approved).toBeNull()
