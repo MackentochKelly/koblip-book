@@ -4,11 +4,7 @@ import type { BatchItem } from "drizzle-orm/batch"
 
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
-import {
-  businesses,
-  inAppNotificationSettings,
-  inAppNotifications,
-} from "@/lib/db/schema"
+import { businesses, inAppNotificationSettings, inAppNotifications } from "@/lib/db/schema"
 import { notificationRules } from "@/lib/platform-settings"
 import type { InAppData, InAppKind } from "@/types/in-app-notifications"
 
@@ -55,27 +51,15 @@ export async function notification(
   { dedupeKey, renew = false }: NotifyOptions = {}
 ): Promise<BatchItem<"sqlite">[]> {
   const [row] = await db
-    .select({
-      isDemo: businesses.isDemo,
-      turnedOff: inAppNotificationSettings.turnedOff,
-    })
+    .select({ isDemo: businesses.isDemo, turnedOff: inAppNotificationSettings.turnedOff })
     .from(businesses)
-    .leftJoin(
-      inAppNotificationSettings,
-      eq(inAppNotificationSettings.businessId, businesses.id)
-    )
+    .leftJoin(inAppNotificationSettings, eq(inAppNotificationSettings.businessId, businesses.id))
     .where(eq(businesses.id, businessId))
     .limit(1)
   if (!row || row.isDemo || row.turnedOff?.includes(kind)) return []
   const insert = db
     .insert(inAppNotifications)
-    .values({
-      businessId,
-      kind,
-      data,
-      link: inAppLink(businessId, kind),
-      dedupeKey,
-    })
+    .values({ businessId, kind, data, link: inAppLink(businessId, kind), dedupeKey })
   if (!dedupeKey) return [insert]
   return [
     renew
@@ -101,10 +85,6 @@ export async function notify(
 // removed (N5); the server's timer calls this on each check.
 export async function removeOldNotifications(now = new Date()) {
   const { inAppKeepDays } = await notificationRules()
-  const before = new Date(
-    now.getTime() - inAppKeepDays * 86_400_000
-  ).toISOString()
-  await db
-    .delete(inAppNotifications)
-    .where(lt(inAppNotifications.createdAt, before))
+  const before = new Date(now.getTime() - inAppKeepDays * 86_400_000).toISOString()
+  await db.delete(inAppNotifications).where(lt(inAppNotifications.createdAt, before))
 }

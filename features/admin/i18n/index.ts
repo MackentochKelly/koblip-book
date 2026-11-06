@@ -33,10 +33,7 @@ const en = {
     soon: "Coming soon",
     usage: {
       everyone: "Limit for every business",
-      perMonth: (n: number) =>
-        n === 1
-          ? "1 template message a month"
-          : `${n} template messages a month`,
+      perMonth: (n: number) => (n === 1 ? "1 template message a month" : `${n} template messages a month`),
       byDefault: (n: number) => `Default: ${n}`,
       changed: "Changed",
       month: (month: string) => `Sent from Koblip's number in ${month}`,
@@ -63,8 +60,7 @@ const en = {
       closed: "Closed",
       remove: (phone: string) => `Remove ${phone}`,
       removeTitle: (phone: string) => `Remove ${phone}?`,
-      removeText:
-        "Until they write again, messages to them from this number go as templates.",
+      removeText: "Until they write again, messages to them from this number go as templates.",
       removeConfirm: "Remove",
       cancel: "Cancel",
       removed: "Removed",
@@ -114,11 +110,7 @@ const en = {
       noneFound: "No messages match",
       clearFilters: "Clear filters",
       via: { text: "Normal message", template: "Template" },
-      replies: {
-        confirm: "I'll be there",
-        cantCome: "Can't make it",
-        ok: "OK",
-      },
+      replies: { confirm: "I'll be there", cantCome: "Can't make it", ok: "OK" },
       states: {
         pending: "Scheduled",
         sending: "Sending",
@@ -176,10 +168,7 @@ const en = {
         keep: "Keep it",
         done: "Message cancelled.",
         failed: "Couldn't cancel it. Try again.",
-        problems: { notWaiting: "It's no longer waiting." } as Record<
-          string,
-          string
-        >,
+        problems: { notWaiting: "It's no longer waiting." } as Record<string, string>,
       },
     },
     // The same names as the business's WhatsApp page.
@@ -205,8 +194,7 @@ const en = {
       koblipNumber: "Koblip number",
       ownNumber: (workspace: string) => `Own number · ${workspace}`,
       reconnect: "Connect again",
-      messagesOff: (n: number) =>
-        n === 1 ? "1 message off" : `${n} messages off`,
+      messagesOff: (n: number) => (n === 1 ? "1 message off" : `${n} messages off`),
       allOn: "All messages on",
       sender: "Sends from",
       connection: "Connection",
@@ -214,8 +202,7 @@ const en = {
       notConnected: "Not connected",
       disconnect: "Disconnect",
       disconnectTitle: "Disconnect this business's number?",
-      disconnectText:
-        "It sends from Koblip's number until the owner connects again.",
+      disconnectText: "It sends from Koblip's number until the owner connects again.",
       // The business's automations, read-only (U3).
       automationsTitle: "Automations",
       flows: {
@@ -237,18 +224,14 @@ const en = {
       messageOn: (name: string) => `${name} on`,
       resetWording: "Reset wording",
       resetWordingTitle: (name: string) => `Reset ${name}?`,
-      resetWordingText:
-        "Book's wording and buttons come back, in English and Spanish.",
+      resetWordingText: "Book's wording and buttons come back, in English and Spanish.",
       settingsTitle: "Settings",
       reminders: "Reminders",
       noReminders: "No reminders",
       quietHours: "Quiet hours",
       freeText: "Normal message inside 24 hours",
       cantCome: "Can't make it",
-      cantComeActions: {
-        cancel: "Cancels and frees the time",
-        alertOnly: "Only alerts the owner",
-      },
+      cantComeActions: { cancel: "Cancels and frees the time", alertOnly: "Only alerts the owner" },
       thankYou: "Thank-you reply",
       ownerPhone: "Owner's WhatsApp",
       noPhone: "None",
@@ -256,12 +239,10 @@ const en = {
       off: "Off",
       resetSettings: "Reset settings",
       resetSettingsTitle: "Reset settings?",
-      resetSettingsText:
-        "Reminders, quiet hours and replies go back to the defaults.",
+      resetSettingsText: "Reminders, quiet hours and replies go back to the defaults.",
       turnOff: "Turn off WhatsApp",
       turnOffTitle: "Turn off every message?",
-      turnOffText:
-        "No messages go for this business until they are turned on again.",
+      turnOffText: "No messages go for this business until they are turned on again.",
       reset: "Reset",
       cancel: "Cancel",
       saved: "Saved",
@@ -287,7 +268,7 @@ const en = {
         historySize: "Latest messages on Activity",
         statsDays: "Days counted on a business's Overview",
         defaultFreeTextInWindow: "Normal message inside 24 hours, to start",
-        defaultCantCome: '"Can\'t make it", to start',
+        defaultCantCome: "\"Can't make it\", to start",
         defaultThankYouReply: "Thank-you reply, to start",
         maxButtons: "Most buttons per message",
         maxButtonLabel: "Longest button",
@@ -297,10 +278,8 @@ const en = {
         maxBody: "Longest text",
         maxFooter: "Longest footer",
         minWordsPerField: "Words needed per field",
-        koblipMonthlyTemplates:
-          "Template messages per month on Koblip's number",
-        koblipLimitNearPercent:
-          "Warn the owner at this share of the Koblip limit",
+        koblipMonthlyTemplates: "Template messages per month on Koblip's number",
+        koblipLimitNearPercent: "Warn the owner at this share of the Koblip limit",
         inAppKeepDays: "Keep notifications for",
         inAppPageSize: "Notifications per page",
         inAppPollSeconds: "Bell checks for new ones every",
@@ -321,10 +300,7 @@ const en = {
       days: (n: number) => (n === 1 ? "1 day" : `${n} days`),
       on: "On",
       off: "Off",
-      cantCome: {
-        alertOnly: "Only alerts the owner",
-        cancel: "Cancels and frees the time",
-      },
+      cantCome: { alertOnly: "Only alerts the owner", cancel: "Cancels and frees the time" },
       changed: "Changed",
       byDefault: (value: string) => `Default: ${value}`,
       perBusiness: "Can differ per business on Usage",
@@ -343,8 +319,7 @@ const en = {
       noneOff: "None",
       settings: "Settings reset",
       wording: (message: string) => `${message}: wording reset`,
-      koblipSubmit: (message: string) =>
-        `${message}: Koblip's copy sent to Meta`,
+      koblipSubmit: (message: string) => `${message}: Koblip's copy sent to Meta`,
       koblipWording: (message: string) => `${message}: Koblip's wording saved`,
       connection: "Own number disconnected",
       removed: "Removed",
@@ -369,11 +344,7 @@ const en = {
       text: "Text",
       footer: "Footer",
       buttons: "Buttons",
-      buttonKinds: {
-        confirm: "Confirms the visit",
-        cantCome: "Says they can't come",
-        ok: "Just OK",
-      },
+      buttonKinds: { confirm: "Confirms the visit", cantCome: "Says they can't come", ok: "Just OK" },
       addButton: "Add button",
       removeButton: (label: string) => `Remove ${label}`,
       normalMessage: "Within 24h",
@@ -431,10 +402,8 @@ const en = {
   remove: {
     label: (name: string) => `Delete ${name}`,
     title: (name: string) => `Delete ${name}?`,
-    businessText:
-      "Its page, bookings, services, team and customers are deleted for good.",
-    ownerText:
-      "Their account and every business they own are deleted for good.",
+    businessText: "Its page, bookings, services, team and customers are deleted for good.",
+    ownerText: "Their account and every business they own are deleted for good.",
     delete: "Delete",
     cancel: "Cancel",
     deleted: "Deleted",
@@ -485,17 +454,14 @@ const en = {
   },
   koblipChat: {
     title: "Koblip WhatsApp number",
-    notConnected:
-      "Not connected. Businesses without their own number can't send.",
+    notConnected: "Not connected. Businesses without their own number can't send.",
     connected: (workspace: string) => `Connected to ${workspace}`,
-    reconnectNeeded: (workspace: string) =>
-      `${workspace}: connect again to keep sending`,
+    reconnectNeeded: (workspace: string) => `${workspace}: connect again to keep sending`,
     connect: "Connect",
     reconnect: "Connect again",
     disconnect: "Disconnect",
     disconnectTitle: "Disconnect Koblip's number?",
-    disconnectText:
-      "Businesses without their own number stop sending WhatsApp messages.",
+    disconnectText: "Businesses without their own number stop sending WhatsApp messages.",
     cancel: "Cancel",
     connectedToast: "Connected",
     disconnectedToast: "Disconnected",
@@ -506,11 +472,10 @@ const en = {
     sending: "Sends",
     inactive: "Not active",
     // Meta's quality rating and account review, as Chat passes them on.
-    quality: {
-      GREEN: "Quality high",
-      YELLOW: "Quality medium",
-      RED: "Quality low",
-    } as Record<string, string>,
+    quality: { GREEN: "Quality high", YELLOW: "Quality medium", RED: "Quality low" } as Record<
+      string,
+      string
+    >,
     review: {
       APPROVED: "Account approved",
       PENDING: "Account in review",
@@ -590,14 +555,10 @@ const es: AdminMessages = {
     soon: "Próximamente",
     usage: {
       everyone: "Límite para todos los negocios",
-      perMonth: (n: number) =>
-        n === 1
-          ? "1 mensaje de plantilla al mes"
-          : `${n} mensajes de plantilla al mes`,
+      perMonth: (n: number) => (n === 1 ? "1 mensaje de plantilla al mes" : `${n} mensajes de plantilla al mes`),
       byDefault: (n: number) => `Predeterminado: ${n}`,
       changed: "Cambiado",
-      month: (month: string) =>
-        `Enviados desde el número de Koblip en ${month}`,
+      month: (month: string) => `Enviados desde el número de Koblip en ${month}`,
       sent: (sent: number, limit: number) => `${sent} de ${limit}`,
       ownLimit: "Límite propio",
       atLimit: "En el límite",
@@ -621,8 +582,7 @@ const es: AdminMessages = {
       closed: "Cerrada",
       remove: (phone: string) => `Quitar ${phone}`,
       removeTitle: (phone: string) => `¿Quitar ${phone}?`,
-      removeText:
-        "Hasta que vuelva a escribir, los mensajes desde este número le llegan como plantilla.",
+      removeText: "Hasta que vuelva a escribir, los mensajes desde este número le llegan como plantilla.",
       removeConfirm: "Quitar",
       cancel: "Cancelar",
       removed: "Quitado",
@@ -672,11 +632,7 @@ const es: AdminMessages = {
       noneFound: "Ningún mensaje coincide",
       clearFilters: "Quitar filtros",
       via: { text: "Mensaje normal", template: "Plantilla" },
-      replies: {
-        confirm: "Ahí estaré",
-        cantCome: "No podré ir",
-        ok: "De acuerdo",
-      },
+      replies: { confirm: "Ahí estaré", cantCome: "No podré ir", ok: "De acuerdo" },
       states: {
         pending: "Programado",
         sending: "Enviando",
@@ -734,10 +690,7 @@ const es: AdminMessages = {
         keep: "Mantener",
         done: "Mensaje cancelado.",
         failed: "No se pudo cancelar. Inténtalo de nuevo.",
-        problems: { notWaiting: "Ya no está en espera." } as Record<
-          string,
-          string
-        >,
+        problems: { notWaiting: "Ya no está en espera." } as Record<string, string>,
       },
     },
     // Los mismos nombres que en la página de WhatsApp del negocio.
@@ -763,8 +716,7 @@ const es: AdminMessages = {
       koblipNumber: "Número de Koblip",
       ownNumber: (workspace: string) => `Número propio · ${workspace}`,
       reconnect: "Volver a conectar",
-      messagesOff: (n: number) =>
-        n === 1 ? "1 mensaje apagado" : `${n} mensajes apagados`,
+      messagesOff: (n: number) => (n === 1 ? "1 mensaje apagado" : `${n} mensajes apagados`),
       allOn: "Todos los mensajes encendidos",
       sender: "Envía desde",
       connection: "Conexión",
@@ -772,8 +724,7 @@ const es: AdminMessages = {
       notConnected: "Sin conectar",
       disconnect: "Desconectar",
       disconnectTitle: "¿Desconectar el número de este negocio?",
-      disconnectText:
-        "Envía desde el número de Koblip hasta que el dueño vuelva a conectar.",
+      disconnectText: "Envía desde el número de Koblip hasta que el dueño vuelva a conectar.",
       // Las automatizaciones del negocio, solo para ver (U3).
       automationsTitle: "Automatizaciones",
       flows: {
@@ -795,18 +746,14 @@ const es: AdminMessages = {
       messageOn: (name: string) => `${name} encendido`,
       resetWording: "Restablecer texto",
       resetWordingTitle: (name: string) => `¿Restablecer ${name}?`,
-      resetWordingText:
-        "Vuelven el texto y los botones de Book, en inglés y español.",
+      resetWordingText: "Vuelven el texto y los botones de Book, en inglés y español.",
       settingsTitle: "Ajustes",
       reminders: "Recordatorios",
       noReminders: "Sin recordatorios",
       quietHours: "Horas sin mensajes",
       freeText: "Mensaje normal dentro de 24 horas",
       cantCome: "No podré ir",
-      cantComeActions: {
-        cancel: "Cancela y libera la hora",
-        alertOnly: "Solo avisa al dueño",
-      },
+      cantComeActions: { cancel: "Cancela y libera la hora", alertOnly: "Solo avisa al dueño" },
       thankYou: "Respuesta de agradecimiento",
       ownerPhone: "WhatsApp del dueño",
       noPhone: "Ninguno",
@@ -814,12 +761,10 @@ const es: AdminMessages = {
       off: "No",
       resetSettings: "Restablecer ajustes",
       resetSettingsTitle: "¿Restablecer ajustes?",
-      resetSettingsText:
-        "Recordatorios, horas sin mensajes y respuestas vuelven a lo predeterminado.",
+      resetSettingsText: "Recordatorios, horas sin mensajes y respuestas vuelven a lo predeterminado.",
       turnOff: "Apagar WhatsApp",
       turnOffTitle: "¿Apagar todos los mensajes?",
-      turnOffText:
-        "No sale ningún mensaje de este negocio hasta que se vuelvan a encender.",
+      turnOffText: "No sale ningún mensaje de este negocio hasta que se vuelvan a encender.",
       reset: "Restablecer",
       cancel: "Cancelar",
       saved: "Guardado",
@@ -844,9 +789,8 @@ const es: AdminMessages = {
         stuckSendingMinutes: "Un envío cuenta como fallido tras",
         historySize: "Últimos mensajes en Actividad",
         statsDays: "Días que cuenta el Resumen de un negocio",
-        defaultFreeTextInWindow:
-          "Mensaje normal dentro de 24 horas, al empezar",
-        defaultCantCome: '"No podré ir", al empezar',
+        defaultFreeTextInWindow: "Mensaje normal dentro de 24 horas, al empezar",
+        defaultCantCome: "\"No podré ir\", al empezar",
         defaultThankYouReply: "Respuesta de agradecimiento, al empezar",
         maxButtons: "Máximo de botones por mensaje",
         maxButtonLabel: "Botón más largo",
@@ -856,10 +800,8 @@ const es: AdminMessages = {
         maxBody: "Texto más largo",
         maxFooter: "Pie más largo",
         minWordsPerField: "Palabras necesarias por campo",
-        koblipMonthlyTemplates:
-          "Mensajes de plantilla al mes con el número de Koblip",
-        koblipLimitNearPercent:
-          "Avisar al dueño en esta parte del límite de Koblip",
+        koblipMonthlyTemplates: "Mensajes de plantilla al mes con el número de Koblip",
+        koblipLimitNearPercent: "Avisar al dueño en esta parte del límite de Koblip",
         inAppKeepDays: "Guardar las notificaciones durante",
         inAppPageSize: "Notificaciones por página",
         inAppPollSeconds: "La campana busca nuevas cada",
@@ -880,10 +822,7 @@ const es: AdminMessages = {
       days: (n: number) => (n === 1 ? "1 día" : `${n} días`),
       on: "Sí",
       off: "No",
-      cantCome: {
-        alertOnly: "Solo avisa al dueño",
-        cancel: "Cancela y libera la hora",
-      },
+      cantCome: { alertOnly: "Solo avisa al dueño", cancel: "Cancela y libera la hora" },
       changed: "Cambiado",
       byDefault: (value: string) => `Predeterminado: ${value}`,
       perBusiness: "Puede variar por negocio en Uso",
@@ -902,10 +841,8 @@ const es: AdminMessages = {
       noneOff: "Ninguno",
       settings: "Ajustes restablecidos",
       wording: (message: string) => `${message}: texto restablecido`,
-      koblipSubmit: (message: string) =>
-        `${message}: copia de Koblip enviada a Meta`,
-      koblipWording: (message: string) =>
-        `${message}: texto de Koblip guardado`,
+      koblipSubmit: (message: string) => `${message}: copia de Koblip enviada a Meta`,
+      koblipWording: (message: string) => `${message}: texto de Koblip guardado`,
       connection: "Número propio desconectado",
       removed: "Quitado",
     },
@@ -929,18 +866,13 @@ const es: AdminMessages = {
       text: "Texto",
       footer: "Pie",
       buttons: "Botones",
-      buttonKinds: {
-        confirm: "Confirma la cita",
-        cantCome: "Avisa que no puede ir",
-        ok: "Solo OK",
-      },
+      buttonKinds: { confirm: "Confirma la cita", cantCome: "Avisa que no puede ir", ok: "Solo OK" },
       addButton: "Añadir botón",
       removeButton: (label: string) => `Quitar ${label}`,
       normalMessage: "Dentro de 24 h",
       sending: "Se envía",
       off: "Apagado",
-      normalHint:
-        "Te escribieron en las últimas 24 horas. Se envía al momento.",
+      normalHint: "Te escribieron en las últimas 24 horas. Se envía al momento.",
       template: "Después de 24 h",
       templateHint: "Meta lo revisa primero y luego se envía.",
       approvedNow: "Se envía ahora, hasta que Meta apruebe tu cambio",
@@ -992,8 +924,7 @@ const es: AdminMessages = {
   remove: {
     label: (name: string) => `Eliminar ${name}`,
     title: (name: string) => `¿Eliminar ${name}?`,
-    businessText:
-      "Su página, reservas, servicios, equipo y clientes se eliminan para siempre.",
+    businessText: "Su página, reservas, servicios, equipo y clientes se eliminan para siempre.",
     ownerText: "Su cuenta y todos sus negocios se eliminan para siempre.",
     delete: "Eliminar",
     cancel: "Cancelar",
@@ -1026,8 +957,7 @@ const es: AdminMessages = {
     block: "Bloquear",
     unblock: "Desbloquear",
     blockTitle: (name: string) => `¿Bloquear a ${name}?`,
-    blockText:
-      "Se cierra su sesión y no puede entrar hasta que lo desbloquees.",
+    blockText: "Se cierra su sesión y no puede entrar hasta que lo desbloquees.",
     cancel: "Cancelar",
     blockedToast: "Bloqueado",
     unblockedToast: "Desbloqueado",
@@ -1044,32 +974,24 @@ const es: AdminMessages = {
   },
   koblipChat: {
     title: "Número de WhatsApp de Koblip",
-    notConnected:
-      "Sin conectar. Los negocios sin número propio no pueden enviar.",
+    notConnected: "Sin conectar. Los negocios sin número propio no pueden enviar.",
     connected: (workspace: string) => `Conectado a ${workspace}`,
-    reconnectNeeded: (workspace: string) =>
-      `${workspace}: vuelve a conectar para seguir enviando`,
+    reconnectNeeded: (workspace: string) => `${workspace}: vuelve a conectar para seguir enviando`,
     connect: "Conectar",
     reconnect: "Volver a conectar",
     disconnect: "Desconectar",
     disconnectTitle: "¿Desconectar el número de Koblip?",
-    disconnectText:
-      "Los negocios sin número propio dejan de enviar mensajes de WhatsApp.",
+    disconnectText: "Los negocios sin número propio dejan de enviar mensajes de WhatsApp.",
     cancel: "Cancelar",
     connectedToast: "Conectado",
     disconnectedToast: "Desconectado",
     failed: "No funcionó. Inténtalo de nuevo.",
     numbers: "Números",
     noNumbers: "No hay número de WhatsApp en el espacio de Koblip",
-    unreachable:
-      "Koblip Chat no respondió. Inténtalo de nuevo en unos minutos.",
+    unreachable: "Koblip Chat no respondió. Inténtalo de nuevo en unos minutos.",
     sending: "Envía",
     inactive: "Inactivo",
-    quality: {
-      GREEN: "Calidad alta",
-      YELLOW: "Calidad media",
-      RED: "Calidad baja",
-    },
+    quality: { GREEN: "Calidad alta", YELLOW: "Calidad media", RED: "Calidad baja" },
     review: {
       APPROVED: "Cuenta aprobada",
       PENDING: "Cuenta en revisión",
