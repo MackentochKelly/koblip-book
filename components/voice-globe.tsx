@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react"
 
 import { HeroGradient } from "@/components/hero-gradient"
 import { useReducedMotion } from "@/hooks/use-theme-colors"
+import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { cn } from "@/lib/utils"
 
 // How much the globe grows at full volume, and how fast it follows.
@@ -18,16 +19,20 @@ const PULSE = { maxGrow: 0.1, smoothing: 0.2 } as const
 // the brand colour, drawn inside the ball, on top: a border drawn around it
 // would be a second circle meeting the ball's own edge, and where the two
 // smoothed edges share pixels the page shows through, so the line looks
-// rough.
+// rough. `screen` is one drawn as big as the screen (a globe opening the
+// Assistant, components/globe-opening.tsx): there from its first frame, its
+// colours drawn with fewer pixels.
 export function VoiceGlobe({
   getInputVolume,
   getOutputVolume,
   edge = false,
+  screen = false,
   className,
 }: {
   getInputVolume?: () => number
   getOutputVolume?: () => number
   edge?: boolean
+  screen?: boolean
   className?: string
 }) {
   const ball = useRef<HTMLDivElement>(null)
@@ -53,7 +58,13 @@ export function VoiceGlobe({
         ref={ball}
         className="relative isolate size-full overflow-hidden rounded-full shadow-[0_16cqw_31cqw_-12cqw_color-mix(in_oklch,var(--primary)_35%,transparent)]"
       >
-        <HeroGradient look="globe" />
+        <HeroGradient
+          look="globe"
+          fadeIn={!screen}
+          maxPixelCount={
+            screen ? ASSISTANT_RULES.globeOpenMaxPixels : undefined
+          }
+        />
         {/* From the top layer down: the shine, the bounced light, the rim
             (all the near-white --primary-foreground, the same in light and
             dark), then the shade (--primary). */}

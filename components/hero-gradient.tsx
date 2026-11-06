@@ -3,6 +3,7 @@
 import { MeshGradient } from "@paper-design/shaders-react"
 
 import { useReducedMotion, useThemeColors } from "@/hooks/use-theme-colors"
+import { cn } from "@/lib/utils"
 
 // Paper's Mesh Gradient (https://shaders.paper.design/mesh-gradient): a
 // fluid colour wash, set up once for the app. The colours are theme tokens
@@ -28,8 +29,19 @@ const LOOKS = {
   },
 } as const
 
-// Fills its `relative isolate` parent, behind the content.
-export function HeroGradient({ look = "hero" }: { look?: keyof typeof LOOKS }) {
+// Fills its `relative isolate` parent, behind the content. It fades in over
+// the plain page colour, unless `fadeIn` is false (something that must be
+// there from its first frame). `maxPixelCount` holds a very big one to fewer
+// pixels (Paper's own limit is four full-HD screens).
+export function HeroGradient({
+  look = "hero",
+  fadeIn = true,
+  maxPixelCount,
+}: {
+  look?: keyof typeof LOOKS
+  fadeIn?: boolean
+  maxPixelCount?: number
+}) {
   const { colorTokens, distortion, swirl, speed, veiled } = LOOKS[look]
   const colors = useThemeColors(colorTokens)
   const still = useReducedMotion()
@@ -49,8 +61,12 @@ export function HeroGradient({ look = "hero" }: { look?: keyof typeof LOOKS }) {
           distortion={distortion}
           swirl={swirl}
           speed={still ? 0 : speed}
+          maxPixelCount={maxPixelCount}
           // Fades in over the plain page colour instead of popping in.
-          className="size-full duration-700 motion-safe:animate-in motion-safe:fade-in"
+          className={cn(
+            "size-full",
+            fadeIn && "duration-700 motion-safe:animate-in motion-safe:fade-in"
+          )}
         />
       )}
       {veiled && <div className="absolute inset-0 bg-background/35" />}

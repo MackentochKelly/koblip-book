@@ -15,6 +15,10 @@ import {
 
 import { AppInset } from "@/components/app-inset"
 import { BottomTabBar, TabBarLink } from "@/components/bottom-tab-bar"
+import {
+  GlobeOpeningProvider,
+  useGlobeOpening,
+} from "@/components/globe-opening"
 import { PageContent } from "@/components/page-content"
 import { PhotoWordsProvider } from "@/components/photo-upload"
 import { SpinSwap } from "@/components/spin-swap"
@@ -54,6 +58,38 @@ const PHONE_RIGHT = ["/services", "/team"]
 // hairline (a little darker than the cards' edge), with a 2 px gap.
 const ADD_BUTTON =
   "size-11 rounded-full border-(length:--hairline) border-foreground/20 p-0.5 hover:bg-transparent dark:hover:bg-transparent"
+
+// The tab bar's assistant: its globe grows over the screen and opens the
+// Assistant behind it, the same as the computer's floating globe
+// (components/globe-opening.tsx). Loaded ahead, so it opens at once. A new
+// tab or window opens as any link does.
+function AssistantTabButton({ href, label }: { href: string; label: string }) {
+  const openFromGlobe = useGlobeOpening()
+  return (
+    <Button
+      size="icon-lg"
+      variant="ghost"
+      // The globe fills the whole 44 px, with its own edge (VoiceGlobe
+      // `edge`), not a border around it.
+      className="size-11 rounded-full border-0 hover:bg-transparent dark:hover:bg-transparent"
+      aria-label={label}
+      nativeButton={false}
+      render={<Link href={href} prefetch />}
+      onClick={(event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey) return
+        event.preventDefault()
+        openFromGlobe(event.currentTarget, href)
+      }}
+    >
+      {/* The composer's voice wave on the globe, in the globe's near-white
+          light, a little see-through so the globe's colours tint it. */}
+      <span className="grid size-full place-items-center *:col-start-1 *:row-start-1">
+        <VoiceGlobe edge className="size-full" />
+        <AudioLinesIcon className="relative size-5 text-primary-foreground/85" />
+      </span>
+    </Button>
+  )
+}
 
 // Pages whose middle button is + rather than the assistant. Known from the
 // address, so it is + from the first moment, while the page still loads;
@@ -127,99 +163,87 @@ export function DashboardShell({
   return (
     <TooltipProvider>
       <CommandMenuProvider business={business}>
-        <SidebarProvider>
-          <AppSidebar
-            business={business}
-            businesses={businesses}
-            owner={owner}
-          />
-          <AppInset className={cn(assistantOpen && "md:h-dvh")}>
-            <TopBar
+        <GlobeOpeningProvider>
+          <SidebarProvider>
+            <AppSidebar
               business={business}
+              businesses={businesses}
               owner={owner}
-              menu
-              bell={bell}
-              className={cn(assistantOpen && "max-md:hidden")}
             />
-            <PageContent
-              fill={assistantOpen}
-              className={cn(!assistantOpen && "pb-28")}
+            <AppInset className={cn(assistantOpen && "md:h-dvh")}>
+              <TopBar
+                business={business}
+                owner={owner}
+                menu
+                bell={bell}
+                className={cn(assistantOpen && "max-md:hidden")}
+              />
+              <PageContent
+                fill={assistantOpen}
+                className={cn(!assistantOpen && "pb-28")}
+              >
+                <TabBarActionContext value={setAction}>
+                  <PhotoWordsProvider
+                    words={{
+                      change: messages.settings.photos.change,
+                      addPhoto: messages.settings.photos.addPhoto,
+                      remove: messages.settings.photos.remove,
+                      errors: {
+                        not_found: messages.settings.tryAgain,
+                        missing: messages.settings.photos.pick,
+                        too_big: messages.settings.photos.tooBig,
+                        wrong_type: messages.settings.photos.wrongType,
+                        limit: messages.settings.photos.limit(UPLOAD_RULES.maxBusinessPhotos),
+                      },
+                    }}
+                  >
+                    {children}
+                  </PhotoWordsProvider>
+                </TabBarActionContext>
+              </PageContent>
+            </AppInset>
+            <BottomTabBar
+              label={m.owner}
+              className={cn("grid-cols-5", assistantOpen && "hidden")}
             >
-              <TabBarActionContext value={setAction}>
-                <PhotoWordsProvider
-                  words={{
-                    change: messages.settings.photos.change,
-                    addPhoto: messages.settings.photos.addPhoto,
-                    remove: messages.settings.photos.remove,
-                    errors: {
-                      not_found: messages.settings.tryAgain,
-                      missing: messages.settings.photos.pick,
-                      too_big: messages.settings.photos.tooBig,
-                      wrong_type: messages.settings.photos.wrongType,
-                      limit: messages.settings.photos.limit(UPLOAD_RULES.maxBusinessPhotos),
-                    },
-                  }}
-                >
-                  {children}
-                </PhotoWordsProvider>
-              </TabBarActionContext>
-            </PageContent>
-          </AppInset>
-          <BottomTabBar
-            label={m.owner}
-            className={cn("grid-cols-5", assistantOpen && "hidden")}
-          >
-            {PHONE_LEFT.map((path) => tab(path))}
-            <div className="relative flex min-h-14 items-center justify-center">
-              {/* The assistant's globe (the computer's floating one), or the
-                  open page's + on the app's grey icon fill, spinning from one
-                  to the other. */}
-              <SpinSwap swapKey={addPage ? "add" : "assistant"}>
-                {addPage ? (
-                  <Button
-                    size="icon-lg"
-                    variant="ghost"
-                    className={ADD_BUTTON}
-                    aria-label={addLabel}
-                    // Until the page hands over its action (while it loads,
-                    // or as it closes) the + keeps its look and a tap does
-                    // nothing; it greys out only when the page says so.
-                    disabled={action?.disabled === true}
-                    aria-disabled={action ? undefined : true}
-                    onClick={action?.onClick}
-                  >
-                    {/* The app's icon fill (an empty state's icon): grey,
-                        dark in dark mode, with the icon in the text colour. */}
-                    <span className="grid size-full place-items-center rounded-full bg-muted text-foreground">
-                      <PlusIcon className="size-6" />
-                    </span>
-                  </Button>
-                ) : (
-                  <Button
-                    size="icon-lg"
-                    variant="ghost"
-                    // The globe fills the whole 44 px, with its own edge
-                    // (VoiceGlobe `edge`), not a border around it.
-                    className="size-11 rounded-full border-0 hover:bg-transparent dark:hover:bg-transparent"
-                    aria-label={m.assistant}
-                    nativeButton={false}
-                    render={<Link href={assistantHref} />}
-                  >
-                    {/* The composer's voice wave on the globe, in the globe's
-                        near-white light, a little see-through so the globe's
-                        colours tint it. */}
-                    <span className="grid size-full place-items-center *:col-start-1 *:row-start-1">
-                      <VoiceGlobe edge className="size-full" />
-                      <AudioLinesIcon className="relative size-5 text-primary-foreground/85" />
-                    </span>
-                  </Button>
-                )}
-              </SpinSwap>
-            </div>
-            {PHONE_RIGHT.map((path) => tab(path))}
-          </BottomTabBar>
-          {assistantFloat}
-        </SidebarProvider>
+              {PHONE_LEFT.map((path) => tab(path))}
+              <div className="relative flex min-h-14 items-center justify-center">
+                {/* The assistant's globe (the computer's floating one), or the
+                    open page's + on the app's grey icon fill, spinning from one
+                    to the other. */}
+                <SpinSwap swapKey={addPage ? "add" : "assistant"}>
+                  {addPage ? (
+                    <Button
+                      size="icon-lg"
+                      variant="ghost"
+                      className={ADD_BUTTON}
+                      aria-label={addLabel}
+                      // Until the page hands over its action (while it loads,
+                      // or as it closes) the + keeps its look and a tap does
+                      // nothing; it greys out only when the page says so.
+                      disabled={action?.disabled === true}
+                      aria-disabled={action ? undefined : true}
+                      onClick={action?.onClick}
+                    >
+                      {/* The app's icon fill (an empty state's icon): grey,
+                          dark in dark mode, with the icon in the text colour. */}
+                      <span className="grid size-full place-items-center rounded-full bg-muted text-foreground">
+                        <PlusIcon className="size-6" />
+                      </span>
+                    </Button>
+                  ) : (
+                    <AssistantTabButton
+                      href={assistantHref}
+                      label={m.assistant}
+                    />
+                  )}
+                </SpinSwap>
+              </div>
+              {PHONE_RIGHT.map((path) => tab(path))}
+            </BottomTabBar>
+            {assistantFloat}
+          </SidebarProvider>
+        </GlobeOpeningProvider>
       </CommandMenuProvider>
     </TooltipProvider>
   )

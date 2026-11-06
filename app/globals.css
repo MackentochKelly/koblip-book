@@ -387,33 +387,6 @@
   }
 }
 
-/* The floating globe opening the Assistant (assistant-float.tsx), Material's
-   circular reveal: the new page shows through a circle that grows from the
-   globe's centre (--reveal-x, --reveal-y) to the window's farthest corner
-   (--reveal-to), while the old page holds still under it. 450ms on the enter
-   curve (docs/ui-rules/motion.md: page changes). A clip, not a scale, so the
-   page stays sharp and nothing lays out again; blending normal, so where the
-   two pages overlap they don't add up (the browser's default for a
-   crossfade). Reduce Motion: the Assistant just opens, with no transition. */
-@media (prefers-reduced-motion: no-preference) {
-  :root:active-view-transition-type(assistant-open)::view-transition-old(root) {
-    animation: none;
-    mix-blend-mode: normal;
-  }
-  :root:active-view-transition-type(assistant-open)::view-transition-new(root) {
-    animation: assistant-reveal 450ms var(--ease-enter) both;
-    mix-blend-mode: normal;
-  }
-}
-@keyframes assistant-reveal {
-  from {
-    clip-path: circle(0 at var(--reveal-x) var(--reveal-y));
-  }
-  to {
-    clip-path: circle(var(--reveal-to) at var(--reveal-x) var(--reveal-y));
-  }
-}
-
 @layer base {
   /* The owner area's gray page (data-surface="app" on its frame): outline
      rows and empty states are filled like cards, so they read as white

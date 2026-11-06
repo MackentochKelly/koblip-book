@@ -1,9 +1,10 @@
 "use client"
 
 import { usePathname, useRouter } from "next/navigation"
-import { useLayoutEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 
 import { FloatingLink } from "@/components/floating-link"
+import { useGlobeOpening } from "@/components/globe-opening"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -14,7 +15,6 @@ import {
 } from "@/components/ui/icons"
 import { VoiceGlobe } from "@/components/voice-globe"
 import { useIsDesktop } from "@/hooks/use-is-desktop"
-import { useReducedMotion } from "@/hooks/use-theme-colors"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type { PageLanguage } from "@/lib/page-language"
 import { cn } from "@/lib/utils"
@@ -31,30 +31,6 @@ const IDEAS = [
 
 type IdeaKey = (typeof IDEAS)[number]["key"]
 
-// From a point to the screen's farthest corner.
-function farthestCorner(x: number, y: number) {
-  return Math.hypot(
-    Math.max(x, window.innerWidth - x),
-    Math.max(y, window.innerHeight - y)
-  )
-}
-
-// The view transition type the reveal's CSS waits for (app/globals.css).
-const REVEAL_TYPE = "assistant-open"
-
-// View transitions with types (Chrome 125+, Safari 18.2+, Firefox 144+).
-// Elsewhere the Assistant just opens.
-function canReveal() {
-  return (
-    typeof document.startViewTransition === "function" &&
-    "types" in ViewTransition.prototype
-  )
-}
-
-// The reveal's circle, read by its CSS: the globe's centre and how far it
-// grows (to the window's farthest corner), set while it plays.
-const REVEAL_PROPS = ["--reveal-x", "--reveal-y", "--reveal-to"] as const
-
 // The way into the assistant on a computer (a phone has the tab bar's middle
 // button): a round globe that floats over every other page and opens the
 // assistant. For a moment after the page loads, a few short ideas rest next to
@@ -69,73 +45,25 @@ export function AssistantFloat({
 }) {
   const messages = assistantMessagesFor(language)
   const router = useRouter()
+  const openFromGlobe = useGlobeOpening()
   const desktop = useIsDesktop()
   const showIdeas = useJustLoaded(ASSISTANT_RULES.floatIdeasMs)
   const [closed, setClosed] = useState<readonly IdeaKey[]>([])
-  // The reveal is playing: a second click waits for it.
-  const opening = useRef(false)
-  const still = useReducedMotion()
   const globe = useRef<HTMLDivElement>(null)
   const href = `/dashboard/${businessId}/assistant`
   const pathname = usePathname()
   const assistantOpen = pathname.startsWith(href)
-
-  // Called once the new page is on screen.
-  const arrived = useRef<(() => void) | null>(null)
-  useLayoutEffect(() => {
-    if (assistantOpen) arrived.current?.()
-  }, [assistantOpen])
 
   // Off on a phone, so its moving canvas never starts there.
   if (!desktop || assistantOpen) return null
 
   const ideas = IDEAS.filter(({ key }) => !closed.includes(key))
 
-  // Goes to the Assistant; resolves once it is on screen.
-  const arrive = () =>
-    new Promise<void>((resolve) => {
-      const timer = setTimeout(resolve, ASSISTANT_RULES.globeRevealWaitMs)
-      arrived.current = () => {
-        clearTimeout(timer)
-        arrived.current = null
-        resolve()
-      }
-      router.push(href)
-    })
-
-  // Material's circular reveal: the Assistant shows through a circle that
-  // grows from the globe's centre to the window's farthest corner, while the
-  // page under it holds still (app/globals.css, assistant-reveal). It is a
-  // view transition of the whole window (developer.mozilla.org/docs/Web/API/
-  // View_Transition_API), started here rather than by a React <ViewTransition>
-  // on the Assistant's page, so only this click plays it: a boundary there
-  // would also animate every other way in and out of the page (the phone's
-  // tab bar, the menu, Back). The browser shows real pages, clipped, so it
-  // stays sharp at every frame.
+  // The globe grows over the screen and opens the Assistant behind it, the
+  // same as the phone's tab bar globe (components/globe-opening.tsx).
   const open = () => {
-    const ball = globe.current
-    if (opening.current) return
-    // Someone asked for less motion, or the browser can't: it just opens.
-    if (!ball || still || !canReveal()) {
-      router.push(href)
-      return
-    }
-    const place = ball.getBoundingClientRect()
-    const x = place.left + place.width / 2
-    const y = place.top + place.height / 2
-    const root = document.documentElement.style
-    root.setProperty("--reveal-x", `${x}px`)
-    root.setProperty("--reveal-y", `${y}px`)
-    root.setProperty("--reveal-to", `${farthestCorner(x, y)}px`)
-    opening.current = true
-    const reveal = document.startViewTransition({
-      update: arrive,
-      types: [REVEAL_TYPE],
-    })
-    void reveal.finished.finally(() => {
-      for (const prop of REVEAL_PROPS) root.removeProperty(prop)
-      opening.current = false
-    })
+    if (globe.current) openFromGlobe(globe.current, href)
+    else router.push(href)
   }
 
   const ask = (question: string) => {
@@ -195,7 +123,7 @@ export function AssistantFloat({
         </div>
       ))}
     >
-      {/* Measured for where the reveal starts. */}
+      {/* Measured for where the opening starts. */}
       <div ref={globe} className="size-full">
         <VoiceGlobe className="size-full" />
       </div>
