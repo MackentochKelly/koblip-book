@@ -29,10 +29,15 @@ export function Sparkline({
         <YAxis hide domain={[0, (most: number) => Math.max(most, 1)]} />
         <Area
           dataKey="value"
-          type="monotone"
+          // A monotone curve: smooth, yet through every real day's value
+          // with no overshoot or made-up bumps; the fill follows the same
+          // curve.
+          type="monotoneX"
           stroke="currentColor"
           strokeOpacity={0.25}
           strokeWidth={1}
+          strokeLinecap="round"
+          strokeLinejoin="round"
           fill="currentColor"
           fillOpacity={0.08}
           dot={false}
