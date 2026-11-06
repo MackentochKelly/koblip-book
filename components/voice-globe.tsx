@@ -14,14 +14,20 @@ const PULSE = { maxGrow: 0.1, smoothing: 0.2 } as const
 // little light bounced back on the bottom right, a thin rim of light all round
 // and a faint glow under it in the brand colour. All of it is sized from the
 // ball itself, so it looks the same at any size. While talking live it swells
-// a little with the owner's voice and the answer.
+// a little with the owner's voice and the answer. `edge` adds a hairline in
+// the brand colour, drawn inside the ball, on top: a border drawn around it
+// would be a second circle meeting the ball's own edge, and where the two
+// smoothed edges share pixels the page shows through, so the line looks
+// rough.
 export function VoiceGlobe({
   getInputVolume,
   getOutputVolume,
+  edge = false,
   className,
 }: {
   getInputVolume?: () => number
   getOutputVolume?: () => number
+  edge?: boolean
   className?: string
 }) {
   const ball = useRef<HTMLDivElement>(null)
@@ -52,6 +58,9 @@ export function VoiceGlobe({
             (all the near-white --primary-foreground, the same in light and
             dark), then the shade (--primary). */}
         <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_32%_26%,color-mix(in_oklch,var(--primary-foreground)_85%,transparent),transparent_20%),radial-gradient(circle_at_70%_80%,color-mix(in_oklch,var(--primary-foreground)_30%,transparent),transparent_24%),radial-gradient(circle_closest-side,transparent_90%,color-mix(in_oklch,var(--primary-foreground)_45%,transparent)_100%),radial-gradient(circle_at_42%_38%,transparent_50%,color-mix(in_oklch,var(--primary)_35%,transparent)_80%)]" />
+        {edge && (
+          <div className="pointer-events-none absolute inset-0 rounded-full inset-ring-(length:--hairline) inset-ring-primary/60" />
+        )}
       </div>
     </div>
   )

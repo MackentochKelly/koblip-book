@@ -198,9 +198,9 @@ export function DashboardShell({
                   <Button
                     size="icon-lg"
                     variant="ghost"
-                    // The globe fills the whole 44 px, edged with the app's
-                    // hairline in its own brand colour, with no gap.
-                    className="size-11 rounded-full border-(length:--hairline) border-primary/60 hover:bg-transparent dark:hover:bg-transparent"
+                    // The globe fills the whole 44 px, with its own edge
+                    // (VoiceGlobe `edge`), not a border around it.
+                    className="size-11 rounded-full border-0 hover:bg-transparent dark:hover:bg-transparent"
                     aria-label={m.assistant}
                     nativeButton={false}
                     render={<Link href={assistantHref} />}
@@ -209,7 +209,7 @@ export function DashboardShell({
                         near-white light, a little see-through so the globe's
                         colours tint it. */}
                     <span className="grid size-full place-items-center *:col-start-1 *:row-start-1">
-                      <VoiceGlobe className="size-full" />
+                      <VoiceGlobe edge className="size-full" />
                       <AudioLinesIcon className="relative size-5 text-primary-foreground/85" />
                     </span>
                   </Button>
