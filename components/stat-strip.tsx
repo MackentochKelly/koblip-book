@@ -13,8 +13,6 @@ export interface Stat {
   label: string
   // A number, or a part like Money for amounts.
   value: React.ReactNode
-  // One short line under the number: what it counts.
-  hint?: string
   // Whole percent against the period before; null hides the badge.
   change?: number | null
   // False for numbers that should go down, like no-shows.
@@ -32,11 +30,13 @@ const COLUMNS = [
 ]
 
 // Key numbers in one card, split by thin lines: two across on a phone, four
-// on a computer. Each has its icon on a soft coloured circle beside its
-// label (a little smaller on a phone, so the label fits), then the number with how it moved against the period before
-// beside it (green when it went the right way), and a short line saying what
-// it counts. With an `href` (the strip's, or a number's own) the number
-// opens that page, and each box lights up on its own under the mouse.
+// on a computer. Each box has its label at the top left, the number right
+// under it with how it moved against the period before beside it (green
+// when it went the right way), and its icon on a soft coloured circle at
+// the right, centred beside both (a little smaller on a phone, so the
+// label and number keep their room). With an `href` (the strip's, or a
+// number's own) the number opens that page, and each box lights up on its
+// own under the mouse.
 export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
   return (
     <Card className="gap-0 py-0">
@@ -53,13 +53,12 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
             <div
               key={stat.label}
               className={cn(
-                "flex flex-col gap-3 bg-card px-3 py-4 md:p-5",
+                "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 bg-card px-3 py-4 md:gap-x-3 md:p-5",
                 link &&
                   "relative transition-colors hover:bg-muted has-[a:focus-visible]:bg-muted has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50 has-[a:focus-visible]:ring-inset"
               )}
             >
-              <dt className="flex items-center gap-2 font-medium md:gap-2.5">
-                <ToneIcon tone={stat.tone}>{stat.icon}</ToneIcon>
+              <dt className="flex font-medium">
                 {link ? (
                   // The label is the box's link; it covers the whole box.
                   <Link
@@ -74,8 +73,8 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
                   </span>
                 )}
               </dt>
-              <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="text-3xl font-semibold tracking-tight tabular-nums">
+              <dd className="col-start-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="text-2xl font-semibold tracking-tight tabular-nums md:text-3xl">
                   {stat.value}
                 </span>
                 <Change
@@ -83,11 +82,12 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
                   upIsGood={stat.upIsGood ?? true}
                 />
               </dd>
-              {stat.hint && (
-                <dd className="-mt-2 truncate text-sm text-muted-foreground">
-                  {stat.hint}
-                </dd>
-              )}
+              {/* Only a picture, so screen readers skip it. */}
+              <dd aria-hidden className="col-start-2 row-span-2 row-start-1">
+                <ToneIcon tone={stat.tone} className="md:size-10">
+                  {stat.icon}
+                </ToneIcon>
+              </dd>
             </div>
           )
         })}
