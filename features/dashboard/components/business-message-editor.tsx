@@ -1,21 +1,25 @@
 "use client"
 
+import { type Messages, useTranslations } from "next-intl"
+
 import {
   MessageEditor,
   type EditorLimits,
   type MessageEditorItem,
 } from "@/components/message-editor"
 import { saveMessageWording, submitMessageToMeta } from "../api/notification-actions"
-import { useOwnerMessages } from "../i18n/provider"
 import type { NotificationMessage } from "../types/notifications"
 import {
   TEMPLATE_LANGUAGES,
+  type BookingField,
   fieldsForOwner,
   fieldsFromOwner,
   messageButtonActions,
   messageFields,
   withExamples,
 } from "../utils/booking-templates"
+
+type Problem = keyof Messages["owner"]["whatsapp"]["problems"]
 
 // A business's own message in the shared editor: its wording with fields in
 // the owner's words, saved and submitted from its own Koblip Chat. On
@@ -31,12 +35,28 @@ export function BusinessMessageEditor({
   limits: EditorLimits
   onClose: () => void
 }) {
-  const t = useOwnerMessages().whatsapp
-  const fields = t.fields
-  const problemOf = (error: string) => t.problems[error as keyof typeof t.problems] ?? t.failed
+  const t = useTranslations("owner.whatsapp")
+  // Every field a message may use, as the owner reads them.
+  const fields: Record<BookingField, string> = {
+    name: t("fields.name"),
+    service: t("fields.service"),
+    business: t("fields.business"),
+    date: t("fields.date"),
+    time: t("fields.time"),
+    teamMember: t("fields.teamMember"),
+    duration: t("fields.duration"),
+    price: t("fields.price"),
+    address: t("fields.address"),
+    phone: t("fields.phone"),
+  }
+  // A code the server sent, in words when there are some for it.
+  const problemOf = (error: string) => {
+    const key = `problems.${error}` as `problems.${Problem}`
+    return t.has(key) ? t(key) : t("failed")
+  }
 
   const editorItem: MessageEditorItem | null = item && {
-    name: t.names[item.message],
+    name: t(`names.${item.message}`),
     editable: item.editable,
     fields: messageFields(item.message).map((field) => fields[field]),
     buttonActions: messageButtonActions(item.message),
@@ -62,7 +82,43 @@ export function BusinessMessageEditor({
   return (
     <MessageEditor
       item={editorItem}
-      labels={{ ...t, readOnly: t.koblipWording }}
+      labels={{
+        edit: (name) => t("edit", { name: name.toLowerCase() }),
+        english: t("english"),
+        spanish: t("spanish"),
+        metaReason: t("metaReason"),
+        review: {
+          missing: t("review.missing"),
+          draft: t("review.draft"),
+          waiting: t("review.waiting"),
+          approved: t("review.approved"),
+          rejected: t("review.rejected"),
+        },
+        readOnly: t("koblipWording"),
+        title: t("title"),
+        text: t("text"),
+        footer: t("footer"),
+        buttons: t("buttons"),
+        buttonKinds: {
+          confirm: t("buttonKinds.confirm"),
+          cantCome: t("buttonKinds.cantCome"),
+          ok: t("buttonKinds.ok"),
+        },
+        addButton: t("addButton"),
+        removeButton: (label) => t("removeButton", { label }),
+        normalMessage: t("normalMessage"),
+        normalHint: t("normalHint"),
+        sending: t("sending"),
+        template: t("template"),
+        templateHint: t("templateHint"),
+        approvedNow: t("approvedNow"),
+        reset: t("reset"),
+        save: t("save"),
+        submit: t("submit"),
+        saved: t("saved"),
+        submitted: t("submitted"),
+        failed: t("failed"),
+      }}
       limits={limits}
       preview={(body, language) => withExamples(fieldsFromOwner(body, fields), language)}
       onSave={async (language, draft) => {

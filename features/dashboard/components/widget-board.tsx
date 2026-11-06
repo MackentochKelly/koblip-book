@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 import {
   LayoutGridIcon,
   PlusIcon,
@@ -24,7 +25,6 @@ import {
   useWidgetAnnouncements,
   useWidgetLayout,
 } from "../hooks/use-widget-layout"
-import { useOwnerMessages } from "../i18n/provider"
 import { reorderShown, setShown, shownWidgets } from "../utils/widget-layout"
 import { WIDGETS, type WidgetId, type WidgetLayout } from "../widgets"
 
@@ -62,7 +62,7 @@ export function WidgetBoard({
   widgets: Record<WidgetId, React.ReactNode>
   actions?: Partial<Record<WidgetId, React.ReactNode>>
 }) {
-  const t = useOwnerMessages().widgets
+  const t = useTranslations("owner.widgets")
   const [editing, setEditing] = useState(false)
   const { layout, save } = useWidgetLayout(businessId, savedLayout, savedDevice)
   const { announcements, instructions } = useWidgetAnnouncements()
@@ -76,7 +76,7 @@ export function WidgetBoard({
       render={<Link href={widgetsPage} />}
     >
       <PlusIcon data-icon="inline-start" />
-      {t.add}
+      {t("add")}
     </Button>
   )
 
@@ -87,7 +87,7 @@ export function WidgetBoard({
           <EmptyMedia variant="icon">
             <LayoutGridIcon />
           </EmptyMedia>
-          <EmptyTitle>{t.noneShown}</EmptyTitle>
+          <EmptyTitle>{t("noneShown")}</EmptyTitle>
         </EmptyHeader>
         <EmptyContent>{addWidget}</EmptyContent>
       </Empty>
@@ -101,7 +101,7 @@ export function WidgetBoard({
           <PageSection
             key={id}
             id={`widget-${id}`}
-            title={t.headings[id]}
+            title={t(`headings.${id}`)}
             action={actions?.[id]}
             className={cn("min-w-0", HIDES_EMPTY, span(id))}
           >
@@ -116,7 +116,7 @@ export function WidgetBoard({
           onClick={() => setEditing(true)}
         >
           <SquarePenIcon data-icon="inline-start" />
-          {t.edit}
+          {t("edit")}
         </Button>
       </div>
     )
@@ -127,7 +127,7 @@ export function WidgetBoard({
       <SortableList
         ids={shown}
         onReorder={(next) => save(reorderShown(layout, next))}
-        handleLabel={(id) => t.move(t.names[id])}
+        handleLabel={(id) => t("move", { name: t(`names.${id}`) })}
         announcements={announcements}
         instructions={instructions}
         layout="grid"
@@ -137,7 +137,7 @@ export function WidgetBoard({
         {(id, handle) => (
           <PageSection
             id={`widget-${id}`}
-            title={t.headings[id]}
+            title={t(`headings.${id}`)}
             className={cn(
               "relative h-full min-w-0 rounded-4xl outline-2 outline-offset-4 outline-border outline-dashed",
               HIDES_EMPTY
@@ -151,7 +151,7 @@ export function WidgetBoard({
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label={t.remove(t.names[id])}
+                aria-label={t("remove", { name: t(`names.${id}`) })}
                 onClick={() => save(setShown(layout, id, false))}
               >
                 <XIcon />
@@ -162,7 +162,7 @@ export function WidgetBoard({
       </SortableList>
       <div className="flex flex-col gap-2 md:flex-row md:justify-center">
         {addWidget}
-        <Button onClick={() => setEditing(false)}>{t.done}</Button>
+        <Button onClick={() => setEditing(false)}>{t("done")}</Button>
       </div>
     </div>
   )

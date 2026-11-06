@@ -12,7 +12,16 @@ vi.mock("@/features/dashboard/api/owned-business", () => ({
 vi.mock("@/features/assistant/api/rate-limit", () => ({
   checkAssistantRateLimit: vi.fn(() => true),
 }))
-vi.mock("../tools", () => ({ buildAssistantTools: vi.fn() }))
+vi.mock("../tools", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../tools")>()),
+  buildAssistantTools: vi.fn(),
+}))
+// The tests have no translations: the lines come in English, and the spy
+// shows which language was asked for.
+vi.mock("next-intl/server", async () => {
+  const words = (await import("@/i18n/testing")).serverWords()
+  return { ...words, getTranslations: vi.fn(words.getTranslations) }
+})
 vi.mock("@/features/assistant/api/audit-log", () => ({
   logAssistantAction: vi.fn(),
 }))
@@ -24,6 +33,7 @@ const { getSession } = await import("@/lib/dal")
 const { ownedBusiness } =
   await import("@/features/dashboard/api/owned-business")
 const { buildAssistantTools } = await import("../tools")
+const { getTranslations } = await import("next-intl/server")
 const { peekPendingAction, storePendingAction } =
   await import("@/features/assistant/api/pending-actions")
 
@@ -276,35 +286,35 @@ test("execute failure streams a failed step and server text", async () => {
   expect(list[3]).toEqual({ type: "done" })
 })
 
-test("an execute that throws still ends with a result, in both languages", async () => {
-  for (const [language, text] of [
-    ["en", "I couldn't confirm it went through. Check the page to be sure."],
-    ["es", "No pude confirmar si se hizo. Revisa la página para estar seguro."],
-  ] as const) {
-    vi.mocked(getOwnerLanguage).mockResolvedValue(language)
-    vi.mocked(logAssistantAction).mockClear()
-    execute.mockRejectedValueOnce(new Error("database is locked"))
-    const id = await store()
-    const list = await events(
-      await POST(post({ businessId: "b1", id, accept: true }))
-    )
-    expect(list.slice(1)).toEqual([
-      expect.objectContaining({ type: "step", status: "failed" }),
-      { type: "result", ok: false, text, kind: "bookings" },
-      { type: "done" },
-    ])
-    expect(logAssistantAction).toHaveBeenCalledWith(
-      expect.objectContaining({ summary: text, status: "failed" })
-    )
-  }
+test("an execute that throws still ends with a result", async () => {
+  const text = "I couldn't confirm it went through. Check the page to be sure."
+  vi.mocked(logAssistantAction).mockClear()
+  execute.mockRejectedValueOnce(new Error("database is locked"))
+  const id = await store()
+  const list = await events(
+    await POST(post({ businessId: "b1", id, accept: true }))
+  )
+  expect(list.slice(1)).toEqual([
+    expect.objectContaining({ type: "step", status: "failed" }),
+    { type: "result", ok: false, text, kind: "bookings" },
+    { type: "done" },
+  ])
+  expect(logAssistantAction).toHaveBeenCalledWith(
+    expect.objectContaining({ summary: text, status: "failed" })
+  )
 })
 
 test("accept false answers in the owner's language", async () => {
   vi.mocked(getOwnerLanguage).mockResolvedValue("es")
+  vi.mocked(getTranslations).mockClear()
   const id = await store()
   const res = await POST(post({ businessId: "b1", id, accept: false }))
+  expect(getTranslations).toHaveBeenCalledWith({
+    locale: "es",
+    namespace: "assistantServer",
+  })
   expect(await events(res)).toEqual([
-    { type: "text", delta: "Vale, no se cambió nada." },
+    { type: "text", delta: "Okay, nothing was changed." },
     { type: "done" },
   ])
   expect(execute).not.toHaveBeenCalled()
@@ -314,7 +324,11 @@ test("confirm passes the cookie language to the tools", async () => {
   vi.mocked(getOwnerLanguage).mockResolvedValue("es")
   const id = await store()
   await POST(post({ businessId: "b1", id, accept: true }))
-  expect(vi.mocked(buildAssistantTools)).toHaveBeenCalledWith("b1", "u1", "es")
+  expect(vi.mocked(buildAssistantTools)).toHaveBeenCalledWith(
+    "b1",
+    "u1",
+    expect.objectContaining({ language: "es", locale: "es-US" })
+  )
 })
 
 test("each tool sends its result kind", async () => {

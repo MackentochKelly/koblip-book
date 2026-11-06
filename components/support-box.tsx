@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react"
 import Image from "next/image"
+import { useTranslations } from "next-intl"
 import { useEffect, useRef, useState } from "react"
 
 import { frostedGlassClassName } from "@/components/glass-frame"
@@ -17,7 +18,6 @@ import {
 import { XIcon } from "@/components/ui/icons"
 import { demoHref } from "@/lib/demo-rules"
 import { HACKATHON } from "@/lib/hackathon"
-import type { Messages } from "@/lib/i18n"
 import { LAYOUT_MOVE } from "@/lib/motion-tokens"
 import { cn } from "@/lib/utils"
 
@@ -28,7 +28,8 @@ import { cn } from "@/lib/utils"
 // until the page is loaded again. The GitHub mark: GitHub's own white file on the
 // purple button, never recoloured (brand.github.com/foundations/logo).
 // Place it right after the hero: it watches that spot.
-export function SupportBox({ words }: { words: Messages["home"]["support"] }) {
+export function SupportBox() {
+  const t = useTranslations("public.home.support")
   // Closed for this visit only: every load of the page asks again.
   const [closed, setClosed] = useState(false)
   const close = () => setClosed(true)
@@ -55,7 +56,7 @@ export function SupportBox({ words }: { words: Messages["home"]["support"] }) {
       <AnimatePresence>
         {shown && !closed && (
           <motion.aside
-            aria-label={words.title}
+            aria-label={t("title")}
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
@@ -72,13 +73,13 @@ export function SupportBox({ words }: { words: Messages["home"]["support"] }) {
               className={cn(frostedGlassClassName, "ring-border")}
             >
               <CardHeader>
-                <CardTitle>{words.title}</CardTitle>
-                <CardDescription>{words.text}</CardDescription>
+                <CardTitle>{t("title")}</CardTitle>
+                <CardDescription>{t("text")}</CardDescription>
                 <CardAction>
                   <Button
                     variant="ghost"
                     size="icon"
-                    aria-label={words.close}
+                    aria-label={t("close")}
                     onClick={close}
                   >
                     <XIcon />
@@ -106,7 +107,7 @@ export function SupportBox({ words }: { words: Messages["home"]["support"] }) {
                     unoptimized
                     data-icon="inline-start"
                   />
-                  {words.star}
+                  {t("star")}
                 </Button>
                 <Button
                   variant="outline"
@@ -121,7 +122,7 @@ export function SupportBox({ words }: { words: Messages["home"]["support"] }) {
                     />
                   }
                 >
-                  {words.demo}
+                  {t("demo")}
                 </Button>
               </CardFooter>
             </Card>

@@ -1,16 +1,21 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
+
 import { Toaster } from "@/components/ui/sonner"
+import { WordsProvider } from "@/components/words-provider"
 import { AdminShell } from "@/features/admin/components/admin-shell"
-import { AdminLanguageProvider } from "@/features/admin/i18n/provider"
-import { getAdminLanguage } from "@/features/admin/i18n/server"
 import { requireAdmin } from "@/lib/dal"
 
-export const metadata: Metadata = {
-  title: "Admin",
-  robots: { index: false, follow: false },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("admin")
+  return {
+    title: t("admin"),
+    robots: { index: false, follow: false },
+  }
 }
 
-// Only the app's admins get in; anyone else sees "not found".
+// Only the app's admins get in; anyone else sees "not found". The admin's
+// language is the page's own (proxy.ts, i18n/request.ts).
 export default async function AdminLayout({
   children,
 }: {
@@ -18,9 +23,9 @@ export default async function AdminLayout({
 }) {
   await requireAdmin()
   return (
-    <AdminLanguageProvider language={await getAdminLanguage()}>
+    <WordsProvider namespaces={["admin", "app"]}>
       <AdminShell>{children}</AdminShell>
       <Toaster />
-    </AdminLanguageProvider>
+    </WordsProvider>
   )
 }

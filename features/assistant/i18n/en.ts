@@ -1,8 +1,7 @@
-// The chat screen's words. The server writes its own lines (step chips,
-// card titles); these are the ones the screen itself shows.
-import { ASSISTANT_NAME } from "@/lib/assistant-rules"
-
-const messages = {
+// The chat screen's words, in English as ICU messages
+// (docs/plans/translations.md, G4). The server writes its own lines (step
+// chips, card titles); these are the ones the screen itself shows.
+const words = {
   title: "Assistant",
   back: "Back",
   newChat: "New chat",
@@ -21,10 +20,8 @@ const messages = {
   retry: "Try again",
   // The one line that folds the assistant's steps.
   work: {
-    done: (count: number) =>
-      count === 1 ? "Checked 1 thing" : `Checked ${count} things`,
+    done: "Checked {count, plural, one {# thing} other {# things}}",
   },
-  locale: "en-US",
   // The day and time picker under "When?"; a tap sends the picked time.
   times: {
     today: "Today",
@@ -34,24 +31,21 @@ const messages = {
     morning: "Morning",
     afternoon: "Afternoon",
     evening: "Evening",
-    timesOf: (part: string) => `${part} times`,
-    pick: (service: string, member: string | null, day: string, time: string) =>
-      `Book ${service}${member ? ` with ${member}` : ""} on ${day} at ${time}`,
+    timesOf: "{part} times",
+    pick: "Book {service} on {day} at {time}",
+    // The same, with the team member picked.
+    pickWith: "Book {service} with {member} on {day} at {time}",
   },
   // Quick-answer buttons: the first few, then one that shows the rest.
   choices: {
-    more: (n: number) => `${n} more`,
+    more: "{n} more",
   },
   // What an answer was based on, e.g. "Based on 3 bookings".
   sources: {
-    bookings: (n: number) =>
-      n === 1 ? "Based on 1 booking" : `Based on ${n} bookings`,
-    services: (n: number) =>
-      n === 1 ? "Based on 1 service" : `Based on ${n} services`,
-    team: (n: number) =>
-      n === 1 ? "Based on 1 team member" : `Based on ${n} team members`,
-    customers: (n: number) =>
-      n === 1 ? "Based on 1 client" : `Based on ${n} clients`,
+    bookings: "Based on {n, plural, one {# booking} other {# bookings}}",
+    services: "Based on {n, plural, one {# service} other {# services}}",
+    team: "Based on {n, plural, one {# team member} other {# team members}}",
+    customers: "Based on {n, plural, one {# client} other {# clients}}",
   },
   // Under each answer.
   actions: {
@@ -76,17 +70,18 @@ const messages = {
       week: "This week",
       customers: "New customers",
     },
-    closeIdea: "Close",
+    // On an idea's close button, with the idea.
+    closeIdea: "Close: {idea}",
   },
   composer: {
-    placeholder: `Ask or tell ${ASSISTANT_NAME}`,
+    placeholder: "Ask or tell {name}",
     label: "Message",
     send: "Send",
     stop: "Stop",
     micDenied: "Allow the microphone to speak.",
     // The first-tap intro to talking live.
     voiceIntro: {
-      title: `Talk to ${ASSISTANT_NAME}`,
+      title: "Talk to {name}",
       speak:
         "Talk naturally. It answers out loud and writes it all in the chat.",
       tap: "Changes still need your yes: tap the button or say it.",
@@ -115,8 +110,9 @@ const messages = {
   voice: {
     title: "Choose a voice",
     hint: "Tap a voice to hear it.",
-    play: "Play",
-    pause: "Pause",
+    // On the play button, with the voice's name.
+    play: "Play {name}",
+    pause: "Pause {name}",
     // The language the voices speak in their samples.
     language: "Language",
     languages: { en: "English", es: "Español" },
@@ -140,7 +136,7 @@ const messages = {
       young: "Young",
       middle_aged: "Middle-aged",
       old: "Older",
-    } as Record<string, string>,
+    },
   },
   errors: {
     rate_limited: "Too many messages. Wait a moment.",
@@ -150,6 +146,6 @@ const messages = {
     expired: "That request expired. Ask again.",
     bad_request: "That recording didn't work. Try again.",
   },
-}
+} as const
 
-export default messages
+export default words

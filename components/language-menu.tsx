@@ -1,9 +1,9 @@
 "use client"
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { GlobeIcon } from "@/components/ui/icons"
 
-import { useMessages, usePageLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -12,13 +12,13 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { isPageLanguage } from "@/lib/page-language"
+import { isPageLanguage, languageOf } from "@/lib/page-language"
 
 // The globe that switches the page between English and Spanish. Each
 // language is named in itself; the choice is kept in the address (?lang=).
 export function LanguageMenu({ className }: { className?: string }) {
-  const m = useMessages()
-  const language = usePageLanguage()
+  const t = useTranslations("app.languageMenu")
+  const language = languageOf(useLocale())
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -37,8 +37,8 @@ export function LanguageMenu({ className }: { className?: string }) {
             variant="outline"
             size="icon"
             className={className}
-            aria-label={m.page.language}
-            title={m.page.language}
+            aria-label={t("label")}
+            title={t("label")}
           />
         }
       >

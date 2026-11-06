@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useOptimistic, useTransition } from "react"
 import { toast } from "sonner"
 
@@ -15,10 +16,8 @@ import {
 import { InfoTip } from "@/components/info-tip"
 import { PageSection } from "@/components/page-section"
 import { Switch } from "@/components/ui/switch"
-import type { PageLanguage } from "@/lib/page-language"
 import type { InAppKind } from "@/types/in-app-notifications"
 import { setNotificationChoice } from "../api/actions"
-import { notificationMessagesFor } from "../i18n"
 import type { InAppChoice } from "../types/notifications"
 import { CHOICE_GROUPS } from "../utils/notification-view"
 
@@ -27,14 +26,12 @@ import { CHOICE_GROUPS } from "../utils/notification-view"
 // shows its new place at once and saves on its own.
 export function NotificationChoices({
   businessId,
-  language,
   choices,
 }: {
   businessId: string
-  language: PageLanguage
   choices: InAppChoice[]
 }) {
-  const t = notificationMessagesFor(language)
+  const t = useTranslations("notifications.choices")
   const [, startTransition] = useTransition()
   const [shown, setShown] = useOptimistic(
     choices,
@@ -48,19 +45,19 @@ export function NotificationChoices({
     startTransition(async () => {
       setShown({ kind, on: next })
       const result = await setNotificationChoice(businessId, kind, next)
-      if (!result.ok) toast.error(t.choices.failed)
+      if (!result.ok) toast.error(t("failed"))
     })
 
   return (
-    <PageSection id="notifications" title={t.choices.title}>
+    <PageSection id="notifications" title={t("title")}>
       <FieldGroup>
         {CHOICE_GROUPS.map((group) => (
           <FieldSet key={group.id}>
             {/* The ⓘ keeps the name's line height (32px button, 24px line). */}
             <FieldLegend className="flex items-center gap-1">
-              {t.choices.groups[group.id]}
-              <InfoTip label={t.choices.moreInfo} className="-my-1">
-                {t.choices.about[group.id]}
+              {t(`groups.${group.id}`)}
+              <InfoTip label={t("moreInfo")} className="-my-1">
+                {t(`about.${group.id}`)}
               </InfoTip>
             </FieldLegend>
             <FieldGroup className="gap-3">
@@ -70,7 +67,7 @@ export function NotificationChoices({
                   <FieldLabel key={kind} htmlFor={id}>
                     <Field orientation="horizontal">
                       <FieldContent>
-                        <FieldTitle>{t.choices.names[kind]}</FieldTitle>
+                        <FieldTitle>{t(`names.${kind}`)}</FieldTitle>
                       </FieldContent>
                       <Switch
                         id={id}

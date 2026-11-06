@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import { CalendarDaysIcon, PlusIcon } from "@/components/ui/icons"
 
 import { FloatingActionButton } from "@/components/floating-action-button"
@@ -16,7 +17,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { formatClock } from "@/lib/format-booking-time"
-import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import type { PeriodSummary } from "../utils/analytics"
 import { presetRange } from "../utils/booking-range"
@@ -79,11 +79,13 @@ export function BookingsView({
   const [view, setView] = useState<View>("upcoming")
   const panels = useBookingPanels(panelProps)
   const { businessId, addOptions } = panelProps
-  const m = useOwnerMessages()
-  const t = m.bookings
+  const t = useTranslations("owner.bookings")
+  const shell = useTranslations("owner.shell")
+  const widgetWords = useTranslations("owner.widgets")
+  const locale = useLocale()
   const views = [
-    { id: "upcoming" as const, label: t.views.upcoming },
-    { id: "past" as const, label: t.views.past },
+    { id: "upcoming" as const, label: t("views.upcoming") },
+    { id: "past" as const, label: t("views.past") },
   ]
   const list = (view === "upcoming" ? upcoming : past).slice(0, HOME_LIMIT)
   // The empty list's own Add booking button (while the Bookings widget is on
@@ -107,14 +109,14 @@ export function BookingsView({
   // Today in one line, counted (no AI), under the greeting.
   const briefLine =
     brief.count === 0
-      ? t.brief.none
-      : `${t.brief.count(brief.count)} · ${
+      ? t("brief.none")
+      : `${t("brief.count", { n: brief.count })} · ${
           brief.next
-            ? t.brief.next(
-                formatClock(brief.next.time, m.locale),
-                brief.next.customerName
-              )
-            : t.brief.noneLeft
+            ? t("brief.next", {
+                time: formatClock(brief.next.time, locale),
+                name: brief.next.customerName,
+              })
+            : t("brief.noneLeft")
         }`
   // The Assistant widget: only the way to ask.
   const assistantCard = assistant && (
@@ -131,13 +133,13 @@ export function BookingsView({
           views={views}
           value={view}
           onChange={setView}
-          ariaLabel={t.title}
+          ariaLabel={t("title")}
           className="min-w-0 flex-1 md:flex-none"
           listClassName="w-full md:w-fit"
         />
         {/* With only one or two bookings, they are all here already. */}
         {list.length >= HOME_PHONE_LIMIT && (
-          <ViewAllLink href={viewAll} label={t.viewAll} />
+          <ViewAllLink href={viewAll} label={t("viewAll")} />
         )}
       </div>
       {list.length === 0 ? (
@@ -147,7 +149,7 @@ export function BookingsView({
               <CalendarDaysIcon />
             </EmptyMedia>
             <EmptyTitle>
-              {view === "upcoming" ? t.noUpcoming : t.noPast}
+              {view === "upcoming" ? t("noUpcoming") : t("noPast")}
             </EmptyTitle>
           </EmptyHeader>
           {emptyAdd && (
@@ -160,7 +162,7 @@ export function BookingsView({
                 onClick={panels.add}
               >
                 <PlusIcon data-icon="inline-start" />
-                {t.addBooking}
+                {t("addBooking")}
               </Button>
             </EmptyContent>
           )}
@@ -193,8 +195,8 @@ export function BookingsView({
         <div className="flex flex-col">
           {/* Home on a phone, like its tab; Dashboard on a computer. */}
           <h1 className="sr-only">
-            <span className="md:hidden">{m.shell.nav.home}</span>
-            <span className="max-md:hidden">{m.shell.nav.dashboard}</span>
+            <span className="md:hidden">{shell("nav.home")}</span>
+            <span className="max-md:hidden">{shell("nav.dashboard")}</span>
           </h1>
           <p className="text-2xl font-semibold tracking-tight">{greeting}</p>
           <p className="text-base text-pretty text-muted-foreground">
@@ -207,7 +209,7 @@ export function BookingsView({
           disabled={!panels.canAdd}
         >
           <PlusIcon data-icon="inline-start" />
-          {t.add}
+          {t("add")}
         </Button>
       </div>
       {setup}
@@ -251,7 +253,7 @@ export function BookingsView({
           newCustomers: (
             <ViewAllLink
               href={`/dashboard/${businessId}/customers`}
-              label={m.widgets.viewAll}
+              label={widgetWords("viewAll")}
             />
           ),
         }}
@@ -259,7 +261,7 @@ export function BookingsView({
 
       {!emptyAdd && (
         <FloatingActionButton
-          label={t.addBooking}
+          label={t("addBooking")}
           onClick={panels.add}
           disabled={!panels.canAdd}
         >

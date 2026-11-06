@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import { motion } from "motion/react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 
-import { PhoneCodeForm } from "@/components/phone-code-form"
+import { PhoneCodeForm, type PhoneCodeLabels } from "@/components/phone-code-form"
 import { ChevronDownIcon, MailIcon, PhoneIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import {
@@ -26,7 +27,7 @@ import { LAYOUT_MOVE } from "@/lib/motion-tokens"
 import type { PageLanguage } from "@/lib/page-language"
 import { cn } from "@/lib/utils"
 import { emailStatus } from "../api/email-status"
-import { authWordsFor } from "../i18n"
+import { useAuthErrorText } from "../hooks/use-auth-error-text"
 import {
   authError,
   passwordProblem,
@@ -75,7 +76,7 @@ function QuietAction({
 // sign-up page. Phone: a code on WhatsApp; a new phone makes an account.
 // After it, `onSignedIn` runs, or the screen opens `next`. Google and the
 // "Forgot password" email leave the page: both come back to `googleNext`
-// (default `next`). `language` picks its words.
+// (default `next`). `language` is the page's, for the links it makes.
 export function AuthForm({
   next = AFTER_LOGIN_PATH,
   googleNext = next,
@@ -100,7 +101,9 @@ export function AuthForm({
   phoneSignIn?: boolean
   language?: PageLanguage
 }) {
-  const t = authWordsFor(language)
+  const t = useTranslations("ownerAuth")
+  const phone = useTranslations("ownerAuth.phone")
+  const errorText = useAuthErrorText()
   const router = useRouter()
   const [step, setStep] = useState<Step>("email")
   const [name, setName] = useState("")
@@ -204,7 +207,7 @@ export function AuthForm({
   const emailPart = (
     <>
         <Field data-invalid={error?.field === "email" || undefined}>
-          <FieldLabel htmlFor="auth-email">{t.email}</FieldLabel>
+          <FieldLabel htmlFor="auth-email">{t("email")}</FieldLabel>
           {/* The account's username: password managers fill it with the
               saved password, so it keeps autofill (not noAutofill). */}
           <Input
@@ -222,11 +225,11 @@ export function AuthForm({
             autoFocus
             aria-invalid={error?.field === "email" || undefined}
           />
-          {error?.field === "email" && <FieldError id="auth-email-error">{t.errors[error.message]}</FieldError>}
+          {error?.field === "email" && <FieldError id="auth-email-error">{errorText(error.message)}</FieldError>}
         </Field>
         {step === "create" && (
           <Field data-invalid={error?.field === "name" || undefined}>
-            <FieldLabel htmlFor="auth-name">{t.yourName}</FieldLabel>
+            <FieldLabel htmlFor="auth-name">{t("yourName")}</FieldLabel>
             <Input
               {...noAutofill("auth_name")}
               id="auth-name"
@@ -237,46 +240,46 @@ export function AuthForm({
               disabled={busy}
               autoFocus
             />
-            {error?.field === "name" && <FieldError id="auth-name-error">{t.errors[error.message]}</FieldError>}
+            {error?.field === "name" && <FieldError id="auth-name-error">{errorText(error.message)}</FieldError>}
           </Field>
         )}
         {step !== "email" && (
           <PasswordField
             id="auth-password"
-            label={step === "create" ? t.choosePassword : t.password}
+            label={step === "create" ? t("choosePassword") : t("password")}
             value={password}
             onChange={setPassword}
             autoComplete={step === "create" ? "new-password" : "current-password"}
             autoFocus={step === "password"}
             disabled={busy}
-            error={error?.field === "password" ? t.errors[error.message] : null}
+            error={error?.field === "password" ? errorText(error.message) : null}
           >
             {/* They share a line, to save room. "Use another email" keeps its
                 side on log in and sign-up alike. */}
             <div className="flex flex-wrap gap-x-4">
               {step === "password" && (
                 <QuietAction disabled={busy} onClick={() => void run(forgotPassword)}>
-                  {t.forgotPassword}
+                  {t("forgotPassword")}
                 </QuietAction>
               )}
               <QuietAction disabled={busy} onClick={changeEmail} className="ms-auto">
-                {t.useAnotherEmail}
+                {t("useAnotherEmail")}
               </QuietAction>
             </div>
           </PasswordField>
         )}
-        {resetSent && <AuthNotice kind="mail">{t.resetSent}</AuthNotice>}
+        {resetSent && <AuthNotice kind="mail">{t("resetSent")}</AuthNotice>}
         {error?.field === "form" && (
           <AuthNotice kind={error.message === "existingAccount" ? "info" : "error"}>
-            {t.errors[error.message]}
+            {errorText(error.message)}
           </AuthNotice>
         )}
         <AuthSubmit busy={busy}>
           {step === "email"
-            ? t.continue
+            ? t("continue")
             : step === "create"
-              ? t.createAccount
-              : t.logIn}
+              ? t("createAccount")
+              : t("logIn")}
         </AuthSubmit>
     </>
   )
@@ -295,17 +298,17 @@ export function AuthForm({
           <Button type="button" variant="outline" size="lg" disabled={busy} />
         }
       >
-        {t.moreOptions}
+        {t("moreOptions")}
         <ChevronDownIcon data-icon="inline-end" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem onClick={() => pick("email")}>
           <MailIcon />
-          {t.useEmail}
+          {t("useEmail")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => pick("phone")}>
           <PhoneIcon />
-          {t.usePhone}
+          {t("usePhone")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -319,7 +322,7 @@ export function AuthForm({
         onClick={() => pick("email")}
       >
         <MailIcon data-icon="inline-start" />
-        {t.useEmail}
+        {t("useEmail")}
       </Button>
     )
   )
@@ -328,7 +331,7 @@ export function AuthForm({
     <FieldGroup>
       {step === "email" && (
         <>
-          {googleError && <GoogleError code={googleError} language={language} />}
+          {googleError && <GoogleError code={googleError} />}
           <GoogleButton
             callbackURL={googleNext}
             errorCallbackURL={googleErrorNext}
@@ -362,7 +365,7 @@ export function AuthForm({
             <PhoneCodeForm
               purpose="signIn"
               onDone={signedIn}
-              labels={t.phone}
+              labels={phoneLabels(phone)}
               locale={language}
               disabled={disabled}
               autoFocus
@@ -372,4 +375,28 @@ export function AuthForm({
       )}
     </FieldGroup>
   )
+}
+
+// The phone sign-in's words, for the shared phone form.
+function phoneLabels(
+  t: ReturnType<typeof useTranslations<"ownerAuth.phone">>
+): PhoneCodeLabels {
+  return {
+    phone: t("phone"),
+    phoneHelp: t("phoneHelp"),
+    sendCode: t("sendCode"),
+    sendingCode: t("sendingCode"),
+    code: t("code"),
+    codeSentTo: (phone) => t("codeSentTo", { phone }),
+    verify: t("verify"),
+    checking: t("checking"),
+    wrongCode: t("wrongCode"),
+    expiredCode: t("expiredCode"),
+    tooManyTries: t("tooManyTries"),
+    tooFast: t("tooFast"),
+    phoneTaken: t("phoneTaken"),
+    sendFailed: t("sendFailed"),
+    newCode: t("newCode"),
+    changePhone: t("changePhone"),
+  }
 }

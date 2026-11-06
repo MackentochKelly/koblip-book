@@ -1,5 +1,7 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
+
 import { StatStrip } from "@/components/stat-strip"
 import {
   BanknoteIcon,
@@ -8,7 +10,6 @@ import {
   UserPlusIcon,
 } from "@/components/ui/icons"
 import { Money } from "@/components/money"
-import { useOwnerMessages } from "../i18n/provider"
 import { type PeriodSummary, percentChange } from "../utils/analytics"
 
 // A period's bookings, revenue, new customers and no-shows (fewer is
@@ -26,9 +27,9 @@ export function PeriodStats({
   // Where the Bookings number opens instead (Home: the Bookings page).
   bookingsHref?: string
 }) {
-  const m = useOwnerMessages()
-  const a = m.bookings.analytics
-  const number = new Intl.NumberFormat(m.locale)
+  const a = useTranslations("owner.bookings.analytics")
+  const locale = useLocale()
+  const number = new Intl.NumberFormat(locale)
   return (
     <StatStrip
       href={href}
@@ -36,7 +37,7 @@ export function PeriodStats({
         {
           icon: <CalendarIcon />,
           tone: "primary",
-          label: a.bookings,
+          label: a("bookings"),
           href: bookingsHref,
           value: number.format(summary.bookings.current),
           change: percentChange(summary.bookings),
@@ -45,12 +46,12 @@ export function PeriodStats({
         {
           icon: <BanknoteIcon />,
           tone: "success",
-          label: a.revenue,
+          label: a("revenue"),
           value: (
             <Money
               priceMinor={summary.revenue.current}
               currency={currency}
-              locale={m.locale}
+              locale={locale}
             />
           ),
           change: percentChange(summary.revenue),
@@ -59,7 +60,7 @@ export function PeriodStats({
         {
           icon: <UserPlusIcon />,
           tone: "info",
-          label: a.newCustomers,
+          label: a("newCustomers"),
           value: number.format(summary.newCustomers.current),
           change: percentChange(summary.newCustomers),
           trend: summary.series.newCustomers,
@@ -67,7 +68,7 @@ export function PeriodStats({
         {
           icon: <CalendarX2Icon />,
           tone: "destructive",
-          label: a.noShows,
+          label: a("noShows"),
           value: number.format(summary.noShows.current),
           change: percentChange(summary.noShows),
           trend: summary.series.noShows,

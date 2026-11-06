@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/confirm-dialog"
@@ -27,7 +28,6 @@ import {
   type TranslationActionResult,
 } from "../api/translation-actions"
 import type { TranslationDetail } from "../api/translations"
-import { useAdminMessages } from "../i18n/provider"
 import { stateBadge, textLabels } from "../utils/translation-labels"
 import { TranslationHistoryList } from "./translation-history-list"
 
@@ -37,15 +37,14 @@ type Problem = Exclude<TranslationActionResult, { ok: true }>["error"]
 // edit (fields, links and emails stay as in English), Reset to Google and,
 // when Google failed, Try again; then everything that happened to it.
 export function TranslationEntry({ detail }: { detail: TranslationDetail }) {
-  const m = useAdminMessages()
-  const t = m.translations
+  const t = useTranslations("admin.translations")
   const router = useRouter()
   const { entry, history } = detail
   const [draft, setDraft] = useState(entry.text ?? "")
   const [problem, setProblem] = useState<Problem | null>(null)
   const [asking, setAsking] = useState(false)
   const [pending, startTransition] = useTransition()
-  const labels = textLabels(entry, m)
+  const labels = textLabels(entry, t)
   const fieldId = `translation-${entry.id}`
   // Saving the same words marks a translation that needs review as checked.
   const canSave =
@@ -70,7 +69,7 @@ export function TranslationEntry({ detail }: { detail: TranslationDetail }) {
       if (error === "empty" || error === "too_long" || error === "fields") {
         setProblem(error)
       } else {
-        toast.error(t.entry.errors[error])
+        toast.error(t(`entry.errors.${error}`))
         router.refresh()
       }
     })
@@ -80,7 +79,7 @@ export function TranslationEntry({ detail }: { detail: TranslationDetail }) {
     entry.status === "pending" ||
     entry.status === "failed" ||
     entry.status === "needs_review"
-      ? t.entry.hints[entry.status]
+      ? t(`entry.hints.${entry.status}`)
       : null
 
   return (
@@ -88,7 +87,7 @@ export function TranslationEntry({ detail }: { detail: TranslationDetail }) {
       <ItemGroup className="gap-3">
         <Item variant="outline">
           <ItemContent className="min-w-0">
-            <ItemTitle>{t.entry.english}</ItemTitle>
+            <ItemTitle>{t("entry.english")}</ItemTitle>
             <ItemDescription className="line-clamp-none break-words whitespace-pre-wrap text-foreground">
               {entry.sourceText}
             </ItemDescription>
@@ -98,7 +97,7 @@ export function TranslationEntry({ detail }: { detail: TranslationDetail }) {
           </ItemContent>
           <ItemActions>
             <Badge variant={stateBadge(entry.status)}>
-              {t.states[entry.status]}
+              {t(`states.${entry.status}`)}
             </Badge>
           </ItemActions>
         </Item>
@@ -109,7 +108,7 @@ export function TranslationEntry({ detail }: { detail: TranslationDetail }) {
         onSubmit={(event) => {
           event.preventDefault()
           if (!canSave) return
-          run(() => saveTranslationText(entry.id, draft), t.entry.saved)
+          run(() => saveTranslationText(entry.id, draft), t("entry.saved"))
         }}
       >
         <Field data-invalid={problem ? true : undefined}>
@@ -123,16 +122,16 @@ export function TranslationEntry({ detail }: { detail: TranslationDetail }) {
               setProblem(null)
             }}
           />
-          {problem && <FieldError>{t.entry.errors[problem]}</FieldError>}
+          {problem && <FieldError>{t(`entry.errors.${problem}`)}</FieldError>}
         </Field>
         {hint && (
           <HelperLine
             more={
               entry.status === "failed" && entry.lastError
-                ? t.entry.lastError(entry.lastError)
+                ? t("entry.lastError", { error: entry.lastError })
                 : undefined
             }
-            moreLabel={t.entry.whyFailed}
+            moreLabel={t("entry.whyFailed")}
           >
             {hint}
           </HelperLine>
@@ -140,7 +139,7 @@ export function TranslationEntry({ detail }: { detail: TranslationDetail }) {
         <div className="flex flex-wrap gap-2">
           <Button type="submit" disabled={pending || !canSave}>
             {pending && <Spinner data-icon="inline-start" />}
-            {t.entry.save}
+            {t("entry.save")}
           </Button>
           {entry.status === "failed" && (
             <Button
@@ -148,11 +147,11 @@ export function TranslationEntry({ detail }: { detail: TranslationDetail }) {
               variant="outline"
               disabled={pending}
               onClick={() =>
-                run(() => retryFailedTranslation(entry.id), t.entry.retried)
+                run(() => retryFailedTranslation(entry.id), t("entry.retried"))
               }
             >
               <RefreshIcon data-icon="inline-start" />
-              {t.entry.retry}
+              {t("entry.retry")}
             </Button>
           )}
           {entry.status !== "pending" && entry.status !== "failed" && (
@@ -163,10 +162,10 @@ export function TranslationEntry({ detail }: { detail: TranslationDetail }) {
               onClick={() =>
                 edited
                   ? setAsking(true)
-                  : run(() => resetTranslationToGoogle(entry.id), t.entry.resetDone)
+                  : run(() => resetTranslationToGoogle(entry.id), t("entry.resetDone"))
               }
             >
-              {t.entry.reset}
+              {t("entry.reset")}
             </Button>
           )}
         </div>
@@ -177,7 +176,7 @@ export function TranslationEntry({ detail }: { detail: TranslationDetail }) {
           id="translation-history"
           className="text-lg font-semibold tracking-tight"
         >
-          {t.history.title}
+          {t("history.title")}
         </h2>
         <TranslationHistoryList
           rows={history.map((row) => ({ ...row, kind: "text" as const }))}
@@ -187,12 +186,12 @@ export function TranslationEntry({ detail }: { detail: TranslationDetail }) {
 
       <ConfirmDialog
         open={asking}
-        title={t.entry.resetTitle}
-        description={t.entry.resetText}
-        confirm={t.entry.reset}
-        cancel={t.entry.keep}
+        title={t("entry.resetTitle")}
+        description={t("entry.resetText")}
+        confirm={t("entry.reset")}
+        cancel={t("entry.keep")}
         onConfirm={() =>
-          run(() => resetTranslationToGoogle(entry.id), t.entry.resetDone)
+          run(() => resetTranslationToGoogle(entry.id), t("entry.resetDone"))
         }
         onClose={() => setAsking(false)}
       />

@@ -1,7 +1,6 @@
 import "server-only"
 
-import type { ServerMessages } from "../i18n/server"
-import type { AssistantStreamEvent, AssistantTool } from "../types"
+import type { AssistantStreamEvent, AssistantTool, ServerWords } from "../types"
 import { logAssistantAction } from "./audit-log"
 import type { PendingAction } from "./pending-actions"
 
@@ -13,23 +12,23 @@ import type { PendingAction } from "./pending-actions"
 export async function* runPending(
   pending: PendingAction,
   tool: AssistantTool | undefined,
-  t: ServerMessages
+  t: ServerWords
 ): AsyncGenerator<AssistantStreamEvent> {
   const stepId = pending.id.slice(0, 64)
   yield {
     type: "step",
     id: stepId,
-    label: tool?.label ?? t.steps.working,
+    label: tool?.label ?? t("steps.working"),
     status: "running",
   }
   let outcome: { ok: boolean; doneText: string }
   try {
     outcome = tool?.confirm
       ? await tool.confirm.execute(pending.args)
-      : { ok: false, doneText: t.confirm.unavailable }
+      : { ok: false, doneText: t("confirm.unavailable") }
   } catch {
     console.error("assistant-confirm-failed")
-    outcome = { ok: false, doneText: t.confirm.unknown }
+    outcome = { ok: false, doneText: t("confirm.unknown") }
   }
   await logAssistantAction({
     businessId: pending.businessId,
@@ -42,8 +41,8 @@ export async function* runPending(
     type: "step",
     id: stepId,
     label: outcome.ok
-      ? (tool?.doneLabel ?? t.stepsDone.working)
-      : (tool?.label ?? t.steps.working),
+      ? (tool?.doneLabel ?? t("stepsDone.working"))
+      : (tool?.label ?? t("steps.working")),
     status: outcome.ok ? "done" : "failed",
   }
   yield {

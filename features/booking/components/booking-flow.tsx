@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import {
   ArrowLeftIcon,
   NavigationIcon,
@@ -17,7 +18,6 @@ import { BottomBar } from "@/components/bottom-bar"
 import { BottomPanel } from "@/components/bottom-panel"
 import { Celebration } from "@/components/celebration"
 import { GlassCard } from "@/components/glass-frame"
-import { useMessages, usePageLanguage } from "@/components/language-provider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -27,10 +27,11 @@ import {
 } from "@/components/ui/drawer"
 import { Item, ItemContent } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import { PHONE_PATTERN } from "@/lib/booking-rules"
 import { BOOKED_PHONE_KEY, myBookingsHref } from "@/lib/my-bookings-links"
-import { formatDuration } from "@/lib/format-duration"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
+import { languageOf } from "@/lib/page-language"
 import { shareLink } from "@/lib/share-link"
 import { createBooking } from "../api/create-booking"
 import type { BookingConfirmation } from "../types"
@@ -52,9 +53,9 @@ import {
   ExtrasStep,
   MemberStep,
   PoliciesStep,
-  priceLabel,
   ServiceStep,
   TimeStep,
+  usePriceLabel,
 } from "./booking-steps"
 
 type Step = "service" | "extras" | "member" | "time" | "details" | "policies"
@@ -75,7 +76,8 @@ export function BookingFlow({
   page: BookingPage
   mode: "page" | "drawer"
 }) {
-  const m = useMessages()
+  const t = useTranslations("public.booking")
+  const pageLanguage = languageOf(useLocale())
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -168,7 +170,7 @@ export function BookingFlow({
             ? "details"
             : asked
   const index = steps.indexOf(step)
-  const title = m.booking.titles[step]
+  const title = t(`titles.${step}`)
   // On the phone sheet the extras sit on top of the services.
   const stacked = mode === "drawer" && step === "extras"
 
@@ -251,7 +253,7 @@ export function BookingFlow({
       // Confirming on the policies step, under the line that says booking
       // agrees to them, is the agreement.
       acceptedPolicies: withPolicies,
-      language: m.locale.startsWith("es") ? "es" : "en",
+      language: pageLanguage,
     }).catch(() => ({ status: "failed" as const }))
     setSending(false)
     if (result.status === "booked") {
@@ -260,7 +262,7 @@ export function BookingFlow({
       setSlot(null)
       setTimesKey((value) => value + 1)
       replaceUrl(href(withParam("step", "time")))
-      toast.error(m.booking.taken)
+      toast.error(t("taken"))
     } else if (
       result.status === "invalid" &&
       (result.field === "name" || result.field === "phone")
@@ -269,10 +271,10 @@ export function BookingFlow({
       replaceUrl(href(withParam("step", "details")))
     } else if (result.status === "invalid" && result.field === "policies") {
       // The business added policies while this page was open.
-      toast.error(m.booking.failed)
+      toast.error(t("failed"))
       router.refresh()
     } else {
-      toast.error(m.booking.failed)
+      toast.error(t("failed"))
     }
   }
 
@@ -282,7 +284,7 @@ export function BookingFlow({
   ) => (
     <Button size="lg" disabled={sending || disabled} {...props}>
       {sending && <Spinner data-icon="inline-start" />}
-      {sending ? m.booking.sending : m.booking.confirm}
+      {sending ? t("sending") : t("confirm")}
     </Button>
   )
   const action =
@@ -293,7 +295,7 @@ export function BookingFlow({
         form={DETAILS_FORM}
         disabled={!detailsFilled}
       >
-        {m.booking.continue}
+        {t("continue")}
       </Button>
     ) : step === "details" ? (
       confirm(!detailsFilled, { type: "submit", form: DETAILS_FORM })
@@ -301,7 +303,7 @@ export function BookingFlow({
       confirm(false, { type: "button", onClick: () => void submit(details) })
     ) : (
       <Button type="button" size="lg" onClick={next} disabled={!canContinue}>
-        {m.booking.continue}
+        {t("continue")}
       </Button>
     )
 
@@ -422,10 +424,10 @@ export function BookingFlow({
           header={
             <DrawerHeader>
               <DrawerDescription>
-                {m.booking.stepOf(shownIndex + 1, steps.length)}
+                {t("stepOf", { index: shownIndex + 1, total: steps.length })}
               </DrawerDescription>
               <DrawerTitle className="truncate">
-                {m.booking.titles[steps[shownIndex]]}
+                {t(`titles.${steps[shownIndex]}`)}
               </DrawerTitle>
             </DrawerHeader>
           }
@@ -439,7 +441,7 @@ export function BookingFlow({
                   size="lg"
                   onClick={back}
                 >
-                  {m.booking.back}
+                  {t("back")}
                 </Button>
               )}
               {action}
@@ -456,7 +458,7 @@ export function BookingFlow({
             header={
               <DrawerHeader>
                 <DrawerDescription>
-                  {m.booking.stepOf(index + 1, steps.length)}
+                  {t("stepOf", { index: index + 1, total: steps.length })}
                 </DrawerDescription>
                 <DrawerTitle className="truncate">{title}</DrawerTitle>
               </DrawerHeader>
@@ -470,7 +472,7 @@ export function BookingFlow({
                   size="lg"
                   onClick={back}
                 >
-                  {m.booking.back}
+                  {t("back")}
                 </Button>
                 {action}
               </div>
@@ -513,21 +515,21 @@ export function BookingFlow({
             type="button"
             variant="ghost"
             size="icon"
-            aria-label={m.booking.back}
+            aria-label={t("back")}
             onClick={back}
           >
             <ArrowLeftIcon />
           </Button>
           <div className="min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">
-              {m.booking.stepOf(index + 1, steps.length)}
+              {t("stepOf", { index: index + 1, total: steps.length })}
             </p>
             <h1 className="truncate text-base font-semibold">{title}</h1>
           </div>
           <Button
             variant="ghost"
             size="icon"
-            aria-label={m.booking.close}
+            aria-label={t("close")}
             nativeButton={false}
             render={<Link href={businessPath} />}
           >
@@ -586,10 +588,13 @@ function BookedPage({
   phone: string
   onDone: () => void
 }) {
-  const m = useMessages()
-  const language = usePageLanguage()
-  const price = priceLabel(booking.priceMinor, booking.currency, m)
-  const when = `${formatDay(booking.date, m.locale)} · ${formatClock(booking.time, m.locale)}`
+  const t = useTranslations("public")
+  const locale = useLocale()
+  const language = languageOf(locale)
+  const priceLabel = usePriceLabel()
+  const formatDuration = useFormatDuration()
+  const price = priceLabel(booking.priceMinor, booking.currency)
+  const when = `${formatDay(booking.date, locale)} · ${formatClock(booking.time, locale)}`
   useLayoutEffect(() => {
     window.scrollTo(0, 0)
   }, [])
@@ -600,7 +605,7 @@ function BookedPage({
       text: `${page.name} · ${when} · ${booking.serviceName}`,
       url,
     })
-    if (result === "copied") toast.success(m.page.linkCopied)
+    if (result === "copied") toast.success(t("page.linkCopied"))
   }
   return createPortal(
     <div data-full-page className="flex min-h-dvh flex-col bg-background">
@@ -615,13 +620,13 @@ function BookedPage({
                 </AvatarFallback>
               </Avatar>
             }
-            title={m.booking.bookedTitle}
-            description={m.booking.expecting(page.name)}
+            title={t("booking.bookedTitle")}
+            description={t("booking.expecting", { name: page.name })}
             actions={
               <>
                 <Button size="lg" onClick={() => void share()}>
                   <ShareIcon data-icon="inline-start" />
-                  {m.page.share}
+                  {t("page.share")}
                 </Button>
                 {page.directionsUrl && (
                   <Button
@@ -637,7 +642,7 @@ function BookedPage({
                     }
                   >
                     <NavigationIcon data-icon="inline-start" />
-                    {m.actions.directions}
+                    {t("actions.directions")}
                   </Button>
                 )}
                 {page.manageBookings ? (
@@ -651,11 +656,11 @@ function BookedPage({
                       />
                     }
                   >
-                    {m.booking.manage}
+                    {t("booking.manage")}
                   </Button>
                 ) : (
                   <Button variant="link" onClick={onDone}>
-                    {m.booking.done}
+                    {t("booking.done")}
                   </Button>
                 )}
               </>
@@ -675,7 +680,7 @@ function BookedPage({
                     <p className="text-muted-foreground">
                       {formatDuration(booking.durationMinutes)}
                       {booking.teamMemberName &&
-                        ` · ${m.booking.with(booking.teamMemberName)}`}
+                        ` · ${t("booking.with", { name: booking.teamMemberName })}`}
                     </p>
                   </div>
                   {price && <p>{price}</p>}

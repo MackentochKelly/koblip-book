@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { preload } from "react-dom"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 
 import { StepReveal, type StepRevealState } from "@/components/step-reveal"
 import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from "@/components/ui/avatar"
@@ -20,8 +21,7 @@ import {
 } from "@/components/ui/icons"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 import { pause } from "@/lib/pace"
-import type { PageLanguage } from "@/lib/page-language"
-import { onboardingWordsFor } from "../i18n"
+import type en from "../i18n/en"
 
 export type GoogleDetails = {
   name: string
@@ -37,7 +37,7 @@ export type GoogleDetails = {
   about: string | null
 }
 
-type StepId = keyof ReturnType<typeof onboardingWordsFor>["found"]["steps"]
+type StepId = keyof typeof en.found.steps
 
 const ICONS: Record<StepId, Icon> = {
   name: StoreIcon,
@@ -56,14 +56,12 @@ const ICONS: Record<StepId, Icon> = {
 // Details Google doesn't have are left out.
 export function GoogleDetailsCard({
   details,
-  language,
   nextHref,
 }: {
   details: GoogleDetails
-  language: PageLanguage
   nextHref: string
 }) {
-  const t = onboardingWordsFor(language).found
+  const t = useTranslations("onboarding.found")
   const router = useRouter()
   // The thumbnails come through the photo proxy, slow the first time:
   // start them now so they are there when their row appears
@@ -76,10 +74,10 @@ export function GoogleDetailsCard({
     { id: "category" as const, detail: details.category },
     { id: "address" as const, detail: details.address },
     { id: "phone" as const, detail: details.phone },
-    { id: "hours" as const, detail: details.openDays > 0 ? t.openDays(details.openDays) : null },
+    { id: "hours" as const, detail: details.openDays > 0 ? t("openDays", { days: details.openDays }) : null },
     {
       id: "photos" as const,
-      detail: details.photoCount > 0 ? t.photoCount(details.photoCount) : null,
+      detail: details.photoCount > 0 ? t("photoCount", { count: details.photoCount }) : null,
       aside: (
         <AvatarGroup>
           {details.photoUrls.map((url) => (
@@ -97,10 +95,13 @@ export function GoogleDetailsCard({
       id: "rating" as const,
       detail:
         details.rating !== null && details.reviewCount
-          ? t.rating(details.rating, details.reviewCount)
+          ? t("rating", {
+              rating: details.rating.toFixed(1),
+              reviews: details.reviewCount,
+            })
           : null,
     },
-    { id: "about" as const, detail: details.about ? t.aboutByMuse : null },
+    { id: "about" as const, detail: details.about ? t("aboutByMuse") : null },
   ].filter((row) => row.detail)
 
   const [shown, setShown] = useState(0)
@@ -131,13 +132,13 @@ export function GoogleDetailsCard({
       media={
         <Image src="/brands/google-maps.svg" alt="" width={24} height={24} className="size-6 object-contain" />
       }
-      title={t.title}
-      helper={t.helper}
-      labels={{ working: t.working, done: t.done, waiting: t.waiting }}
+      title={t("title")}
+      helper={t("helper")}
+      labels={{ working: t("working"), done: t("done"), waiting: t("waiting") }}
       steps={rows.map((row, index) => ({
         id: row.id,
         icon: ICONS[row.id],
-        title: t.steps[row.id],
+        title: t(`steps.${row.id}`),
         state: state(index),
         detail: row.detail,
         aside: row.aside,

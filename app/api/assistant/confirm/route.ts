@@ -9,12 +9,11 @@ import type {
   AssistantConfirmRequest,
   AssistantStreamEvent,
 } from "@/features/assistant/types"
-import { serverMessagesFor } from "@/features/assistant/i18n/server"
 import { ownedBusiness } from "@/features/dashboard/api/owned-business"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { getSession } from "@/lib/dal"
-import { buildAssistantTools } from "../tools"
+import { buildAssistantTools, toolWords } from "../tools"
 
 export const runtime = "nodejs"
 
@@ -95,8 +94,8 @@ export async function POST(request: Request) {
   }
 
   // The owner's language, read once from the cookie (never the body).
-  const language = await getOwnerLanguage()
-  const t = serverMessagesFor(language)
+  const words = await toolWords(await getOwnerLanguage())
+  const { t } = words
   const budget = requestBudget(request)
   const encoder = new TextEncoder()
   const send = (event: AssistantStreamEvent): Uint8Array =>
@@ -104,7 +103,7 @@ export async function POST(request: Request) {
   const tool = buildAssistantTools(
     owned.business.id,
     session.userId,
-    language
+    words
   ).find((tool) => tool.definition.name === pending.toolName)
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -116,7 +115,7 @@ export async function POST(request: Request) {
           controller.enqueue(
             send({
               type: "text",
-              delta: tool?.confirm?.declinedText ?? t.confirm.unchanged,
+              delta: tool?.confirm?.declinedText ?? t("confirm.unchanged"),
             })
           )
           controller.enqueue(send({ type: "done" }))

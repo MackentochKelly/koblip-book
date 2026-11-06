@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 
 import { ConnectDone } from "@/features/dashboard/components/connect-done"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import {
   CHAT_CONNECT_CHANNEL,
   CHAT_CONNECT_RESULTS,
@@ -10,7 +10,8 @@ import {
 } from "@/types/chat-connect"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).integrations.koblipChat.name }
+  const t = await getTranslations("owner.integrations")
+  return { title: t("koblipChat.name") }
 }
 
 type Props = {

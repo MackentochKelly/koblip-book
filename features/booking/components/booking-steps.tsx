@@ -1,11 +1,11 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
 import { Fragment, useCallback, useEffect, useRef, useState } from "react"
 import { CalendarIcon, CalendarX2Icon, UsersIcon } from "@/components/ui/icons"
 
 import { InfoTip } from "@/components/info-tip"
 import { PolicyPointIcon } from "@/components/policy-point-icon"
-import { useMessages } from "@/components/language-provider"
 import { TimePicker } from "@/components/time-picker"
 import { ViewTabs } from "@/components/view-tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -51,13 +51,13 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useElementHeight } from "@/hooks/use-element-height"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import { scrollParent, useScrollSpy } from "@/hooks/use-scroll-spy"
 import { BOOKING_RULES } from "@/lib/booking-rules"
-import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { formatClock, formatDay, todayIn } from "@/lib/format-booking-time"
-import type { Messages } from "@/lib/i18n"
 import { initials } from "@/lib/initials"
+import { languageOf } from "@/lib/page-language"
 import { policySegment } from "@/lib/policy-rules"
 import { groupServices, showsGroups } from "@/lib/service-groups"
 import { cn } from "@/lib/utils"
@@ -75,15 +75,30 @@ import { noAutofill } from "@/lib/no-autofill"
 
 export const ANYONE = "any"
 
-export function priceLabel(
-  priceMinor: number | null,
-  currency: string,
-  m: Messages
-) {
-  if (priceMinor === null) return null
-  return priceMinor === 0
-    ? m.booking.free
-    : formatPrice(priceMinor, currency, m.locale)
+// A price as the booking shows it: "Free" for 0, nothing when it has none.
+export function usePriceLabel() {
+  const t = useTranslations("public.booking")
+  const locale = useLocale()
+  return (priceMinor: number | null, currency: string) => {
+    if (priceMinor === null) return null
+    return priceMinor === 0 ? t("free") : formatPrice(priceMinor, currency, locale)
+  }
+}
+
+// The time picker's words (components/time-picker.tsx), in the page's
+// language.
+export function useTimeLabels() {
+  const t = useTranslations("public.booking")
+  return {
+    today: t("today"),
+    tomorrow: t("tomorrow"),
+    day: t("day"),
+    moreDates: t("moreDates"),
+    morning: t("morning"),
+    afternoon: t("afternoon"),
+    evening: t("evening"),
+    timesOf: (part: string) => t("timesOf", { part }),
+  }
 }
 
 // How far under the pinned category tabs (px) a group's top counts as
@@ -111,14 +126,16 @@ export function ServiceStep({
   value: string
   onChange: (id: string) => void
 }) {
-  const m = useMessages()
+  const t = useTranslations("public")
+  const priceLabel = usePriceLabel()
+  const formatDuration = useFormatDuration()
   const groups = groupServices(page.services, page.serviceCategories)
   const grouped = showsGroups(groups)
   const sections =
     grouped && groups.length >= 2
       ? groups.map((group) => ({
           id: groupId(group.category),
-          label: group.category?.name ?? m.sections.otherServices,
+          label: group.category?.name ?? t("sections.otherServices"),
         }))
       : []
   const tabbed = sections.length > 0
@@ -160,7 +177,7 @@ export function ServiceStep({
     }
   }, [pressed])
   const card = (service: BookingService) => {
-    const price = priceLabel(service.priceMinor, page.currency, m)
+    const price = priceLabel(service.priceMinor, page.currency)
     return (
       <FieldLabel
         variant="box"
@@ -193,7 +210,7 @@ export function ServiceStep({
     <RadioGroup
       value={value}
       onValueChange={(next) => onChange(String(next))}
-      aria-label={m.booking.titles.service}
+      aria-label={t("booking.titles.service")}
       className={cn(grouped && "gap-7")}
     >
       {grouped
@@ -209,7 +226,7 @@ export function ServiceStep({
               )}
             >
               <FieldLegend>
-                {group.category?.name ?? m.sections.otherServices}
+                {group.category?.name ?? t("sections.otherServices")}
               </FieldLegend>
               <FieldGroup className="gap-3">
                 {group.services.map(card)}
@@ -265,7 +282,7 @@ export function ServiceStep({
               block: "start",
             })
           }}
-          ariaLabel={m.sections.serviceCategories}
+          ariaLabel={t("sections.serviceCategories")}
         />
       </div>
       {list}
@@ -274,12 +291,15 @@ export function ServiceStep({
 }
 
 // A group's rule, under its question: optional, pick one, up to three…
-function groupHint(group: BookingAddonGroup, m: Messages): string {
-  if (group.minSelect > 0) return m.booking.extrasRequired(group.minSelect)
-  if (group.maxSelect !== null && group.maxSelect < group.options.length) {
-    return m.booking.extrasUpTo(group.maxSelect)
+function useGroupHint() {
+  const t = useTranslations("public.booking")
+  return (group: BookingAddonGroup): string => {
+    if (group.minSelect > 0) return t("extrasRequired", { min: group.minSelect })
+    if (group.maxSelect !== null && group.maxSelect < group.options.length) {
+      return t("extrasUpTo", { max: group.maxSelect })
+    }
+    return t("optional")
   }
-  return m.booking.optional
 }
 
 // The extras of the chosen service (like Fresha's add-ons): each group's
@@ -295,7 +315,9 @@ export function ExtrasStep({
   value: string[]
   onChange: (ids: string[]) => void
 }) {
-  const m = useMessages()
+  const priceLabel = usePriceLabel()
+  const formatDuration = useFormatDuration()
+  const groupHint = useGroupHint()
   // Kept in page order: group by group, option by option.
   const order = groups.flatMap((group) =>
     group.options.map((option) => option.id)
@@ -324,11 +346,11 @@ export function ExtrasStep({
         return (
           <FieldSet key={group.id}>
             <FieldLegend>{group.prompt}</FieldLegend>
-            <FieldDescription>{groupHint(group, m)}</FieldDescription>
+            <FieldDescription>{groupHint(group)}</FieldDescription>
             <FieldGroup data-slot="checkbox-group" className="gap-3">
               {group.options.map((option) => {
                 const checked = value.includes(option.id)
-                const price = priceLabel(option.priceMinor, page.currency, m)
+                const price = priceLabel(option.priceMinor, page.currency)
                 const extra = [
                   option.durationMinutes > 0 &&
                     `+${formatDuration(option.durationMinutes)}`,
@@ -380,12 +402,12 @@ export function MemberStep({
   value: string
   onChange: (id: string) => void
 }) {
-  const m = useMessages()
+  const t = useTranslations("public.booking")
   const options = [
     {
       id: ANYONE,
-      name: m.booking.anyone,
-      detail: m.booking.whoeverFree,
+      name: t("anyone"),
+      detail: t("whoeverFree"),
       photoUrl: null,
     },
     ...team.map((member) => ({ ...member, detail: member.description })),
@@ -394,7 +416,7 @@ export function MemberStep({
     <RadioGroup
       value={value}
       onValueChange={(next) => onChange(String(next))}
-      aria-label={m.booking.titles.member}
+      aria-label={t("titles.member")}
     >
       {options.map((option) => (
         <FieldLabel
@@ -440,7 +462,9 @@ export function TimeStep({
   slot: BookingSlot | null
   onChange: (slot: BookingSlot | null) => void
 }) {
-  const m = useMessages()
+  const t = useTranslations("public.booking")
+  const timeLabels = useTimeLabels()
+  const locale = useLocale()
   const [availability, setAvailability] = useState<Availability | null>(null)
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -474,14 +498,14 @@ export function TimeStep({
     return (
       <Empty className="border">
         <EmptyHeader>
-          <EmptyTitle>{m.booking.timesFailed}</EmptyTitle>
+          <EmptyTitle>{t("timesFailed")}</EmptyTitle>
         </EmptyHeader>
         <Button
           type="button"
           variant="outline"
           onClick={() => setAttempt((value) => value + 1)}
         >
-          {m.booking.tryAgain}
+          {t("tryAgain")}
         </Button>
       </Empty>
     )
@@ -496,7 +520,7 @@ export function TimeStep({
           <EmptyMedia variant="icon">
             <CalendarX2Icon />
           </EmptyMedia>
-          <EmptyTitle>{m.booking.noTimes}</EmptyTitle>
+          <EmptyTitle>{t("noTimes")}</EmptyTitle>
           {page.phone && <EmptyDescription>{page.phone}</EmptyDescription>}
         </EmptyHeader>
       </Empty>
@@ -517,8 +541,8 @@ export function TimeStep({
       time={slot?.date === date ? slot.time : null}
       onTimeChange={(time) => onChange({ date, time })}
       today={todayIn(page.timeZone)}
-      locale={m.locale}
-      labels={m.booking}
+      locale={locale}
+      labels={timeLabels}
     />
   )
 }
@@ -548,7 +572,8 @@ export function DetailsStep({
   onDetailsChange: (details: BookingDetails) => void
   onSubmit: (details: BookingDetails) => void
 }) {
-  const m = useMessages()
+  const t = useTranslations("public.booking")
+  const locale = useLocale()
   const { name, phone } = details
   const setName = (next: string) => onDetailsChange({ name: next, phone })
   const setPhone = (next: string) => onDetailsChange({ name, phone: next })
@@ -563,7 +588,7 @@ export function DetailsStep({
     >
       <FieldGroup>
         <Field data-invalid={error === "name" || undefined}>
-          <FieldLabel htmlFor="booking-name">{m.booking.name}</FieldLabel>
+          <FieldLabel htmlFor="booking-name">{t("name")}</FieldLabel>
           <Input
             {...noAutofill("booking_name")}
             id="booking-name"
@@ -573,14 +598,14 @@ export function DetailsStep({
             maxLength={BOOKING_RULES.maxCustomerName}
             aria-invalid={error === "name" || undefined}
           />
-          {error === "name" && <FieldError>{m.booking.addName}</FieldError>}
+          {error === "name" && <FieldError>{t("addName")}</FieldError>}
         </Field>
         <Field data-invalid={error === "phone" || undefined}>
           <div className="flex items-center gap-1">
-            <FieldLabel htmlFor="booking-phone">{m.booking.phone}</FieldLabel>
+            <FieldLabel htmlFor="booking-phone">{t("phone")}</FieldLabel>
             {whatsappFrom && (
-              <InfoTip label={m.booking.whatsappAbout}>
-                {m.booking.whatsappNotice(whatsappFrom)}
+              <InfoTip label={t("whatsappAbout")}>
+                {t("whatsappNotice", { business: whatsappFrom })}
               </InfoTip>
             )}
           </div>
@@ -592,9 +617,9 @@ export function DetailsStep({
             disabled={sending}
             maxLength={25}
             aria-invalid={error === "phone" || undefined}
-            locale={m.locale}
+            locale={locale}
           />
-          {error === "phone" && <FieldError>{m.booking.checkPhone}</FieldError>}
+          {error === "phone" && <FieldError>{t("checkPhone")}</FieldError>}
         </Field>
       </FieldGroup>
     </form>
@@ -621,12 +646,15 @@ export function BookingSummary({
   footer?: React.ReactNode
   className?: string
 }) {
-  const m = useMessages()
+  const t = useTranslations("public.booking")
+  const locale = useLocale()
+  const priceLabel = usePriceLabel()
+  const formatDuration = useFormatDuration()
   const totals = service ? bookingTotals(service, groups, addonIds) : null
   const servicePrice = service
-    ? priceLabel(service.priceMinor, page.currency, m)
+    ? priceLabel(service.priceMinor, page.currency)
     : null
-  const total = totals ? priceLabel(totals.priceMinor, page.currency, m) : null
+  const total = totals ? priceLabel(totals.priceMinor, page.currency) : null
   return (
     // The same soft grey box as the dashboard's "Start here" card.
     <Card variant="muted" className={className}>
@@ -644,10 +672,10 @@ export function BookingSummary({
           {slot && (
             <div className="flex flex-col gap-0.5">
               <p className="text-2xl font-semibold tracking-tight tabular-nums">
-                {formatClock(slot.time, m.locale)}
+                {formatClock(slot.time, locale)}
               </p>
               <p className="text-muted-foreground">
-                {formatDay(slot.date, m.locale)}
+                {formatDay(slot.date, locale)}
               </p>
             </div>
           )}
@@ -669,7 +697,7 @@ export function BookingSummary({
                   <ItemTitle>{service.name}</ItemTitle>
                   <ItemDescription>
                     {formatDuration(totals.durationMinutes)}
-                    {member && ` · ${m.booking.with(member.name)}`}
+                    {member && ` · ${t("with", { name: member.name })}`}
                   </ItemDescription>
                 </ItemContent>
                 {servicePrice && (
@@ -679,7 +707,7 @@ export function BookingSummary({
                 )}
               </Item>
               {totals.extras.map((extra) => {
-                const price = priceLabel(extra.priceMinor, page.currency, m)
+                const price = priceLabel(extra.priceMinor, page.currency)
                 return (
                   <Fragment key={extra.id}>
                     <ItemSeparator className="my-0" />
@@ -704,7 +732,7 @@ export function BookingSummary({
                   <Item size="xs" className="px-0">
                     <ItemContent>
                       <ItemTitle className="font-semibold">
-                        {m.booking.total}
+                        {t("total")}
                       </ItemTitle>
                     </ItemContent>
                     <ItemActions className="font-semibold tabular-nums">
@@ -737,16 +765,18 @@ export function BookingTotal({
   groups: BookingAddonGroup[]
   addonIds: string[]
 }) {
-  const m = useMessages()
+  const t = useTranslations("public.booking")
+  const priceLabel = usePriceLabel()
+  const formatDuration = useFormatDuration()
   if (!service) {
     return (
       <p className="text-sm text-muted-foreground">
-        {m.booking.titles.service}
+        {t("titles.service")}
       </p>
     )
   }
   const totals = bookingTotals(service, groups, addonIds)
-  const price = priceLabel(totals.priceMinor, page.currency, m)
+  const price = priceLabel(totals.priceMinor, page.currency)
   return (
     <div className="min-w-0 text-sm">
       <p className="truncate font-semibold">{service.name}</p>
@@ -769,27 +799,28 @@ export function PoliciesStep({
   slug: string
   policies: BookingPolicies
 }) {
-  const m = useMessages()
-  const language = m.locale.startsWith("es") ? "es" : "en"
+  const t = useTranslations("public")
+  const locale = useLocale()
+  const language = languageOf(locale)
   // A standard policy takes its article ("the", "la"); the owner's own goes
   // by its title alone, since its article can't be known.
   const links = policies.documents.map((policy) => (
     <span key={policy.id}>
-      {policy.kind && <>{m.policies.articles[policy.kind]} </>}
+      {policy.kind && <>{t(`policies.articles.${policy.kind}`)} </>}
       <a
         href={`/b/${slug}/policies/${policySegment(policy)}?lang=${language}`}
         target="_blank"
         rel="noreferrer"
         className="font-medium text-foreground underline underline-offset-4"
       >
-        {policy.kind ? m.policies[policy.kind] : policy.title}
+        {policy.kind ? t(`policies.${policy.kind}`) : policy.title}
       </a>
     </span>
   ))
   // "the A, the B and the C", joined the language's own way.
   const sentence =
     links.length > 0
-      ? new Intl.ListFormat(m.locale, { type: "conjunction" })
+      ? new Intl.ListFormat(locale, { type: "conjunction" })
           .formatToParts(links.map((_, index) => String(index)))
           .map((part) =>
             part.type === "element" ? links[Number(part.value)] : part.value
@@ -818,10 +849,10 @@ export function PoliciesStep({
       <p className="text-sm text-muted-foreground">
         {sentence ? (
           <>
-            {m.booking.agreeTo} {sentence}.
+            {t("booking.agreeTo")} {sentence}.
           </>
         ) : (
-          m.booking.agreeToThese
+          t("booking.agreeToThese")
         )}
       </p>
     </div>

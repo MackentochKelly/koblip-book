@@ -1,9 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import { useLocale, useTranslations } from "next-intl"
 
-import { useMessages, usePageLanguage } from "@/components/language-provider"
-import { DEFAULT_LANGUAGE } from "@/lib/page-language"
+import { DEFAULT_LANGUAGE, languageOf } from "@/lib/page-language"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -33,9 +33,9 @@ export function BookButton({
   size?: "lg" | "default"
   className?: string
 }) {
-  const m = useMessages()
-  const language = usePageLanguage()
-  const text = label ?? m.actions.bookNow
+  const t = useTranslations("public.actions")
+  const language = languageOf(useLocale())
+  const text = label ?? t("bookNow")
   // The page's language goes along (?lang=), so booking speaks it too.
   const query = new URLSearchParams()
   if (serviceId) query.set("service", serviceId)

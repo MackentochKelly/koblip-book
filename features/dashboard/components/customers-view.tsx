@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { SearchField } from "@/components/search-field"
 import {
   ChevronRightIcon,
@@ -50,8 +51,6 @@ import { BookingStatusBadge } from "./booking-status-badge"
 import { ContactButtons } from "./contact-buttons"
 import { useTabBarAction } from "./tab-bar-action"
 import { noAutofill } from "@/lib/no-autofill"
-import type { OwnerMessages } from "../i18n"
-import { useOwnerMessages } from "../i18n/provider"
 
 // Everyone who booked, from their bookings, and anyone the owner added by
 // hand. Opening one shows their visits; the open customer is in the address
@@ -69,8 +68,9 @@ export function CustomersView({
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const m = useOwnerMessages()
-  const t = m.bookings.customers
+  const t = useTranslations("owner.bookings.customers")
+  const common = useTranslations("owner.catalog.common")
+  const locale = useLocale()
   const [query, setQuery] = useState("")
   const [closing, setClosing] = useState(false)
   const [adding, setAdding] = useState(false)
@@ -80,7 +80,7 @@ export function CustomersView({
     setAdding(true)
   }
   // On a phone the tab bar's middle button adds a customer.
-  useTabBarAction({ label: t.add, onClick: startAdding })
+  useTabBarAction({ label: t("add"), onClick: startAdding })
   // Once the address has no customer in it, the next one opens normally.
   if (!openKey && closing) setClosing(false)
   const opened = customers.find((customer) => customer.key === openKey) ?? null
@@ -104,6 +104,15 @@ export function CustomersView({
     setClosing(true)
     router.replace(pathname, { scroll: false })
   }
+  // Their visits, then when they come next or last came.
+  const summary = (customer: OwnerCustomer) => {
+    const visits = t("visits", { n: customer.completed })
+    if (customer.nextBooking)
+      return t("next", { visits, day: formatDay(customer.nextBooking, locale) })
+    if (customer.lastVisit)
+      return t("last", { visits, day: formatDay(customer.lastVisit, locale) })
+    return t("bookings", { n: customer.bookings })
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -111,14 +120,14 @@ export function CustomersView({
           middle button, so Add here is a computer's. */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{t.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
-            {t.people(customers.length)}
+            {t("people", { n: customers.length })}
           </p>
         </div>
         <Button className="max-md:hidden" onClick={startAdding}>
           <PlusIcon data-icon="inline-start" />
-          {m.catalog.common.add}
+          {common("add")}
         </Button>
       </div>
       {customers.length > 0 && (
@@ -126,8 +135,8 @@ export function CustomersView({
           {...noAutofill("customers")}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder={t.search}
-          aria-label={t.searchLabel}
+          placeholder={t("search")}
+          aria-label={t("searchLabel")}
         />
       )}
       {shown.length === 0 ? (
@@ -136,12 +145,12 @@ export function CustomersView({
             <EmptyMedia variant="icon">
               <UsersIcon />
             </EmptyMedia>
-            <EmptyTitle>{needle ? t.noneFound : t.none}</EmptyTitle>
+            <EmptyTitle>{needle ? t("noneFound") : t("none")}</EmptyTitle>
           </EmptyHeader>
           {needle && (
             <EmptyContent>
               <Button variant="outline" onClick={() => setQuery("")}>
-                {t.clearSearch}
+                {t("clearSearch")}
               </Button>
             </EmptyContent>
           )}
@@ -164,7 +173,7 @@ export function CustomersView({
               </ItemMedia>
               <ItemContent>
                 <ItemTitle>{customer.name}</ItemTitle>
-                <ItemDescription>{summary(customer, m)}</ItemDescription>
+                <ItemDescription>{summary(customer)}</ItemDescription>
               </ItemContent>
               <ItemActions>
                 <ChevronRightIcon />
@@ -177,7 +186,7 @@ export function CustomersView({
       <ResponsivePanel
         open={opened !== null && !closing}
         onClose={close}
-        title={opened?.name ?? t.customer}
+        title={opened?.name ?? t("customer")}
       >
         {opened && (
           <CustomerDetails customer={opened} bookings={openBookings} />
@@ -194,16 +203,6 @@ export function CustomersView({
   )
 }
 
-function summary(customer: OwnerCustomer, m: OwnerMessages): string {
-  const t = m.bookings.customers
-  const visits = t.visits(customer.completed)
-  if (customer.nextBooking)
-    return t.next(visits, formatDay(customer.nextBooking, m.locale))
-  if (customer.lastVisit)
-    return t.last(visits, formatDay(customer.lastVisit, m.locale))
-  return t.bookings(customer.bookings)
-}
-
 function CustomerDetails({
   customer,
   bookings,
@@ -211,14 +210,14 @@ function CustomerDetails({
   customer: OwnerCustomer
   bookings: OwnerBooking[]
 }) {
-  const m = useOwnerMessages()
-  const t = m.bookings.customers
+  const t = useTranslations("owner.bookings.customers")
+  const locale = useLocale()
   const stats = [
-    { label: t.visitsLabel, value: String(customer.completed) },
-    { label: t.noShows, value: String(customer.noShows) },
+    { label: t("visitsLabel"), value: String(customer.completed) },
+    { label: t("noShows"), value: String(customer.noShows) },
     {
-      label: t.spent,
-      value: formatPrice(customer.spentMinor, customer.currency, m.locale),
+      label: t("spent"),
+      value: formatPrice(customer.spentMinor, customer.currency, locale),
     },
   ]
   return (
@@ -245,8 +244,8 @@ function CustomerDetails({
           <Item key={booking.id} size="sm" className="px-0">
             <ItemContent>
               <ItemTitle>
-                {formatDay(booking.date, m.locale)} ·{" "}
-                {formatClock(booking.time, m.locale)}
+                {formatDay(booking.date, locale)} ·{" "}
+                {formatClock(booking.time, locale)}
                 <BookingStatusBadge status={booking.status} />
               </ItemTitle>
               <ItemDescription>
@@ -273,8 +272,9 @@ function AddCustomerPanel({
   onClose: () => void
 }) {
   const router = useRouter()
-  const m = useOwnerMessages()
-  const t = m.bookings.customers
+  const t = useTranslations("owner.bookings.customers")
+  const common = useTranslations("owner.catalog.common")
+  const locale = useLocale()
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [error, setError] = useState<"name" | "phone" | null>(null)
@@ -291,15 +291,15 @@ function AddCustomerPanel({
         phone: phone.trim() || null,
       }).catch(() => null)
       if (result?.ok) {
-        toast.success(t.added(trimmed))
+        toast.success(t("added", { name: trimmed }))
         onClose()
         router.refresh()
       } else if (result?.error === "name" || result?.error === "phone") {
         setError(result.error)
       } else if (result?.error === "exists") {
-        toast.error(t.exists)
+        toast.error(t("exists"))
       } else {
-        toast.error(m.catalog.common.failed)
+        toast.error(common("failed"))
       }
     })
   }
@@ -308,11 +308,11 @@ function AddCustomerPanel({
     <ResponsivePanel
       open={open}
       onClose={onClose}
-      title={t.add}
+      title={t("add")}
       footer={
         <Button type="submit" size="lg" form={ADD_CUSTOMER_FORM} disabled={pending}>
           {pending && <Spinner data-icon="inline-start" />}
-          {m.catalog.common.save}
+          {common("save")}
         </Button>
       }
     >
@@ -326,7 +326,7 @@ function AddCustomerPanel({
       >
         <FieldGroup>
           <Field data-invalid={error === "name" || undefined}>
-            <FieldLabel htmlFor="customer-name">{t.name}</FieldLabel>
+            <FieldLabel htmlFor="customer-name">{t("name")}</FieldLabel>
             <Input
               {...noAutofill("customer_name")}
               id="customer-name"
@@ -336,10 +336,10 @@ function AddCustomerPanel({
               maxLength={BOOKING_RULES.maxCustomerName}
               aria-invalid={error === "name" || undefined}
             />
-            {error === "name" && <FieldError>{t.nameRequired}</FieldError>}
+            {error === "name" && <FieldError>{t("nameRequired")}</FieldError>}
           </Field>
           <Field data-invalid={error === "phone" || undefined}>
-            <FieldLabel htmlFor="customer-phone">{t.phone}</FieldLabel>
+            <FieldLabel htmlFor="customer-phone">{t("phone")}</FieldLabel>
             <PhoneInput
               {...noAutofill("customer_phone")}
               id="customer-phone"
@@ -347,9 +347,9 @@ function AddCustomerPanel({
               value={phone}
               onChange={setPhone}
               aria-invalid={error === "phone" || undefined}
-            locale={m.locale}
+            locale={locale}
           />
-            {error === "phone" && <FieldError>{t.badPhone}</FieldError>}
+            {error === "phone" && <FieldError>{t("badPhone")}</FieldError>}
           </Field>
         </FieldGroup>
       </form>

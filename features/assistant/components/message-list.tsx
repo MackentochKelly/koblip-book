@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useRef, useState } from "react"
 import { Streamdown } from "streamdown"
 import {
@@ -45,7 +46,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import type { AssistantMessages } from "../i18n"
 import type { AssistantStreamEvent, ResultKind, SourceKind } from "../types"
 import type {
   ChatItem,
@@ -117,12 +117,11 @@ const SOURCE_ICONS: Record<SourceKind, typeof CalendarDaysIcon> = {
 function SourceLines({
   sources,
   businessId,
-  labels,
 }: {
   sources: ChatSource[]
   businessId: string
-  labels: AssistantMessages["sources"]
 }) {
+  const t = useTranslations("assistant.sources")
   return (
     <>
       {sources.map(({ kind, count }) => {
@@ -136,7 +135,7 @@ function SourceLines({
               <TraceIcon>
                 <Icon />
               </TraceIcon>
-              <TraceTitle>{labels[kind](count)}</TraceTitle>
+              <TraceTitle>{t(kind, { n: count })}</TraceTitle>
               <TraceIcon>
                 <ChevronRightIcon />
               </TraceIcon>
@@ -161,13 +160,12 @@ function StepIcon({ status }: { status: ChatStep["status"] }) {
 // the answer was based on) are more lines of the same list, under the steps.
 export function WorkSteps({
   steps,
-  labels,
   children,
 }: {
   steps: ChatStep[]
-  labels: AssistantMessages["work"]
   children?: ReactNode
 }) {
+  const t = useTranslations("assistant.work")
   const [open, setOpen] = useState<boolean | undefined>(undefined)
   const running = steps.find((step) => step.status === "running")
   // Red only when the work ended badly: a mistake the assistant caught
@@ -183,7 +181,7 @@ export function WorkSteps({
               <SparklesIcon />
             </TraceIcon>
             <TraceTitle>
-              {running ? running.label : labels.done(steps.length)}
+              {running ? running.label : t("done", { count: steps.length })}
             </TraceTitle>
           </TraceLine>
         </TraceCollapsibleTrigger>
@@ -280,7 +278,6 @@ function FollowNewQuestion({ id }: { id: string | undefined }) {
 // owner scrolls up; the arrow brings it back down.
 export function MessageList({
   businessId,
-  messages: m,
   items,
   busy,
   error,
@@ -289,7 +286,6 @@ export function MessageList({
   onAnswer,
 }: {
   businessId: string
-  messages: AssistantMessages
   items: ChatItem[]
   busy: boolean
   error: ErrorCode | null
@@ -297,6 +293,7 @@ export function MessageList({
   onRetry: () => void
   onAnswer: (id: string, accept: boolean) => void
 }) {
+  const t = useTranslations("assistant")
   const last = items.at(-1)
   const lastQuestion = items.findLast((item) => item.role === "owner")
   const waiting =
@@ -320,7 +317,7 @@ export function MessageList({
             {items.length === 0 && !busy && (
               <div className="flex flex-1 items-center justify-center p-12">
                 <h2 className="text-center font-heading text-2xl font-normal tracking-tight text-balance">
-                  {m.empty.title}
+                  {t("empty.title")}
                 </h2>
               </div>
             )}
@@ -344,12 +341,11 @@ export function MessageList({
                   <Message>
                     <MessageContent>
                       {item.steps.length > 0 && (
-                        <WorkSteps steps={item.steps} labels={m.work}>
+                        <WorkSteps steps={item.steps}>
                           {item.sources.length > 0 && (
                             <SourceLines
                               sources={item.sources}
                               businessId={businessId}
-                              labels={m.sources}
                             />
                           )}
                         </WorkSteps>
@@ -365,22 +361,16 @@ export function MessageList({
                         <QuickChoices
                           choices={item.choices}
                           onPick={onSend}
-                          moreLabel={m.choices.more}
+                          moreLabel={(n) => t("choices.more", { n: String(n) })}
                         />
                       )}
                       {item === last && !busy && item.times && (
-                        <TimeChoices
-                          times={item.times}
-                          onPick={onSend}
-                          locale={m.locale}
-                          labels={m.times}
-                        />
+                        <TimeChoices times={item.times} onPick={onSend} />
                       )}
                       {item.confirms.map((confirm) => (
                         <ConfirmCard
                           key={confirm.id}
                           confirm={confirm}
-                          labels={m.confirm}
                           disabled={busy}
                           onAnswer={(accept) => onAnswer(confirm.id, accept)}
                         />
@@ -391,7 +381,6 @@ export function MessageList({
                           <SourceLines
                             sources={item.sources}
                             businessId={businessId}
-                            labels={m.sources}
                           />
                         </Trace>
                       )}
@@ -404,10 +393,13 @@ export function MessageList({
                       {/* Under the answer, as in AI Elements' Message. */}
                       {item.text && !(item === last && busy) && (
                         <MessageFooter className="px-0">
-                          <CopyAnswer text={item.text} label={m.actions.copy} />
+                          <CopyAnswer
+                            text={item.text}
+                            label={t("actions.copy")}
+                          />
                           {item === last && (
                             <AnswerAction
-                              label={m.actions.retry}
+                              label={t("actions.retry")}
                               onClick={onRetry}
                             >
                               <RefreshIcon />
@@ -421,15 +413,15 @@ export function MessageList({
               )
             )}
             {waiting && (
-              <p className="shimmer text-muted-foreground">{m.working}</p>
+              <p className="shimmer text-muted-foreground">{t("working")}</p>
             )}
             {error && !busy && (
               <Alert variant="destructive">
                 <AlertCircleIcon />
-                <AlertDescription>{m.errors[error]}</AlertDescription>
+                <AlertDescription>{t(`errors.${error}`)}</AlertDescription>
                 {RETRYABLE.includes(error) && (
                   <Button variant="outline" onClick={onRetry}>
-                    {m.retry}
+                    {t("retry")}
                   </Button>
                 )}
               </Alert>

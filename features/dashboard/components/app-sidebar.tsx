@@ -1,6 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { SearchIcon } from "@/components/ui/icons"
 
 import {
@@ -20,7 +21,6 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { useOwnerMessages } from "../i18n/provider"
 import { NAV_GROUPS, NOT_IN_MENU } from "../navigation"
 import type { OwnedBusiness } from "../types"
 import type { Owner } from "./account-menu"
@@ -44,7 +44,7 @@ export function AppSidebar({
   owner: Owner
 }) {
   const pathname = usePathname()
-  const m = useOwnerMessages().shell
+  const t = useTranslations("owner.shell")
   const { isMobile, setOpenMobile } = useSidebar()
   const openCommandMenu = useCommandMenu()
   const base = `/dashboard/${business.id}`
@@ -64,8 +64,8 @@ export function AppSidebar({
           </InputGroupAddon>
           <InputGroupInput
             readOnly
-            placeholder={m.search}
-            aria-label={m.searchHint}
+            placeholder={t("search")}
+            aria-label={t("searchHint")}
             aria-haspopup="dialog"
             className="cursor-pointer"
             onClick={openSearch}
@@ -85,11 +85,11 @@ export function AppSidebar({
             <SidebarMenuButton
               variant="outline"
               className={NAV_ICON_SIZE}
-              tooltip={m.search}
+              tooltip={t("search")}
               onClick={openSearch}
             >
               <SearchIcon />
-              <span>{m.search}</span>
+              <span>{t("search")}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -98,7 +98,7 @@ export function AppSidebar({
         {NAV_GROUPS.map((group) => (
           <NavMain
             key={group.key}
-            title={group.key === "main" ? undefined : m.groups[group.key]}
+            title={group.key === "main" ? undefined : t(`groups.${group.key}`)}
             items={group.items
               .filter((item) => !NOT_IN_MENU.includes(item.key))
               .map((item) => {
@@ -109,8 +109,8 @@ export function AppSidebar({
                   // Home, like its tab.
                   label:
                     item.key === "home" && !isMobile
-                      ? m.nav.dashboard
-                      : m.nav[item.key],
+                      ? t("nav.dashboard")
+                      : t(`nav.${item.key}`),
                   icon: item.icon,
                   active: item.path
                     ? pathname.startsWith(href)

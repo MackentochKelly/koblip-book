@@ -1,5 +1,7 @@
+import { createTranslator } from "next-intl"
 import { expect, test } from "vitest"
 
+import messages from "@/i18n/messages"
 import {
   BOOKING_MESSAGES,
   TEMPLATE_LANGUAGES,
@@ -119,7 +121,12 @@ test("every field has a value the customer can read, even when the booking lacks
     date: "2026-05-08",
     time: "15:30",
   }
-  const values = bookingValues(facts, "en")
+  const duration = createTranslator({
+    locale: "en-US",
+    messages,
+    namespace: "app.duration",
+  })
+  const values = bookingValues(facts, "en", duration)
   expect(values.teamMember).toBe("Lucía")
   expect(values.duration).toBe("1 h 30 min")
   expect(values.price).toBe("$35.00")
@@ -127,12 +134,13 @@ test("every field has a value the customer can read, even when the booking lacks
   expect(values.phone).toBe("-")
   const bare = bookingValues(
     { ...facts, teamMemberName: null, priceMinor: null, businessAddress: " " },
-    "es"
+    "es",
+    duration
   )
   expect(bare.teamMember).toBe("nuestro equipo")
   expect(bare.price).toBe("por confirmar")
   expect(bare.address).toBe("Lumen Studio")
-  expect(bookingValues({ ...facts, priceMinor: 0 }, "en").price).toBe("free")
+  expect(bookingValues({ ...facts, priceMinor: 0 }, "en", duration).price).toBe("free")
 })
 
 test("the new fields fit the customer's messages and the owner's alert", () => {

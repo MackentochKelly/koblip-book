@@ -1,12 +1,14 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
+
 import { notificationMessagesFor } from "@/features/dashboard/api/notifications"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { WhatsappMessages } from "@/features/dashboard/components/whatsapp-messages"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { notificationRules } from "@/lib/platform-settings"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).whatsapp.parts.messages }
+  const t = await getTranslations("owner.whatsapp")
+  return { title: t("parts.messages") }
 }
 
 export default async function WhatsappMessagesPage({

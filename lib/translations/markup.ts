@@ -84,7 +84,7 @@ function sameParts(found: string[], kept: string[]): boolean {
   return left.every((part, index) => part === right[index])
 }
 
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -92,7 +92,7 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;")
 }
 
-function escapeText(text: string): string {
+export function escapeText(text: string): string {
   return escapeHtml(text).replace(/\r?\n/g, "<br>")
 }
 
@@ -106,7 +106,7 @@ const NAMED: Record<string, string> = {
 }
 
 // One pass, so "&amp;lt;" becomes "&lt;", not "<".
-function decodeEntities(text: string): string {
+export function decodeEntities(text: string): string {
   return text.replace(
     /&(#\d+|#x[0-9a-f]+|amp|lt|gt|quot|apos|nbsp);/gi,
     (entity, name: string) => {

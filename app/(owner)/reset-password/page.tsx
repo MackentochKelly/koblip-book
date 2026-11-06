@@ -1,18 +1,16 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 
 import { HeroCardPage } from "@/components/hero-card-page"
 import { RememberOwnerLanguage } from "@/features/dashboard/i18n/remember-language"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { ResetPasswordForm } from "@/features/owner-auth/components/reset-password-form"
-import { authWordsFor } from "@/features/owner-auth/i18n"
 import { languageParam } from "@/lib/page-language"
 import { safeNext } from "@/lib/safe-next"
 
-export async function generateMetadata({
-  searchParams,
-}: PageProps<"/reset-password">): Promise<Metadata> {
-  const { lang } = await searchParams
-  return { title: authWordsFor(await getOwnerLanguage(lang)).newPassword }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("ownerAuth")
+  return { title: t("newPassword") }
 }
 
 // Where the "Forgot password" email's link lands. An old or used link comes
@@ -26,8 +24,9 @@ export default async function ResetPasswordPage({
   // for the owner area after it.
   const linked = languageParam(lang)
   const language = await getOwnerLanguage(lang)
+  const t = await getTranslations("ownerAuth")
   return (
-    <HeroCardPage language={language} title={authWordsFor(language).newPassword}>
+    <HeroCardPage language={language} title={t("newPassword")}>
       {linked && <RememberOwnerLanguage language={linked} />}
       <ResetPasswordForm
         token={typeof token === "string" ? token : null}

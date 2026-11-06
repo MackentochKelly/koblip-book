@@ -3,6 +3,7 @@
 import type { Route } from "next"
 import Link from "next/link"
 import { Fragment } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import { ContactIcon, PhoneIcon, WhatsAppIcon } from "@/components/ui/icons"
 
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
@@ -27,7 +28,6 @@ import {
 import { formatDayShort } from "@/lib/format-booking-time"
 import { initials } from "@/lib/initials"
 import { phoneLinks } from "@/lib/phone-link"
-import { useOwnerMessages } from "../i18n/provider"
 
 // The New customers widget: who booked for the first time lately, newest
 // first, each with a ⋮ menu (open them on the Customers page, call or
@@ -45,8 +45,8 @@ export function NewCustomersCard({
   }>
   href: string
 }) {
-  const m = useOwnerMessages()
-  const t = m.widgets
+  const t = useTranslations("owner.widgets")
+  const locale = useLocale()
   return (
     <Card>
       <CardContent>
@@ -66,7 +66,7 @@ export function NewCustomersCard({
                   <ItemContent>
                     <ItemTitle>{customer.name}</ItemTitle>
                     <ItemDescription>
-                      {t.firstVisit} · {formatDayShort(customer.date, m.locale)}
+                      {t("firstVisit")} · {formatDayShort(customer.date, locale)}
                     </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -80,7 +80,7 @@ export function NewCustomersCard({
             ))}
           </ItemGroup>
         ) : (
-          <p className="text-muted-foreground">{t.noNewCustomers}</p>
+          <p className="text-muted-foreground">{t("noNewCustomers")}</p>
         )}
       </CardContent>
     </Card>
@@ -88,22 +88,22 @@ export function NewCustomersCard({
 }
 
 function CustomerMenu({ href, phone }: { href: string; phone: string | null }) {
-  const t = useOwnerMessages().bookings
+  const t = useTranslations("owner.bookings")
   const links = phone ? phoneLinks(phone) : null
   return (
     <DropdownMenu>
-      <MoreMenuTrigger label={t.list.actions} />
+      <MoreMenuTrigger label={t("list.actions")} />
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
           <DropdownMenuItem render={<Link href={href as Route} />}>
             <ContactIcon />
-            {t.list.open}
+            {t("list.open")}
           </DropdownMenuItem>
           {links && (
             <>
               <DropdownMenuItem render={<a href={links.tel} />}>
                 <PhoneIcon />
-                {t.contact.call}
+                {t("contact.call")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 render={
@@ -111,7 +111,7 @@ function CustomerMenu({ href, phone }: { href: string; phone: string | null }) {
                 }
               >
                 <WhatsAppIcon />
-                {t.contact.whatsapp}
+                {t("contact.whatsapp")}
               </DropdownMenuItem>
             </>
           )}

@@ -7,6 +7,7 @@ import {
   type Variants,
 } from "motion/react"
 import Image from "next/image"
+import { useTranslations } from "next-intl"
 import { useId, useRef, useState } from "react"
 
 import { BottomPanel } from "@/components/bottom-panel"
@@ -36,7 +37,6 @@ import { useStoryLoop } from "@/hooks/use-story-loop"
 import { APP_SHORT_NAME } from "@/lib/app-install"
 import { SHOWCASE_LOOP } from "@/lib/showcase-rules"
 import { cn } from "@/lib/utils"
-import { useOwnerMessages } from "../i18n/provider"
 
 // Safari's taps on an iPhone, in order (iOS 26): ••• in the bottom bar,
 // Share in its menu, View More in the share sheet, Add to Home Screen in
@@ -88,7 +88,7 @@ const ROW: Variants = {
 // The lit step's background slides from step to step.
 const HIGHLIGHT = { type: "spring", bounce: 0.15, duration: 0.7 } as const
 
-type Words = ReturnType<typeof useOwnerMessages>["widgets"]
+type Words = ReturnType<typeof useTranslations<"owner.widgets">>
 
 // How to add Koblip Book to an iPhone's Home Screen, shown happening like
 // the home page's pictures (useStoryLoop): each tap in Safari plays in
@@ -102,7 +102,7 @@ export function InstallStepsPanel({
   open: boolean
   onClose: () => void
 }) {
-  const t = useOwnerMessages().widgets
+  const t = useTranslations("owner.widgets")
   const time = SHOWCASE_LOOP.install
   const box = useRef<HTMLDivElement>(null)
   const [phase, setPhase] = useState<Phase>("more")
@@ -151,26 +151,26 @@ export function InstallStepsPanel({
   }
 
   const labels: Record<Step, string> = {
-    more: t.installMore,
-    share: t.installShare,
-    viewMore: t.installViewMore,
-    addHome: t.installAdd,
-    add: t.installConfirm,
+    more: t("installMore"),
+    share: t("installShare"),
+    viewMore: t("installViewMore"),
+    addHome: t("installAdd"),
+    add: t("installConfirm"),
   }
 
   return (
     <BottomPanel
       open={open}
       onClose={onClose}
-      title={t.installTitle}
+      title={t("installTitle")}
       footer={
         <div className="flex flex-col gap-2">
           <Button size="lg" onClick={onClose}>
-            {t.gotIt}
+            {t("gotIt")}
           </Button>
           <Button variant="ghost" size="lg" onClick={playAgain}>
             <RefreshIcon data-icon="inline-start" />
-            {t.playAgain}
+            {t("playAgain")}
           </Button>
         </div>
       }
@@ -260,7 +260,7 @@ export function InstallStepsPanel({
                   {step === "more" ? (
                     <>
                       <span aria-hidden>{labels.more}</span>
-                      <span className="sr-only">{t.installMoreSpoken}</span>
+                      <span className="sr-only">{t("installMoreSpoken")}</span>
                     </>
                   ) : (
                     labels[step]
@@ -316,10 +316,10 @@ function Picture({
     return (
       <MenuList>
         <MenuRow icon={<ShareUpIcon />} tap={tap()}>
-          {t.installShareButton}
+          {t("installShareButton")}
         </MenuRow>
-        <MenuRow icon={<BookmarkIcon />}>{t.installBookmark}</MenuRow>
-        <MenuRow icon={<PlusIcon />}>{t.installNewTab}</MenuRow>
+        <MenuRow icon={<BookmarkIcon />}>{t("installBookmark")}</MenuRow>
+        <MenuRow icon={<PlusIcon />}>{t("installNewTab")}</MenuRow>
       </MenuList>
     )
   }
@@ -333,11 +333,11 @@ function Picture({
         animate="show"
         className="grid grid-cols-4 gap-1 text-center text-xs leading-tight"
       >
-        <SheetButton icon={<CopyIcon />}>{t.installCopy}</SheetButton>
-        <SheetButton icon={<BookmarkIcon />}>{t.installBookmark}</SheetButton>
-        <SheetButton icon={<GlassesIcon />}>{t.installReadingList}</SheetButton>
+        <SheetButton icon={<CopyIcon />}>{t("installCopy")}</SheetButton>
+        <SheetButton icon={<BookmarkIcon />}>{t("installBookmark")}</SheetButton>
+        <SheetButton icon={<GlassesIcon />}>{t("installReadingList")}</SheetButton>
         <SheetButton icon={<ChevronDownIcon />} tap={tap(true)}>
-          {t.installViewMoreButton}
+          {t("installViewMoreButton")}
         </SheetButton>
       </motion.div>
     )
@@ -347,10 +347,10 @@ function Picture({
   if (phase === "addHome") {
     return (
       <MenuList>
-        <MenuRow icon={<StarIcon />}>{t.installFavorite}</MenuRow>
-        <MenuRow icon={<SearchIcon />}>{t.installFind}</MenuRow>
+        <MenuRow icon={<StarIcon />}>{t("installFavorite")}</MenuRow>
+        <MenuRow icon={<SearchIcon />}>{t("installFind")}</MenuRow>
         <MenuRow icon={<PlusSquareIcon />} tap={tap()}>
-          {t.installTitle}
+          {t("installTitle")}
         </MenuRow>
       </MenuList>
     )
@@ -367,7 +367,7 @@ function Picture({
             <XIcon />
           </Round>
           <span className="min-w-0 flex-1 truncate text-center text-xs font-medium">
-            {t.installTitle}
+            {t("installTitle")}
           </span>
           <span
             className={cn(
@@ -376,7 +376,7 @@ function Picture({
             )}
           >
             <Button size="xs" tabIndex={-1}>
-              {t.installAddButton}
+              {t("installAddButton")}
             </Button>
             {tap(true)}
           </span>
@@ -391,7 +391,7 @@ function Picture({
           </div>
         </div>
         <div className="flex items-center justify-between gap-2 rounded-xl bg-muted p-2 text-xs">
-          <span className="truncate">{t.installWebApp}</span>
+          <span className="truncate">{t("installWebApp")}</span>
           <Switch size="sm" checked readOnly tabIndex={-1} />
         </div>
       </div>

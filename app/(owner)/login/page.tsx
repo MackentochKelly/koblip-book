@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
+import { getTranslations } from "next-intl/server"
 
 import { HeroCardPage, HeroPage } from "@/components/hero-card-page"
 import { claimBusiness } from "@/features/dashboard/api/actions"
@@ -9,7 +10,6 @@ import { prepareFound } from "@/features/onboarding/api/prepare-found"
 import { GetStarted } from "@/features/onboarding/components/get-started"
 import { readSignUpLink } from "@/features/onboarding/utils/sign-up-link"
 import { AuthForm } from "@/features/owner-auth/components/auth-form"
-import { authWordsFor } from "@/features/owner-auth/i18n"
 import { getSession } from "@/lib/dal"
 import { languageParam } from "@/lib/page-language"
 import { phoneSignInReady } from "@/lib/phone-sign-in"
@@ -18,10 +18,9 @@ import { safeNext } from "@/lib/safe-next"
 export async function generateMetadata({
   searchParams,
 }: PageProps<"/login">): Promise<Metadata> {
-  const { lang } = await searchParams
-  const words = authWordsFor(await getOwnerLanguage(lang))
+  const t = await getTranslations("ownerAuth")
   return {
-    title: readSignUpLink(await searchParams) ? words.signUp : words.logIn,
+    title: readSignUpLink(await searchParams) ? t("signUp") : t("logIn"),
   }
 }
 
@@ -46,12 +45,12 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   // it is remembered for the owner area after it.
   const linked = languageParam(params.lang)
   const language = await getOwnerLanguage(params.lang)
-  const words = authWordsFor(language)
+  const t = await getTranslations("ownerAuth")
   const googleError = typeof error === "string" ? error : null
   const remember = linked && <RememberOwnerLanguage language={linked} />
   if (!found) {
     return (
-      <HeroCardPage language={language} title={words.logIn}>
+      <HeroCardPage language={language} title={t("logIn")}>
         {remember}
         <AuthForm
           next={target}
@@ -63,7 +62,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     )
   }
   return (
-    <HeroPage language={language} title={words.signUp} wide>
+    <HeroPage language={language} title={t("signUp")} wide>
       {remember}
       <GetStarted
         signedIn={signedIn}

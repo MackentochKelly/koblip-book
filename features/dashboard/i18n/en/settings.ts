@@ -1,4 +1,5 @@
-// Settings, Hours, photos, and the setup and welcome steps.
+// Settings, Hours, photos, and the setup and welcome steps, in English as
+// ICU messages (docs/plans/translations.md, G4).
 const settings = {
   // The page's parts (tabs, pinned under the top bar on a phone).
   parts: {
@@ -30,7 +31,7 @@ const settings = {
     fullLink: "Use a full link, with https://",
     seats: "Bookings at the same time",
     seatsHint: "With a team, each person takes one.",
-    seatsRange: (max: number) => `From 1 to ${max}`,
+    seatsRange: "From 1 to {max, number}",
     currency: "Currency",
     currencyHint: "Prices keep their numbers. Nothing is converted.",
     noCurrency: "No currency found",
@@ -42,8 +43,8 @@ const settings = {
   },
   hours: {
     closed: "Closed",
-    opens: (day: string) => `${day} opens`,
-    closes: (day: string) => `${day} closes`,
+    opens: "{day} opens",
+    closes: "{day} closes",
     remove: "Remove these hours",
     add: "Add hours",
     fillEvery: "Fill in every time.",
@@ -54,8 +55,8 @@ const settings = {
     title: "Portfolio",
     add: "Add",
     none: "No photos yet",
-    photo: (n: number) => `Photo ${n}`,
-    options: (n: number) => `Photo ${n} options`,
+    photo: "Photo {n, number}",
+    options: "Photo {n, number} options",
     moveLeft: "Move left",
     moveRight: "Move right",
     remove: "Remove",
@@ -64,7 +65,7 @@ const settings = {
     pick: "Pick a photo.",
     tooBig: "That photo is too big.",
     wrongType: "Use a JPEG, PNG or WebP photo.",
-    limit: (max: number) => `Up to ${max} photos.`,
+    limit: "Up to {max, number} photos.",
   },
   policies: {
     title: "Policies",
@@ -81,7 +82,7 @@ const settings = {
     addTitle: "Add a title",
     addText: "Add the text",
     empty: "No policies yet",
-    limit: (max: number) => `Up to ${max} policies.`,
+    limit: "Up to {max, number} policies.",
     removed: "Policy removed",
     view: "View on your page",
     saveFailed: "Could not save. Please try again.",
@@ -98,7 +99,7 @@ const settings = {
       pointText: "Text",
       addTitle: "Add a title",
       addText: "Add the text",
-      limit: (max: number) => `Up to ${max} key points.`,
+      limit: "Up to {max, number} key points.",
       removed: "Key point removed",
       pictures: {
         calendar: "Calendar",
@@ -130,7 +131,7 @@ const settings = {
   // The home page's first steps for a new owner (utils/setup-tasks).
   setup: {
     title: "Get set up",
-    progress: (done: number, total: number): string => `${done} of ${total} done`,
+    progress: "{done, number} of {total, number} done",
     allDone: "Setup done",
     done: "Done",
     now: "Now",
@@ -155,11 +156,11 @@ const settings = {
   },
   verify: {
     title: "Confirm your email",
-    sentTo: (email: string) => `We sent a link to ${email}.`,
+    sentTo: "We sent a link to {email}.",
     resend: "Resend",
     sent: "Email sent",
     failed: "Could not send. Try again.",
   },
-}
+} as const
 
 export default settings

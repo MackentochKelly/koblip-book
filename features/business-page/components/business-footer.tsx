@@ -1,7 +1,8 @@
 import Link from "next/link"
+import { useLocale, useTranslations } from "next-intl"
+
 import { GoogleMapsCredit } from "@/components/google-maps-credit"
-import { messagesFor } from "@/lib/i18n"
-import type { PageLanguage } from "@/lib/page-language"
+import { languageOf } from "@/lib/page-language"
 import { policySegment, type PolicyLink } from "@/lib/policy-rules"
 import { TOUCH_AREA } from "@/lib/touch-area"
 import { cn } from "@/lib/utils"
@@ -13,16 +14,14 @@ export function BusinessFooter({
   slug,
   policies,
   fromGoogle,
-  language,
 }: {
   name: string
   slug: string
   policies: PolicyLink[]
   fromGoogle: boolean
-  language: PageLanguage
 }) {
-  const messages = messagesFor(language)
-  const m = messages.footer
+  const t = useTranslations("public")
+  const language = languageOf(useLocale())
   return (
     <footer className="flex flex-col items-center gap-1 pt-4 text-center text-xs text-muted-foreground">
       {policies.length > 0 && (
@@ -36,23 +35,23 @@ export function BusinessFooter({
                   "transition-colors hover:text-foreground"
                 )}
               >
-                {policy.kind ? messages.policies[policy.kind] : policy.title}
+                {policy.kind ? t(`policies.${policy.kind}`) : policy.title}
               </Link>
             </li>
           ))}
         </ul>
       )}
       <p>
-        © {new Date().getFullYear()} {name}. {m.rights}
+        © {new Date().getFullYear()} {name}. {t("footer.rights")}
       </p>
       {fromGoogle && (
         <p className="flex flex-wrap items-center justify-center">
-          {m.fromGoogle}
+          {t("footer.fromGoogle")}
           <GoogleMapsCredit />
         </p>
       )}
       <p>
-        {m.builtBy} <span className="font-medium text-foreground">Koblip</span>
+        {t("footer.builtBy")} <span className="font-medium text-foreground">Koblip</span>
       </p>
     </footer>
   )

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 
 import { StepReveal, type StepRevealState } from "@/components/step-reveal"
 import {
@@ -26,7 +27,6 @@ import {
   startPolicies,
   startStarterCatalog,
 } from "../api/prepare-actions"
-import { starterMessagesFor } from "../i18n"
 import type { StarterSummary } from "../types"
 
 type StepId =
@@ -67,10 +67,12 @@ export function PreparingCard({
   readyHref,
 }: {
   businessId: string
+  // The page's, for how prices read.
   language: PageLanguage
   readyHref: string
 }) {
-  const t = starterMessagesFor(language)
+  const t = useTranslations("starterCatalog")
+  const more = (count: number) => t("more", { count })
   const router = useRouter()
   const started = useRef(false)
   const [states, setStates] = useState<Record<StepId, StepState>>({
@@ -154,15 +156,15 @@ export function PreparingCard({
   const photosDone = summary?.team.filter((person) => person.photoUrl).length ?? 0
 
   const detail: Record<StepId, React.ReactNode> = {
-    services: summary && shortList(summary.services.map((service) => service.name), t.more),
-    extras: summary && shortList(summary.extras, t.more),
+    services: summary && shortList(summary.services.map((service) => service.name), more),
+    extras: summary && shortList(summary.extras, more),
     prices:
       summary && prices.length > 0
-        ? t.from(formatPrice(Math.min(...prices), summary.currency, locale))
+        ? t("from", { price: formatPrice(Math.min(...prices), summary.currency, locale) })
         : null,
-    team: summary && shortList(summary.team.map((person) => person.name), t.more),
-    photos: summary && t.photosDone(photosDone, summary.team.length),
-    policies: policiesReady && t.policiesDone,
+    team: summary && shortList(summary.team.map((person) => person.name), more),
+    photos: summary && t("photosDone", { done: photosDone, total: summary.team.length }),
+    policies: policiesReady && t("policiesDone"),
   }
 
   return (
@@ -174,13 +176,13 @@ export function PreparingCard({
           <Image src="/brands/meta-symbol-white.png" alt="" width={24} height={24} className="hidden size-6 object-contain dark:block" />
         </>
       }
-      title={t.title}
-      helper={t.helper}
-      labels={{ working: t.working, done: t.done, waiting: t.waiting }}
+      title={t("title")}
+      helper={t("helper")}
+      labels={{ working: t("working"), done: t("done"), waiting: t("waiting") }}
       steps={STEPS.map(({ id, icon }) => ({
         id,
         icon,
-        title: t.steps[id],
+        title: t(`steps.${id}`),
         state: states[id],
         detail: detail[id],
         aside: id === "photos" && summary && (

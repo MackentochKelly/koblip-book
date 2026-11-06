@@ -1,5 +1,6 @@
+import { useTranslations } from "next-intl"
+
 import { Badge } from "@/components/ui/badge"
-import { useOwnerMessages } from "../i18n/provider"
 import type { BookingState } from "../utils/booking-filters"
 
 const VARIANTS = {
@@ -13,6 +14,6 @@ const VARIANTS = {
 // Where a booking stands now, in the Bookings page's colours: to come,
 // waiting to be marked, done, missed or cancelled.
 export function BookingStateBadge({ state }: { state: BookingState }) {
-  const t = useOwnerMessages().bookings.list.state
-  return <Badge variant={VARIANTS[state]}>{t[state]}</Badge>
+  const t = useTranslations("owner.bookings.list.state")
+  return <Badge variant={VARIANTS[state]}>{t(state)}</Badge>
 }

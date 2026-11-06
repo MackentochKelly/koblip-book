@@ -1,25 +1,22 @@
 import type { Metadata } from "next"
-import { headers } from "next/headers"
 import { notFound } from "next/navigation"
+import { getLocale } from "next-intl/server"
 import { LanguageProvider } from "@/components/language-provider"
+import { WordsProvider } from "@/components/words-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { getTeamProfile } from "@/features/business-page/api/get-team-profile"
 import { TeamProfile } from "@/features/business-page/components/team-profile"
 import { isBookable } from "@/features/booking/utils/is-bookable"
-import { pickLanguage } from "@/lib/page-language"
+import { languageOf } from "@/lib/page-language"
 
 type Props = PageProps<"/b/[slug]/team/[memberId]">
 
-// ?lang= wins, then the visitor's browser language, else English.
-async function pageLanguage(searchParams: Props["searchParams"]) {
-  const { lang } = await searchParams
-  return pickLanguage(lang, (await headers()).get("accept-language"))
-}
-
-// The profile, or a 404 for an unknown business or team member.
-async function load({ params, searchParams }: Props) {
+// The profile, or a 404 for an unknown business or team member. The page's
+// language: ?lang= wins, then the visitor's browser language, else English
+// (proxy.ts).
+async function load({ params }: Props) {
   const { slug, memberId } = await params
-  const language = await pageLanguage(searchParams)
+  const language = languageOf(await getLocale())
   const profile = await getTeamProfile(slug, memberId, language)
   if (!profile) {
     notFound()
@@ -47,9 +44,11 @@ export default async function TeamProfilePage(props: Props) {
     hoursCount: data.hours.length,
   })
   return (
-    <LanguageProvider language={language}>
-      <TeamProfile profile={profile} language={language} bookable={bookable} />
-      <Toaster />
-    </LanguageProvider>
+    <WordsProvider namespaces={["app", "public"]}>
+      <LanguageProvider language={language}>
+        <TeamProfile profile={profile} bookable={bookable} />
+        <Toaster />
+      </LanguageProvider>
+    </WordsProvider>
   )
 }

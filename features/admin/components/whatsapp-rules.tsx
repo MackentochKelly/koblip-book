@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
@@ -26,9 +27,9 @@ import {
 import { AppSelect } from "@/components/app-select"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import type { NotificationRuleKey } from "@/lib/notification-rules"
 import { saveWhatsappRule } from "../api/whatsapp-rule-actions"
-import { useAdminMessages } from "../i18n/provider"
 import {
   formatRuleValue,
   parseRuleInput,
@@ -54,8 +55,11 @@ const FORM = "whatsapp-rule-form"
 // changed one shows its default. Tapping one opens it to change or go back
 // to the default. The server checks each value and logs the change.
 export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
-  const m = useAdminMessages()
-  const t = m.whatsapp.rules
+  const t = useTranslations("admin.whatsapp.rules")
+  const locale = useLocale()
+  const formatDuration = useFormatDuration()
+  const valueOf = (key: NotificationRuleKey, value: unknown) =>
+    formatRuleValue(key, value, t, locale, formatDuration)
   const byKey = new Map(rules.map((rule) => [rule.key, rule]))
   // The rule being edited; kept while the panel closes, so it stays drawn.
   const [opened, setOpened] = useState<RuleSetting | null>(null)
@@ -85,11 +89,11 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
       const done = await saveWhatsappRule(opened.key, value).catch(() => null)
       if (done?.ok) {
         setOpen(false)
-        toast.success(t.saved)
+        toast.success(t("saved"))
       } else if (done?.error === "invalid") {
         setInvalid(true)
       } else {
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
   }
@@ -101,7 +105,7 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
     if (unit === "switch") {
       return (
         <Field orientation="horizontal">
-          <FieldLabel htmlFor={id}>{t.names[opened.key]}</FieldLabel>
+          <FieldLabel htmlFor={id}>{t(`names.${opened.key}`)}</FieldLabel>
           <Switch
             id={id}
             checked={input === "true"}
@@ -113,7 +117,7 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
     if (unit === "cantCome") {
       const items = CANT_COME_CHOICES.map((choice) => ({
         value: choice,
-        label: t.cantCome[choice],
+        label: t(`cantCome.${choice}`),
       }))
       return (
         <Field>
@@ -122,7 +126,7 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
             value={input}
             onValueChange={setInput}
             className="w-full"
-            aria-label={t.names[opened.key]}
+            aria-label={t(`names.${opened.key}`)}
           />
         </Field>
       )
@@ -130,20 +134,20 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
     if (unit === "clock") {
       return (
         <Field data-invalid={invalid || undefined}>
-          <FieldLabel htmlFor={id}>{t.names[opened.key]}</FieldLabel>
+          <FieldLabel htmlFor={id}>{t(`names.${opened.key}`)}</FieldLabel>
           <TimeInput
             id={id}
             value={input}
             aria-invalid={invalid || undefined}
             onChange={(event) => setInput(event.target.value)}
           />
-          {invalid && <FieldError>{t.invalid}</FieldError>}
+          {invalid && <FieldError>{t("invalid")}</FieldError>}
         </Field>
       )
     }
     return (
       <Field data-invalid={invalid || undefined}>
-        <FieldLabel htmlFor={id}>{t.units[unit]}</FieldLabel>
+        <FieldLabel htmlFor={id}>{t(`units.${unit}`)}</FieldLabel>
         <Input
           id={id}
           inputMode={unit === "minutesList" ? "text" : "decimal"}
@@ -154,7 +158,7 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
             setInvalid(false)
           }}
         />
-        {invalid && <FieldError>{t.invalid}</FieldError>}
+        {invalid && <FieldError>{t("invalid")}</FieldError>}
       </Field>
     )
   })()
@@ -171,7 +175,7 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
             id={`rules-${group.id}`}
             className="text-lg font-semibold tracking-tight"
           >
-            {t.groups[group.id]}
+            {t(`groups.${group.id}`)}
           </h2>
           <ItemGroup className="gap-3">
             {group.keys.map((key) => {
@@ -185,19 +189,15 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
                   render={<button type="button" onClick={() => edit(rule)} />}
                 >
                   <ItemContent className="min-w-0">
-                    <ItemTitle>{t.names[key]}</ItemTitle>
+                    <ItemTitle>{t(`names.${key}`)}</ItemTitle>
                     <ItemDescription className="break-words">
-                      {formatRuleValue(
-                        key,
-                        changed ? rule.value : rule.defaultValue,
-                        m
-                      )}
+                      {valueOf(key, changed ? rule.value : rule.defaultValue)}
                       {changed &&
-                        ` · ${t.byDefault(formatRuleValue(key, rule.defaultValue, m))}`}
+                        ` · ${t("byDefault", { value: valueOf(key, rule.defaultValue) })}`}
                     </ItemDescription>
                   </ItemContent>
                   <ItemActions>
-                    {changed && <Badge variant="secondary">{t.changed}</Badge>}
+                    {changed && <Badge variant="secondary">{t("changed")}</Badge>}
                     <ChevronRightIcon className="size-4 text-muted-foreground" />
                   </ItemActions>
                 </Item>
@@ -210,7 +210,7 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
       <ResponsivePanel
         open={open}
         onClose={() => setOpen(false)}
-        title={opened ? t.names[opened.key] : ""}
+        title={opened ? t(`names.${opened.key}`) : ""}
         footer={
           <>
             {opened?.value !== null && opened?.value !== undefined && (
@@ -220,7 +220,7 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
                 disabled={pending}
                 onClick={() => save(null)}
               >
-                {t.useDefault}
+                {t("useDefault")}
               </Button>
             )}
             <Button
@@ -230,7 +230,7 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
               disabled={pending || input === start}
             >
               {pending && <Spinner data-icon="inline-start" />}
-              {t.save}
+              {t("save")}
             </Button>
           </>
         }
@@ -247,10 +247,10 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
             {field}
             <FieldDescription>
               {opened.perBusiness
-                ? `${t.byDefault(formatRuleValue(opened.key, opened.defaultValue, m))} · ${t.perBusiness}`
-                : t.byDefault(
-                    formatRuleValue(opened.key, opened.defaultValue, m)
-                  )}
+                ? `${t("byDefault", { value: valueOf(opened.key, opened.defaultValue) })} · ${t("perBusiness")}`
+                : t("byDefault", {
+                    value: valueOf(opened.key, opened.defaultValue),
+                  })}
             </FieldDescription>
           </form>
         )}

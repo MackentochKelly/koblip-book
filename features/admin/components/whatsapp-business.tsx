@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useLocale, useTranslations, type Messages } from "next-intl"
 import { toast } from "sonner"
 
 import { AutomationSteps } from "@/components/automation-steps"
@@ -16,18 +17,17 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { Switch } from "@/components/ui/switch"
-import { formatDuration } from "@/lib/format-duration"
+import { useFormatDuration } from "@/hooks/use-format-duration"
+import { languageOf } from "@/lib/page-language"
 import {
   resetBusinessSettings,
   resetBusinessWording,
   setBusinessMessageOn,
   turnOffBusinessWhatsapp,
 } from "../api/whatsapp-business-actions"
-import type { AdminMessages } from "../i18n"
-import { useAdminMessages } from "../i18n/provider"
 
-type Message = keyof AdminMessages["whatsapp"]["messages"]
-type Review = keyof AdminMessages["whatsapp"]["review"]
+type Message = keyof Messages["admin"]["whatsapp"]["messages"]
+type Review = keyof Messages["admin"]["whatsapp"]["review"]
 type Language = "en" | "es"
 
 // One business's WhatsApp as its page reads it (the page passes it in from
@@ -83,11 +83,12 @@ export function WhatsappBusiness({
   // Passed in by the page (it lives with the Chat connection code).
   disconnect: (businessId: string) => Promise<{ ok: boolean }>
 }) {
-  const m = useAdminMessages()
-  const t = m.whatsapp.businesses
+  const words = useTranslations("admin.whatsapp")
+  const t = useTranslations("admin.whatsapp.businesses")
+  const formatDuration = useFormatDuration()
   const { business, connection, messages, settings, automations } = data
   // Automations read in the admin's language.
-  const language: Language = m.locale.startsWith("es") ? "es" : "en"
+  const language: Language = languageOf(useLocale())
   // What the dialog asks; kept while it closes, so its words stay.
   const [ask, setAskState] = useState<Ask | null>(null)
   const [asking, setAsking] = useState(false)
@@ -100,57 +101,59 @@ export function WhatsappBusiness({
   function run(action: () => Promise<{ ok: boolean }>) {
     startTransition(async () => {
       const done = await action().catch(() => null)
-      if (done?.ok) toast.success(t.saved)
-      else toast.error(t.failed)
+      if (done?.ok) toast.success(t("saved"))
+      else toast.error(t("failed"))
     })
   }
 
   const allOff = messages.every((item) => !item.on)
-  const onOff = (value: boolean) => (value ? t.on : t.off)
+  const onOff = (value: boolean) => (value ? t("on") : t("off"))
   const settingRows = [
     {
-      label: t.reminders,
+      label: t("reminders"),
       value: settings.reminders.length
         ? settings.reminders.map(formatDuration).join(", ")
-        : t.noReminders,
+        : t("noReminders"),
     },
     {
-      label: t.quietHours,
+      label: t("quietHours"),
       value: `${settings.quietStart}–${settings.quietEnd}`,
     },
-    { label: t.freeText, value: onOff(settings.freeTextInWindow) },
-    { label: t.cantCome, value: t.cantComeActions[settings.cantCome] },
-    { label: t.thankYou, value: onOff(settings.thankYouReply) },
-    { label: t.ownerPhone, value: settings.ownerPhone ?? t.noPhone },
+    { label: t("freeText"), value: onOff(settings.freeTextInWindow) },
+    { label: t("cantCome"), value: t(`cantComeActions.${settings.cantCome}`) },
+    { label: t("thankYou"), value: onOff(settings.thankYouReply) },
+    { label: t("ownerPhone"), value: settings.ownerPhone ?? t("noPhone") },
   ]
 
   const dialog =
     ask?.kind === "disconnect"
       ? {
-          title: t.disconnectTitle,
-          description: t.disconnectText,
-          confirm: t.disconnect,
+          title: t("disconnectTitle"),
+          description: t("disconnectText"),
+          confirm: t("disconnect"),
           action: () => disconnect(business.id),
         }
       : ask?.kind === "turnOff"
         ? {
-            title: t.turnOffTitle,
-            description: t.turnOffText,
-            confirm: t.turnOff,
+            title: t("turnOffTitle"),
+            description: t("turnOffText"),
+            confirm: t("turnOff"),
             action: () => turnOffBusinessWhatsapp(business.id),
           }
         : ask?.kind === "resetSettings"
           ? {
-              title: t.resetSettingsTitle,
-              description: t.resetSettingsText,
-              confirm: t.reset,
+              title: t("resetSettingsTitle"),
+              description: t("resetSettingsText"),
+              confirm: t("reset"),
               action: () => resetBusinessSettings(business.id),
             }
           : ask?.kind === "resetWording"
             ? {
-                title: t.resetWordingTitle(m.whatsapp.messages[ask.message]),
-                description: t.resetWordingText,
-                confirm: t.reset,
+                title: t("resetWordingTitle", {
+                  name: words(`messages.${ask.message}`),
+                }),
+                description: t("resetWordingText"),
+                confirm: t("reset"),
                 action: () => resetBusinessWording(business.id, ask.message),
               }
             : null
@@ -167,15 +170,15 @@ export function WhatsappBusiness({
           id="business-connection"
           className="text-lg font-semibold tracking-tight"
         >
-          {t.connection}
+          {t("connection")}
         </h3>
         <Item variant="outline">
           <ItemContent className="min-w-0">
-            <ItemTitle>{t.sender}</ItemTitle>
+            <ItemTitle>{t("sender")}</ItemTitle>
             <ItemDescription className="truncate">
               {connection
-                ? t.ownNumber(connection.workspaceName)
-                : t.koblipNumber}
+                ? t("ownNumber", { workspace: connection.workspaceName })
+                : t("koblipNumber")}
             </ItemDescription>
           </ItemContent>
           <ItemActions>
@@ -186,14 +189,14 @@ export function WhatsappBusiness({
                     connection.needsReconnect ? "destructive" : "secondary"
                   }
                 >
-                  {connection.needsReconnect ? t.reconnect : t.connected}
+                  {connection.needsReconnect ? t("reconnect") : t("connected")}
                 </Badge>
                 <Button
                   variant="outline"
                   disabled={pending}
                   onClick={() => setAsk({ kind: "disconnect" })}
                 >
-                  {t.disconnect}
+                  {t("disconnect")}
                 </Button>
               </>
             )}
@@ -209,11 +212,11 @@ export function WhatsappBusiness({
           id="business-messages"
           className="text-lg font-semibold tracking-tight"
         >
-          {t.messagesTitle}
+          {t("messagesTitle")}
         </h3>
         <ItemGroup className="gap-3">
           {messages.map((item) => {
-            const name = m.whatsapp.messages[item.message]
+            const name = words(`messages.${item.message}`)
             const own = LANGUAGES.some(
               (language) => !item.texts[language].isDefault
             )
@@ -223,10 +226,10 @@ export function WhatsappBusiness({
                   <ItemTitle>{name}</ItemTitle>
                   <ItemDescription>
                     {[
-                      own ? t.ownWording : t.bookWording,
+                      own ? t("ownWording") : t("bookWording"),
                       ...LANGUAGES.map(
                         (language) =>
-                          `${language.toUpperCase()}: ${m.whatsapp.review[item.texts[language].review]}`
+                          `${language.toUpperCase()}: ${words(`review.${item.texts[language].review}`)}`
                       ),
                     ].join(" · ")}
                   </ItemDescription>
@@ -240,13 +243,13 @@ export function WhatsappBusiness({
                         setAsk({ kind: "resetWording", message: item.message })
                       }
                     >
-                      {t.resetWording}
+                      {t("resetWording")}
                     </Button>
                   )}
                   <Switch
                     checked={item.on}
                     disabled={pending}
-                    aria-label={t.messageOn(name)}
+                    aria-label={t("messageOn", { name })}
                     onCheckedChange={(on) =>
                       run(() =>
                         setBusinessMessageOn(business.id, item.message, on)
@@ -269,10 +272,10 @@ export function WhatsappBusiness({
             id="business-automations"
             className="text-lg font-semibold tracking-tight"
           >
-            {t.automationsTitle}
+            {t("automationsTitle")}
           </h3>
           {automations.map((automation) => {
-            const name = t.flows.names[automation.trigger]
+            const name = t(`flows.names.${automation.trigger}`)
             return (
               <div key={automation.id} className="flex flex-col gap-3">
                 <Item variant="outline">
@@ -281,7 +284,7 @@ export function WhatsappBusiness({
                   </ItemContent>
                   <ItemActions>
                     <Badge variant={automation.on ? "secondary" : "outline"}>
-                      {automation.on ? t.on : t.off}
+                      {automation.on ? t("on") : t("off")}
                     </Badge>
                   </ItemActions>
                 </Item>
@@ -296,9 +299,16 @@ export function WhatsappBusiness({
                     action: button.action.type,
                   }))}
                   labels={{
-                    ...t.flows,
-                    label: t.flows.stepsLabel(name),
-                    trigger: t.flows.triggers[automation.trigger],
+                    label: t("flows.stepsLabel", { name }),
+                    when: t("flows.when"),
+                    send: t("flows.send"),
+                    button: t("flows.button"),
+                    trigger: t(`flows.triggers.${automation.trigger}`),
+                    actions: {
+                      bookingLink: t("flows.actions.bookingLink"),
+                      servicesList: t("flows.actions.servicesList"),
+                      handoff: t("flows.actions.handoff"),
+                    },
                   }}
                 />
               </div>
@@ -316,14 +326,14 @@ export function WhatsappBusiness({
             id="business-settings"
             className="text-lg font-semibold tracking-tight"
           >
-            {t.settingsTitle}
+            {t("settingsTitle")}
           </h3>
           <Button
             variant="ghost"
             disabled={pending}
             onClick={() => setAsk({ kind: "resetSettings" })}
           >
-            {t.resetSettings}
+            {t("resetSettings")}
           </Button>
         </div>
         <ItemGroup className="gap-3">
@@ -347,7 +357,7 @@ export function WhatsappBusiness({
           disabled={pending}
           onClick={() => setAsk({ kind: "turnOff" })}
         >
-          {t.turnOff}
+          {t("turnOff")}
         </Button>
       )}
 
@@ -356,7 +366,7 @@ export function WhatsappBusiness({
         title={dialog?.title ?? ""}
         description={dialog?.description ?? ""}
         confirm={dialog?.confirm ?? ""}
-        cancel={t.cancel}
+        cancel={t("cancel")}
         onClose={() => setAsking(false)}
         onConfirm={() => {
           if (dialog) run(dialog.action)

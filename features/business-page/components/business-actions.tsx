@@ -1,9 +1,9 @@
+import { useTranslations } from "next-intl"
+
 import { NavigationIcon, PhoneCallIcon, WebsiteIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { messagesFor } from "@/lib/i18n"
-import type { PageLanguage } from "@/lib/page-language"
 import type { Business } from "../types"
 import { directionsUrl } from "@/lib/directions-url"
 import { BookButton } from "./book-button"
@@ -16,14 +16,12 @@ export function BusinessActions({
   business,
   layout,
   bookable = false,
-  language,
 }: {
   business: Business
   layout: "row" | "stack"
   bookable?: boolean
-  language: PageLanguage
 }) {
-  const m = messagesFor(language).actions
+  const t = useTranslations("public.actions")
   const directions = directionsUrl(business)
   const wide = layout === "row" ? "flex-1" : "w-full"
   const icons = bookable && layout === "row"
@@ -33,7 +31,7 @@ export function BusinessActions({
         // On the phone bar the icons come first, Book now on the right.
         <BookButton
           slug={business.slug}
-          label={m.bookNow}
+          label={t("bookNow")}
           className={cn(wide, icons && "order-last")}
         />
       )}
@@ -42,12 +40,12 @@ export function BusinessActions({
           variant="outline"
           size={icons ? "icon-lg" : "lg"}
           className={icons ? undefined : wide}
-          aria-label={icons ? m.directions : undefined}
+          aria-label={icons ? t("directions") : undefined}
           nativeButton={false}
           render={<a href={directions} target="_blank" rel="noreferrer" />}
         >
           <NavigationIcon />
-          {!icons && m.directions}
+          {!icons && t("directions")}
         </Button>
       )}
       {business.phone && (
@@ -55,12 +53,12 @@ export function BusinessActions({
           variant={bookable ? "outline" : "default"}
           size={icons ? "icon-lg" : "lg"}
           className={icons ? undefined : wide}
-          aria-label={icons ? m.call : undefined}
+          aria-label={icons ? t("call") : undefined}
           nativeButton={false}
           render={<a href={`tel:${business.phone.replace(/[^\d+]/g, "")}`} />}
         >
           <PhoneCallIcon />
-          {!icons && m.call}
+          {!icons && t("call")}
         </Button>
       )}
       {layout === "stack" && business.website && (
@@ -74,7 +72,7 @@ export function BusinessActions({
           }
         >
           <WebsiteIcon />
-          {m.website}
+          {t("website")}
         </Button>
       )}
     </div>

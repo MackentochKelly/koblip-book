@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useEffectEvent, useState } from "react"
+import { useLocale, useTranslations } from "next-intl"
 
 import { TimePicker } from "@/components/time-picker"
 import { Button } from "@/components/ui/button"
@@ -13,7 +14,6 @@ import {
 } from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { OwnerFreeTimes } from "@/types/owner-booking"
-import { useOwnerMessages } from "../i18n/provider"
 
 // Loads the free times again whenever `key` changes (what they depend on);
 // undefined while they load. `onLoaded` runs with each new answer.
@@ -76,14 +76,14 @@ export function BookingWhen({
   error: string | null
   children: React.ReactNode
 }) {
-  const m = useOwnerMessages()
-  const t = m.bookings.form
+  const t = useTranslations("owner.bookings.form")
+  const locale = useLocale()
   const first = firstFreeDay(free)
 
   if (free === undefined && !anyTime) {
     return (
       <Field>
-        <FieldLabel>{t.when}</FieldLabel>
+        <FieldLabel>{t("when")}</FieldLabel>
         <Skeleton className="h-40 w-full rounded-2xl" />
       </Field>
     )
@@ -107,7 +107,7 @@ export function BookingWhen({
               if (!isFree) onDateChange(first)
             }}
           >
-            {t.freeTimes}
+            {t("freeTimes")}
           </Button>
         )}
       </>
@@ -115,7 +115,7 @@ export function BookingWhen({
   }
   return (
     <FieldSet className="min-w-0" data-invalid={error !== null || undefined}>
-      <FieldLegend variant="label">{t.when}</FieldLegend>
+      <FieldLegend variant="label">{t("when")}</FieldLegend>
       <TimePicker
         days={free.days}
         date={date}
@@ -126,8 +126,17 @@ export function BookingWhen({
         time={time || null}
         onTimeChange={onTimeChange}
         today={today}
-        locale={m.locale}
-        labels={t.picker}
+        locale={locale}
+        labels={{
+          today: t("picker.today"),
+          tomorrow: t("picker.tomorrow"),
+          day: t("picker.day"),
+          moreDates: t("picker.moreDates"),
+          morning: t("picker.morning"),
+          afternoon: t("picker.afternoon"),
+          evening: t("picker.evening"),
+          timesOf: (part) => t("picker.timesOf", { part }),
+        }}
       />
       {error !== null && <FieldError>{error}</FieldError>}
       <Button
@@ -136,7 +145,7 @@ export function BookingWhen({
         className="w-fit px-0"
         onClick={() => onAnyTimeChange(true)}
       >
-        {t.otherTime}
+        {t("otherTime")}
       </Button>
     </FieldSet>
   )

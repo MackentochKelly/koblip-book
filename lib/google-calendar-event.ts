@@ -1,35 +1,30 @@
-import { formatDuration } from "@/lib/format-duration"
+import "server-only"
+import { createTranslator } from "next-intl"
+
+import { durationIn } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { isGoogleEventColor } from "@/lib/google-calendar-colors"
+import { DEFAULT_LOCALES, type PageLanguage } from "@/lib/page-language"
 import { phoneLinks } from "@/lib/phone-link"
+import { wordsFor } from "@/lib/translations/interface-words"
 
 // What a booking's Google Calendar event says (G6 in
 // docs/plans/google-calendar.md): the service and customer as its title,
 // the business's address as its place, and the details as short lines in
 // the language the owner uses Book in. Its colour is the service's (G7).
 
-const WORDS = {
-  en: {
-    extras: "Extras",
-    with: "With",
-    customer: "Customer",
-    phone: "Phone",
-    whatsapp: "WhatsApp",
-    note: "Note",
-    price: "Price",
-    open: "Open in Koblip Book",
-  },
-  es: {
-    extras: "Extras",
-    with: "Con",
-    customer: "Cliente",
-    phone: "Teléfono",
-    whatsapp: "WhatsApp",
-    note: "Nota",
-    price: "Precio",
-    open: "Abrir en Koblip Book",
-  },
-} as const
+// The event's words (appServer.calendarEvent, app.duration) in the owner's
+// language. The sync runs on the server's timer, with no request.
+export async function eventWordsFor(language: PageLanguage) {
+  const messages = await wordsFor(language)
+  const locale = DEFAULT_LOCALES[language]
+  return {
+    event: createTranslator({ locale, messages, namespace: "appServer.calendarEvent" }),
+    duration: createTranslator({ locale, messages, namespace: "app.duration" }),
+  }
+}
+
+export type EventWords = Awaited<ReturnType<typeof eventWordsFor>>
 
 export type EventBooking = {
   id: string
@@ -49,7 +44,7 @@ export type EventPlace = {
   businessId: string
   timeZone: string
   address: string | null
-  language: "en" | "es"
+  language: PageLanguage
   // The owner's site address; null leaves out the link (a team member has
   // no account to open it with).
   site: string | null
@@ -66,29 +61,34 @@ export function eventOf(
   booking: EventBooking,
   extras: string[],
   place: EventPlace,
+  words: EventWords,
   // The service's colour, else its category's (eventColorOf, a Google
   // colorId); null keeps the calendar's.
   color: string | null = null
 ) {
-  const t = WORDS[place.language]
+  const t = words.event
   const day = dayOf(booking.startAt, place.timeZone)
   const lines = [
-    `${booking.serviceName} · ${formatDuration(booking.durationMinutes)}`,
-    extras.length ? `${t.extras}: ${extras.join(", ")}` : null,
-    booking.teamMemberName ? `${t.with}: ${booking.teamMemberName}` : null,
-    `${t.customer}: ${booking.customerName}`,
-    booking.customerPhone ? `${t.phone}: ${booking.customerPhone}` : null,
-    booking.customerPhone ? `${t.whatsapp}: ${phoneLinks(booking.customerPhone).whatsapp}` : null,
-    booking.note ? `${t.note}: ${booking.note}` : null,
+    `${booking.serviceName} · ${durationIn(words.duration, booking.durationMinutes)}`,
+    extras.length ? t("extras", { extras: extras.join(", ") }) : null,
+    booking.teamMemberName ? t("with", { name: booking.teamMemberName }) : null,
+    t("customer", { name: booking.customerName }),
+    booking.customerPhone ? t("phone", { phone: booking.customerPhone }) : null,
+    booking.customerPhone ? t("whatsapp", { link: phoneLinks(booking.customerPhone).whatsapp }) : null,
+    booking.note ? t("note", { note: booking.note }) : null,
     booking.priceMinor !== null
-      ? `${t.price}: ${formatPrice(booking.priceMinor, booking.currency, place.language === "es" ? "es" : "en-US")}`
+      ? t("price", {
+          price: formatPrice(booking.priceMinor, booking.currency, place.language === "es" ? "es" : "en-US"),
+        })
       : null,
     // The bookings of that day in the owner area.
     place.site
-      ? `${t.open}: ${new URL(
-          `/dashboard/${encodeURIComponent(place.businessId)}/bookings?from=${day}&to=${day}`,
-          place.site
-        )}`
+      ? t("open", {
+          link: new URL(
+            `/dashboard/${encodeURIComponent(place.businessId)}/bookings?from=${day}&to=${day}`,
+            place.site
+          ).toString(),
+        })
       : null,
   ]
   return {

@@ -1,15 +1,13 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { getTranslations } from "next-intl/server"
 
-import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { getNotificationChoices } from "@/features/notifications/api/queries"
 import { NotificationChoices } from "@/features/notifications/components/notification-choices"
-import { notificationMessagesFor } from "@/features/notifications/i18n"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: notificationMessagesFor(await getOwnerLanguage()).choices.title,
-  }
+  const t = await getTranslations("notifications")
+  return { title: t("choices.title") }
 }
 
 type Props = {
@@ -18,16 +16,7 @@ type Props = {
 
 export default async function NotificationSettingsPage({ params }: Props) {
   const { businessId } = await params
-  const [choices, language] = await Promise.all([
-    getNotificationChoices(businessId),
-    getOwnerLanguage(),
-  ])
+  const choices = await getNotificationChoices(businessId)
   if (!choices) notFound()
-  return (
-    <NotificationChoices
-      businessId={businessId}
-      language={language}
-      choices={choices}
-    />
-  )
+  return <NotificationChoices businessId={businessId} choices={choices} />
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
 import { useState } from "react"
 import { CalendarDaysIcon } from "@/components/ui/icons"
 
@@ -19,10 +20,12 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import { useTeamAreaWords } from "../i18n/provider"
 import type { MyBooking } from "../types"
 
 type View = "upcoming" | "past"
+
+// The statuses that show a badge; a confirmed booking has none.
+const BADGES = ["completed", "no_show", "cancelled"] as const
 
 // The team member's own bookings, by day in the business's time zone.
 export function MyBookings({
@@ -34,16 +37,17 @@ export function MyBookings({
   past: MyBooking[]
   timeZone: string
 }) {
-  const t = useTeamAreaWords()
+  const t = useTranslations("teamArea")
+  const locale = useLocale()
   const [view, setView] = useState<View>("upcoming")
   const list = view === "upcoming" ? upcoming : past
-  const day = new Intl.DateTimeFormat(t.locale, {
+  const day = new Intl.DateTimeFormat(locale, {
     weekday: "long",
     month: "long",
     day: "numeric",
     timeZone,
   })
-  const clock = new Intl.DateTimeFormat(t.locale, {
+  const clock = new Intl.DateTimeFormat(locale, {
     hour: "numeric",
     minute: "2-digit",
     timeZone,
@@ -57,10 +61,10 @@ export function MyBookings({
     <div className="flex flex-col gap-6">
       <ViewTabs
         variant="line"
-        ariaLabel={t.nav.bookings}
+        ariaLabel={t("nav.bookings")}
         views={[
-          { id: "upcoming", label: t.bookings.upcoming },
-          { id: "past", label: t.bookings.past },
+          { id: "upcoming", label: t("bookings.upcoming") },
+          { id: "past", label: t("bookings.past") },
         ]}
         value={view}
         onChange={setView}
@@ -72,7 +76,7 @@ export function MyBookings({
               <CalendarDaysIcon />
             </EmptyMedia>
             <EmptyTitle>
-              {view === "upcoming" ? t.bookings.emptyUpcoming : t.bookings.emptyPast}
+              {view === "upcoming" ? t("bookings.emptyUpcoming") : t("bookings.emptyPast")}
             </EmptyTitle>
           </EmptyHeader>
         </Empty>
@@ -81,23 +85,26 @@ export function MyBookings({
           <section key={label} className="flex flex-col gap-3">
             <h2 className="text-sm font-medium text-muted-foreground">{label}</h2>
             <ItemGroup className="gap-3">
-              {items.map((booking) => (
-                <Item key={booking.id} variant="outline">
-                  <ItemContent>
-                    <ItemTitle>{booking.serviceName}</ItemTitle>
-                    <ItemDescription>
-                      {clock.formatRange(new Date(booking.startAt), new Date(booking.endAt))}
-                      {" · "}
-                      {booking.customerName}
-                    </ItemDescription>
-                  </ItemContent>
-                  {t.bookings.status[booking.status] && (
-                    <ItemActions>
-                      <Badge variant="secondary">{t.bookings.status[booking.status]}</Badge>
-                    </ItemActions>
-                  )}
-                </Item>
-              ))}
+              {items.map((booking) => {
+                const badge = BADGES.find((status) => status === booking.status)
+                return (
+                  <Item key={booking.id} variant="outline">
+                    <ItemContent>
+                      <ItemTitle>{booking.serviceName}</ItemTitle>
+                      <ItemDescription>
+                        {clock.formatRange(new Date(booking.startAt), new Date(booking.endAt))}
+                        {" · "}
+                        {booking.customerName}
+                      </ItemDescription>
+                    </ItemContent>
+                    {badge && (
+                      <ItemActions>
+                        <Badge variant="secondary">{t(`bookings.status.${badge}`)}</Badge>
+                      </ItemActions>
+                    )}
+                  </Item>
+                )
+              })}
             </ItemGroup>
           </section>
         ))

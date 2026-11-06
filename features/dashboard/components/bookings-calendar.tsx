@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import { es } from "react-day-picker/locale"
 
 import { DayStrip } from "@/components/day-strip"
@@ -36,7 +37,6 @@ import {
   formatDay,
 } from "@/lib/format-booking-time"
 import { cn } from "cn"
-import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import { type BookingState, bookingState } from "../utils/booking-filters"
 import { monthRange } from "../utils/booking-range"
@@ -76,8 +76,8 @@ export function BookingsCalendar({
   team: { id: string; name: string }[]
   panels: ReturnType<typeof useBookingPanels>
 }) {
-  const m = useOwnerMessages()
-  const t = m.bookings.calendar
+  const t = useTranslations("owner.bookings")
+  const locale = useLocale()
   const [picked, setPicked] = useState<string | null>(null)
   // The phone's row: the month and a week either side, the days loaded.
   const shown = monthRange(month)
@@ -115,8 +115,13 @@ export function BookingsCalendar({
           value={day}
           onChange={pick}
           today={today}
-          locale={m.locale}
-          labels={t}
+          locale={locale}
+          labels={{
+            today: t("calendar.today"),
+            tomorrow: t("calendar.tomorrow"),
+            day: t("calendar.day"),
+            moreDates: t("calendar.moreDates"),
+          }}
           note={(date) => {
             const booked = perDay.get(date) ?? 0
             return (
@@ -130,7 +135,7 @@ export function BookingsCalendar({
           <Calendar
             mode="single"
             required
-            locale={m.locale.startsWith("es") ? es : undefined}
+            locale={locale.startsWith("es") ? es : undefined}
             month={dateFromDay(`${month}-01`)}
             onMonthChange={(date) => {
               // A new month opens on today or its 1st.
@@ -161,20 +166,20 @@ export function BookingsCalendar({
 
       <Card className="min-w-0">
         <CardHeader>
-          <CardTitle>{formatDay(day, m.locale)}</CardTitle>
-          <CardDescription>{t.count(count)}</CardDescription>
+          <CardTitle>{formatDay(day, locale)}</CardTitle>
+          <CardDescription>{t("calendar.count", { count })}</CardDescription>
         </CardHeader>
         <CardContent>
           {dayBookings.length === 0 ? (
             <Empty className="border">
               <EmptyHeader>
-                <EmptyTitle>{t.free}</EmptyTitle>
+                <EmptyTitle>{t("calendar.free")}</EmptyTitle>
               </EmptyHeader>
               {panels.canAdd && (
                 <EmptyContent>
                   <Button onClick={panels.add}>
                     <PlusIcon data-icon="inline-start" />
-                    {m.bookings.addBooking}
+                    {t("addBooking")}
                   </Button>
                 </EmptyContent>
               )}
@@ -196,8 +201,8 @@ export function BookingsCalendar({
                   >
                     <ItemContent>
                       <ItemTitle>
-                        {formatClock(booking.time, m.locale)} –{" "}
-                        {formatClock(booking.endTime, m.locale)}
+                        {formatClock(booking.time, locale)} –{" "}
+                        {formatClock(booking.endTime, locale)}
                         <BookingStateBadge state={bookingState(booking, now)} />
                       </ItemTitle>
                       <ItemDescription>
@@ -243,8 +248,8 @@ function DayGrid({
   now: string
   onOpen: (booking: OwnerBooking) => void
 }) {
-  const m = useOwnerMessages()
-  const t = m.bookings.calendar
+  const t = useTranslations("owner.bookings.calendar")
+  const locale = useLocale()
   // Whole hours around the day's bookings, at least 9 to 5.
   const firstHour = Math.min(
     9,
@@ -269,7 +274,7 @@ function DayGrid({
       )
       .map((member) => ({ id: member.id, name: member.name })),
     ...(bookings.some((booking) => booking.teamMemberId === null)
-      ? [{ id: null, name: team.length > 0 ? t.anyone : "" }]
+      ? [{ id: null, name: team.length > 0 ? t("anyone") : "" }]
       : []),
   ]
   const slot = (time: string) =>
@@ -302,7 +307,7 @@ function DayGrid({
             gridRow: `${index * SLOTS_PER_HOUR + 2} / span ${SLOTS_PER_HOUR}`,
           }}
         >
-          {formatClock(`${String(hour).padStart(2, "0")}:00`, m.locale)}
+          {formatClock(`${String(hour).padStart(2, "0")}:00`, locale)}
         </div>
       ))}
       {/* A line at each hour, across every column. */}
@@ -345,7 +350,7 @@ function DayGrid({
           >
             <span className="font-medium">{booking.customerName}</span>
             <span className="text-muted-foreground tabular-nums">
-              {formatClock(booking.time, m.locale)} · {booking.serviceName}
+              {formatClock(booking.time, locale)} · {booking.serviceName}
             </span>
           </Button>
         )

@@ -1,9 +1,9 @@
 // Lines the server writes for the owner: step chips, confirm card
-// titles, tap results, and the error sentences tools return. Database
-// names (services, team, customers) are inserted, never translated.
-// The audit log summaries stay in English (they are for developers).
-const messages = {
-  locale: "en-US",
+// titles, tap results, and the error sentences tools return, in English as
+// ICU messages (docs/plans/translations.md, G4). Database names (services,
+// team, customers) are inserted, never translated. The audit log summaries
+// stay in English (they are for developers).
+const words = {
   // One line in the short dynamic prompt part, so the model answers in
   // the owner's language from the first word.
   languageLine: "Reply in English.",
@@ -286,16 +286,15 @@ const messages = {
     messageReset: "Go back",
   },
   booking: {
-    minutes: (durationMinutes: number) => `${durationMinutes} min`,
+    minutes: "{durationMinutes} min",
     anyone: "Anyone",
     noPrice: "No price",
     free: "Free",
     closedWeek: "Closed all week",
-    at: (day: string, time: string) => `${day} at ${time}`,
-    booked: (name: string, service: string, when: string) =>
-      `Done! ${name} is booked for ${service} on ${when}.`,
+    at: "{day} at {time}",
+    booked: "Done! {name} is booked for {service} on {when}.",
     declined: "Okay, I didn't book it.",
-    couldNotBook: (reason: string) => `Could not book: ${reason}.`,
+    couldNotBook: "Could not book: {reason}.",
     conflictClosed: "the business is closed then",
     conflictTaken: "that time was just taken",
     fields: {
@@ -313,48 +312,46 @@ const messages = {
   },
   cancel: {
     unknown: "Could not cancel: unknown booking.",
-    failed: (error: string) => `Could not cancel the booking (${error}).`,
+    failed: "Could not cancel the booking ({error}).",
     done: "Cancelled the booking.",
     alreadyCancelled: "That booking was already cancelled.",
     started: "Not cancelled: that booking has already started.",
   },
   deleteService: {
     unknown: "Could not delete: unknown service.",
-    failed: (error: string) => `Could not delete the service (${error}).`,
+    failed: "Could not delete the service ({error}).",
     done: "Deleted the service.",
   },
   createService: {
-    failed: (error: string) => `Could not add the service (${error}).`,
-    done: (name: string) => `Added the service ${name}.`,
+    failed: "Could not add the service ({error}).",
+    done: "Added the service {name}.",
   },
   createServiceCategory: {
-    taken: (name: string) =>
-      `Not added: you already have a category called ${name}.`,
-    failed: (error: string) => `Could not add the category (${error}).`,
-    done: (name: string) => `Added the category ${name}.`,
+    taken: "Not added: you already have a category called {name}.",
+    failed: "Could not add the category ({error}).",
+    done: "Added the category {name}.",
   },
   renameServiceCategory: {
     unknown: "Could not rename: unknown category.",
-    taken: (name: string) =>
-      `Not renamed: you already have a category called ${name}.`,
-    failed: (error: string) => `Could not rename the category (${error}).`,
-    done: (name: string) => `Renamed to ${name}.`,
+    taken: "Not renamed: you already have a category called {name}.",
+    failed: "Could not rename the category ({error}).",
+    done: "Renamed to {name}.",
   },
   deleteServiceCategory: {
     unknown: "Could not remove: unknown category.",
-    failed: (error: string) => `Could not remove the category (${error}).`,
+    failed: "Could not remove the category ({error}).",
     done: "Category removed. Its services moved to Other.",
   },
   renameMember: {
     unknown: "Could not rename: unknown team member.",
-    failed: (error: string) => `Could not rename the team member (${error}).`,
-    done: (name: string) => `Renamed to ${name}.`,
+    failed: "Could not rename the team member ({error}).",
+    done: "Renamed to {name}.",
   },
   bookingStatus: {
     unknown: "Could not update: unknown booking.",
     cancelled: "Not updated: that booking was cancelled.",
     notStarted: "Not updated: that booking hasn't started yet.",
-    failed: (error: string) => `Could not update the booking (${error}).`,
+    failed: "Could not update the booking ({error}).",
     done: {
       completed: "Marked as done.",
       no_show: "Marked as no-show.",
@@ -362,48 +359,47 @@ const messages = {
     },
   },
   createMember: {
-    failed: (error: string) => `Could not add the team member (${error}).`,
-    done: (name: string) => `Added ${name} to the team.`,
+    failed: "Could not add the team member ({error}).",
+    done: "Added {name} to the team.",
   },
   updateService: {
     unknown: "Could not change: unknown service.",
-    failed: (error: string) => `Could not change the service (${error}).`,
+    failed: "Could not change the service ({error}).",
     done: "Changed the service.",
   },
   deleteMember: {
     unknown: "Could not remove: unknown team member.",
-    failed: (error: string) => `Could not remove the team member (${error}).`,
+    failed: "Could not remove the team member ({error}).",
     done: "Removed the team member.",
   },
   serviceTeam: {
     anyone: "anyone",
     unknown: "Could not save: unknown service.",
-    failed: (error: string) => `Could not save the service team (${error}).`,
+    failed: "Could not save the service team ({error}).",
     done: "Service team updated.",
   },
   memberServices: {
     none: "no services",
     unknown: "Could not save: unknown team member.",
-    failed: (error: string) => `Could not save the member services (${error}).`,
+    failed: "Could not save the member services ({error}).",
     done: "Member services updated.",
   },
   createAddon: {
-    failed: (error: string) => `Could not create the extras (${error}).`,
+    failed: "Could not create the extras ({error}).",
     done: "Extras created.",
   },
   updateAddon: {
     unknown: "Could not change: unknown extras group.",
-    failed: (error: string) => `Could not change the extras (${error}).`,
+    failed: "Could not change the extras ({error}).",
     done: "Extras changed.",
   },
   deleteAddon: {
     unknown: "Could not delete: unknown extras group.",
-    failed: (error: string) => `Could not delete the extras (${error}).`,
+    failed: "Could not delete the extras ({error}).",
     done: "Extras deleted.",
   },
   updateBusiness: {
-    failed: (error: string) =>
-      `Could not save the business details (${error}).`,
+    failed: "Could not save the business details ({error}).",
     done: "Business details updated.",
     fields: {
       name: "Name",
@@ -416,13 +412,13 @@ const messages = {
   },
   hours: {
     invalid: "Could not save: invalid hours.",
-    failed: (error: string) => `Could not save the hours (${error}).`,
+    failed: "Could not save the hours ({error}).",
     done: "Opening hours updated.",
   },
   moveBooking: {
     invalid: "Could not move: bad booking details.",
-    done: (when: string) => `Moved the booking to ${when}.`,
-    couldNotMove: (reason: string) => `Could not move: ${reason}.`,
+    done: "Moved the booking to {when}.",
+    couldNotMove: "Could not move: {reason}.",
     badDate: "bad date",
     badTime: "bad time",
     failed: "Could not move the booking. It may have started or been cancelled.",
@@ -430,13 +426,13 @@ const messages = {
   addCustomer: {
     invalid: "Could not add: bad customer details.",
     exists: "That customer is already on your list.",
-    failed: (error: string) => `Could not add the customer (${error}).`,
+    failed: "Could not add the customer ({error}).",
     done: "Customer added.",
   },
   memberHours: {
     sameAsBusiness: "Same as business hours",
     unknown: "Could not save: unknown team member.",
-    failed: (error: string) => `Could not save the working hours (${error}).`,
+    failed: "Could not save the working hours ({error}).",
     done: "Working hours updated.",
   },
   invite: {
@@ -444,7 +440,7 @@ const messages = {
     noEmail: "Not sent: this team member has no email.",
     notEmailed: "The email didn't go out. Share a new link from the Team page.",
     failed: "Could not send the invite. They may have joined already.",
-    done: (name: string) => `Invite sent to ${name}.`,
+    done: "Invite sent to {name}.",
   },
   removeAccess: {
     unknown: "Could not remove access: unknown team member.",
@@ -457,15 +453,15 @@ const messages = {
     done: "Photo drawn.",
   },
   photos: {
-    one: (position: number, total: number) => `Photo ${position} of ${total}`,
-    order: (positions: string) => `New order: photos ${positions}`,
+    one: "Photo {position} of {total}",
+    order: "New order: photos {positions}",
     unknown: "Could not change the photos: they changed since the card showed.",
-    failed: (error: string) => `Could not change the photos (${error}).`,
+    failed: "Could not change the photos ({error}).",
     deleted: "Photo deleted.",
     ordered: "Photo order updated.",
   },
   reorder: {
-    failed: (error: string) => `Could not save the order (${error}).`,
+    failed: "Could not save the order ({error}).",
     services: "Service order updated.",
     serviceCategories: "Category order updated.",
     team: "Team order updated.",
@@ -473,7 +469,7 @@ const messages = {
   },
   savePolicy: {
     invalid: "Could not save: bad policy text.",
-    failed: (error: string) => `Could not save the policy (${error}).`,
+    failed: "Could not save the policy ({error}).",
     done: "Policy saved.",
     added: "Policy added.",
     removed: "Policy removed.",
@@ -482,19 +478,19 @@ const messages = {
   policyPoint: {
     unknown: "Could not save: unknown key point.",
     full: "Could not add: your key points are full.",
-    failed: (error: string) => `Could not save the key point (${error}).`,
+    failed: "Could not save the key point ({error}).",
     added: "Key point added.",
     done: "Key point saved.",
     removed: "Key point removed.",
   },
   theme: {
-    failed: (error: string) => `Could not change the theme (${error}).`,
+    failed: "Could not change the theme ({error}).",
     done: "Theme changed.",
   },
   messageOn: {
-    failed: (error: string) => `Could not switch the message (${error}).`,
-    on: (name: string) => `${name} is on.`,
-    off: (name: string) => `${name} is off.`,
+    failed: "Could not switch the message ({error}).",
+    on: "{name} is on.",
+    off: "{name} is off.",
   },
   reminderSettings: {
     fields: {
@@ -512,22 +508,22 @@ const messages = {
     none: "None",
     languages: { en: "English", es: "Spanish" },
     cantCome: { cancel: "Cancels the booking", alertOnly: "Only alerts you" },
-    failed: (error: string) => `Could not save the settings (${error}).`,
+    failed: "Could not save the settings ({error}).",
     done: "Reminder settings updated.",
   },
   messageWording: {
     languages: { en: "English", es: "Spanish" },
     draftNote: "Goes to Meta only when you submit it.",
-    failed: (error: string) => `Could not save the wording (${error}).`,
+    failed: "Could not save the wording ({error}).",
     done: "Saved as a draft. Submit it to Meta on the Messages page.",
     resetDone: "Back to the original wording.",
   },
   automationOn: {
     unknown: "Could not switch: unknown automation.",
     noOwnNumber: "That works on your own WhatsApp number only.",
-    failed: (error: string) => `Could not switch the automation (${error}).`,
-    on: (name: string) => `${name} is on.`,
-    off: (name: string) => `${name} is off.`,
+    failed: "Could not switch the automation ({error}).",
+    on: "{name} is on.",
+    off: "{name} is off.",
   },
   // Sentences the tools return to the model when arguments are wrong.
   // Field names (serviceId, YYYY-MM-DD) stay as-is: they are codes.
@@ -542,22 +538,15 @@ const messages = {
       "unknown team member id: list the team first and use an id from the list",
     teamMemberInvalid: "teamMemberId must be an id from list_team or omitted",
     serviceRequired: "service is required: the service name the owner said",
-    serviceWhich: (names: string) =>
-      `which service? ask the owner to pick one of: ${names}`,
-    memberWhich: (names: string) =>
-      `which team member? ask the owner to pick one of: ${names}`,
+    serviceWhich: "which service? ask the owner to pick one of: {names}",
+    memberWhich: "which team member? ask the owner to pick one of: {names}",
     extrasInvalid: "extras must be a short list of extra names",
-    noExtras: (service: string) =>
-      `${service} has no extras: book it without extras`,
-    extraWhich: (names: string) =>
-      `which extra? ask the owner to pick one of: ${names}`,
-    extraNeeded: (group: string, count: number, names: string) =>
-      `${group}: pick at least ${count}; ask the owner to pick from: ${names}`,
-    extraTooMany: (group: string, count: number) =>
-      `${group}: at most ${count}; ask the owner which to keep`,
+    noExtras: "{service} has no extras: book it without extras",
+    extraWhich: "which extra? ask the owner to pick one of: {names}",
+    extraNeeded: "{group}: pick at least {count}; ask the owner to pick from: {names}",
+    extraTooMany: "{group}: at most {count}; ask the owner which to keep",
     bookingDayInvalid: "day must be today or tomorrow; use date for other days",
-    slotNotFree: (times: string) =>
-      `that time is not free; free times that day: ${times}`,
+    slotNotFree: "that time is not free; free times that day: {times}",
     dayNotFree: "nothing is free that day: ask for another day",
     dateInvalid: "date must be a real YYYY-MM-DD date",
     timeInvalid: "time must be HH:mm",
@@ -567,35 +556,29 @@ const messages = {
     noteTooLong: "note too long",
     datePast: "date is in the past: book today or later",
     rangeInvalid: "range must be upcoming or past",
-    dayInvalid: (key: string) => `${key} must be YYYY-MM-DD`,
+    dayInvalid: "{key} must be YYYY-MM-DD",
     dayChoiceInvalid: "day must be yesterday, today or tomorrow",
     dayAlone: "day already covers the whole day: leave out from, to and range",
     statusUnknown: "unknown status",
-    queryInvalid: (max: number) => `query must be 1-${max} characters`,
-    nameInvalid: (max: number) => `name must be 1-${max} characters`,
+    queryInvalid: "query must be 1-{max} characters",
+    nameInvalid: "name must be 1-{max} characters",
     nothingToChange: "Nothing to change.",
-    servicesFull: (max: number) =>
-      `there are already ${max} services, the most a business can have`,
+    servicesFull: "there are already {max} services, the most a business can have",
     serviceCategoryIdRequired:
       "categoryId is required: list services first and use an id from its categories",
     serviceCategoryUnknown:
       "unknown category id: list services first and use an id from its categories",
     serviceCategoryInvalid:
       'categoryId must be an id from list_services categories, or "none" for no category',
-    serviceCategoryExists: (name: string) =>
-      `there is already a category called ${name}`,
-    serviceCategoriesFull: (max: number) =>
-      `there are already ${max} categories, the most a business can have`,
-    serviceExists: (name: string) =>
-      `there is already a service called ${name} with the same time and price`,
-    teamFull: (max: number) =>
-      `there are already ${max} team members, the most a business can have`,
+    serviceCategoryExists: "there is already a category called {name}",
+    serviceCategoriesFull: "there are already {max} categories, the most a business can have",
+    serviceExists: "there is already a service called {name} with the same time and price",
+    teamFull: "there are already {max} team members, the most a business can have",
     bookingNotStarted:
       "that booking hasn't started yet, so it can't be marked completed or no_show",
-    minutesInvalid: (options: string) => `minutes must be one of ${options}`,
+    minutesInvalid: "minutes must be one of {options}",
     priceInvalid: "priceMinor must be null or an integer within range",
-    descriptionInvalid: (max: number) =>
-      `description must be at most ${max} characters`,
+    descriptionInvalid: "description must be at most {max} characters",
     bookingIdRequired:
       "bookingId is required: list bookings first and use an id from the list",
     bookingUnknown:
@@ -605,29 +588,26 @@ const messages = {
       "that booking has already started or ended, so it cannot be cancelled; set_booking_status can mark it completed or no_show",
     statusInvalid:
       "status must be confirmed, completed or no_show (cancelling needs a tap)",
-    rowsInvalid: (max: number) =>
-      `rows must be at most ${max} of weekday 0-6 with open and close HH:mm`,
+    rowsInvalid: "rows must be at most {max} of weekday 0-6 with open and close HH:mm",
     freeTimesUnknown:
       "unknown service or team member: list them first and use an id from the list",
     fromInvalid: "from must be a real YYYY-MM-DD date, today or later",
     toInvalid: "to must be a real YYYY-MM-DD date on or after from",
-    spanInvalid: (max: number) => `ask for at most ${max} days at once`,
-    rangeTooLong: (max: number) => `ask for at most ${max} days at once`,
+    spanInvalid: "ask for at most {max} days at once",
+    rangeTooLong: "ask for at most {max} days at once",
     sortInvalid: "sort must be bookings, spent, lastVisit or firstBooking",
     groupIdRequired:
       "groupId is required: list add-ons first and use an id from the list",
     groupUnknown:
       "unknown extras group id: list add-ons first and use an id from the list",
-    promptInvalid: (max: number) => `prompt must be 1-${max} characters`,
+    promptInvalid: "prompt must be 1-{max} characters",
     selectsInvalid: "minSelect and maxSelect must fit the number of options",
-    optionsInvalid: (max: number) =>
-      `options must be 1-${max} with a name, duration and price`,
-    businessNameInvalid: (max: number) => `name must be 1-${max} characters`,
-    addressInvalid: (max: number) =>
-      `address must be at most ${max} characters`,
-    aboutInvalid: (max: number) => `about must be at most ${max} characters`,
+    optionsInvalid: "options must be 1-{max} with a name, duration and price",
+    businessNameInvalid: "name must be 1-{max} characters",
+    addressInvalid: "address must be at most {max} characters",
+    aboutInvalid: "about must be at most {max} characters",
     websiteInvalid: "website must be an http(s) URL",
-    seatsInvalid: (max: number) => `seats must be between 1 and ${max}`,
+    seatsInvalid: "seats must be between 1 and {max}",
     bookingNotMovable:
       "that booking has already started or ended, so it cannot be moved",
     moveUnavailable: "that booking cannot be moved",
@@ -641,14 +621,11 @@ const messages = {
     aiOff: "AI suggestions are off right now",
     suggestFailed: "that suggestion failed: offer to try again",
     noPhotos: "this business has no photos",
-    photoPositionInvalid: (total: number) =>
-      `position must be a photo number from 1 to ${total}`,
-    photoOrderInvalid: (total: number) =>
-      `order must list every photo number from 1 to ${total} exactly once`,
-    orderInvalid: (source: string) =>
-      `list every id from ${source} exactly once, in the new order`,
+    photoPositionInvalid: "position must be a photo number from 1 to {total}",
+    photoOrderInvalid: "order must list every photo number from 1 to {total} exactly once",
+    orderInvalid: "list every id from {source} exactly once, in the new order",
     policyKindInvalid: "kind must be booking, terms or privacy",
-    policyTooLong: (max: number) => `body must be at most ${max} characters`,
+    policyTooLong: "body must be at most {max} characters",
     policyBodyRequired: "body is required: the policy's whole text",
     policyUnknown:
       "unknown policy id: call list_policies and use the id of one of the owner's own policies (kind null)",
@@ -656,39 +633,33 @@ const messages = {
       "policyId is required: call list_policies and use an id from the list",
     policyTitleRequired:
       "title is required for the owner's own policy (no kind)",
-    policyTitleTooLong: (max: number) =>
-      `title must be at most ${max} characters`,
-    policiesFull: (max: number) =>
-      `there are already ${max} policies: change or remove one first`,
+    policyTitleTooLong: "title must be at most {max} characters",
+    policiesFull: "there are already {max} policies: change or remove one first",
     pointUnknown:
       "unknown key point id: call list_policies and use an id from the list",
     pointIdRequired:
       "pointId is required: call list_policies and use an id from the list",
-    pointsFull: (max: number) =>
-      `there are already ${max} key points: change or remove one first`,
-    pointIconInvalid: (icons: string) => `icon must be one of ${icons}`,
-    pointTitleInvalid: (max: number) => `title must be 1-${max} characters`,
-    pointBodyInvalid: (max: number) => `body must be 1-${max} characters`,
-    themeUnknown: (names: string) => `theme must be one of ${names}`,
-    themeComingSoon: (name: string, ready: string) =>
-      `${name} is coming soon; ready now: ${ready}`,
+    pointsFull: "there are already {max} key points: change or remove one first",
+    pointIconInvalid: "icon must be one of {icons}",
+    pointTitleInvalid: "title must be 1-{max} characters",
+    pointBodyInvalid: "body must be 1-{max} characters",
+    themeUnknown: "theme must be one of {names}",
+    themeComingSoon: "{name} is coming soon; ready now: {ready}",
     messageUnknown: "unknown message: use a name from whatsapp_settings",
     onInvalid: "on must be true or false",
     languageInvalid: "language must be en or es",
     wordingLocked:
       "this business sends from Koblip's number: its wording is fixed and only turns on or off",
-    remindersInvalid: (max: number, choices: string) =>
-      `reminders must be at most ${max} of these minutes: ${choices}`,
+    remindersInvalid: "reminders must be at most {max} of these minutes: {choices}",
     quietInvalid: "quietStart and quietEnd must be HH:mm",
-    settingInvalid: (field: string) => `bad value for ${field}`,
+    settingInvalid: "bad value for {field}",
     automationIdRequired:
       "automationId is required: call whatsapp_settings and use an id from it",
     automationUnknown:
       "unknown automation id: call whatsapp_settings and use an id from it",
     wordingInvalid: "header, body and footer must be text",
     buttonsInvalid: "buttons must be a list with an action and a label",
-    wordingProblem: (reason: string, fields: string) =>
-      `that wording can't be saved: ${reason}. Fields it may use: ${fields}`,
+    wordingProblem: "that wording can't be saved: {reason}. Fields it may use: {fields}",
     wordingProblems: {
       empty: "header and body can't be empty",
       tooLong: "header, body or footer is too long",
@@ -703,6 +674,6 @@ const messages = {
       sameButton: "two buttons have the same action or label",
     },
   },
-}
+} as const
 
-export default messages
+export default words

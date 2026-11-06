@@ -1,16 +1,16 @@
 import type { Metadata } from "next"
+import { getLocale, getTranslations } from "next-intl/server"
+
 import { getVoiceChoice } from "@/features/assistant/api/voice-choice"
 import { VoiceSection } from "@/features/assistant/components/voice-section"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { AccountSection } from "@/features/dashboard/components/account-section"
-import {
-  getOwnerLanguage,
-  getOwnerMessages,
-} from "@/features/dashboard/i18n/server"
 import { requireAccount } from "@/lib/dal"
+import { languageOf } from "@/lib/page-language"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).settings.parts.account }
+  const t = await getTranslations("owner.settings")
+  return { title: t("parts.account") }
 }
 
 type Props = {
@@ -20,11 +20,12 @@ type Props = {
 export default async function AccountPage({ params }: Props) {
   const { businessId } = await params
   const returnTo = `/dashboard/${businessId}/settings/account`
-  const [owner, , language] = await Promise.all([
+  const [owner, , locale] = await Promise.all([
     requireAccount(returnTo),
     getOwnerBusiness(businessId),
-    getOwnerLanguage(),
+    getLocale(),
   ])
+  const language = languageOf(locale)
   const voiceChoice = await getVoiceChoice(owner.userId)
   return (
     <div className="flex flex-col gap-10">

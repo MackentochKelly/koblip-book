@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSelectedLayoutSegment } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { WhatsAppIcon } from "@/components/ui/icons"
 
 import { SectionParts } from "@/components/section-parts"
@@ -15,7 +16,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { refreshChatMessages } from "../api/chat-connection"
-import { useOwnerMessages } from "../i18n/provider"
 import type { ChatConnection } from "../types/chat-connection"
 import type { Sender } from "../types/notifications"
 
@@ -47,8 +47,9 @@ export function WhatsappFrame({
   sender: Sender | null
   children: React.ReactNode
 }) {
-  const m = useOwnerMessages()
-  const t = m.whatsapp
+  const t = useTranslations("owner.whatsapp")
+  const chat = useTranslations("owner.integrations.koblipChat")
+  const shell = useTranslations("owner.shell")
   const router = useRouter()
   const segment = useSelectedLayoutSegment()
   const base = `/dashboard/${businessId}/automations`
@@ -80,20 +81,20 @@ export function WhatsappFrame({
   if (!usable) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{m.shell.nav.automations}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{shell("nav.automations")}</h1>
         <Empty className="border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <WhatsAppIcon />
             </EmptyMedia>
-            <EmptyTitle>{t.connectTitle}</EmptyTitle>
+            <EmptyTitle>{t("connectTitle")}</EmptyTitle>
           </EmptyHeader>
           <EmptyContent>
             <Button
               nativeButton={false}
               render={<Link href={`/dashboard/${businessId}/integrations`} />}
             >
-              {connection ? m.integrations.koblipChat.reconnect : t.connect}
+              {connection ? chat("reconnect") : t("connect")}
             </Button>
           </EmptyContent>
         </Empty>
@@ -103,20 +104,20 @@ export function WhatsappFrame({
 
   return (
     <SectionParts
-      title={m.shell.nav.automations}
+      title={shell("nav.automations")}
       parts={PARTS.map((item) => ({
         id: item,
-        label: t.parts[item],
+        label: t(`parts.${item}`),
         href: hrefOf(item),
       }))}
       current={part}
-      ariaLabel={t.partsLabel}
+      ariaLabel={t("partsLabel")}
       notice={
         state &&
         state !== "ready" &&
         !showsStatus && (
           <p className="text-sm text-muted-foreground">
-            {m.integrations.koblipChat.messages[state]}
+            {chat(`messages.${state}`)}
           </p>
         )
       }

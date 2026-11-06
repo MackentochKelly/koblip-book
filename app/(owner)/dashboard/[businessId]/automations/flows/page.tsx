@@ -1,13 +1,15 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
+
 import { automationsFor } from "@/features/dashboard/api/automation-queries"
 import { chatConnectionFor } from "@/features/dashboard/api/chat-templates"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { WhatsappFlows } from "@/features/dashboard/components/whatsapp-flows"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { automationRules } from "@/lib/platform-settings"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).whatsapp.parts.flows }
+  const t = await getTranslations("owner.whatsapp")
+  return { title: t("parts.flows") }
 }
 
 // Flows: what Book answers by itself when a customer writes (D11).

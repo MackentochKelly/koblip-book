@@ -2,11 +2,14 @@ import {
   act,
   cleanup,
   fireEvent,
-  render,
+  render as renderUi,
   screen,
   waitFor,
 } from "@testing-library/react"
+import { NextIntlClientProvider } from "next-intl"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
+import messages from "@/i18n/messages"
+import { WithWords } from "@/i18n/testing"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 
 const { search } = vi.hoisted(() => ({
@@ -41,6 +44,8 @@ vi.mock("@/lib/onboarding-rules", async (original) => {
 })
 
 const { GetStarted } = await import("./get-started")
+
+const render = (ui: React.ReactElement) => renderUi(ui, { wrapper: WithWords })
 
 const suggested = "photography studio near Brockton, MA, USA"
 
@@ -415,16 +420,16 @@ test("a location timeout keeps the retry action", async () => {
 })
 
 // The browser says Allow but the device says no: quiet until someone asks.
-async function allowedButRefused(language: "en" | "es") {
+async function allowedButRefused() {
   mockLocationError(1)
   const status = await navigator.permissions.query({ name: "geolocation" })
   Object.assign(status, { state: "granted" })
-  render(<GetStarted signedIn={false} claim={vi.fn()} language={language} />)
+  render(<GetStarted signedIn={false} claim={vi.fn()} language="en" />)
   await act(async () => {})
 }
 
 test("a reload never opens the panel or an error, even when the device refuses", async () => {
-  await allowedButRefused("en")
+  await allowedButRefused()
   expect(screen.queryByRole("dialog")).toBeNull()
   const read = navigator.geolocation.watchPosition
   expect(read).not.toHaveBeenCalled()
@@ -443,8 +448,8 @@ test("a reload never opens the panel or an error, even when the device refuses",
   expect(screen.queryByRole("dialog")).toBeNull()
 })
 
-test("a tap on the button then says where to look, in the visitor's language", async () => {
-  await allowedButRefused("en")
+test("a tap on the button then says where to look", async () => {
+  await allowedButRefused()
   fireEvent.click(screen.getByRole("button", { name: "Anywhere" }))
   const use = await screen.findByRole("button", {
     name: "Use my current location",
@@ -455,16 +460,6 @@ test("a tap on the button then says where to look, in the visitor's language", a
     "Turn on location for this browser in your device settings and reload, or pick a city."
   )
   expect(use.isConnected).toBe(true)
-  cleanup()
-
-  await allowedButRefused("es")
-  fireEvent.click(screen.getByRole("button", { name: "En cualquier lugar" }))
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Usar mi ubicación actual" })
-  )
-  expect((await screen.findByRole("alert")).textContent).toBe(
-    "Activa la ubicación del navegador en los ajustes del dispositivo y recarga, o elige una ciudad."
-  )
 })
 
 test("permission changes update the open panel and remove the listener on unmount", async () => {
@@ -558,24 +553,25 @@ test("business searches wait for a selected area", async () => {
   expect(search.searchBusinesses).not.toHaveBeenCalled()
 })
 
-test("Spanish location success uses the existing translated pill", async () => {
-  mockLocation("granted")
-  render(<GetStarted signedIn={false} claim={vi.fn()} language="es" />)
-  fireEvent.focus(screen.getByRole("searchbox"))
-  expect(
-    await screen.findByRole("button", { name: /Cerca de mí/ })
-  ).toBeTruthy()
-})
-
 test("changing language translates an already selected current location", async () => {
   mockLocation("granted")
-  const view = render(
-    <GetStarted signedIn={false} claim={vi.fn()} language="en" />
+  // The page's words, with "Near me" as another language would have it.
+  const inWords = (nearMe: string) => (
+    <NextIntlClientProvider
+      locale="en-US"
+      timeZone="UTC"
+      messages={
+        { ...messages, onboarding: { ...messages.onboarding, nearMe } } as typeof messages
+      }
+    >
+      <GetStarted signedIn={false} claim={vi.fn()} language="en" />
+    </NextIntlClientProvider>
   )
+  const view = renderUi(inWords(messages.onboarding.nearMe))
   fireEvent.focus(screen.getByRole("searchbox"))
   await screen.findByRole("button", { name: /Near me/ })
-  view.rerender(<GetStarted signedIn={false} claim={vi.fn()} language="es" />)
-  expect(screen.getByRole("button", { name: /Cerca de mí/ })).toBeTruthy()
+  view.rerender(inWords("Nearby, translated"))
+  expect(screen.getByRole("button", { name: /Nearby, translated/ })).toBeTruthy()
 })
 
 test("unmount retires background location callbacks", async () => {

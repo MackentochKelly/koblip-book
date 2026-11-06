@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 
 import { ConnectDone } from "@/features/dashboard/components/connect-done"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import {
   GOOGLE_CONNECT_CHANNEL,
   GOOGLE_CONNECT_RESULTS,
@@ -10,7 +10,8 @@ import {
 } from "@/types/google-calendar-connect"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).integrations.googleCalendar.name }
+  const t = await getTranslations("owner.integrations")
+  return { title: t("googleCalendar.name") }
 }
 
 type Props = {

@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, expect, test, vi } from "vitest"
 
+import { WithWords } from "@/i18n/testing"
+
 const { actions, toast } = vi.hoisted(() => ({
   actions: { setAutomationOn: vi.fn(), saveAutomation: vi.fn() },
   toast: { success: vi.fn(), error: vi.fn() },
@@ -51,13 +53,15 @@ const welcome = (on = false): Automation => ({
 
 function show(automation: Automation, ownNumber = true) {
   render(
-    <WhatsappFlows
-      businessId="b1"
-      businessName="Davida Salon"
-      automations={[automation]}
-      ownNumber={ownNumber}
-      limits={{ maxBody: 1024, maxListBody: 4096, maxButtons: 3, maxButtonLabel: 20 }}
-    />
+    <WithWords>
+      <WhatsappFlows
+        businessId="b1"
+        businessName="Davida Salon"
+        automations={[automation]}
+        ownNumber={ownNumber}
+        limits={{ maxBody: 1024, maxListBody: 4096, maxButtons: 3, maxButtonLabel: 20 }}
+      />
+    </WithWords>
   )
 }
 

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
@@ -41,7 +42,6 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { noAutofill } from "@/lib/no-autofill"
 import {
   POLICY_POINT_ICONS,
@@ -67,9 +67,9 @@ export function PolicyPointsSection({
   businessId: string
   points: OwnerPolicyPoint[]
 }) {
-  const m = useOwnerMessages()
-  const t = m.settings.policies.points
-  const c = m.catalog.common
+  const settings = useTranslations("owner.settings")
+  const t = useTranslations("owner.settings.policies.points")
+  const c = useTranslations("owner.catalog.common")
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   // The point being edited, "new" while adding, null when closed.
@@ -109,13 +109,13 @@ export function PolicyPointsSection({
       ).catch(() => null)
       if (result?.ok) {
         setEditing(null)
-        toast.success(m.settings.saved)
+        toast.success(settings("saved"))
         router.refresh()
       } else {
         toast.error(
           result?.error === "limit"
-            ? t.limit(POLICY_RULES.maxPoints)
-            : m.settings.policies.saveFailed
+            ? t("limit", { max: POLICY_RULES.maxPoints })
+            : settings("policies.saveFailed")
         )
       }
     })
@@ -127,37 +127,37 @@ export function PolicyPointsSection({
         () => null
       )
       if (result?.ok) {
-        toast.success(t.removed)
+        toast.success(t("removed"))
         router.refresh()
       } else {
-        toast.error(c.failed)
+        toast.error(c("failed"))
       }
     })
 
   return (
     <PageSection
       id="policy-points"
-      title={t.title}
+      title={t("title")}
       action={
         <Button
           variant="outline"
           onClick={() => open("new")}
           disabled={full}
-          title={full ? t.limit(POLICY_RULES.maxPoints) : undefined}
+          title={full ? t("limit", { max: POLICY_RULES.maxPoints }) : undefined}
         >
           <PlusIcon data-icon="inline-start" />
-          {t.add}
+          {t("add")}
         </Button>
       }
     >
-      <p className="-mt-2 text-sm text-muted-foreground">{t.hint}</p>
+      <p className="-mt-2 text-sm text-muted-foreground">{t("hint")}</p>
       {points.length === 0 ? (
         <Empty className="border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <InfoIcon />
             </EmptyMedia>
-            <EmptyTitle>{t.empty}</EmptyTitle>
+            <EmptyTitle>{t("empty")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : (
@@ -173,10 +173,10 @@ export function PolicyPointsSection({
               </ItemContent>
               <ItemActions>
                 <Button variant="outline" onClick={() => open(point)}>
-                  {c.edit}
+                  {c("edit")}
                 </Button>
                 <DropdownMenu>
-                  <MoreMenuTrigger label={c.more} />
+                  <MoreMenuTrigger label={c("more")} />
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
                       variant="destructive"
@@ -184,7 +184,7 @@ export function PolicyPointsSection({
                       onClick={() => setRemoving(point)}
                     >
                       <Trash2Icon />
-                      {c.remove}
+                      {c("remove")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -203,7 +203,7 @@ export function PolicyPointsSection({
       <ResponsivePanel
         open={editing !== null}
         onClose={() => setEditing(null)}
-        title={editing === "new" ? t.addPoint : t.editPoint}
+        title={editing === "new" ? t("addPoint") : t("editPoint")}
         footer={
           <Button
             type="submit"
@@ -212,7 +212,7 @@ export function PolicyPointsSection({
             disabled={pending || !changed}
           >
             {pending && <Spinner data-icon="inline-start" />}
-            {m.settings.save}
+            {settings("save")}
           </Button>
         }
       >
@@ -220,7 +220,7 @@ export function PolicyPointsSection({
           <form id={POINT_FORM} onSubmit={submit} noValidate>
             <FieldGroup>
               <Field>
-                <FieldLabel id="policy-point-picture">{t.picture}</FieldLabel>
+                <FieldLabel id="policy-point-picture">{t("picture")}</FieldLabel>
                 <ToggleGroup
                   variant="outline"
                   aria-labelledby="policy-point-picture"
@@ -237,8 +237,8 @@ export function PolicyPointsSection({
                     <ToggleGroupItem
                       key={item}
                       value={item}
-                      aria-label={t.pictures[item]}
-                      title={t.pictures[item]}
+                      aria-label={t(`pictures.${item}`)}
+                      title={t(`pictures.${item}`)}
                       className={TOUCH_AREA}
                     >
                       <PolicyPointIcon icon={item} />
@@ -248,7 +248,7 @@ export function PolicyPointsSection({
               </Field>
               <Field data-invalid={invalid === "title" || undefined}>
                 <FieldLabel htmlFor="policy-point-title">
-                  {t.pointTitle}
+                  {t("pointTitle")}
                 </FieldLabel>
                 <Input
                   {...noAutofill("policy_point_title")}
@@ -258,10 +258,10 @@ export function PolicyPointsSection({
                   maxLength={POLICY_RULES.maxPointTitle}
                   aria-invalid={invalid === "title" || undefined}
                 />
-                {invalid === "title" && <FieldError>{t.addTitle}</FieldError>}
+                {invalid === "title" && <FieldError>{t("addTitle")}</FieldError>}
               </Field>
               <Field data-invalid={invalid === "body" || undefined}>
-                <FieldLabel htmlFor="policy-point-text">{t.pointText}</FieldLabel>
+                <FieldLabel htmlFor="policy-point-text">{t("pointText")}</FieldLabel>
                 <Textarea
                   {...noAutofill("policy_point_text")}
                   id="policy-point-text"
@@ -272,7 +272,7 @@ export function PolicyPointsSection({
                   aria-invalid={invalid === "body" || undefined}
                 />
                 {invalid === "body" ? (
-                  <FieldError>{t.addText}</FieldError>
+                  <FieldError>{t("addText")}</FieldError>
                 ) : (
                   <FieldDescription>
                     {body.length}/{POLICY_RULES.maxPointBody}

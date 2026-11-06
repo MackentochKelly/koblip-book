@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import {
   ChevronRightIcon,
   MailIcon,
@@ -30,7 +31,6 @@ import { toast } from "sonner"
 import { disconnectChat, refreshChatMessages } from "../api/chat-connection"
 import { disconnectGoogleCalendar } from "../api/google-calendar-actions"
 import { useConnectWindow } from "../hooks/use-connect-window"
-import { useOwnerMessages } from "../i18n/provider"
 import type { ChatConnection } from "../types/chat-connection"
 import type { GoogleCalendarConnection } from "../types/google-calendar"
 import type { Sender } from "@/types/whatsapp"
@@ -73,8 +73,9 @@ export function IntegrationsView({
   // The team, for whose bookings Google busy times block.
   team: { id: string; name: string }[]
 }) {
-  const m = useOwnerMessages()
-  const t = m.integrations
+  const t = useTranslations("owner.integrations")
+  const whatsapp = useTranslations("owner.whatsapp")
+  const shell = useTranslations("owner.shell")
   const router = useRouter()
   const chatWindow = useConnectWindow()
   const googleWindow = useConnectWindow()
@@ -93,9 +94,9 @@ export function IntegrationsView({
       setChatWaiting(false)
       if (next === "connected") {
         router.refresh()
-        toast(t.koblipChat.connectedToast)
+        toast(t("koblipChat.connectedToast"))
       } else if (next === "failed") {
-        toast.error(t.koblipChat.failed)
+        toast.error(t("koblipChat.failed"))
       }
     }
     if (result) {
@@ -116,9 +117,9 @@ export function IntegrationsView({
       setGoogleWaiting(false)
       if (next === "connected") {
         router.refresh()
-        toast(t.googleCalendar.connectedToast)
+        toast(t("googleCalendar.connectedToast"))
       } else {
-        toast.error(next === "denied" ? t.googleCalendar.denied : t.googleCalendar.failed)
+        toast.error(next === "denied" ? t("googleCalendar.denied") : t("googleCalendar.failed"))
       }
     }
     if (googleResult) {
@@ -160,25 +161,25 @@ export function IntegrationsView({
   const chatRow = (
     <IntegrationRow
       logo="/brands/koblip-chat.png"
-      name={t.koblipChat.name}
+      name={t("koblipChat.name")}
       description={
         !connection
-          ? t.koblipChat.description
+          ? t("koblipChat.description")
           : connection.needsReconnect
-            ? t.koblipChat.reconnectHint
+            ? t("koblipChat.reconnectHint")
             : connection.messages === "ready"
-              ? t.koblipChat.workspace(connection.workspaceName)
-              : t.koblipChat.messages[connection.messages]
+              ? t("koblipChat.workspace", { name: connection.workspaceName })
+              : t(`koblipChat.messages.${connection.messages}`)
       }
       action={
         connection && !connection.needsReconnect ? (
           <Button variant="outline" onClick={() => setManagingWhatsapp(true)}>
-            {t.koblipChat.manage}
+            {t("koblipChat.manage")}
           </Button>
         ) : (
           <Button variant="outline" onClick={connectChat} disabled={waiting}>
             {waiting && <Spinner data-icon="inline-start" />}
-            {connection ? t.koblipChat.reconnect : t.koblipChat.connect}
+            {connection ? t("koblipChat.reconnect") : t("koblipChat.connect")}
             {!waiting && <ChevronRightIcon data-icon="inline-end" />}
           </Button>
         )
@@ -190,20 +191,20 @@ export function IntegrationsView({
   const googleRow = (
     <IntegrationRow
       logo="/brands/google-calendar.png"
-      name={t.googleCalendar.name}
+      name={t("googleCalendar.name")}
       description={
         !googleCalendar
-          ? t.googleCalendar.description
+          ? t("googleCalendar.description")
           : googleCalendar.needsReconnect
-            ? t.googleCalendar.reconnectHint
+            ? t("googleCalendar.reconnectHint")
             : googleCalendar.syncFailed
-              ? t.googleCalendar.syncFailed
-              : t.googleCalendar.account(googleCalendar.googleEmail)
+              ? t("googleCalendar.syncFailed")
+              : t("googleCalendar.account", { email: googleCalendar.googleEmail })
       }
       action={
         googleUsable ? (
           <Button variant="outline" onClick={() => setManagingGoogle(true)}>
-            {t.googleCalendar.manage}
+            {t("googleCalendar.manage")}
           </Button>
         ) : (
           <Button
@@ -217,7 +218,7 @@ export function IntegrationsView({
             disabled={googleWindow.waiting}
           >
             {googleWindow.waiting && <Spinner data-icon="inline-start" />}
-            {googleCalendar ? t.googleCalendar.reconnect : t.googleCalendar.connect}
+            {googleCalendar ? t("googleCalendar.reconnect") : t("googleCalendar.connect")}
             {!googleWindow.waiting && <ChevronRightIcon data-icon="inline-end" />}
           </Button>
         )
@@ -229,11 +230,11 @@ export function IntegrationsView({
   const whatsappRow = sender && (
     <IntegrationRow
       logo="/brands/whatsapp-glyph-green.svg"
-      name={t.whatsapp.name}
-      description={m.whatsapp.sendingFrom[sender]}
+      name={t("whatsapp.name")}
+      description={whatsapp(`sendingFrom.${sender}`)}
       action={
         <Button variant="outline" onClick={() => setManagingWhatsapp(true)}>
-          {t.whatsapp.manage}
+          {t("whatsapp.manage")}
         </Button>
       }
     />
@@ -254,16 +255,16 @@ export function IntegrationsView({
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">
-        {m.shell.nav.integrations}
+        {shell("nav.integrations")}
       </h1>
       <ViewTabs
         views={[
-          { id: "connected" as const, label: t.tabs.connected },
-          { id: "all" as const, label: t.tabs.all },
+          { id: "connected" as const, label: t("tabs.connected") },
+          { id: "all" as const, label: t("tabs.all") },
         ]}
         value={view}
         onChange={setView}
-        ariaLabel={t.tabs.label}
+        ariaLabel={t("tabs.label")}
         listClassName="w-full md:w-fit"
       />
 
@@ -272,11 +273,11 @@ export function IntegrationsView({
           {connectedRows.length === 0 ? (
             <Empty className="border">
               <EmptyHeader>
-                <EmptyTitle>{t.noneConnected}</EmptyTitle>
+                <EmptyTitle>{t("noneConnected")}</EmptyTitle>
               </EmptyHeader>
               <EmptyContent>
                 <Button variant="outline" onClick={() => setView("all")}>
-                  {t.seeAllApps}
+                  {t("seeAllApps")}
                 </Button>
               </EmptyContent>
             </Empty>
@@ -284,22 +285,22 @@ export function IntegrationsView({
             <ItemGroup className="gap-3">{connectedRows}</ItemGroup>
           )}
           {suggestedRows.length > 0 && (
-            <PageSection id="suggested" title={t.suggested}>
+            <PageSection id="suggested" title={t("suggested")}>
               <ItemGroup className="gap-3">{suggestedRows}</ItemGroup>
             </PageSection>
           )}
         </>
       ) : (
         <>
-          <PageSection id="messaging" title={t.messaging}>
+          <PageSection id="messaging" title={t("messaging")}>
             <ItemGroup className="gap-3">
               {/* WhatsApp's own file from the official pack, never recoloured
                   (meta.com/brand/resources/whatsapp/whatsapp-brand). */}
               <IntegrationRow
                 logo="/brands/whatsapp-glyph-green.svg"
-                name={t.whatsapp.name}
-                description={t.whatsapp.description}
-                action={<Badge variant="secondary">{t.soon}</Badge>}
+                name={t("whatsapp.name")}
+                description={t("whatsapp.description")}
+                action={<Badge variant="secondary">{t("soon")}</Badge>}
               />
               {chatRow}
               {/* Texts go through Twilio: its own app icon, as twilio.com uses
@@ -307,104 +308,104 @@ export function IntegrationsView({
               <IntegrationRow
                 logo="/brands/twilio.png"
                 square
-                name={t.sms.name}
-                description={t.sms.description}
-                action={<Badge variant="secondary">{t.soon}</Badge>}
+                name={t("sms.name")}
+                description={t("sms.description")}
+                action={<Badge variant="secondary">{t("soon")}</Badge>}
               />
               {/* Email has no brand: an app-style tile. */}
               <IntegrationRow
                 logo={MailIcon}
-                name={t.email.name}
-                description={t.email.description}
-                action={<Badge variant="secondary">{t.soon}</Badge>}
+                name={t("email.name")}
+                description={t("email.description")}
+                action={<Badge variant="secondary">{t("soon")}</Badge>}
               />
             </ItemGroup>
           </PageSection>
-          <PageSection id="social" title={t.social}>
+          <PageSection id="social" title={t("social")}>
             <ItemGroup className="gap-3">
               {/* Instagram's and Facebook's own icons, from their own sites. */}
               <IntegrationRow
                 logo="/brands/instagram.png"
-                name={t.instagram.name}
-                description={t.instagram.description}
-                action={<Badge variant="secondary">{t.soon}</Badge>}
+                name={t("instagram.name")}
+                description={t("instagram.description")}
+                action={<Badge variant="secondary">{t("soon")}</Badge>}
               />
               <IntegrationRow
                 logo="/brands/facebook.png"
-                name={t.facebook.name}
-                description={t.facebook.description}
-                action={<Badge variant="secondary">{t.soon}</Badge>}
+                name={t("facebook.name")}
+                description={t("facebook.description")}
+                action={<Badge variant="secondary">{t("soon")}</Badge>}
               />
               {/* Google's own Business Profile icon, from Google's servers. */}
               <IntegrationRow
                 logo="/brands/google-business.png"
-                name={t.googleBusiness.name}
-                description={t.googleBusiness.description}
-                action={<Badge variant="secondary">{t.soon}</Badge>}
+                name={t("googleBusiness.name")}
+                description={t("googleBusiness.description")}
+                action={<Badge variant="secondary">{t("soon")}</Badge>}
               />
             </ItemGroup>
           </PageSection>
-          <PageSection id="calendar" title={t.calendar}>
+          <PageSection id="calendar" title={t("calendar")}>
             <ItemGroup className="gap-3">
               {googleRow}
               {/* Apple's own Calendar app icon, unaltered. */}
               <IntegrationRow
                 logo="/brands/apple-calendar.png"
-                name={t.appleCalendar.name}
-                description={t.appleCalendar.description}
-                action={<Badge variant="secondary">{t.soon}</Badge>}
+                name={t("appleCalendar.name")}
+                description={t("appleCalendar.description")}
+                action={<Badge variant="secondary">{t("soon")}</Badge>}
               />
               {/* Outlook's icon from Microsoft's own Office web server. */}
               <IntegrationRow
                 logo="/brands/outlook.svg"
-                name={t.outlook.name}
-                description={t.outlook.description}
-                action={<Badge variant="secondary">{t.soon}</Badge>}
+                name={t("outlook.name")}
+                description={t("outlook.description")}
+                action={<Badge variant="secondary">{t("soon")}</Badge>}
               />
             </ItemGroup>
           </PageSection>
-          <PageSection id="payments" title={t.payments}>
+          <PageSection id="payments" title={t("payments")}>
             <ItemGroup className="gap-3">
               {/* Stripe's own app icon, as stripe.com uses it; a square, so
                   its corners are rounded like the other app icons. */}
               <IntegrationRow
                 logo="/brands/stripe.svg"
                 square
-                name={t.stripe.name}
-                description={t.stripe.description}
-                action={<Badge variant="secondary">{t.soon}</Badge>}
+                name={t("stripe.name")}
+                description={t("stripe.description")}
+                action={<Badge variant="secondary">{t("soon")}</Badge>}
               />
             </ItemGroup>
           </PageSection>
-          <PageSection id="reviews" title={t.reviews}>
+          <PageSection id="reviews" title={t("reviews")}>
             <ItemGroup className="gap-3">
               {/* Google's own "G", colour on light and its dark-mode file. */}
               <IntegrationRow
                 logo="/brands/google-g-light.png"
                 logoDark="/brands/google-g-dark.png"
-                name={t.googleReviews.name}
-                description={t.googleReviews.description}
-                action={<Badge variant="secondary">{t.soon}</Badge>}
+                name={t("googleReviews.name")}
+                description={t("googleReviews.description")}
+                action={<Badge variant="secondary">{t("soon")}</Badge>}
               />
             </ItemGroup>
           </PageSection>
-          <PageSection id="tracking" title={t.tracking}>
+          <PageSection id="tracking" title={t("tracking")}>
             <ItemGroup className="gap-3">
               {/* Meta's symbol, from the logo in its brand pack: colour on
                   light, white on dark. */}
               <IntegrationRow
                 logo="/brands/meta-symbol.png"
                 logoDark="/brands/meta-symbol-white.png"
-                name={t.metaPixel.name}
-                description={t.metaPixel.description}
-                action={<Badge variant="secondary">{t.soon}</Badge>}
+                name={t("metaPixel.name")}
+                description={t("metaPixel.description")}
+                action={<Badge variant="secondary">{t("soon")}</Badge>}
               />
               {/* Google's own Analytics icon, from Google's servers. */}
               <IntegrationRow
                 logo="/brands/google-analytics.svg"
-                name={t.googleAnalytics.name}
-                description={t.googleAnalytics.description}
-                action={<Badge variant="secondary">{t.soon}</Badge>}
+                name={t("googleAnalytics.name")}
+                description={t("googleAnalytics.description")}
+                action={<Badge variant="secondary">{t("soon")}</Badge>}
               />
             </ItemGroup>
           </PageSection>
@@ -444,20 +445,20 @@ export function IntegrationsView({
       <ConfirmRemove
         name={
           disconnecting === "chat"
-            ? t.koblipChat.name
+            ? t("koblipChat.name")
             : disconnecting === "google"
-              ? t.googleCalendar.name
+              ? t("googleCalendar.name")
               : null
         }
         onClose={() => setDisconnecting(null)}
         onConfirm={async () => {
           if (disconnecting === "google") {
             const result = await disconnectGoogleCalendar(businessId, removeGoogleEvents)
-            if (result.eventsRemoved) toast(t.googleCalendar.disconnected)
-            else toast.error(t.googleCalendar.removeEventsFailed)
+            if (result.eventsRemoved) toast(t("googleCalendar.disconnected"))
+            else toast.error(t("googleCalendar.removeEventsFailed"))
           } else {
             await disconnectChat(businessId)
-            toast(t.koblipChat.disconnected)
+            toast(t("koblipChat.disconnected"))
           }
           router.refresh()
         }}
@@ -530,7 +531,7 @@ function IntegrationRow({
   description: string
   action: React.ReactNode
 }) {
-  const t = useOwnerMessages().integrations
+  const t = useTranslations("owner.integrations")
   return (
     <Item variant="outline">
       <ItemMedia>
@@ -544,7 +545,7 @@ function IntegrationRow({
             title={name}
             text={description}
             media={<Logo logo={logo} logoDark={logoDark} square={square} className="size-16" />}
-            label={t.about(name)}
+            label={t("about", { name })}
           />
         </ItemTitle>
         <ItemDescription>{description}</ItemDescription>

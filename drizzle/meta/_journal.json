@@ -400,6 +400,13 @@
       "when": 1793982622380,
       "tag": "0056_move_translations",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "6",
+      "when": 1793991330912,
+      "tag": "0057_interface_spanish",
+      "breakpoints": true
     }
   ]
 }

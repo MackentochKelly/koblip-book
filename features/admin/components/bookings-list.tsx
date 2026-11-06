@@ -1,3 +1,5 @@
+import { useLocale, useTranslations } from "next-intl"
+
 import { Badge } from "@/components/ui/badge"
 import {
   Item,
@@ -8,20 +10,21 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import type { AdminBooking } from "../api/queries"
-import type { AdminMessages } from "../i18n"
+
+// A booking's status words, by the statuses a booking has.
+const STATUSES = ["confirmed", "completed", "no_show", "cancelled"] as const
 
 // The newest bookings across every business, each at its business's own
 // clock time.
-export function BookingsList({
-  bookings,
-  m,
-}: {
-  bookings: AdminBooking[]
-  m: AdminMessages
-}) {
-  const t = m.bookings
+export function BookingsList({ bookings }: { bookings: AdminBooking[] }) {
+  const t = useTranslations("admin.bookings")
+  const locale = useLocale()
+  const statusOf = (booking: AdminBooking) => {
+    const status = STATUSES.find((item) => item === booking.status)
+    return status ? t(`status.${status}`) : booking.status
+  }
   const when = (booking: AdminBooking) =>
-    new Intl.DateTimeFormat(m.locale, {
+    new Intl.DateTimeFormat(locale, {
       dateStyle: "medium",
       timeStyle: "short",
       timeZone: booking.timezone,
@@ -46,7 +49,7 @@ export function BookingsList({
                     : "outline"
               }
             >
-              {t.status[booking.status] ?? booking.status}
+              {statusOf(booking)}
             </Badge>
           </ItemActions>
         </Item>

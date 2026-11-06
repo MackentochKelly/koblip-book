@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react"
 import Image from "next/image"
+import { useTranslations } from "next-intl"
 import { useRef, useState } from "react"
 
 import {
@@ -11,10 +12,14 @@ import {
   POP,
   ReplayButton,
   RISE,
+  SAMPLE_BUSINESS,
+  SAMPLE_PEOPLE,
   SAMPLE_PHOTO,
+  SAMPLE_SERVICES,
   SAMPLE_TEAM,
   Scene,
   TapMark,
+  useSampleLocale,
 } from "@/components/feature-preview"
 import { GoogleMark, googleButtonClassName } from "@/components/google-mark"
 import { Rating } from "@/components/rating"
@@ -44,12 +49,15 @@ import { formatClock } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
 import { initials } from "@/lib/initials"
 import { useStoryLoop } from "@/hooks/use-story-loop"
-import type { Messages } from "@/lib/i18n"
 import { SHOWCASE_LOOP } from "@/lib/showcase-rules"
 import { cn } from "@/lib/utils"
 
-type Words = Messages["home"]["steps"]["sample"]
-type Shared = Messages["home"]["features"]["sample"]
+// The sample's owner, address, link and the AI that builds the page: the
+// same in every language.
+const SAMPLE_OWNER = "Lucía Gómez"
+const SAMPLE_ADDRESS = "Calle Mayor 12, Madrid"
+const SAMPLE_LINK = "book.koblip.com/lumen"
+const SAMPLE_BUILDER = "Muse"
 
 // The pictures on the "How it works" cards, made like FeaturePreview's:
 // a small piece of the real app on a still colour wash, tap to play.
@@ -62,21 +70,13 @@ const STEPS = {
 
 export type StepPreviewName = keyof typeof STEPS
 
-export function StepPreview({
-  name,
-  words,
-  shared,
-}: {
-  name: StepPreviewName
-  words: Words
-  shared: Shared
-}) {
+export function StepPreview({ name }: { name: StepPreviewName }) {
   return (
     <Scene {...STEPS[name]}>
-      {name === "find" && <FindPreview words={words} shared={shared} />}
-      {name === "check" && <CheckPreview words={words} shared={shared} />}
-      {name === "share" && <SharePreview words={words} shared={shared} />}
-      {name === "signIn" && <SignInPreview words={words} />}
+      {name === "find" && <FindPreview />}
+      {name === "check" && <CheckPreview />}
+      {name === "share" && <SharePreview />}
+      {name === "signIn" && <SignInPreview />}
     </Scene>
   )
 }
@@ -86,8 +86,10 @@ type FindPhase = "typing" | "result" | "tap" | "page"
 // Plays by itself (useStoryLoop): the name types in, the Google Maps
 // result shows, a tap lands on it and the business page appears. Rests on
 // the search with its result; Search plays it again.
-function FindPreview({ words, shared }: { words: Words; shared: Shared }) {
-  const name = shared.business
+function FindPreview() {
+  const t = useTranslations("public.home.steps.sample")
+  const locale = useSampleLocale()
+  const name = SAMPLE_BUSINESS
   const box = useRef<HTMLDivElement>(null)
   const [typed, setTyped] = useState(name.length)
   const [phase, setPhase] = useState<FindPhase>("result")
@@ -133,7 +135,7 @@ function FindPreview({ words, shared }: { words: Words; shared: Shared }) {
                   <Rating
                     rating={4.9}
                     reviewCount={128}
-                    locale={shared.locale}
+                    locale={locale}
                   />
                 </div>
               </motion.div>
@@ -149,7 +151,7 @@ function FindPreview({ words, shared }: { words: Words; shared: Shared }) {
                   <InputGroupAddon align="inline-end">
                     <InputGroupButton
                       size="icon-xs"
-                      aria-label={words.search}
+                      aria-label={t("search")}
                       onClick={replay}
                     >
                       <SearchIcon />
@@ -167,7 +169,7 @@ function FindPreview({ words, shared }: { words: Words; shared: Shared }) {
                         <div className="flex min-w-0 flex-col">
                           <span className="truncate font-medium">{name}</span>
                           <span className="truncate text-xs text-muted-foreground">
-                            {words.address}
+                            {SAMPLE_ADDRESS}
                           </span>
                         </div>
                         {phase === "tap" && <TapMark ms={time.tap} />}
@@ -197,11 +199,13 @@ const CHECK_ORDER: CheckPhase[] = [
 // A small copy of the page building itself (useStoryLoop) while Muse, the
 // AI, works: placeholders, then the business's photo, the name and
 // rating, the services and prices one by one and the team, then "Ready". Rests on the finished page; tap the picture to play it again.
-function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
-  const services = words.services
+function CheckPreview() {
+  const t = useTranslations("public.home.steps.sample")
+  const locale = useSampleLocale()
+  const services = SAMPLE_SERVICES
   const box = useRef<HTMLDivElement>(null)
   const [phase, setPhase] = useState<CheckPhase>("team")
-  const [shown, setShown] = useState(services.length)
+  const [shown, setShown] = useState<number>(services.length)
   const [ready, setReady] = useState(true)
   const time = SHOWCASE_LOOP.check
   const replay = useStoryLoop(
@@ -237,7 +241,7 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
 
   return (
     <>
-      <ReplayButton label={words.replay} onClick={replay} />
+      <ReplayButton label={t("replay")} onClick={replay} />
       <div ref={box} className="relative w-full max-w-60">
         <Box>
           <div className="flex flex-col gap-2 px-(--card-spacing)">
@@ -257,9 +261,9 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
                     className="flex items-center justify-between gap-2"
                   >
                     <span className="truncate font-medium">
-                      {shared.business}
+                      {SAMPLE_BUSINESS}
                     </span>
-                    <Rating rating={4.9} locale={shared.locale} />
+                    <Rating rating={4.9} locale={locale} />
                   </motion.div>
                 ) : (
                   <Skeleton className="h-4 w-28" />
@@ -282,17 +286,17 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
               {services.map((service, index) =>
                 reached("services") && index < shown ? (
                   <motion.div
-                    key={service.name}
+                    key={service.key}
                     {...RISE}
                     className="flex h-4 items-center justify-between gap-2"
                   >
-                    <span>{service.name}</span>
+                    <span>{t(`services.${service.key}`)}</span>
                     <span className="text-muted-foreground tabular-nums">
-                      {formatPrice(service.priceMinor, "EUR", shared.locale)}
+                      {formatPrice(service.priceMinor, "EUR", locale)}
                     </span>
                   </motion.div>
                 ) : (
-                  <Skeleton key={service.name} className="h-4 w-full" />
+                  <Skeleton key={service.key} className="h-4 w-full" />
                 )
               )}
             </div>
@@ -306,7 +310,7 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
               <motion.span key="ready" {...POP} className="flex">
                 <Badge className="bg-success text-success-foreground">
                   <CheckIcon />
-                  {words.ready}
+                  {t("ready")}
                 </Badge>
               </motion.span>
             ) : (
@@ -328,7 +332,7 @@ function CheckPreview({ words, shared }: { words: Words; shared: Shared }) {
                     data-icon="inline-start"
                     className="hidden dark:block"
                   />
-                  {words.building}
+                  {SAMPLE_BUILDER}
                 </Badge>
               </motion.span>
             )}
@@ -359,7 +363,9 @@ const SHARE_SLIDE = "-6.5rem"
 // share row slides to show more people and one is picked, then that
 // person's booking comes in, with confetti. Rests on the link; Copy plays
 // it again. A sample, so nothing goes to the clipboard.
-function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
+function SharePreview() {
+  const t = useTranslations("public.home.steps.sample")
+  const locale = useSampleLocale()
   const box = useRef<HTMLDivElement>(null)
   const [phase, setPhase] = useState<SharePhase>("link")
   const time = SHOWCASE_LOOP.share
@@ -389,7 +395,7 @@ function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
   const copied = phase === "copied"
   const sharing = ["share", "scroll", "tapPerson", "picked"].includes(phase)
   const slid = phase !== "share"
-  const person = words.people[PICKED]
+  const person = SAMPLE_PEOPLE[PICKED]
 
   return (
     <div ref={box} className="w-full max-w-60">
@@ -410,18 +416,18 @@ function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
                 </Avatar>
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate font-medium">
-                    {words.newBooking}
+                    {t("newBooking")}
                   </span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {person.split(" ")[0]} · {words.bookingService} ·{" "}
-                    {formatClock(words.bookingTime, shared.locale)}
+                    {person.split(" ")[0]} · {t("bookingService")} ·{" "}
+                    {formatClock(t("bookingTime"), locale)}
                   </span>
                 </div>
               </motion.div>
             ) : sharing ? (
               <motion.div key="share" {...POP} className="flex flex-col gap-2">
                 <span className="text-xs text-muted-foreground">
-                  {words.share}
+                  {t("share")}
                 </span>
                 <div className="-mx-1 overflow-hidden px-1 py-1">
                   <motion.div
@@ -439,7 +445,7 @@ function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
                         className="object-contain p-2"
                       />
                     </Avatar>
-                    {words.people.map((name, index) => (
+                    {SAMPLE_PEOPLE.map((name, index) => (
                       <span key={name} className="relative flex">
                         <Avatar
                           size="lg"
@@ -463,7 +469,7 @@ function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
             ) : (
               <motion.div key="link" {...POP} className="flex flex-col gap-3">
                 <span className="truncate text-sm text-muted-foreground">
-                  {words.link}
+                  {SAMPLE_LINK}
                 </span>
                 <Button
                   size="sm"
@@ -481,7 +487,7 @@ function SharePreview({ words, shared }: { words: Words; shared: Shared }) {
                       className="flex items-center gap-1"
                     >
                       {copied && <CheckIcon />}
-                      {copied ? words.copied : words.copy}
+                      {copied ? t("copied") : t("copy")}
                     </motion.span>
                   </AnimatePresence>
                   {phase === "tapCopy" && (
@@ -501,7 +507,8 @@ type SignInPhase = "button" | "tap" | "loading" | "done"
 
 // Signing in (useStoryLoop): "Continue with Google" is tapped, loads (the
 // real button's spinner) and the owner is in, free. Rests on the button; the button plays it again.
-function SignInPreview({ words }: { words: Words }) {
+function SignInPreview() {
+  const t = useTranslations("public.home.steps.sample")
   const box = useRef<HTMLDivElement>(null)
   const [phase, setPhase] = useState<SignInPhase>("button")
   const time = SHOWCASE_LOOP.signIn
@@ -538,9 +545,9 @@ function SignInPreview({ words }: { words: Words }) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex min-w-0 flex-col">
-                  <span className="truncate font-medium">{words.owner}</span>
+                  <span className="truncate font-medium">{SAMPLE_OWNER}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {words.signedIn}
+                    {t("signedIn")}
                   </span>
                 </div>
               </motion.div>
@@ -556,7 +563,7 @@ function SignInPreview({ words }: { words: Words }) {
                   ) : (
                     <GoogleMark />
                   )}
-                  {words.google}
+                  {t("google")}
                   {phase === "tap" && (
                     <TapMark ms={time.tap} className="left-1/2" />
                   )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import {
@@ -28,7 +29,6 @@ import {
   type ChatConnectMessage,
   type ChatConnectResult,
 } from "@/types/chat-connect"
-import { useAdminMessages } from "../i18n/provider"
 
 // Koblip's own Koblip Chat workspace, the number every business sends from
 // until it connects its own (K1). Connect opens Chat's consent page in a
@@ -44,7 +44,7 @@ export function KoblipChatCard({
   // Passed in by the page (it lives with the Chat connection code).
   disconnect: () => Promise<{ ok: true }>
 }) {
-  const t = useAdminMessages().koblipChat
+  const t = useTranslations("admin.koblipChat")
   const router = useRouter()
   const [waiting, setWaiting] = useState(false)
   const [asking, setAsking] = useState(false)
@@ -57,9 +57,9 @@ export function KoblipChatCard({
       setWaiting(false)
       if (next === "connected") {
         router.refresh()
-        toast.success(t.connectedToast, { id: CHAT_CONNECT_CHANNEL })
+        toast.success(t("connectedToast"), { id: CHAT_CONNECT_CHANNEL })
       } else if (next === "failed") {
-        toast.error(t.failed, { id: CHAT_CONNECT_CHANNEL })
+        toast.error(t("failed"), { id: CHAT_CONNECT_CHANNEL })
       }
     }
     if (result) {
@@ -98,9 +98,9 @@ export function KoblipChatCard({
       const done = await disconnect().catch(() => null)
       if (done?.ok) {
         router.refresh()
-        toast.success(t.disconnectedToast)
+        toast.success(t("disconnectedToast"))
       } else {
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
   }
@@ -109,24 +109,24 @@ export function KoblipChatCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t.title}</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
         <CardDescription>
           {!connection
-            ? t.notConnected
+            ? t("notConnected")
             : connection.needsReconnect
-              ? t.reconnectNeeded(connection.workspaceName)
-              : t.connected(connection.workspaceName)}
+              ? t("reconnectNeeded", { workspace: connection.workspaceName })
+              : t("connected", { workspace: connection.workspaceName })}
         </CardDescription>
         <CardAction>
           {connection && !connection.needsReconnect ? (
             <Button variant="outline" disabled={busy} onClick={() => setAsking(true)}>
               {pending && <Spinner data-icon="inline-start" />}
-              {t.disconnect}
+              {t("disconnect")}
             </Button>
           ) : (
             <Button disabled={busy} onClick={connect}>
               {waiting && <Spinner data-icon="inline-start" />}
-              {connection ? t.reconnect : t.connect}
+              {connection ? t("reconnect") : t("connect")}
             </Button>
           )}
         </CardAction>
@@ -134,13 +134,13 @@ export function KoblipChatCard({
       <AlertDialog open={asking} onOpenChange={setAsking}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t.disconnectTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{t.disconnectText}</AlertDialogDescription>
+            <AlertDialogTitle>{t("disconnectTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("disconnectText")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={remove}>
-              {t.disconnect}
+              {t("disconnect")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

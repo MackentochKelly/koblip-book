@@ -1,5 +1,6 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
@@ -16,7 +17,6 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { formatDayShort, formatMonthDay } from "@/lib/format-booking-time"
-import { useOwnerMessages } from "../i18n/provider"
 
 // The grid always shows a few steps, even with no bookings yet.
 const MIN_TOP = 3
@@ -35,28 +35,28 @@ export function ComingUpCard({
   upcoming: number
   days: Array<{ date: string; bookings: number }>
 }) {
-  const m = useOwnerMessages()
-  const a = m.bookings.analytics
-  const number = new Intl.NumberFormat(m.locale)
+  const t = useTranslations("owner.bookings")
+  const locale = useLocale()
+  const number = new Intl.NumberFormat(locale)
   const config = {
-    bookings: { label: m.bookings.chart.series, color: "var(--chart-2)" },
+    bookings: { label: t("chart.series"), color: "var(--chart-2)" },
   } satisfies ChartConfig
   const counts = [
-    { label: a.today, value: today },
-    { label: a.tomorrow, value: days[1]?.bookings ?? 0 },
+    { label: t("analytics.today"), value: today },
+    { label: t("analytics.tomorrow"), value: days[1]?.bookings ?? 0 },
     {
-      label: a.next7,
+      label: t("analytics.next7"),
       value: days.slice(0, 7).reduce((sum, day) => sum + day.bookings, 0),
     },
-    { label: a.upcoming, value: upcoming },
+    { label: t("analytics.upcoming"), value: upcoming },
   ]
 
   return (
     <Card>
       {titled && (
         <CardHeader>
-          <CardTitle>{a.comingUp}</CardTitle>
-          <CardDescription>{a.nextTwoWeeks}</CardDescription>
+          <CardTitle>{t("analytics.comingUp")}</CardTitle>
+          <CardDescription>{t("analytics.nextTwoWeeks")}</CardDescription>
         </CardHeader>
       )}
       <CardContent className="flex flex-col gap-6">
@@ -79,7 +79,7 @@ export function ComingUpCard({
               axisLine={false}
               tickMargin={8}
               minTickGap={24}
-              tickFormatter={(date: string) => formatMonthDay(date, m.locale)}
+              tickFormatter={(date: string) => formatMonthDay(date, locale)}
             />
             <YAxis
               orientation="right"
@@ -97,7 +97,7 @@ export function ComingUpCard({
                   labelFormatter={(_, payload) => {
                     const date = payload[0]?.payload?.date
                     return typeof date === "string"
-                      ? formatDayShort(date, m.locale)
+                      ? formatDayShort(date, locale)
                       : ""
                   }}
                 />

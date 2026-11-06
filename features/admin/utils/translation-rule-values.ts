@@ -1,6 +1,6 @@
-import { formatDuration } from "@/lib/format-duration"
+import type { useTranslations } from "next-intl"
+
 import type { TranslationRuleKey } from "@/lib/translations/rules"
-import type { AdminMessages } from "../i18n"
 
 // How Admin → Translations → Rules shows and edits each rule. Typed by every
 // key, so a new rule in lib/translations/rules.ts must be placed here.
@@ -14,20 +14,29 @@ export const TRANSLATION_RULE_UNITS: Record<TranslationRuleKey, TranslationRuleU
   requestTexts: "count",
 }
 
-// A rule's value as words ("1 min, 5 min, 30 min", "50,000 characters").
+// Translations → Rules' words (useTranslations or getTranslations).
+export type TranslationRuleWords = ReturnType<
+  typeof useTranslations<"admin.translations.rules">
+>
+
+// A rule's value as words ("1 min, 5 min, 30 min", "50,000 characters"),
+// numbers as `locale` writes them and lengths of time as `formatDuration`
+// does (useFormatDuration).
 export function formatTranslationRule(
   key: TranslationRuleKey,
   value: unknown,
-  m: AdminMessages
+  t: TranslationRuleWords,
+  locale: string,
+  formatDuration: (minutes: number) => string
 ): string {
-  const number = new Intl.NumberFormat(m.locale)
+  const number = new Intl.NumberFormat(locale)
   switch (TRANSLATION_RULE_UNITS[key]) {
     case "minutesList":
       return Array.isArray(value)
         ? value.map((item) => formatDuration(Number(item))).join(", ")
         : ""
     case "characters":
-      return m.translations.rules.characters(number.format(Number(value)))
+      return t("characters", { n: number.format(Number(value)) })
     case "count":
       return number.format(Number(value))
   }

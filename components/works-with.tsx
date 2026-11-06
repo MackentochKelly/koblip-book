@@ -1,9 +1,8 @@
 import Image from "next/image"
+import { useTranslations } from "next-intl"
 
 import { HomeRowLabel } from "@/components/home-section-title"
-import { messagesFor } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
-import type { PageLanguage } from "@/lib/page-language"
 
 // The services Koblip Book works with, each with its own logo, unaltered:
 // Meta's symbol from its brand pack (colour on light, white on dark), and
@@ -11,8 +10,8 @@ import type { PageLanguage } from "@/lib/page-language"
 // official pack, never recoloured, and its name never joined to other words
 // (meta.com/brand/resources/whatsapp/whatsapp-brand).
 // A quiet row of service names.
-export function WorksWith({ language }: { language: PageLanguage }) {
-  const t = messagesFor(language).home
+export function WorksWith() {
+  const t = useTranslations("public.home")
   const services: {
     logo: string
     logoDark?: string
@@ -26,7 +25,7 @@ export function WorksWith({ language }: { language: PageLanguage }) {
     { logo: "/brands/google-maps.svg", name: "Google Maps" },
     {
       logo: "/brands/whatsapp-glyph-green.svg",
-      name: t.remindersOnWhatsApp,
+      name: t("remindersOnWhatsApp"),
     },
     {
       logo: "/brands/google-calendar.png",
@@ -35,7 +34,7 @@ export function WorksWith({ language }: { language: PageLanguage }) {
   ]
   return (
     <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6 px-4">
-      <HomeRowLabel>{t.worksWith}</HomeRowLabel>
+      <HomeRowLabel>{t("worksWith")}</HomeRowLabel>
       <ul className="flex flex-wrap justify-center gap-x-8 gap-y-4">
         {services.map(({ logo, logoDark, name }) => (
           <li

@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslations } from "next-intl"
+
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { Button } from "@/components/ui/button"
@@ -27,7 +29,6 @@ import {
 } from "@/components/ui/item"
 import { isGoogleEventColor } from "@/lib/google-calendar-colors"
 import type { OwnerServiceCategory } from "../types"
-import { useOwnerMessages } from "../i18n/provider"
 import { GoogleEventDot } from "./google-event-dot"
 
 export interface CategoryCount {
@@ -68,21 +69,19 @@ export function CategoriesPanel({
   onRemove: (category: OwnerServiceCategory) => void
   children?: React.ReactNode
 }) {
-  const m = useOwnerMessages()
-  const k = m.catalog.categories
-  const c = m.catalog.common
+  const t = useTranslations("owner.catalog")
   const menu = (category: OwnerServiceCategory, index: number) => (
     <DropdownMenu>
-      <MoreMenuTrigger label={c.more} />
+      <MoreMenuTrigger label={t("common.more")} />
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => onAddService(category)}>
             <PlusIcon />
-            {m.catalog.services.addService}
+            {t("services.addService")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onEdit(category)}>
             <SquarePenIcon />
-            {c.edit}
+            {t("common.edit")}
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
@@ -92,14 +91,14 @@ export function CategoriesPanel({
             onClick={() => onMove(index, -1)}
           >
             <ArrowUpIcon />
-            {c.moveUp}
+            {t("common.moveUp")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={index === categories.length - 1 || pending}
             onClick={() => onMove(index, 1)}
           >
             <ArrowDownIcon />
-            {c.moveDown}
+            {t("common.moveDown")}
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
@@ -110,7 +109,7 @@ export function CategoriesPanel({
             onClick={() => onRemove(category)}
           >
             <Trash2Icon />
-            {c.remove}
+            {t("common.remove")}
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
@@ -121,18 +120,18 @@ export function CategoriesPanel({
     <ResponsivePanel
       open={open}
       onClose={onClose}
-      title={k.title}
+      title={t("categories.title")}
       footer={
         <Button size="lg" onClick={onAdd}>
           <PlusIcon data-icon="inline-start" />
-          {k.add}
+          {t("categories.add")}
         </Button>
       }
     >
       {categories.length === 0 ? (
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>{k.empty}</EmptyTitle>
+            <EmptyTitle>{t("categories.empty")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : (

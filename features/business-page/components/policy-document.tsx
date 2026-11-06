@@ -1,24 +1,21 @@
 import Link from "next/link"
+import { useLocale, useTranslations } from "next-intl"
+
 import { LanguageMenu } from "@/components/language-menu"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftIcon } from "@/components/ui/icons"
-import { messagesFor } from "@/lib/i18n"
-import type { PageLanguage } from "@/lib/page-language"
+import { languageOf } from "@/lib/page-language"
 import type { BusinessPolicy } from "../api/get-business-policy"
 
 // One of a business's policies on its own page: a way back to the business,
 // the title, when it last changed, and the text in a readable column. The
 // text is plain; a blank line starts a new paragraph.
-export function PolicyDocument({
-  policy,
-  language,
-}: {
-  policy: BusinessPolicy
-  language: PageLanguage
-}) {
-  const m = messagesFor(language)
-  const updated = new Date(policy.updatedAt).toLocaleDateString(m.locale, {
+export function PolicyDocument({ policy }: { policy: BusinessPolicy }) {
+  const t = useTranslations("public.policies")
+  const locale = useLocale()
+  const language = languageOf(locale)
+  const updated = new Date(policy.updatedAt).toLocaleDateString(locale, {
     dateStyle: "long",
     timeZone: "UTC",
   })
@@ -42,7 +39,7 @@ export function PolicyDocument({
           render={<Link href={`/b/${policy.business.slug}?lang=${language}`} />}
         >
           <ArrowLeftIcon data-icon="inline-start" />
-          <span className="truncate">{m.policies.backTo(policy.business.name)}</span>
+          <span className="truncate">{t("backTo", { name: policy.business.name })}</span>
         </Button>
         <div className="flex shrink-0 gap-2">
           <ThemeToggle />
@@ -54,7 +51,7 @@ export function PolicyDocument({
           {policy.title}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {m.policies.updated}: {updated}
+          {t("updated")}: {updated}
         </p>
       </div>
       <div className="flex flex-col gap-4 whitespace-pre-line text-muted-foreground">

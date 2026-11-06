@@ -1,6 +1,7 @@
 "use client"
 
 import { AnimatePresence, motion } from "motion/react"
+import { useTranslations } from "next-intl"
 import { useRef, useState } from "react"
 
 import {
@@ -11,9 +12,12 @@ import {
   POP,
   ReplayButton,
   RISE,
+  SAMPLE_PEOPLE,
+  SAMPLE_SERVICES,
   SAMPLE_TEAM,
   Scene,
   TapMark,
+  useSampleLocale,
 } from "@/components/feature-preview"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -21,14 +25,9 @@ import { CheckIcon } from "@/components/ui/icons"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Logo } from "@/components/works-with"
 import { formatClock } from "@/lib/format-booking-time"
-import type { Messages } from "@/lib/i18n"
 import { useStoryLoop } from "@/hooks/use-story-loop"
 import { SHOWCASE_LOOP } from "@/lib/showcase-rules"
 import { cn } from "@/lib/utils"
-
-type Home = Messages["home"]
-type Words = Home["everything"]
-type Steps = Home["steps"]["sample"]
 
 // More of the pictures on "What you get": Lumen Studio's day, the same story
 // as the rest of the page, each playing by itself (useStoryLoop). Each has its own still colour wash: the theme's
@@ -60,27 +59,20 @@ const REPORT = {
 // The theme's chart shades, as on the dashboard's Top services.
 const SHADES = ["bg-chart-2", "bg-chart-1"]
 
-export function DayPreview({
-  name,
-  words,
-}: {
-  name: DayPreviewName
-  words: Home
-}) {
-  const t = words.everything
-  const steps = words.steps.sample
+export function DayPreview({ name }: { name: DayPreviewName }) {
   return (
     <Scene {...WASHES[name]}>
-      {name === "bookings" && <BookingsPicture words={t} steps={steps} />}
-      {name === "customers" && <CustomersPicture words={t} steps={steps} />}
-      {name === "team" && <TeamPicture words={t} steps={steps} />}
-      {name === "automations" && (
-        <AutomationsPicture words={t} done={words.features.sample.confirmed} />
-      )}
-      {name === "reports" && <ReportsPicture words={t} steps={steps} />}
+      {name === "bookings" && <BookingsPicture />}
+      {name === "customers" && <CustomersPicture />}
+      {name === "team" && <TeamPicture />}
+      {name === "automations" && <AutomationsPicture />}
+      {name === "reports" && <ReportsPicture />}
     </Scene>
   )
 }
+
+// Each team member's hours (SAMPLE_TEAM's order): their words' keys.
+const TEAM_HOURS = ["weekdays", "tuesdayToSaturday", "weekends"] as const
 
 // The day's calendar: each booking, its time and who comes; the new one
 // in green.
@@ -91,17 +83,19 @@ const DAY = [
 
 // The calendar filling up (useStoryLoop): the day's bookings drop in one
 // by one, the new one last. Rests on the full day; tap to play it again.
-function BookingsPicture({ words, steps }: { words: Words; steps: Steps }) {
+function BookingsPicture() {
+  const steps = useTranslations("public.home.steps.sample")
+  const locale = useSampleLocale()
   const box = useRef<HTMLDivElement>(null)
   const rows = [
     ...DAY.map(({ time, service, person }) => ({
       time,
-      label: `${steps.services[service].name} · ${firstName(steps.people[person])}`,
+      label: `${steps(`services.${SAMPLE_SERVICES[service].key}`)} · ${firstName(SAMPLE_PEOPLE[person])}`,
       fresh: false,
     })),
     {
-      time: steps.bookingTime,
-      label: `${steps.bookingService} · ${firstName(steps.people[2])}`,
+      time: steps("bookingTime"),
+      label: `${steps("bookingService")} · ${firstName(SAMPLE_PEOPLE[2])}`,
       fresh: true,
     },
   ]
@@ -122,14 +116,14 @@ function BookingsPicture({ words, steps }: { words: Words; steps: Steps }) {
   )
   return (
     <>
-      <ReplayButton label={steps.replay} onClick={replay} />
+      <ReplayButton label={steps("replay")} onClick={replay} />
       <div ref={box} className="w-full max-w-60">
         <Box>
           <div className="flex flex-col gap-1.5 px-(--card-spacing) text-xs">
             {rows.map((row, index) => (
               <div key={row.time} className="flex h-6 items-center gap-2">
                 <span className="w-16 shrink-0 whitespace-nowrap text-muted-foreground tabular-nums">
-                  {formatClock(row.time, words.sample.locale)}
+                  {formatClock(row.time, locale)}
                 </span>
                 <AnimatePresence initial={false}>
                   {index < shown && (
@@ -157,7 +151,9 @@ function BookingsPicture({ words, steps }: { words: Words; steps: Steps }) {
 
 // Ana comes back (useStoryLoop): her visits go up by one. Rests on the
 // list; tap to play it again.
-function CustomersPicture({ words, steps }: { words: Words; steps: Steps }) {
+function CustomersPicture() {
+  const t = useTranslations("public.home.everything.sample")
+  const steps = useTranslations("public.home.steps.sample")
   const box = useRef<HTMLDivElement>(null)
   const [back, setBack] = useState(false)
   const time = SHOWCASE_LOOP.customers
@@ -172,12 +168,12 @@ function CustomersPicture({ words, steps }: { words: Words; steps: Steps }) {
     () => setBack(false)
   )
   const people = [
-    { name: steps.people[2], visits: back ? 12 : 11, back },
-    { name: steps.people[1], visits: 8, back: false },
+    { name: SAMPLE_PEOPLE[2], visits: back ? 12 : 11, back },
+    { name: SAMPLE_PEOPLE[1], visits: 8, back: false },
   ]
   return (
     <>
-      <ReplayButton label={steps.replay} onClick={replay} />
+      <ReplayButton label={steps("replay")} onClick={replay} />
       <div ref={box} className="w-full max-w-60">
         <Box>
           <div className="flex flex-col gap-3 px-(--card-spacing)">
@@ -188,7 +184,7 @@ function CustomersPicture({ words, steps }: { words: Words; steps: Steps }) {
               >
                 <BookingRow
                   title={name}
-                  detail={`${visits} ${words.sample.visits}`}
+                  detail={`${visits} ${t("visits")}`}
                 />
                 <AnimatePresence>
                   {came && (
@@ -210,12 +206,13 @@ function CustomersPicture({ words, steps }: { words: Words; steps: Steps }) {
 
 // The team, with their photos (useStoryLoop): each member in turn, with
 // when they work. Tap a member to see theirs.
-function TeamPicture({ words, steps }: { words: Words; steps: Steps }) {
+function TeamPicture() {
+  const t = useTranslations("public.home.everything.sample")
   const box = useRef<HTMLDivElement>(null)
   const team = SAMPLE_TEAM.map(({ person, photo }, index) => ({
-    name: steps.people[person],
+    name: SAMPLE_PEOPLE[person],
     photo,
-    hours: words.sample.hours[index],
+    hours: t(`hours.${TEAM_HOURS[index]}`),
   }))
   const [picked, setPicked] = useState(0)
   const time = SHOWCASE_LOOP.team
@@ -270,7 +267,10 @@ type ReminderPhase = "none" | "reminder" | "tap" | "confirmed"
 
 // A WhatsApp reminder comes in on its own (useStoryLoop) and the client
 // taps Confirm. Rests on the reminder; Confirm plays it again.
-function AutomationsPicture({ words, done }: { words: Words; done: string }) {
+function AutomationsPicture() {
+  const t = useTranslations("public.home.everything.sample")
+  const features = useTranslations("public.home.features.sample")
+  const done = features("confirmed")
   const box = useRef<HTMLDivElement>(null)
   const [phase, setPhase] = useState<ReminderPhase>("reminder")
   const time = SHOWCASE_LOOP.automations
@@ -301,7 +301,7 @@ function AutomationsPicture({ words, done }: { words: Words; done: string }) {
                     src="/brands/whatsapp-glyph-green.svg"
                     className="mt-0.5 size-4 shrink-0 object-contain"
                   />
-                  <span>{words.sample.reminder}</span>
+                  <span>{t("reminder")}</span>
                 </div>
                 <Button
                   size="sm"
@@ -320,7 +320,7 @@ function AutomationsPicture({ words, done }: { words: Words; done: string }) {
                       className="flex items-center gap-1"
                     >
                       {answered && <CheckIcon />}
-                      {answered ? done : words.sample.confirm}
+                      {answered ? done : t("confirm")}
                     </motion.span>
                   </AnimatePresence>
                   {phase === "tap" && (
@@ -338,7 +338,9 @@ function AutomationsPicture({ words, done }: { words: Words; done: string }) {
 
 // What's booked most: one bar split by service, as on the dashboard. It
 // shows the week, then the month (useStoryLoop); pick a period to see it.
-function ReportsPicture({ words, steps }: { words: Words; steps: Steps }) {
+function ReportsPicture() {
+  const t = useTranslations("public.home.everything.sample")
+  const steps = useTranslations("public.home.steps.sample")
   const box = useRef<HTMLDivElement>(null)
   const [period, setPeriod] = useState<keyof typeof REPORT>("week")
   const time = SHOWCASE_LOOP.reports
@@ -364,7 +366,7 @@ function ReportsPicture({ words, steps }: { words: Words; steps: Steps }) {
                   {total}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {words.sample.bookings}
+                  {t("bookings")}
                 </span>
               </motion.div>
             </AnimatePresence>
@@ -377,10 +379,10 @@ function ReportsPicture({ words, steps }: { words: Words; steps: Steps }) {
               }}
             >
               <ToggleGroupItem value="week">
-                {words.sample.week}
+                {t("week")}
               </ToggleGroupItem>
               <ToggleGroupItem value="month">
-                {words.sample.month}
+                {t("month")}
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
@@ -396,12 +398,12 @@ function ReportsPicture({ words, steps }: { words: Words; steps: Steps }) {
                 ))}
               </div>
               <div className="flex justify-between gap-2 text-xs text-muted-foreground">
-                {steps.services.map((service, index) => (
-                  <span key={service.name} className="flex items-center gap-1">
+                {SAMPLE_SERVICES.map((service, index) => (
+                  <span key={service.key} className="flex items-center gap-1">
                     <span
                       className={cn("size-2 rounded-full", SHADES[index])}
                     />
-                    {service.name}
+                    {steps(`services.${service.key}`)}
                   </span>
                 ))}
               </div>

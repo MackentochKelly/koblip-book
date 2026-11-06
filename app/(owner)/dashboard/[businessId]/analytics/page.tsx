@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import { getFirstVisits } from "@/features/dashboard/api/customers"
 import {
   getBookingCounts,
@@ -6,7 +7,6 @@ import {
   getBookingsBetween,
   getOwnerBusiness,
 } from "@/features/dashboard/api/queries"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { AnalyticsView } from "@/features/dashboard/components/analytics-view"
 import {
   type Period,
@@ -20,7 +20,8 @@ import { BOOKING_RULES } from "@/lib/booking-rules"
 import { addDaysTo, todayIn } from "@/lib/format-booking-time"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.analytics }
+  const t = await getTranslations("owner.shell")
+  return { title: t("nav.analytics") }
 }
 
 export default async function AnalyticsPage({
@@ -43,7 +44,7 @@ export default async function AnalyticsPage({
   const now = new Date().toISOString()
   // Top categories once there are categories: a booking counts in its
   // service's category, or Other with none or a service since removed.
-  const other = (await getOwnerMessages()).catalog.categories.other
+  const other = (await getTranslations("owner.catalog.categories"))("other")
   const categoryName = new Map(categories.map(({ id, name }) => [id, name]))
   const serviceCategory = new Map(
     services.map(({ id, categoryId }) => [

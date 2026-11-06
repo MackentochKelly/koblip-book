@@ -2,6 +2,7 @@ import { cleanup, render, screen, within } from "@testing-library/react"
 import type { ComponentProps, ReactNode } from "react"
 import { afterEach, expect, test, vi } from "vitest"
 
+import { WithWords } from "@/i18n/testing"
 import type { OwnerBooking } from "../types"
 
 vi.mock("next/navigation", () => ({
@@ -60,7 +61,7 @@ function home(past: OwnerBooking[] = []) {
       whatsapp: false,
     },
   } as unknown as ComponentProps<typeof BookingsView>
-  render(<BookingsView {...props} />)
+  render(<BookingsView {...props} />, { wrapper: WithWords })
 }
 
 test("today's line sits right under the greeting", () => {

@@ -47,8 +47,9 @@ export const auth = betterAuth({
     maxPasswordLength: ONBOARDING_RULES.maxPasswordLength,
     resetPasswordTokenExpiresIn: ACCOUNT_RULES.passwordResetMinutes * 60,
     sendResetPassword: ({ user, url }, request) => {
-      const content = resetPasswordEmail(url, emailLanguage(request))
-      void sendEmail({ to: user.email, ...content })
+      void resetPasswordEmail(url, emailLanguage(request)).then((content) =>
+        sendEmail({ to: user.email, ...content })
+      )
       return Promise.resolve()
     },
     // Anyone who signed up with another person's email before them loses
@@ -70,8 +71,9 @@ export const auth = betterAuth({
   // before verification: claiming keeps working straight after sign-up.
   emailVerification: {
     sendVerificationEmail: ({ user, url }, request) => {
-      const content = verificationEmail(url, emailLanguage(request))
-      void sendEmail({ to: user.email, ...content })
+      void verificationEmail(url, emailLanguage(request)).then((content) =>
+        sendEmail({ to: user.email, ...content })
+      )
       return Promise.resolve()
     },
     sendOnSignUp: true,

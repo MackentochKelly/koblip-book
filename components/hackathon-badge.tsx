@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import { useLocale, useTranslations } from "next-intl"
 import { useState } from "react"
 import {
   AudioLinesIcon,
@@ -36,8 +37,6 @@ import {
   PopoverTitle,
 } from "@/components/ui/popover"
 import { HACKATHON, MUSE } from "@/lib/hackathon"
-import { messagesFor } from "@/lib/i18n"
-import type { PageLanguage } from "@/lib/page-language"
 import { TOUCH_AREA } from "@/lib/touch-area"
 import { cn } from "@/lib/utils"
 
@@ -58,24 +57,43 @@ type More = { what: string; how: string; note?: string }
 // One card: the Meta model that does these (named once, on top), or none.
 type Group = { heading?: string; rows: Row[] }
 
+// The ⓘ texts with a "Good to know", and those without one.
+type WithNote =
+  | "assistant"
+  | "setup"
+  | "about"
+  | "translate"
+  | "voice"
+  | "portraits"
+  | "metaModels"
+  | "reminders"
+type WithoutNote = "openSource" | "control" | "track" | "ownNumber" | "checked"
+
+type AiFeature =
+  | "assistant"
+  | "setup"
+  | "about"
+  | "translate"
+  | "voice"
+  | "portraits"
+
 // The home page's glass pill: Koblip Book was built for Meta's hackathon.
 // Tap it for a panel with the Meta AI in the app (one card per model), the
 // event rules it keeps (a checklist) and what Meta approved for WhatsApp.
 // Short rows only, so it reads at a glance. Plain words only: Meta's logo
 // needs Meta's approval (meta.com/brand/resources/meta/company-brand).
-export function HackathonBadge({ language }: { language: PageLanguage }) {
-  const messages = messagesFor(language)
-  const home = messages.home
-  const t = messages.hackathon
-  const provider = home.provider
+export function HackathonBadge() {
+  const t = useTranslations("public.hackathon")
+  const home = useTranslations("public.home")
+  const locale = useLocale()
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<Tab>("ai")
   const day = (iso: string) =>
-    new Date(`${iso}T12:00:00`).toLocaleDateString(messages.locale, {
+    new Date(`${iso}T12:00:00`).toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
     })
-  const dates = new Intl.DateTimeFormat(messages.locale, {
+  const dates = new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -83,7 +101,19 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
     new Date(`${HACKATHON.start}T12:00:00`),
     new Date(`${HACKATHON.end}T12:00:00`)
   )
-  const d = t.details
+  const ai = (key: AiFeature) => ({
+    title: t(`ai.${key}.title`),
+    description: t(`ai.${key}.description`),
+  })
+  const more = (key: WithNote): More => ({
+    what: t(`details.${key}.what`),
+    how: t(`details.${key}.how`),
+    note: t(`details.${key}.note`),
+  })
+  const brief = (key: WithoutNote): More => ({
+    what: t(`details.${key}.what`),
+    how: t(`details.${key}.how`),
+  })
   const firstDay = day(HACKATHON.firstCommit)
   const check = <CircleCheckFilledIcon className="size-5 text-success" />
   // WhatsApp: its own file from the official pack, never recoloured, its
@@ -104,19 +134,31 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
       {
         heading: MUSE.spark,
         rows: [
-          { icon: <SparklesIcon />, ...t.ai.assistant, more: d.assistant },
-          { icon: <StoreIcon />, ...t.ai.setup, more: d.setup },
-          { icon: <SquarePenIcon />, ...t.ai.about, more: d.about },
-          { icon: <LanguagesIcon />, ...t.ai.translate, more: d.translate },
+          {
+            icon: <SparklesIcon />,
+            ...ai("assistant"),
+            more: more("assistant"),
+          },
+          { icon: <StoreIcon />, ...ai("setup"), more: more("setup") },
+          { icon: <SquarePenIcon />, ...ai("about"), more: more("about") },
+          {
+            icon: <LanguagesIcon />,
+            ...ai("translate"),
+            more: more("translate"),
+          },
         ],
       },
       {
         heading: MUSE.voice,
-        rows: [{ icon: <AudioLinesIcon />, ...t.ai.voice, more: d.voice }],
+        rows: [
+          { icon: <AudioLinesIcon />, ...ai("voice"), more: more("voice") },
+        ],
       },
       {
         heading: MUSE.image,
-        rows: [{ icon: <ImageIcon />, ...t.ai.portraits, more: d.portraits }],
+        rows: [
+          { icon: <ImageIcon />, ...ai("portraits"), more: more("portraits") },
+        ],
       },
     ],
     rules: [
@@ -124,13 +166,24 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
         rows: [
           {
             icon: check,
-            title: t.rules.newWork(firstDay),
-            more: { ...d.newWork, how: d.newWork.how(firstDay) },
+            title: t("rules.newWork", { date: firstDay }),
+            more: {
+              what: t("details.newWork.what"),
+              how: t("details.newWork.how", { date: firstDay }),
+            },
           },
-          { icon: check, title: t.rules.openSource, more: d.openSource },
-          { icon: check, title: t.rules.metaModels, more: d.metaModels },
-          { icon: check, title: t.rules.control, more: d.control },
-          { icon: check, title: t.rules.track, more: d.track },
+          {
+            icon: check,
+            title: t("rules.openSource"),
+            more: brief("openSource"),
+          },
+          {
+            icon: check,
+            title: t("rules.metaModels"),
+            more: more("metaModels"),
+          },
+          { icon: check, title: t("rules.control"), more: brief("control") },
+          { icon: check, title: t("rules.track"), more: brief("track") },
         ],
       },
     ],
@@ -139,22 +192,22 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
         rows: [
           {
             icon: whatsapp,
-            title: provider.ownNumber,
-            description: provider.ownNumberText,
-            tag: home.soon,
-            more: d.ownNumber,
+            title: home("provider.ownNumber"),
+            description: home("provider.ownNumberText"),
+            tag: home("soon"),
+            more: brief("ownNumber"),
           },
           {
             icon: whatsapp,
-            title: provider.reminders,
-            description: provider.remindersText,
-            more: d.reminders,
+            title: home("provider.reminders"),
+            description: home("provider.remindersText"),
+            more: more("reminders"),
           },
           {
             icon: <ShieldCheckIcon />,
-            title: provider.checked,
-            description: provider.checkedText,
-            more: d.checked,
+            title: home("provider.checked"),
+            description: home("provider.checkedText"),
+            more: brief("checked"),
           },
         ],
       },
@@ -173,14 +226,14 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
         render={<button type="button" onClick={() => setOpen(true)} />}
       >
         <SparklesIcon data-icon="inline-start" />
-        {t.badge}
+        {t("badge")}
         <ChevronRightIcon data-icon="inline-end" />
       </Badge>
       <ResponsivePanel
         open={open}
         onClose={() => setOpen(false)}
         title={HACKATHON.name}
-        description={t.about(dates, Object.keys(MUSE).length)}
+        description={t("about", { dates, models: Object.keys(MUSE).length })}
         wide
         footer={
           <>
@@ -191,7 +244,7 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
                 <a href={HACKATHON.eventUrl} target="_blank" rel="noreferrer" />
               }
             >
-              {t.event}
+              {t("event")}
               <ExternalLinkIcon data-icon="inline-end" />
             </Button>
             <Button
@@ -200,7 +253,7 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
                 <a href={HACKATHON.repoUrl} target="_blank" rel="noreferrer" />
               }
             >
-              {t.code}
+              {t("code")}
               <ExternalLinkIcon data-icon="inline-end" />
             </Button>
           </>
@@ -209,9 +262,9 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
         <div className="flex flex-col gap-4 pt-3">
           <ViewTabs
             views={[
-              { id: "ai", label: t.tabs.ai },
-              { id: "rules", label: t.tabs.rules },
-              { id: "whatsapp", label: t.tabs.whatsapp },
+              { id: "ai", label: t("tabs.ai") },
+              { id: "rules", label: t("tabs.rules") },
+              { id: "whatsapp", label: t("tabs.whatsapp") },
             ]}
             value={tab}
             onChange={setTab}
@@ -245,13 +298,17 @@ export function HackathonBadge({ language }: { language: PageLanguage }) {
                             {tag && <Badge variant="secondary">{tag}</Badge>}
                             {more && (
                               <InfoTip
-                                label={`${t.more}: ${title}`}
+                                label={`${t("more")}: ${title}`}
                                 className="size-6"
                               >
                                 <MoreAbout
                                   title={title}
                                   more={more}
-                                  sections={t.sections}
+                                  sections={{
+                                    what: t("sections.what"),
+                                    how: t("sections.how"),
+                                    note: t("sections.note"),
+                                  }}
                                 />
                               </InfoTip>
                             )}

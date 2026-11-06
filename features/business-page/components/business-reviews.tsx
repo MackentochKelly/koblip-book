@@ -1,10 +1,10 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
 import { useState } from "react"
 import { ArrowRightIcon, ExternalLinkIcon } from "@/components/ui/icons"
 
 import { GoogleMapsCredit } from "@/components/google-maps-credit"
-import { useMessages } from "@/components/language-provider"
 import { Rating } from "@/components/rating"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button, touchArea } from "@/components/ui/button"
@@ -26,10 +26,10 @@ const REVIEWS_ON_PAGE = 2
 // How the reviews are chosen, with Google's logo: Google asks for both
 // (developers.google.com/maps/documentation/places/web-service/policies).
 function ReviewSource() {
-  const m = useMessages()
+  const t = useTranslations("public.reviews")
   return (
     <p className="flex flex-wrap items-center text-xs text-muted-foreground">
-      {m.reviews.order}
+      {t("order")}
       <GoogleMapsCredit />
     </p>
   )
@@ -114,7 +114,7 @@ function GoogleReviewsLink({
   mapsUrl: string
   variant: "default" | "outline"
 }) {
-  const m = useMessages()
+  const t = useTranslations("public.reviews")
   return (
     <Button
       variant={variant}
@@ -122,7 +122,7 @@ function GoogleReviewsLink({
       nativeButton={false}
       render={<a href={mapsUrl} target="_blank" rel="noreferrer" />}
     >
-      {m.reviews.seeAllOnGoogle}
+      {t("seeAllOnGoogle")}
       <ExternalLinkIcon data-icon="inline-end" />
     </Button>
   )
@@ -139,10 +139,11 @@ export function BusinessReviews({
   reviewCount: number | null
   mapsUrl: string | null
 }) {
-  const m = useMessages()
+  const t = useTranslations("public")
+  const locale = useLocale()
   const [open, setOpen] = useState(false)
   if (reviews.length === 0) {
-    return <p className="text-sm text-muted-foreground">{m.reviews.none}</p>
+    return <p className="text-sm text-muted-foreground">{t("reviews.none")}</p>
   }
   const more = reviews.length > REVIEWS_ON_PAGE
   return (
@@ -154,7 +155,7 @@ export function BusinessReviews({
           className="self-start"
           onClick={() => setOpen(true)}
         >
-          {m.reviews.seeMore}
+          {t("reviews.seeMore")}
           <ArrowRightIcon data-icon="inline-end" />
         </Button>
       ) : (
@@ -163,11 +164,11 @@ export function BusinessReviews({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="flex max-h-[85svh] flex-col sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{m.sections.reviews}</DialogTitle>
+            <DialogTitle>{t("sections.reviews")}</DialogTitle>
             {reviewCount !== null && (
               <DialogDescription>
-                {reviewCount.toLocaleString(m.locale)}{" "}
-                {m.reviews.count(reviewCount)}
+                {reviewCount.toLocaleString(locale)}{" "}
+                {t("reviews.count", { n: reviewCount })}
               </DialogDescription>
             )}
             <ReviewSource />

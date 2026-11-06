@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl"
+
 import {
   AlertCircleIcon,
   CircleCheckIcon,
@@ -15,7 +17,6 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { Trace, TraceIcon, TraceLine, TraceTitle } from "@/components/ui/trace"
-import type { AssistantMessages } from "../i18n"
 import type { ChatConfirm } from "../utils/chat-state"
 
 // The assistant never does a risky thing alone: the owner taps first.
@@ -23,24 +24,21 @@ import type { ChatConfirm } from "../utils/chat-state"
 // buttons; once answered it folds into one line, like a finished step.
 export function ConfirmCard({
   confirm,
-  labels,
   disabled,
   onAnswer,
 }: {
   confirm: ChatConfirm
-  labels: AssistantMessages["confirm"]
   disabled: boolean
   onAnswer: (accept: boolean) => void
 }) {
+  const t = useTranslations("assistant.confirm")
   if (confirm.state !== "pending") {
     const accepted = confirm.state === "accepted"
     return (
       <Trace>
         <TraceLine>
           <TraceIcon>{accepted ? <CircleCheckIcon /> : <XIcon />}</TraceIcon>
-          <TraceTitle>
-            {accepted ? labels.confirmed : labels.cancelled}
-          </TraceTitle>
+          <TraceTitle>{accepted ? t("confirmed") : t("cancelled")}</TraceTitle>
         </TraceLine>
       </Trace>
     )
@@ -65,7 +63,7 @@ export function ConfirmCard({
           disabled={disabled}
           onClick={() => onAnswer(false)}
         >
-          {labels.cancel}
+          {t("cancel")}
         </Button>
         <Button
           variant={confirm.destructive ? "destructive" : "default"}

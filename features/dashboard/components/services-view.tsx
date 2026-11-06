@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -16,6 +17,7 @@ import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { FilterChips } from "@/components/filter-chips"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { ViewTabs } from "@/components/view-tabs"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import { useShowFirst } from "@/hooks/use-show-first"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -55,7 +57,6 @@ import { AppSelect } from "@/components/app-select"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { BOOKING_RULES } from "@/lib/booking-rules"
-import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import {
   GOOGLE_EVENT_COLORS,
@@ -102,7 +103,7 @@ import { GoogleEventDot } from "./google-event-dot"
 import { PhotoField } from "@/components/photo-upload"
 import { useTabBarAction } from "./tab-bar-action"
 import { noAutofill } from "@/lib/no-autofill"
-import { useOwnerLanguage, useOwnerMessages } from "../i18n/provider"
+import { languageOf } from "@/lib/page-language"
 
 interface ServiceRow {
   id: string
@@ -156,10 +157,12 @@ export function ServicesView({
   googleCalendar: boolean
 }) {
   const router = useRouter()
-  const m = useOwnerMessages()
-  const t = m.catalog.services
-  const c = m.catalog.common
-  const k = m.catalog.categories
+  const t = useTranslations("owner.catalog.services")
+  const c = useTranslations("owner.catalog.common")
+  const k = useTranslations("owner.catalog.categories")
+  const extras = useTranslations("owner.catalog.extras")
+  const locale = useLocale()
+  const formatDuration = useFormatDuration()
   const [editing, setEditing] = useState<ServiceRow | "new" | null>(null)
   // The category a new service starts in: the one whose menu opened it.
   const [newCategoryId, setNewCategoryId] = useState<string>(NO_CATEGORY)
@@ -207,7 +210,7 @@ export function ServicesView({
         if (done) toast.success(done)
         router.refresh()
       } else {
-        toast.error(c.failed)
+        toast.error(c("failed"))
       }
     })
   // Every category, even an empty one to add services to; with none it is
@@ -220,7 +223,7 @@ export function ServicesView({
     category?.id ?? OTHER_GROUP
   const categoryOptions = groups.map(({ category }) => ({
     value: groupKey(category),
-    label: category?.name ?? k.other,
+    label: category?.name ?? k("other"),
   }))
   const shown = categoryOptions.some((option) => option.value === shownCategory)
     ? shownCategory
@@ -264,7 +267,7 @@ export function ServicesView({
   }
   // On a phone the tab bar's middle button adds a service (or extras).
   useTabBarAction({
-    label: view === "services" ? t.addService : m.catalog.extras.add,
+    label: view === "services" ? t("addService") : extras("add"),
     onClick: () =>
       view === "services" ? openForm("new") : setAddingExtras(true),
     disabled: view === "extras" && services.length === 0,
@@ -281,7 +284,7 @@ export function ServicesView({
   const phoneSuggest = !(view === "extras" && services.length === 0) && (
     <Button variant="outline" className="md:hidden" onClick={suggest}>
       <SparklesIcon data-icon="inline-start" />
-      {view === "services" ? t.suggestServices : t.suggestExtras}
+      {view === "services" ? t("suggestServices") : t("suggestExtras")}
     </Button>
   )
 
@@ -311,15 +314,15 @@ export function ServicesView({
           <ItemDescription>
             {formatDuration(service.durationMinutes)}
             {service.priceMinor !== null &&
-              ` · ${service.priceMinor === 0 ? c.free : formatPrice(service.priceMinor, currency, m.locale)}`}
+              ` · ${service.priceMinor === 0 ? c("free") : formatPrice(service.priceMinor, currency, locale)}`}
           </ItemDescription>
         </ItemContent>
         <ItemActions>
           <Button variant="outline" onClick={() => openForm(service)}>
-            {c.edit}
+            {c("edit")}
           </Button>
           <DropdownMenu>
-            <MoreMenuTrigger label={c.more} />
+            <MoreMenuTrigger label={c("more")} />
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
                 <DropdownMenuItem
@@ -327,14 +330,14 @@ export function ServicesView({
                   onClick={() => move(groupIndex, index, -1)}
                 >
                   <ArrowUpIcon />
-                  {c.moveUp}
+                  {c("moveUp")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   disabled={index === count - 1 || pending}
                   onClick={() => move(groupIndex, index, 1)}
                 >
                   <ArrowDownIcon />
-                  {c.moveDown}
+                  {c("moveDown")}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
@@ -345,7 +348,7 @@ export function ServicesView({
                   onClick={() => setRemoving(service)}
                 >
                   <Trash2Icon />
-                  {c.remove}
+                  {c("remove")}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
@@ -361,7 +364,7 @@ export function ServicesView({
           the list and Add is the tab bar's middle button, so this header row
           is a computer's. */}
       <div className="flex flex-wrap items-center justify-between gap-3 max-md:contents">
-        <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{t.title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{t("title")}</h1>
         <div className="flex gap-2 max-md:hidden">
           <Button
             variant="outline"
@@ -369,7 +372,7 @@ export function ServicesView({
             disabled={view === "extras" && services.length === 0}
           >
             <SparklesIcon data-icon="inline-start" />
-            {t.suggest}
+            {t("suggest")}
           </Button>
           <Button
             onClick={() =>
@@ -378,18 +381,18 @@ export function ServicesView({
             disabled={view === "extras" && services.length === 0}
           >
             <PlusIcon data-icon="inline-start" />
-            {c.add}
+            {c("add")}
           </Button>
         </div>
       </div>
       <ViewTabs
         views={[
-          { id: "services" as const, label: t.tabs.services },
-          { id: "extras" as const, label: t.tabs.extras },
+          { id: "services" as const, label: t("tabs.services") },
+          { id: "extras" as const, label: t("tabs.extras") },
         ]}
         value={view}
         onChange={setView}
-        ariaLabel={t.tabs.label}
+        ariaLabel={t("tabs.label")}
         listClassName="w-full md:w-fit"
       />
 
@@ -399,8 +402,8 @@ export function ServicesView({
         <div className="flex items-center gap-3">
           {grouped && (
             <FilterChips
-              label={k.title}
-              all={k.all}
+              label={k("title")}
+              all={k("all")}
               options={categoryOptions}
               value={shown}
               onValueChange={setShownCategory}
@@ -413,7 +416,7 @@ export function ServicesView({
             onClick={() => setCategoriesOpen(true)}
           >
             <TagIcon data-icon="inline-start" />
-            {k.title}
+            {k("title")}
           </Button>
         </div>
       )}
@@ -438,7 +441,7 @@ export function ServicesView({
             <EmptyMedia variant="icon">
               <TagIcon />
             </EmptyMedia>
-            <EmptyTitle>{t.empty}</EmptyTitle>
+            <EmptyTitle>{t("empty")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : grouped ? (
@@ -446,11 +449,11 @@ export function ServicesView({
           // Only empty categories are ticked.
           <Empty className="border">
             <EmptyHeader>
-              <EmptyTitle>{k.noneShown}</EmptyTitle>
+              <EmptyTitle>{k("noneShown")}</EmptyTitle>
             </EmptyHeader>
             <EmptyContent>
               <Button variant="outline" onClick={() => setShownCategory(null)}>
-                {k.allServices}
+                {k("allServices")}
               </Button>
             </EmptyContent>
           </Empty>
@@ -473,7 +476,7 @@ export function ServicesView({
 
       {view === "services" && (
         <ListFooter
-          showMore={!grouped && first.hidden > 0 && <ShowMore label={c.showMore(first.hidden)} onClick={first.showAll} />}
+          showMore={!grouped && first.hidden > 0 && <ShowMore label={c("showMore", { count: first.hidden })} onClick={first.showAll} />}
           suggest={phoneSuggest}
         />
       )}
@@ -483,7 +486,7 @@ export function ServicesView({
         onClose={() => setRemoving(null)}
         onConfirm={() =>
           removing &&
-          run(() => deleteService(businessId, removing.id), t.removed)
+          run(() => deleteService(businessId, removing.id), t("removed"))
         }
       />
 
@@ -508,13 +511,13 @@ export function ServicesView({
         {/* On top of the panel, back to it once done. */}
         <ConfirmRemove
           name={removingCategory?.name ?? null}
-          description={k.movesToOther}
+          description={k("movesToOther")}
           onClose={() => setRemovingCategory(null)}
           onConfirm={() =>
             removingCategory &&
             run(
               () => deleteServiceCategory(businessId, removingCategory.id),
-              k.removed
+              k("removed")
             )
           }
         />
@@ -522,7 +525,7 @@ export function ServicesView({
         <ResponsivePanel
           open={editingCategory !== null}
           onClose={() => setEditingCategory(null)}
-          title={editingCategory === "new" ? k.addTitle : k.editTitle}
+          title={editingCategory === "new" ? k("addTitle") : k("editTitle")}
           footer={
             <Button
               type="submit"
@@ -533,7 +536,7 @@ export function ServicesView({
               }
             >
               {pending && <Spinner data-icon="inline-start" />}
-              {c.save}
+              {c("save")}
             </Button>
           }
         >
@@ -557,12 +560,12 @@ export function ServicesView({
                         )
                   if (result.ok) {
                     setEditingCategory(null)
-                    toast.success(c.saved)
+                    toast.success(c("saved"))
                     router.refresh()
                   } else if (result.error === "taken") {
                     setCategoryTaken(true)
                   } else {
-                    toast.error(c.checkFields)
+                    toast.error(c("checkFields"))
                   }
                 })
               }}
@@ -574,7 +577,7 @@ export function ServicesView({
       <ResponsivePanel
         open={editing !== null}
         onClose={() => setEditing(null)}
-        title={editing === "new" ? t.addService : t.editService}
+        title={editing === "new" ? t("addService") : t("editService")}
         footer={
           <Button
             type="submit"
@@ -583,7 +586,7 @@ export function ServicesView({
             disabled={pending || (editing !== "new" && !changed)}
           >
             {pending && <Spinner data-icon="inline-start" />}
-            {c.save}
+            {c("save")}
           </Button>
         }
       >
@@ -604,7 +607,7 @@ export function ServicesView({
             photo={
               editing !== "new" && (
                 <PhotoField
-                  label={t.photo(editing.name)}
+                  label={t("photo", { name: editing.name })}
                   photoUrl={editing.photoUrl}
                   upload={(formData) =>
                     setServicePhoto(businessId, editing.id, formData)
@@ -636,10 +639,10 @@ export function ServicesView({
                     : saved
                 if (result.ok) {
                   setEditing(null)
-                  toast.success(c.saved)
+                  toast.success(c("saved"))
                   router.refresh()
                 } else {
-                  toast.error(c.checkFields)
+                  toast.error(c("checkFields"))
                 }
               })
             }
@@ -685,10 +688,10 @@ function ServiceForm({
   onChanged: (changed: boolean) => void
   onSave: (input: ServiceInput, memberIds: string[]) => void
 }) {
-  const m = useOwnerMessages()
-  const t = m.catalog.services
-  const c = m.catalog.common
-  const k = m.catalog.categories
+  const t = useTranslations("owner.catalog.services")
+  const c = useTranslations("owner.catalog.common")
+  const k = useTranslations("owner.catalog.categories")
+  const formatDuration = useFormatDuration()
   const durations = BOOKING_RULES.serviceMinutes.map((minutes) => ({
     value: String(minutes),
     label: formatDuration(minutes),
@@ -709,7 +712,7 @@ function ServiceForm({
     categories.find((item) => item.id === initialCategory)?.id ?? NO_CATEGORY
   const [category, setCategory] = useState<string>(savedCategory)
   const categoryOptions = [
-    { value: NO_CATEGORY, label: k.none },
+    { value: NO_CATEGORY, label: k("none") },
     ...categories.map((item) => ({ value: item.id, label: item.name })),
   ]
   // No colour of its own takes the picked category's, if it has one.
@@ -757,7 +760,7 @@ function ServiceForm({
       <FieldGroup>
         {photo}
         <Field data-invalid={invalid === "name" || undefined}>
-          <FieldLabel htmlFor="service-name">{c.name}</FieldLabel>
+          <FieldLabel htmlFor="service-name">{c("name")}</FieldLabel>
           <Input
             {...noAutofill("service_name")}
             id="service-name"
@@ -766,11 +769,11 @@ function ServiceForm({
             maxLength={BOOKING_RULES.maxServiceName}
             aria-invalid={invalid === "name" || undefined}
           />
-          {invalid === "name" && <FieldError>{c.addName}</FieldError>}
+          {invalid === "name" && <FieldError>{c("addName")}</FieldError>}
         </Field>
         {categories.length > 0 && (
           <Field>
-            <FieldLabel htmlFor="service-category">{k.category}</FieldLabel>
+            <FieldLabel htmlFor="service-category">{k("category")}</FieldLabel>
             <AppSelect
               id="service-category"
               options={categoryOptions}
@@ -782,7 +785,7 @@ function ServiceForm({
         )}
         <div className="grid grid-cols-2 gap-4">
           <Field>
-            <FieldLabel htmlFor="service-duration">{t.length}</FieldLabel>
+            <FieldLabel htmlFor="service-duration">{t("length")}</FieldLabel>
             <AppSelect
               id="service-duration"
               options={durations}
@@ -792,33 +795,33 @@ function ServiceForm({
             />
           </Field>
           <Field data-invalid={invalid === "price" || undefined}>
-            <FieldLabel htmlFor="service-price">{t.price}</FieldLabel>
+            <FieldLabel htmlFor="service-price">{t("price")}</FieldLabel>
             <Input
               {...noAutofill("service_price")}
               id="service-price"
               inputMode="decimal"
               value={price}
               onChange={(event) => setPrice(event.target.value)}
-              placeholder={c.optional}
+              placeholder={c("optional")}
               aria-invalid={invalid === "price" || undefined}
             />
-            {invalid === "price" && <FieldError>{t.useNumber}</FieldError>}
+            {invalid === "price" && <FieldError>{t("useNumber")}</FieldError>}
           </Field>
         </div>
         <Field>
-          <FieldLabel htmlFor="service-description">{t.description}</FieldLabel>
+          <FieldLabel htmlFor="service-description">{t("description")}</FieldLabel>
           <Textarea
             {...noAutofill("service_description")}
             id="service-description"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             maxLength={BOOKING_RULES.maxServiceDescription}
-            placeholder={c.optional}
+            placeholder={c("optional")}
           />
         </Field>
         {team.length > 1 && (
           <Field data-invalid={invalid === "team" || undefined}>
-            <FieldLabel htmlFor="service-members">{t.whoDoesIt}</FieldLabel>
+            <FieldLabel htmlFor="service-members">{t("whoDoesIt")}</FieldLabel>
             <AppSelect
               multiple
               id="service-members"
@@ -831,7 +834,7 @@ function ServiceForm({
               invalid={invalid === "team"}
               className="w-full"
             />
-            {invalid === "team" && <FieldError>{t.pickOne}</FieldError>}
+            {invalid === "team" && <FieldError>{t("pickOne")}</FieldError>}
           </Field>
         )}
         {googleCalendar && (
@@ -841,8 +844,8 @@ function ServiceForm({
             onChange={setColor}
             none={
               categoryColor
-                ? { label: t.calendarColorCategory, color: categoryColor }
-                : { label: t.calendarColorNone, color: null }
+                ? { label: t("calendarColorCategory"), color: categoryColor }
+                : { label: t("calendarColorNone"), color: null }
             }
           />
         )}
@@ -865,7 +868,7 @@ function CalendarColorField({
   onChange: (value: GoogleEventColor | typeof NO_COLOR) => void
   none: { label: string; color: GoogleEventColor | null }
 }) {
-  const t = useOwnerMessages().catalog.services
+  const t = useTranslations("owner.catalog.services")
   const options = [
     {
       value: NO_COLOR,
@@ -874,13 +877,13 @@ function CalendarColorField({
     },
     ...GOOGLE_EVENT_COLORS.map((color) => ({
       value: color,
-      label: t.calendarColors[color],
+      label: t(`calendarColors.${color}`),
       icon: <GoogleEventDot color={color} />,
     })),
   ]
   return (
     <Field>
-      <FieldLabel htmlFor={id}>{t.calendarColor}</FieldLabel>
+      <FieldLabel htmlFor={id}>{t("calendarColor")}</FieldLabel>
       <AppSelect
         id={id}
         options={options}
@@ -910,9 +913,9 @@ function CategoryForm({
   onChanged: (changed: boolean) => void
   onSave: (input: ServiceCategoryInput) => void
 }) {
-  const m = useOwnerMessages()
-  const c = m.catalog.common
-  const k = m.catalog.categories
+  const c = useTranslations("owner.catalog.common")
+  const k = useTranslations("owner.catalog.categories")
+  const services = useTranslations("owner.catalog.services")
   const [name, setName] = useState(category?.name ?? "")
   const [empty, setEmpty] = useState(false)
   const savedColor = isGoogleEventColor(category?.calendarColor)
@@ -942,24 +945,24 @@ function CategoryForm({
     >
       <FieldGroup>
         <Field data-invalid={invalid || undefined}>
-          <FieldLabel htmlFor="category-name">{c.name}</FieldLabel>
+          <FieldLabel htmlFor="category-name">{c("name")}</FieldLabel>
           <Input
             {...noAutofill("category_name")}
             id="category-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
             maxLength={BOOKING_RULES.maxServiceCategoryName}
-            placeholder={k.namePlaceholder}
+            placeholder={k("namePlaceholder")}
             aria-invalid={invalid || undefined}
           />
-          {invalid && <FieldError>{empty ? c.addName : k.taken}</FieldError>}
+          {invalid && <FieldError>{empty ? c("addName") : k("taken")}</FieldError>}
         </Field>
         {googleCalendar && (
           <CalendarColorField
             id="category-color"
             value={color}
             onChange={setColor}
-            none={{ label: m.catalog.services.calendarColorNone, color: null }}
+            none={{ label: services("calendarColorNone"), color: null }}
           />
         )}
       </FieldGroup>
@@ -992,9 +995,10 @@ function SuggestPanel({
     | { status: "loading" | "failed" | "off" }
     | { status: "ready"; items: Suggestion[] }
   >({ status: "loading" })
-  const m = useOwnerMessages()
-  const t = m.catalog.services
-  const [language] = useOwnerLanguage()
+  const t = useTranslations("owner.catalog.services")
+  const extras = useTranslations("owner.catalog.extras")
+  const formatDuration = useFormatDuration()
+  const language = languageOf(useLocale())
   const [ticked, setTicked] = useState<string[]>([])
   const [attempt, setAttempt] = useState(0)
   const [adding, startAdding] = useTransition()
@@ -1073,7 +1077,7 @@ function SuggestPanel({
     return () => {
       live = false
     }
-  }, [open, kind, businessId, language, attempt])
+  }, [open, kind, businessId, language, attempt, formatDuration])
   const suggestions = state.status === "ready" ? state.items : []
   const retry = () => {
     setState({ status: "loading" })
@@ -1088,7 +1092,7 @@ function SuggestPanel({
         const result = await item.save()
         if (!result.ok) {
           toast.error(
-            kind === "services" ? t.someFailed : m.catalog.extras.someFailed
+            kind === "services" ? t("someFailed") : extras("someFailed")
           )
           break
         }
@@ -1100,12 +1104,12 @@ function SuggestPanel({
     <ResponsivePanel
       open={open}
       onClose={onClose}
-      title={kind === "services" ? t.suggested : m.catalog.extras.suggested}
+      title={kind === "services" ? t("suggested") : extras("suggested")}
       footer={
         suggestions.length > 0 ? (
           <Button size="lg" onClick={add} disabled={adding || ticked.length === 0}>
             {adding && <Spinner data-icon="inline-start" />}
-            {t.addCount(ticked.length)}
+            {t("addCount", { n: ticked.length })}
           </Button>
         ) : undefined
       }
@@ -1117,24 +1121,24 @@ function SuggestPanel({
       ) : state.status === "off" ? (
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>{t.aiOff}</EmptyTitle>
+            <EmptyTitle>{t("aiOff")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : state.status === "failed" ? (
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>{t.noSuggestions}</EmptyTitle>
+            <EmptyTitle>{t("noSuggestions")}</EmptyTitle>
           </EmptyHeader>
           <EmptyContent>
             <Button variant="outline" onClick={retry}>
-              {t.tryAgain}
+              {t("tryAgain")}
             </Button>
           </EmptyContent>
         </Empty>
       ) : suggestions.length === 0 ? (
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>{t.nothingNew}</EmptyTitle>
+            <EmptyTitle>{t("nothingNew")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : (

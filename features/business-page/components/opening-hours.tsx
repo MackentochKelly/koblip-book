@@ -1,24 +1,30 @@
+import { useLocale, useTranslations } from "next-intl"
+
 import { PageSection } from "@/components/page-section"
 import { Badge } from "@/components/ui/badge"
 import { formatClock, formatWeekday } from "@/lib/format-booking-time"
-import { messagesFor, type Messages } from "@/lib/i18n"
-import type { PageLanguage } from "@/lib/page-language"
 import { cn } from "@/lib/utils"
 import type { DayHours } from "../utils/group-hours"
 
-function dayTime(day: DayHours, m: Messages): string {
-  if (day.ranges.length === 0) return m.hours.closed
+// A day's hours: closed, open all day, or each opening, in the page's
+// words and clock.
+function dayTime(
+  day: DayHours,
+  words: { closed: string; open24: string },
+  locale: string
+): string {
+  if (day.ranges.length === 0) return words.closed
   if (
     day.ranges.some(
       (range) => range.opensAt === "00:00" && range.closesAt === "00:00"
     )
   ) {
-    return m.hours.open24
+    return words.open24
   }
   return day.ranges
     .map(
       (range) =>
-        `${formatClock(range.opensAt, m.locale)} – ${formatClock(range.closesAt, m.locale)}`
+        `${formatClock(range.opensAt, locale)} – ${formatClock(range.closesAt, locale)}`
     )
     .join(", ")
 }
@@ -28,17 +34,17 @@ function dayTime(day: DayHours, m: Messages): string {
 export function OpeningHours({
   days,
   todayWeekday,
-  language,
   title,
 }: {
   days: DayHours[]
   todayWeekday: number
-  language: PageLanguage
   title?: string
 }) {
-  const m = messagesFor(language)
+  const t = useTranslations("public")
+  const locale = useLocale()
+  const words = { closed: t("hours.closed"), open24: t("hours.open24") }
   return (
-    <PageSection id="hours" title={title ?? m.sections.hours}>
+    <PageSection id="hours" title={title ?? t("sections.hours")}>
       <dl className="flex flex-col gap-2.5 text-sm">
         {days.map((day) => {
           const isToday = day.weekday === todayWeekday
@@ -53,10 +59,10 @@ export function OpeningHours({
               )}
             >
               <dt className="flex items-center gap-2">
-                {formatWeekday(day.weekday, m.locale)}
-                {isToday && <Badge variant="outline">{m.hours.today}</Badge>}
+                {formatWeekday(day.weekday, locale)}
+                {isToday && <Badge variant="outline">{t("hours.today")}</Badge>}
               </dt>
-              <dd className="text-right tabular-nums">{dayTime(day, m)}</dd>
+              <dd className="text-right tabular-nums">{dayTime(day, words, locale)}</dd>
             </div>
           )
         })}

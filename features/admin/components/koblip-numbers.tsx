@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl"
+
 import { Badge } from "@/components/ui/badge"
 import {
   Empty,
@@ -14,7 +16,6 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import type { AdminMessages } from "../i18n"
 
 export type KoblipNumberRow = {
   id: string
@@ -26,25 +27,35 @@ export type KoblipNumberRow = {
   sending: boolean
 }
 
+// Meta's quality ratings and account reviews that have words.
+const QUALITIES = ["GREEN", "YELLOW", "RED"] as const
+const REVIEWS = ["APPROVED", "PENDING", "REJECTED"] as const
+
 // The WhatsApp numbers in Koblip's own workspace, as Chat lists them (A3):
 // the one Book sends from, each number's name, Meta's quality rating and the
 // account's review (a value Meta adds later is left out, never shown raw). Numbers are added in Koblip Chat itself.
 export function KoblipNumbers({
   numbers,
-  m,
 }: {
   numbers: KoblipNumberRow[] | "unreachable"
-  m: AdminMessages
 }) {
-  const t = m.koblipChat
+  const t = useTranslations("admin.koblipChat")
+  const qualityOf = (row: KoblipNumberRow) => {
+    const quality = QUALITIES.find((item) => item === row.quality?.toUpperCase())
+    return quality ? t(`quality.${quality}`) : null
+  }
+  const reviewOf = (row: KoblipNumberRow) => {
+    const review = REVIEWS.find((item) => item === row.accountReview?.toUpperCase())
+    return review ? t(`review.${review}`) : null
+  }
   return (
     <section className="flex flex-col gap-3" aria-labelledby="koblip-numbers">
       <h2 id="koblip-numbers" className="text-lg font-semibold tracking-tight">
-        {t.numbers}
+        {t("numbers")}
       </h2>
       {numbers === "unreachable" ? (
         <p className="text-sm text-muted-foreground" role="status">
-          {t.unreachable}
+          {t("unreachable")}
         </p>
       ) : numbers.length === 0 ? (
         <Empty className="border">
@@ -52,7 +63,7 @@ export function KoblipNumbers({
             <EmptyMedia variant="icon">
               <PhoneIcon />
             </EmptyMedia>
-            <EmptyTitle>{t.noNumbers}</EmptyTitle>
+            <EmptyTitle>{t("noNumbers")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : (
@@ -66,19 +77,17 @@ export function KoblipNumbers({
                 <ItemDescription className="break-words">
                   {[
                     row.number ? row.name : null,
-                    row.quality ? t.quality[row.quality.toUpperCase()] : null,
-                    row.accountReview
-                      ? t.review[row.accountReview.toUpperCase()]
-                      : null,
+                    qualityOf(row),
+                    reviewOf(row),
                   ]
                     .filter(Boolean)
                     .join(" · ")}
                 </ItemDescription>
               </ItemContent>
               <ItemActions>
-                {row.sending && <Badge variant="secondary">{t.sending}</Badge>}
+                {row.sending && <Badge variant="secondary">{t("sending")}</Badge>}
                 {!row.active && (
-                  <Badge variant="destructive">{t.inactive}</Badge>
+                  <Badge variant="destructive">{t("inactive")}</Badge>
                 )}
               </ItemActions>
             </Item>

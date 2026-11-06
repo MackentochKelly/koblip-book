@@ -5,6 +5,8 @@ import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { translationEntries, translationHistory } from "@/lib/db/schema"
 import { runInTurn } from "@/lib/run-in-turn"
+import { sameIcuFields } from "./icu"
+import { forgetInterfaceWords } from "./interface-words"
 import { keepsProtectedParts } from "./markup"
 import { historyOf, turnKey } from "./queue"
 import { TRANSLATION_RULES } from "./rules"
@@ -41,8 +43,22 @@ async function change(
   if (!first) return { ok: false, error: "not_found" }
   return runInTurn(turnKey(first.scope, first.businessId), async () => {
     const entry = await entryById(id)
-    return entry ? apply(entry) : { ok: false, error: "not_found" }
+    if (!entry) return { ok: false, error: "not_found" }
+    const result = await apply(entry)
+    // The app's own words are read from memory: the next page reads them
+    // again.
+    if (result.ok && entry.scope === "interface") forgetInterfaceWords()
+    return result
   })
+}
+
+// An admin's text keeps the English's fields: for the app's own words, the
+// same ICU fields with the same types; for a business text, its fields,
+// links and emails.
+function keepsFields(entry: Entry, text: string): boolean {
+  return entry.scope === "interface"
+    ? sameIcuFields(entry.sourceText, text)
+    : keepsProtectedParts(entry.sourceText, text)
 }
 
 // The admin's own translation: shown from now on and never overwritten by
@@ -60,7 +76,7 @@ export function editTranslation(input: {
     if ([...text].length > TRANSLATION_RULES.maxTextCharacters) {
       return { ok: false, error: "too_long" }
     }
-    if (!keepsProtectedParts(entry.sourceText, text)) {
+    if (!keepsFields(entry, text)) {
       return { ok: false, error: "fields" }
     }
     if (entry.status === "edited" && entry.text === text) {

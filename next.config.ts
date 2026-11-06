@@ -1,4 +1,9 @@
 import type { NextConfig } from "next"
+import createNextIntlPlugin from "next-intl/plugin"
+
+// The app's words (docs/plans/translations.md, G4): next-intl reads each
+// request's language and words from i18n/request.ts.
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts")
 
 const nextConfig: NextConfig = {
   // Google's translation client loads its gRPC and protocol files from
@@ -44,4 +49,4 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig)

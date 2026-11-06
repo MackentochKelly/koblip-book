@@ -1,26 +1,22 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { getLocale, getTranslations } from "next-intl/server"
 
 import { HeroCardPage } from "@/components/hero-card-page"
 import { Button } from "@/components/ui/button"
+import { WordsProvider } from "@/components/words-provider"
 import { JoinButton } from "@/features/team-area/components/join-button"
-import { teamAreaWordsFor } from "@/features/team-area/i18n"
-import { TeamAreaLanguageProvider } from "@/features/team-area/i18n/provider"
-import {
-  getTeamAreaLanguage,
-  getTeamAreaLocale,
-} from "@/features/team-area/i18n/server"
 import { loginHref } from "@/lib/auth-links"
 import { getSession } from "@/lib/dal"
+import { languageOf } from "@/lib/page-language"
 import { readTeamInvite } from "@/lib/team-invites"
 
 // Never in search results: a link is one person's key.
 export async function generateMetadata({ params }: PageProps<"/join/[token]">): Promise<Metadata> {
   const { token } = await params
-  const [language, invite] = await Promise.all([getTeamAreaLanguage(), readTeamInvite(token)])
-  const t = teamAreaWordsFor(language).join
+  const [t, invite] = await Promise.all([getTranslations("teamArea.join"), readTeamInvite(token)])
   return {
-    title: invite?.state === "ready" ? t.title(invite.businessName) : t.expired.title,
+    title: invite?.state === "ready" ? t("title", { business: invite.businessName }) : t("expired.title"),
     robots: { index: false, follow: false },
   }
 }
@@ -30,38 +26,40 @@ export async function generateMetadata({ params }: PageProps<"/join/[token]">): 
 // an account). A used or old link says so.
 export default async function JoinPage({ params }: PageProps<"/join/[token]">) {
   const { token } = await params
-  const [language, locale, invite, session] = await Promise.all([
-    getTeamAreaLanguage(),
-    getTeamAreaLocale(),
+  const [locale, t, invite, session] = await Promise.all([
+    getLocale(),
+    getTranslations("teamArea.join"),
     readTeamInvite(token),
     getSession(),
   ])
-  const t = teamAreaWordsFor(language).join
+  const language = languageOf(locale)
   if (!invite || invite.state !== "ready") {
     return (
-      <HeroCardPage language={language} title={t.expired.title}>
-        <p className="text-center text-sm text-muted-foreground">{t.expired.text}</p>
+      <HeroCardPage language={language} title={t("expired.title")}>
+        <p className="text-center text-sm text-muted-foreground">{t("expired.text")}</p>
       </HeroCardPage>
     )
   }
   const signedIn = session && !session.isGuest
   return (
-    <HeroCardPage language={language} title={t.title(invite.businessName)}>
+    <HeroCardPage language={language} title={t("title", { business: invite.businessName })}>
       <div className="flex flex-col gap-4">
         <p className="text-center text-sm text-muted-foreground">
-          {signedIn ? t.signedInAs(session.contact) : t.intro(invite.memberName)}
+          {signedIn
+            ? t("signedInAs", { email: session.contact })
+            : t("intro", { name: invite.memberName })}
         </p>
         {signedIn ? (
-          <TeamAreaLanguageProvider language={language} locale={locale}>
+          <WordsProvider namespaces={["app", "teamArea"]}>
             <JoinButton token={token} />
-          </TeamAreaLanguageProvider>
+          </WordsProvider>
         ) : (
           <Button
             size="lg"
             nativeButton={false}
             render={<Link href={loginHref({ next: `/join/${token}` })} />}
           >
-            {t.logIn}
+            {t("logIn")}
           </Button>
         )}
       </div>

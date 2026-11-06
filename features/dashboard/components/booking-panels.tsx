@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
@@ -32,7 +33,6 @@ import type {
 } from "@/types/owner-booking"
 import { cancelBooking } from "../api/actions"
 import { setBookingStatus } from "../api/booking-actions"
-import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import { type BookingAction, bookingActions } from "../utils/booking-filters"
 import { AddBookingPanel, type AddBookingOptions } from "./add-booking-panel"
@@ -71,8 +71,8 @@ export function useBookingPanels({
   const [reason, setReason] = useState<CancelReason | null>(null)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
-  const m = useOwnerMessages()
-  const t = m.bookings
+  const t = useTranslations("owner.bookings")
+  const locale = useLocale()
 
   const run = (task: () => Promise<{ ok: boolean }>, done: string) =>
     startTransition(async () => {
@@ -83,7 +83,7 @@ export function useBookingPanels({
         toast.success(done)
         router.refresh()
       } else {
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
 
@@ -106,17 +106,17 @@ export function useBookingPanels({
     } else if (action === "undo") {
       run(
         () => setBookingStatus(businessId, booking.id, "confirmed"),
-        t.actions.undone
+        t("actions.undone")
       )
     } else if (action === "done") {
       run(
         () => setBookingStatus(businessId, booking.id, "completed"),
-        t.actions.markedDone
+        t("actions.markedDone")
       )
     } else {
       run(
         () => setBookingStatus(businessId, booking.id, "no_show"),
-        t.actions.markedNoShow
+        t("actions.markedNoShow")
       )
     }
   }
@@ -139,7 +139,7 @@ export function useBookingPanels({
           {pending && index === actions.length - 1 && (
             <Spinner data-icon="inline-start" />
           )}
-          {actionLabel(t, action)}
+          {t(ACTION_LABELS[action])}
         </Button>
       ))}
     </div>
@@ -150,7 +150,7 @@ export function useBookingPanels({
       <ResponsivePanel
         open={detailsOpen}
         onClose={() => setDetailsOpen(false)}
-        title={opened ? opened.customerName : t.booking}
+        title={opened ? opened.customerName : t("booking")}
         footer={footer}
       >
         {opened && <BookingDetails booking={opened} />}
@@ -184,19 +184,19 @@ export function useBookingPanels({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t.cancel.title}</AlertDialogTitle>
+            <AlertDialogTitle>{t("cancel.title")}</AlertDialogTitle>
             <AlertDialogDescription>
               {cancelling &&
-                t.cancel.description(
-                  cancelling.customerName,
-                  formatDay(cancelling.date, m.locale),
-                  formatClock(cancelling.time, m.locale)
-                )}
+                t("cancel.description", {
+                  name: cancelling.customerName,
+                  day: formatDay(cancelling.date, locale),
+                  time: formatClock(cancelling.time, locale),
+                })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-2">
             <p id="cancel-why" className="text-sm font-medium">
-              {t.cancel.why}
+              {t("cancel.why")}
             </p>
             <ToggleGroup
               variant="outline"
@@ -216,14 +216,14 @@ export function useBookingPanels({
                   disabled={pending}
                   className={TOUCH_AREA}
                 >
-                  {t.cancel.reasons[item]}
+                  {t(`cancel.reasons.${item}`)}
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>
-              {t.cancel.keep}
+              {t("cancel.keep")}
             </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
@@ -232,11 +232,11 @@ export function useBookingPanels({
                 cancelling &&
                 run(
                   () => cancelBooking(businessId, cancelling.id, reason),
-                  t.cancel.done
+                  t("cancel.done")
                 )
               }
             >
-              {t.cancel.confirm}
+              {t("cancel.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -254,15 +254,11 @@ export function useBookingPanels({
   }
 }
 
-export function actionLabel(
-  t: ReturnType<typeof useOwnerMessages>["bookings"],
-  action: BookingAction
-): string {
-  return {
-    move: t.move.open,
-    cancel: t.cancel.confirm,
-    done: t.actions.done,
-    noShow: t.actions.noShow,
-    undo: t.actions.undo,
-  }[action]
-}
+// Each action's name, in the owner.bookings words.
+export const ACTION_LABELS = {
+  move: "move.open",
+  cancel: "cancel.confirm",
+  done: "actions.done",
+  noShow: "actions.noShow",
+  undo: "actions.undo",
+} as const satisfies Record<BookingAction, string>

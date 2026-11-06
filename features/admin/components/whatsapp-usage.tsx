@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
@@ -31,7 +32,6 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import type { WhatsappUsage as Usage, UsageBusiness } from "../api/whatsapp-usage"
 import { saveKoblipLimit } from "../api/whatsapp-usage-actions"
-import { useAdminMessages } from "../i18n/provider"
 
 const FORM = "koblip-limit-form"
 
@@ -42,8 +42,8 @@ type Editing = { business: UsageBusiness | null }
 // business's templates from Koblip's number this month against its limit.
 // Tapping either opens it to change; the server checks and logs each change.
 export function WhatsappUsage({ usage }: { usage: Usage }) {
-  const m = useAdminMessages()
-  const t = m.whatsapp.usage
+  const t = useTranslations("admin.whatsapp.usage")
+  const locale = useLocale()
   const [editing, setEditing] = useState<Editing | null>(null)
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState("")
@@ -51,7 +51,7 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
   const [start, setStart] = useState("")
   const [invalid, setInvalid] = useState(false)
   const [pending, startTransition] = useTransition()
-  const month = new Intl.DateTimeFormat(m.locale, {
+  const month = new Intl.DateTimeFormat(locale, {
     month: "long",
     year: "numeric",
     timeZone: "UTC",
@@ -72,11 +72,11 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
       const done = await saveKoblipLimit(editing.business?.id ?? null, value).catch(() => null)
       if (done?.ok) {
         setOpen(false)
-        toast.success(t.saved)
+        toast.success(t("saved"))
       } else if (done?.error === "invalid") {
         setInvalid(true)
       } else {
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
   }
@@ -95,15 +95,15 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
       <ItemGroup className="gap-3">
         <Item variant="outline" render={<button type="button" onClick={() => edit(null)} />}>
           <ItemContent className="min-w-0">
-            <ItemTitle>{t.everyone}</ItemTitle>
+            <ItemTitle>{t("everyone")}</ItemTitle>
             <ItemDescription className="break-words">
               {usage.changed
-                ? `${t.perMonth(usage.limit)} · ${t.byDefault(usage.defaultLimit)}`
-                : t.perMonth(usage.limit)}
+                ? `${t("perMonth", { n: usage.limit })} · ${t("byDefault", { n: usage.defaultLimit })}`
+                : t("perMonth", { n: usage.limit })}
             </ItemDescription>
           </ItemContent>
           <ItemActions>
-            {usage.changed && <Badge variant="secondary">{t.changed}</Badge>}
+            {usage.changed && <Badge variant="secondary">{t("changed")}</Badge>}
             <ChevronRightIcon className="size-4 text-muted-foreground" />
           </ItemActions>
         </Item>
@@ -111,7 +111,7 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
 
       <section className="flex flex-col gap-3" aria-labelledby="usage-month">
         <h2 id="usage-month" className="text-lg font-semibold tracking-tight">
-          {t.month(month)}
+          {t("month", { month })}
         </h2>
         {usage.businesses.length ? (
           <ItemGroup className="gap-3">
@@ -127,13 +127,13 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
                   </ItemTitle>
                   <ItemDescription className="truncate">
                     {business.ownLimit === null
-                      ? t.sent(business.sent, business.limit)
-                      : `${t.sent(business.sent, business.limit)} · ${t.ownLimit}`}
+                      ? t("sent", { sent: business.sent, limit: business.limit })
+                      : `${t("sent", { sent: business.sent, limit: business.limit })} · ${t("ownLimit")}`}
                   </ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   {business.sent >= business.limit && (
-                    <Badge variant="destructive">{t.atLimit}</Badge>
+                    <Badge variant="destructive">{t("atLimit")}</Badge>
                   )}
                   <ChevronRightIcon className="size-4 text-muted-foreground" />
                 </ItemActions>
@@ -146,7 +146,7 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
               <EmptyMedia variant="icon">
                 <BanknoteIcon />
               </EmptyMedia>
-              <EmptyTitle>{t.none}</EmptyTitle>
+              <EmptyTitle>{t("none")}</EmptyTitle>
             </EmptyHeader>
           </Empty>
         )}
@@ -155,12 +155,12 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
       <ResponsivePanel
         open={open}
         onClose={() => setOpen(false)}
-        title={editing?.business ? t.limitFor(editing.business.name) : t.everyone}
+        title={editing?.business ? t("limitFor", { name: editing.business.name }) : t("everyone")}
         footer={
           <>
             {own !== null && (
               <Button variant="outline" size="lg" disabled={pending} onClick={() => save(null)}>
-                {editing?.business ? t.useEveryone : t.useDefault}
+                {editing?.business ? t("useEveryone") : t("useDefault")}
               </Button>
             )}
             <Button
@@ -170,7 +170,7 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
               disabled={pending || input === start}
             >
               {pending && <Spinner data-icon="inline-start" />}
-              {t.save}
+              {t("save")}
             </Button>
           </>
         }
@@ -189,7 +189,7 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
           }}
         >
           <Field data-invalid={invalid || undefined}>
-            <FieldLabel htmlFor="koblip-limit">{t.limit}</FieldLabel>
+            <FieldLabel htmlFor="koblip-limit">{t("limit")}</FieldLabel>
             <Input
               id="koblip-limit"
               inputMode="numeric"
@@ -200,9 +200,9 @@ export function WhatsappUsage({ usage }: { usage: Usage }) {
                 setInvalid(false)
               }}
             />
-            {invalid && <FieldError>{t.invalid}</FieldError>}
+            {invalid && <FieldError>{t("invalid")}</FieldError>}
           </Field>
-          <FieldDescription>{t.hint}</FieldDescription>
+          <FieldDescription>{t("hint")}</FieldDescription>
         </form>
       </ResponsivePanel>
     </div>

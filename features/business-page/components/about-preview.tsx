@@ -1,11 +1,12 @@
 "use client"
 
-import { useMessages } from "@/components/language-provider"
+import { useTranslations } from "next-intl"
+
 import { Button } from "@/components/ui/button"
 
 // The first two lines of About under the name, with a jump to the rest.
 export function AboutPreview({ text }: { text: string }) {
-  const m = useMessages()
+  const t = useTranslations("public.page")
   return (
     <div className="-mt-4 flex flex-col items-start">
       <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
@@ -21,7 +22,7 @@ export function AboutPreview({ text }: { text: string }) {
             ?.scrollIntoView({ behavior: "smooth", block: "start" })
         }
       >
-        {m.page.viewMore}
+        {t("viewMore")}
       </Button>
     </div>
   )

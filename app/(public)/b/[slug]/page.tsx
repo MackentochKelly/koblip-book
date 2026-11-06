@@ -1,10 +1,10 @@
 import type { Metadata } from "next"
-import { headers } from "next/headers"
 import { notFound } from "next/navigation"
+import { getLocale, getTranslations } from "next-intl/server"
 import { LanguageProvider } from "@/components/language-provider"
+import { WordsProvider } from "@/components/words-provider"
 import { getSession } from "@/lib/dal"
-import { messagesFor } from "@/lib/i18n"
-import { pickLanguage } from "@/lib/page-language"
+import { languageOf } from "@/lib/page-language"
 import { phoneSignInReady } from "@/lib/phone-sign-in"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -38,18 +38,15 @@ import { isBookable } from "@/features/booking/utils/is-bookable"
 
 type Props = PageProps<"/b/[slug]">
 
-// ?lang= wins, then the visitor's browser language, else English.
-async function pageLanguage(searchParams: Props["searchParams"]) {
-  const { lang } = await searchParams
-  return pickLanguage(lang, (await headers()).get("accept-language"))
+// The page's language: ?lang= wins, then the visitor's browser language,
+// else English (proxy.ts).
+async function pageLanguage() {
+  return languageOf(await getLocale())
 }
 
-export async function generateMetadata({
-  params,
-  searchParams,
-}: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const language = await pageLanguage(searchParams)
+  const language = await pageLanguage()
   const data = await getBusinessPage(slug, language)
   if (!data) {
     notFound()
@@ -62,10 +59,10 @@ export async function generateMetadata({
   }
 }
 
-export default async function BusinessPage({ params, searchParams }: Props) {
+export default async function BusinessPage({ params }: Props) {
   const { slug } = await params
-  const language = await pageLanguage(searchParams)
-  const m = messagesFor(language)
+  const language = await pageLanguage()
+  const t = await getTranslations("public")
   const data = await getBusinessPage(slug, language)
   if (!data) {
     notFound()
@@ -81,81 +78,76 @@ export default async function BusinessPage({ params, searchParams }: Props) {
     hoursCount: hours.length,
   })
   const sections = [
-    ...(services.length > 0 ? [{ id: "services", label: m.sections.services }] : []),
-    ...(team.length > 0 ? [{ id: "team", label: m.sections.team }] : []),
-    ...detailSections(data, language),
+    ...(services.length > 0 ? [{ id: "services", label: t("sections.services") }] : []),
+    ...(team.length > 0 ? [{ id: "team", label: t("sections.team") }] : []),
+    ...detailSections(data, (section) => t(`sections.${section}`)),
   ]
 
   return (
-    <LanguageProvider language={language}>
-      <main
-        lang={language}
-        className="mx-auto w-full max-w-page pb-28 md:px-6 md:pt-6 md:pb-16"
-      >
-        <BusinessPhotos photos={photos} />
-        <div className="grid gap-8 px-4 pt-5 md:grid-cols-[minmax(0,1fr)_20rem] md:gap-10 md:px-0 md:pt-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
-          <div className="flex min-w-0 flex-col gap-8">
-            <div className="flex items-start justify-between gap-3">
-              <BusinessSummary
+    <WordsProvider namespaces={["app", "public"]}>
+      <LanguageProvider language={language}>
+        <main
+          lang={language}
+          className="mx-auto w-full max-w-page pb-28 md:px-6 md:pt-6 md:pb-16"
+        >
+          <BusinessPhotos photos={photos} />
+          <div className="grid gap-8 px-4 pt-5 md:grid-cols-[minmax(0,1fr)_20rem] md:gap-10 md:px-0 md:pt-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <div className="flex min-w-0 flex-col gap-8">
+              <div className="flex items-start justify-between gap-3">
+                <BusinessSummary business={business} open={open} />
+                <div className="flex shrink-0 gap-2 md:hidden">
+                  <ThemeToggle />
+                  <LanguageMenu />
+                  <ShareButton title={business.name} />
+                </div>
+              </div>
+              {business.description && (
+                <AboutPreview text={business.description} />
+              )}
+              <SectionTabs sections={sections} />
+              <ServiceList
+                services={services}
+                serviceCategories={data.serviceCategories}
+                currency={business.currency}
+                slug={business.slug}
+                bookable={bookable}
+              />
+              {team.length > 0 && (
+                <>
+                  <TeamList slug={business.slug} team={team} />
+                  <Separator />
+                </>
+              )}
+              <BusinessDetails data={data} />
+              <BusinessFooter
+                name={business.name}
+                slug={business.slug}
+                policies={data.policies}
+                fromGoogle={business.googlePlaceId !== null}
+              />
+            </div>
+            <aside className="hidden md:block">
+              <BusinessSideCard
                 business={business}
                 open={open}
-                language={language}
+                bookable={bookable}
               />
-              <div className="flex shrink-0 gap-2 md:hidden">
-                <ThemeToggle />
-                <LanguageMenu />
-                <ShareButton title={business.name} />
-              </div>
-            </div>
-            {business.description && (
-              <AboutPreview text={business.description} />
-            )}
-            <SectionTabs sections={sections} />
-            <ServiceList
-              services={services}
-              serviceCategories={data.serviceCategories}
-              currency={business.currency}
-              slug={business.slug}
-              bookable={bookable}
-            />
-            {team.length > 0 && (
-              <>
-                <TeamList slug={business.slug} team={team} language={language} />
-                <Separator />
-              </>
-            )}
-            <BusinessDetails data={data} language={language} />
-            <BusinessFooter
-              name={business.name}
-              slug={business.slug}
-              policies={data.policies}
-              fromGoogle={business.googlePlaceId !== null}
-              language={language}
-            />
+            </aside>
           </div>
-          <aside className="hidden md:block">
-            <BusinessSideCard
+        </main>
+        {hasActions(business, bookable) && (
+          <BottomBar label={t("page.contact")} className="md:hidden">
+            <BusinessActions
               business={business}
-              open={open}
+              layout="row"
               bookable={bookable}
-              language={language}
             />
-          </aside>
-        </div>
-      </main>
-      {hasActions(business, bookable) && (
-        <BottomBar label={m.page.contact} className="md:hidden">
-          <BusinessActions
-            business={business}
-            layout="row"
-            bookable={bookable}
-            language={language}
-          />
-        </BottomBar>
-      )}
-      {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp, manageBookings: phoneSignInReady() })} mode="drawer" />}
-      {isOwner && <OwnerBackButton businessId={business.id} />}
-      <Toaster />
-    </LanguageProvider>
+          </BottomBar>
+        )}
+        {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp, manageBookings: phoneSignInReady() })} mode="drawer" />}
+        {isOwner && <OwnerBackButton businessId={business.id} />}
+        <Toaster />
+      </LanguageProvider>
+    </WordsProvider>
   )
 }

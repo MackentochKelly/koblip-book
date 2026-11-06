@@ -1,29 +1,32 @@
+import type { useTranslations } from "next-intl"
+
+import type { BusinessTextField } from "@/lib/translations/business-texts"
 import { isTranslationLanguage } from "@/lib/translations/languages"
 import type { TranslationStatus } from "@/lib/translations/rules"
 import type { TranslationRow } from "../api/translations"
-import type { AdminMessages } from "../i18n"
 
-type Fields = AdminMessages["translations"]["fields"]
+// The Translations screens' words (useTranslations or getTranslations).
+export type TranslationWords = ReturnType<typeof useTranslations<"admin.translations">>
 
 // Where a text is from and what it is, in the admin's words: a business and
 // the kind of text ("Palacete · Service"), or the interface's page and the
 // word's key.
 export function textLabels(
   row: Pick<TranslationRow, "scope" | "module" | "key" | "language" | "businessName">,
-  m: AdminMessages
+  t: TranslationWords
 ): { where: string; what: string; language: string } {
-  const t = m.translations
   const language = isTranslationLanguage(row.language)
-    ? t.languages[row.language]
+    ? t(`languages.${row.language}`)
     : row.language
   if (row.scope === "interface") {
     return { where: row.module, what: row.key, language }
   }
+  // A business text's module is its field ("service.name"); one this
+  // screen has no name for shows as it is.
+  const field = `fields.${row.module as BusinessTextField}` as const
   return {
-    where: row.businessName ?? t.parts.business,
-    what: Object.hasOwn(t.fields, row.module)
-      ? t.fields[row.module as keyof Fields]
-      : row.module,
+    where: row.businessName ?? t("parts.business"),
+    what: t.has(field) ? t(field) : row.module,
     language,
   }
 }

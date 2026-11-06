@@ -1,13 +1,13 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 
 import { getMyProfile } from "@/features/team-area/api/queries"
 import { ProfileForm } from "@/features/team-area/components/profile-form"
-import { teamAreaWordsFor } from "@/features/team-area/i18n"
-import { getTeamAreaLanguage } from "@/features/team-area/i18n/server"
 import { requireTeamMember } from "@/lib/dal"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: teamAreaWordsFor(await getTeamAreaLanguage()).nav.profile }
+  const t = await getTranslations("teamArea.nav")
+  return { title: t("profile") }
 }
 
 export default async function MyProfilePage({ params }: PageProps<"/team/[memberId]/profile">) {

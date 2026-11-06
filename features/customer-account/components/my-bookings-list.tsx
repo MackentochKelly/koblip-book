@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { useLocale, useTranslations } from "next-intl"
 
 import { PageSection } from "@/components/page-section"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -17,36 +18,30 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import { rescheduleHref } from "@/lib/my-bookings-links"
-import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
-import type { Messages } from "@/lib/i18n"
-import type { PageLanguage } from "@/lib/page-language"
+import { languageOf } from "@/lib/page-language"
 import type { MyBooking } from "../types"
 import { CantComeButton } from "./cant-come-button"
 
 // One booking. What is ahead carries its "Can't make it"; what is over
 // opens the business's page, to book again.
-function BookingRow({
-  booking,
-  ahead,
-  language,
-  m,
-}: {
-  booking: MyBooking
-  ahead: boolean
-  language: PageLanguage
-  m: Messages
-}) {
+function BookingRow({ booking, ahead }: { booking: MyBooking; ahead: boolean }) {
+  const t = useTranslations("public")
+  const locale = useLocale()
+  const language = languageOf(locale)
+  const formatDuration = useFormatDuration()
   const price =
     booking.priceMinor === null
       ? null
       : booking.priceMinor === 0
-        ? m.booking.free
-        : formatPrice(booking.priceMinor, booking.currency, m.locale)
+        ? t("booking.free")
+        : formatPrice(booking.priceMinor, booking.currency, locale)
   const details = [
     formatDuration(booking.durationMinutes),
-    booking.teamMemberName && m.booking.with(booking.teamMemberName),
+    booking.teamMemberName &&
+      t("booking.with", { name: booking.teamMemberName }),
   ]
     .filter(Boolean)
     .join(" · ")
@@ -84,7 +79,7 @@ function BookingRow({
       </ItemContent>
       <ItemActions className="flex-col items-end gap-1">
         {booking.cancelled && (
-          <Badge variant="destructive">{m.account.cancelled}</Badge>
+          <Badge variant="destructive">{t("account.cancelled")}</Badge>
         )}
         {price && <span className="text-sm tabular-nums">{price}</span>}
       </ItemActions>
@@ -96,7 +91,7 @@ function BookingRow({
               nativeButton={false}
               render={<Link href={rescheduleHref(booking.id, language)} />}
             >
-              {m.account.reschedule}
+              {t("account.reschedule")}
             </Button>
             <CantComeButton booking={booking} />
           </ButtonGroup>
@@ -111,26 +106,23 @@ function BookingRow({
 export function MyBookingsList({
   upcoming,
   past,
-  language,
-  m,
 }: {
   upcoming: MyBooking[]
   past: MyBooking[]
-  language: PageLanguage
-  m: Messages
 }) {
+  const t = useTranslations("public.account")
   if (upcoming.length === 0 && past.length === 0) {
     return (
       <Empty>
         <EmptyHeader>
-          <EmptyTitle>{m.account.none}</EmptyTitle>
+          <EmptyTitle>{t("none")}</EmptyTitle>
         </EmptyHeader>
       </Empty>
     )
   }
   return (
     <div className="flex w-full flex-col gap-8">
-      <PageSection id="upcoming" title={m.account.upcoming}>
+      <PageSection id="upcoming" title={t("upcoming")}>
         {upcoming.length ? (
           <ItemGroup className="gap-3">
             {upcoming.map((booking) => (
@@ -138,27 +130,23 @@ export function MyBookingsList({
                 key={booking.id}
                 booking={booking}
                 ahead
-                language={language}
-                m={m}
               />
             ))}
           </ItemGroup>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {m.account.noneUpcoming}
+            {t("noneUpcoming")}
           </p>
         )}
       </PageSection>
       {past.length > 0 && (
-        <PageSection id="past" title={m.account.past}>
+        <PageSection id="past" title={t("past")}>
           <ItemGroup className="gap-3">
             {past.map((booking) => (
               <BookingRow
                 key={booking.id}
                 booking={booking}
                 ahead={false}
-                language={language}
-                m={m}
               />
             ))}
           </ItemGroup>

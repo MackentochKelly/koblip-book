@@ -1,5 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
+import { useLocale, useTranslations } from "next-intl"
 
 import { BottomBar } from "@/components/bottom-bar"
 import { LanguageMenu } from "@/components/language-menu"
@@ -10,9 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftIcon } from "@/components/ui/icons"
-import { messagesFor } from "@/lib/i18n"
 import { initials } from "@/lib/initials"
-import type { PageLanguage } from "@/lib/page-language"
+import { languageOf } from "@/lib/page-language"
 import { languageName } from "@/lib/team-rules"
 import type { TeamProfilePage } from "../types/team-profile"
 import { BookButton } from "./book-button"
@@ -29,24 +29,24 @@ import { ShareButton } from "./share-button"
 // business's reviews, photos, About, info and location.
 export function TeamProfile({
   profile,
-  language,
   bookable,
 }: {
   profile: TeamProfilePage
-  language: PageLanguage
   bookable: boolean
 }) {
-  const m = messagesFor(language)
-  const t = m.teamProfile
+  const m = useTranslations("public")
+  const t = useTranslations("public.teamProfile")
+  const locale = useLocale()
+  const language = languageOf(locale)
   const { data, member, services } = profile
   const { business } = data
-  const number = new Intl.NumberFormat(m.locale)
+  const number = new Intl.NumberFormat(locale)
   const firstName = member.name.split(" ")[0] || member.name
   const cover = data.photos[0]
-  const hoursTitle = t.hours(firstName)
+  const hoursTitle = t("hours", { name: firstName })
   const sections = [
-    ...(services.length > 0 ? [{ id: "services", label: m.sections.services }] : []),
-    ...detailSections(data, language, hoursTitle),
+    ...(services.length > 0 ? [{ id: "services", label: m("sections.services") }] : []),
+    ...detailSections(data, (section) => m(`sections.${section}`), hoursTitle),
   ]
   return (
     <>
@@ -63,7 +63,7 @@ export function TeamProfile({
             render={<Link href={`/b/${business.slug}?lang=${language}#team`} />}
           >
             <ArrowLeftIcon data-icon="inline-start" />
-            <span className="truncate">{m.policies.backTo(business.name)}</span>
+            <span className="truncate">{m("policies.backTo", { name: business.name })}</span>
           </Button>
           <div className="flex shrink-0 gap-2">
             <ThemeToggle />
@@ -101,7 +101,7 @@ export function TeamProfile({
                 <Rating
                   rating={business.rating}
                   reviewCount={business.reviewCount}
-                  locale={m.locale}
+                  locale={locale}
                 />
               )}
             </p>
@@ -110,8 +110,8 @@ export function TeamProfile({
           {profile.appointments > 0 && (
             <dl className="flex items-center justify-center">
               {[
-                { label: t.appointments, value: profile.appointments },
-                { label: t.clients, value: profile.clients },
+                { label: t("appointments"), value: profile.appointments },
+                { label: t("clients"), value: profile.clients },
               ].map((stat) => (
                 <div
                   key={stat.label}
@@ -136,17 +136,17 @@ export function TeamProfile({
         </div>
 
         {member.about && (
-          <PageSection id="about-me" title={t.about(firstName)}>
+          <PageSection id="about-me" title={t("about", { name: firstName })}>
             <p className="whitespace-pre-line text-muted-foreground">{member.about}</p>
           </PageSection>
         )}
 
         {member.languages.length > 0 && (
-          <PageSection id="languages" title={t.languages}>
+          <PageSection id="languages" title={t("languages")}>
             <div className="flex flex-wrap gap-2">
               {member.languages.map((code) => (
                 <Badge key={code} variant="secondary">
-                  {languageName(code, m.locale)}
+                  {languageName(code, locale)}
                 </Badge>
               ))}
             </div>
@@ -165,7 +165,6 @@ export function TeamProfile({
         />
         <BusinessDetails
           data={data}
-          language={language}
           hours={{ rows: profile.hours, title: hoursTitle }}
         />
         <BusinessFooter
@@ -173,11 +172,10 @@ export function TeamProfile({
           slug={business.slug}
           policies={data.policies}
           fromGoogle={business.googlePlaceId !== null}
-          language={language}
         />
       </main>
       {bookable && (
-        <BottomBar label={m.actions.bookNow} className="md:hidden">
+        <BottomBar label={m("actions.bookNow")} className="md:hidden">
           <BookButton slug={business.slug} memberId={member.id} fromAway className="flex-1" />
         </BottomBar>
       )}

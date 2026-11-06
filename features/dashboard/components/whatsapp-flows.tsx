@@ -3,13 +3,14 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { SwitchCard } from "@/components/switch-card"
 import { ItemGroup } from "@/components/ui/item"
+import { languageOf } from "@/lib/page-language"
 import { setAutomationOn } from "../api/automation-actions"
-import { useOwnerMessages } from "../i18n/provider"
 import type { Automation, AutomationAction, AutomationLanguage } from "../types/automations"
 import { AutomationEditor, type AutomationLimits } from "./automation-editor"
 import { WhatsappFlowCanvas } from "./whatsapp-flow-canvas"
@@ -35,11 +36,11 @@ export function WhatsappFlows({
   const [editorKey, setEditorKey] = useState(0)
   // The button the editor opens with, added from the canvas's side.
   const [adding, setAdding] = useState<AutomationAction["type"] | undefined>()
-  const m = useOwnerMessages()
-  const t = m.whatsapp
+  const t = useTranslations("owner.whatsapp")
+  const locale = useLocale()
   const open = automations.find((item) => item.id === openId)
   // The owner reads the words in their own language.
-  const language: AutomationLanguage = m.locale.startsWith("es") ? "es" : "en"
+  const language: AutomationLanguage = languageOf(locale)
   const openEditor = (id: string, action?: AutomationAction["type"]) => {
     setAdding(action)
     setEditorKey((value) => value + 1)
@@ -50,13 +51,13 @@ export function WhatsappFlows({
     <div className="flex flex-col gap-3">
       {!ownNumber && (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">{t.flows.ownNumberOnly}</p>
+          <p className="text-sm text-muted-foreground">{t("flows.ownNumberOnly")}</p>
           <Button
             variant="outline"
             nativeButton={false}
             render={<Link href={`/dashboard/${businessId}/integrations`} />}
           >
-            {t.useOwnNumber}
+            {t("useOwnNumber")}
           </Button>
         </div>
       )}
@@ -105,11 +106,11 @@ function FlowRow({
   ownNumber: boolean
   onOpen: () => void
 }) {
-  const t = useOwnerMessages().whatsapp
+  const t = useTranslations("owner.whatsapp")
   const router = useRouter()
   const [on, setOn] = useState(automation.on)
   const [pending, startTransition] = useTransition()
-  const name = t.flows.names[automation.trigger]
+  const name = t(`flows.names.${automation.trigger}`)
 
   const toggle = (next: boolean) => {
     setOn(next)
@@ -119,7 +120,7 @@ function FlowRow({
         router.refresh()
       } else {
         setOn(!next)
-        toast.error(result?.error === "noOwnNumber" ? t.flows.ownNumberOnly : t.failed)
+        toast.error(result?.error === "noOwnNumber" ? t("flows.ownNumberOnly") : t("failed"))
       }
     })
   }
@@ -127,12 +128,12 @@ function FlowRow({
   return (
     <SwitchCard
       title={name}
-      description={t.flows.about[automation.trigger]}
-      openLabel={t.edit(name)}
+      description={t(`flows.about.${automation.trigger}`)}
+      openLabel={t("edit", { name: name.toLowerCase() })}
       onOpen={onOpen}
       on={on}
       onCheckedChange={toggle}
-      switchLabel={t.turnOn(name)}
+      switchLabel={t("turnOn", { name: name.toLowerCase() })}
       // Turning on needs the business's own number (D2); off always works.
       switchDisabled={pending || (!ownNumber && !on)}
     />

@@ -1,6 +1,8 @@
 import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, expect, test, vi } from "vitest"
 
+import { WithWords } from "@/i18n/testing"
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
   usePathname: () => "/dashboard/b1/automations/activity",
@@ -42,20 +44,22 @@ const run = (id: string, at: string, patch: Partial<Run> = {}): Run => ({
 
 test("runs show among the messages, newest first, with why one didn't go", () => {
   render(
-    <WhatsappActivity
-      businessId="b1"
-      history={[send("s1", "2026-10-31T10:00:00.000Z")]}
-      runs={[
-        run("r1", "2026-10-31T11:00:00.000Z"),
-        run("r2", "2026-10-31T09:00:00.000Z", {
-          step: "handoff",
-          state: "skipped",
-          reason: "paused",
-        }),
-      ]}
-      filter={{}}
-      timeZone="UTC"
-    />
+    <WithWords>
+      <WhatsappActivity
+        businessId="b1"
+        history={[send("s1", "2026-10-31T10:00:00.000Z")]}
+        runs={[
+          run("r1", "2026-10-31T11:00:00.000Z"),
+          run("r2", "2026-10-31T09:00:00.000Z", {
+            step: "handoff",
+            state: "skipped",
+            reason: "paused",
+          }),
+        ]}
+        filter={{}}
+        timeZone="UTC"
+      />
+    </WithWords>
   )
   const titles = Array.from(document.querySelectorAll("[data-slot=item-title]")).map(
     (title) => title.textContent
@@ -67,13 +71,15 @@ test("runs show among the messages, newest first, with why one didn't go", () =>
 
 test("the message filter offers Automations", () => {
   render(
-    <WhatsappActivity
-      businessId="b1"
-      history={[]}
-      runs={[run("r1", "2026-10-31T11:00:00.000Z")]}
-      filter={{ automations: true }}
-      timeZone="UTC"
-    />
+    <WithWords>
+      <WhatsappActivity
+        businessId="b1"
+        history={[]}
+        runs={[run("r1", "2026-10-31T11:00:00.000Z")]}
+        filter={{ automations: true }}
+        timeZone="UTC"
+      />
+    </WithWords>
   )
   expect(screen.getByRole("combobox", { name: "Message" }).textContent).toContain("Automations")
 })

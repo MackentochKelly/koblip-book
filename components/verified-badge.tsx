@@ -15,11 +15,11 @@ const SEAL =
 // and screen readers.
 export function VerifiedName({
   name,
-  label = "Verified",
+  label,
   className,
 }: {
   name: string
-  label?: string
+  label: string
   className?: string
 }) {
   const [open, setOpen] = useState(false)

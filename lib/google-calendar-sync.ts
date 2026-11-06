@@ -17,7 +17,7 @@ import { GoogleCalendarError, googleCalendarApi, googleTurnKey } from "@/lib/goo
 import { eventColorOf } from "@/lib/google-calendar-colors"
 import { refreshGoogleBusy } from "@/lib/google-calendar-busy"
 import { ensureGoogleChannels } from "@/lib/google-calendar-channels"
-import { eventOf, type EventPlace, type GoogleEvent } from "@/lib/google-calendar-event"
+import { eventOf, eventWordsFor, type EventPlace, type GoogleEvent } from "@/lib/google-calendar-event"
 import { GOOGLE_CALENDAR_RULES } from "@/lib/google-calendar-rules"
 import { runInTurn } from "@/lib/run-in-turn"
 
@@ -136,6 +136,7 @@ async function syncConnection(connectionId: string, busy: "when_due" | "now" = "
     // Only the owner can open the owner area.
     site: connection.teamMemberId ? null : (process.env.BETTER_AUTH_URL ?? null),
   }
+  const words = await eventWordsFor(place.language)
 
   let lastError: string | null = null
   try {
@@ -183,7 +184,7 @@ async function syncConnection(connectionId: string, busy: "when_due" | "now" = "
     let sent = 0
     for (const { booking, sent: before, serviceColor, categoryColor } of rows) {
       const color = eventColorOf(serviceColor, categoryColor)
-      const event = eventOf(booking, extras.get(booking.id) ?? [], place, color)
+      const event = eventOf(booking, extras.get(booking.id) ?? [], place, words, color)
       const fingerprint = fingerprintOf(booking, event)
       // Unchanged, or cancelled before it was ever sent.
       if (before ? before.fingerprint === fingerprint : fingerprint === CANCELLED) continue

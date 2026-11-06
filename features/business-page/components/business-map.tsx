@@ -7,9 +7,10 @@ import {
   Map as GoogleMap,
   Pin,
 } from "@vis.gl/react-google-maps"
+import { useLocale } from "next-intl"
 import { useTheme } from "next-themes"
 
-import { usePageLanguage } from "@/components/language-provider"
+import { languageOf } from "@/lib/page-language"
 
 const BROWSER_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY
 const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID
@@ -26,7 +27,7 @@ export function BusinessMap({
   longitude: number
 }) {
   const { resolvedTheme } = useTheme()
-  const language = usePageLanguage()
+  const language = languageOf(useLocale())
   const [rejected, setRejected] = useState(false)
   useEffect(() => {
     const host = window as typeof window & { gm_authFailure?: () => void }

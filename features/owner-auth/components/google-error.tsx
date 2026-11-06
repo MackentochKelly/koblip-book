@@ -1,9 +1,9 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useEffect } from "react"
 
-import type { PageLanguage } from "@/lib/page-language"
-import { authWordsFor, type AuthWords } from "../i18n"
+import type en from "../i18n/en"
 import { AuthNotice } from "./auth-notice"
 
 // What went wrong with Google sign-in, from the `error` it came back with
@@ -12,21 +12,15 @@ import { AuthNotice } from "./auth-notice"
 // never verified, so Google is not joined to it (that keeps someone who
 // signed up with another person's email out of their account). It is a
 // tip, not a failure, so it shows in the calm style.
-const TIPS: Record<string, keyof AuthWords["googleErrors"]> = {
+const TIPS: Record<string, keyof typeof en.googleErrors> = {
   account_not_linked: "accountNotLinked",
 }
 
 // The owner pressed Cancel on Google's screen: nothing went wrong.
 const SILENT = new Set(["access_denied"])
 
-export function GoogleError({
-  code,
-  language = "en",
-}: {
-  code: string
-  language?: PageLanguage
-}) {
-  const t = authWordsFor(language).googleErrors
+export function GoogleError({ code }: { code: string }) {
+  const t = useTranslations("ownerAuth.googleErrors")
   const key = code.replaceAll(" ", "_")
 
   // Shown once: the error leaves the address, so a refresh doesn't bring it
@@ -42,7 +36,7 @@ export function GoogleError({
   const tip = TIPS[key]
   return (
     <AuthNotice kind={tip ? "info" : "error"}>
-      {tip ? t[tip] : t.fallback}
+      {t(tip ?? "fallback")}
     </AuthNotice>
   )
 }

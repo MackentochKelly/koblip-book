@@ -1,6 +1,7 @@
 "use client"
 
 import { useId } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
@@ -19,7 +20,6 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { formatDayShort, formatMonthDay } from "@/lib/format-booking-time"
-import { useOwnerMessages } from "../i18n/provider"
 import type { PeriodSummary } from "../utils/analytics"
 
 // The grid always shows a few steps, even with few bookings.
@@ -33,19 +33,19 @@ export function BookingsAreaChart({
 }: {
   daily: PeriodSummary["daily"]
 }) {
-  const m = useOwnerMessages()
-  const a = m.bookings.analytics
+  const a = useTranslations("owner.bookings.analytics")
+  const locale = useLocale()
   const id = useId().replace(/:/g, "")
   const config = {
-    returning: { label: a.returning, color: "var(--chart-2)" },
-    newCustomers: { label: a.newCustomers, color: "var(--chart-1)" },
+    returning: { label: a("returning"), color: "var(--chart-2)" },
+    newCustomers: { label: a("newCustomers"), color: "var(--chart-1)" },
   } satisfies ChartConfig
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{a.bookings}</CardTitle>
-        <CardDescription>{a.newAndReturning}</CardDescription>
+        <CardTitle>{a("bookings")}</CardTitle>
+        <CardDescription>{a("newAndReturning")}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={config} className="aspect-auto h-64 w-full">
@@ -80,7 +80,7 @@ export function BookingsAreaChart({
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tickFormatter={(date: string) => formatMonthDay(date, m.locale)}
+              tickFormatter={(date: string) => formatMonthDay(date, locale)}
             />
             <YAxis
               orientation="right"
@@ -98,7 +98,7 @@ export function BookingsAreaChart({
                   labelFormatter={(_, payload) => {
                     const date = payload[0]?.payload?.date
                     return typeof date === "string"
-                      ? formatDayShort(date, m.locale)
+                      ? formatDayShort(date, locale)
                       : ""
                   }}
                 />

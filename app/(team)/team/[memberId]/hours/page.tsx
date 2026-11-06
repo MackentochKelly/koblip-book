@@ -1,13 +1,13 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 
 import { getMyHours } from "@/features/team-area/api/queries"
 import { MyHours } from "@/features/team-area/components/my-hours"
-import { teamAreaWordsFor } from "@/features/team-area/i18n"
-import { getTeamAreaLanguage } from "@/features/team-area/i18n/server"
 import { requireTeamMember } from "@/lib/dal"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: teamAreaWordsFor(await getTeamAreaLanguage()).nav.hours }
+  const t = await getTranslations("teamArea.nav")
+  return { title: t("hours") }
 }
 
 export default async function MyHoursPage({ params }: PageProps<"/team/[memberId]/hours">) {

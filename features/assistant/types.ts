@@ -1,5 +1,15 @@
+import type { createTranslator, Messages } from "next-intl"
+
 import type { PageLanguage } from "@/lib/page-language"
 import type { MemoryRow } from "./utils/memory"
+
+// The lines the server writes for the owner (i18n/server-en.ts), and the
+// owner area's own names the tools read, as next-intl gives them
+// (getTranslations).
+export type ServerWords = ReturnType<
+  typeof createTranslator<Messages, "assistantServer">
+>
+export type OwnerWords = ReturnType<typeof createTranslator<Messages, "owner">>
 
 // Stream contract for POST /api/assistant (section 5 of docs/assistant-plan.md).
 // One JSON object per line.

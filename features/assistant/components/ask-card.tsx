@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import {
   CalendarDaysIcon,
   ContactIcon,
@@ -8,8 +9,6 @@ import {
 } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
-import type { PageLanguage } from "@/lib/page-language"
-import { assistantMessagesFor } from "../i18n"
 import { type HandOff, handOff } from "../utils/ask-handoff"
 import { AssistantComposer } from "./assistant-composer"
 
@@ -23,14 +22,8 @@ const IDEAS = [
 // A way into the assistant from another page (Home): a few ideas to tap and
 // the assistant's own message box under them. A question, or Talk live,
 // opens the assistant to carry on there as a new chat; no AI runs until then.
-export function AskCard({
-  businessId,
-  language,
-}: {
-  businessId: string
-  language: PageLanguage
-}) {
-  const messages = assistantMessagesFor(language)
+export function AskCard({ businessId }: { businessId: string }) {
+  const t = useTranslations("assistant.empty.suggestions")
   const router = useRouter()
   const open = (value: HandOff) => {
     handOff(businessId, value)
@@ -49,17 +42,16 @@ export function AskCard({
             key={key}
             type="button"
             variant="outline"
-            onClick={() => ask(messages.empty.suggestions[key])}
+            onClick={() => ask(t(key))}
           >
             <Icon data-icon="inline-start" />
-            {messages.empty.suggestions[key]}
+            {t(key)}
           </Button>
         ))}
       </div>
       {/* Nothing is answered here, so the talking-mode handlers have no
           chat to act on: talking live opens the assistant instead. */}
       <AssistantComposer
-        labels={messages.composer}
         busy={false}
         stoppable={false}
         onSend={ask}

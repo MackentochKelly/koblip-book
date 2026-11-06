@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { FormActions } from "@/components/form-actions"
 import { PlusIcon, XIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
@@ -27,10 +28,9 @@ import {
 import { AppSelect } from "@/components/app-select"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
-import { formatDuration } from "@/lib/format-duration"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import type { NotificationRules } from "@/lib/notification-rules"
 import { saveNotificationSettings } from "../api/notification-actions"
-import { useOwnerMessages } from "../i18n/provider"
 import type { NotificationSettings } from "../types/notifications"
 
 // Timing: when reminders go, the quiet hours and the 24-hour setting (a
@@ -45,7 +45,8 @@ export function WhatsappTiming({
   settings: NotificationSettings
   rules: Pick<NotificationRules, "reminderChoices" | "maxReminders">
 }) {
-  const t = useOwnerMessages().whatsapp
+  const t = useTranslations("owner.whatsapp")
+  const formatDuration = useFormatDuration()
   const router = useRouter()
   const [reminders, setReminders] = useState(settings.reminders)
   const [adding, setAdding] = useState<string | null>(null)
@@ -60,7 +61,7 @@ export function WhatsappTiming({
   const full = reminders.length >= rules.maxReminders
   const items = choices.map((minutes) => ({
     value: String(minutes),
-    label: t.before(formatDuration(minutes)),
+    label: t("before", { time: formatDuration(minutes) }),
   }))
 
   const save = () => {
@@ -74,20 +75,20 @@ export function WhatsappTiming({
         freeTextInWindow: freeText,
       }).catch(() => null)
       if (result?.ok) {
-        toast.success(t.settingsSaved)
+        toast.success(t("settingsSaved"))
         router.refresh()
       } else {
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
   }
 
   return (
     <div className="flex flex-col gap-10">
-      <PageSection id="reminders" title={t.reminders}>
+      <PageSection id="reminders" title={t("reminders")}>
         <ItemGroup className="gap-3">
           {reminders.length === 0 && (
-            <p className="text-sm text-muted-foreground">{t.noReminders}</p>
+            <p className="text-sm text-muted-foreground">{t("noReminders")}</p>
           )}
           {[...reminders]
             .sort((a, b) => b - a)
@@ -96,13 +97,13 @@ export function WhatsappTiming({
               return (
                 <Item key={minutes} variant="outline" size="sm">
                   <ItemContent>
-                    <ItemTitle>{t.before(time)}</ItemTitle>
+                    <ItemTitle>{t("before", { time })}</ItemTitle>
                   </ItemContent>
                   <ItemActions>
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label={t.removeReminder(time)}
+                      aria-label={t("removeReminder", { time })}
                       onClick={() =>
                         setReminders((list) => list.filter((value) => value !== minutes))
                       }
@@ -120,8 +121,8 @@ export function WhatsappTiming({
               options={items}
               value={adding}
               onValueChange={setAdding}
-              placeholder={t.addReminder}
-              aria-label={t.addReminder}
+              placeholder={t("addReminder")}
+              aria-label={t("addReminder")}
               className="flex-1"
             />
             <Button
@@ -134,25 +135,25 @@ export function WhatsappTiming({
               }}
             >
               <PlusIcon data-icon="inline-start" />
-              {t.addField}
+              {t("addField")}
             </Button>
           </Field>
         )}
       </PageSection>
 
-      <PageSection id="quiet-hours" title={t.quietHours}>
+      <PageSection id="quiet-hours" title={t("quietHours")}>
         <FieldGroup>
           <Field>
-            <FieldDescription>{t.quietHint}</FieldDescription>
+            <FieldDescription>{t("quietHint")}</FieldDescription>
             <div className="flex items-center gap-2">
               <TimeInput
-                aria-label={t.from}
+                aria-label={t("from")}
                 value={quietStart}
                 onChange={(event) => setQuietStart(event.target.value)}
               />
               <span className="text-muted-foreground">–</span>
               <TimeInput
-                aria-label={t.to}
+                aria-label={t("to")}
                 value={quietEnd}
                 onChange={(event) => setQuietEnd(event.target.value)}
               />
@@ -161,13 +162,13 @@ export function WhatsappTiming({
         </FieldGroup>
       </PageSection>
 
-      <PageSection id="window" title={t.window}>
+      <PageSection id="window" title={t("window")}>
         {/* The whole row is the switch's tap area. */}
         <FieldLabel htmlFor="free-text-in-window">
           <Field orientation="horizontal">
             <FieldContent>
-              <FieldTitle>{t.freeText}</FieldTitle>
-              <FieldDescription>{t.freeTextHint}</FieldDescription>
+              <FieldTitle>{t("freeText")}</FieldTitle>
+              <FieldDescription>{t("freeTextHint")}</FieldDescription>
             </FieldContent>
             <Switch
               id="free-text-in-window"
@@ -181,7 +182,7 @@ export function WhatsappTiming({
       <FormActions>
         <Button size="lg" onClick={save} disabled={pending}>
           {pending && <Spinner data-icon="inline-start" />}
-          {t.saveSettings}
+          {t("saveSettings")}
         </Button>
       </FormActions>
     </div>

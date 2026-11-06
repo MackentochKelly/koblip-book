@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useLocale, useTranslations } from "next-intl"
 
 import { DateRangePicker, type DayRangeValue } from "@/components/date-range-picker"
 import { ListFilters } from "@/components/list-filters"
@@ -16,7 +17,6 @@ import {
 } from "@/components/ui/empty"
 import { CalendarDaysIcon } from "@/components/ui/icons"
 import { AppSelect } from "@/components/app-select"
-import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking, OwnerServiceCategory } from "../types"
 import {
   type BookingFilters,
@@ -62,8 +62,12 @@ export function BookingsTable({
   team: { id: string; name: string }[]
   panels: Panels
 }) {
-  const m = useOwnerMessages()
-  const t = m.bookings.list
+  const t = useTranslations("owner.bookings.list")
+  const bookingWords = useTranslations("owner.bookings")
+  const catalog = useTranslations("owner.catalog")
+  // Services with no category, and bookings of a removed service.
+  const other = catalog("categories.other")
+  const locale = useLocale()
   const [filters, setFilters] = useState<BookingFilters>(NO_FILTERS)
   const hasTeam = team.length > 0
   const set = (change: Partial<BookingFilters>) => {
@@ -88,24 +92,20 @@ export function BookingsTable({
 
   const statusTabs = STATUS_FILTERS.map((status) => ({
     id: status,
-    label: `${t.statuses[status]} ${counts[status]}`,
+    label: `${t(`statuses.${status}`)} ${counts[status]}`,
   }))
   const rangeChoices = RANGE_PRESETS.map((preset) => ({
     id: preset,
-    label: t.presets[preset],
+    label: t(`presets.${preset}`),
     range: presetRange(preset, today),
   }))
-  const serviceOptions = serviceSelectOptions(
-    services,
-    categories,
-    m.catalog.categories.other
-  )
+  const serviceOptions = serviceSelectOptions(services, categories, other)
   // Each category, then Other when a service or booking has none.
   const categoryOptions = [
     ...categories.map(({ id, name }) => ({ value: id, label: name })),
     ...(services.some((service) => !service.categoryId) ||
     bookings.some((booking) => categoryOf(booking) === null)
-      ? [{ value: OTHER_GROUP, label: m.catalog.categories.other }]
+      ? [{ value: OTHER_GROUP, label: other }]
       : []),
   ]
   const teamOptions = team.map(({ id, name }) => ({ value: id, label: name }))
@@ -127,15 +127,15 @@ export function BookingsTable({
             className="min-w-0 flex-1 md:w-80 md:flex-none"
             value={filters.search}
             onChange={(event) => set({ search: event.target.value })}
-            placeholder={t.search}
-            aria-label={t.search}
+            placeholder={t("search")}
+            aria-label={t("search")}
           />
         }
         filters={[
           {
             // A computer picks the status from the tabs under the row.
             key: "status",
-            label: t.status,
+            label: t("status"),
             control: (
               <AppSelect
                 value={filters.status}
@@ -144,7 +144,7 @@ export function BookingsTable({
                   value: tab.id,
                   label: tab.label,
                 }))}
-                aria-label={t.status}
+                aria-label={t("status")}
                 className="w-full"
               />
             ),
@@ -152,13 +152,13 @@ export function BookingsTable({
           },
           {
             key: "dates",
-            label: t.dates,
+            label: t("dates"),
             control: (
               <DateRangePicker
                 value={range}
                 onChange={onRangeChange}
-                locale={m.locale}
-                label={t.dates}
+                locale={locale}
+                label={t("dates")}
                 choices={rangeChoices}
                 // A field in the sheet: a field's height.
                 className={cn("w-full justify-start", CONTROL_SIZE.field)}
@@ -168,8 +168,8 @@ export function BookingsTable({
               <DateRangePicker
                 value={range}
                 onChange={onRangeChange}
-                locale={m.locale}
-                label={t.dates}
+                locale={locale}
+                label={t("dates")}
                 choices={rangeChoices}
               />
             ),
@@ -179,15 +179,15 @@ export function BookingsTable({
             ? [
                 {
                   key: "categories",
-                  label: t.categories,
+                  label: t("categories"),
                   control: (
                     <AppSelect
                       multiple
                       options={categoryOptions}
                       value={filters.categoryIds}
                       onValueChange={(categoryIds) => set({ categoryIds })}
-                      placeholder={t.categories}
-                      aria-label={t.categories}
+                      placeholder={t("categories")}
+                      aria-label={t("categories")}
                       className="w-full md:w-auto"
                     />
                   ),
@@ -198,15 +198,15 @@ export function BookingsTable({
             ? [
                 {
                   key: "services",
-                  label: t.services,
+                  label: t("services"),
                   control: (
                     <AppSelect
                       multiple
                       options={serviceOptions}
                       value={filters.serviceIds}
                       onValueChange={(serviceIds) => set({ serviceIds })}
-                      placeholder={t.services}
-                      aria-label={t.services}
+                      placeholder={t("services")}
+                      aria-label={t("services")}
                       className="w-full md:w-auto"
                     />
                   ),
@@ -217,15 +217,15 @@ export function BookingsTable({
             ? [
                 {
                   key: "team",
-                  label: t.team,
+                  label: t("team"),
                   control: (
                     <AppSelect
                       multiple
                       options={teamOptions}
                       value={filters.teamIds}
                       onValueChange={(teamIds) => set({ teamIds })}
-                      placeholder={t.team}
-                      aria-label={t.team}
+                      placeholder={t("team")}
+                      aria-label={t("team")}
                       className="w-full md:w-auto"
                     />
                   ),
@@ -249,10 +249,10 @@ export function BookingsTable({
             : undefined
         }
         words={{
-          filters: t.filters,
-          clearAll: t.clearAll,
-          clear: t.clear,
-          showResults: t.showResults(total),
+          filters: t("filters"),
+          clearAll: t("clearAll"),
+          clear: t("clear"),
+          showResults: t("showResults", { count: total }),
         }}
       />
 
@@ -260,7 +260,7 @@ export function BookingsTable({
         views={statusTabs}
         value={filters.status}
         onChange={(status) => set({ status })}
-        ariaLabel={m.bookings.title}
+        ariaLabel={bookingWords("title")}
         className="max-md:hidden"
         listClassName="w-fit"
       />
@@ -272,7 +272,7 @@ export function BookingsTable({
               <CalendarDaysIcon />
             </EmptyMedia>
             <EmptyTitle>
-              {bookings.length === 0 ? t.noneInRange : t.noMatch}
+              {bookings.length === 0 ? t("noneInRange") : t("noMatch")}
             </EmptyTitle>
           </EmptyHeader>
           {filtered && (
@@ -281,7 +281,7 @@ export function BookingsTable({
                 variant="outline"
                 onClick={() => set({ ...NO_FILTERS, status: filters.status })}
               >
-                {t.clear}
+                {t("clear")}
               </Button>
             </EmptyContent>
           )}

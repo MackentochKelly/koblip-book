@@ -1,6 +1,6 @@
+import { useLocale } from "next-intl"
+
 import { Rating } from "@/components/rating"
-import { messagesFor } from "@/lib/i18n"
-import type { PageLanguage } from "@/lib/page-language"
 import type { Business } from "../types"
 import { BusinessStatus } from "./business-status"
 
@@ -8,12 +8,11 @@ import { BusinessStatus } from "./business-status"
 export function BusinessFacts({
   business,
   open,
-  language,
 }: {
   business: Business
   open: boolean | null
-  language: PageLanguage
 }) {
+  const locale = useLocale()
   const hasStatus =
     open !== null ||
     business.status === "temporarily_closed" ||
@@ -25,14 +24,10 @@ export function BusinessFacts({
         <Rating
           rating={business.rating}
           reviewCount={business.reviewCount}
-          locale={messagesFor(language).locale}
+          locale={locale}
         />
       )}
-      <BusinessStatus
-        status={business.status}
-        open={open}
-        language={language}
-      />
+      <BusinessStatus status={business.status} open={open} />
     </div>
   )
 }

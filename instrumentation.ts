@@ -6,10 +6,27 @@ export async function register() {
   // timers: Node.js only (the database), and never while `next build`
   // prerenders pages.
   if (process.env.NEXT_RUNTIME === "nodejs" && process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) {
+    // The English words first: the timers below write in them outside a
+    // page.
+    const [{ default: messages }, { registerEnglishWords }] = await Promise.all([
+      import("@/i18n/messages"),
+      import("@/lib/translations/interface-words"),
+    ])
+    registerEnglishWords(messages)
     const { startNotificationTimer } = await import("@/features/dashboard/api/notification-timer")
     startNotificationTimer()
     const { startGoogleCalendarTimer } = await import("@/features/dashboard/api/google-calendar-timer")
     startGoogleCalendarTimer()
+    // New and changed English goes to the database for translation
+    // (docs/plans/translations.md, G4) before the translation timer's first
+    // run. A database error leaves the words as they are; the next start
+    // tries again.
+    const { syncInterfaceWords } = await import("@/i18n/sync")
+    try {
+      await syncInterfaceWords()
+    } catch (error) {
+      console.error("Couldn't sync the app's words", error)
+    }
     const { startTranslationTimer } = await import("@/lib/translations/timer")
     startTranslationTimer()
   }

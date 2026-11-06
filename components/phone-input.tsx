@@ -7,6 +7,7 @@ import {
   type CountryCode,
 } from "libphonenumber-js"
 import dynamic from "next/dynamic"
+import { useTranslations } from "next-intl"
 import { useMemo, useState, useSyncExternalStore } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -20,7 +21,7 @@ import {
   ComboboxTrigger,
 } from "@/components/ui/combobox"
 import { Input } from "@/components/ui/input"
-import { detectCountry, FALLBACK_COUNTRY, phoneWords } from "@/lib/phone-country"
+import { detectCountry, FALLBACK_COUNTRY } from "@/lib/phone-country"
 import { cn } from "@/lib/utils"
 
 const PhoneFlag = dynamic(() => import("@/components/phone-flag"), {
@@ -70,7 +71,7 @@ export function PhoneInput({
     setStored(shown)
   }
   const country = shown.country ?? detected
-  const words = phoneWords(locale)
+  const t = useTranslations("app.phoneInput")
   const labels = useMemo(() => {
     const names = new Intl.DisplayNames([locale], { type: "region" })
     return new Map(
@@ -131,15 +132,15 @@ export function PhoneInput({
         }}
       >
         <ComboboxTrigger
-          aria-label={words.country}
+          aria-label={t("country")}
           disabled={disabled}
           render={<Button type="button" variant="outline" className={cn("h-auto shrink-0 tabular-nums", className)} />}
         >
           <PhoneFlag country={country} />+{getCountryCallingCode(country)}
         </ComboboxTrigger>
         <ComboboxContent className="min-w-64">
-          <ComboboxInput showTrigger={false} placeholder={words.search} className="m-1" />
-          <ComboboxEmpty>{words.empty}</ComboboxEmpty>
+          <ComboboxInput showTrigger={false} placeholder={t("search")} className="m-1" />
+          <ComboboxEmpty>{t("empty")}</ComboboxEmpty>
           <ComboboxList>
             {(code: CountryCode) => (
               <ComboboxItem key={code} value={code}>

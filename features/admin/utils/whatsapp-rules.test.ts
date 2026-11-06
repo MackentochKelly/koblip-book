@@ -1,10 +1,12 @@
+import { createTranslator } from "next-intl"
 import { expect, test } from "vitest"
+import messages from "@/i18n/messages"
+import { durationIn } from "@/lib/format-duration"
 import {
   NOTIFICATION_RULES,
   NOTIFICATION_RULE_CHECKS,
   type NotificationRuleKey,
 } from "@/lib/notification-rules"
-import { adminMessagesFor } from "../i18n"
 import { formatRuleValue, parseRuleInput, ruleInputOf } from "./rule-values"
 import { RULE_GROUPS } from "./whatsapp-rules"
 
@@ -33,16 +35,25 @@ test("typed values: minutes lists, numbers, and what cannot be one", () => {
   expect(parseRuleInput("minWordsPerField", "2.2")).toBe(2.2)
 })
 
-test("values read in their unit, in both languages", () => {
-  const en = adminMessagesFor("en")
-  const es = adminMessagesFor("es")
-  expect(formatRuleValue("defaultReminders", [1440, 120, 30], en)).toBe(
+test("values read in their unit", () => {
+  const t = createTranslator({
+    locale: "en-US",
+    messages,
+    namespace: "admin.whatsapp.rules",
+  })
+  const duration = createTranslator({
+    locale: "en-US",
+    messages,
+    namespace: "app.duration",
+  })
+  const minutes = (n: number) => durationIn(duration, n)
+  expect(formatRuleValue("defaultReminders", [1440, 120, 30], t, "en-US", minutes)).toBe(
     "24 h, 2 h, 30 min"
   )
-  expect(formatRuleValue("maxButtonLabel", 25, en)).toBe("25 characters")
-  expect(formatRuleValue("maxButtonLabel", 25, es)).toBe("25 caracteres")
-  expect(formatRuleValue("defaultCantCome", "cancel", es)).toBe(
-    "Cancela y libera la hora"
+  expect(formatRuleValue("maxButtonLabel", 25, t, "en-US", minutes)).toBe("25 characters")
+  expect(formatRuleValue("maxButtonLabel", 1, t, "en-US", minutes)).toBe("1 character")
+  expect(formatRuleValue("defaultCantCome", "cancel", t, "en-US", minutes)).toBe(
+    "Cancels and frees the time"
   )
-  expect(formatRuleValue("defaultThankYouReply", false, en)).toBe("Off")
+  expect(formatRuleValue("defaultThankYouReply", false, t, "en-US", minutes)).toBe("Off")
 })

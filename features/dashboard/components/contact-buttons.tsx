@@ -1,12 +1,12 @@
+import { useTranslations } from "next-intl"
 import { WhatsAppIcon, PhoneIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { phoneLinks } from "@/lib/phone-link"
-import { useOwnerMessages } from "../i18n/provider"
 
 // Call or WhatsApp a customer, side by side.
 export function ContactButtons({ phone }: { phone: string }) {
-  const t = useOwnerMessages().bookings.contact
+  const t = useTranslations("owner.bookings.contact")
   const links = phoneLinks(phone)
   return (
     <div className="grid grid-cols-2 gap-2">
@@ -16,7 +16,7 @@ export function ContactButtons({ phone }: { phone: string }) {
         render={<a href={links.tel} />}
       >
         <PhoneIcon data-icon="inline-start" />
-        {t.call}
+        {t("call")}
       </Button>
       <Button
         variant="outline"
@@ -24,7 +24,7 @@ export function ContactButtons({ phone }: { phone: string }) {
         render={<a href={links.whatsapp} target="_blank" rel="noreferrer" />}
       >
         <WhatsAppIcon data-icon="inline-start" />
-        {t.whatsapp}
+        {t("whatsapp")}
       </Button>
     </div>
   )

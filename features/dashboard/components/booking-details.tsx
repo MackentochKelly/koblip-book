@@ -1,8 +1,9 @@
+import { useLocale, useTranslations } from "next-intl"
+
 import { Separator } from "@/components/ui/separator"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
-import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
-import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import { BookingStatusBadge } from "./booking-status-badge"
 import { ContactButtons } from "./contact-buttons"
@@ -20,22 +21,26 @@ function price(
 // One booking: when (and why, once cancelled), what with its extras, the
 // total, the owner's note and quick ways to reach the customer.
 export function BookingDetails({ booking }: { booking: OwnerBooking }) {
-  const m = useOwnerMessages()
-  const t = m.bookings.details
-  const total = price(booking.priceMinor, booking.currency, m.locale, t.free)
+  const t = useTranslations("owner.bookings")
+  const locale = useLocale()
+  const formatDuration = useFormatDuration()
+  const free = t("details.free")
+  const total = price(booking.priceMinor, booking.currency, locale, free)
   return (
     <div className="flex flex-col gap-4 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <p className="font-medium">
-          {formatDay(booking.date, m.locale)} ·{" "}
-          {formatClock(booking.time, m.locale)} –{" "}
-          {formatClock(booking.endTime, m.locale)}
+          {formatDay(booking.date, locale)} ·{" "}
+          {formatClock(booking.time, locale)} –{" "}
+          {formatClock(booking.endTime, locale)}
         </p>
         <BookingStatusBadge status={booking.status} />
       </div>
       {booking.status === "cancelled" && booking.cancelReason && (
         <p className="text-muted-foreground">
-          {t.reason(m.bookings.cancel.reasons[booking.cancelReason])}
+          {t("details.reason", {
+            reason: t(`cancel.reasons.${booking.cancelReason}`),
+          })}
         </p>
       )}
       <div className="flex flex-col gap-2">
@@ -48,7 +53,7 @@ export function BookingDetails({ booking }: { booking: OwnerBooking }) {
             <span className="min-w-0">+ {addon.name}</span>
             {addon.priceMinor !== null && (
               <span>
-                {price(addon.priceMinor, booking.currency, m.locale, t.free)}
+                {price(addon.priceMinor, booking.currency, locale, free)}
               </span>
             )}
           </div>
@@ -56,7 +61,8 @@ export function BookingDetails({ booking }: { booking: OwnerBooking }) {
         <div className="flex items-start justify-between gap-3 text-muted-foreground">
           <span className="min-w-0">
             {formatDuration(booking.durationMinutes)}
-            {booking.teamMemberName && ` · ${t.with(booking.teamMemberName)}`}
+            {booking.teamMemberName &&
+              ` · ${t("details.with", { name: booking.teamMemberName })}`}
           </span>
           {total && (
             <span className="font-medium text-foreground">{total}</span>

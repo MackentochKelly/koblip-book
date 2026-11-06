@@ -19,9 +19,3 @@ export function detectCountry(): CountryCode {
     return FALLBACK_COUNTRY
   }
 }
-
-export function phoneWords(locale: string) {
-  return locale.startsWith("es")
-    ? { country: "País", search: "Buscar país…", empty: "Ningún país encontrado." }
-    : { country: "Country", search: "Search country…", empty: "No country found." }
-}

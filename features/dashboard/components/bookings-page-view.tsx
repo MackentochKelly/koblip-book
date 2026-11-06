@@ -2,6 +2,7 @@
 
 import { useTransition } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 
 import type { DayRangeValue } from "@/components/date-range-picker"
 import { FloatingActionButton } from "@/components/floating-action-button"
@@ -9,7 +10,6 @@ import { ViewTabs } from "@/components/view-tabs"
 import { Button } from "@/components/ui/button"
 import { PlusIcon } from "@/components/ui/icons"
 import { cn } from "cn"
-import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import { type BookingPanelsProps, useBookingPanels } from "./booking-panels"
 import { BookingsCalendar } from "./bookings-calendar"
@@ -36,8 +36,7 @@ export function BookingsPageView({
   today: string
   now: string
 }) {
-  const m = useOwnerMessages()
-  const t = m.bookings
+  const t = useTranslations("owner.bookings")
   const router = useRouter()
   const pathname = usePathname()
   const [loading, startTransition] = useTransition()
@@ -65,17 +64,17 @@ export function BookingsPageView({
     <div className="flex min-w-0 flex-col gap-6">
       <div className="flex items-center justify-between gap-3 max-md:flex-col max-md:items-stretch">
         <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">
-          {t.title}
+          {t("title")}
         </h1>
         <div className="flex items-center gap-3">
           <ViewTabs
             views={[
-              { id: "bookings" as const, label: t.list.tabs.bookings },
-              { id: "calendar" as const, label: t.list.tabs.calendar },
+              { id: "bookings" as const, label: t("list.tabs.bookings") },
+              { id: "calendar" as const, label: t("list.tabs.calendar") },
             ]}
             value={tab}
             onChange={(next) => go({ tab: next })}
-            ariaLabel={t.title}
+            ariaLabel={t("title")}
             className="max-md:flex-1"
             listClassName="w-full md:w-fit"
           />
@@ -86,7 +85,7 @@ export function BookingsPageView({
             disabled={!panels.canAdd}
           >
             <PlusIcon data-icon="inline-start" />
-            {t.add}
+            {t("add")}
           </Button>
         </div>
       </div>
@@ -122,7 +121,7 @@ export function BookingsPageView({
       </div>
 
       <FloatingActionButton
-        label={t.addBooking}
+        label={t("addBooking")}
         onClick={panels.add}
         disabled={!panels.canAdd}
       >

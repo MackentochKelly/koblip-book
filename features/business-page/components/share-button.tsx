@@ -1,26 +1,26 @@
 "use client"
 
-import { ShareIcon } from "@/components/ui/icons"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
-import { useMessages } from "@/components/language-provider"
+import { ShareIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import { shareLink } from "@/lib/share-link"
 
 // The phone's share sheet, or the link copied where there is none.
 export function ShareButton({ title }: { title: string }) {
-  const m = useMessages()
+  const t = useTranslations("public.page")
   const share = async () => {
     const result = await shareLink({ title, url: window.location.href })
-    if (result === "copied") toast.success(m.page.linkCopied)
+    if (result === "copied") toast.success(t("linkCopied"))
   }
   return (
     <Button
       type="button"
       variant="outline"
       size="icon"
-      aria-label={m.page.share}
-      title={m.page.share}
+      aria-label={t("share")}
+      title={t("share")}
       onClick={() => void share()}
     >
       <ShareIcon />

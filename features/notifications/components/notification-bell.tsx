@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 
 import { BottomPanel } from "@/components/bottom-panel"
@@ -26,7 +27,8 @@ import { useNotifications } from "./notifications-provider"
 
 // Marks every notification read; off when none is unread.
 function MarkAllButton({ className }: { className?: string }) {
-  const { t, unread, markAll } = useNotifications()
+  const t = useTranslations("notifications")
+  const { unread, markAll } = useNotifications()
   return (
     <Button
       variant="ghost"
@@ -35,19 +37,20 @@ function MarkAllButton({ className }: { className?: string }) {
       onClick={markAll}
     >
       <CheckIcon data-icon="inline-start" />
-      {t.markAll}
+      {t("markAll")}
     </Button>
   )
 }
 
 // The owner's choices screen (N7).
 function SettingsButton({ onOpen }: { onOpen: () => void }) {
-  const { t, settingsHref } = useNotifications()
+  const t = useTranslations("notifications")
+  const { settingsHref } = useNotifications()
   return (
     <Button
       variant="ghost"
       size="icon"
-      aria-label={t.settings}
+      aria-label={t("settings")}
       nativeButton={false}
       render={<Link href={settingsHref} onClick={onOpen} />}
     >
@@ -59,11 +62,12 @@ function SettingsButton({ onOpen }: { onOpen: () => void }) {
 // The owner area's bell (docs/plans/in-app-notifications.md, N4): the
 // unread count on it; a popover on a computer, a bottom sheet on a phone.
 export function NotificationBell() {
-  const { t, unread } = useNotifications()
+  const t = useTranslations("notifications")
+  const { unread } = useNotifications()
   const phone = useIsMobile()
   const [open, setOpen] = useState(false)
   const close = () => setOpen(false)
-  const label = unread > 0 ? t.bellUnread(unread) : t.bell
+  const label = unread > 0 ? t("bellUnread", { n: unread }) : t("bell")
 
   const icon = (
     <>
@@ -101,10 +105,10 @@ export function NotificationBell() {
         <BottomPanel
           open={open}
           onClose={close}
-          title={t.title}
+          title={t("title")}
           header={
             <DrawerHeader className="flex-row items-center justify-between gap-2">
-              <DrawerTitle>{t.title}</DrawerTitle>
+              <DrawerTitle>{t("title")}</DrawerTitle>
               <SettingsButton onOpen={close} />
             </DrawerHeader>
           }
@@ -137,7 +141,7 @@ export function NotificationBell() {
         >
           {icon}
         </TooltipTrigger>
-        <TooltipContent>{t.bell}</TooltipContent>
+        <TooltipContent>{t("bell")}</TooltipContent>
       </Tooltip>
       <PopoverContent
         // The bell sits at the top bar's right edge (N-D11).
@@ -146,7 +150,7 @@ export function NotificationBell() {
         className="max-h-[min(--spacing(140),80dvh)] w-sm gap-2 overflow-y-auto p-2"
       >
         <PopoverHeader className="flex-row items-center justify-between gap-2 py-1 pl-3">
-          <PopoverTitle>{t.title}</PopoverTitle>
+          <PopoverTitle>{t("title")}</PopoverTitle>
           <div className="flex items-center gap-1">
             <MarkAllButton />
             <SettingsButton onOpen={close} />

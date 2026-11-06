@@ -1,3 +1,5 @@
+import { useTranslations, type Messages } from "next-intl"
+
 import { HomeRowLabel } from "@/components/home-section-title"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -14,10 +16,10 @@ import {
   type Icon,
 } from "@/components/ui/icons"
 import { Marquee } from "@/components/ui/marquee"
-import { messagesFor, type Messages } from "@/lib/i18n"
-import type { PageLanguage } from "@/lib/page-language"
-
-type Kind = Exclude<keyof Messages["home"]["madeFor"], "title" | "more">
+type Kind = Exclude<
+  keyof Messages["public"]["home"]["madeFor"],
+  "title" | "more"
+>
 
 // The kinds of business shown, in order, each with its icon. Any business
 // clients book with can use Koblip Book; these are only examples.
@@ -44,8 +46,8 @@ export const marqueeRowClassName =
 // for them. Right under "Works with" and quiet like it, but moving chips,
 // not still logos. Reduce Motion: one still copy, wrapped onto more lines.
 // Screen readers get the plain list once, not the sliding copies.
-export function MadeFor({ language }: { language: PageLanguage }) {
-  const t = messagesFor(language).home.madeFor
+export function MadeFor() {
+  const t = useTranslations("public.home.madeFor")
   const chips = KINDS.map(([kind, KindIcon]) => (
     <Badge
       key={kind}
@@ -53,17 +55,17 @@ export function MadeFor({ language }: { language: PageLanguage }) {
       className="h-9 gap-2 px-4 text-sm [&>svg]:size-4!"
     >
       <KindIcon />
-      {t[kind]}
+      {t(kind)}
     </Badge>
   ))
   return (
     <section className="mx-auto flex w-full max-w-page flex-col items-center gap-6">
-      <HomeRowLabel>{t.title}</HomeRowLabel>
+      <HomeRowLabel>{t("title")}</HomeRowLabel>
       <ul className="sr-only">
         {KINDS.map(([kind]) => (
-          <li key={kind}>{t[kind]}</li>
+          <li key={kind}>{t(kind)}</li>
         ))}
-        <li>{t.more}</li>
+        <li>{t("more")}</li>
       </ul>
       <Marquee
         aria-hidden

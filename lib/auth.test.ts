@@ -27,6 +27,10 @@ beforeAll(async () => {
   const { db } = await import("@/lib/db")
   await migrate(db, { migrationsFolder: "drizzle" })
   closeDb = () => db.$client.close()
+  // The emails' words: English from code, Spanish from the migrated
+  // database.
+  const { registerEnglishWords } = await import("@/lib/translations/interface-words")
+  registerEnglishWords((await import("@/i18n/messages")).default)
 })
 
 afterAll(() => {

@@ -2,17 +2,19 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
-import { useMessages, usePageLanguage } from "@/components/language-provider"
 import { TimePicker } from "@/components/time-picker"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { Spinner } from "@/components/ui/spinner"
 import { myBookingsHref, myBookingsLoginHref } from "@/lib/my-bookings-links"
 import { todayIn } from "@/lib/format-booking-time"
+import { languageOf } from "@/lib/page-language"
 import { moveCustomerBooking } from "../api/move-customer-booking"
 import type { Availability } from "../types"
+import { useTimeLabels } from "./booking-steps"
 
 // The customer picks a new free time for their booking (same person and
 // length), then moves it with one button, back to My bookings.
@@ -25,9 +27,11 @@ export function RescheduleForm({
   availability: Availability
   timeZone: string
 }) {
-  const m = useMessages()
-  const t = m.account
-  const language = usePageLanguage()
+  const t = useTranslations("public.account")
+  const booking = useTranslations("public.booking")
+  const timeLabels = useTimeLabels()
+  const locale = useLocale()
+  const language = languageOf(locale)
   const router = useRouter()
   const [picked, setPicked] = useState<string | null>(null)
   const [time, setTime] = useState<string | null>(null)
@@ -38,7 +42,7 @@ export function RescheduleForm({
     return (
       <Empty>
         <EmptyHeader>
-          <EmptyTitle>{m.booking.noTimes}</EmptyTitle>
+          <EmptyTitle>{booking("noTimes")}</EmptyTitle>
         </EmptyHeader>
       </Empty>
     )
@@ -51,16 +55,16 @@ export function RescheduleForm({
     startTransition(async () => {
       const result = await moveCustomerBooking({ bookingId, date, time })
       if (result.status === "moved") {
-        toast.success(t.moved)
+        toast.success(t("moved"))
         router.replace(myBookingsHref(language))
       } else if (result.status === "signedOut") {
         router.replace(myBookingsLoginHref(language))
       } else if (result.status === "taken") {
-        toast.error(t.timeTaken)
+        toast.error(t("timeTaken"))
         setTime(null)
         router.refresh()
       } else {
-        toast.error(t.actionFailed)
+        toast.error(t("actionFailed"))
       }
     })
   }
@@ -77,12 +81,12 @@ export function RescheduleForm({
         time={time}
         onTimeChange={setTime}
         today={todayIn(timeZone)}
-        locale={m.locale}
-        labels={m.booking}
+        locale={locale}
+        labels={timeLabels}
       />
       <Button size="lg" disabled={!time || busy} onClick={move}>
         {busy && <Spinner data-icon="inline-start" />}
-        {busy ? t.moving : t.moveTo}
+        {busy ? t("moving") : t("moveTo")}
       </Button>
     </div>
   )

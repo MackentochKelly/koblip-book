@@ -1,12 +1,12 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { XIcon } from "@/components/ui/icons"
 
 import { CarouselDots } from "@/components/carousel-dots"
-import { useMessages } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -45,7 +45,7 @@ function useCurrentSlide(api: CarouselApi, start = 0) {
 // Edge to edge and swiped on a phone, two or three across on a computer.
 // A tap opens the photo full screen.
 export function BusinessPhotos({ photos }: { photos: PagePhoto[] }) {
-  const m = useMessages()
+  const t = useTranslations("public.photos")
   const [api, setApi] = useState<CarouselApi>()
   const current = useCurrentSlide(api)
   const [open, setOpen] = useState<number | null>(null)
@@ -56,7 +56,7 @@ export function BusinessPhotos({ photos }: { photos: PagePhoto[] }) {
     <Carousel
       setApi={setApi}
       opts={{ align: "start" }}
-      aria-label={m.photos.photos}
+      aria-label={t("photos")}
       className="md:overflow-hidden md:rounded-xl"
     >
       <CarouselContent className="ml-0 md:-ml-2">
@@ -68,7 +68,7 @@ export function BusinessPhotos({ photos }: { photos: PagePhoto[] }) {
             <button
               type="button"
               onClick={() => setOpen(index)}
-              aria-label={m.photos.photoOf(index + 1, total)}
+              aria-label={t("photoOf", { index: index + 1, total })}
               className="relative block aspect-4/3 w-full overflow-hidden bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/30 md:rounded-lg"
             >
               <Image
@@ -130,7 +130,7 @@ function PhotoViewer({
   const current = useCurrentSlide(api, start)
   const total = photos.length
   const credit = photos[current]?.credit
-  const m = useMessages()
+  const t = useTranslations("public.photos")
 
   return (
     <Dialog open onOpenChange={(next) => !next && onClose()}>
@@ -138,20 +138,20 @@ function PhotoViewer({
         showCloseButton={false}
         className="inset-0 flex h-svh max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none bg-background p-0 text-foreground ring-0 sm:max-w-none"
       >
-        <DialogTitle className="sr-only">{m.photos.photos}</DialogTitle>
+        <DialogTitle className="sr-only">{t("photos")}</DialogTitle>
         <div className="flex items-center justify-between px-4 pt-[max(1rem,var(--safe-top))] pb-2">
           <span className="text-sm text-muted-foreground tabular-nums">
             {current + 1}/{total}
           </span>
           <DialogClose render={<Button variant="ghost" size="icon" />}>
             <XIcon />
-            <span className="sr-only">{m.photos.close}</span>
+            <span className="sr-only">{t("close")}</span>
           </DialogClose>
         </div>
         <Carousel
           setApi={setApi}
           opts={{ startIndex: start }}
-          aria-label={m.photos.photos}
+          aria-label={t("photos")}
           className="min-h-0 flex-1 *:h-full"
         >
           <CarouselContent className="ml-0 h-full">
@@ -183,11 +183,11 @@ function PhotoViewer({
                 rel="noreferrer"
                 className="underline-offset-4 hover:underline"
               >
-                {m.photos.photoBy} {credit.name}
+                {t("photoBy")} {credit.name}
               </a>
             ) : (
               <>
-                {m.photos.photoBy} {credit.name}
+                {t("photoBy")} {credit.name}
               </>
             ))}
         </p>
@@ -203,7 +203,7 @@ const PORTFOLIO_PREVIEW = 9
 // phone, one big photo beside the rest on a computer. The last tile shows
 // "+N" when there are more; any tile opens the full-screen viewer.
 export function BusinessPortfolio({ photos }: { photos: PagePhoto[] }) {
-  const m = useMessages()
+  const t = useTranslations("public.photos")
   const [open, setOpen] = useState<number | null>(null)
   const total = photos.length
   const shown = photos.slice(0, PORTFOLIO_PREVIEW)
@@ -220,8 +220,8 @@ export function BusinessPortfolio({ photos }: { photos: PagePhoto[] }) {
               onClick={() => setOpen(index)}
               aria-label={
                 last
-                  ? m.photos.seeMore(more)
-                  : m.photos.photoOf(index + 1, total)
+                  ? t("seeMore", { more })
+                  : t("photoOf", { index: index + 1, total })
               }
               className={cn(
                 "relative aspect-square overflow-hidden rounded-xl bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/30",

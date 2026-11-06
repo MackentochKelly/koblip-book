@@ -1,11 +1,11 @@
 "use client"
 
 import type { Announcements } from "@dnd-kit/core"
+import { useTranslations } from "next-intl"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import { saveWidgetLayout } from "../api/widget-actions"
-import { useOwnerMessages } from "../i18n/provider"
 import type { WidgetId, WidgetLayout } from "../widgets"
 
 // Home's layout as the owner edits it: each change shows at once and is
@@ -16,7 +16,7 @@ export function useWidgetLayout(
   saved: WidgetLayout,
   savedDevice: boolean
 ) {
-  const t = useOwnerMessages().widgets
+  const t = useTranslations("owner.widgets")
   const [layout, setLayout] = useState(saved)
   const [device, setDevice] = useState(savedDevice)
   // A fresh layout from the server (another tab, a refresh) wins.
@@ -37,7 +37,7 @@ export function useWidgetLayout(
       if (!result.ok) {
         setLayout(before.layout)
         setDevice(before.device)
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
   }
@@ -50,27 +50,29 @@ export function useWidgetAnnouncements(): {
   announcements: Announcements
   instructions: string
 } {
-  const t = useOwnerMessages().widgets
-  const name = (id: string | number) => t.names[id as WidgetId]
+  const t = useTranslations("owner.widgets")
+  const name = (id: string | number) => t(`names.${id as WidgetId}`)
   const place = (over: { data: { current?: Record<string, unknown> } } | null) => {
     const sortable = over?.data.current?.sortable as
       | { index: number; items: unknown[] }
       | undefined
-    return sortable ? ([sortable.index + 1, sortable.items.length] as const) : null
+    return sortable
+      ? { position: sortable.index + 1, total: sortable.items.length }
+      : null
   }
   return {
-    instructions: t.instructions,
+    instructions: t("instructions"),
     announcements: {
-      onDragStart: ({ active }) => t.picked(name(active.id)),
+      onDragStart: ({ active }) => t("picked", { name: name(active.id) }),
       onDragOver: ({ active, over }) => {
         const at = place(over)
-        return at ? t.movedTo(name(active.id), ...at) : undefined
+        return at ? t("movedTo", { name: name(active.id), ...at }) : undefined
       },
       onDragEnd: ({ active, over }) => {
         const at = place(over)
-        return at ? t.dropped(name(active.id), ...at) : undefined
+        return at ? t("dropped", { name: name(active.id), ...at }) : undefined
       },
-      onDragCancel: ({ active }) => t.cancelled(name(active.id)),
+      onDragCancel: ({ active }) => t("cancelled", { name: name(active.id) }),
     },
   }
 }

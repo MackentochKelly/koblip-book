@@ -13,7 +13,7 @@ import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { cleanMemory } from "@/features/assistant/utils/memory"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import { getSession } from "@/lib/dal"
-import { buildAssistantTools } from "./tools"
+import { buildAssistantTools, toolWords } from "./tools"
 
 export const runtime = "nodejs"
 
@@ -130,6 +130,7 @@ export async function POST(request: Request) {
     .map((m) =>
       m.memory === undefined ? m : { ...m, memory: cleanMemory(m.memory) ?? [] }
     )
+  const words = await toolWords(language)
   const budget = requestBudget(request)
   const encoder = new TextEncoder()
   const stream = new ReadableStream<Uint8Array>({
@@ -148,7 +149,7 @@ export async function POST(request: Request) {
             // Only for a talk: it says what a tap did out loud.
             afterTap: voice === true ? afterTap : undefined,
           },
-          buildAssistantTools(owned.business.id, session.userId, language),
+          buildAssistantTools(owned.business.id, session.userId, words),
           { signal: budget.signal }
         )) {
           controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"))

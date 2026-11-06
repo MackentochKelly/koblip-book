@@ -1,5 +1,6 @@
 "use client"
 
+import { type Messages, useTranslations } from "next-intl"
 import { useState } from "react"
 
 import { ViewTabs } from "@/components/view-tabs"
@@ -15,9 +16,11 @@ import {
 } from "@/components/ui/item"
 import { PAGE_LANGUAGES, type PageLanguage } from "@/lib/page-language"
 import { cn } from "@/lib/utils"
-import type { AssistantMessages } from "../i18n"
 import type { VoiceOption } from "../types"
 import { useVoicePreview } from "./voice-preview"
+
+// The ElevenLabs labels the app has its own words for.
+type VoiceLabel = keyof Messages["assistant"]["voice"]["labels"]
 
 // The voices, with a tab for each language they speak in their samples
 // (starting on the owner's). A tap on a row chooses the voice and plays its
@@ -31,17 +34,16 @@ export function VoiceList({
   voices,
   chosen,
   language,
-  labels,
   onChoose,
   listClassName,
 }: {
   voices: VoiceOption[]
   chosen: string | null
   language: PageLanguage
-  labels: AssistantMessages["voice"]
   onChoose: (voiceId: string) => void
   listClassName?: string
 }) {
+  const t = useTranslations("assistant.voice")
   const preview = useVoicePreview()
   const spoken = PAGE_LANGUAGES.filter((item) =>
     voices.some((voice) => voice.previews[item])
@@ -49,8 +51,11 @@ export function VoiceList({
   const [picked, setPicked] = useState(language)
   const shown = spoken.includes(picked) ? picked : (spoken[0] ?? language)
   // ElevenLabs' label in the owner's words, or as it comes.
+  const isVoiceLabel = (value: string): value is VoiceLabel =>
+    t.has(`labels.${value as VoiceLabel}`)
   const word = (value: string | undefined) =>
-    value && (labels.labels[value] ?? value.replaceAll("_", " "))
+    value &&
+    (isVoiceLabel(value) ? t(`labels.${value}`) : value.replaceAll("_", " "))
   // ElevenLabs names often carry a tagline ("Adam - Engaging, Friendly");
   // the row shows the name alone, with the accent and gender under it.
   const shortName = (name: string) => name.split(/\s[-–]\s/)[0] || name
@@ -59,13 +64,13 @@ export function VoiceList({
     <div className="flex flex-col gap-3">
       {spoken.length > 1 && (
         <ViewTabs
-          views={spoken.map((id) => ({ id, label: labels.languages[id] }))}
+          views={spoken.map((id) => ({ id, label: t(`languages.${id}`) }))}
           value={shown}
           onChange={(next) => {
             void preview.pause()
             setPicked(next)
           }}
-          ariaLabel={labels.language}
+          ariaLabel={t("language")}
           className="items-center"
         />
       )}
@@ -111,7 +116,9 @@ export function VoiceList({
                   type="button"
                   variant="outline"
                   size="icon"
-                  aria-label={`${playing ? labels.pause : labels.play} ${shortName(voice.name)}`}
+                  aria-label={t(playing ? "pause" : "play", {
+                    name: shortName(voice.name),
+                  })}
                   onClick={() =>
                     playing ? void preview.pause() : preview.play(id, src)
                   }

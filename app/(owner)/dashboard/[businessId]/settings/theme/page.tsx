@@ -1,10 +1,12 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
+
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { ThemeSection } from "@/features/dashboard/components/theme-section"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).settings.parts.theme }
+  const t = await getTranslations("owner.settings")
+  return { title: t("parts.theme") }
 }
 
 type Props = {

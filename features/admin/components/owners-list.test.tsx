@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, expect, test, vi } from "vitest"
-import { adminMessagesFor } from "../i18n"
+import { WithWords } from "@/i18n/testing"
 import { OwnersList } from "./owners-list"
 
 vi.mock("./admin-delete-button", () => ({ AdminDeleteButton: () => null }))
@@ -17,37 +17,32 @@ const OWNER = {
   businesses: 1,
 }
 
-test.each(["en", "es"] as const)(
-  "admin shows the account voice name in %s",
-  (language) => {
-    const m = adminMessagesFor(language)
-    render(
+test("admin shows the account voice name", () => {
+  render(
+    <WithWords>
       <OwnersList
         owners={[{ ...OWNER, voice: { voiceId: "v1", name: "Ana" } }]}
         selfId="u1"
-        m={m}
         onDelete={async () => ({ ok: true })}
       />
-    )
-    expect(screen.getByText(`${m.owners.voice}: Ana`).title).toBe("v1")
-  }
-)
+    </WithWords>
+  )
+  expect(screen.getByText("Voice: Ana").title).toBe("v1")
+})
 
 test("a missing choice and a removed voice remain visible", () => {
-  const m = adminMessagesFor("en")
   render(
-    <OwnersList
-      owners={[
-        { ...OWNER, voice: null },
-        { ...OWNER, id: "u2", voice: { voiceId: "removed-voice", name: null } },
-      ]}
-      selfId="u1"
-      m={m}
-      onDelete={async () => ({ ok: true })}
-    />
+    <WithWords>
+      <OwnersList
+        owners={[
+          { ...OWNER, voice: null },
+          { ...OWNER, id: "u2", voice: { voiceId: "removed-voice", name: null } },
+        ]}
+        selfId="u1"
+        onDelete={async () => ({ ok: true })}
+      />
+    </WithWords>
   )
-  expect(
-    screen.getByText(`${m.owners.voice}: ${m.owners.noVoice}`)
-  ).toBeDefined()
-  expect(screen.getByText(`${m.owners.voice}: removed-voice`)).toBeDefined()
+  expect(screen.getByText("Voice: None chosen")).toBeDefined()
+  expect(screen.getByText("Voice: removed-voice")).toBeDefined()
 })

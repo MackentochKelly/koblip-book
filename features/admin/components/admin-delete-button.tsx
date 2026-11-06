@@ -2,13 +2,13 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import { Trash2Icon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
-import { useAdminMessages } from "../i18n/provider"
 
 // Delete on an Owners, Businesses or Service categories row: asks first,
 // then runs the page's delete action (passed in by the page) and shows how
@@ -22,7 +22,7 @@ export function AdminDeleteButton({
   description: string
   onDelete: () => Promise<{ ok: boolean }>
 }) {
-  const t = useAdminMessages().remove
+  const t = useTranslations("admin.remove")
   const router = useRouter()
   const [asking, setAsking] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -30,10 +30,10 @@ export function AdminDeleteButton({
     startTransition(async () => {
       const result = await onDelete().catch(() => null)
       if (result?.ok) {
-        toast.success(t.deleted)
+        toast.success(t("deleted"))
         router.refresh()
       } else {
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
 
@@ -42,8 +42,8 @@ export function AdminDeleteButton({
       <Button
         variant="ghost"
         size="icon"
-        aria-label={t.label(name)}
-        title={t.label(name)}
+        aria-label={t("label", { name })}
+        title={t("label", { name })}
         disabled={pending}
         onClick={() => setAsking(true)}
       >
@@ -51,10 +51,10 @@ export function AdminDeleteButton({
       </Button>
       <ConfirmDialog
         open={asking}
-        title={t.title(name)}
+        title={t("title", { name })}
         description={description}
-        confirm={t.delete}
-        cancel={t.cancel}
+        confirm={t("delete")}
+        cancel={t("cancel")}
         onConfirm={remove}
         onClose={() => setAsking(false)}
       />

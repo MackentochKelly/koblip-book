@@ -1,6 +1,8 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { usePathname } from "next/navigation"
+import { useMemo } from "react"
 import {
   CalendarDaysIcon,
   ClockIcon,
@@ -12,7 +14,7 @@ import { AppTopBar } from "@/components/app-top-bar"
 import { BottomTabBar, TabBarLink } from "@/components/bottom-tab-bar"
 import { NavMain } from "@/components/nav-main"
 import { PageContent } from "@/components/page-content"
-import { PhotoWordsProvider } from "@/components/photo-upload"
+import { PhotoWordsProvider, type PhotoWords } from "@/components/photo-upload"
 import {
   Sidebar,
   SidebarContent,
@@ -20,7 +22,6 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { useTeamAreaWords } from "../i18n/provider"
 
 const NAV = [
   { path: "", key: "bookings", icon: CalendarDaysIcon },
@@ -41,11 +42,29 @@ export function TeamShell({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const t = useTeamAreaWords()
+  const t = useTranslations("teamArea")
+  const photos = useTranslations("teamArea.photos")
+  // The photo buttons' words, one object while the words stay the same, so
+  // the photo fields don't redraw on every page change.
+  const photoWords = useMemo<PhotoWords>(
+    () => ({
+      change: photos("change"),
+      addPhoto: photos("addPhoto"),
+      remove: photos("remove"),
+      errors: {
+        not_found: photos("errors.not_found"),
+        missing: photos("errors.missing"),
+        too_big: photos("errors.too_big"),
+        wrong_type: photos("errors.wrong_type"),
+        limit: photos("errors.limit"),
+      },
+    }),
+    [photos]
+  )
   const base = `/team/${teamMemberId}`
   const items = NAV.map((item) => ({
     href: base + item.path,
-    label: t.nav[item.key],
+    label: t(`nav.${item.key}`),
     icon: item.icon,
     active: item.path ? pathname.startsWith(base + item.path) : pathname === base,
   }))
@@ -61,10 +80,10 @@ export function TeamShell({
         <AppInset>
           <AppTopBar
             title={items.find((item) => item.active)?.label ?? businessName}
-            menuLabel={t.menu}
+            menuLabel={t("menu")}
           />
           <PageContent className="pb-28">
-            <PhotoWordsProvider words={t.photos}>{children}</PhotoWordsProvider>
+            <PhotoWordsProvider words={photoWords}>{children}</PhotoWordsProvider>
           </PageContent>
         </AppInset>
         <BottomTabBar label={businessName} className="grid-cols-3">

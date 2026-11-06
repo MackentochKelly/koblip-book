@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -8,7 +9,7 @@ import { FieldGroup } from "@/components/ui/field"
 import { authClient } from "@/lib/auth-client"
 import { loginHref } from "@/lib/auth-links"
 import type { PageLanguage } from "@/lib/page-language"
-import { authWordsFor } from "../i18n"
+import { useAuthErrorText } from "../hooks/use-auth-error-text"
 import {
   authError,
   passwordProblem,
@@ -28,9 +29,11 @@ export function ResetPasswordForm({
   // Null when the link came back without one: it is old or used.
   token: string | null
   next: string
+  // The page's, for the way back to log in.
   language: PageLanguage
 }) {
-  const t = authWordsFor(language)
+  const t = useTranslations("ownerAuth")
+  const errorText = useAuthErrorText()
   const [password, setPassword] = useState("")
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<AuthError | null>(null)
@@ -65,14 +68,14 @@ export function ResetPasswordForm({
     return (
       <FieldGroup>
         <AuthNotice kind="info">
-          {ended === "changed" ? t.passwordChanged : t.linkExpired}
+          {ended === "changed" ? t("passwordChanged") : t("linkExpired")}
         </AuthNotice>
         <Button
           size="lg"
           nativeButton={false}
           render={<Link href={loginHref({ next, language })} />}
         >
-          {ended === "changed" ? t.logIn : t.backToLogIn}
+          {ended === "changed" ? t("logIn") : t("backToLogIn")}
         </Button>
       </FieldGroup>
     )
@@ -83,18 +86,18 @@ export function ResetPasswordForm({
       <FieldGroup>
         <PasswordField
           id="new-password"
-          label={t.password}
+          label={t("password")}
           value={password}
           onChange={setPassword}
           autoComplete="new-password"
           autoFocus
           disabled={sending}
-          error={error?.field === "password" ? t.errors[error.message] : null}
+          error={error?.field === "password" ? errorText(error.message) : null}
         />
         {error && error.field !== "password" && (
-          <AuthNotice kind="error">{t.errors[error.message]}</AuthNotice>
+          <AuthNotice kind="error">{errorText(error.message)}</AuthNotice>
         )}
-        <AuthSubmit busy={sending}>{t.savePassword}</AuthSubmit>
+        <AuthSubmit busy={sending}>{t("savePassword")}</AuthSubmit>
       </FieldGroup>
     </form>
   )

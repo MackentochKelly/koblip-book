@@ -2,6 +2,7 @@
 
 import { createContext, use, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import type { Route } from "next"
 import {
   ExternalLinkIcon,
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/command"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { PAGE_LANGUAGES } from "@/lib/page-language"
-import { useOwnerLanguage, useOwnerMessages } from "../i18n/provider"
+import { useOwnerLanguage } from "../i18n/provider"
 import { LANGUAGE_NAMES } from "../i18n/language"
 import { NAV_GROUPS } from "../navigation"
 import { THEMES, useSignOut } from "./account-menu"
@@ -71,7 +72,7 @@ function CommandMenu({
   onOpenChange: (open: boolean) => void
 }) {
   const router = useRouter()
-  const m = useOwnerMessages().shell
+  const t = useTranslations("owner.shell")
   const { setTheme } = useTheme()
   const [, setLanguage] = useOwnerLanguage()
   const signOut = useSignOut()
@@ -86,17 +87,19 @@ function CommandMenu({
     <CommandDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={m.search}
-      description={m.searchHint}
+      title={t("search")}
+      description={t("searchHint")}
     >
       <Command>
-        <CommandInput placeholder={m.searchHint} />
+        <CommandInput placeholder={t("searchHint")} />
         <CommandList className="scroll-fade">
-          <CommandEmpty>{m.noResults}</CommandEmpty>
+          <CommandEmpty>{t("noResults")}</CommandEmpty>
           {NAV_GROUPS.map((group) => (
             <CommandGroup
               key={group.key}
-              heading={group.key === "main" ? undefined : m.groups[group.key]}
+              heading={
+                group.key === "main" ? undefined : t(`groups.${group.key}`)
+              }
             >
               {group.items.map((item) => (
                 <CommandItem
@@ -108,20 +111,20 @@ function CommandMenu({
                   <item.icon />
                   {/* As in the menu: Dashboard on a computer. */}
                   {item.key === "home" && !phone
-                    ? m.nav.dashboard
-                    : m.nav[item.key]}
+                    ? t("nav.dashboard")
+                    : t(`nav.${item.key}`)}
                 </CommandItem>
               ))}
             </CommandGroup>
           ))}
-          <CommandGroup heading={m.account}>
+          <CommandGroup heading={t("account")}>
             <CommandItem
               onSelect={() =>
                 run(() => window.open(`/b/${business.slug}`, "_blank"))
               }
             >
               <ExternalLinkIcon />
-              {m.viewPage}
+              {t("viewPage")}
             </CommandItem>
             {THEMES.map((item) => (
               <CommandItem
@@ -129,7 +132,7 @@ function CommandMenu({
                 onSelect={() => run(() => setTheme(item.value))}
               >
                 <item.icon />
-                {`${m.appearance}: ${m[item.key]}`}
+                {t("appearanceChoice", { theme: t(item.key) })}
               </CommandItem>
             ))}
             {PAGE_LANGUAGES.map((code) => (
@@ -138,12 +141,12 @@ function CommandMenu({
                 onSelect={() => run(() => setLanguage(code))}
               >
                 <LanguagesIcon />
-                {`${m.language}: ${LANGUAGE_NAMES[code]}`}
+                {t("languageChoice", { language: LANGUAGE_NAMES[code] })}
               </CommandItem>
             ))}
             <CommandItem onSelect={() => run(() => void signOut())}>
               <LogOutIcon />
-              {m.signOut}
+              {t("signOut")}
             </CommandItem>
           </CommandGroup>
         </CommandList>

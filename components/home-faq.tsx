@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslations } from "next-intl"
+
 import { useHomeLook } from "@/components/home-look"
 import { HOME_SECTION_IDS, HomeBigTitle } from "@/components/home-section-title"
 import {
@@ -8,8 +10,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import type { Messages } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
+
+// The questions, in order.
+const QUESTIONS = ["free", "start", "who", "app", "change", "spanish"] as const
 
 // The home page's short questions, one open at a time (shadcn Accordion),
 // each in its own soft card. On computers the big title sits on the left
@@ -17,7 +21,8 @@ import { cn } from "@/lib/utils"
 // a comfortable width; phones stack them.
 // The "bands" look: the questions in one card (the stock Accordion, a
 // line between questions).
-export function HomeFaq({ words }: { words: Messages["home"]["faq"] }) {
+export function HomeFaq() {
+  const t = useTranslations("public.home.faq")
   const oneCard = useHomeLook() === "bands"
   return (
     <section
@@ -27,9 +32,9 @@ export function HomeFaq({ words }: { words: Messages["home"]["faq"] }) {
       {/* Below the sticky header while it stays. */}
       <div className="md:sticky md:top-24 md:self-start">
         <HomeBigTitle
-          start={words.titleStart}
-          end={words.titleEnd}
-          line={words.subtitle}
+          start={t("titleStart")}
+          end={t("titleEnd")}
+          line={t("subtitle")}
           beside
         />
       </div>
@@ -42,17 +47,17 @@ export function HomeFaq({ words }: { words: Messages["home"]["faq"] }) {
           oneCard ? "bg-card" : "gap-3 overflow-visible rounded-none border-0"
         )}
       >
-        {words.items.map((item, index) => (
+        {QUESTIONS.map((question, index) => (
           <AccordionItem
             key={index}
             value={index}
             className={cn(!oneCard && "rounded-2xl border")}
           >
             <AccordionTrigger className="py-5 text-base hover:no-underline">
-              {item.q}
+              {t(`items.${question}.q`)}
             </AccordionTrigger>
             <AccordionContent>
-              <p className="pb-4 text-base text-muted-foreground">{item.a}</p>
+              <p className="pb-4 text-base text-muted-foreground">{t(`items.${question}.a`)}</p>
             </AccordionContent>
           </AccordionItem>
         ))}

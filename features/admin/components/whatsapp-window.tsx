@@ -1,3 +1,5 @@
+import { useLocale, useTranslations } from "next-intl"
+
 import { Badge } from "@/components/ui/badge"
 import { ClockIcon } from "@/components/ui/icons"
 import {
@@ -15,14 +17,14 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import type { WhatsappWindow as Window, WindowEntry } from "../api/whatsapp-window"
-import type { AdminMessages } from "../i18n"
 import { formatAgo } from "@/lib/format-ago"
 import { WhatsappWindowRemove } from "./whatsapp-window-remove"
 
 // WhatsApp → 24-hour window (A6): each customer who wrote, to which number
 // and when, open or closed; any entry can be removed.
-export function WhatsappWindow({ list, m }: { list: Window; m: AdminMessages }) {
-  const t = m.whatsapp.window
+export function WhatsappWindow({ list }: { list: Window }) {
+  const t = useTranslations("admin.whatsapp.window")
+  const locale = useLocale()
   if (!list.entries.length) {
     return (
       <Empty className="border">
@@ -30,17 +32,17 @@ export function WhatsappWindow({ list, m }: { list: Window; m: AdminMessages }) 
           <EmptyMedia variant="icon">
             <ClockIcon />
           </EmptyMedia>
-          <EmptyTitle>{t.none}</EmptyTitle>
+          <EmptyTitle>{t("none")}</EmptyTitle>
         </EmptyHeader>
       </Empty>
     )
   }
   const numberOf = ({ number }: WindowEntry) =>
     number.kind === "koblip"
-      ? t.koblipNumber
+      ? t("koblipNumber")
       : number.kind === "own"
         ? number.businesses.join(", ")
-        : t.unknownNumber
+        : t("unknownNumber")
   return (
     <ItemGroup className="gap-3">
       {list.entries.map((entry) => {
@@ -53,12 +55,12 @@ export function WhatsappWindow({ list, m }: { list: Window; m: AdminMessages }) 
             <ItemContent className="min-w-0">
               <ItemTitle>{phone}</ItemTitle>
               <ItemDescription className="truncate">
-                {`${numberOf(entry)} · ${t.wrote(formatAgo(entry.lastReplyAt, list.now, m.locale))}`}
+                {`${numberOf(entry)} · ${t("wrote", { ago: formatAgo(entry.lastReplyAt, list.now, locale) })}`}
               </ItemDescription>
             </ItemContent>
             <ItemActions>
               <Badge variant={entry.open ? "secondary" : "outline"}>
-                {entry.open ? t.open : t.closed}
+                {entry.open ? t("open") : t("closed")}
               </Badge>
               <WhatsappWindowRemove
                 entry={{

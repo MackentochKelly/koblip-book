@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -49,8 +50,8 @@ import {
 import { AppSelect } from "@/components/app-select"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import { BOOKING_RULES } from "@/lib/booking-rules"
-import { formatDuration } from "@/lib/format-duration"
 import { parsePrice } from "@/lib/parse-price"
 import {
   createAddonGroup,
@@ -66,7 +67,6 @@ import type {
 import { CATALOG_FIRST_SHOWN } from "../utils/catalog-list"
 import { serviceSelectOptions } from "../utils/service-options"
 import { noAutofill } from "@/lib/no-autofill"
-import { useOwnerMessages } from "../i18n/provider"
 import { ConfirmRemove } from "./confirm-remove"
 import { ListFooter, ShowMore } from "./list-footer"
 
@@ -121,7 +121,8 @@ export function ExtrasView({
   phoneSuggest?: React.ReactNode
 }) {
   const router = useRouter()
-  const { common: c, extras: t } = useOwnerMessages().catalog
+  const c = useTranslations("owner.catalog.common")
+  const t = useTranslations("owner.catalog.extras")
   const [editing, setEditing] = useState<OwnerAddonGroup | null>(null)
   const [formKey, setFormKey] = useState(0)
   const [removing, setRemoving] = useState<OwnerAddonGroup | null>(null)
@@ -142,7 +143,7 @@ export function ExtrasView({
         if (done) toast.success(done)
         router.refresh()
       } else {
-        toast.error(c.failed)
+        toast.error(c("failed"))
       }
     })
   const move = (index: number, by: number) => {
@@ -161,7 +162,7 @@ export function ExtrasView({
             <EmptyMedia variant="icon">
               <SparklesIcon />
             </EmptyMedia>
-            <EmptyTitle>{t.empty}</EmptyTitle>
+            <EmptyTitle>{t("empty")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : (
@@ -187,10 +188,10 @@ export function ExtrasView({
                     setEditing(group)
                   }}
                 >
-                  {c.edit}
+                  {c("edit")}
                 </Button>
                 <DropdownMenu>
-                  <MoreMenuTrigger label={c.more} />
+                  <MoreMenuTrigger label={c("more")} />
                   <DropdownMenuContent align="end">
                     <DropdownMenuGroup>
                       <DropdownMenuItem
@@ -198,14 +199,14 @@ export function ExtrasView({
                         onClick={() => move(index, -1)}
                       >
                         <ArrowUpIcon />
-                        {c.moveUp}
+                        {c("moveUp")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         disabled={index === groups.length - 1 || pending}
                         onClick={() => move(index, 1)}
                       >
                         <ArrowDownIcon />
-                        {c.moveDown}
+                        {c("moveDown")}
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
@@ -216,7 +217,7 @@ export function ExtrasView({
                         onClick={() => setRemoving(group)}
                       >
                         <Trash2Icon />
-                        {c.remove}
+                        {c("remove")}
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                   </DropdownMenuContent>
@@ -227,7 +228,7 @@ export function ExtrasView({
         </ItemGroup>
       )}
       <ListFooter
-        showMore={first.hidden > 0 && <ShowMore label={c.showMore(first.hidden)} onClick={first.showAll} />}
+        showMore={first.hidden > 0 && <ShowMore label={c("showMore", { count: first.hidden })} onClick={first.showAll} />}
         suggest={phoneSuggest}
       />
 
@@ -236,14 +237,14 @@ export function ExtrasView({
         onClose={() => setRemoving(null)}
         onConfirm={() =>
           removing &&
-          run(() => deleteAddonGroup(businessId, removing.id), t.removed)
+          run(() => deleteAddonGroup(businessId, removing.id), t("removed"))
         }
       />
 
       <ResponsivePanel
         open={panelOpen}
         onClose={closePanel}
-        title={editing ? t.edit : t.add}
+        title={editing ? t("edit") : t("add")}
         footer={
           <Button
             type="submit"
@@ -252,7 +253,7 @@ export function ExtrasView({
             disabled={pending || (editing !== null && !changed)}
           >
             {pending && <Spinner data-icon="inline-start" />}
-            {c.save}
+            {c("save")}
           </Button>
         }
       >
@@ -272,10 +273,10 @@ export function ExtrasView({
                 ).catch(() => ({ ok: false }))
                 if (result.ok) {
                   closePanel()
-                  toast.success(c.saved)
+                  toast.success(c("saved"))
                   router.refresh()
                 } else {
-                  toast.error(c.checkFields)
+                  toast.error(c("checkFields"))
                 }
               })
             }
@@ -310,14 +311,13 @@ function ExtrasForm({
   onChanged: (changed: boolean) => void
   onSave: (input: AddonGroupInput) => void
 }) {
-  const {
-    common: c,
-    extras: t,
-    categories: words,
-  } = useOwnerMessages().catalog
+  const c = useTranslations("owner.catalog.common")
+  const t = useTranslations("owner.catalog.extras")
+  const words = useTranslations("owner.catalog.categories")
+  const formatDuration = useFormatDuration()
   const minutesItems = BOOKING_RULES.addonMinutes.map((minutes) => ({
     value: String(minutes),
-    label: minutes === 0 ? t.noExtraTime : `+${formatDuration(minutes)}`,
+    label: minutes === 0 ? t("noExtraTime") : `+${formatDuration(minutes)}`,
   }))
   const [name, setName] = useState(group?.name ?? "")
   const [prompt, setPrompt] = useState(group?.prompt ?? "")
@@ -376,7 +376,7 @@ function ExtrasForm({
     )
   const choices = CHOICES.map(({ value, label }) => ({
     value,
-    label: t.choices[label],
+    label: t(`choices.${label}`),
   }))
 
   return (
@@ -418,21 +418,21 @@ function ExtrasForm({
     >
       <FieldGroup>
         <Field data-invalid={invalid === "name" || undefined}>
-          <FieldLabel htmlFor="extras-name">{c.name}</FieldLabel>
+          <FieldLabel htmlFor="extras-name">{c("name")}</FieldLabel>
           <Input
             {...noAutofill("extras_name")}
             id="extras-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
             maxLength={BOOKING_RULES.maxAddonName}
-            placeholder={t.namePlaceholder}
+            placeholder={t("namePlaceholder")}
             aria-invalid={invalid === "name" || undefined}
           />
-          {invalid === "name" && <FieldError>{c.addName}</FieldError>}
+          {invalid === "name" && <FieldError>{c("addName")}</FieldError>}
         </Field>
         <Field data-invalid={invalid === "prompt" || undefined}>
           <FieldLabel htmlFor="extras-prompt">
-            {t.question}
+            {t("question")}
           </FieldLabel>
           <Input
             {...noAutofill("extras_prompt")}
@@ -440,13 +440,13 @@ function ExtrasForm({
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
             maxLength={BOOKING_RULES.maxAddonPrompt}
-            placeholder={t.questionPlaceholder}
+            placeholder={t("questionPlaceholder")}
             aria-invalid={invalid === "prompt" || undefined}
           />
-          {invalid === "prompt" && <FieldError>{t.addQuestion}</FieldError>}
+          {invalid === "prompt" && <FieldError>{t("addQuestion")}</FieldError>}
         </Field>
         <Field>
-          <FieldLabel htmlFor="extras-choice">{t.customersPick}</FieldLabel>
+          <FieldLabel htmlFor="extras-choice">{t("customersPick")}</FieldLabel>
           <AppSelect
             id="extras-choice"
             options={choices}
@@ -457,7 +457,7 @@ function ExtrasForm({
         </Field>
 
         <FieldSet>
-          <FieldLegend variant="label">{t.options}</FieldLegend>
+          <FieldLegend variant="label">{t("options")}</FieldLegend>
           <FieldGroup className="gap-4">
             {options.map((option, index) => (
               <div key={option.key} className="flex flex-col gap-3">
@@ -470,14 +470,14 @@ function ExtrasForm({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <FieldLabel htmlFor={`option-name-${option.key}`}>
-                      {t.option(index + 1)}
+                      {t("option", { n: index + 1 })}
                     </FieldLabel>
                     {options.length > 1 && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        aria-label={t.removeOption(index + 1)}
+                        aria-label={t("removeOption", { n: index + 1 })}
                         onClick={() =>
                           setOptions((current) =>
                             current.filter((item) => item.key !== option.key)
@@ -496,7 +496,7 @@ function ExtrasForm({
                       update(option.key, { name: event.target.value })
                     }
                     maxLength={BOOKING_RULES.maxAddonName}
-                    placeholder={t.optionPlaceholder}
+                    placeholder={t("optionPlaceholder")}
                     aria-invalid={
                       (badOption === option.key && !option.name.trim()) ||
                       undefined
@@ -506,13 +506,13 @@ function ExtrasForm({
                 <Field>
                   <Input
                     {...noAutofill("option_description")}
-                    aria-label={t.optionDescription(index + 1)}
+                    aria-label={t("optionDescription", { n: index + 1 })}
                     value={option.description}
                     onChange={(event) =>
                       update(option.key, { description: event.target.value })
                     }
                     maxLength={BOOKING_RULES.maxAddonDescription}
-                    placeholder={t.descriptionPlaceholder}
+                    placeholder={t("descriptionPlaceholder")}
                   />
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
@@ -525,13 +525,13 @@ function ExtrasForm({
                   >
                     <Input
                       {...noAutofill("option_price")}
-                      aria-label={t.optionPrice(index + 1)}
+                      aria-label={t("optionPrice", { n: index + 1 })}
                       inputMode="decimal"
                       value={option.price}
                       onChange={(event) =>
                         update(option.key, { price: event.target.value })
                       }
-                      placeholder={t.pricePlaceholder}
+                      placeholder={t("pricePlaceholder")}
                     />
                   </Field>
                   <Field>
@@ -541,7 +541,7 @@ function ExtrasForm({
                       onValueChange={(minutes) =>
                         update(option.key, { minutes })
                       }
-                      aria-label={t.optionTime(index + 1)}
+                      aria-label={t("optionTime", { n: index + 1 })}
                       className="w-full"
                     />
                   </Field>
@@ -550,7 +550,7 @@ function ExtrasForm({
             ))}
             {invalid === "options" && (
               <FieldError>
-                {t.optionsInvalid}
+                {t("optionsInvalid")}
               </FieldError>
             )}
             {options.length < BOOKING_RULES.maxAddonOptions && (
@@ -574,7 +574,7 @@ function ExtrasForm({
                 }}
               >
                 <PlusIcon data-icon="inline-start" />
-                {t.addOption}
+                {t("addOption")}
               </Button>
             )}
           </FieldGroup>
@@ -582,14 +582,14 @@ function ExtrasForm({
 
         {services.length > 0 && (
           <Field>
-            <FieldLabel htmlFor="extras-services">{t.offeredWith}</FieldLabel>
+            <FieldLabel htmlFor="extras-services">{t("offeredWith")}</FieldLabel>
             <AppSelect
               multiple
               id="extras-services"
               options={serviceSelectOptions(
                 services,
                 categories,
-                words.other
+                words("other")
               )}
               value={serviceIds}
               onValueChange={setServiceIds}

@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl"
+
 import {
   Item,
   ItemActions,
@@ -7,7 +9,6 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import type { AdminCategoryBusiness } from "../api/queries"
-import type { AdminMessages } from "../i18n"
 import { AdminDeleteButton } from "./admin-delete-button"
 
 // Each business's service categories in its order, with how many services
@@ -15,14 +16,12 @@ import { AdminDeleteButton } from "./admin-delete-button"
 // to Other.
 export function ServiceCategoriesList({
   businesses,
-  m,
   onDelete,
 }: {
   businesses: AdminCategoryBusiness[]
-  m: AdminMessages
   onDelete: (categoryId: string) => Promise<{ ok: boolean }>
 }) {
-  const t = m.serviceCategories
+  const t = useTranslations("admin.serviceCategories")
   return (
     <div className="flex flex-col gap-8">
       {businesses.map((business) => (
@@ -38,13 +37,13 @@ export function ServiceCategoriesList({
                     <span className="truncate">{category.name}</span>
                   </ItemTitle>
                   <ItemDescription className="truncate">
-                    {t.services(category.services)}
+                    {t("services", { n: category.services })}
                   </ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <AdminDeleteButton
                     name={category.name}
-                    description={t.movesToOther}
+                    description={t("movesToOther")}
                     onDelete={onDelete.bind(null, category.id)}
                   />
                 </ItemActions>

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useLocale, useTranslations } from "next-intl"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { ExternalLinkIcon, LogOutIcon } from "@/components/ui/icons"
@@ -33,7 +34,6 @@ import {
   type TeamProfile,
 } from "@/lib/team-rules"
 import { removeMyPhoto, saveMyProfile, setMyPhoto } from "../api/actions"
-import { useTeamAreaWords } from "../i18n/provider"
 
 // What customers see on the team member's public profile, which they keep
 // up themselves: their photo, job title, about, languages and their
@@ -51,8 +51,8 @@ export function ProfileForm({
   publicHref: string
   profile: TeamProfile & StartingCounts
 }) {
-  const t = useTeamAreaWords()
-  const p = t.profile
+  const p = useTranslations("teamArea.profile")
+  const locale = useLocale()
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [description, setDescription] = useState(profile.description ?? "")
@@ -83,12 +83,12 @@ export function ProfileForm({
             nativeButton={false}
             render={<Link href={publicHref} target="_blank" />}
           >
-            {p.seePublic}
+            {p("seePublic")}
             <ExternalLinkIcon data-icon="inline-end" />
           </Button>
         </div>
         <PhotoField
-          label={p.photo(name)}
+          label={p("photo", { name })}
           photoUrl={photoUrl}
           fallback={initials(name)}
           upload={(formData) => setMyPhoto(teamMemberId, formData)}
@@ -107,60 +107,60 @@ export function ProfileForm({
               ...counts,
             }).catch(() => null)
             if (result?.ok) {
-              toast.success(p.saved)
+              toast.success(p("saved"))
               router.refresh()
             } else {
-              toast.error(p.failed)
+              toast.error(p("failed"))
             }
           })
         }}
       >
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="my-title">{p.jobTitle}</FieldLabel>
+            <FieldLabel htmlFor="my-title">{p("jobTitle")}</FieldLabel>
             <Input
               id="my-title"
               className="min-h-11 md:min-h-9"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               maxLength={BOOKING_RULES.maxTeamDescription}
-              placeholder={p.optional}
+              placeholder={p("optional")}
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="my-about">{p.about}</FieldLabel>
+            <FieldLabel htmlFor="my-about">{p("about")}</FieldLabel>
             <Textarea
               id="my-about"
               value={about}
               onChange={(event) => setAbout(event.target.value)}
               maxLength={TEAM_RULES.aboutMaxLength}
-              placeholder={p.optional}
+              placeholder={p("optional")}
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="my-languages">{p.languages}</FieldLabel>
+            <FieldLabel htmlFor="my-languages">{p("languages")}</FieldLabel>
             <AppSelect
               multiple
               id="my-languages"
               options={TEAM_RULES.languages.map((code) => ({
                 value: code,
-                label: languageName(code, t.locale),
+                label: languageName(code, locale),
                 disabled:
                   languages.length >= TEAM_RULES.maxLanguages &&
                   !languages.includes(code),
               }))}
               value={languages}
               onValueChange={setLanguages}
-              placeholder={p.optional}
+              placeholder={p("optional")}
               className="w-full"
             />
           </Field>
           <FieldSet>
-            <FieldLegend variant="label">{p.before.title}</FieldLegend>
-            <FieldDescription>{p.before.note}</FieldDescription>
+            <FieldLegend variant="label">{p("before.title")}</FieldLegend>
+            <FieldDescription>{p("before.note")}</FieldDescription>
             <div className="grid grid-cols-2 gap-3">
               <Field data-invalid={!countsOk || undefined}>
-                <FieldLabel htmlFor="my-past-appointments">{p.before.appointments}</FieldLabel>
+                <FieldLabel htmlFor="my-past-appointments">{p("before.appointments")}</FieldLabel>
                 <Input
                   id="my-past-appointments"
                   className="min-h-11 md:min-h-9"
@@ -172,7 +172,7 @@ export function ProfileForm({
                 />
               </Field>
               <Field data-invalid={!countsOk || undefined}>
-                <FieldLabel htmlFor="my-past-clients">{p.before.clients}</FieldLabel>
+                <FieldLabel htmlFor="my-past-clients">{p("before.clients")}</FieldLabel>
                 <Input
                   id="my-past-clients"
                   className="min-h-11 md:min-h-9"
@@ -184,7 +184,7 @@ export function ProfileForm({
                 />
               </Field>
             </div>
-            {!countsOk && <FieldError>{p.before.error}</FieldError>}
+            {!countsOk && <FieldError>{p("before.error")}</FieldError>}
             <Button
               type="button"
               variant="outline"
@@ -195,12 +195,12 @@ export function ProfileForm({
                 setPastClients("0")
               }}
             >
-              {p.before.reset}
+              {p("before.reset")}
             </Button>
           </FieldSet>
           <Button type="submit" size="lg" disabled={pending || !changed || !countsOk}>
             {pending && <Spinner data-icon="inline-start" />}
-            {p.save}
+            {p("save")}
           </Button>
         </FieldGroup>
       </form>
@@ -212,7 +212,7 @@ export function ProfileForm({
         }
       >
         <LogOutIcon data-icon="inline-start" />
-        {p.logOut}
+        {p("logOut")}
       </Button>
     </div>
   )

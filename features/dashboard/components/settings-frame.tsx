@@ -1,8 +1,8 @@
 "use client"
 
 import { useSelectedLayoutSegment } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { SectionParts } from "@/components/section-parts"
-import { useOwnerMessages } from "../i18n/provider"
 
 // Settings' parts, in order. Details is the page itself; each other part is
 // its own route below it (app/(owner)/dashboard/[businessId]/settings/).
@@ -28,7 +28,8 @@ export function SettingsFrame({
   businessId: string
   children: React.ReactNode
 }) {
-  const m = useOwnerMessages()
+  const t = useTranslations("owner.settings")
+  const shell = useTranslations("owner.shell")
   const segment = useSelectedLayoutSegment()
   const base = `/dashboard/${businessId}/settings`
   const hrefOf = (part: Part) => (part === "details" ? base : `${base}/${part}`)
@@ -36,15 +37,15 @@ export function SettingsFrame({
 
   return (
     <SectionParts
-      title={m.shell.nav.settings}
+      title={shell("nav.settings")}
       titleHidden
       parts={PARTS.map((item) => ({
         id: item,
-        label: m.settings.parts[item],
+        label: t(`parts.${item}`),
         href: hrefOf(item),
       }))}
       current={part}
-      ariaLabel={m.settings.partsLabel}
+      ariaLabel={t("partsLabel")}
     >
       {children}
     </SectionParts>

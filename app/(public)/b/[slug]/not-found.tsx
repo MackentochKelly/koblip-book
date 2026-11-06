@@ -1,12 +1,15 @@
+import { useTranslations } from "next-intl"
+
 import { SearchXIcon } from "@/components/ui/icons"
 import { PageNotice } from "@/components/page-notice"
 
 export default function NotFound() {
+  const t = useTranslations("public.page.notFound")
   return (
     <PageNotice
       icon={<SearchXIcon />}
-      title="This page does not exist"
-      description="Check the link you received, or ask the business for a new one."
+      title={t("title")}
+      description={t("text")}
     />
   )
 }

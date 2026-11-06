@@ -1,6 +1,12 @@
+import type { PageLanguage } from "@/lib/page-language"
+
 // Home's greeting: morning until noon, afternoon until the language's evening
-// hour (i18n shell.greeting.eveningFrom), by the clock where the business is.
+// hour, by the clock where the business is.
 const AFTERNOON_FROM = 12
+
+// When each language's evening greeting starts: "Buenas tardes" lasts until
+// about 8pm.
+export const EVENING_FROM: Record<PageLanguage, number> = { en: 18, es: 20 }
 
 export type PartOfDay = "morning" | "afternoon" | "evening"
 

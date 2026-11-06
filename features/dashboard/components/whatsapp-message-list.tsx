@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { HelperLine } from "@/components/helper-line"
@@ -9,7 +10,6 @@ import { MessageStatus } from "@/components/message-status"
 import { SwitchCard } from "@/components/switch-card"
 import { ItemGroup } from "@/components/ui/item"
 import { setMessageOn } from "../api/notification-actions"
-import { useOwnerMessages } from "../i18n/provider"
 import type { NotificationMessage, TemplateReview } from "../types/notifications"
 import type { BookingMessage } from "../utils/booking-templates"
 import type { EditorLimits } from "@/components/message-editor"
@@ -30,11 +30,11 @@ export function WhatsappMessageList({
   // page's refresh shows Meta's new review in the editor too.
   const [editing, setEditing] = useState<BookingMessage | null>(null)
   const [editorKey, setEditorKey] = useState(0)
-  const t = useOwnerMessages().whatsapp
+  const t = useTranslations("owner.whatsapp")
   return (
     <div className="flex flex-col gap-3">
-      <HelperLine more={t.listMore} moreLabel={t.moreInfo}>
-        {t.listHint}
+      <HelperLine more={t("listMore")} moreLabel={t("moreInfo")}>
+        {t("listHint")}
       </HelperLine>
       <ItemGroup className="gap-3">
         {messages.map((item) => (
@@ -78,11 +78,11 @@ function MessageRow({
   item: NotificationMessage
   onEdit: () => void
 }) {
-  const t = useOwnerMessages().whatsapp
+  const t = useTranslations("owner.whatsapp")
   const router = useRouter()
   const [on, setOn] = useState(item.on)
   const [pending, startTransition] = useTransition()
-  const name = t.names[item.message]
+  const name = t(`names.${item.message}`)
   const review = reviewOf(item)
 
   const toggle = (next: boolean) => {
@@ -93,7 +93,7 @@ function MessageRow({
         router.refresh()
       } else {
         setOn(!next)
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
   }
@@ -101,15 +101,31 @@ function MessageRow({
   return (
     <SwitchCard
       title={name}
-      description={t.about[item.message]}
-      openLabel={t.edit(name)}
+      description={t(`about.${item.message}`)}
+      openLabel={t("edit", { name: name.toLowerCase() })}
       onOpen={onEdit}
       on={on}
       onCheckedChange={toggle}
-      switchLabel={t.turnOn(name)}
+      switchLabel={t("turnOn", { name: name.toLowerCase() })}
       switchDisabled={pending}
     >
-      <MessageStatus on={on} review={review} labels={t} />
+      <MessageStatus
+        on={on}
+        review={review}
+        labels={{
+          normalMessage: t("normalMessage"),
+          template: t("template"),
+          sending: t("sending"),
+          off: t("off"),
+          review: {
+            missing: t("review.missing"),
+            draft: t("review.draft"),
+            waiting: t("review.waiting"),
+            approved: t("review.approved"),
+            rejected: t("review.rejected"),
+          },
+        }}
+      />
     </SwitchCard>
   )
 }

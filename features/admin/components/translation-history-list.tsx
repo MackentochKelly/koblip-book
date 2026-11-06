@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useLocale, useTranslations } from "next-intl"
 
 import {
   Empty,
@@ -16,12 +17,12 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import type { TranslationScope } from "@/lib/translations/rules"
 import type {
   TranslationChange,
   TranslationHistoryRow,
 } from "../api/translations"
-import { useAdminMessages } from "../i18n/provider"
 import { textLabels } from "../utils/translation-labels"
 import { translationEntryHref } from "../utils/translation-parts"
 import { formatTranslationRule } from "../utils/translation-rule-values"
@@ -42,10 +43,12 @@ export function TranslationHistoryList({
   rows: HistoryListRow[]
   showText: boolean
 }) {
-  const m = useAdminMessages()
-  const t = m.translations
-  const number = new Intl.NumberFormat(m.locale)
-  const when = new Intl.DateTimeFormat(m.locale, {
+  const t = useTranslations("admin.translations")
+  const rules = useTranslations("admin.translations.rules")
+  const locale = useLocale()
+  const formatDuration = useFormatDuration()
+  const number = new Intl.NumberFormat(locale)
+  const when = new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   })
@@ -57,7 +60,7 @@ export function TranslationHistoryList({
           <EmptyMedia variant="icon">
             <SquarePenIcon />
           </EmptyMedia>
-          <EmptyTitle>{t.history.none}</EmptyTitle>
+          <EmptyTitle>{t("history.none")}</EmptyTitle>
         </EmptyHeader>
       </Empty>
     )
@@ -65,8 +68,8 @@ export function TranslationHistoryList({
 
   const ruleValue = (row: Extract<TranslationChange, { kind: "rule" }>, value: unknown) =>
     value === null || value === undefined
-      ? t.history.defaultValue
-      : formatTranslationRule(row.rule, value, m)
+      ? t("history.defaultValue")
+      : formatTranslationRule(row.rule, value, rules, locale, formatDuration)
 
   return (
     <ItemGroup className="gap-2">
@@ -75,13 +78,13 @@ export function TranslationHistoryList({
           return (
             <Item key={`rule-${row.id}`} variant="outline" size="sm">
               <ItemContent className="min-w-0">
-                <ItemTitle>{t.rules.names[row.rule]}</ItemTitle>
+                <ItemTitle>{t(`rules.names.${row.rule}`)}</ItemTitle>
                 <ItemDescription className="break-words">
                   {`${ruleValue(row, row.before)} → ${ruleValue(row, row.after)}`}
                 </ItemDescription>
                 <ItemDescription className="truncate">
                   {[
-                    row.changedBy ?? t.history.someone,
+                    row.changedBy ?? t("history.someone"),
                     when.format(new Date(row.changedAt)),
                   ].join(" · ")}
                 </ItemDescription>
@@ -91,13 +94,15 @@ export function TranslationHistoryList({
         }
         const byGoogle =
           row.action === "google" || row.action === "memory" || row.action === "failed"
-        const who = row.changedBy ?? (byGoogle ? t.history.google : null)
+        const who = row.changedBy ?? (byGoogle ? t("history.google") : null)
         const context = "scope" in row && showText ? contextOf(row) : null
         const meta = [
           context,
           who,
           when.format(new Date(row.changedAt)),
-          row.characters > 0 ? t.history.characters(number.format(row.characters)) : null,
+          row.characters > 0
+            ? t("history.characters", { n: number.format(row.characters) })
+            : null,
         ]
           .filter(Boolean)
           .join(" · ")
@@ -107,7 +112,7 @@ export function TranslationHistoryList({
             : null
         const content = (
           <ItemContent className="min-w-0">
-            <ItemTitle>{t.actions[row.action]}</ItemTitle>
+            <ItemTitle>{t(`actions.${row.action}`)}</ItemTitle>
             {(row.after ?? (showText ? row.sourceText : null)) && (
               <ItemDescription className="line-clamp-2 break-words">
                 {row.after ?? row.sourceText}
@@ -146,10 +151,10 @@ export function TranslationHistoryList({
         language: row.language,
         businessName: row.businessName,
       },
-      m
+      t
     )
     return row.scope === "business"
       ? [labels.where, labels.what, labels.language].join(" · ")
-      : [t.history.app, labels.what, labels.language].join(" · ")
+      : [t("history.app"), labels.what, labels.language].join(" · ")
   }
 }

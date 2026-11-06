@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslations } from "next-intl"
+
 import { SortableList } from "@/components/sortable-list"
 import { PageSection } from "@/components/page-section"
 import {
@@ -21,7 +23,6 @@ import {
   useWidgetAnnouncements,
   useWidgetLayout,
 } from "../hooks/use-widget-layout"
-import { useOwnerMessages } from "../i18n/provider"
 import { setShown } from "../utils/widget-layout"
 import { WIDGETS, type WidgetLayout } from "../widgets"
 
@@ -42,8 +43,7 @@ export function WidgetsView({
   layout: WidgetLayout
   device: boolean
 }) {
-  const m = useOwnerMessages()
-  const t = m.widgets
+  const t = useTranslations("owner.widgets")
   const { layout, device, save } = useWidgetLayout(
     businessId,
     savedLayout,
@@ -51,27 +51,27 @@ export function WidgetsView({
   )
   const { announcements, instructions } = useWidgetAnnouncements()
   const places = [
-    { device: false, label: t.everyDevice },
-    { device: true, label: t.thisDevice },
+    { device: false, label: t("everyDevice") },
+    { device: true, label: t("thisDevice") },
   ]
 
   return (
     <div className="flex flex-col gap-10">
       <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">
-        {t.title}
+        {t("title")}
       </h1>
 
       <SortableList
         ids={layout.order}
         onReorder={(order) => save({ ...layout, order })}
-        handleLabel={(id) => t.move(t.names[id])}
+        handleLabel={(id) => t("move", { name: t(`names.${id}`) })}
         announcements={announcements}
         instructions={instructions}
         className="flex flex-col gap-3"
       >
         {(id, handle) => {
           const Icon = ICONS[id]
-          const name = t.names[id]
+          const name = t(`names.${id}`)
           const shown = !layout.hidden.includes(id)
           return (
             <Item variant="outline" className="bg-card">
@@ -88,7 +88,7 @@ export function WidgetsView({
                 <Switch
                   id={`widget-${id}`}
                   checked={shown}
-                  aria-label={t.show(name)}
+                  aria-label={t("show", { name })}
                   onCheckedChange={(next) => save(setShown(layout, id, next))}
                 />
               </ItemActions>
@@ -97,11 +97,11 @@ export function WidgetsView({
         }}
       </SortableList>
 
-      <PageSection id="saved-for" title={t.savedFor}>
+      <PageSection id="saved-for" title={t("savedFor")}>
         <RadioGroup
           value={device ? "device" : "account"}
           onValueChange={(next) => save(layout, next === "device")}
-          aria-label={t.savedFor}
+          aria-label={t("savedFor")}
         >
           {places.map((place) => {
             const value = place.device ? "device" : "account"

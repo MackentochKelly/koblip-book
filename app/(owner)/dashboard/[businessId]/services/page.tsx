@@ -1,13 +1,14 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import { getAddonGroups } from "@/features/dashboard/api/addon-queries"
 import { usesGoogleCalendar } from "@/features/dashboard/api/google-calendar"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { getServiceTeams } from "@/features/dashboard/api/team-service-queries"
 import { ServicesView } from "@/features/dashboard/components/services-view"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.services }
+  const t = await getTranslations("owner.shell")
+  return { title: t("nav.services") }
 }
 
 type Props = {

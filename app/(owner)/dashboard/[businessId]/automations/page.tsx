@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
+
 import {
   chatConnectionFor,
   ownTemplatesNotApproved,
@@ -10,12 +12,12 @@ import {
 } from "@/features/dashboard/api/notifications"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { WhatsappOverview } from "@/features/dashboard/components/whatsapp-overview"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { notificationRules } from "@/lib/platform-settings"
 import { whatsappActivityStats } from "@/lib/whatsapp-activity"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.automations }
+  const t = await getTranslations("owner.shell")
+  return { title: t("nav.automations") }
 }
 
 export default async function AutoMessagesOverviewPage({

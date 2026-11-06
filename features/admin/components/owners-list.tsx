@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -11,7 +13,6 @@ import {
 } from "@/components/ui/item"
 import { initials } from "@/lib/initials"
 import type { AdminOwner } from "../api/queries"
-import type { AdminMessages } from "../i18n"
 import { AdminDeleteButton } from "./admin-delete-button"
 import { OwnerBlockButton } from "./owner-block-button"
 
@@ -20,15 +21,13 @@ import { OwnerBlockButton } from "./owner-block-button"
 export function OwnersList({
   owners,
   selfId,
-  m,
   onDelete,
 }: {
   owners: AdminOwner[]
   selfId: string
-  m: AdminMessages
   onDelete: (userId: string) => Promise<{ ok: boolean }>
 }) {
-  const t = m.owners
+  const t = useTranslations("admin")
   return (
     <ItemGroup className="gap-3">
       {owners.map((owner) => {
@@ -44,14 +43,14 @@ export function OwnersList({
             <ItemContent className="min-w-0">
               <ItemTitle className="max-w-full">
                 <span className="truncate">{owner.name}</span>
-                {self && <Badge variant="secondary">{t.you}</Badge>}
-                {owner.banned && <Badge variant="destructive">{t.blocked}</Badge>}
+                {self && <Badge variant="secondary">{t("owners.you")}</Badge>}
+                {owner.banned && <Badge variant="destructive">{t("owners.blocked")}</Badge>}
               </ItemTitle>
               <ItemDescription className="truncate">
-                {`${owner.email} · ${t.businesses(owner.businesses)}`}
+                {`${owner.email} · ${t("owners.businesses", { n: owner.businesses })}`}
               </ItemDescription>
               <ItemDescription className="truncate" title={owner.voice?.voiceId}>
-                {`${t.voice}: ${owner.voice?.name ?? owner.voice?.voiceId ?? t.noVoice}`}
+                {`${t("owners.voice")}: ${owner.voice?.name ?? owner.voice?.voiceId ?? t("owners.noVoice")}`}
               </ItemDescription>
             </ItemContent>
             {!self && (
@@ -63,7 +62,7 @@ export function OwnersList({
                 />
                 <AdminDeleteButton
                   name={owner.name}
-                  description={m.remove.ownerText}
+                  description={t("remove.ownerText")}
                   onDelete={onDelete.bind(null, owner.id)}
                 />
               </ItemActions>

@@ -1,6 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import { useTranslations } from "next-intl"
 import {
   BellIcon,
   CalendarDaysIcon,
@@ -25,7 +26,6 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { useAdminMessages } from "../i18n/provider"
 
 const BASE = "/admin"
 
@@ -46,10 +46,10 @@ const NAV = [
 // a computer, sliding in from ☰ on a phone) and the same top bar.
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const m = useAdminMessages()
+  const t = useTranslations("admin")
   const items = NAV.map((item) => ({
     href: BASE + item.path,
-    label: m.nav[item.key],
+    label: t(`nav.${item.key}`),
     icon: item.icon,
     active: item.path
       ? pathname.startsWith(BASE + item.path)
@@ -60,12 +60,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <SidebarProvider>
         <Sidebar collapsible="icon">
           <SidebarContent className="scroll-fade">
-            <NavMain title={m.groups.app} items={items} />
+            <NavMain title={t("groups.app")} items={items} />
           </SidebarContent>
           <SidebarRail />
         </Sidebar>
         <AppInset>
-          <AppTopBar title={m.admin} menuLabel={m.admin} />
+          <AppTopBar title={t("admin")} menuLabel={t("admin")} />
           <PageContent>{children}</PageContent>
         </AppInset>
       </SidebarProvider>

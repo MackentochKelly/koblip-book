@@ -1,3 +1,5 @@
+import { useLocale, useTranslations } from "next-intl"
+
 import { Badge } from "@/components/ui/badge"
 import {
   Item,
@@ -9,23 +11,17 @@ import {
 } from "@/components/ui/item"
 import { WHATSAPP_ADMIN_RULES } from "@/lib/whatsapp-admin-rules"
 import type { WhatsappOverview as Overview } from "../api/whatsapp-overview"
-import type { AdminMessages } from "../i18n"
 import { formatAgo } from "@/lib/format-ago"
 import { StatStrip } from "@/components/stat-strip"
 import { ClockIcon, OctagonXIcon } from "@/components/ui/icons"
 
 // The admin's WhatsApp Overview (A2): what waits and failed, whether the
 // timer runs, whether Koblip Chat answers, and which server settings are set.
-export function WhatsappOverview({
-  overview,
-  m,
-}: {
-  overview: Overview
-  m: AdminMessages
-}) {
-  const t = m.whatsapp.overview
+export function WhatsappOverview({ overview }: { overview: Overview }) {
+  const t = useTranslations("admin.whatsapp.overview")
+  const locale = useLocale()
   const { timer, chat } = overview
-  const number = new Intl.NumberFormat(m.locale)
+  const number = new Intl.NumberFormat(locale)
   return (
     <div className="flex flex-col gap-6">
       <StatStrip
@@ -33,13 +29,13 @@ export function WhatsappOverview({
           {
             icon: <ClockIcon />,
             tone: "warning",
-            label: t.waiting,
+            label: t("waiting"),
             value: number.format(overview.waiting),
           },
           {
             icon: <OctagonXIcon />,
             tone: "destructive",
-            label: t.failed(WHATSAPP_ADMIN_RULES.failedDays),
+            label: t("failed", { days: WHATSAPP_ADMIN_RULES.failedDays }),
             value: number.format(overview.failed),
           },
         ]}
@@ -48,13 +44,13 @@ export function WhatsappOverview({
       <ItemGroup className="gap-3">
         <Item variant="outline">
           <ItemContent className="min-w-0">
-            <ItemTitle>{t.timer}</ItemTitle>
+            <ItemTitle>{t("timer")}</ItemTitle>
             <ItemDescription className="line-clamp-2">
               {timer.state === "never"
-                ? t.timerNever
+                ? t("timerNever")
                 : timer.lastError
-                  ? t.timerError(timer.lastError)
-                  : t.timerLast(formatAgo(timer.lastRunAt, overview.now, m.locale))}
+                  ? t("timerError", { error: timer.lastError })
+                  : t("timerLast", { ago: formatAgo(timer.lastRunAt, overview.now, locale) })}
             </ItemDescription>
           </ItemContent>
           <ItemActions>
@@ -65,18 +61,18 @@ export function WhatsappOverview({
                   : "destructive"
               }
             >
-              {timer.state === "running" ? t.running : t.stopped}
+              {timer.state === "running" ? t("running") : t("stopped")}
             </Badge>
           </ItemActions>
         </Item>
 
         <Item variant="outline">
           <ItemContent className="min-w-0">
-            <ItemTitle>{t.chat}</ItemTitle>
+            <ItemTitle>{t("chat")}</ItemTitle>
           </ItemContent>
           <ItemActions>
             <Badge variant={chat === "reachable" ? "secondary" : "destructive"}>
-              {t.chatStates[chat]}
+              {t(`chatStates.${chat}`)}
             </Badge>
           </ItemActions>
         </Item>
@@ -90,7 +86,7 @@ export function WhatsappOverview({
           id="whatsapp-secrets"
           className="text-lg font-semibold tracking-tight"
         >
-          {t.secrets}
+          {t("secrets")}
         </h2>
         <ItemGroup className="gap-3">
           {overview.secrets.map((secret) => (
@@ -102,7 +98,7 @@ export function WhatsappOverview({
               </ItemContent>
               <ItemActions>
                 <Badge variant={secret.set ? "secondary" : "destructive"}>
-                  {secret.set ? t.set : t.missing}
+                  {secret.set ? t("set") : t("missing")}
                 </Badge>
               </ItemActions>
             </Item>

@@ -1,11 +1,13 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
+
 import { PageSection } from "@/components/page-section"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { DetailsForm } from "@/features/dashboard/components/details-form"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.settings }
+  const t = await getTranslations("owner.shell")
+  return { title: t("nav.settings") }
 }
 
 type Props = {
@@ -16,16 +18,16 @@ type Props = {
 // has. No "Improve with Muse" here (the owner's call); sign-up keeps it.
 export default async function SettingsPage({ params }: Props) {
   const { businessId } = await params
-  const [{ business, team }, m] = await Promise.all([
+  const [{ business, team }, t] = await Promise.all([
     getOwnerBusiness(businessId),
-    getOwnerMessages(),
+    getTranslations("owner.settings"),
   ])
   return (
     <PageSection
       id="details"
-      title={m.settings.parts.details}
-      info={m.settings.details.info}
-      infoLabel={m.settings.moreInfo}
+      title={t("parts.details")}
+      info={t("details.info")}
+      infoLabel={t("moreInfo")}
     >
       <DetailsForm
         businessId={businessId}

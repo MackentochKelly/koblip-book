@@ -10,6 +10,7 @@ import {
   PlusIcon,
   Trash2Icon,
 } from "@/components/ui/icons"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
@@ -29,7 +30,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Spinner } from "@/components/ui/spinner"
-import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { UPLOAD_RULES } from "@/lib/upload-rules"
 import {
   deleteBusinessPhoto,
@@ -47,8 +47,8 @@ export function BusinessPhotosEditor({
   businessId: string
   photos: OwnerPhoto[]
 }) {
-  const m = useOwnerMessages()
-  const t = m.settings.photos
+  const settings = useTranslations("owner.settings")
+  const t = useTranslations("owner.settings.photos")
   const router = useRouter()
   const [busy, startTransition] = useTransition()
   const { pick, pending, field } = usePhotoUpload((formData) =>
@@ -60,7 +60,7 @@ export function BusinessPhotosEditor({
     startTransition(async () => {
       const result = await task().catch(() => ({ ok: false }))
       if (result.ok) router.refresh()
-      else toast.error(m.settings.tryAgain)
+      else toast.error(settings("tryAgain"))
     })
   const move = (index: number, by: number) => {
     const ids = photos.map((photo) => photo.id)
@@ -72,7 +72,7 @@ export function BusinessPhotosEditor({
   return (
     <PageSection
       id="photos"
-      title={t.title}
+      title={t("title")}
       action={
         <Button variant="outline" onClick={pick} disabled={pending || full}>
           {pending ? (
@@ -80,7 +80,7 @@ export function BusinessPhotosEditor({
           ) : (
             <PlusIcon data-icon="inline-start" />
           )}
-          {t.add}
+          {t("add")}
         </Button>
       }
     >
@@ -91,7 +91,7 @@ export function BusinessPhotosEditor({
             <EmptyMedia variant="icon">
               <ImageIcon />
             </EmptyMedia>
-            <EmptyTitle>{t.none}</EmptyTitle>
+            <EmptyTitle>{t("none")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : (
@@ -103,14 +103,14 @@ export function BusinessPhotosEditor({
             >
               <Image
                 src={photo.url}
-                alt={t.photo(index + 1)}
+                alt={t("photo", { n: index + 1 })}
                 fill
                 unoptimized
                 sizes="(max-width: 640px) 50vw, 33vw"
                 className="object-cover"
               />
               <DropdownMenu>
-                <MoreMenuTrigger label={t.options(index + 1)} className="absolute top-2 right-2" />
+                <MoreMenuTrigger label={t("options", { n: index + 1 })} className="absolute top-2 right-2" />
                 <DropdownMenuContent align="end">
                   <DropdownMenuGroup>
                     <DropdownMenuItem
@@ -118,14 +118,14 @@ export function BusinessPhotosEditor({
                       onClick={() => move(index, -1)}
                     >
                       <ArrowLeftIcon />
-                      {t.moveLeft}
+                      {t("moveLeft")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       disabled={index === photos.length - 1 || busy}
                       onClick={() => move(index, 1)}
                     >
                       <ArrowRightIcon />
-                      {t.moveRight}
+                      {t("moveRight")}
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
@@ -138,7 +138,7 @@ export function BusinessPhotosEditor({
                       }
                     >
                       <Trash2Icon />
-                      {t.remove}
+                      {t("remove")}
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                 </DropdownMenuContent>

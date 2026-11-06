@@ -1,13 +1,13 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import { useTranslations } from "next-intl"
 
 import { AppTopBar } from "@/components/app-top-bar"
 import { ExternalLinkIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { navKeyFor } from "../navigation"
 import { AccountMenu } from "./account-menu"
 
@@ -33,7 +33,7 @@ export function TopBar({
   bell?: React.ReactNode
   className?: string
 }) {
-  const m = useOwnerMessages().shell
+  const t = useTranslations("owner.shell")
   const pathname = usePathname()
   // In the dashboard the bar names the page, like an app's title bar; the
   // page's own big title then shows only on a computer.
@@ -42,8 +42,8 @@ export function TopBar({
     : undefined
   return (
     <AppTopBar
-      title={key ? m.nav[key] : business.name}
-      menuLabel={menu ? m.menu : undefined}
+      title={key ? t(`nav.${key}`) : business.name}
+      menuLabel={menu ? t("menu") : undefined}
       className={className}
     >
       <div className="flex items-center gap-2">
@@ -60,7 +60,7 @@ export function TopBar({
               />
             }
           >
-            {m.viewPage}
+            {t("viewPage")}
             <ExternalLinkIcon data-icon="inline-end" />
           </Button>
         )}

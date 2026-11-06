@@ -1,3 +1,5 @@
+import { useLocale, useTranslations } from "next-intl"
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { ExternalLinkIcon } from "@/components/ui/icons"
@@ -13,21 +15,19 @@ import {
 import { formatClock, formatWeekday } from "@/lib/format-booking-time"
 import { initials } from "@/lib/initials"
 import type { AdminBusiness } from "../api/queries"
-import type { AdminMessages } from "../i18n"
 import { AdminDeleteButton } from "./admin-delete-button"
 
 // Every business: its owner, its bookings, a link to its public page and
 // Delete (onDelete comes from the page).
 export function BusinessesList({
   businesses,
-  m,
   onDelete,
 }: {
   businesses: AdminBusiness[]
-  m: AdminMessages
   onDelete: (businessId: string) => Promise<{ ok: boolean }>
 }) {
-  const t = m.businesses
+  const t = useTranslations("admin")
+  const locale = useLocale()
   return (
     <ItemGroup className="gap-3">
       {businesses.map((business) => (
@@ -40,17 +40,17 @@ export function BusinessesList({
           <ItemContent className="min-w-0">
             <ItemTitle>{business.name}</ItemTitle>
             <ItemDescription className="truncate">
-              {`${business.ownerName ?? t.noOwner} · ${t.bookings(business.bookings)}`}
+              {`${business.ownerName ?? t("businesses.noOwner")} · ${t("businesses.bookings", { n: business.bookings })}`}
             </ItemDescription>
             {business.team?.map((member) => <div key={member.id} className="flex flex-col gap-1 text-sm">
               <span className="font-medium">{member.name}</span>
               {[member.description, member.phone, member.email].filter(Boolean).map((detail) => <span key={detail} className="text-muted-foreground">{detail}</span>)}
-              {member.hours.length === 0 ? <span className="text-muted-foreground">{t.sameHours}</span> : member.hours.map((row) =>
-                <span key={row.id} className="text-muted-foreground">{formatWeekday(row.weekday, m.locale)} · {formatClock(row.opensAt, m.locale)}–{formatClock(row.closesAt, m.locale)}</span>
+              {member.hours.length === 0 ? <span className="text-muted-foreground">{t("businesses.sameHours")}</span> : member.hours.map((row) =>
+                <span key={row.id} className="text-muted-foreground">{formatWeekday(row.weekday, locale)} · {formatClock(row.opensAt, locale)}–{formatClock(row.closesAt, locale)}</span>
               )}
             </div>)}
             {business.customers && business.customers.length > 0 && <div className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">{t.addedCustomers}</span>
+              <span className="font-medium">{t("businesses.addedCustomers")}</span>
               {business.customers.map((customer) => <span key={customer.id} className="text-muted-foreground">{customer.phone ? `${customer.name} · ${customer.phone}` : customer.name}</span>)}
             </div>}
           </ItemContent>
@@ -58,7 +58,7 @@ export function BusinessesList({
             <Button
               variant="ghost"
               size="icon"
-              aria-label={t.open(business.name)}
+              aria-label={t("businesses.open", { name: business.name })}
               nativeButton={false}
               render={
                 <a
@@ -72,7 +72,7 @@ export function BusinessesList({
             </Button>
             <AdminDeleteButton
               name={business.name}
-              description={m.remove.businessText}
+              description={t("remove.businessText")}
               onDelete={onDelete.bind(null, business.id)}
             />
           </ItemActions>

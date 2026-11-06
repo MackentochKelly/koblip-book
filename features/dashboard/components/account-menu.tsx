@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import type { Route } from "next"
 import {
   ChevronDownIcon,
@@ -28,10 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  useOwnerLanguage,
-  useOwnerMessages,
-} from "@/features/dashboard/i18n/provider"
+import { useOwnerLanguage } from "@/features/dashboard/i18n/provider"
 import { LANGUAGE_NAMES } from "@/features/dashboard/i18n/language"
 import { authClient } from "@/lib/auth-client"
 import { PAGE_LANGUAGES, isPageLanguage } from "@/lib/page-language"
@@ -91,7 +89,7 @@ export function AccountMenu({
   owner: Owner
   settingsHref?: string
 }) {
-  const m = useOwnerMessages().shell
+  const t = useTranslations("owner.shell")
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -99,7 +97,7 @@ export function AccountMenu({
           <Button
             variant="ghost"
             size="icon"
-            aria-label={m.account}
+            aria-label={t("account")}
             className="relative rounded-full hover:bg-transparent hover:ring-2 hover:ring-border data-popup-open:ring-2 data-popup-open:ring-border"
           />
         }
@@ -139,7 +137,7 @@ export function AccountMenuContent({
   "side" | "align" | "sideOffset" | "className"
 >) {
   const { theme, setTheme } = useTheme()
-  const m = useOwnerMessages().shell
+  const t = useTranslations("owner.shell")
   const [language, setLanguage] = useOwnerLanguage()
   const signOut = useSignOut()
   const current = THEMES.find((item) => item.value === theme) ?? THEMES[2]
@@ -167,7 +165,7 @@ export function AccountMenuContent({
         <>
           <DropdownMenuItem render={<Link href={settingsHref as Route} />}>
             <SettingsIcon />
-            {m.nav.settings}
+            {t("nav.settings")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
         </>
@@ -175,29 +173,29 @@ export function AccountMenuContent({
       {/* Choosing keeps the menu open, to compare (radio items don't close it). */}
       <MenuSub
         icon={<current.icon />}
-        label={m.appearance}
-        value={m[current.key]}
+        label={t("appearance")}
+        value={t(current.key)}
       >
         <DropdownMenuRadioGroup
-          aria-label={m.appearance}
+          aria-label={t("appearance")}
           value={current.value}
           onValueChange={setTheme}
         >
           {THEMES.map((item) => (
             <DropdownMenuRadioItem key={item.value} value={item.value}>
               <item.icon />
-              {m[item.key]}
+              {t(item.key)}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
       </MenuSub>
       <MenuSub
         icon={<LanguagesIcon />}
-        label={m.language}
+        label={t("language")}
         value={LANGUAGE_NAMES[language]}
       >
         <DropdownMenuRadioGroup
-          aria-label={m.language}
+          aria-label={t("language")}
           value={language}
           onValueChange={(next) => {
             if (isPageLanguage(next)) setLanguage(next)
@@ -213,7 +211,7 @@ export function AccountMenuContent({
       <DropdownMenuSeparator />
       <DropdownMenuItem onClick={() => void signOut()}>
         <LogOutIcon />
-        {m.signOut}
+        {t("signOut")}
       </DropdownMenuItem>
     </DropdownMenuContent>
   )

@@ -1,26 +1,23 @@
+import { getTranslations } from "next-intl/server"
+
 import { StoreIcon } from "@/components/ui/icons"
 import { adminDeleteBusiness } from "@/features/dashboard/api/delete-actions"
 import { getBusinesses } from "@/features/admin/api/queries"
 import { AdminPage } from "@/features/admin/components/admin-page"
 import { BusinessesList } from "@/features/admin/components/businesses-list"
-import { getAdminMessages } from "@/features/admin/i18n/server"
 
 export default async function AdminBusinessesPage() {
-  const [businesses, m] = await Promise.all([
+  const [businesses, t] = await Promise.all([
     getBusinesses(),
-    getAdminMessages(),
+    getTranslations("admin"),
   ])
   return (
     <AdminPage
-      title={m.nav.businesses}
+      title={t("nav.businesses")}
       icon={<StoreIcon />}
-      empty={businesses.length ? null : m.businesses.none}
+      empty={businesses.length ? null : t("businesses.none")}
     >
-      <BusinessesList
-        businesses={businesses}
-        m={m}
-        onDelete={adminDeleteBusiness}
-      />
+      <BusinessesList businesses={businesses} onDelete={adminDeleteBusiness} />
     </AdminPage>
   )
 }

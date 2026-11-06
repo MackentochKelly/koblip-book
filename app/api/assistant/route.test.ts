@@ -16,6 +16,11 @@ vi.mock("@/features/dashboard/i18n/server", () => ({
   getOwnerLanguage: vi.fn(async () => "en"),
 }))
 
+// The tests have no translations: the tools' lines come in English.
+vi.mock("next-intl/server", async () =>
+  (await import("@/i18n/testing")).serverWords()
+)
+
 const { getSession } = await import("@/lib/dal")
 const { ownedBusiness } =
   await import("@/features/dashboard/api/owned-business")

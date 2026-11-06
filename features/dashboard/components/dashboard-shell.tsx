@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
+import { useTranslations } from "next-intl"
 import {
   AudioLinesIcon,
   CalendarDaysIcon,
@@ -26,7 +27,6 @@ import { Button } from "@/components/ui/button"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { VoiceGlobe } from "@/components/voice-globe"
-import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { UPLOAD_RULES } from "@/lib/upload-rules"
 import { cn } from "@/lib/utils"
 import {
@@ -122,8 +122,8 @@ export function DashboardShell({
   useEffect(() => {
     document.cookie = `${LAST_BUSINESS_COOKIE}=${business.id}; path=/; max-age=${LAST_BUSINESS_MAX_AGE}; samesite=lax`
   }, [business.id])
-  const messages = useOwnerMessages()
-  const m = messages.shell.nav
+  const t = useTranslations("owner")
+  const photos = useTranslations("owner.settings.photos")
   const base = `/dashboard/${business.id}`
   const assistantHref = `${base}/assistant`
   const assistantOpen = pathname.startsWith(assistantHref)
@@ -132,13 +132,13 @@ export function DashboardShell({
   const addLabel =
     action?.label ??
     (addPage === "/customers"
-      ? messages.bookings.customers.add
+      ? t("bookings.customers.add")
       : addPage === "/services"
-        ? messages.catalog.services.addService
-        : messages.catalog.team.addPerson)
+        ? t("catalog.services.addService")
+        : t("catalog.team.addPerson"))
   const items = NAV.map((item) => ({
     ...item,
-    label: m[item.key],
+    label: t(`shell.nav.${item.key}`),
     href: base + item.path,
     active: item.path
       ? pathname.startsWith(base + item.path)
@@ -185,15 +185,17 @@ export function DashboardShell({
                 <TabBarActionContext value={setAction}>
                   <PhotoWordsProvider
                     words={{
-                      change: messages.settings.photos.change,
-                      addPhoto: messages.settings.photos.addPhoto,
-                      remove: messages.settings.photos.remove,
+                      change: photos("change"),
+                      addPhoto: photos("addPhoto"),
+                      remove: photos("remove"),
                       errors: {
-                        not_found: messages.settings.tryAgain,
-                        missing: messages.settings.photos.pick,
-                        too_big: messages.settings.photos.tooBig,
-                        wrong_type: messages.settings.photos.wrongType,
-                        limit: messages.settings.photos.limit(UPLOAD_RULES.maxBusinessPhotos),
+                        not_found: t("settings.tryAgain"),
+                        missing: photos("pick"),
+                        too_big: photos("tooBig"),
+                        wrong_type: photos("wrongType"),
+                        limit: photos("limit", {
+                          max: UPLOAD_RULES.maxBusinessPhotos,
+                        }),
                       },
                     }}
                   >
@@ -203,7 +205,7 @@ export function DashboardShell({
               </PageContent>
             </AppInset>
             <BottomTabBar
-              label={m.owner}
+              label={t("shell.nav.owner")}
               className={cn("grid-cols-5", assistantOpen && "hidden")}
             >
               {PHONE_LEFT.map((path) => tab(path))}
@@ -234,7 +236,7 @@ export function DashboardShell({
                   ) : (
                     <AssistantTabButton
                       href={assistantHref}
-                      label={m.assistant}
+                      label={t("shell.nav.assistant")}
                     />
                   )}
                 </SpinSwap>

@@ -1,12 +1,12 @@
 import type { authClient } from "@/lib/auth-client"
 import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
-import type { AuthWords } from "../i18n"
+import type en from "../i18n/en"
 
 type ErrorCode = keyof typeof authClient.$ERROR_CODES
 
 export type AuthError = {
   field: "email" | "name" | "password" | "form"
-  message: keyof AuthWords["errors"]
+  message: keyof typeof en.errors
 }
 
 // Better Auth's codes pick our words, never its message strings

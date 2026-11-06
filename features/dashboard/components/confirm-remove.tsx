@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslations } from "next-intl"
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,7 +12,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useOwnerMessages } from "../i18n/provider"
 
 // Asks before anything is removed for good (shadcn's Alert Dialog, as for
 // cancelling a booking): open while `name` is set. Remove closes it and
@@ -31,7 +32,7 @@ export function ConfirmRemove({
   onClose: () => void
   children?: React.ReactNode
 }) {
-  const c = useOwnerMessages().catalog.common
+  const t = useTranslations("owner.catalog.common")
   return (
     <AlertDialog
       open={name !== null}
@@ -42,15 +43,15 @@ export function ConfirmRemove({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {name && c.confirmRemove.title(name)}
+            {name && t("confirmRemove.title", { name })}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {description ?? c.confirmRemove.description}
+            {description ?? t("confirmRemove.description")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {children}
         <AlertDialogFooter>
-          <AlertDialogCancel>{c.confirmRemove.keep}</AlertDialogCancel>
+          <AlertDialogCancel>{t("confirmRemove.keep")}</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             onClick={() => {
@@ -58,7 +59,7 @@ export function ConfirmRemove({
               onConfirm()
             }}
           >
-            {c.remove}
+            {t("remove")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

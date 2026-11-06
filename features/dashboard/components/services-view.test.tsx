@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 
+import { WithWords } from "@/i18n/testing"
 import type { OwnerServiceCategory } from "../types"
 
 const { actions, categoryActions, toast } = vi.hoisted(() => ({
@@ -103,7 +104,8 @@ function view(
       serviceTeams={{}}
       addonGroups={[]}
       googleCalendar={googleCalendar}
-    />
+    />,
+    { wrapper: WithWords }
   )
 }
 

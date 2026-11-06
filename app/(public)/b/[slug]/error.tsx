@@ -1,5 +1,6 @@
 "use client" // Error boundaries must be Client Components
 
+import { useTranslations } from "next-intl"
 import { useEffect } from "react"
 import { CircleAlertIcon } from "@/components/ui/icons"
 
@@ -13,6 +14,8 @@ export default function Error({
   error: unknown
   retry: () => void
 }) {
+  // Outside the page, so its words are the shared ones (app/layout.tsx).
+  const t = useTranslations("app.pageError")
   useEffect(() => {
     console.error(error)
   }, [error])
@@ -20,11 +23,11 @@ export default function Error({
   return (
     <PageNotice
       icon={<CircleAlertIcon />}
-      title="This page is not available right now"
-      description="Try again in a few minutes."
+      title={t("title")}
+      description={t("text")}
       action={
         <Button variant="outline" onClick={() => retry()}>
-          Try again
+          {t("retry")}
         </Button>
       }
     />

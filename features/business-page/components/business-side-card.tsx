@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { PageLanguage } from "@/lib/page-language"
 import type { Business } from "../types"
 import { BusinessActions } from "./business-actions"
 import { BusinessFacts } from "./business-facts"
@@ -19,12 +18,10 @@ export function BusinessSideCard({
   business,
   open,
   bookable,
-  language,
 }: {
   business: Business
   open: boolean | null
   bookable: boolean
-  language: PageLanguage
 }) {
   return (
     <Card className="sticky top-6">
@@ -40,7 +37,7 @@ export function BusinessSideCard({
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <BusinessFacts business={business} open={open} language={language} />
+        <BusinessFacts business={business} open={open} />
         {business.address && (
           <p className="text-sm text-muted-foreground">{business.address}</p>
         )}
@@ -48,7 +45,6 @@ export function BusinessSideCard({
           business={business}
           layout="stack"
           bookable={bookable}
-          language={language}
         />
       </CardContent>
     </Card>

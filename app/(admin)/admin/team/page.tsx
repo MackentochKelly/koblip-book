@@ -1,23 +1,24 @@
+import { getTranslations } from "next-intl/server"
+
 import { UsersIcon } from "@/components/ui/icons"
 import { getTeamAccounts } from "@/features/admin/api/queries"
 import { AdminPage } from "@/features/admin/components/admin-page"
 import { TeamAccountsList } from "@/features/admin/components/team-accounts-list"
-import { getAdminMessages } from "@/features/admin/i18n/server"
 import { requireAdmin } from "@/lib/dal"
 
 export default async function AdminTeamPage() {
-  const [, { joined, invites }, m] = await Promise.all([
+  const [, { joined, invites }, t] = await Promise.all([
     requireAdmin(),
     getTeamAccounts(),
-    getAdminMessages(),
+    getTranslations("admin"),
   ])
   return (
     <AdminPage
-      title={m.nav.team}
+      title={t("nav.team")}
       icon={<UsersIcon />}
-      empty={joined.length || invites.length ? null : m.team.none}
+      empty={joined.length || invites.length ? null : t("team.none")}
     >
-      <TeamAccountsList joined={joined} invites={invites} m={m} />
+      <TeamAccountsList joined={joined} invites={invites} />
     </AdminPage>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { motion } from "motion/react"
+import { useTranslations } from "next-intl"
 import {
   AlertCircleIcon,
   MapPinIcon,
@@ -32,7 +33,15 @@ import { useDebounced } from "../utils/use-debounced"
 import { useSessionToken } from "../utils/use-session-token"
 import { SuggestionList } from "./suggestion-list"
 import { noAutofill } from "@/lib/no-autofill"
-import type { OnboardingWords } from "../i18n"
+
+// What each location problem says.
+const ALERTS = {
+  settings: "turnOnLocation",
+  off: "locationOff",
+  waiting: "waiting",
+  timeout: "timeout",
+  "not-found": "notFound",
+} as const satisfies Record<Exclude<LocationAlert, "none">, string>
 
 // Where business search looks first: the phone's location (the one main
 // action) or a city. A dialog in the middle of the screen on a phone too,
@@ -47,7 +56,6 @@ export function SearchAreaPanel({
   pending,
   canLocate,
   locationAlert,
-  words: t,
 }: {
   open: boolean
   onClose: () => void
@@ -59,8 +67,8 @@ export function SearchAreaPanel({
   // False once the browser won't give a location: cities only.
   canLocate: boolean
   locationAlert: LocationAlert
-  words: OnboardingWords["area"]
 }) {
+  const t = useTranslations("onboarding.area")
   const [query, setQuery] = useState("")
   const [cities, setCities] = useState<CitySuggestion[]>([])
   const [picking, setPicking] = useState<string | null>(null)
@@ -122,15 +130,7 @@ export function SearchAreaPanel({
       >
         <AlertCircleIcon />
         <AlertDescription>
-          {
-            {
-              settings: t.turnOnLocation,
-              off: t.locationOff,
-              waiting: t.waiting,
-              timeout: t.timeout,
-              "not-found": t.notFound,
-            }[locationAlert]
-          }
+          {t(ALERTS[locationAlert])}
         </AlertDescription>
       </Alert>
     ) : null
@@ -158,8 +158,8 @@ export function SearchAreaPanel({
               <MapPinIcon />
             </span>
           </div>
-          <DialogTitle className="text-xl leading-tight">{t.title}</DialogTitle>
-          <DialogDescription>{t.helper}</DialogDescription>
+          <DialogTitle className="text-xl leading-tight">{t("title")}</DialogTitle>
+          <DialogDescription>{t("helper")}</DialogDescription>
         </DialogHeader>
         {(canLocate || alert) && (
           <div className="mb-2 flex flex-col items-center gap-3">
@@ -180,7 +180,7 @@ export function SearchAreaPanel({
                   ) : (
                     <NavigationIcon data-icon="inline-start" />
                   )}
-                  {t.useLocation}
+                  {t("useLocation")}
                 </Button>
               </motion.div>
             )}
@@ -189,7 +189,7 @@ export function SearchAreaPanel({
         )}
         {canLocate && (
           <FieldSeparator className="*:data-[slot=field-separator-content]:bg-popover">
-            {t.or}
+            {t("or")}
           </FieldSeparator>
         )}
         <div className="flex flex-col gap-3">
@@ -197,8 +197,8 @@ export function SearchAreaPanel({
             {...noAutofill("city")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={t.city}
-            aria-label={t.city}
+            placeholder={t("city")}
+            aria-label={t("city")}
           />
           {/* The cities scroll, so the dialog fits above a phone's keyboard. */}
           {cities.length > 0 && (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
@@ -26,7 +27,6 @@ import {
   setGoogleCalendarBusyMember,
   syncGoogleCalendarNowFor,
 } from "../api/google-calendar-actions"
-import { useOwnerMessages } from "../i18n/provider"
 import type { GoogleCalendarChoice, GoogleCalendarConnection } from "../types/google-calendar"
 
 // "Nobody" in the radio group, which needs a string.
@@ -51,8 +51,8 @@ export function GoogleCalendarPanel({
   team: { id: string; name: string }[]
   onDisconnect: () => void
 }) {
-  const m = useOwnerMessages()
-  const t = m.integrations.googleCalendar
+  const t = useTranslations("owner.integrations.googleCalendar")
+  const locale = useLocale()
   const router = useRouter()
   const [busyMember, setBusyMember] = useState(connection.busyTeamMemberId ?? NOBODY)
   const [saving, startSaving] = useTransition()
@@ -64,7 +64,7 @@ export function GoogleCalendarPanel({
       const result = await setGoogleCalendarBusyMember(businessId, next || null).catch(() => null)
       if (!result?.ok) {
         setBusyMember(before)
-        toast.error(t.saveFailed)
+        toast.error(t("saveFailed"))
         return
       }
       router.refresh()
@@ -82,7 +82,7 @@ export function GoogleCalendarPanel({
     startSyncing(async () => {
       const result = await syncGoogleCalendarNowFor(businessId).catch(() => null)
       if (result?.ok) setSynced(result.lastSyncAt)
-      if (!result?.ok || result.failed) toast.error(t.syncNowFailed)
+      if (!result?.ok || result.failed) toast.error(t("syncNowFailed"))
       // The Integrations row shows the same state.
       router.refresh()
     })
@@ -117,7 +117,7 @@ export function GoogleCalendarPanel({
       const result = await setGoogleBusyCalendars(businessId, ids).catch(() => null)
       if (!result?.ok) {
         setCalendars(before)
-        toast.error(t.saveFailed)
+        toast.error(t("saveFailed"))
       }
     })
   }
@@ -126,35 +126,35 @@ export function GoogleCalendarPanel({
     <ResponsivePanel
       open={open}
       onClose={onClose}
-      title={t.name}
+      title={t("name")}
       footer={
         <Button variant="outline" size="lg" onClick={onDisconnect}>
-          {t.disconnect}
+          {t("disconnect")}
         </Button>
       }
     >
       <div className="flex flex-col gap-6">
-        <p className="text-sm text-muted-foreground">{t.account(connection.googleEmail)}</p>
+        <p className="text-sm text-muted-foreground">{t("account", { email: connection.googleEmail })}</p>
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
-            {!lastSyncAt ? t.notSynced : now !== null &&
+            {!lastSyncAt ? t("notSynced") : now !== null &&
                 // Never "in 5 seconds" when the clock ticked before the sync.
-                t.synced(formatAgo(lastSyncAt, Math.max(now, Date.parse(lastSyncAt)), m.locale))}
+                t("synced", { ago: formatAgo(lastSyncAt, Math.max(now, Date.parse(lastSyncAt)), locale) })}
           </p>
           <Button variant="outline" onClick={syncNow} disabled={syncing}>
             {syncing && <Spinner data-icon="inline-start" />}
-            {t.syncNow}
+            {t("syncNow")}
           </Button>
         </div>
         <FieldSet disabled={saving}>
-          <FieldLegend variant="label">{t.calendarsTitle}</FieldLegend>
+          <FieldLegend variant="label">{t("calendarsTitle")}</FieldLegend>
           {calendars === "loading" ? (
             <Spinner className="text-muted-foreground" />
           ) : calendars === null ? (
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-muted-foreground">{t.calendarsFailed}</p>
+              <p className="text-sm text-muted-foreground">{t("calendarsFailed")}</p>
               <Button variant="outline" onClick={() => setLoads((count) => count + 1)}>
-                {t.tryAgain}
+                {t("tryAgain")}
               </Button>
             </div>
           ) : (
@@ -163,7 +163,7 @@ export function GoogleCalendarPanel({
                 <Field orientation="horizontal">
                   <FieldContent>
                     <FieldTitle>{calendar.name}</FieldTitle>
-                    {calendar.primary && <FieldDescription>{t.mainCalendar}</FieldDescription>}
+                    {calendar.primary && <FieldDescription>{t("mainCalendar")}</FieldDescription>}
                   </FieldContent>
                   <Checkbox
                     id={`calendar-${calendar.id}`}
@@ -177,7 +177,7 @@ export function GoogleCalendarPanel({
         </FieldSet>
         {team.length ? (
           <FieldSet disabled={saving}>
-            <FieldLegend variant="label">{t.busyTitle}</FieldLegend>
+            <FieldLegend variant="label">{t("busyTitle")}</FieldLegend>
             <RadioGroup value={busyMember} onValueChange={(next) => choose(String(next))}>
               {team.map((member) => (
                 <FieldLabel key={member.id} htmlFor={`busy-${member.id}`}>
@@ -192,8 +192,8 @@ export function GoogleCalendarPanel({
               <FieldLabel htmlFor="busy-nobody">
                 <Field orientation="horizontal">
                   <FieldContent>
-                    <FieldTitle>{t.busyNobody}</FieldTitle>
-                    <FieldDescription>{t.busyNobodyHint}</FieldDescription>
+                    <FieldTitle>{t("busyNobody")}</FieldTitle>
+                    <FieldDescription>{t("busyNobodyHint")}</FieldDescription>
                   </FieldContent>
                   <RadioGroupItem value={NOBODY} id="busy-nobody" />
                 </Field>
@@ -201,7 +201,7 @@ export function GoogleCalendarPanel({
             </RadioGroup>
           </FieldSet>
         ) : (
-          <p className="text-sm">{t.busyWholeBusiness}</p>
+          <p className="text-sm">{t("busyWholeBusiness")}</p>
         )}
       </div>
     </ResponsivePanel>

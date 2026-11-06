@@ -1,6 +1,5 @@
 import { KoblipChatCard } from "@/features/admin/components/koblip-chat-card"
 import { KoblipNumbers } from "@/features/admin/components/koblip-numbers"
-import { getAdminMessages } from "@/features/admin/i18n/server"
 import { koblipChatConnectionStatus } from "@/features/dashboard/api/chat-oauth"
 import { disconnectKoblipChat } from "@/features/dashboard/api/koblip-chat-connection"
 import { koblipChatNumbers } from "@/features/dashboard/api/koblip-chat-numbers"
@@ -17,10 +16,9 @@ export default async function WhatsappKoblipNumberPage({
   searchParams,
 }: Props) {
   await requireAdmin()
-  const [connection, numbers, m, { chat }] = await Promise.all([
+  const [connection, numbers, { chat }] = await Promise.all([
     koblipChatConnectionStatus(),
     koblipChatNumbers(),
-    getAdminMessages(),
     searchParams,
   ])
   return (
@@ -31,7 +29,7 @@ export default async function WhatsappKoblipNumberPage({
         disconnect={disconnectKoblipChat}
       />
       {numbers && !connection?.needsReconnect && (
-        <KoblipNumbers numbers={numbers} m={m} />
+        <KoblipNumbers numbers={numbers} />
       )}
     </div>
   )

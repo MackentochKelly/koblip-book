@@ -22,6 +22,7 @@ import {
 import {
   type QueueResult,
   runTranslationQueue,
+  type SyncItem,
   syncTexts,
   type SyncResult,
 } from "./queue"
@@ -192,25 +193,35 @@ async function loadBusinessTextRows(
   }
 }
 
+// The business's current English texts, as the queue keeps them. Demo
+// businesses are never translated: they are copies guests try out, removed
+// within days, so they cost nothing. Null when the business is gone or a
+// demo.
+export async function businessSyncItems(
+  businessId: string
+): Promise<SyncItem[] | null> {
+  const rows = await loadBusinessTextRows(businessId)
+  if (!rows || rows.isDemo) return null
+  return collectBusinessTexts(rows).map((item) => ({
+    key: businessTextKey(item.entityId, item.field),
+    module: item.field,
+    text: item.text,
+  }))
+}
+
 // Brings the business's translations in line with its current English:
 // only new or changed texts wait for Google, and those of removed things go.
-// Demo businesses are never translated: they are copies guests try out,
-// removed within days, so they cost nothing. Null when the business is
-// gone or a demo.
+// Null when the business is gone or a demo.
 export async function syncBusinessTexts(
   businessId: string
 ): Promise<SyncResult | null> {
-  const rows = await loadBusinessTextRows(businessId)
-  if (!rows || rows.isDemo) return null
+  const items = await businessSyncItems(businessId)
+  if (!items) return null
   return syncTexts({
     scope: "business",
     businessId,
     removeMissing: true,
-    items: collectBusinessTexts(rows).map((item) => ({
-      key: businessTextKey(item.entityId, item.field),
-      module: item.field,
-      text: item.text,
-    })),
+    items,
   })
 }
 

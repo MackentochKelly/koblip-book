@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { after } from "next/server"
+import { getTranslations } from "next-intl/server"
 
 import { GlassCard } from "@/components/glass-frame"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
@@ -8,14 +9,14 @@ import { TopBar } from "@/features/dashboard/components/top-bar"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { startPreparing } from "@/features/starter-catalog/api/prepare-jobs"
 import { PreparingCard } from "@/features/starter-catalog/components/preparing-card"
-import { starterMessagesFor } from "@/features/starter-catalog/i18n"
 import { requireAccount } from "@/lib/dal"
 import { fontDisplay } from "@/lib/fonts"
 import { translateBusinessNow } from "@/lib/translations/business-texts"
 import { cn } from "@/lib/utils"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: starterMessagesFor(await getOwnerLanguage()).title }
+  const t = await getTranslations("starterCatalog")
+  return { title: t("title") }
 }
 
 // Between "Check your details" and "Your page is live": Meta AI fills the

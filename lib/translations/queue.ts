@@ -17,6 +17,8 @@ import {
   sourceHash,
   toGoogleHtml,
 } from "./markup"
+import { toGoogleIcu } from "./icu"
+import { forgetInterfaceWords } from "./interface-words"
 import { getTranslator, type Translator } from "./provider"
 import {
   TRANSLATION_RULES,
@@ -30,7 +32,8 @@ import { translationRules } from "./settings"
 // records what changed (syncTexts); the run after the save
 // (lib/translations/schedule.ts) and the server's timer
 // (lib/translations/timer.ts) send the waiting texts to Google, so saving
-// never waits for Google.
+// never waits for Google. The app's own words are ICU messages: they go
+// to Google sentence by sentence (lib/translations/icu.ts).
 
 type Entry = typeof translationEntries.$inferSelect
 type HistoryRow = typeof translationHistory.$inferInsert
@@ -159,12 +162,33 @@ async function syncNow(input: {
       })
     }
   }
-  const removeIds = input.removeMissing
-    ? current.filter((entry) => !wanted.has(slot(entry))).map((entry) => entry.id)
+  // A word whose key changed but whose English didn't keeps its
+  // translation (an admin's own included): it moves to the new key instead
+  // of being removed and made again.
+  const leaving = input.removeMissing
+    ? current.filter((entry) => !wanted.has(slot(entry)))
     : []
+  const movable = new Map<string, Entry>()
+  for (const entry of leaving) {
+    if (entry.text !== null) movable.set(`${entry.language}\u0000${entry.sourceHash}`, entry)
+  }
+  const moved = new Set<string>()
+  const newRows: typeof inserts = []
+  for (const insert of inserts) {
+    const old = movable.get(`${insert.language}\u0000${insert.sourceHash}`)
+    if (old && !moved.has(old.id)) {
+      moved.add(old.id)
+      changes.push({ id: old.id, set: { key: insert.key, module: insert.module } })
+      continue
+    }
+    newRows.push(insert)
+  }
+  const removeIds = leaving
+    .filter((entry) => !moved.has(entry.id))
+    .map((entry) => entry.id)
 
   await saveAll([
-    ...chunks(inserts, 200).map((part) =>
+    ...chunks(newRows, 200).map((part) =>
       db.insert(translationEntries).values(part)
     ),
     ...changes.map((change) =>
@@ -180,8 +204,11 @@ async function syncNow(input: {
       db.delete(translationEntries).where(inArray(translationEntries.id, part))
     ),
   ])
+  if (scope === "interface" && (changes.length > 0 || removeIds.length > 0)) {
+    forgetInterfaceWords()
+  }
   return {
-    added: inserts.length,
+    added: newRows.length,
     changed: changes.length,
     removed: removeIds.length,
   }
@@ -222,10 +249,29 @@ export function runTranslationQueue(
   return run
 }
 
+// The app's words are read from memory: after a run that saved some, the
+// next page reads them again (once per run, not per word).
 async function runOnce(options: {
   now?: () => Date
   translator?: Translator | null
 }): Promise<QueueResult> {
+  const changed = { interface: false }
+  try {
+    return await runSteps(options, changed)
+  } finally {
+    if (changed.interface) forgetInterfaceWords()
+  }
+}
+
+async function runSteps(
+  options: { now?: () => Date; translator?: Translator | null },
+  changed: { interface: boolean }
+): Promise<QueueResult> {
+  const save = async (...args: Parameters<typeof saveTranslation>) => {
+    const saved = await saveTranslation(...args)
+    if (saved && args[0].scope === "interface") changed.interface = true
+    return saved
+  }
   const result: QueueResult = {
     status: "done",
     translated: 0,
@@ -264,12 +310,12 @@ async function runOnce(options: {
   const memory = await reusable(due)
   const toSend: Entry[] = []
   for (const entry of due) {
-    const text = memory.get(slot({ key: entry.sourceHash, language: entry.language }))
+    const text = memory.get(reuseSlot(entry.scope, entry.sourceHash, entry.language))
     if (text === undefined) {
       toSend.push(entry)
       continue
     }
-    if (await saveTranslation(entry, text, "google", "memory", 0)) {
+    if (await save(entry, text, "google", "memory", 0)) {
       result.reused += 1
     }
   }
@@ -277,12 +323,18 @@ async function runOnce(options: {
   // 2. Each business's daily limit; texts too long or in a language the
   // app no longer has fail at once.
   const used = await usedToday(toSend, now)
+  used.set(APP_WORDS, await appWordsUsedToday(now))
   const tomorrow = startOfNextUtcDay(now).toISOString()
   const deferred: string[] = []
   const requests = new Map<TranslationLanguage, PreparedText[]>()
   for (const entry of toSend) {
-    const { html, kept } = toGoogleHtml(entry.sourceText)
-    const characters = billedCharacters(html)
+    const prepared = prepare(entry)
+    if (!prepared) {
+      await failNow(entry, "The English isn't a valid message")
+      result.failed += 1
+      continue
+    }
+    const { characters } = prepared
     if (!isTranslationLanguage(entry.language)) {
       await failNow(entry, "This language is not in the app")
       result.failed += 1
@@ -293,16 +345,26 @@ async function runOnce(options: {
       result.failed += 1
       continue
     }
-    if (entry.businessId !== null) {
-      const spent = used.get(entry.businessId) ?? 0
-      if (spent + characters > rules.dailyBusinessCharacters) {
-        deferred.push(entry.id)
-        continue
+    // Each business, and the app's own words together, have the daily
+    // limit: a new release's words never send more in a day.
+    const budget = entry.businessId ?? APP_WORDS
+    const spent = used.get(budget) ?? 0
+    if (spent + characters > rules.dailyBusinessCharacters) {
+      deferred.push(entry.id)
+      continue
+    }
+    used.set(budget, spent + characters)
+    // A message with no words of its own ("{count}") is the same in
+    // every language.
+    if (prepared.htmls.length === 0) {
+      const same = prepared.read([])
+      if (same !== null && (await save(entry, same, translator.name, "google", 0))) {
+        result.translated += 1
       }
-      used.set(entry.businessId, spent + characters)
+      continue
     }
     const list = requests.get(entry.language) ?? []
-    list.push({ entry, html, kept, characters })
+    list.push(prepared)
     requests.set(entry.language, list)
   }
   for (const part of chunks(deferred, 500)) {
@@ -324,7 +386,7 @@ async function runOnce(options: {
       let answers: string[]
       try {
         answers = await translator.translate(
-          batch.map((item) => item.html),
+          batch.flatMap((item) => item.htmls),
           GOOGLE_LANGUAGE_CODES[language]
         )
       } catch (error) {
@@ -338,11 +400,14 @@ async function runOnce(options: {
         result.failed += outcome.failed
         continue
       }
-      for (const [index, item] of batch.entries()) {
+      let next = 0
+      for (const item of batch) {
         result.characters += item.characters
-        const text = fromGoogleHtml(answers[index] ?? "", item.kept)
+        const mine = answers.slice(next, next + item.htmls.length)
+        next += item.htmls.length
+        const text = mine.length === item.htmls.length ? item.read(mine) : null
         if (text === null) {
-          await recordBilled(item, answers[index] ?? "")
+          await recordBilled(item, mine.join("\n"))
           const outcome = await failTry(
             [item.entry],
             "Google changed a field, link or email",
@@ -354,7 +419,7 @@ async function runOnce(options: {
           continue
         }
         if (
-          await saveTranslation(
+          await save(
             item.entry,
             text,
             translator.name,
@@ -370,34 +435,77 @@ async function runOnce(options: {
   return result
 }
 
-interface PreparedText {
-  entry: Entry
-  html: string
-  kept: string[]
+export interface GoogleTexts {
+  // What Google gets: one HTML text, or for an ICU message one per sentence.
+  htmls: string[]
+  // The translation from Google's answers, or null when one can't be used.
+  read(answers: string[]): string | null
+  // What Google bills for them.
   characters: number
+  parts: number
 }
 
-// Requests of at most `requestCharacters` and `requestTexts`; a longer
-// text goes alone.
-export function requestBatches<T extends { characters: number }>(
+interface PreparedText extends GoogleTexts {
+  entry: Entry
+}
+
+// What Google gets for one English text and what it bills: a business text
+// goes whole; the app's own words go as ICU messages. Null when the English
+// isn't a valid message. The backfill's count uses it too
+// (lib/translations/backfill.ts).
+export function googleTexts(
+  scope: TranslationScope,
+  sourceText: string
+): GoogleTexts | null {
+  if (scope === "interface") {
+    const icu = toGoogleIcu(sourceText)
+    if (!icu) return null
+    return {
+      htmls: icu.htmls,
+      read: icu.assemble,
+      characters: icu.htmls.reduce((sum, html) => sum + billedCharacters(html), 0),
+      parts: icu.htmls.length,
+    }
+  }
+  const { html, kept } = toGoogleHtml(sourceText)
+  return {
+    htmls: [html],
+    read: ([answer]) => fromGoogleHtml(answer ?? "", kept),
+    characters: billedCharacters(html),
+    parts: 1,
+  }
+}
+
+function prepare(entry: Entry): PreparedText | null {
+  const texts = googleTexts(entry.scope, entry.sourceText)
+  return texts && { entry, ...texts }
+}
+
+// Requests of at most `requestCharacters` and `requestTexts` (an ICU
+// message counts each of its sentences); a longer text goes alone.
+export function requestBatches<T extends { characters: number; parts?: number }>(
   texts: T[],
   rules: Pick<TranslationRules, "requestCharacters" | "requestTexts"> = TRANSLATION_RULES
 ): T[][] {
   const batches: T[][] = []
   let batch: T[] = []
   let characters = 0
+  let parts = 0
   for (const text of texts) {
+    const size = text.parts ?? 1
     if (
       batch.length > 0 &&
-      (batch.length === rules.requestTexts ||
+      (parts + size > rules.requestTexts ||
         characters + text.characters > rules.requestCharacters)
     ) {
       batches.push(batch)
       batch = []
       characters = 0
+      parts = 0
     }
     batch.push(text)
     characters += text.characters
+    parts += size
   }
   if (batch.length > 0) {
     batches.push(batch)
@@ -405,14 +513,20 @@ export function requestBatches<T extends { characters: number }>(
   return batches
 }
 
-// Google's earlier translations of the same English, by language.
-async function reusable(entries: Entry[]): Promise<Map<string, string>> {
+// Google's earlier translations of the same English, by language, within
+// the same scope: a business text isn't an ICU message, and an ICU message's
+// quotes and braces mean something a business text's don't. Keyed by
+// reuseSlot.
+export async function reusable(
+  entries: { sourceHash: string }[]
+): Promise<Map<string, string>> {
   const hashes = [...new Set(entries.map((entry) => entry.sourceHash))]
   const found = new Map<string, string>()
   for (const part of chunks(hashes, 500)) {
     const rows = await db
       .select({
         language: translationEntries.language,
+        scope: translationEntries.scope,
         sourceHash: translationEntries.sourceHash,
         text: translationEntries.text,
       })
@@ -426,7 +540,7 @@ async function reusable(entries: Entry[]): Promise<Map<string, string>> {
       )
     for (const row of rows) {
       if (row.text !== null) {
-        found.set(slot({ key: row.sourceHash, language: row.language }), row.text)
+        found.set(reuseSlot(row.scope, row.sourceHash, row.language), row.text)
       }
     }
   }
@@ -434,8 +548,26 @@ async function reusable(entries: Entry[]): Promise<Map<string, string>> {
 }
 
 // Characters each business sent to Google since midnight (UTC).
-async function usedToday(
-  entries: Entry[],
+// The app's own words' place in the daily limits (no business id is empty).
+const APP_WORDS = ""
+
+async function appWordsUsedToday(now: Date): Promise<number> {
+  const [row] = await db
+    .select({
+      total: sql<number>`coalesce(sum(${translationHistory.characters}), 0)`,
+    })
+    .from(translationHistory)
+    .where(
+      and(
+        eq(translationHistory.scope, "interface"),
+        gte(translationHistory.changedAt, startOfUtcDay(now).toISOString())
+      )
+    )
+  return Number(row?.total ?? 0)
+}
+
+export async function usedToday(
+  entries: { businessId: string | null }[],
   now: Date
 ): Promise<Map<string, number>> {
   const ids = [
@@ -630,6 +762,14 @@ export function historyOf(entry: Entry) {
 
 function errorText(error: unknown): string {
   return (error instanceof Error ? error.message : String(error)).slice(0, 200)
+}
+
+export function reuseSlot(
+  scope: TranslationScope,
+  hash: string,
+  language: string
+): string {
+  return `${scope}\u0000${hash}\u0000${language}`
 }
 
 function slot(entry: { key: string; language: string }): string {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
+import { serverWords } from "@/i18n/testing"
 import { IN_APP_KINDS } from "@/types/in-app-notifications"
-import { notificationMessagesFor } from "../i18n"
 import type { InAppNotification } from "../types/notifications"
 import {
   CHOICE_GROUPS,
@@ -10,8 +10,8 @@ import {
   titleOf,
 } from "./notification-view"
 
-const en = notificationMessagesFor("en")
-const es = notificationMessagesFor("es")
+const t = await serverWords().getTranslations("notifications")
+const title = (item: InAppNotification) => titleOf(item, t, "en-US")
 
 function note(overrides: Partial<InAppNotification> = {}): InAppNotification {
   return {
@@ -30,13 +30,13 @@ function note(overrides: Partial<InAppNotification> = {}): InAppNotification {
 
 describe("titleOf", () => {
   it("names the customer, else their number, else a customer", () => {
-    expect(titleOf(note({ data: { customerName: "Ana" } }), en)).toBe(
+    expect(title(note({ data: { customerName: "Ana" } }))).toBe(
       "New booking: Ana"
     )
-    expect(titleOf(note({ data: { customerPhone: "15551234567" } }), en)).toBe(
+    expect(title(note({ data: { customerPhone: "15551234567" } }))).toBe(
       "New booking: +15551234567"
     )
-    expect(titleOf(note(), es)).toBe("Nueva reserva: Un cliente")
+    expect(title(note())).toBe("New booking: A customer")
   })
 
   it("names the message Meta decided on", () => {
@@ -44,10 +44,9 @@ describe("titleOf", () => {
       kind: "templateApproved",
       data: { message: "reminder" },
     })
-    expect(titleOf(item, en)).toBe("Meta approved Reminder")
-    expect(titleOf(item, es)).toBe("Meta aprobó Recordatorio")
+    expect(title(item)).toBe("Meta approved Reminder")
     expect(
-      titleOf(note({ kind: "templateRejected", data: { message: "gone" } }), en)
+      title(note({ kind: "templateRejected", data: { message: "gone" } }))
     ).toBe("Meta rejected a message")
   })
 
@@ -56,13 +55,15 @@ describe("titleOf", () => {
       kind: "koblipLimitNear",
       data: { sent: 1800, limit: 2000 },
     })
-    expect(titleOf(item, en)).toBe("1,800 of 2,000 messages used this month")
+    expect(title(item)).toBe("1,800 of 2,000 messages used this month")
+    expect(titleOf(item, t, "de-DE")).toBe(
+      "1.800 of 2.000 messages used this month"
+    )
   })
 
-  it("has a title for every kind in both languages", () => {
+  it("has a title for every kind", () => {
     for (const kind of IN_APP_KINDS) {
-      expect(titleOf(note({ kind }), en)).not.toBe("")
-      expect(titleOf(note({ kind }), es)).not.toBe("")
+      expect(title(note({ kind }))).not.toBe("")
     }
   })
 })

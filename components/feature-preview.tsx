@@ -3,6 +3,7 @@
 import { MeshGradient } from "@paper-design/shaders-react"
 import { AnimatePresence, motion, useInView } from "motion/react"
 import Image from "next/image"
+import { useLocale, useTranslations } from "next-intl"
 import { useRef, useState } from "react"
 
 import { celebrate } from "@/components/celebration"
@@ -24,13 +25,51 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useStoryLoop } from "@/hooks/use-story-loop"
 import { useThemeColors } from "@/hooks/use-theme-colors"
 import { initials } from "@/lib/initials"
-import type { Messages } from "@/lib/i18n"
+import { languageOf, type PageLanguage } from "@/lib/page-language"
 import { SHOWCASE_LOOP, SHOWCASE_WASH_MARGIN } from "@/lib/showcase-rules"
 import { cn } from "@/lib/utils"
 
-type Home = Messages["home"]
-type Sample = Home["features"]["sample"]
-type Steps = Home["steps"]["sample"]
+// The sample business in the home page's pictures (the demo's Lumen
+// Studio). Its name and its people's names are the same in every language;
+// its words are the page's (public.home.features.sample and
+// public.home.steps.sample).
+export const SAMPLE_BUSINESS = "Lumen Studio"
+
+// People in the samples; the third is the one who books.
+export const SAMPLE_PEOPLE = [
+  "Luis Romero",
+  "Marta Gil",
+  "Ana Morales",
+  "Pablo Ruiz",
+  "Sofía León",
+] as const
+
+// The sample's two services, in order: their words' keys and prices.
+export const SAMPLE_SERVICES = [
+  { key: "haircut", priceMinor: 2500 },
+  { key: "colour", priceMinor: 6000 },
+] as const
+
+// How the samples' numbers, prices and times read in each page language: a
+// salon in Spain, or one in the US.
+const SAMPLE_LOCALES: Record<PageLanguage, string> = {
+  en: "en-US",
+  es: "es-ES",
+}
+
+export function useSampleLocale() {
+  return SAMPLE_LOCALES[languageOf(useLocale())]
+}
+
+// The sample day's free times, in order (their words' keys).
+const SAMPLE_TIMES = ["first", "second", "third"] as const
+
+// The "In your clients' language" picture: the page in each language, each
+// named and written in itself, whatever the page's own language.
+const LANGUAGE_SAMPLE = [
+  { label: "English", open: "Open today", book: "Book now" },
+  { label: "Español", open: "Abierto hoy", book: "Reservar" },
+]
 
 // The pictures on the home feature cards: a small piece of the real app,
 // built from its own parts, on a still colour wash (the hero's Paper Mesh
@@ -118,22 +157,13 @@ export function Scene({
   )
 }
 
-export function FeaturePreview({
-  name,
-  words,
-}: {
-  name: FeaturePreviewName
-  words: Home
-}) {
-  const sample = words.features.sample
+export function FeaturePreview({ name }: { name: FeaturePreviewName }) {
   return (
     <Scene {...PREVIEWS[name]} featured={name === "page"}>
-      {name === "page" && <PagePreview sample={sample} />}
-      {name === "book" && (
-        <BookPreview sample={sample} steps={words.steps.sample} />
-      )}
-      {name === "assistant" && <AssistantPreview sample={sample} />}
-      {name === "language" && <LanguagePreview sample={sample} />}
+      {name === "page" && <PagePreview />}
+      {name === "book" && <BookPreview />}
+      {name === "assistant" && <AssistantPreview />}
+      {name === "language" && <LanguagePreview />}
     </Scene>
   )
 }
@@ -168,7 +198,7 @@ export function burstFrom(element: HTMLElement) {
 
 // The sample business's own pictures (the demo's Lumen Studio, in
 // public/demo/lumen): a photo of the place, and its team with, for each,
-// their name's place in the sample's `people`.
+// their name's place in SAMPLE_PEOPLE.
 export const SAMPLE_PHOTO = "/demo/lumen/01.jpg"
 export const SAMPLE_TEAM = [
   { person: 1, photo: "/demo/lumen/team-01.webp" },
@@ -241,7 +271,9 @@ export function TapMark({ ms, className }: { ms: number; className?: string }) {
 // where from): photo, name, rating, Book. Plays by itself (useStoryLoop):
 // Book is tapped and turns "Booked", with confetti. Rests on Book; Book
 // plays it again.
-export function PagePreview({ sample }: { sample: Sample }) {
+export function PagePreview() {
+  const t = useTranslations("public.home.features.sample")
+  const locale = useSampleLocale()
   const box = useRef<HTMLDivElement>(null)
   const [phase, setPhase] = useState<"book" | "tap" | "booked">("book")
   const time = SHOWCASE_LOOP.page
@@ -266,8 +298,8 @@ export function PagePreview({ sample }: { sample: Sample }) {
           <div className="flex items-center gap-3">
             <PhotoAvatar src={SAMPLE_PHOTO} size="lg" />
             <div className="flex min-w-0 flex-col">
-              <span className="truncate font-medium">{sample.business}</span>
-              <Rating rating={4.9} reviewCount={128} locale={sample.locale} />
+              <span className="truncate font-medium">{SAMPLE_BUSINESS}</span>
+              <Rating rating={4.9} reviewCount={128} locale={locale} />
             </div>
           </div>
           <Button
@@ -285,7 +317,7 @@ export function PagePreview({ sample }: { sample: Sample }) {
                 className="flex items-center gap-1"
               >
                 {booked && <CheckIcon />}
-                {booked ? sample.booked : sample.book}
+                {booked ? t("booked") : t("book")}
               </motion.span>
             </AnimatePresence>
             {phase === "tap" && <TapMark ms={time.tap} className="left-1/2" />}
@@ -313,13 +345,9 @@ const BOOK_ORDER: BookPhase[] = ["none", "service", "member", "time"]
 // Booking on the page (useStoryLoop): a service, then who does it, then a
 // free time, each tapped in turn, then "Confirmed". Rests on the booking
 // made; tap the picture to play it again.
-export function BookPreview({
-  sample,
-  steps,
-}: {
-  sample: Sample
-  steps: Steps
-}) {
+export function BookPreview() {
+  const t = useTranslations("public.home.features.sample")
+  const steps = useTranslations("public.home.steps.sample")
   const box = useRef<HTMLDivElement>(null)
   const [phase, setPhase] = useState<BookPhase>("time")
   const [tapping, setTapping] = useState(false)
@@ -347,28 +375,28 @@ export function BookPreview({
     BOOK_ORDER.indexOf(phase) >= BOOK_ORDER.indexOf(step)
   // What is tapped next: the first of each row.
   const next = BOOK_ORDER[BOOK_ORDER.indexOf(phase) + 1]
-  const [service] = steps.services
+  const [service] = SAMPLE_SERVICES
   const [member] = SAMPLE_TEAM
-  const [first] = sample.times
+  const [first] = SAMPLE_TIMES
   return (
     <>
-      <ReplayButton label={steps.replay} onClick={replay} />
+      <ReplayButton label={steps("replay")} onClick={replay} />
       <div ref={box} className="relative w-full max-w-60">
         <Box>
           <div className="flex flex-col gap-2 px-(--card-spacing)">
             <div className="flex gap-2">
-              {steps.services.map(({ name }) => (
+              {SAMPLE_SERVICES.map(({ key }) => (
                 <Badge
-                  key={name}
+                  key={key}
                   variant={
-                    name === service.name && reached("service")
+                    key === service.key && reached("service")
                       ? "default"
                       : "outline"
                   }
                   className="relative h-6"
                 >
-                  {name}
-                  {tapping && next === "service" && name === service.name && (
+                  {steps(`services.${key}`)}
+                  {tapping && next === "service" && key === service.key && (
                     <TapMark ms={time.tap} className="left-1/2" />
                   )}
                 </Badge>
@@ -395,7 +423,7 @@ export function BookPreview({
             </div>
             <div className="flex gap-2">
               {/* Two times: a third doesn't fit a phone's picture. */}
-              {sample.times.slice(0, 2).map((slot) => (
+              {SAMPLE_TIMES.slice(0, 2).map((slot) => (
                 <Badge
                   key={slot}
                   variant={
@@ -403,7 +431,7 @@ export function BookPreview({
                   }
                   className="relative h-6"
                 >
-                  {slot}
+                  {t(`times.${slot}`)}
                   {tapping && next === "time" && slot === first && (
                     <TapMark ms={time.tap} className="left-1/2" />
                   )}
@@ -422,7 +450,7 @@ export function BookPreview({
             >
               <Badge className="bg-success text-success-foreground">
                 <CheckIcon />
-                {sample.confirmed}
+                {t("confirmed")}
               </Badge>
             </motion.span>
           )}
@@ -438,7 +466,8 @@ const WAVE = [0.5, 1, 0.7, 0.9, 0.4]
 // The owner asks, out loud, and the assistant does it (useStoryLoop): the
 // voice wave, the words they said, thinking, then the answer. Rests on the
 // answer; the question plays it again.
-export function AssistantPreview({ sample }: { sample: Sample }) {
+export function AssistantPreview() {
+  const t = useTranslations("public.home.features.sample")
   const box = useRef<HTMLDivElement>(null)
   const [step, setStep] = useState<"listening" | "thinking" | "done">("done")
   const time = SHOWCASE_LOOP.assistant
@@ -486,7 +515,7 @@ export function AssistantPreview({ sample }: { sample: Sample }) {
               </motion.span>
             ) : (
               <motion.span key="ask" {...RISE} className="flex">
-                {sample.ask}
+                {t("ask")}
               </motion.span>
             )}
           </AnimatePresence>
@@ -513,7 +542,7 @@ export function AssistantPreview({ sample }: { sample: Sample }) {
                 className="flex items-center gap-1.5"
               >
                 <CheckIcon className="size-4 shrink-0 text-success" />
-                {sample.done}
+                {t("done")}
               </motion.span>
             ) : (
               <motion.span key="thinking" {...POP} className="flex">
@@ -528,11 +557,11 @@ export function AssistantPreview({ sample }: { sample: Sample }) {
 }
 
 // The page in each language: tap one and the page's words switch to it.
-export function LanguagePreview({ sample }: { sample: Sample }) {
-  const [shown, setShown] = useState(sample.languages[0].label)
+export function LanguagePreview() {
+  const [shown, setShown] = useState(LANGUAGE_SAMPLE[0].label)
   const page =
-    sample.languages.find((language) => language.label === shown) ??
-    sample.languages[0]
+    LANGUAGE_SAMPLE.find((language) => language.label === shown) ??
+    LANGUAGE_SAMPLE[0]
   return (
     <Box>
       <div className="flex flex-col gap-3 px-(--card-spacing)">
@@ -544,7 +573,7 @@ export function LanguagePreview({ sample }: { sample: Sample }) {
             if (value[0]) setShown(value[0])
           }}
         >
-          {sample.languages.map((language) => (
+          {LANGUAGE_SAMPLE.map((language) => (
             <ToggleGroupItem key={language.label} value={language.label}>
               {language.label}
             </ToggleGroupItem>
@@ -553,7 +582,7 @@ export function LanguagePreview({ sample }: { sample: Sample }) {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={shown} {...RISE} className="flex flex-col gap-3">
             <div className="flex min-w-0 flex-col">
-              <span className="truncate font-medium">{sample.business}</span>
+              <span className="truncate font-medium">{SAMPLE_BUSINESS}</span>
               <span className="truncate text-xs text-muted-foreground">
                 {page.open}
               </span>

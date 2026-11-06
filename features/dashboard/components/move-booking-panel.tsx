@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { DatePicker } from "@/components/date-picker"
@@ -33,7 +34,6 @@ import type {
   OwnerMoveInput,
   OwnerMoveResult,
 } from "@/types/owner-booking"
-import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import { BookingWhen, firstFreeDay, useFreeTimes } from "./booking-when"
 
@@ -65,9 +65,8 @@ export function MoveBookingPanel({
   findFreeTimes: (input: OwnerMoveFreeTimesInput) => Promise<OwnerFreeTimes>
 }) {
   const router = useRouter()
-  const m = useOwnerMessages()
-  const t = m.bookings.move
-  const form = m.bookings.form
+  const t = useTranslations("owner.bookings.move")
+  const form = useTranslations("owner.bookings.form")
   const [pending, startTransition] = useTransition()
   const [invalid, setInvalid] = useState<InvalidField | null>(null)
   const [conflict, setConflict] = useState<{
@@ -84,7 +83,7 @@ export function MoveBookingPanel({
         setConflict(null)
         setInvalid(null)
         onMoved()
-        toast.success(t.moved)
+        toast.success(t("moved"))
         router.refresh()
       } else if (result.status === "conflict") {
         setConflict({ input, reason: result.reason })
@@ -93,7 +92,7 @@ export function MoveBookingPanel({
         setInvalid(result.field)
       } else {
         setConflict(null)
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
 
@@ -102,11 +101,11 @@ export function MoveBookingPanel({
       <ResponsivePanel
         open={open}
         onClose={onClose}
-        title={t.title}
+        title={t("title")}
         footer={
           <Button type="submit" size="lg" form={FORM} disabled={pending}>
             {pending && <Spinner data-icon="inline-start" />}
-            {t.submit}
+            {t("submit")}
           </Button>
         }
       >
@@ -141,13 +140,13 @@ export function MoveBookingPanel({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {conflict?.reason === "closed" ? form.closed : form.taken}
+              {conflict?.reason === "closed" ? form("closed") : form("taken")}
             </AlertDialogTitle>
-            <AlertDialogDescription>{t.moveAnyway}</AlertDialogDescription>
+            <AlertDialogDescription>{t("moveAnyway")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>
-              {form.changeTime}
+              {form("changeTime")}
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={pending}
@@ -155,7 +154,7 @@ export function MoveBookingPanel({
                 conflict && send({ ...conflict.input, allowConflict: true })
               }
             >
-              {t.confirmAnyway}
+              {t("confirmAnyway")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -179,8 +178,8 @@ function MoveForm({
   loadFreeTimes: () => Promise<OwnerFreeTimes>
   onSubmit: (date: string, time: string) => void
 }) {
-  const m = useOwnerMessages()
-  const form = m.bookings.form
+  const t = useTranslations("owner.bookings")
+  const locale = useLocale()
   const [date, setDate] = useState(booking.date)
   const [time, setTime] = useState(booking.time)
   // Other time (`anyTime`) shows the plain day and time fields instead.
@@ -223,28 +222,30 @@ function MoveForm({
           today={today}
           error={
             invalid === "date" || (invalid === "time" && !time)
-              ? form.pickTime
+              ? t("form.pickTime")
               : invalid === "time"
-                ? m.bookings.move.later
+                ? t("move.later")
                 : null
           }
         >
           <div className="grid grid-cols-2 gap-4">
             <Field data-invalid={error("date")}>
-              <FieldLabel htmlFor="move-date">{form.day}</FieldLabel>
+              <FieldLabel htmlFor="move-date">{t("form.day")}</FieldLabel>
               <DatePicker
                 id="move-date"
                 value={date}
                 min={today}
                 max={addDaysTo(today, BOOKING_RULES.ownerDaysAhead)}
                 onChange={setDate}
-                locale={m.locale}
+                locale={locale}
                 invalid={error("date")}
               />
-              {invalid === "date" && <FieldError>{form.pickDay}</FieldError>}
+              {invalid === "date" && (
+                <FieldError>{t("form.pickDay")}</FieldError>
+              )}
             </Field>
             <Field data-invalid={error("time")}>
-              <FieldLabel htmlFor="move-time">{form.time}</FieldLabel>
+              <FieldLabel htmlFor="move-time">{t("form.time")}</FieldLabel>
               <TimeInput
                 id="move-time"
                 step={300}
@@ -253,7 +254,7 @@ function MoveForm({
                 aria-invalid={error("time")}
               />
               {invalid === "time" && (
-                <FieldError>{m.bookings.move.later}</FieldError>
+                <FieldError>{t("move.later")}</FieldError>
               )}
             </Field>
           </div>

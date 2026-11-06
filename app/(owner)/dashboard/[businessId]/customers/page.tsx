@@ -1,13 +1,14 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import {
   getCustomerBookings,
   getCustomers,
 } from "@/features/dashboard/api/customers"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { CustomersView } from "@/features/dashboard/components/customers-view"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.customers }
+  const t = await getTranslations("owner.shell")
+  return { title: t("nav.customers") }
 }
 
 export default async function CustomersPage({

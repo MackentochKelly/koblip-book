@@ -37,8 +37,15 @@ vi.mock("./pending-actions", () => {
   }
 })
 vi.mock("./audit-log", () => ({ logAssistantAction: vi.fn() }))
+// The tests have no translations: the server's lines come in English, and
+// the spy shows which language was asked for.
+vi.mock("next-intl/server", async () => {
+  const words = (await import("@/i18n/testing")).serverWords()
+  return { ...words, getTranslations: vi.fn(words.getTranslations) }
+})
 
 const { runChat } = await import("./run-chat")
+const { getTranslations } = await import("next-intl/server")
 const meta = await import("@/lib/meta-ai")
 const { ASSISTANT_RULES } = await import("@/lib/assistant-rules")
 
@@ -896,24 +903,26 @@ test("spanish context tells the model to reply in spanish", async () => {
   expect(body.messages[1]?.content).toContain("Responde en español.")
 })
 
-test("spanish context uses spanish fallbacks and stop text", async () => {
+test("spanish context asks for the server's lines in spanish", async () => {
+  vi.mocked(getTranslations).mockClear()
   scriptedClient([[toolChunk(0, "call-A", "nope", "{}")]])
   const events = await collect(
     runChat(MESSAGES, CONTEXT_ES, [probe(async () => ({}))])
   )
+  expect(getTranslations).toHaveBeenCalledWith({
+    locale: "es",
+    namespace: "assistantServer",
+  })
   expect(events).toContainEqual({
     type: "step",
     id: "call-A",
-    label: "Trabajando…",
+    label: "Working…",
     status: "failed",
-  })
-  expect(events).toContainEqual({
-    type: "text",
-    delta: expect.stringContaining("demasiados pasos"),
   })
 })
 
-test("spanish context reports invalid arguments in spanish", async () => {
+test("spanish context reports invalid arguments in its own language", async () => {
+  vi.mocked(getTranslations).mockClear()
   resetPendingActionsForTests()
   const { create } = scriptedClient([
     [toolChunk(0, "call-A", "cancel_booking", "not json")],
@@ -930,7 +939,11 @@ test("spanish context reports invalid arguments in spanish", async () => {
     messages: { role: string; content: string }[]
   }
   const toolMessage = second.messages.find((m) => m.role === "tool")
-  expect(toolMessage?.content).toContain("esos argumentos no eran válidos")
+  expect(getTranslations).toHaveBeenCalledWith({
+    locale: "es",
+    namespace: "assistantServer",
+  })
+  expect(toolMessage?.content).toContain("those arguments were not valid")
 })
 
 test("no tool means one text event", async () => {

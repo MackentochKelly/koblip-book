@@ -1,13 +1,12 @@
 import type { Metadata } from "next"
 import { after } from "next/server"
+import { getTranslations } from "next-intl/server"
 
 import { GlassCard } from "@/components/glass-frame"
 import { getBusinessPage } from "@/features/business-page/api/get-business-page"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { TopBar } from "@/features/dashboard/components/top-bar"
-import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { GoogleDetailsCard } from "@/features/onboarding/components/google-details-card"
-import { onboardingWordsFor } from "@/features/onboarding/i18n"
 import { startPreparing } from "@/features/starter-catalog/api/prepare-jobs"
 import { requireAccount } from "@/lib/dal"
 import { fontDisplay } from "@/lib/fonts"
@@ -16,7 +15,8 @@ import { translateBusinessNow } from "@/lib/translations/business-texts"
 import { cn } from "@/lib/utils"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: onboardingWordsFor(await getOwnerLanguage()).found.title }
+  const t = await getTranslations("onboarding.found")
+  return { title: t("title") }
 }
 
 // Right after sign-up: the page's Google Maps details appear one at a time,
@@ -28,7 +28,6 @@ export default async function GoogleDetailsPage({
   const { businessId } = await params
   const owner = await requireAccount(`/setup/${businessId}/google`)
   const { business } = await getOwnerBusiness(businessId)
-  const language = await getOwnerLanguage()
   const page = await getBusinessPage(business.slug)
   // Muse starts the page's services, policies and team photos, then
   // Google translates its texts, now, while the owner reads this screen
@@ -52,7 +51,6 @@ export default async function GoogleDetailsPage({
       <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-4 pt-6 pb-24">
         <GlassCard>
           <GoogleDetailsCard
-            language={language}
             nextHref={`/setup/${businessId}`}
             details={{
               name: business.name,

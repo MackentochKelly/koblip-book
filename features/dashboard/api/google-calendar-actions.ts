@@ -168,12 +168,12 @@ export async function sendTeamCalendarLink(
     !!member.email &&
     (await sendEmail({
       to: member.email,
-      ...teamCalendarEmail({
+      ...(await teamCalendarEmail({
         businessName: business.name,
         url,
         days: GOOGLE_CALENDAR_RULES.inviteDays,
         language: await getOwnerLanguage(),
-      }),
+      })),
     }))
   return { ok: true, url, emailedTo: emailed ? member.email : null }
 }

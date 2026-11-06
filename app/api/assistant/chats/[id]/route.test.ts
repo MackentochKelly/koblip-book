@@ -18,6 +18,10 @@ vi.mock("@/features/assistant/api/run-chat", () => ({
 vi.mock("@/features/dashboard/i18n/server", () => ({
   getOwnerLanguage: vi.fn(async () => "en"),
 }))
+// The asking route reads the tools' lines; the tests have no translations.
+vi.mock("next-intl/server", async () =>
+  (await import("@/i18n/testing")).serverWords()
+)
 
 const { getSession } = await import("@/lib/dal")
 const { ownedBusiness } =

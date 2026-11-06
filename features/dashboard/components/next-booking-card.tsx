@@ -1,5 +1,6 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
 import { ChevronRightIcon, ClockIcon } from "@/components/ui/icons"
 
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,7 +13,6 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { formatClock, formatDayShort } from "@/lib/format-booking-time"
-import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 
 // The Next booking widget: who comes next, when and for what. A tap opens
@@ -24,8 +24,8 @@ export function NextBookingCard({
   booking: OwnerBooking | null
   onOpen: (booking: OwnerBooking, at: number) => void
 }) {
-  const m = useOwnerMessages()
-  const t = m.widgets
+  const t = useTranslations("owner.widgets")
+  const locale = useLocale()
   return (
     <Card>
       <CardContent>
@@ -46,8 +46,8 @@ export function NextBookingCard({
             <ItemContent>
               <ItemTitle>{booking.customerName}</ItemTitle>
               <ItemDescription>
-                {formatDayShort(booking.date, m.locale)} ·{" "}
-                {formatClock(booking.time, m.locale)} · {booking.serviceName}
+                {formatDayShort(booking.date, locale)} ·{" "}
+                {formatClock(booking.time, locale)} · {booking.serviceName}
               </ItemDescription>
             </ItemContent>
             <ItemActions>
@@ -55,7 +55,7 @@ export function NextBookingCard({
             </ItemActions>
           </Item>
         ) : (
-          <p className="text-muted-foreground">{t.noNext}</p>
+          <p className="text-muted-foreground">{t("noNext")}</p>
         )}
       </CardContent>
     </Card>

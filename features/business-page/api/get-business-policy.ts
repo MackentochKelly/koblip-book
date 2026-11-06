@@ -1,9 +1,9 @@
 import "server-only"
 import { cache } from "react"
 import { and, eq, isNull } from "drizzle-orm"
+import { getTranslations } from "next-intl/server"
 import { db } from "@/lib/db"
 import { businessPolicies, businesses } from "@/lib/db/schema"
-import { messagesFor } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
 import { isPolicyKind } from "@/lib/policy-rules"
 import { getBusinessTranslations } from "@/lib/translations/business-texts"
@@ -52,8 +52,12 @@ async function loadBusinessPolicy(
     return null
   }
   const translated = await getBusinessTranslations(row.businessId, language)
+  const policies = await getTranslations({
+    locale: language,
+    namespace: "public.policies",
+  })
   const title = row.kind
-    ? messagesFor(language).policies[row.kind]
+    ? policies(row.kind)
     : row.title
       ? translated(row.id, "policy.title", row.title)
       : ""

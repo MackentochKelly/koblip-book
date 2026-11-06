@@ -1,6 +1,7 @@
 "use client"
 
 import { AnimatePresence, motion } from "motion/react"
+import { useTranslations } from "next-intl"
 import { useRef, useState } from "react"
 
 import {
@@ -9,6 +10,10 @@ import {
   firstName,
   POP,
   RISE,
+  SAMPLE_BUSINESS,
+  SAMPLE_PEOPLE,
+  SAMPLE_SERVICES,
+  useSampleLocale,
 } from "@/components/feature-preview"
 import { glassFrameClassName } from "@/components/glass-frame"
 import { Rating } from "@/components/rating"
@@ -18,12 +23,8 @@ import { Spinner } from "@/components/ui/spinner"
 import { useStoryLoop } from "@/hooks/use-story-loop"
 import { formatClock } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
-import type { Messages } from "@/lib/i18n"
 import { SHOWCASE_LOOP } from "@/lib/showcase-rules"
 import { cn } from "@/lib/utils"
-
-type Words = Messages["home"]["steps"]["sample"]
-type Shared = Messages["home"]["features"]["sample"]
 
 // The person booked in the story: the one the assistant is asked to book
 // (Ana, as in "How it works").
@@ -71,16 +72,13 @@ const CARD_LOOK = { scale: 0.9, opacity: 0.85 }
 // they get, the assistant booking a client and the booking coming in. One
 // story plays across them (useStoryLoop), then rests on the full picture.
 // Only a picture: hidden from screen readers and not tappable.
-export function HeroSideCards({
-  words,
-  shared,
-}: {
-  words: Words
-  shared: Shared
-}) {
+export function HeroSideCards() {
+  const t = useTranslations("public.home.steps.sample")
+  const shared = useTranslations("public.home.features.sample")
+  const locale = useSampleLocale()
   const box = useRef<HTMLDivElement>(null)
-  const services = words.services
-  const [shown, setShown] = useState(services.length)
+  const services = SAMPLE_SERVICES
+  const [shown, setShown] = useState<number>(services.length)
   const [reply, setReply] = useState<"none" | "thinking" | "done">("done")
   const [booked, setBooked] = useState(true)
   const time = SHOWCASE_LOOP.hero
@@ -123,10 +121,10 @@ export function HeroSideCards({
               <MapPinIcon className="size-4" />
             </span>
             <div className="flex min-w-0 flex-col">
-              <span className="truncate font-medium">{shared.business}</span>
-              <Rating rating={4.9} reviewCount={128} locale={shared.locale} />
+              <span className="truncate font-medium">{SAMPLE_BUSINESS}</span>
+              <Rating rating={4.9} reviewCount={128} locale={locale} />
               <span className="truncate text-xs text-muted-foreground">
-                {words.openToday}
+                {t("openToday")}
               </span>
             </div>
           </div>
@@ -138,7 +136,7 @@ export function HeroSideCards({
           <div className="flex flex-col gap-2 px-(--card-spacing) text-sm">
             {services.map((service, index) => (
               <div
-                key={service.name}
+                key={service.key}
                 className="flex h-5 items-center justify-between gap-3"
               >
                 <span className="flex items-center gap-2">
@@ -151,10 +149,10 @@ export function HeroSideCards({
                       )}
                     </AnimatePresence>
                   </span>
-                  {service.name}
+                  {t(`services.${service.key}`)}
                 </span>
                 <span className="text-muted-foreground tabular-nums">
-                  {formatPrice(service.priceMinor, "EUR", shared.locale)}
+                  {formatPrice(service.priceMinor, "EUR", locale)}
                 </span>
               </div>
             ))}
@@ -178,8 +176,8 @@ export function HeroSideCards({
                   className="overflow-hidden"
                 >
                   <BookingRow
-                    title={words.newBooking}
-                    detail={`${firstName(words.people[BOOKED])} · ${words.bookingService} · ${formatClock(words.bookingTime, shared.locale)}`}
+                    title={t("newBooking")}
+                    detail={`${firstName(SAMPLE_PEOPLE[BOOKED])} · ${t("bookingService")} · ${formatClock(t("bookingTime"), locale)}`}
                     icon
                   />
                   <div className="h-3" />
@@ -187,8 +185,8 @@ export function HeroSideCards({
               )}
             </AnimatePresence>
             <BookingRow
-              title={words.people[EARLIER.person]}
-              detail={`${services[EARLIER.service].name} · ${formatClock(EARLIER.time, shared.locale)}`}
+              title={SAMPLE_PEOPLE[EARLIER.person]}
+              detail={`${t(`services.${services[EARLIER.service].key}`)} · ${formatClock(EARLIER.time, locale)}`}
             />
           </div>
         </Box>
@@ -199,7 +197,7 @@ export function HeroSideCards({
           card. */}
         <div className="flex min-h-28 flex-col gap-2">
           <Bubble align="end">
-            <BubbleContent>{shared.ask}</BubbleContent>
+            <BubbleContent>{shared("ask")}</BubbleContent>
           </Bubble>
           <AnimatePresence>
             {reply !== "none" && (
@@ -224,7 +222,7 @@ export function HeroSideCards({
                           className="flex items-center gap-1.5"
                         >
                           <CheckIcon className="size-4 shrink-0 text-success" />
-                          {shared.done}
+                          {shared("done")}
                         </motion.span>
                       )}
                     </AnimatePresence>

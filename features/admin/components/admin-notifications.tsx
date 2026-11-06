@@ -2,6 +2,7 @@
 
 import { useTransition } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -26,7 +27,6 @@ import { ListFilters } from "@/components/list-filters"
 import { cn } from "@/lib/utils"
 import { IN_APP_KINDS } from "@/types/in-app-notifications"
 import type { AdminNotification, AdminNotifications } from "../api/notifications"
-import { useAdminMessages } from "../i18n/provider"
 import {
   NOTIFICATION_READ_FILTERS,
   notificationQuery,
@@ -45,8 +45,9 @@ export function AdminNotificationsList({
   choices,
   filter,
 }: AdminNotifications & { filter: NotificationFilter }) {
-  const m = useAdminMessages()
-  const t = m.notifications
+  const nav = useTranslations("admin.nav")
+  const t = useTranslations("admin.notifications")
+  const locale = useLocale()
   const router = useRouter()
   const pathname = usePathname()
   const [pending, startTransition] = useTransition()
@@ -58,7 +59,7 @@ export function AdminNotificationsList({
     })
 
   const when = (row: AdminNotification) =>
-    new Intl.DateTimeFormat(m.locale, {
+    new Intl.DateTimeFormat(locale, {
       month: "short",
       day: "numeric",
       hour: "numeric",
@@ -75,22 +76,22 @@ export function AdminNotificationsList({
 
   return (
     <AdminPage
-      title={m.nav.notifications}
+      title={nav("notifications")}
       icon={<BellIcon />}
-      empty={rows.length === 0 && !filtered && choices.length === 0 ? t.none : null}
+      empty={rows.length === 0 && !filtered && choices.length === 0 ? t("none") : null}
     >
       <div className="flex flex-col gap-4">
         <ListFilters
           filters={[
             {
               key: "business",
-              label: t.businessFilter,
+              label: t("businessFilter"),
               control: (
                 <FilterSelect
-                  label={t.businessFilter}
+                  label={t("businessFilter")}
                   value={filter.businessId}
                   items={[
-                    { value: ANY, label: t.allBusinesses },
+                    { value: ANY, label: t("allBusinesses") },
                     ...businesses.map(({ id, name }) => ({ value: id, label: name })),
                   ]}
                   onChange={(businessId) => show({ ...filter, businessId })}
@@ -99,14 +100,14 @@ export function AdminNotificationsList({
             },
             {
               key: "kind",
-              label: t.kindFilter,
+              label: t("kindFilter"),
               control: (
                 <FilterSelect
-                  label={t.kindFilter}
+                  label={t("kindFilter")}
                   value={filter.kind}
                   items={[
-                    { value: ANY, label: t.allKinds },
-                    ...IN_APP_KINDS.map((kind) => ({ value: kind, label: t.kinds[kind] })),
+                    { value: ANY, label: t("allKinds") },
+                    ...IN_APP_KINDS.map((kind) => ({ value: kind, label: t(`kinds.${kind}`) })),
                   ]}
                   onChange={(kind) => show({ ...filter, kind: kind as NotificationFilter["kind"] })}
                 />
@@ -114,14 +115,14 @@ export function AdminNotificationsList({
             },
             {
               key: "read",
-              label: t.readFilter,
+              label: t("readFilter"),
               control: (
                 <FilterSelect
-                  label={t.readFilter}
+                  label={t("readFilter")}
                   value={filter.read}
                   items={[
-                    { value: ANY, label: t.allStates },
-                    ...NOTIFICATION_READ_FILTERS.map((read) => ({ value: read, label: t[read] })),
+                    { value: ANY, label: t("allStates") },
+                    ...NOTIFICATION_READ_FILTERS.map((read) => ({ value: read, label: t(read) })),
                   ]}
                   onChange={(read) => show({ ...filter, read: read as NotificationFilter["read"] })}
                 />
@@ -132,10 +133,10 @@ export function AdminNotificationsList({
           onClear={() => show({})}
           rowClear={filtered ? () => show({}) : undefined}
           words={{
-            filters: t.filters,
-            clearAll: t.clearFilters,
-            clear: t.clearFilters,
-            showResults: t.showResults,
+            filters: t("filters"),
+            clearAll: t("clearFilters"),
+            clear: t("clearFilters"),
+            showResults: t("showResults"),
           }}
         />
 
@@ -146,12 +147,12 @@ export function AdminNotificationsList({
                 <EmptyMedia variant="icon">
                   <SearchIcon />
                 </EmptyMedia>
-                <EmptyTitle>{filtered ? t.noneFound : t.none}</EmptyTitle>
+                <EmptyTitle>{filtered ? t("noneFound") : t("none")}</EmptyTitle>
               </EmptyHeader>
               {filtered && (
                 <EmptyContent>
                   <Button variant="outline" onClick={() => show({})}>
-                    {t.clearFilters}
+                    {t("clearFilters")}
                   </Button>
                 </EmptyContent>
               )}
@@ -161,14 +162,14 @@ export function AdminNotificationsList({
               {rows.map((row) => (
                 <Item key={row.id} variant="outline" size="sm">
                   <ItemContent className="min-w-0">
-                    <ItemTitle>{t.kinds[row.kind]}</ItemTitle>
+                    <ItemTitle>{t(`kinds.${row.kind}`)}</ItemTitle>
                     <ItemDescription>
                       {[row.businessName, what(row), when(row)].filter(Boolean).join(" · ")}
                     </ItemDescription>
                   </ItemContent>
                   <ItemActions>
                     <Badge variant={row.read ? "outline" : "secondary"}>
-                      {row.read ? t.read : t.unread}
+                      {row.read ? t("read") : t("unread")}
                     </Badge>
                   </ItemActions>
                 </Item>
@@ -179,7 +180,7 @@ export function AdminNotificationsList({
 
         {choices.length > 0 && (
           <section className="flex flex-col gap-3">
-            <h2 className="text-lg font-semibold tracking-tight">{t.turnedOff}</h2>
+            <h2 className="text-lg font-semibold tracking-tight">{t("turnedOff")}</h2>
             <ItemGroup className="gap-2">
               {choices.map((choice) => (
                 <Item key={choice.businessId} variant="outline" size="sm">
@@ -188,7 +189,7 @@ export function AdminNotificationsList({
                     <div className="flex flex-wrap gap-1">
                       {choice.turnedOff.map((kind) => (
                         <Badge key={kind} variant="outline">
-                          {t.kinds[kind]}
+                          {t(`kinds.${kind}`)}
                         </Badge>
                       ))}
                     </div>

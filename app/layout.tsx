@@ -7,6 +7,7 @@ import { MotionProvider } from "@/components/motion-provider"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { ScrollTopOnReload } from "@/components/scroll-top-on-reload"
 import { ThemeProvider } from "@/components/theme-provider"
+import { WordsProvider } from "@/components/words-provider"
 import {
   DEFAULT_LANGUAGE,
   isPageLanguage,
@@ -54,7 +55,10 @@ export default async function RootLayout({
         <ScrollTopOnReload />
         <ThemeProvider>
           <MotionProvider>
-            <SmoothScroll>{children}</SmoothScroll>
+            <SmoothScroll>
+              {/* Shared words; each area and public page gives its own. */}
+              <WordsProvider namespaces={["app"]}>{children}</WordsProvider>
+            </SmoothScroll>
           </MotionProvider>
         </ThemeProvider>
       </body>

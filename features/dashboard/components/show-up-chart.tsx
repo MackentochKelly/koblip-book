@@ -1,5 +1,6 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
 import {
   Label,
   PolarRadiusAxis,
@@ -22,7 +23,6 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
-import { useOwnerMessages } from "../i18n/provider"
 import type { PeriodSummary } from "../utils/analytics"
 
 // Who came and who did not over the period, as a half ring (shadcn's
@@ -34,27 +34,27 @@ export function ShowUpChart({
   showUp: PeriodSummary["showUp"]
   period: string
 }) {
-  const m = useOwnerMessages()
-  const a = m.bookings.analytics
-  const number = new Intl.NumberFormat(m.locale)
-  const percent = new Intl.NumberFormat(m.locale, { style: "percent" })
+  const a = useTranslations("owner.bookings.analytics")
+  const locale = useLocale()
+  const number = new Intl.NumberFormat(locale)
+  const percent = new Intl.NumberFormat(locale, { style: "percent" })
   const total = showUp.showedUp + showUp.noShows
   const config = {
-    showedUp: { label: a.showedUp, color: "var(--chart-2)" },
-    noShows: { label: a.noShows, color: "var(--destructive)" },
+    showedUp: { label: a("showedUp"), color: "var(--chart-2)" },
+    noShows: { label: a("noShows"), color: "var(--destructive)" },
   } satisfies ChartConfig
 
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>{a.showUps}</CardTitle>
+        <CardTitle>{a("showUps")}</CardTitle>
         <CardDescription>{period}</CardDescription>
       </CardHeader>
       {total === 0 ? (
         <CardContent className="flex flex-1">
           <Empty className="flex-1 border">
             <EmptyHeader>
-              <EmptyTitle>{a.noData}</EmptyTitle>
+              <EmptyTitle>{a("noData")}</EmptyTitle>
             </EmptyHeader>
           </Empty>
         </CardContent>
@@ -95,7 +95,7 @@ export function ShowUpChart({
                             y={(viewBox.cy ?? 0) + 6}
                             className="fill-muted-foreground"
                           >
-                            {a.showedUp}
+                            {a("showedUp")}
                           </tspan>
                         </text>
                       ) : null
@@ -120,10 +120,10 @@ export function ShowUpChart({
             </ChartContainer>
           </CardContent>
           <CardFooter className="justify-center text-muted-foreground">
-            {a.showUpSplit(
-              number.format(showUp.showedUp),
-              number.format(showUp.noShows)
-            )}
+            {a("showUpSplit", {
+              showed: number.format(showUp.showedUp),
+              missed: number.format(showUp.noShows),
+            })}
           </CardFooter>
         </>
       )}

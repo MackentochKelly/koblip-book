@@ -1,11 +1,12 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
 import { useState } from "react"
 import Image from "next/image"
 
-import { useMessages } from "@/components/language-provider"
 import { PageSection } from "@/components/page-section"
 import { ViewTabs } from "@/components/view-tabs"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import {
   Item,
   ItemActions,
@@ -15,7 +16,6 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import type { Service, ServiceCategory } from "../types"
-import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { groupServices, showsGroups } from "@/lib/service-groups"
 import { BookButton } from "./book-button"
@@ -38,7 +38,9 @@ function ServiceFacts({
   service: Service
   currency: string
 }) {
-  const m = useMessages()
+  const t = useTranslations("public.booking")
+  const locale = useLocale()
+  const formatDuration = useFormatDuration()
   const description =
     service.description && plain(service.description) !== plain(service.name)
       ? service.description
@@ -52,8 +54,8 @@ function ServiceFacts({
       {service.priceMinor !== null && (
         <p className="text-sm font-medium text-foreground">
           {service.priceMinor === 0
-            ? m.booking.free
-            : formatPrice(service.priceMinor, currency, m.locale)}
+            ? t("free")
+            : formatPrice(service.priceMinor, currency, locale)}
         </p>
       )}
     </>
@@ -82,13 +84,13 @@ export function ServiceList({
   memberId?: string
   fromAway?: boolean
 }) {
-  const m = useMessages()
+  const t = useTranslations("public")
   const groups = groupServices(services, serviceCategories)
   const tabs =
     showsGroups(groups) && groups.length >= 2
       ? groups.map((group) => ({
           id: group.category?.id ?? OTHER,
-          label: group.category?.name ?? m.sections.otherServices,
+          label: group.category?.name ?? t("sections.otherServices"),
           services: group.services,
         }))
       : null
@@ -102,7 +104,7 @@ export function ServiceList({
     // computer, with the white service cards on it.
     <PageSection
       id="services"
-      title={m.sections.services}
+      title={t("sections.services")}
       className="-mx-4 bg-muted px-4 py-6 dark:bg-card md:mx-0 md:rounded-2xl md:p-6"
     >
       {tabs && tab && (
@@ -110,7 +112,7 @@ export function ServiceList({
           views={tabs}
           value={tab.id}
           onChange={setPicked}
-          ariaLabel={m.sections.serviceCategories}
+          ariaLabel={t("sections.serviceCategories")}
           variant="chips"
         />
       )}
@@ -143,7 +145,7 @@ export function ServiceList({
                   serviceId={service.id}
                   memberId={memberId}
                   fromAway={fromAway}
-                  label={m.actions.book}
+                  label={t("actions.book")}
                   variant="outline"
                   size="default"
                 />
@@ -159,7 +161,7 @@ export function ServiceList({
           slug={slug}
           memberId={memberId}
           fromAway={fromAway}
-          label={m.page.seeAll}
+          label={t("page.seeAll")}
           variant="outline"
           size="lg"
         />

@@ -1,5 +1,7 @@
-import { cleanup, render, waitFor } from "@testing-library/react"
+import { cleanup, render as renderUi, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
+
+import { WithWords } from "@/i18n/testing"
 
 const mocks = vi.hoisted(() => ({
   catalog: vi.fn(),
@@ -22,6 +24,8 @@ vi.mock("../api/prepare-actions", () => ({
   finishSetup: mocks.finish,
 }))
 const { PreparingCard } = await import("./preparing-card")
+
+const render = (ui: React.ReactElement) => renderUi(ui, { wrapper: WithWords })
 
 afterEach(cleanup)
 beforeEach(() => {

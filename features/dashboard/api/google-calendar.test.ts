@@ -21,6 +21,10 @@ vi.mock("server-only", () => ({}))
 // The owner's check (queries.getOwnerBusiness) is tested with the dashboard.
 vi.mock("./queries", () => ({ getOwnerBusiness: vi.fn(async () => ({})) }))
 
+// The event's words come from the app's words, English here.
+const { registerEnglishWords } = await import("@/lib/translations/interface-words")
+registerEnglishWords((await import("@/i18n/messages")).default)
+
 const {
   GOOGLE_SCOPES,
   endGoogleCalendarConnection,

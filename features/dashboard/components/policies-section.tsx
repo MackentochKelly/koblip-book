@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
@@ -50,7 +51,6 @@ import {
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
-import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { noAutofill } from "@/lib/no-autofill"
 import {
   POLICY_KINDS,
@@ -90,9 +90,9 @@ export function PoliciesSection({
   slug: string
   policies: OwnerPolicy[]
 }) {
-  const m = useOwnerMessages()
-  const t = m.settings.policies
-  const c = m.catalog.common
+  const settings = useTranslations("owner.settings")
+  const t = useTranslations("owner.settings.policies")
+  const c = useTranslations("owner.catalog.common")
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [editing, setEditing] = useState<Editing | null>(null)
@@ -107,7 +107,7 @@ export function PoliciesSection({
   )
 
   const nameOf = (policy: OwnerPolicy) =>
-    policy.kind ? t.kinds[policy.kind] : (policy.title ?? "")
+    policy.kind ? t(`kinds.${policy.kind}`) : (policy.title ?? "")
 
   const open = (next: Editing) => {
     setTitle(next.policy?.title ?? "")
@@ -139,13 +139,13 @@ export function PoliciesSection({
       ).catch(() => null)
       if (result?.ok) {
         setEditing(null)
-        toast.success(m.settings.saved)
+        toast.success(settings("saved"))
         router.refresh()
       } else {
         toast.error(
           result?.error === "limit"
-            ? t.limit(POLICY_RULES.maxPolicies)
-            : t.saveFailed
+            ? t("limit", { max: POLICY_RULES.maxPolicies })
+            : t("saveFailed")
         )
       }
     })
@@ -155,25 +155,25 @@ export function PoliciesSection({
     startTransition(async () => {
       const result = await removePolicy(businessId, policy.id).catch(() => null)
       if (result?.ok) {
-        toast.success(t.removed)
+        toast.success(t("removed"))
         router.refresh()
       } else {
-        toast.error(c.failed)
+        toast.error(c("failed"))
       }
     })
 
   const addButton = (
     <>
       <PlusIcon data-icon="inline-start" />
-      {c.add}
+      {c("add")}
     </>
   )
-  const limitTitle = full ? t.limit(POLICY_RULES.maxPolicies) : undefined
+  const limitTitle = full ? t("limit", { max: POLICY_RULES.maxPolicies }) : undefined
 
   return (
     <PageSection
       id="policies"
-      title={t.title}
+      title={t("title")}
       action={
         // With every standard one on the page, Add writes the owner's own.
         missing.length === 0 ? (
@@ -203,7 +203,7 @@ export function PoliciesSection({
                     onClick={() => open({ kind, policy: null })}
                   >
                     <KindIcon />
-                    {t.kinds[kind]}
+                    {t(`kinds.${kind}`)}
                   </DropdownMenuItem>
                 )
               })}
@@ -212,7 +212,7 @@ export function PoliciesSection({
                 onClick={() => open({ kind: null, policy: null })}
               >
                 <BookmarkIcon />
-                {t.own}
+                {t("own")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -225,7 +225,7 @@ export function PoliciesSection({
             <EmptyMedia variant="icon">
               <BookmarkIcon />
             </EmptyMedia>
-            <EmptyTitle>{t.empty}</EmptyTitle>
+            <EmptyTitle>{t("empty")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : (
@@ -246,10 +246,10 @@ export function PoliciesSection({
                     variant="outline"
                     onClick={() => open({ kind: policy.kind, policy })}
                   >
-                    {c.edit}
+                    {c("edit")}
                   </Button>
                   <DropdownMenu>
-                    <MoreMenuTrigger label={c.more} />
+                    <MoreMenuTrigger label={c("more")} />
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
                         render={
@@ -261,7 +261,7 @@ export function PoliciesSection({
                         }
                       >
                         <ExternalLinkIcon />
-                        {t.view}
+                        {t("view")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         variant="destructive"
@@ -269,7 +269,7 @@ export function PoliciesSection({
                         onClick={() => setRemoving(policy)}
                       >
                         <Trash2Icon />
-                        {c.remove}
+                        {c("remove")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -293,8 +293,8 @@ export function PoliciesSection({
           editing?.policy
             ? nameOf(editing.policy)
             : editing?.kind
-              ? t.kinds[editing.kind]
-              : t.own
+              ? t(`kinds.${editing.kind}`)
+              : t("own")
         }
         footer={
           <Button
@@ -304,7 +304,7 @@ export function PoliciesSection({
             disabled={pending || !changed}
           >
             {pending && <Spinner data-icon="inline-start" />}
-            {m.settings.save}
+            {settings("save")}
           </Button>
         }
       >
@@ -314,18 +314,18 @@ export function PoliciesSection({
               {own && (
                 <Field data-invalid={invalid === "title" || undefined}>
                   <FieldLabel htmlFor="policy-title">
-                    {t.policyTitle}
+                    {t("policyTitle")}
                   </FieldLabel>
                   <Input
                     {...noAutofill("policy_title")}
                     id="policy-title"
                     value={title}
                     onChange={(event) => setTitle(event.target.value)}
-                    placeholder={t.titleExample}
+                    placeholder={t("titleExample")}
                     maxLength={POLICY_RULES.maxTitle}
                     aria-invalid={invalid === "title" || undefined}
                   />
-                  {invalid === "title" && <FieldError>{t.addTitle}</FieldError>}
+                  {invalid === "title" && <FieldError>{t("addTitle")}</FieldError>}
                 </Field>
               )}
               <Field data-invalid={invalid === "body" || undefined}>
@@ -335,8 +335,8 @@ export function PoliciesSection({
                   className={own ? undefined : "sr-only"}
                 >
                   {own || editing.kind === null
-                    ? t.policyText
-                    : t.kinds[editing.kind]}
+                    ? t("policyText")
+                    : t(`kinds.${editing.kind}`)}
                 </FieldLabel>
                 <Textarea
                   {...noAutofill("policy_text")}
@@ -348,7 +348,7 @@ export function PoliciesSection({
                   aria-invalid={invalid === "body" || undefined}
                 />
                 {invalid === "body" ? (
-                  <FieldError>{t.addText}</FieldError>
+                  <FieldError>{t("addText")}</FieldError>
                 ) : (
                   <FieldDescription>
                     {text.length}/{POLICY_RULES.maxLength}

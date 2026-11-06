@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import {
@@ -16,7 +17,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { setOwnerBlocked } from "../api/actions"
-import { useAdminMessages } from "../i18n/provider"
 
 // Block asks first (shadcn's Alert Dialog); Unblock acts at once.
 export function OwnerBlockButton({
@@ -28,16 +28,16 @@ export function OwnerBlockButton({
   name: string
   blocked: boolean
 }) {
-  const t = useAdminMessages().owners
+  const t = useTranslations("admin.owners")
   const [asking, setAsking] = useState(false)
   const [pending, startTransition] = useTransition()
   const save = (block: boolean) =>
     startTransition(async () => {
       const result = await setOwnerBlocked(userId, block).catch(() => null)
       if (result?.ok) {
-        toast.success(block ? t.blockedToast : t.unblockedToast)
+        toast.success(block ? t("blockedToast") : t("unblockedToast"))
       } else {
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
 
@@ -49,16 +49,16 @@ export function OwnerBlockButton({
         onClick={() => (blocked ? save(false) : setAsking(true))}
       >
         {pending && <Spinner data-icon="inline-start" />}
-        {blocked ? t.unblock : t.block}
+        {blocked ? t("unblock") : t("block")}
       </Button>
       <AlertDialog open={asking} onOpenChange={setAsking}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t.blockTitle(name)}</AlertDialogTitle>
-            <AlertDialogDescription>{t.blockText}</AlertDialogDescription>
+            <AlertDialogTitle>{t("blockTitle", { name })}</AlertDialogTitle>
+            <AlertDialogDescription>{t("blockText")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
@@ -66,7 +66,7 @@ export function OwnerBlockButton({
                 save(true)
               }}
             >
-              {t.block}
+              {t("block")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

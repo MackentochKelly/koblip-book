@@ -2,15 +2,17 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useMessages, useTranslations } from "next-intl"
 
 import {
   MessageEditor,
   type EditorLimits,
   type EditorResult,
   type MessageEditorItem,
+  type MessageEditorLabels,
 } from "@/components/message-editor"
 import { HelperLine } from "@/components/helper-line"
-import { MessageStatus } from "@/components/message-status"
+import { MessageStatus, type MessageStatusLabels } from "@/components/message-status"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { WhatsAppIcon } from "@/components/ui/icons"
@@ -30,8 +32,18 @@ import type {
   KoblipSaveResult,
   KoblipSubmitResult,
 } from "@/types/koblip-messages"
-import { useAdminMessages } from "../i18n/provider"
+import { wordGroup } from "../utils/word-group"
 import { WHATSAPP_BASE } from "../utils/whatsapp-parts"
+
+type SaveError = Exclude<KoblipSaveResult, { ok: true }>["error"]
+type SubmitError = Exclude<KoblipSubmitResult, { ok: true }>["error"]
+
+// Meta's review of each message, in the admin's words.
+function useReviewWords(): MessageStatusLabels["review"] {
+  const t = useTranslations("admin.whatsapp")
+  const words = useMessages().admin.whatsapp
+  return wordGroup(words.review, (key) => t(`review.${key}`))
+}
 
 // The review a message shows in the list: the worse of its two languages.
 function reviewOf(item: KoblipMessage): KoblipReview {
@@ -76,9 +88,17 @@ export function WhatsappKoblipMessages({
   ) => Promise<KoblipSaveResult>
   submit: (message: KoblipMessageName, language: KoblipLanguage) => Promise<KoblipSubmitResult>
 }) {
-  const m = useAdminMessages().whatsapp
-  const t = m.koblipMessages
+  const whatsapp = useTranslations("admin.whatsapp")
+  const t = useTranslations("admin.whatsapp.koblipMessages")
+  const review = useReviewWords()
   const [open, setOpen] = useState<KoblipMessageName | null>(null)
+  const statusLabels: MessageStatusLabels = {
+    normalMessage: t("normalMessage"),
+    template: t("template"),
+    sending: t("sending"),
+    off: t("off"),
+    review,
+  }
 
   if (!connected) {
     return (
@@ -87,11 +107,11 @@ export function WhatsappKoblipMessages({
           <EmptyMedia variant="icon">
             <WhatsAppIcon />
           </EmptyMedia>
-          <EmptyTitle>{t.notConnected}</EmptyTitle>
+          <EmptyTitle>{t("notConnected")}</EmptyTitle>
         </EmptyHeader>
         <EmptyContent>
           <Button nativeButton={false} render={<Link href={`${WHATSAPP_BASE}/koblip-number`} />}>
-            {t.openNumber}
+            {t("openNumber")}
           </Button>
         </EmptyContent>
       </Empty>
@@ -100,26 +120,25 @@ export function WhatsappKoblipMessages({
 
   return (
     <div className="flex flex-col gap-3">
-      <HelperLine more={t.more} moreLabel={t.moreInfo}>
-        {t.hint}
+      <HelperLine more={t("more")} moreLabel={t("moreInfo")}>
+        {t("hint")}
       </HelperLine>
       <ItemGroup className="gap-3">
         {messages.map((item) => {
-          const name = m.messages[item.message]
-          const review = reviewOf(item)
+          const name = whatsapp(`messages.${item.message}`)
           return (
             <Item key={item.message} variant="outline">
               <ItemContent className="min-w-0">
                 <button
                   type="button"
                   onClick={() => setOpen(item.message)}
-                  aria-label={t.open(name)}
+                  aria-label={t("open", { name: name.toLowerCase() })}
                   className="flex min-h-11 items-center rounded-md text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
                   <ItemTitle>{name}</ItemTitle>
                 </button>
                 <div className="mt-2">
-                  <MessageStatus review={review} labels={{ ...t, review: m.review }} />
+                  <MessageStatus review={reviewOf(item)} labels={statusLabels} />
                 </div>
               </ItemContent>
             </Item>
@@ -156,9 +175,13 @@ function KoblipMessageEditor({
   submit: Parameters<typeof WhatsappKoblipMessages>[0]["submit"]
   onClose: () => void
 }) {
-  const m = useAdminMessages().whatsapp
-  const t = m.koblipMessages
-  const labels = t.fields as Record<string, string>
+  const whatsapp = useTranslations("admin.whatsapp")
+  const t = useTranslations("admin.whatsapp.koblipMessages")
+  const groups = useMessages().admin.whatsapp.koblipMessages
+  const review = useReviewWords()
+  const labels: Record<string, string> = wordGroup(groups.fields, (key) =>
+    t(`fields.${key}`)
+  )
   const about = item ? info[item.message] : null
   const words = (wording: { header: string; body: string; footer: string }) => ({
     ...wording,
@@ -168,7 +191,7 @@ function KoblipMessageEditor({
   const editorItem: MessageEditorItem | null =
     item && about
       ? {
-          name: m.messages[item.message],
+          name: whatsapp(`messages.${item.message}`),
           editable: true,
           fields: about.fields.map((field) => labels[field] ?? field),
           buttonActions: about.buttonActions,
@@ -189,12 +212,41 @@ function KoblipMessageEditor({
       approved: text.approved && { wording: words(text.approved.wording), buttons: text.approved.buttons },
     }
   }
-  const problem = (error: string) => t.problems[error] ?? t.errors[error as keyof typeof t.errors] ?? t.failed
+  const saveProblem = (error: SaveError) => t(`problems.${error}`)
+  const submitProblem = (error: SubmitError) => t(`errors.${error}`)
+  const editorLabels: MessageEditorLabels = {
+    // "Edit booking confirmed".
+    edit: (name) => t("edit", { name: name.toLowerCase() }),
+    english: t("english"),
+    spanish: t("spanish"),
+    metaReason: t("metaReason"),
+    review,
+    readOnly: t("hint"),
+    title: t("title"),
+    text: t("text"),
+    footer: t("footer"),
+    buttons: t("buttons"),
+    buttonKinds: wordGroup(groups.buttonKinds, (key) => t(`buttonKinds.${key}`)),
+    addButton: t("addButton"),
+    removeButton: (label) => t("removeButton", { label }),
+    normalMessage: t("normalMessage"),
+    normalHint: t("normalHint"),
+    sending: t("sending"),
+    template: t("template"),
+    templateHint: t("templateHint"),
+    approvedNow: t("approvedNow"),
+    reset: t("reset"),
+    save: t("save"),
+    submit: t("submit"),
+    saved: t("saved"),
+    submitted: t("submitted"),
+    failed: t("failed"),
+  }
 
   return (
     <MessageEditor
       item={editorItem}
-      labels={{ ...t, review: m.review, readOnly: t.hint }}
+      labels={editorLabels}
       limits={limits}
       preview={(body, language) =>
         fillFields(fieldsFromLabels(body, labels), about?.examples[language] ?? {})
@@ -207,7 +259,7 @@ function KoblipMessageEditor({
           draft && { ...draft.wording, body: fieldsFromLabels(draft.wording.body, labels) },
           draft && draft.buttons
         )
-        return result.ok ? result : { ok: false, problem: problem(result.error) }
+        return result.ok ? result : { ok: false, problem: saveProblem(result.error) }
       }}
       onSubmit={async (language): Promise<EditorResult> => {
         if (!item) return { ok: false, problem: null }
@@ -216,7 +268,7 @@ function KoblipMessageEditor({
         // Meta refused: its own words when Chat passed them on.
         return {
           ok: false,
-          problem: result.error === "chat" && result.reason ? result.reason : problem(result.error),
+          problem: result.error === "chat" && result.reason ? result.reason : submitProblem(result.error),
         }
       }}
       onClose={onClose}

@@ -1,5 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render as renderUi, screen } from "@testing-library/react"
+import { createTranslator } from "next-intl"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
+
+import messages from "@/i18n/messages"
+import { WithWords } from "@/i18n/testing"
+import { ONBOARDING_RULES } from "@/lib/onboarding-rules"
 
 const { authClient, emailStatus } = vi.hoisted(() => ({
   authClient: {
@@ -20,14 +25,22 @@ vi.mock("@/lib/auth-client", () => ({ authClient }))
 vi.mock("../api/email-status", () => ({ emailStatus }))
 
 const { AuthForm } = await import("./auth-form")
-const { authWordsFor } = await import("../i18n")
+
+// The form's English words, as the person reads them.
+const t = messages.ownerAuth
+const translate = createTranslator({ locale: "en-US", messages, namespace: "ownerAuth" })
+const errorText = (key: keyof typeof t.errors) =>
+  translate(`errors.${key}`, {
+    min: ONBOARDING_RULES.minPasswordLength,
+    max: ONBOARDING_RULES.maxPasswordLength,
+  })
+
+const render = (ui: React.ReactElement) => renderUi(ui, { wrapper: WithWords })
 
 // The email form unfolds once "Continue with email" is picked.
 function renderEmail(ui: React.ReactElement) {
   const view = render(ui)
-  fireEvent.click(
-    screen.getByRole("button", { name: /Continue with email|Continuar con correo/ })
-  )
+  fireEvent.click(screen.getByRole("button", { name: t.useEmail }))
   return view
 }
 
@@ -85,87 +98,82 @@ function onlyInvalid(field: "email" | "name" | "password" | "form", message: str
   }
 }
 
-for (const language of ["en", "es"] as const) {
-  const t = authWordsFor(language)
-  for (const step of ["create", "password"] as const) {
-    const cases = [
-      { code: "INVALID_EMAIL_OR_PASSWORD", status: 401, field: step === "password" ? "password" : "form", key: step === "password" ? "wrongPassword" : "failed" },
-      { code: "PASSWORD_TOO_SHORT", status: 400, field: "password", key: "password" },
-      { code: "PASSWORD_TOO_LONG", status: 400, field: "password", key: "passwordTooLong" },
-      { code: "INVALID_PASSWORD", status: 400, field: "password", key: "invalidPassword" },
-      { code: "INVALID_EMAIL", status: 400, field: "email", key: "email" },
-      { code: "INVALID_ORIGIN", status: 403, field: "form", key: "failed" },
-      { code: "FAILED_TO_CREATE_USER", status: 422, field: "form", key: "failed" },
-      { code: "UNKNOWN", status: 500, field: "form", key: "failed" },
-      { code: undefined, status: 429, field: "form", key: "tooManyTries" },
-      { code: "PASSWORD_TOO_SHORT", status: 429, field: "form", key: "tooManyTries" },
-      { code: null, status: 0, field: "form", key: "connection" },
-      { code: "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL", status: 422, field: "form", key: step === "create" ? "existingAccount" : "failed" },
-    ] as const
-    for (const { code, status, field, key } of cases) {
-      test(`${language} ${step}: ${code ?? status} shows ${key} on ${field}`, async () => {
-        emailStatus.mockResolvedValue({ ok: true, exists: step === "password" })
-        const request = step === "create" ? authClient.signUp.email : authClient.signIn.email
-        // These mocks supply the same error shape as Better Auth's client.
-        if (code === null) request.mockRejectedValue(new Error("offline"))
-        else request.mockResolvedValue({ error: { code, status } })
-        renderEmail(<AuthForm language={language} />)
-        fireEvent.change(screen.getByLabelText(t.email), { target: { value: "owner@example.com" } })
-        fireEvent.click(screen.getByRole("button", { name: t.continue }))
-        const password = await screen.findByLabelText(step === "create" ? t.choosePassword : t.password)
-        if (step === "create") fireEvent.change(screen.getByLabelText(t.yourName), { target: { value: "Owner" } })
-        fireEvent.change(password, { target: { value: "long-enough-password" } })
-        fireEvent.click(screen.getByRole("button", { name: step === "create" ? t.createAccount : t.logIn }))
-        await screen.findByText(t.errors[key])
-        onlyInvalid(field, t.errors[key])
-        const alert = screen.getByText(t.errors[key]).closest('[data-slot="alert"]')
-        if (key === "existingAccount") {
-          expect(screen.queryByLabelText(t.yourName)).toBeNull()
-          expect((screen.getByLabelText(t.password) as HTMLInputElement).value).toBe("")
-          expect(screen.getByRole("button", { name: t.logIn })).toBeTruthy()
-          expect(alert?.classList.contains("text-destructive")).toBe(false)
-        } else if (field === "form") {
-          expect(alert?.classList.contains("text-destructive")).toBe(true)
-        }
-        fireEvent.click(screen.getByRole("button", { name: t.useAnotherEmail }))
-        expect(document.querySelector('[data-slot="alert"], [data-slot="field-error"], [aria-invalid="true"]')).toBeNull()
-      })
-    }
+for (const step of ["create", "password"] as const) {
+  const cases = [
+    { code: "INVALID_EMAIL_OR_PASSWORD", status: 401, field: step === "password" ? "password" : "form", key: step === "password" ? "wrongPassword" : "failed" },
+    { code: "PASSWORD_TOO_SHORT", status: 400, field: "password", key: "password" },
+    { code: "PASSWORD_TOO_LONG", status: 400, field: "password", key: "passwordTooLong" },
+    { code: "INVALID_PASSWORD", status: 400, field: "password", key: "invalidPassword" },
+    { code: "INVALID_EMAIL", status: 400, field: "email", key: "email" },
+    { code: "INVALID_ORIGIN", status: 403, field: "form", key: "failed" },
+    { code: "FAILED_TO_CREATE_USER", status: 422, field: "form", key: "failed" },
+    { code: "UNKNOWN", status: 500, field: "form", key: "failed" },
+    { code: undefined, status: 429, field: "form", key: "tooManyTries" },
+    { code: "PASSWORD_TOO_SHORT", status: 429, field: "form", key: "tooManyTries" },
+    { code: null, status: 0, field: "form", key: "connection" },
+    { code: "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL", status: 422, field: "form", key: step === "create" ? "existingAccount" : "failed" },
+  ] as const
+  for (const { code, status, field, key } of cases) {
+    test(`${step}: ${code ?? status} shows ${key} on ${field}`, async () => {
+      emailStatus.mockResolvedValue({ ok: true, exists: step === "password" })
+      const request = step === "create" ? authClient.signUp.email : authClient.signIn.email
+      // These mocks supply the same error shape as Better Auth's client.
+      if (code === null) request.mockRejectedValue(new Error("offline"))
+      else request.mockResolvedValue({ error: { code, status } })
+      renderEmail(<AuthForm />)
+      fireEvent.change(screen.getByLabelText(t.email), { target: { value: "owner@example.com" } })
+      fireEvent.click(screen.getByRole("button", { name: t.continue }))
+      const password = await screen.findByLabelText(step === "create" ? t.choosePassword : t.password)
+      if (step === "create") fireEvent.change(screen.getByLabelText(t.yourName), { target: { value: "Owner" } })
+      fireEvent.change(password, { target: { value: "long-enough-password" } })
+      fireEvent.click(screen.getByRole("button", { name: step === "create" ? t.createAccount : t.logIn }))
+      await screen.findByText(errorText(key))
+      onlyInvalid(field, errorText(key))
+      const alert = screen.getByText(errorText(key)).closest('[data-slot="alert"]')
+      if (key === "existingAccount") {
+        expect(screen.queryByLabelText(t.yourName)).toBeNull()
+        expect((screen.getByLabelText(t.password) as HTMLInputElement).value).toBe("")
+        expect(screen.getByRole("button", { name: t.logIn })).toBeTruthy()
+        expect(alert?.classList.contains("text-destructive")).toBe(false)
+      } else if (field === "form") {
+        expect(alert?.classList.contains("text-destructive")).toBe(true)
+      }
+      fireEvent.click(screen.getByRole("button", { name: t.useAnotherEmail }))
+      expect(document.querySelector('[data-slot="alert"], [data-slot="field-error"], [aria-invalid="true"]')).toBeNull()
+    })
   }
-
-  test(`${language}: a missing name marks only the name`, async () => {
-    emailStatus.mockResolvedValue({ ok: true, exists: false })
-    renderEmail(<AuthForm language={language} />)
-    fireEvent.change(screen.getByLabelText(t.email), { target: { value: "new@example.com" } })
-    fireEvent.click(screen.getByRole("button", { name: t.continue }))
-    await screen.findByLabelText(t.yourName)
-    fireEvent.click(screen.getByRole("button", { name: t.createAccount }))
-    await screen.findByText(t.errors.name)
-    onlyInvalid("name", t.errors.name)
-    expect(authClient.signUp.email).not.toHaveBeenCalled()
-  })
-
-  test(`${language}: local short-password validation marks only the password`, async () => {
-    renderEmail(<AuthForm language={language} />)
-    fireEvent.change(screen.getByLabelText(t.email), { target: { value: "owner@example.com" } })
-    fireEvent.click(screen.getByRole("button", { name: t.continue }))
-    fireEvent.change(await screen.findByLabelText(t.password), { target: { value: "short" } })
-    fireEvent.click(screen.getByRole("button", { name: t.logIn }))
-    await screen.findByText(t.errors.password)
-    onlyInvalid("password", t.errors.password)
-    expect(authClient.signIn.email).not.toHaveBeenCalled()
-  })
 }
 
-async function atPasswordStep(language: "en" | "es", next?: string) {
-  const t = authWordsFor(language)
+test("a missing name marks only the name", async () => {
+  emailStatus.mockResolvedValue({ ok: true, exists: false })
+  renderEmail(<AuthForm />)
+  fireEvent.change(screen.getByLabelText(t.email), { target: { value: "new@example.com" } })
+  fireEvent.click(screen.getByRole("button", { name: t.continue }))
+  await screen.findByLabelText(t.yourName)
+  fireEvent.click(screen.getByRole("button", { name: t.createAccount }))
+  await screen.findByText(errorText("name"))
+  onlyInvalid("name", errorText("name"))
+  expect(authClient.signUp.email).not.toHaveBeenCalled()
+})
+
+test("local short-password validation marks only the password", async () => {
+  renderEmail(<AuthForm />)
+  fireEvent.change(screen.getByLabelText(t.email), { target: { value: "owner@example.com" } })
+  fireEvent.click(screen.getByRole("button", { name: t.continue }))
+  fireEvent.change(await screen.findByLabelText(t.password), { target: { value: "short" } })
+  fireEvent.click(screen.getByRole("button", { name: t.logIn }))
+  await screen.findByText(errorText("password"))
+  onlyInvalid("password", errorText("password"))
+  expect(authClient.signIn.email).not.toHaveBeenCalled()
+})
+
+async function atPasswordStep(language: "en" | "es" = "en", next?: string) {
   renderEmail(<AuthForm language={language} next={next} />)
   fireEvent.change(screen.getByLabelText(t.email), {
     target: { value: "owner@example.com" },
   })
   fireEvent.click(screen.getByRole("button", { name: t.continue }))
   return {
-    t,
     forgot: await screen.findByRole("button", { name: t.forgotPassword }),
   }
 }
@@ -173,7 +181,7 @@ async function atPasswordStep(language: "en" | "es", next?: string) {
 for (const language of ["en", "es"] as const) {
   test(`${language}: forgot password asks for the link, keeping the language and the way back`, async () => {
     authClient.requestPasswordReset.mockResolvedValue({ data: { status: true }, error: null })
-    const { t, forgot } = await atPasswordStep(language, "/connect")
+    const { forgot } = await atPasswordStep(language, "/connect")
     fireEvent.click(forgot)
 
     expect(await screen.findByText(t.resetSent)).toBeTruthy()
@@ -186,7 +194,6 @@ for (const language of ["en", "es"] as const) {
 
 test("forgot password from the sign-up card comes back to that card", async () => {
   authClient.requestPasswordReset.mockResolvedValue({ data: { status: true }, error: null })
-  const t = authWordsFor("en")
   renderEmail(<AuthForm googleNext="/login?business=ana&finish=1" />)
   fireEvent.change(screen.getByLabelText(t.email), {
     target: { value: "owner@example.com" },
@@ -203,7 +210,7 @@ test("forgot password from the sign-up card comes back to that card", async () =
 
 test("trying to log in clears the news about the link", async () => {
   authClient.requestPasswordReset.mockResolvedValue({ data: { status: true }, error: null })
-  const { t, forgot } = await atPasswordStep("en")
+  const { forgot } = await atPasswordStep()
   fireEvent.click(forgot)
   await screen.findByText(t.resetSent)
 
@@ -212,13 +219,12 @@ test("trying to log in clears the news about the link", async () => {
   })
   fireEvent.click(screen.getByRole("button", { name: t.logIn }))
 
-  expect(await screen.findByText(t.errors.password)).toBeTruthy()
+  expect(await screen.findByText(errorText("password"))).toBeTruthy()
   expect(screen.queryByText(t.resetSent)).toBeNull()
 })
 
 test("sign-up has the same quiet way back as log in", async () => {
   emailStatus.mockResolvedValue({ ok: true, exists: false })
-  const t = authWordsFor("en")
   renderEmail(<AuthForm />)
   fireEvent.change(screen.getByLabelText(t.email), {
     target: { value: "new@example.com" },
@@ -234,24 +240,23 @@ test("forgot password says so when there were too many tries", async () => {
     data: null,
     error: { status: 429 },
   })
-  const { t, forgot } = await atPasswordStep("en")
+  const { forgot } = await atPasswordStep()
   fireEvent.click(forgot)
 
-  expect(await screen.findByText(t.errors.tooManyTries)).toBeTruthy()
+  expect(await screen.findByText(errorText("tooManyTries"))).toBeTruthy()
   expect(screen.queryByText(t.resetSent)).toBeNull()
 })
 
 test("forgot password says so when the server can't be reached", async () => {
   authClient.requestPasswordReset.mockRejectedValue(new Error("offline"))
-  const { t, forgot } = await atPasswordStep("en")
+  const { forgot } = await atPasswordStep()
   fireEvent.click(forgot)
 
-  expect(await screen.findByText(t.errors.connection)).toBeTruthy()
+  expect(await screen.findByText(errorText("connection"))).toBeTruthy()
 })
 
 test("a new account has no forgot password link", async () => {
   emailStatus.mockResolvedValue({ ok: true, exists: false })
-  const t = authWordsFor("en")
   renderEmail(<AuthForm />)
   fireEvent.change(screen.getByLabelText(t.email), {
     target: { value: "new@example.com" },

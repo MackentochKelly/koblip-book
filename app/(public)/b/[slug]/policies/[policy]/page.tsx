@@ -1,24 +1,20 @@
 import type { Metadata } from "next"
-import { headers } from "next/headers"
 import { notFound } from "next/navigation"
+import { getLocale } from "next-intl/server"
 import { LanguageProvider } from "@/components/language-provider"
+import { WordsProvider } from "@/components/words-provider"
 import { getBusinessPolicy } from "@/features/business-page/api/get-business-policy"
 import { PolicyDocument } from "@/features/business-page/components/policy-document"
-import { pickLanguage } from "@/lib/page-language"
+import { languageOf } from "@/lib/page-language"
 
 type Props = PageProps<"/b/[slug]/policies/[policy]">
 
-// ?lang= wins, then the visitor's browser language, else English.
-async function pageLanguage(searchParams: Props["searchParams"]) {
-  const { lang } = await searchParams
-  return pickLanguage(lang, (await headers()).get("accept-language"))
-}
-
 // The policy (a standard kind, or the id of one of the owner's own), or a
-// 404 for an unknown business or policy.
-async function load({ params, searchParams }: Props) {
+// 404 for an unknown business or policy. The page's language: ?lang= wins,
+// then the visitor's browser language, else English (proxy.ts).
+async function load({ params }: Props) {
   const { slug, policy: segment } = await params
-  const language = await pageLanguage(searchParams)
+  const language = languageOf(await getLocale())
   const policy = await getBusinessPolicy(slug, segment, language)
   if (!policy) {
     notFound()
@@ -38,8 +34,10 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 export default async function PolicyPage(props: Props) {
   const { language, policy } = await load(props)
   return (
-    <LanguageProvider language={language}>
-      <PolicyDocument policy={policy} language={language} />
-    </LanguageProvider>
+    <WordsProvider namespaces={["app", "public"]}>
+      <LanguageProvider language={language}>
+        <PolicyDocument policy={policy} />
+      </LanguageProvider>
+    </WordsProvider>
   )
 }

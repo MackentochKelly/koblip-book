@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useLocale, useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -68,8 +69,9 @@ function useNow() {
 // The bell's list, the same in the computer's popover and the phone's sheet:
 // Today, then Earlier, newest first. Tapping one marks it read and opens it.
 export function NotificationList({ onOpen }: { onOpen: () => void }) {
+  const t = useTranslations("notifications")
+  const locale = useLocale()
   const {
-    t,
     items,
     loaded,
     failed,
@@ -86,11 +88,11 @@ export function NotificationList({ onOpen }: { onOpen: () => void }) {
       return (
         <Empty className="p-6">
           <EmptyHeader>
-            <EmptyTitle>{t.failed}</EmptyTitle>
+            <EmptyTitle>{t("failed")}</EmptyTitle>
           </EmptyHeader>
           <EmptyContent>
             <Button variant="outline" onClick={reload}>
-              {t.retry}
+              {t("retry")}
             </Button>
           </EmptyContent>
         </Empty>
@@ -110,7 +112,7 @@ export function NotificationList({ onOpen }: { onOpen: () => void }) {
           <EmptyMedia variant="icon">
             <BellIcon />
           </EmptyMedia>
-          <EmptyTitle>{t.empty}</EmptyTitle>
+          <EmptyTitle>{t("empty")}</EmptyTitle>
         </EmptyHeader>
       </Empty>
     )
@@ -128,7 +130,7 @@ export function NotificationList({ onOpen }: { onOpen: () => void }) {
             id={`notifications-${group.id}`}
             className="px-3 text-xs font-medium text-muted-foreground"
           >
-            {t[group.id]}
+            {t(group.id)}
           </h3>
           <ItemGroup className="gap-1">
             {group.items.map((item) => {
@@ -156,15 +158,15 @@ export function NotificationList({ onOpen }: { onOpen: () => void }) {
                     <ItemTitle
                       className={item.read ? "font-normal" : undefined}
                     >
-                      {titleOf(item, t)}
+                      {titleOf(item, t, locale)}
                     </ItemTitle>
                     <ItemDescription className="line-clamp-1">
-                      {item.businessName} · {formatAgo(item.at, now, t.locale)}
+                      {item.businessName} · {formatAgo(item.at, now, locale)}
                     </ItemDescription>
                   </ItemContent>
                   {!item.read && (
                     <span className="size-2 shrink-0 rounded-full bg-primary">
-                      <span className="sr-only">{t.unread}</span>
+                      <span className="sr-only">{t("unread")}</span>
                     </span>
                   )}
                 </Item>
@@ -181,7 +183,7 @@ export function NotificationList({ onOpen }: { onOpen: () => void }) {
           onClick={loadMore}
         >
           {loadingMore && <Spinner data-icon="inline-start" />}
-          {t.more}
+          {t("more")}
         </Button>
       )}
     </div>

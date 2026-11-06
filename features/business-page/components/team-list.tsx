@@ -1,10 +1,10 @@
 import Link from "next/link"
+import { useLocale, useTranslations } from "next-intl"
 
 import { PageSection } from "@/components/page-section"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { messagesFor } from "@/lib/i18n"
 import { initials } from "@/lib/initials"
-import type { PageLanguage } from "@/lib/page-language"
+import { languageOf } from "@/lib/page-language"
 import type { TeamMember } from "../types"
 
 function firstName(name: string) {
@@ -16,20 +16,14 @@ function lastName(name: string) {
 }
 
 // The team, like Fresha: each person opens their own profile.
-export function TeamList({
-  slug,
-  team,
-  language,
-}: {
-  slug: string
-  team: TeamMember[]
-  language: PageLanguage
-}) {
+export function TeamList({ slug, team }: { slug: string; team: TeamMember[] }) {
+  const t = useTranslations("public.sections")
+  const language = languageOf(useLocale())
   if (team.length === 0) {
     return null
   }
   return (
-    <PageSection id="team" title={messagesFor(language).sections.team}>
+    <PageSection id="team" title={t("team")}>
       {/* One row that swipes sideways; on the phone it runs to the screen
           edges (the page's px-4, taken back by a negative margin). The
           swipe stays in the row instead of carrying on to the page. */}

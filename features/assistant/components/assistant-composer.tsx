@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useEffect, useEffectEvent, useRef, useState } from "react"
 import {
   ArrowUpIcon,
@@ -18,9 +19,8 @@ import { Spinner } from "@/components/ui/spinner"
 import { VoiceGlobe } from "@/components/voice-globe"
 import { VoiceWaveform } from "@/components/voice-waveform"
 import { useStoredFlag } from "@/hooks/use-stored-flag"
-import { ASSISTANT_RULES } from "@/lib/assistant-rules"
+import { ASSISTANT_NAME, ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type { PageLanguage } from "@/lib/page-language"
-import type { AssistantMessages } from "../i18n"
 import { type LiveVoice, useLiveVoiceSupported } from "../hooks/use-live-voice"
 import type { VoicePicking } from "../hooks/use-voice-choice"
 import { VoiceIntro } from "./voice-intro"
@@ -31,15 +31,12 @@ const VOICE_INTRO_HIDDEN_KEY = "assistant-voice-intro-hidden"
 type Mode = "stop" | "working" | "send" | "live"
 
 // What the one button says to a screen reader in each state.
-const MODE_LABELS: Record<
-  Mode,
-  (labels: AssistantMessages["composer"]) => string
-> = {
-  stop: (labels) => labels.stop,
-  working: (labels) => labels.send,
-  send: (labels) => labels.send,
-  live: (labels) => labels.live.start,
-}
+const MODE_LABELS = {
+  stop: "stop",
+  working: "send",
+  send: "send",
+  live: "live.start",
+} as const satisfies Record<Mode, string>
 
 // The message box. Enter sends; Shift+Enter starts a new line. Like
 // ChatGPT: the voice button talks live (the box then shows what it hears,
@@ -48,7 +45,6 @@ const MODE_LABELS: Record<
 // card) `onTalkLive` takes the voice button to the assistant page, which
 // gets `startLive` to offer it.
 export function AssistantComposer({
-  labels,
   busy,
   stoppable,
   onSend,
@@ -59,7 +55,6 @@ export function AssistantComposer({
   startLive: startLiveNow = false,
   inline = false,
 }: {
-  labels: AssistantMessages["composer"]
   busy: boolean
   // While a question is being answered, the send button stops it.
   stoppable: boolean
@@ -70,7 +65,6 @@ export function AssistantComposer({
   // The owner's voice for it, asked for before the first talk.
   voice?: {
     picking: VoicePicking
-    labels: AssistantMessages["voice"]
     language: PageLanguage
   }
   // Talking live happens somewhere else: the voice button calls this.
@@ -81,6 +75,7 @@ export function AssistantComposer({
   // chat itself puts the buttons under them.
   inline?: boolean
 }) {
+  const t = useTranslations("assistant.composer")
   const [text, setText] = useState("")
   const canSend = text.trim() !== "" && !busy
   const supported = useLiveVoiceSupported()
@@ -146,8 +141,8 @@ export function AssistantComposer({
             readOnly
             value={live.caption}
             rows={1}
-            placeholder={labels.live[live.state]}
-            aria-label={labels.label}
+            placeholder={t(`live.${live.state}`)}
+            aria-label={t("label")}
             aria-live="polite"
             className="max-h-32 min-h-11"
           />
@@ -163,14 +158,14 @@ export function AssistantComposer({
               processing={
                 live.state === "connecting" || live.state === "thinking"
               }
-              label={labels.live.waveform}
+              label={t("live.waveform")}
               className="col-start-2 h-10 w-56 text-muted-foreground sm:w-72"
             />
             <InputGroupButton
               className="justify-self-end"
               variant="default"
               size="icon-sm"
-              aria-label={labels.live.end}
+              aria-label={t("live.end")}
               onClick={live.end}
             >
               <XIcon />
@@ -200,8 +195,8 @@ export function AssistantComposer({
           }}
           rows={1}
           maxLength={ASSISTANT_RULES.maxMessageChars}
-          placeholder={labels.placeholder}
-          aria-label={labels.label}
+          placeholder={t("placeholder", { name: ASSISTANT_NAME })}
+          aria-label={t("label")}
           enterKeyHint="send"
           className="max-h-32 min-h-11"
         />
@@ -218,7 +213,7 @@ export function AssistantComposer({
             type={mode === "send" ? "submit" : "button"}
             variant="default"
             size="icon-sm"
-            aria-label={MODE_LABELS[mode](labels)}
+            aria-label={t(MODE_LABELS[mode])}
             disabled={mode === "working" || (mode === "send" && !canSend)}
             onClick={
               mode === "stop" ? onStop : mode === "live" ? startLive : undefined
@@ -242,8 +237,6 @@ export function AssistantComposer({
           open={introOpen || voice.picking.asking}
           step={introOpen ? "intro" : "voice"}
           language={voice.language}
-          labels={labels.voiceIntro}
-          voiceLabels={voice.labels}
           voice={voice.picking}
           onClose={() => {
             setIntroOpen(false)

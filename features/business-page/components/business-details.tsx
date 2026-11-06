@@ -1,3 +1,5 @@
+import { useLocale, useTranslations } from "next-intl"
+
 import { PageSection } from "@/components/page-section"
 import { Rating } from "@/components/rating"
 import { Badge } from "@/components/ui/badge"
@@ -5,8 +7,6 @@ import { Button } from "@/components/ui/button"
 import { ExternalLinkIcon } from "@/components/ui/icons"
 import { Separator } from "@/components/ui/separator"
 import type { ViewTab } from "@/components/view-tabs"
-import { messagesFor } from "@/lib/i18n"
-import type { PageLanguage } from "@/lib/page-language"
 import type { BusinessPageData } from "../types"
 import { getWeekdayInTimeZone } from "../utils/get-weekday-in-time-zone"
 import { groupHours, type HourRow } from "../utils/group-hours"
@@ -21,21 +21,29 @@ function hasLocation({ business }: BusinessPageData): boolean {
   return Boolean(business.address || business.mapsUrl || business.latitude !== null)
 }
 
-// The section tabs for what BusinessDetails shows, in its order; the
-// hours tab takes the same title as its section.
+export type DetailSection =
+  | "reviews"
+  | "portfolio"
+  | "hours"
+  | "about"
+  | "info"
+  | "location"
+
+// The section tabs for what BusinessDetails shows, in its order, each
+// titled by `title` (the page's words); the hours tab takes the same title
+// as its section.
 export function detailSections(
   data: BusinessPageData,
-  language: PageLanguage,
+  title: (section: DetailSection) => string,
   hoursTitle?: string
 ): ViewTab<string>[] {
-  const m = messagesFor(language)
   return [
-    { id: "reviews", label: m.sections.reviews },
-    data.photos.length > 0 && { id: "portfolio", label: m.sections.portfolio },
-    { id: "hours", label: hoursTitle ?? m.sections.hours },
-    data.business.description && { id: "about", label: m.sections.about },
-    data.amenities.length > 0 && { id: "info", label: m.sections.info },
-    hasLocation(data) && { id: "location", label: m.sections.location },
+    { id: "reviews", label: title("reviews") },
+    data.photos.length > 0 && { id: "portfolio", label: title("portfolio") },
+    { id: "hours", label: hoursTitle ?? title("hours") },
+    data.business.description && { id: "about", label: title("about") },
+    data.amenities.length > 0 && { id: "info", label: title("info") },
+    hasLocation(data) && { id: "location", label: title("location") },
   ].filter((section) => !!section)
 }
 
@@ -44,26 +52,25 @@ export function detailSections(
 // `hours` are that person's own.
 export function BusinessDetails({
   data,
-  language,
   hours,
 }: {
   data: BusinessPageData
-  language: PageLanguage
   hours?: { rows: HourRow[]; title: string }
 }) {
-  const m = messagesFor(language)
+  const t = useTranslations("public")
+  const locale = useLocale()
   const { business, photos, reviews, amenities } = data
   return (
     <>
       <PageSection
         id="reviews"
-        title={m.sections.reviews}
+        title={t("sections.reviews")}
         action={
           business.rating !== null ? (
             <Rating
               rating={business.rating}
               reviewCount={business.reviewCount}
-              locale={m.locale}
+              locale={locale}
               className="text-sm"
             />
           ) : undefined
@@ -80,7 +87,7 @@ export function BusinessDetails({
         <>
           <PageSection
             id="portfolio"
-            title={m.sections.portfolio}
+            title={t("sections.portfolio")}
             action={
               <Badge variant="outline" className="mr-auto">
                 {photos.length}
@@ -95,27 +102,26 @@ export function BusinessDetails({
       <OpeningHours
         days={groupHours(hours?.rows ?? data.hours)}
         todayWeekday={getWeekdayInTimeZone(business.timezone)}
-        language={language}
         title={hours?.title}
       />
       {business.description && (
         <>
           <Separator />
-          <BusinessAbout description={business.description} language={language} />
+          <BusinessAbout description={business.description} />
         </>
       )}
       {amenities.length > 0 && (
         <>
           <Separator />
-          <PageSection id="info" title={m.sections.info}>
-            <BusinessAmenities amenities={amenities} language={language} />
+          <PageSection id="info" title={t("sections.info")}>
+            <BusinessAmenities amenities={amenities} />
           </PageSection>
         </>
       )}
       {hasLocation(data) && (
         <>
           <Separator />
-          <PageSection id="location" title={m.sections.location}>
+          <PageSection id="location" title={t("sections.location")}>
             {business.latitude !== null && business.longitude !== null && (
               <BusinessMap
                 name={business.name}
@@ -131,7 +137,7 @@ export function BusinessDetails({
                 nativeButton={false}
                 render={<a href={business.mapsUrl} target="_blank" rel="noreferrer" />}
               >
-                {m.page.openInMaps}
+                {t("page.openInMaps")}
                 <ExternalLinkIcon data-icon="inline-end" />
               </Button>
             )}

@@ -1,5 +1,6 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
 import { ChevronRightIcon } from "@/components/ui/icons"
 
@@ -19,8 +20,6 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
-import type { PageLanguage } from "@/lib/page-language"
-import type { AssistantMessages } from "../i18n"
 import type { AssistantChatSummary } from "../types"
 import { listChats } from "../utils/chats-client"
 
@@ -28,21 +27,15 @@ import { listChats } from "../utils/chats-client"
 // one. Not loaded: try again.
 export function RecentChats({
   businessId,
-  language,
-  labels,
-  newChatLabel,
-  retryLabel,
   onOpen,
   onNew,
 }: {
   businessId: string
-  language: PageLanguage
-  labels: AssistantMessages["recent"]
-  newChatLabel: string
-  retryLabel: string
   onOpen: (id: string) => void
   onNew: () => void
 }) {
+  const t = useTranslations("assistant")
+  const locale = useLocale()
   // null while loading; false when the list could not load.
   const [chats, setChats] = useState<AssistantChatSummary[] | null | false>(
     null
@@ -70,7 +63,7 @@ export function RecentChats({
       <Empty className="flex-1">
         <EmptyHeader>
           <EmptyTitle>
-            {chats === false ? labels.failed : labels.empty}
+            {chats === false ? t("recent.failed") : t("recent.empty")}
           </EmptyTitle>
         </EmptyHeader>
         <EmptyContent>
@@ -82,18 +75,18 @@ export function RecentChats({
                 setAttempt((value) => value + 1)
               }}
             >
-              {retryLabel}
+              {t("retry")}
             </Button>
           ) : (
             <Button variant="outline" onClick={onNew}>
-              {newChatLabel}
+              {t("newChat")}
             </Button>
           )}
         </EmptyContent>
       </Empty>
     )
   }
-  const when = new Intl.DateTimeFormat(language, {
+  const when = new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   })

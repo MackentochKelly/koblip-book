@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/confirm-dialog"
@@ -20,7 +21,6 @@ import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
 import { loginHref } from "@/lib/auth-links"
 import { deleteAccount } from "../api/delete-actions"
-import { useOwnerMessages } from "../i18n/provider"
 
 // Settings → Account: the owner deletes their account and every business
 // they own, after a confirm. A login too old to delete with asks them to
@@ -33,8 +33,8 @@ export function AccountSection({
   contact: string
   returnTo: string
 }) {
-  const m = useOwnerMessages().settings
-  const t = m.account
+  const settings = useTranslations("owner.settings")
+  const t = useTranslations("owner.settings.account")
   const router = useRouter()
   const [asking, setAsking] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -50,16 +50,16 @@ export function AccountSection({
         router.replace("/")
         router.refresh()
       } else if (result?.error === "login") {
-        toast.error(t.loginAgain, {
-          action: { label: t.logIn, onClick: () => void logInAgain() },
+        toast.error(t("loginAgain"), {
+          action: { label: t("logIn"), onClick: () => void logInAgain() },
         })
       } else {
-        toast.error(m.tryAgain)
+        toast.error(settings("tryAgain"))
       }
     })
 
   return (
-    <PageSection id="account" title={t.title}>
+    <PageSection id="account" title={t("title")}>
       <Item variant="outline">
         <ItemMedia variant="icon">
           <UserXIcon />
@@ -68,7 +68,7 @@ export function AccountSection({
           <ItemTitle className="max-w-full">
             <span className="truncate">{contact}</span>
           </ItemTitle>
-          <ItemDescription>{t.deleteHint}</ItemDescription>
+          <ItemDescription>{t("deleteHint")}</ItemDescription>
         </ItemContent>
         <ItemActions>
           <Button
@@ -77,16 +77,16 @@ export function AccountSection({
             onClick={() => setAsking(true)}
           >
             {pending && <Spinner data-icon="inline-start" />}
-            {t.delete}
+            {t("delete")}
           </Button>
         </ItemActions>
       </Item>
       <ConfirmDialog
         open={asking}
-        title={t.confirmTitle}
-        description={t.confirmText}
-        confirm={t.delete}
-        cancel={t.cancel}
+        title={t("confirmTitle")}
+        description={t("confirmText")}
+        confirm={t("delete")}
+        cancel={t("cancel")}
         onConfirm={remove}
         onClose={() => setAsking(false)}
       />

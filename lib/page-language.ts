@@ -15,6 +15,14 @@ export function isPageLanguage(value: unknown): value is PageLanguage {
   return value === "en" || value === "es"
 }
 
+// The page language a format locale is in ("es-ES" → "es"), else English.
+// next-intl's locale is the format one (pickLocale), so a page's language
+// is `languageOf(useLocale())`.
+export function languageOf(locale: string): PageLanguage {
+  const primary = locale.split("-")[0].toLowerCase()
+  return isPageLanguage(primary) ? primary : DEFAULT_LANGUAGE
+}
+
 // The language a ?lang= value names ("en" or "es", the first one if
 // repeated), or null when it names none.
 export function languageParam(

@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import { LiveRefresh } from "@/components/live-refresh"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import { moveOwnerBooking } from "@/features/booking/api/move-owner-booking"
@@ -13,7 +14,6 @@ import {
 } from "@/features/dashboard/api/queries"
 import { getServiceTeams } from "@/features/dashboard/api/team-service-queries"
 import { BookingsPageView } from "@/features/dashboard/components/bookings-page-view"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import {
   monthFrom,
   monthRange,
@@ -24,7 +24,8 @@ import { todayIn } from "@/lib/format-booking-time"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.bookings }
+  const t = await getTranslations("owner.shell")
+  return { title: t("nav.bookings") }
 }
 
 export default async function AllBookingsPage({

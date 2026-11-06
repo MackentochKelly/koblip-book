@@ -1,5 +1,7 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
+
 import {
   Card,
   CardContent,
@@ -9,7 +11,6 @@ import {
 } from "@/components/ui/card"
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { cn } from "cn"
-import { useOwnerMessages } from "../i18n/provider"
 
 // The theme's chart shades, most booked first; everything else is muted.
 const SHADES = [
@@ -32,10 +33,10 @@ export function TopShares({
   items: { name: string | null; count: number }[]
   period: string
 }) {
-  const m = useOwnerMessages()
-  const a = m.bookings.analytics
-  const number = new Intl.NumberFormat(m.locale)
-  const percent = new Intl.NumberFormat(m.locale, { style: "percent" })
+  const a = useTranslations("owner.bookings.analytics")
+  const locale = useLocale()
+  const number = new Intl.NumberFormat(locale)
+  const percent = new Intl.NumberFormat(locale, { style: "percent" })
   const total = items.reduce((sum, item) => sum + item.count, 0)
   const shade = (index: number, name: string | null) =>
     name === null ? "bg-muted-foreground/30" : SHADES[index % SHADES.length]
@@ -50,7 +51,7 @@ export function TopShares({
         {total === 0 ? (
           <Empty className="flex-1 border">
             <EmptyHeader>
-              <EmptyTitle>{a.noData}</EmptyTitle>
+              <EmptyTitle>{a("noData")}</EmptyTitle>
             </EmptyHeader>
           </Empty>
         ) : (
@@ -75,7 +76,7 @@ export function TopShares({
                   />
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate text-muted-foreground">
-                      {item.name ?? a.otherServices}
+                      {item.name ?? a("otherServices")}
                     </span>
                     <span className="font-medium tabular-nums">
                       {number.format(item.count)}

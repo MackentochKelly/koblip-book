@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import {
   createColumnHelper,
   createPaginatedRowModel,
@@ -53,10 +54,9 @@ import { CONTROL_SIZE } from "@/lib/control-size"
 import { formatClock, formatDayNear } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
 import { initials } from "@/lib/initials"
-import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerBooking } from "../types"
 import { bookingActions, bookingState } from "../utils/booking-filters"
-import { actionLabel, type useBookingPanels } from "./booking-panels"
+import { ACTION_LABELS, type useBookingPanels } from "./booking-panels"
 import { BookingStateBadge } from "./booking-state-badge"
 
 const features = tableFeatures({
@@ -102,8 +102,8 @@ export function BookingList({
   pages?: boolean
   phoneLimit?: number
 }) {
-  const m = useOwnerMessages()
-  const t = m.bookings.list
+  const t = useTranslations("owner.bookings.list")
+  const locale = useLocale()
   const [shown, setShown] = useState(PHONE_STEP)
   // Other bookings (a new search or filter) start again from the top.
   const ids = bookings.map((booking) => booking.id).join()
@@ -118,7 +118,7 @@ export function BookingList({
     // opens on a click; the name is its button for the keyboard.
     column.accessor("customerName", {
       id: "customer",
-      header: t.columns.customer,
+      header: t("columns.customer"),
       sortFn: "text",
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
@@ -141,7 +141,7 @@ export function BookingList({
             <span className="text-muted-foreground">
               {row.original.serviceName}
               {row.original.addons.length > 0 &&
-                ` ${t.extras(row.original.addons.length)}`}
+                ` ${t("extras", { count: row.original.addons.length })}`}
             </span>
           </div>
         </div>
@@ -151,14 +151,14 @@ export function BookingList({
     // start time; the end is in the details.
     column.accessor("startAt", {
       id: "date",
-      header: t.columns.date,
+      header: t("columns.date"),
       sortFn: "basic",
       cell: ({ row }) => (
         <span className="whitespace-nowrap tabular-nums">
-          {formatDayNear(row.original.date, today, m.locale)}
+          {formatDayNear(row.original.date, today, locale)}
           <span className="text-muted-foreground">
             {" · "}
-            {formatClock(row.original.time, m.locale)}
+            {formatClock(row.original.time, locale)}
           </span>
         </span>
       ),
@@ -167,7 +167,7 @@ export function BookingList({
       ? [
           column.accessor((booking) => booking.teamMemberName ?? "", {
             id: "team",
-            header: t.columns.team,
+            header: t("columns.team"),
             sortFn: "text",
           }),
         ]
@@ -175,7 +175,7 @@ export function BookingList({
     // How it went, then the price on the right.
     column.accessor((booking) => bookingState(booking, now), {
       id: "status",
-      header: t.columns.status,
+      header: t("columns.status"),
       sortFn: "text",
       cell: ({ row }) => (
         <div className="flex items-center justify-between gap-3">
@@ -185,7 +185,7 @@ export function BookingList({
               {formatPrice(
                 row.original.priceMinor,
                 row.original.currency,
-                m.locale
+                locale
               )}
             </span>
           )}
@@ -194,7 +194,7 @@ export function BookingList({
     }),
     column.display({
       id: "actions",
-      header: () => <span className="sr-only">{t.actions}</span>,
+      header: () => <span className="sr-only">{t("actions")}</span>,
       cell: ({ row }) => (
         <RowMenu booking={row.original} now={now} panels={panels} />
       ),
@@ -242,8 +242,8 @@ export function BookingList({
                     <BookingStateBadge state={bookingState(booking, now)} />
                   </ItemTitle>
                   <ItemDescription>
-                    {formatDayNear(booking.date, today, m.locale)} ·{" "}
-                    {formatClock(booking.time, m.locale)} ·{" "}
+                    {formatDayNear(booking.date, today, locale)} ·{" "}
+                    {formatClock(booking.time, locale)} ·{" "}
                     {booking.serviceName}
                     {booking.teamMemberName && ` · ${booking.teamMemberName}`}
                   </ItemDescription>
@@ -260,7 +260,7 @@ export function BookingList({
             variant="outline"
             onClick={() => setShown((count) => count + PHONE_STEP)}
           >
-            {t.showMore}
+            {t("showMore")}
           </Button>
         )}
       </div>
@@ -311,14 +311,14 @@ export function BookingList({
         {pages && (
           <div className="flex items-center justify-between gap-4 border-t px-5 py-3">
             <span className="text-muted-foreground tabular-nums">
-              {t.showing(first, last, total)}
+              {t("showing", { from: first, to: last, total })}
             </span>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">{t.rows}</span>
+                <span className="text-muted-foreground">{t("rows")}</span>
                 <AppSelect
                   className={CONTROL_SIZE.select}
-                  aria-label={t.rows}
+                  aria-label={t("rows")}
                   value={String(pageSize)}
                   onValueChange={(value) => table.setPageSize(Number(value))}
                   options={PAGE_SIZES.map((size) => ({
@@ -328,13 +328,16 @@ export function BookingList({
                 />
               </div>
               <span className="tabular-nums">
-                {t.page(pageIndex + 1, Math.max(1, table.getPageCount()))}
+                {t("page", {
+                  page: pageIndex + 1,
+                  pages: Math.max(1, table.getPageCount()),
+                })}
               </span>
               <div className="flex items-center gap-1">
                 <Button
                   variant="outline"
                   size="icon"
-                  aria-label={t.previous}
+                  aria-label={t("previous")}
                   disabled={!table.getCanPreviousPage()}
                   onClick={() => table.previousPage()}
                 >
@@ -343,7 +346,7 @@ export function BookingList({
                 <Button
                   variant="outline"
                   size="icon"
-                  aria-label={t.next}
+                  aria-label={t("next")}
                   disabled={!table.getCanNextPage()}
                   onClick={() => table.nextPage()}
                 >
@@ -377,14 +380,14 @@ function SortButton({
   column: Column<Features, OwnerBooking, unknown>
   label: string
 }) {
-  const t = useOwnerMessages().bookings.list
+  const t = useTranslations("owner.bookings.list")
   const sorted = column.getIsSorted()
   return (
     <Button
       variant="ghost"
       size="sm"
       className="-ml-3"
-      aria-label={t.sortBy(label)}
+      aria-label={t("sortBy", { column: label })}
       onClick={() => column.toggleSorting(sorted === "asc")}
     >
       {label}
@@ -412,16 +415,16 @@ function RowMenu({
   now: string
   panels: Panels
 }) {
-  const t = useOwnerMessages().bookings
+  const t = useTranslations("owner.bookings")
   const actions = bookingActions(booking, now)
   return (
     <div onClick={(event) => event.stopPropagation()}>
       <DropdownMenu>
-        <MoreMenuTrigger label={t.list.actions} />
+        <MoreMenuTrigger label={t("list.actions")} />
         <DropdownMenuContent align="end">
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => panels.open(booking, Date.now())}>
-              {t.list.open}
+              {t("list.open")}
             </DropdownMenuItem>
           </DropdownMenuGroup>
           {actions.length > 0 && <DropdownMenuSeparator />}
@@ -433,7 +436,7 @@ function RowMenu({
                 disabled={panels.pending}
                 onClick={() => panels.act(booking, action)}
               >
-                {actionLabel(t, action)}
+                {t(ACTION_LABELS[action])}
               </DropdownMenuItem>
             ))}
           </DropdownMenuGroup>

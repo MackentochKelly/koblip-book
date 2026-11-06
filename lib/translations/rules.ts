@@ -133,6 +133,12 @@ export const TRANSLATION_RULE_CHECKS: Record<
 // Translations' month count.
 export const GOOGLE_FREE_MONTHLY_CHARACTERS = 500_000
 
+// US dollars per million characters past the free part: Cloud Translation
+// Advanced (v3), NMT model, from 500,000 up to 1 billion characters a month
+// (https://cloud.google.com/translate/pricing, read 2026-11-06), for the
+// backfill's estimate (lib/translations/backfill.ts).
+export const GOOGLE_NMT_USD_PER_MILLION_CHARACTERS = 20
+
 // Texts per page in Admin → Translations.
 export const TRANSLATION_ADMIN_PAGE_ROWS = 50
 

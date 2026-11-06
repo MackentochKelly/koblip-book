@@ -2,13 +2,14 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/confirm-dialog"
-import { useMessages, usePageLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { myBookingsLoginHref } from "@/lib/my-bookings-links"
+import { languageOf } from "@/lib/page-language"
 import { cantCome } from "../api/cant-come"
 import type { MyBooking } from "../types"
 
@@ -16,9 +17,8 @@ import type { MyBooking } from "../types"
 // cancels where the business lets customers cancel; else the dialog says
 // it tells the owner they can't make it, and the booking stays.
 export function CantComeButton({ booking }: { booking: MyBooking }) {
-  const m = useMessages()
-  const t = m.account
-  const language = usePageLanguage()
+  const t = useTranslations("public.account")
+  const language = languageOf(useLocale())
   const router = useRouter()
   const [asking, setAsking] = useState(false)
   const [busy, startTransition] = useTransition()
@@ -27,7 +27,7 @@ export function CantComeButton({ booking }: { booking: MyBooking }) {
   if (booking.cantCome === "alertOnly" && booking.saidCantCome) {
     return (
       <Button variant="outline" disabled>
-        {t.told}
+        {t("told")}
       </Button>
     )
   }
@@ -37,12 +37,12 @@ export function CantComeButton({ booking }: { booking: MyBooking }) {
     startTransition(async () => {
       const result = await cantCome(booking.id).catch(() => null)
       if (result?.ok) {
-        if (result.cancelled) toast.success(t.cancelDone)
+        if (result.cancelled) toast.success(t("cancelDone"))
         router.refresh()
       } else if (result?.error === "signedOut") {
         router.replace(myBookingsLoginHref(language))
       } else {
-        toast.error(t.actionFailed)
+        toast.error(t("actionFailed"))
         router.refresh()
       }
     })
@@ -56,14 +56,14 @@ export function CantComeButton({ booking }: { booking: MyBooking }) {
         onClick={() => setAsking(true)}
       >
         {busy && <Spinner data-icon="inline-start" />}
-        {t.cancel}
+        {t("cancel")}
       </Button>
       <ConfirmDialog
         open={asking}
-        title={cancels ? t.cancelTitle : t.cantComeTitle}
-        description={t.willBeTold(booking.business.name)}
-        confirm={cancels ? t.cancelBooking : t.tellThem}
-        cancel={t.keep}
+        title={cancels ? t("cancelTitle") : t("cantComeTitle")}
+        description={t("willBeTold", { business: booking.business.name })}
+        confirm={cancels ? t("cancelBooking") : t("tellThem")}
+        cancel={t("keep")}
         tone={cancels ? "destructive" : "default"}
         onConfirm={confirm}
         onClose={() => setAsking(false)}

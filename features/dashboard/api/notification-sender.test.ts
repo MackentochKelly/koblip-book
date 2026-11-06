@@ -31,6 +31,10 @@ vi.mock("@/lib/dal", () => ({
   requireOwner: vi.fn(async () => ({ userId: "u1", name: "Owner", email: "owner@example.com" })),
 }))
 
+// A message's length of time comes from the app's words, English here.
+const { registerEnglishWords } = await import("@/lib/translations/interface-words")
+registerEnglishWords((await import("@/i18n/messages")).default)
+
 const { runNotifications } = await import("./notification-sender")
 const { applyChatEvent } = await import("./chat-events")
 const { sendAgain, sendTestToMyPhone } = await import("./notification-actions")

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 
 import { ViewTabs } from "@/components/view-tabs"
@@ -19,7 +20,6 @@ import {
 } from "@/components/ui/chart"
 import { addDaysTo, formatWeekdayShort } from "@/lib/format-booking-time"
 import { cn } from "@/lib/utils"
-import { useOwnerMessages } from "../i18n/provider"
 import { type Period, PERIODS, type PeriodSummary } from "../utils/analytics"
 import { BookingsAreaChart } from "./bookings-area-chart"
 import { ComingUpCard } from "./coming-up-card"
@@ -48,26 +48,26 @@ export function AnalyticsView({
     days: Array<{ date: string; bookings: number }>
   }
 }) {
-  const m = useOwnerMessages()
-  const a = m.bookings.analytics
+  const a = useTranslations("owner.bookings.analytics")
+  const shell = useTranslations("owner.shell")
   const [period, setPeriod] = useState<`${Period}`>("7")
   const summary = periods[Number(period) as Period]
-  const label = a.last[Number(period) as Period]
+  const label = a(`last.${period}`)
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3 max-md:flex-col max-md:items-stretch">
         <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">
-          {m.shell.nav.analytics}
+          {shell("nav.analytics")}
         </h1>
         <ViewTabs<`${Period}`>
           views={PERIODS.map((days) => ({
             id: `${days}`,
-            label: a.periods[days],
+            label: a(`periods.${days}`),
           }))}
           value={period}
           onChange={setPeriod}
-          ariaLabel={a.period}
+          ariaLabel={a("period")}
           listClassName="w-full md:w-fit"
         />
       </div>
@@ -82,13 +82,13 @@ export function AnalyticsView({
       >
         <ShowUpChart showUp={summary.showUp} period={label} />
         <TopShares
-          title={a.topServices}
+          title={a("topServices")}
           items={summary.topServices}
           period={label}
         />
         {summary.topCategories && (
           <TopShares
-            title={a.topCategories}
+            title={a("topCategories")}
             items={summary.topCategories}
             period={label}
           />
@@ -112,19 +112,19 @@ function BusiestDays({
   weekdays: number[]
   period: string
 }) {
-  const m = useOwnerMessages()
-  const a = m.bookings.analytics
+  const t = useTranslations("owner.bookings")
+  const locale = useLocale()
   const config = {
-    bookings: { label: m.bookings.chart.series, color: "var(--chart-2)" },
+    bookings: { label: t("chart.series"), color: "var(--chart-2)" },
   } satisfies ChartConfig
   const data = weekdays.map((bookings, index) => ({
-    day: formatWeekdayShort(addDaysTo(A_MONDAY, index), m.locale),
+    day: formatWeekdayShort(addDaysTo(A_MONDAY, index), locale),
     bookings,
   }))
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>{a.busiestDays}</CardTitle>
+        <CardTitle>{t("analytics.busiestDays")}</CardTitle>
         <CardDescription>{period}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 items-end">

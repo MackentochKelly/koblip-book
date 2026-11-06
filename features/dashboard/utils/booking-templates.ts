@@ -1,7 +1,7 @@
 import { fieldsToLabels, fieldsFromLabels, fillFields } from "@/lib/message-fields"
 import type { ButtonsProblem, WordingProblem } from "@/types/koblip-messages"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
-import { formatDuration } from "@/lib/format-duration"
+import { durationIn, type DurationWords } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
 import type { BookingMessage } from "@/types/whatsapp"
@@ -366,8 +366,8 @@ export function withExamples(text: string, language: TemplateLanguage) {
   return fillFields(text, EXAMPLES[language])
 }
 
-// Dates, times and prices as the customer saw them on the booking page
-// (lib/i18n.ts).
+// Dates, times and prices in each language's own formats, as the booking
+// page writes them by default (DEFAULT_LOCALES in lib/page-language.ts).
 const LOCALES: Record<TemplateLanguage, string> = { en: "en-US", es: "es-US" }
 
 // The words for a value the booking does not have: Meta refuses an empty
@@ -392,10 +392,12 @@ export type BookingFacts = {
   time: string
 }
 
-// Every field's value for one booking, in the reader's language.
+// Every field's value for one booking, in the reader's language: `duration`
+// is the app's words for a length of time (app.duration) in that language.
 export function bookingValues(
   facts: BookingFacts,
-  language: TemplateLanguage
+  language: TemplateLanguage,
+  duration: DurationWords
 ): Record<BookingField, string> {
   const locale = LOCALES[language]
   const missing = MISSING[language]
@@ -406,7 +408,7 @@ export function bookingValues(
     date: formatDay(facts.date, locale),
     time: formatClock(facts.time, locale),
     teamMember: facts.teamMemberName?.trim() || missing.teamMember,
-    duration: formatDuration(facts.durationMinutes),
+    duration: durationIn(duration, facts.durationMinutes),
     price:
       facts.priceMinor === null
         ? missing.price

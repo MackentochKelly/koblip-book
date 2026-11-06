@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 
 import { GoogleMark, googleButtonClassName } from "@/components/google-mark"
@@ -8,7 +9,6 @@ import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
 import { loginHref } from "@/lib/auth-links"
 import type { PageLanguage } from "@/lib/page-language"
-import { authWordsFor } from "../i18n"
 
 // "Continue with Google", in Google's look (GoogleMark). After Google, the
 // browser comes back to `callbackURL`; when Google sign-in fails, to the
@@ -25,6 +25,7 @@ export function GoogleButton({
   disabled?: boolean
   language?: PageLanguage
 }) {
+  const t = useTranslations("ownerAuth")
   const [sending, setSending] = useState(false)
 
   const start = async () => {
@@ -47,7 +48,7 @@ export function GoogleButton({
       className={googleButtonClassName}
     >
       {sending ? <Spinner data-icon="inline-start" /> : <GoogleMark />}
-      {authWordsFor(language).google}
+      {t("google")}
     </Button>
   )
 }

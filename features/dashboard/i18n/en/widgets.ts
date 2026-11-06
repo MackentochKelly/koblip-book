@@ -1,4 +1,5 @@
-// Home's widgets: editing them on Home and the Widgets page.
+// Home's widgets: editing them on Home and the Widgets page, in English as
+// ICU messages (docs/plans/translations.md, G4).
 const widgets = {
   title: "Widgets",
   names: {
@@ -27,9 +28,9 @@ const widgets = {
   edit: "Edit widgets",
   done: "Done",
   add: "Add widget",
-  remove: (name: string) => `Remove ${name}`,
-  move: (name: string) => `Move ${name}`,
-  show: (name: string) => `Show ${name} on Home`,
+  remove: "Remove {name}",
+  move: "Move {name}",
+  show: "Show {name} on Home",
   noneShown: "No widgets on Home",
   savedFor: "Layout saved for",
   everyDevice: "All your devices",
@@ -38,12 +39,10 @@ const widgets = {
   // Read to screen readers while a widget is moved with the keyboard.
   instructions:
     "To move a widget, press Space. Use the arrow keys to move it, Space to drop it, or Escape to cancel.",
-  picked: (name: string) => `Picked up ${name}.`,
-  movedTo: (name: string, position: number, total: number) =>
-    `${name} moved to position ${position} of ${total}.`,
-  dropped: (name: string, position: number, total: number) =>
-    `${name} dropped at position ${position} of ${total}.`,
-  cancelled: (name: string) => `Moving ${name} cancelled.`,
+  picked: "Picked up {name}.",
+  movedTo: "{name} moved to position {position, number} of {total, number}.",
+  dropped: "{name} dropped at position {position, number} of {total, number}.",
+  cancelled: "Moving {name} cancelled.",
   // The widgets' own words.
   noNext: "No bookings coming up",
   noNewCustomers: "No new customers this week",
@@ -76,6 +75,6 @@ const widgets = {
   installShareButton: "Share",
   installAddButton: "Add",
   installWebApp: "Open as Web App",
-}
+} as const
 
 export default widgets

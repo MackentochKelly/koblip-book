@@ -1,5 +1,6 @@
+import { WordsProvider } from "@/components/words-provider"
 import { OwnerLanguageProvider } from "@/features/dashboard/i18n/provider"
-import { getOwnerLanguage, getOwnerLocale } from "@/features/dashboard/i18n/server"
+import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 
 // Every owner page (login, setup, dashboard) speaks the owner's language.
 export default async function OwnerLayout({
@@ -8,11 +9,21 @@ export default async function OwnerLayout({
   children: React.ReactNode
 }) {
   return (
-    <OwnerLanguageProvider
-      language={await getOwnerLanguage()}
-      locale={await getOwnerLocale()}
-    >
-      {children}
+    <OwnerLanguageProvider language={await getOwnerLanguage()}>
+      <WordsProvider
+        namespaces={[
+          "app",
+          "assistant",
+          "notifications",
+          "onboarding",
+          "owner",
+          "ownerAuth",
+          "public",
+          "starterCatalog",
+        ]}
+      >
+        {children}
+      </WordsProvider>
     </OwnerLanguageProvider>
   )
 }

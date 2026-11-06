@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import { getTranslations } from "next-intl/server"
 
 import { Toaster } from "@/components/ui/sonner"
 import { AssistantFloat } from "@/features/assistant/components/assistant-float"
@@ -8,10 +9,6 @@ import {
 } from "@/features/dashboard/api/queries"
 import { DemoBar } from "@/features/dashboard/components/demo-bar"
 import { DashboardShell } from "@/features/dashboard/components/dashboard-shell"
-import {
-  getOwnerLanguage,
-  getOwnerMessages,
-} from "@/features/dashboard/i18n/server"
 import { WelcomePanel } from "@/features/dashboard/components/welcome-panel"
 import { getUnreadCount } from "@/features/notifications/api/queries"
 import { NotificationBell } from "@/features/notifications/components/notification-bell"
@@ -27,9 +24,8 @@ export default async function BusinessDashboardLayout({
   const { businessId } = await params
   const owner = await requireOwner(`/dashboard/${businessId}`)
   const { business } = await getOwnerBusiness(businessId)
-  const [verify, language, unread, rules, businesses] = await Promise.all([
-    getOwnerMessages().then((m) => m.settings.verify),
-    getOwnerLanguage(),
+  const [verify, unread, rules, businesses] = await Promise.all([
+    getTranslations("owner.settings.verify"),
     getUnreadCount(),
     notificationRules(),
     getMyBusinesses(),
@@ -38,7 +34,6 @@ export default async function BusinessDashboardLayout({
   // bell keeps it current (docs/plans/in-app-notifications.md, N-D3).
   return (
     <NotificationsProvider
-      language={language}
       initialUnread={unread}
       pollSeconds={rules.inAppPollSeconds}
       settingsHref={`/dashboard/${businessId}/settings/notifications`}
@@ -49,7 +44,7 @@ export default async function BusinessDashboardLayout({
         owner={{ name: owner.name, contact: owner.contact, image: owner.image }}
         bell={<NotificationBell />}
         assistantFloat={
-          <AssistantFloat businessId={business.id} language={language} />
+          <AssistantFloat businessId={business.id} />
         }
       >
         {owner.isGuest && <DemoBar />}
@@ -58,7 +53,13 @@ export default async function BusinessDashboardLayout({
         {!owner.emailVerified && !owner.isGuest && owner.email && (
           <VerifyEmailAlert
             email={owner.email}
-            labels={{ ...verify, sentTo: verify.sentTo(owner.email) }}
+            labels={{
+              title: verify("title"),
+              sentTo: verify("sentTo", { email: owner.email }),
+              resend: verify("resend"),
+              sent: verify("sent"),
+              failed: verify("failed"),
+            }}
           />
         )}
         {children}

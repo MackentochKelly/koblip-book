@@ -1,4 +1,5 @@
-// The owner area's frame: tabs, top bar, account menu and page titles.
+// The owner area's frame: tabs, top bar, account menu and page titles, in
+// English as ICU messages (docs/plans/translations.md, G4).
 const shell = {
   nav: {
     home: "Home",
@@ -34,6 +35,9 @@ const shell = {
   dark: "Dark",
   device: "Device",
   language: "Language",
+  // The search list's rows that pick one (Appearance: Dark).
+  appearanceChoice: "Appearance: {theme}",
+  languageChoice: "Language: {language}",
   signOut: "Sign out",
   // The bar over the full app for a home page demo guest.
   demo: {
@@ -41,19 +45,21 @@ const shell = {
     text: "Look around. It resets in a day.",
     action: "Get your own page",
   },
-  // Home's greeting, by the business's clock; no name for a demo guest.
+  // Home's greeting, by the business's clock (utils/part-of-day.ts).
   greeting: {
-    eveningFrom: 18,
-    morning: (name?: string) =>
-      name ? `Good morning, ${name}` : "Good morning",
-    afternoon: (name?: string) =>
-      name ? `Good afternoon, ${name}` : "Good afternoon",
-    evening: (name?: string) =>
-      name ? `Good evening, ${name}` : "Good evening",
+    morning: "Good morning, {name}",
+    afternoon: "Good afternoon, {name}",
+    evening: "Good evening, {name}",
+    // A demo guest has no name.
+    noName: {
+      morning: "Good morning",
+      afternoon: "Good afternoon",
+      evening: "Good evening",
+    },
   },
   // /dashboard before the first business.
   start: {
-    welcome: (name: string) => `Welcome, ${name}`,
+    welcome: "Welcome, {name}",
     title: "Find your business",
     hint: "Pick it on Google Maps to build your booking page.",
   },
@@ -77,6 +83,6 @@ const shell = {
     description: "Try again in a few minutes.",
     retry: "Try again",
   },
-}
+} as const
 
 export default shell

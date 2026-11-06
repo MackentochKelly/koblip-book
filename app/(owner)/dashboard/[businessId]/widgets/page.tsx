@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { getWidgetLayout } from "@/features/dashboard/api/widgets"
 import { WidgetsView } from "@/features/dashboard/components/widgets-view"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.widgets }
+  const t = await getTranslations("owner.shell")
+  return { title: t("nav.widgets") }
 }
 
 export default async function WidgetsPage({

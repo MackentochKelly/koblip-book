@@ -1,4 +1,11 @@
+import type { createTranslator, Messages } from "next-intl"
+
 import type { InAppData, InAppKind } from "@/types/in-app-notifications"
+
+// The bell's words (i18n/en.ts), as next-intl gives them.
+export type NotificationWords = ReturnType<
+  typeof createTranslator<Messages, "notifications">
+>
 
 // The bell's contract (docs/plans/in-app-notifications.md, N1): what the
 // server gives the bell. The words come from `kind` + `data` on screen, in

@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import {
   AudioLinesIcon,
@@ -24,8 +25,8 @@ import {
   ItemMedia,
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
+import { ASSISTANT_NAME } from "@/lib/assistant-rules"
 import type { PageLanguage } from "@/lib/page-language"
-import type { AssistantMessages } from "../i18n"
 import type { VoicePicking } from "../hooks/use-voice-choice"
 import { VoiceList } from "./voice-list"
 import { VoicePreview, VoicePreviewGlobe } from "./voice-preview"
@@ -40,8 +41,6 @@ export function VoiceIntro({
   open,
   step,
   language,
-  labels,
-  voiceLabels,
   voice,
   onClose,
   onContinue,
@@ -51,22 +50,22 @@ export function VoiceIntro({
   open: boolean
   step: "intro" | "voice"
   language: PageLanguage
-  labels: AssistantMessages["composer"]["voiceIntro"]
-  voiceLabels: AssistantMessages["voice"]
   voice: VoicePicking
   onClose: () => void
   onContinue: () => void
   onNeverShow: () => void
   onStart: () => void
 }) {
+  const t = useTranslations("assistant.composer.voiceIntro")
+  const voiceWords = useTranslations("assistant.voice")
   const rows = [
-    { icon: <AudioLinesIcon />, text: labels.speak },
-    { icon: <CircleCheckIcon />, text: labels.tap },
-    { icon: <ShieldCheckIcon />, text: labels.privacy },
+    { icon: <AudioLinesIcon />, text: t("speak") },
+    { icon: <CircleCheckIcon />, text: t("tap") },
+    { icon: <ShieldCheckIcon />, text: t("privacy") },
   ]
   const choose = (voiceId: string) =>
     void voice.choose(voiceId).then((saved) => {
-      if (!saved) toast.error(voiceLabels.notSaved)
+      if (!saved) toast.error(voiceWords("notSaved"))
     })
   return (
     <Dialog
@@ -81,7 +80,9 @@ export function VoiceIntro({
           {step === "intro" ? (
             <>
               <DialogHeader className="items-center text-center">
-                <DialogTitle className="text-xl">{labels.title}</DialogTitle>
+                <DialogTitle className="text-xl">
+                  {t("title", { name: ASSISTANT_NAME })}
+                </DialogTitle>
               </DialogHeader>
               <ItemGroup>
                 {rows.map((row) => (
@@ -97,7 +98,7 @@ export function VoiceIntro({
               </ItemGroup>
               <DialogFooter className="flex-col sm:flex-col">
                 <Button size="lg" className="w-full" onClick={onContinue}>
-                  {labels.continue}
+                  {t("continue")}
                 </Button>
                 <Button
                   variant="secondary"
@@ -105,7 +106,7 @@ export function VoiceIntro({
                   className="w-full"
                   onClick={onNeverShow}
                 >
-                  {labels.neverShow}
+                  {t("neverShow")}
                 </Button>
               </DialogFooter>
             </>
@@ -113,12 +114,12 @@ export function VoiceIntro({
             <>
               <DialogHeader className="items-center text-center">
                 <DialogTitle className="text-xl">
-                  {voiceLabels.title}
+                  {voiceWords("title")}
                 </DialogTitle>
                 <DialogDescription>
                   {voice.voices?.length
-                    ? voiceLabels.hint
-                    : voiceLabels.unavailable}
+                    ? voiceWords("hint")
+                    : voiceWords("unavailable")}
                 </DialogDescription>
               </DialogHeader>
               {voice.voices?.length ? (
@@ -128,7 +129,6 @@ export function VoiceIntro({
                   voices={voice.voices}
                   chosen={voice.chosen}
                   language={language}
-                  labels={voiceLabels}
                   onChoose={choose}
                   // Only the list scrolls, so the globe and Start talking
                   // stay in view (like ResponsivePanel's body).
@@ -143,7 +143,7 @@ export function VoiceIntro({
                   onClick={onStart}
                 >
                   {voice.saving && <Spinner data-icon="inline-start" />}
-                  {voiceLabels.start}
+                  {voiceWords("start")}
                 </Button>
               </DialogFooter>
             </>

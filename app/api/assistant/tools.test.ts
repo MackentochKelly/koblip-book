@@ -3,6 +3,11 @@ import { readFileSync } from "node:fs"
 import { beforeEach, expect, test, vi } from "vitest"
 
 vi.mock("server-only", () => ({}))
+// The English words; the spy shows which language the tools asked for.
+vi.mock("next-intl/server", async () => {
+  const words = (await import("@/i18n/testing")).serverWords()
+  return { ...words, getTranslations: vi.fn(words.getTranslations) }
+})
 vi.mock("@/features/dashboard/api/queries", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("@/features/dashboard/api/queries")>()
@@ -207,7 +212,12 @@ const { getAddonGroups } =
   await import("@/features/dashboard/api/addon-queries")
 const { getServiceNameTranslations } =
   await import("@/lib/translations/business-texts")
-const { buildAssistantTools } = await import("./tools")
+const { buildAssistantTools, toolWords } = await import("./tools")
+const { getTranslations } = await import("next-intl/server")
+
+// The owner's words in each language: English text, as the tests have no
+// translations; the language's own dates, times and prices.
+const WORDS = { en: await toolWords("en"), es: await toolWords("es") }
 
 const BUSINESS = {
   id: "b1",
@@ -219,13 +229,13 @@ const BUSINESS = {
 }
 
 function byName(name: string) {
-  return buildAssistantTools("b1", "u1", "en").find(
+  return buildAssistantTools("b1", "u1", WORDS.en).find(
     (t) => t.definition.name === name
   )!
 }
 
 test("every needsConfirm tool carries its result kind", () => {
-  const tools = buildAssistantTools("b1", "u1", "en")
+  const tools = buildAssistantTools("b1", "u1", WORDS.en)
   const kinds: [string, string][] = [
     ["update_service", "services"],
     ["cancel_booking", "bookings"],
@@ -482,11 +492,18 @@ test("list_team row carries hasPhoto and serviceIds", async () => {
   ])
 })
 
-test("list_addons has a Spanish step label", () => {
-  const tools = buildAssistantTools("b1", "u1", "es")
-  expect(tools.find((t) => t.definition.name === "list_addons")!.label).toBe(
-    "Listando extras…"
-  )
+test("the tools' words come in the owner's language", async () => {
+  vi.mocked(getTranslations).mockClear()
+  const words = await toolWords("es")
+  expect(getTranslations).toHaveBeenCalledWith({
+    locale: "es",
+    namespace: "assistantServer",
+  })
+  expect(getTranslations).toHaveBeenCalledWith({
+    locale: "es",
+    namespace: "owner",
+  })
+  expect(words.locale).toBe("es-US")
 })
 
 test("list_bookings validates, filters and caps", async () => {
@@ -1759,38 +1776,6 @@ test("category tools act on the signed-in owner's business, never the model's", 
   }
 })
 
-test("spanish category cards use the owner area's own words", async () => {
-  mockCategoryShop()
-  expect(
-    await byNameLang("delete_service_category", "es").confirm!.describe({
-      categoryId: "c2",
-    })
-  ).toEqual({
-    title: "¿Quitar esta categoría?",
-    action: "Quitar",
-    summary: "Nails · Sus servicios pasan a Otros.",
-    destructive: true,
-  })
-  expect(
-    await byNameLang("update_service", "es").confirm!.describe({
-      serviceId: "s2",
-      categoryId: "none",
-    })
-  ).toMatchObject({ summary: "Cut · Hair → Sin categoría" })
-  vi.mocked(createServiceCategory).mockResolvedValue({
-    ok: false,
-    error: "taken",
-  })
-  expect(
-    await byNameLang("create_service_category", "es").confirm!.execute({
-      name: "Brows",
-    })
-  ).toEqual({
-    ok: false,
-    doneText: "No se agregó: ya tienes una categoría llamada Brows.",
-  })
-})
-
 // A booking the bookings screen could still cancel: confirmed, starts later.
 const CANCELLABLE = {
   id: "k1",
@@ -2022,12 +2007,6 @@ test("set_service_team describes, executes and refuses unknown ids", async () =>
   })
   expect(failed.ok).toBe(false)
   expect(failed.doneText).toContain("invalid")
-  const es = byNameLang("set_service_team", "es")
-  const esFailed = await es.confirm!.execute({
-    serviceId: "s1",
-    teamMemberIds: ["m1"],
-  })
-  expect(esFailed.doneText).toContain("No se pudo guardar")
 })
 
 test("set_member_services describes, executes and refuses unknown ids", async () => {
@@ -2100,11 +2079,6 @@ test("create_addon_group describes, executes and refuses bad input", async () =>
   const failed = await tool.confirm!.execute(ADDON_CREATE)
   expect(failed.ok).toBe(false)
   expect(failed.doneText).toContain("invalid")
-  const esFailed = await byNameLang(
-    "create_addon_group",
-    "es"
-  ).confirm!.execute(ADDON_CREATE)
-  expect(esFailed.doneText).toContain("No se pudo crear")
 })
 
 test("update_addon_group keeps, adds and removes options by id", async () => {
@@ -2269,20 +2243,20 @@ test("update_business_details changes only the given fields", async () => {
   expect(failed.doneText).toContain("invalid")
 })
 
-test("every new tool has a Spanish step label", () => {
-  const tools = buildAssistantTools("b1", "u1", "es")
+test("every new tool has a step label", () => {
+  const tools = buildAssistantTools("b1", "u1", WORDS.en)
   const labels: [string, string][] = [
-    ["create_team_member", "Agregando miembro…"],
-    ["set_service_team", "Guardando equipo…"],
-    ["set_member_services", "Guardando servicios…"],
-    ["create_addon_group", "Creando extras…"],
-    ["update_addon_group", "Actualizando extras…"],
-    ["delete_addon_group", "Eliminando extras…"],
-    ["update_business_details", "Guardando datos…"],
-    ["create_service_category", "Creando categoría…"],
-    ["rename_service_category", "Renombrando categoría…"],
-    ["delete_service_category", "Quitando categoría…"],
-    ["reorder_service_categories", "Ordenando categorías…"],
+    ["create_team_member", "Adding team member…"],
+    ["set_service_team", "Saving service team…"],
+    ["set_member_services", "Saving member services…"],
+    ["create_addon_group", "Creating extras…"],
+    ["update_addon_group", "Updating extras…"],
+    ["delete_addon_group", "Deleting extras…"],
+    ["update_business_details", "Saving business details…"],
+    ["create_service_category", "Creating category…"],
+    ["rename_service_category", "Renaming category…"],
+    ["delete_service_category", "Removing category…"],
+    ["reorder_service_categories", "Ordering categories…"],
   ]
   for (const [name, label] of labels) {
     expect(tools.find((t) => t.definition.name === name)!.label).toBe(label)
@@ -2902,7 +2876,7 @@ test("a hostile customer name is only data in the booking card", async () => {
 })
 
 test("the prompt sends a move to move_booking", async () => {
-  const names = buildAssistantTools("b1", "u1", "en").map(
+  const names = buildAssistantTools("b1", "u1", WORDS.en).map(
     (t) => t.definition.name
   )
   expect(names).toContain("move_booking")
@@ -2971,7 +2945,7 @@ test("the prompt carries the Markdown formatting rule", async () => {
 })
 
 test("businessId comes from the closure, never from model arguments", async () => {
-  const tools = buildAssistantTools("b1", "u1", "en")
+  const tools = buildAssistantTools("b1", "u1", WORDS.en)
   await tools
     .find((t) => t.definition.name === "list_services")!
     .run({ businessId: "evil" })
@@ -2990,7 +2964,7 @@ test("businessId comes from the closure, never from model arguments", async () =
       expect(call[0]).toBe("b1")
     }
   }
-  const names = buildAssistantTools("b1", "u1", "en").flatMap((t) =>
+  const names = buildAssistantTools("b1", "u1", WORDS.en).flatMap((t) =>
     Object.keys(
       (t.definition.parameters as { properties: Record<string, unknown> })
         .properties
@@ -3042,7 +3016,7 @@ test("capped list results stay bounded for the model", async () => {
 })
 
 function byNameLang(name: string, language: "en" | "es") {
-  return buildAssistantTools("b1", "u1", language).find(
+  return buildAssistantTools("b1", "u1", WORDS[language]).find(
     (t) => t.definition.name === name
   )!
 }
@@ -3051,55 +3025,53 @@ test("english tools keep english labels and results", async () => {
   expect(byNameLang("cancel_booking", "en").label).toBe("Cancelling booking…")
 })
 
+// The tests have no translations, so the words stay English; the day and
+// time read the Spanish way.
 test("spanish cancel card is server-built with a spanish weekday", async () => {
   vi.mocked(getBooking).mockResolvedValue({
     ...(CANCELLABLE as object),
     serviceName: "Corte",
   } as never)
   const tool = byNameLang("cancel_booking", "es")
-  expect(tool.label).toBe("Cancelando reserva…")
   const card = await tool.confirm!.describe({ bookingId: "k1" })
   expect(card).toEqual({
-    title: "¿Cancelar esta reserva?",
+    title: "Cancel this booking?",
     summary: "Ana · Corte · jueves, 29 de octubre · 10:00 a.m.",
     destructive: true,
-    action: "Cancelar reserva",
+    action: "Cancel booking",
   })
   expect(vi.mocked(cancelBooking)).not.toHaveBeenCalled()
   vi.mocked(cancelBooking).mockResolvedValue({ ok: true })
   const done = await tool.confirm!.execute({ bookingId: "k1" })
-  expect(done).toEqual({ ok: true, doneText: "Reserva cancelada." })
+  expect(done).toEqual({ ok: true, doneText: "Cancelled the booking." })
 })
 
 test("spanish booking card keeps the server weekday, time and price", async () => {
   mockBookingShop()
   const tool = byNameLang("create_booking", "es")
-  expect(tool.label).toBe("Reservando…")
   const card = (await tool.confirm!.describe(BOOKING_ARGS)) as {
     summary: string
   }
-  // DB names stay; the words, weekday and price around them are Spanish.
+  // DB names stay; the weekday and price around them are Spanish.
   expect(card.summary).toContain("Ana · Cut")
   expect(card.summary).toContain("jueves, 1 de enero")
   expect(card.summary).toContain("EUR 25.00")
   expect(vi.mocked(createOwnerBooking)).not.toHaveBeenCalled()
 })
 
-test("spanish validation errors are server-built sentences", async () => {
+test("validation errors are server-built sentences", async () => {
   mockBookingShop()
   vi.mocked(getBooking).mockResolvedValue(null)
-  const unknown = await byNameLang("cancel_booking", "es").confirm!.describe({
+  const unknown = await byName("cancel_booking").confirm!.describe({
     bookingId: "nope",
   })
   expect(unknown).toEqual({
-    error: expect.stringContaining("lista las reservas"),
+    error: expect.stringContaining("list bookings first"),
   })
-  const badRange = await byNameLang("list_bookings", "es").run({
-    range: "soon",
-  })
-  expect(badRange).toEqual({ error: "range debe ser upcoming o past" })
-  const missing = await byNameLang("create_service", "es").confirm!.describe({})
-  expect(missing).toEqual({ error: "name debe tener 1-80 caracteres" })
+  const badRange = await byName("list_bookings").run({ range: "soon" })
+  expect(badRange).toEqual({ error: "range must be upcoming or past" })
+  const missing = await byName("create_service").confirm!.describe({})
+  expect(missing).toEqual({ error: "name must be 1-80 characters" })
 })
 
 // The tools that wrap the owner area's own actions.
@@ -4141,36 +4113,10 @@ test("list_policies and whatsapp_settings read what the changes need", async () 
   expect(read.automations).toEqual([{ id: "a1", name: "Welcome", on: false }])
 })
 
-test("spanish cards for the new tools use the owner area's own names", async () => {
-  vi.mocked(notificationSettingsFor).mockResolvedValue(SETTINGS)
-  expect(
-    await byNameLang("turn_message_on_off", "es").confirm!.describe({
-      message: "reminder",
-      on: true,
-    })
-  ).toEqual({
-    title: "¿Activar este mensaje?",
-    action: "Activar",
-    summary: "Recordatorio",
-    destructive: false,
-  })
-  expect(byNameLang("move_booking", "es").label).toBe("Moviendo reserva…")
-  vi.mocked(getPolicies).mockResolvedValue(POLICIES)
-  expect(
-    await byNameLang("remove_policy", "es").confirm!.describe({
-      policyId: "p1",
-    })
-  ).toMatchObject({
-    title: "¿Quitar esta política?",
-    action: "Quitar",
-    summary: "Política de reservas",
-  })
-})
-
 // A new tool that changes something has to be added here on purpose: only
 // lookups and suggestions may run with no card.
 test("only lookups and suggestions run without the tap", () => {
-  const noTap = buildAssistantTools("b1", "u1", "en")
+  const noTap = buildAssistantTools("b1", "u1", WORDS.en)
     .filter((tool) => !tool.definition.needsConfirm)
     .map((tool) => tool.definition.name)
     .sort()
@@ -4193,7 +4139,7 @@ test("only lookups and suggestions run without the tap", () => {
 })
 
 test("every change says it needs the tap, so the prompt's rule covers it", () => {
-  for (const tool of buildAssistantTools("b1", "u1", "en")) {
+  for (const tool of buildAssistantTools("b1", "u1", WORDS.en)) {
     if (tool.definition.needsConfirm) {
       expect(tool.definition.description).toContain("owner's tap")
     }
@@ -4382,28 +4328,3 @@ test("create_team_member refuses a blank name and a full team", async () => {
   })
 })
 
-test("spanish cards for the older changes", async () => {
-  vi.mocked(getBooking).mockResolvedValue(STARTED)
-  expect(
-    await byNameLang("set_booking_status", "es").confirm!.describe({
-      bookingId: "k1",
-      status: "completed",
-    })
-  ).toMatchObject({
-    title: "¿Marcar esta reserva como lista?",
-    action: "Marcar lista",
-  })
-  expect(
-    await byNameLang("create_team_member", "es").confirm!.describe({
-      name: "Cy",
-    })
-  ).toEqual({
-    title: "¿Agregar a este miembro del equipo?",
-    action: "Agregar",
-    summary: "Cy",
-    destructive: false,
-  })
-  expect(
-    await byNameLang("create_service", "es").run({ name: "Corte" })
-  ).toEqual({ error: "agregar un servicio necesita tu toque primero" })
-})

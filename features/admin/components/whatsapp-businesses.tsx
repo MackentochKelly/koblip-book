@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 import { Badge } from "@/components/ui/badge"
 import { ChevronRightIcon, StoreIcon } from "@/components/ui/icons"
@@ -17,7 +18,6 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import type { WhatsappBusinessRow } from "../api/whatsapp-businesses"
-import type { AdminMessages } from "../i18n"
 import { WHATSAPP_BASE } from "../utils/whatsapp-parts"
 
 export type BusinessConnection = {
@@ -31,13 +31,11 @@ export type BusinessConnection = {
 export function WhatsappBusinesses({
   businesses,
   connections,
-  m,
 }: {
   businesses: WhatsappBusinessRow[]
   connections: BusinessConnection[]
-  m: AdminMessages
 }) {
-  const t = m.whatsapp.businesses
+  const t = useTranslations("admin.whatsapp.businesses")
   if (!businesses.length) {
     return (
       <Empty className="border">
@@ -45,7 +43,7 @@ export function WhatsappBusinesses({
           <EmptyMedia variant="icon">
             <StoreIcon />
           </EmptyMedia>
-          <EmptyTitle>{t.none}</EmptyTitle>
+          <EmptyTitle>{t("none")}</EmptyTitle>
         </EmptyHeader>
       </Empty>
     )
@@ -66,16 +64,16 @@ export function WhatsappBusinesses({
             <ItemContent className="min-w-0">
               <ItemTitle>{business.name}</ItemTitle>
               <ItemDescription className="truncate">
-                {`${connection ? t.ownNumber(connection.workspaceName) : t.koblipNumber} · ${
+                {`${connection ? t("ownNumber", { workspace: connection.workspaceName }) : t("koblipNumber")} · ${
                   business.messagesOff
-                    ? t.messagesOff(business.messagesOff)
-                    : t.allOn
+                    ? t("messagesOff", { n: business.messagesOff })
+                    : t("allOn")
                 }`}
               </ItemDescription>
             </ItemContent>
             <ItemActions>
               {connection?.needsReconnect && (
-                <Badge variant="destructive">{t.reconnect}</Badge>
+                <Badge variant="destructive">{t("reconnect")}</Badge>
               )}
               <ChevronRightIcon className="size-4 text-muted-foreground" />
             </ItemActions>

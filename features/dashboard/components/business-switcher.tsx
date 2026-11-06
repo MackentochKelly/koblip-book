@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useTranslations } from "next-intl"
 import type { Route } from "next"
 import {
   CheckIcon,
@@ -26,7 +27,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import type { OwnedBusiness } from "../types"
-import { useOwnerMessages } from "../i18n/provider"
 
 // The menu's top, as shadcn's sidebar-07 TeamSwitcher: the open business
 // and its type (as Google Maps names it), opening the owner's other businesses and Add business. Switching keeps
@@ -38,7 +38,7 @@ export function BusinessSwitcher({
   current: { id: string; name: string }
   businesses: OwnedBusiness[]
 }) {
-  const m = useOwnerMessages().shell.businesses
+  const t = useTranslations("owner.shell.businesses")
   const { isMobile, setOpenMobile } = useSidebar()
   const pathname = usePathname()
   const base = `/dashboard/${current.id}`
@@ -60,7 +60,7 @@ export function BusinessSwitcher({
               <SidebarMenuButton
                 size="lg"
                 tooltip={current.name}
-                aria-label={m.switch}
+                aria-label={t("switch")}
                 className="data-popup-open:bg-sidebar-accent data-popup-open:text-sidebar-accent-foreground"
               />
             }
@@ -85,7 +85,7 @@ export function BusinessSwitcher({
             className="min-w-56"
           >
             <DropdownMenuGroup>
-              <DropdownMenuLabel>{m.title}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("title")}</DropdownMenuLabel>
               {businesses.map((business) => (
                 <DropdownMenuItem
                   key={business.id}
@@ -114,7 +114,7 @@ export function BusinessSwitcher({
                 <PlusIcon className="size-4" />
               </span>
               <span className="font-medium text-muted-foreground">
-                {m.add}
+                {t("add")}
               </span>
             </DropdownMenuItem>
           </DropdownMenuContent>

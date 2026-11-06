@@ -9,14 +9,11 @@ import {
   useState,
 } from "react"
 
-import type { PageLanguage } from "@/lib/page-language"
 import { markAllNotificationsRead, markNotificationRead } from "../api/actions"
-import { notificationMessagesFor, type NotificationMessages } from "../i18n"
 import type { InAppFeed, InAppNotification } from "../types/notifications"
 import { mergePage } from "../utils/notification-view"
 
 type Feed = {
-  t: NotificationMessages
   unread: number
   items: InAppNotification[]
   // Null until the first answer; then whether older ones are left.
@@ -48,19 +45,16 @@ async function fetchFeed(cursor?: string): Promise<InAppFeed> {
 // `pollSeconds` while the tab is shown, and at once when it comes back
 // (docs/plans/in-app-notifications.md, N-D3).
 export function NotificationsProvider({
-  language,
   initialUnread,
   pollSeconds,
   settingsHref,
   children,
 }: {
-  language: PageLanguage
   initialUnread: number
   pollSeconds: number
   settingsHref: string
   children: React.ReactNode
 }) {
-  const t = notificationMessagesFor(language)
   const [unread, setUnread] = useState(initialUnread)
   const [items, setItems] = useState<InAppNotification[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
@@ -157,7 +151,6 @@ export function NotificationsProvider({
   return (
     <FeedContext
       value={{
-        t,
         unread,
         items,
         nextCursor,

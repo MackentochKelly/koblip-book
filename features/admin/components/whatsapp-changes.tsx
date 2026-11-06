@@ -1,3 +1,5 @@
+import { useLocale, useTranslations } from "next-intl"
+
 import {
   Empty,
   EmptyHeader,
@@ -12,74 +14,88 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import {
   NOTIFICATION_RULES,
   type NotificationRuleKey,
 } from "@/lib/notification-rules"
+import { BOOKING_MESSAGES } from "@/lib/whatsapp-messages"
 import type { WhatsappChange } from "../api/whatsapp-changes"
-import type { AdminMessages } from "../i18n"
-import { formatRuleValue } from "../utils/rule-values"
+import { formatRuleValue, type RuleWords } from "../utils/rule-values"
 
-type Message = keyof AdminMessages["whatsapp"]["messages"]
+type Words = ReturnType<typeof useTranslations<"admin.whatsapp">>
 
 const isRule = (key: string): key is NotificationRuleKey =>
   Object.hasOwn(NOTIFICATION_RULES, key)
 
 // What changed and how, in words: a rule from → to (null is its default), or
 // one of a business's changes (lib/platform-settings.ts, adminChangeEntry).
-function describe(change: WhatsappChange, m: AdminMessages) {
-  const t = m.whatsapp.changes
-  const messageName = (value: unknown) =>
-    m.whatsapp.messages[value as Message] ?? String(value)
+function describe(
+  change: WhatsappChange,
+  t: Words,
+  rules: RuleWords,
+  locale: string,
+  formatDuration: (minutes: number) => string
+) {
+  const messageName = (value: unknown) => {
+    const message = BOOKING_MESSAGES.find((item) => item === value)
+    return message ? t(`messages.${message}`) : String(value)
+  }
+  const languageName = (language: string | undefined) =>
+    language === "es"
+      ? t("koblipMessages.spanish")
+      : language === "en"
+        ? t("koblipMessages.english")
+        : null
   if (isRule(change.key)) {
     const key = change.key
     const value = (v: unknown) =>
       v === null || v === undefined
-        ? `${t.defaultValue} (${formatRuleValue(key, NOTIFICATION_RULES[key], m)})`
-        : formatRuleValue(key, v, m)
+        ? `${t("changes.defaultValue")} (${formatRuleValue(key, NOTIFICATION_RULES[key], rules, locale, formatDuration)})`
+        : formatRuleValue(key, v, rules, locale, formatDuration)
     return {
-      title: m.whatsapp.rules.names[key],
+      title: rules(`names.${key}`),
       detail: `${value(change.before)} → ${value(change.after)}`,
     }
   }
   if (change.key === "whatsapp.turnedOff") {
     const list = (v: unknown) =>
-      Array.isArray(v) && v.length ? v.map(messageName).join(", ") : t.noneOff
+      Array.isArray(v) && v.length
+        ? v.map(messageName).join(", ")
+        : t("changes.noneOff")
     return {
-      title: t.turnedOff,
+      title: t("changes.turnedOff"),
       detail: `${list(change.before)} → ${list(change.after)}`,
     }
   }
   if (change.key === "whatsapp.settings")
-    return { title: t.settings, detail: null }
+    return { title: t("changes.settings"), detail: null }
   if (change.key === "whatsapp.connection") {
     return {
-      title: t.connection,
-      detail: `${String(change.before)} → ${t.removed}`,
+      title: t("changes.connection"),
+      detail: `${String(change.before)} → ${t("changes.removed")}`,
     }
   }
   if (change.key.startsWith("whatsapp.wording.")) {
     return {
-      title: t.wording(
-        messageName(change.key.slice("whatsapp.wording.".length))
-      ),
+      title: t("changes.wording", {
+        message: messageName(change.key.slice("whatsapp.wording.".length)),
+      }),
       detail: null,
     }
   }
   if (change.key.startsWith("whatsapp.koblipWording.")) {
     const [message, language] = change.key.slice("whatsapp.koblipWording.".length).split(".")
-    const k = m.whatsapp.koblipMessages
     return {
-      title: t.koblipWording(messageName(message)),
-      detail: language === "es" ? k.spanish : language === "en" ? k.english : null,
+      title: t("changes.koblipWording", { message: messageName(message) }),
+      detail: languageName(language),
     }
   }
   if (change.key.startsWith("whatsapp.koblipSubmit.")) {
     const [message, language] = change.key.slice("whatsapp.koblipSubmit.".length).split(".")
-    const k = m.whatsapp.koblipMessages
     return {
-      title: t.koblipSubmit(messageName(message)),
-      detail: language === "es" ? k.spanish : language === "en" ? k.english : null,
+      title: t("changes.koblipSubmit", { message: messageName(message) }),
+      detail: languageName(language),
     }
   }
   return { title: change.key, detail: null }
@@ -87,14 +103,11 @@ function describe(change: WhatsappChange, m: AdminMessages) {
 
 // WhatsApp → Change log (A7): every admin change, newest first: what, how,
 // for whom, who and when.
-export function WhatsappChanges({
-  changes,
-  m,
-}: {
-  changes: WhatsappChange[]
-  m: AdminMessages
-}) {
-  const t = m.whatsapp.changes
+export function WhatsappChanges({ changes }: { changes: WhatsappChange[] }) {
+  const t = useTranslations("admin.whatsapp")
+  const rules = useTranslations("admin.whatsapp.rules")
+  const locale = useLocale()
+  const formatDuration = useFormatDuration()
   if (!changes.length) {
     return (
       <Empty className="border">
@@ -102,19 +115,19 @@ export function WhatsappChanges({
           <EmptyMedia variant="icon">
             <SquarePenIcon />
           </EmptyMedia>
-          <EmptyTitle>{t.none}</EmptyTitle>
+          <EmptyTitle>{t("changes.none")}</EmptyTitle>
         </EmptyHeader>
       </Empty>
     )
   }
-  const when = new Intl.DateTimeFormat(m.locale, {
+  const when = new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   })
   return (
     <ItemGroup className="gap-3">
       {changes.map((change) => {
-        const { title, detail } = describe(change, m)
+        const { title, detail } = describe(change, t, rules, locale, formatDuration)
         return (
           <Item key={change.id} variant="outline">
             <ItemContent className="min-w-0">
@@ -126,8 +139,8 @@ export function WhatsappChanges({
               )}
               <ItemDescription className="truncate">
                 {[
-                  change.businessName ?? t.everyone,
-                  change.changedBy ?? t.someone,
+                  change.businessName ?? t("changes.everyone"),
+                  change.changedBy ?? t("changes.someone"),
                   when.format(new Date(change.changedAt)),
                 ].join(" · ")}
               </ItemDescription>

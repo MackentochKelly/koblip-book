@@ -1,6 +1,6 @@
+import { useTranslations } from "next-intl"
+
 import { Badge } from "@/components/ui/badge"
-import { messagesFor } from "@/lib/i18n"
-import type { PageLanguage } from "@/lib/page-language"
 import type { Business } from "../types"
 
 // Closed for now or for good (Google's word first), else open now or closed
@@ -8,23 +8,21 @@ import type { Business } from "../types"
 export function BusinessStatus({
   status,
   open,
-  language,
 }: {
   status: Business["status"]
   open: boolean | null
-  language: PageLanguage
 }) {
-  const m = messagesFor(language).status
+  const t = useTranslations("public.status")
   if (status === "temporarily_closed") {
-    return <Badge variant="destructive">{m.temporarilyClosed}</Badge>
+    return <Badge variant="destructive">{t("temporarilyClosed")}</Badge>
   }
   if (status === "closed") {
-    return <Badge variant="destructive">{m.closed}</Badge>
+    return <Badge variant="destructive">{t("closed")}</Badge>
   }
   if (open === null) return null
   return (
     <Badge variant={open ? "success" : "destructive"}>
-      {open ? m.openNow : m.closedNow}
+      {open ? t("openNow") : t("closedNow")}
     </Badge>
   )
 }

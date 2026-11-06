@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
@@ -23,9 +24,9 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import type { TranslationRuleSetting } from "@/lib/translations/settings"
 import { saveTranslationRule } from "../api/translation-actions"
-import { useAdminMessages } from "../i18n/provider"
 import {
   formatTranslationRule,
   parseTranslationRule,
@@ -40,8 +41,11 @@ const FORM = "translation-rule-form"
 // to the default, as WhatsApp's Rules do. The server checks each value and
 // logs the change (History).
 export function TranslationRules({ rules }: { rules: TranslationRuleSetting[] }) {
-  const m = useAdminMessages()
-  const t = m.translations.rules
+  const t = useTranslations("admin.translations.rules")
+  const locale = useLocale()
+  const formatDuration = useFormatDuration()
+  const valueOf = (key: TranslationRuleSetting["key"], value: unknown) =>
+    formatTranslationRule(key, value, t, locale, formatDuration)
   // The rule being edited; kept while the panel closes, so it stays drawn.
   const [opened, setOpened] = useState<TranslationRuleSetting | null>(null)
   const [open, setOpen] = useState(false)
@@ -70,11 +74,11 @@ export function TranslationRules({ rules }: { rules: TranslationRuleSetting[] })
       const done = await saveTranslationRule(opened.key, value).catch(() => null)
       if (done?.ok) {
         setOpen(false)
-        toast.success(t.saved)
+        toast.success(t("saved"))
       } else if (done?.ok === false && done.error === "invalid") {
         setInvalid(true)
       } else {
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
   }
@@ -93,19 +97,15 @@ export function TranslationRules({ rules }: { rules: TranslationRuleSetting[] })
               render={<button type="button" onClick={() => edit(rule)} />}
             >
               <ItemContent className="min-w-0">
-                <ItemTitle>{t.names[rule.key]}</ItemTitle>
+                <ItemTitle>{t(`names.${rule.key}`)}</ItemTitle>
                 <ItemDescription className="break-words">
-                  {formatTranslationRule(
-                    rule.key,
-                    changed ? rule.value : rule.defaultValue,
-                    m
-                  )}
+                  {valueOf(rule.key, changed ? rule.value : rule.defaultValue)}
                   {changed &&
-                    ` · ${t.byDefault(formatTranslationRule(rule.key, rule.defaultValue, m))}`}
+                    ` · ${t("byDefault", { value: valueOf(rule.key, rule.defaultValue) })}`}
                 </ItemDescription>
               </ItemContent>
               <ItemActions>
-                {changed && <Badge variant="secondary">{t.changed}</Badge>}
+                {changed && <Badge variant="secondary">{t("changed")}</Badge>}
                 <ChevronRightIcon className="size-4 text-muted-foreground" />
               </ItemActions>
             </Item>
@@ -116,7 +116,7 @@ export function TranslationRules({ rules }: { rules: TranslationRuleSetting[] })
       <ResponsivePanel
         open={open}
         onClose={() => setOpen(false)}
-        title={opened ? t.names[opened.key] : ""}
+        title={opened ? t(`names.${opened.key}`) : ""}
         footer={
           <>
             {opened?.value !== null && opened?.value !== undefined && (
@@ -126,7 +126,7 @@ export function TranslationRules({ rules }: { rules: TranslationRuleSetting[] })
                 disabled={pending}
                 onClick={() => save(null)}
               >
-                {t.useDefault}
+                {t("useDefault")}
               </Button>
             )}
             <Button
@@ -136,7 +136,7 @@ export function TranslationRules({ rules }: { rules: TranslationRuleSetting[] })
               disabled={pending || input === start}
             >
               {pending && <Spinner data-icon="inline-start" />}
-              {t.save}
+              {t("save")}
             </Button>
           </>
         }
@@ -152,7 +152,7 @@ export function TranslationRules({ rules }: { rules: TranslationRuleSetting[] })
           >
             <Field data-invalid={invalid || undefined}>
               <FieldLabel htmlFor={fieldId}>
-                {t.units[TRANSLATION_RULE_UNITS[opened.key]]}
+                {t(`units.${TRANSLATION_RULE_UNITS[opened.key]}`)}
               </FieldLabel>
               <Input
                 id={fieldId}
@@ -168,12 +168,12 @@ export function TranslationRules({ rules }: { rules: TranslationRuleSetting[] })
                   setInvalid(false)
                 }}
               />
-              {invalid && <FieldError>{t.invalid}</FieldError>}
+              {invalid && <FieldError>{t("invalid")}</FieldError>}
             </Field>
             <FieldDescription>
-              {t.byDefault(
-                formatTranslationRule(opened.key, opened.defaultValue, m)
-              )}
+              {t("byDefault", {
+                value: valueOf(opened.key, opened.defaultValue),
+              })}
             </FieldDescription>
           </form>
         )}

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { DatePicker } from "@/components/date-picker"
@@ -32,9 +33,9 @@ import { PhoneInput } from "@/components/phone-input"
 import { AppSelect } from "@/components/app-select"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
+import { useFormatDuration } from "@/hooks/use-format-duration"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { addDaysTo } from "@/lib/format-booking-time"
-import { formatDuration } from "@/lib/format-duration"
 import type {
   OwnerBookingInput,
   OwnerBookingResult,
@@ -42,7 +43,6 @@ import type {
   OwnerFreeTimesInput,
 } from "@/types/owner-booking"
 import { noAutofill } from "@/lib/no-autofill"
-import { useOwnerMessages } from "../i18n/provider"
 import type { OwnerServiceCategory } from "../types"
 import { serviceSelectOptions } from "../utils/service-options"
 import { BookingWhen, firstFreeDay, useFreeTimes } from "./booking-when"
@@ -96,7 +96,7 @@ export function AddBookingPanel({
   findFreeTimes: (input: OwnerFreeTimesInput) => Promise<OwnerFreeTimes>
 }) {
   const router = useRouter()
-  const t = useOwnerMessages().bookings.form
+  const t = useTranslations("owner.bookings.form")
   const [pending, startTransition] = useTransition()
   const [formKey, setFormKey] = useState(0)
   const [invalid, setInvalid] = useState<InvalidField | null>(null)
@@ -115,7 +115,7 @@ export function AddBookingPanel({
         setInvalid(null)
         setFormKey((value) => value + 1)
         onClose()
-        toast.success(t.added)
+        toast.success(t("added"))
         router.refresh()
       } else if (result.status === "conflict") {
         setConflict({ input, reason: result.reason })
@@ -124,7 +124,7 @@ export function AddBookingPanel({
         setInvalid(result.field)
       } else {
         setConflict(null)
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
 
@@ -133,11 +133,11 @@ export function AddBookingPanel({
       <ResponsivePanel
         open={open}
         onClose={onClose}
-        title={t.title}
+        title={t("title")}
         footer={
           <Button type="submit" size="lg" form={FORM} disabled={pending}>
             {pending && <Spinner data-icon="inline-start" />}
-            {t.submit}
+            {t("submit")}
           </Button>
         }
       >
@@ -160,13 +160,13 @@ export function AddBookingPanel({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {conflict?.reason === "closed" ? t.closed : t.taken}
+              {conflict?.reason === "closed" ? t("closed") : t("taken")}
             </AlertDialogTitle>
-            <AlertDialogDescription>{t.bookAnyway}</AlertDialogDescription>
+            <AlertDialogDescription>{t("bookAnyway")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>
-              {t.changeTime}
+              {t("changeTime")}
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={pending}
@@ -174,7 +174,7 @@ export function AddBookingPanel({
                 conflict && send({ ...conflict.input, allowConflict: true })
               }
             >
-              {t.confirmAnyway}
+              {t("confirmAnyway")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -198,13 +198,14 @@ function BookingForm({
   onSubmit: (input: OwnerBookingInput) => void
   findFreeTimes: (input: OwnerFreeTimesInput) => Promise<OwnerFreeTimes>
 }) {
-  const m = useOwnerMessages()
-  const t = m.bookings.form
-  const locale = m.locale
+  const t = useTranslations("owner.bookings.form")
+  const catalog = useTranslations("owner.catalog")
+  const locale = useLocale()
+  const formatDuration = useFormatDuration()
   const services = serviceSelectOptions(
     options.services,
     options.categories,
-    m.catalog.categories.other,
+    catalog("categories.other"),
     (service) => `${service.name} · ${formatDuration(service.durationMinutes)}`
   )
   // Starts on the list's first service: with categories, the first one's.
@@ -236,7 +237,7 @@ function BookingForm({
 
   const allowed = options.serviceTeams[serviceId]
   const members = [
-    { value: ANYONE, label: t.anyone },
+    { value: ANYONE, label: t("anyone") },
     ...options.team
       .filter((member) => !allowed || allowed.includes(member.id))
       .map((member) => ({ value: member.id, label: member.name })),
@@ -275,7 +276,7 @@ function BookingForm({
     >
       <FieldGroup>
         <Field data-invalid={error("service")}>
-          <FieldLabel htmlFor="add-service">{t.service}</FieldLabel>
+          <FieldLabel htmlFor="add-service">{t("service")}</FieldLabel>
           <AppSelect
             id="add-service"
             options={services}
@@ -287,11 +288,13 @@ function BookingForm({
             }}
             className="w-full"
           />
-          {invalid === "service" && <FieldError>{t.pickService}</FieldError>}
+          {invalid === "service" && (
+            <FieldError>{t("pickService")}</FieldError>
+          )}
         </Field>
         {options.team.length > 1 && (
           <Field data-invalid={error("teamMember")}>
-            <FieldLabel htmlFor="add-member">{t.with}</FieldLabel>
+            <FieldLabel htmlFor="add-member">{t("with")}</FieldLabel>
             <AppSelect
               id="add-member"
               options={members}
@@ -300,7 +303,7 @@ function BookingForm({
               className="w-full"
             />
             {invalid === "teamMember" && (
-              <FieldError>{t.notTheirService}</FieldError>
+              <FieldError>{t("notTheirService")}</FieldError>
             )}
           </Field>
         )}
@@ -352,7 +355,7 @@ function BookingForm({
             </FieldSet>
           )
         })}
-        {invalid === "addons" && <FieldError>{t.checkExtras}</FieldError>}
+        {invalid === "addons" && <FieldError>{t("checkExtras")}</FieldError>}
         <BookingWhen
           free={free}
           anyTime={anyTime}
@@ -362,11 +365,13 @@ function BookingForm({
           time={time}
           onTimeChange={setTime}
           today={options.today}
-          error={invalid === "time" || invalid === "date" ? t.pickTime : null}
+          error={
+            invalid === "time" || invalid === "date" ? t("pickTime") : null
+          }
         >
           <div className="grid grid-cols-2 gap-4">
             <Field data-invalid={error("date")}>
-              <FieldLabel htmlFor="add-date">{t.day}</FieldLabel>
+              <FieldLabel htmlFor="add-date">{t("day")}</FieldLabel>
               <DatePicker
                 id="add-date"
                 value={date}
@@ -376,10 +381,10 @@ function BookingForm({
                 locale={locale}
                 invalid={error("date")}
               />
-              {invalid === "date" && <FieldError>{t.pickDay}</FieldError>}
+              {invalid === "date" && <FieldError>{t("pickDay")}</FieldError>}
             </Field>
             <Field data-invalid={error("time")}>
-              <FieldLabel htmlFor="add-time">{t.time}</FieldLabel>
+              <FieldLabel htmlFor="add-time">{t("time")}</FieldLabel>
               <TimeInput
                 id="add-time"
                 step={300}
@@ -387,12 +392,12 @@ function BookingForm({
                 onChange={(event) => setTime(event.target.value)}
                 aria-invalid={error("time")}
               />
-              {invalid === "time" && <FieldError>{t.pickTime}</FieldError>}
+              {invalid === "time" && <FieldError>{t("pickTime")}</FieldError>}
             </Field>
           </div>
         </BookingWhen>
         <Field data-invalid={error("name")}>
-          <FieldLabel htmlFor="add-name">{t.customer}</FieldLabel>
+          <FieldLabel htmlFor="add-name">{t("customer")}</FieldLabel>
           <Input
             {...noAutofill("add_name")}
             id="add-name"
@@ -401,20 +406,20 @@ function BookingForm({
             maxLength={BOOKING_RULES.maxCustomerName}
             aria-invalid={error("name")}
           />
-          {invalid === "name" && <FieldError>{t.addName}</FieldError>}
+          {invalid === "name" && <FieldError>{t("addName")}</FieldError>}
         </Field>
         <Field data-invalid={error("phone")}>
-          <FieldLabel htmlFor="add-phone">{t.phone}</FieldLabel>
+          <FieldLabel htmlFor="add-phone">{t("phone")}</FieldLabel>
           <PhoneInput
             {...noAutofill("add_phone")}
             id="add-phone"
             value={phone}
             onChange={setPhone}
-            placeholder={t.optional}
+            placeholder={t("optional")}
             aria-invalid={error("phone")}
-            locale={m.locale}
+            locale={locale}
           />
-          {invalid === "phone" && <FieldError>{t.checkPhone}</FieldError>}
+          {invalid === "phone" && <FieldError>{t("checkPhone")}</FieldError>}
         </Field>
         {options.whatsapp && phone.trim() && (
           <Field orientation="horizontal">
@@ -424,19 +429,19 @@ function BookingForm({
               onCheckedChange={(on) => setWhatsappOptIn(on === true)}
             />
             <FieldLabel htmlFor="add-whatsapp" className="font-normal">
-              {t.whatsappOptIn}
+              {t("whatsappOptIn")}
             </FieldLabel>
           </Field>
         )}
         <Field data-invalid={error("note")}>
-          <FieldLabel htmlFor="add-note">{t.note}</FieldLabel>
+          <FieldLabel htmlFor="add-note">{t("note")}</FieldLabel>
           <Textarea
             {...noAutofill("add_note")}
             id="add-note"
             value={note}
             onChange={(event) => setNote(event.target.value)}
             maxLength={BOOKING_RULES.maxNote}
-            placeholder={t.optional}
+            placeholder={t("optional")}
           />
         </Field>
       </FieldGroup>

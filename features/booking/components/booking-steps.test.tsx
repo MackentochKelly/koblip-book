@@ -1,13 +1,18 @@
 import {
   cleanup,
   fireEvent,
-  render,
+  render as renderPlain,
   screen,
   within,
 } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { WithWords } from "@/i18n/testing"
 import type { BookingPage, BookingService } from "./booking-page"
 import { ServiceStep } from "./booking-steps"
+
+// The parts read their words from next-intl, in English.
+const render = (ui: React.ReactElement) =>
+  renderPlain(ui, { wrapper: WithWords })
 
 const service = (
   id: string,

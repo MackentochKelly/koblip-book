@@ -1,4 +1,5 @@
-// The Automations page: booking messages sent on WhatsApp through Koblip Chat.
+// The Automations page: booking messages sent on WhatsApp through Koblip
+// Chat, in English as ICU messages (docs/plans/translations.md, G4).
 const whatsapp = {
   connectTitle: "Connect Koblip Chat to send WhatsApp messages",
   connect: "Connect",
@@ -16,7 +17,7 @@ const whatsapp = {
   flows: {
     names: { firstMessage: "Welcome" },
     about: { firstMessage: "Answers a customer's first message." },
-    stepsLabel: (name: string) => `${name} steps`,
+    stepsLabel: "{name} steps",
     kickers: { when: "When", send: "Sends", button: "Button" },
     triggers: { firstMessage: "A customer writes for the first time" },
     actions: {
@@ -25,9 +26,9 @@ const whatsapp = {
       handoff: "Tells you, then stays quiet",
     },
     ownNumberOnly: "Works on your own number only.",
-    replyFor: (label: string) => `Reply to “${label}”`,
+    replyFor: "Reply to “{label}”",
     businessName: "business name",
-    moveUp: (label: string) => `Move ${label} up`,
+    moveUp: "Move {label} up",
     saved: "Saved.",
     canvas: {
       groups: { start: "Start", messages: "Messages", buttons: "Buttons" },
@@ -55,7 +56,8 @@ const whatsapp = {
       tooLong: "Too long.",
       tooManyButtons: "Too many buttons.",
       duplicateLabel: "Two buttons have the same text.",
-      badField: "Use only {business} in curly brackets.",
+      // A literal {business}, quoted for ICU.
+      badField: "Use only '{business}' in curly brackets.",
       noOwnNumber: "Works on your own number only.",
       not_found: "Couldn't find this. Reload the page.",
       invalid: "Couldn't save. Try again.",
@@ -66,10 +68,10 @@ const whatsapp = {
   // Which number sends (K4).
   sendingFrom: { koblip: "Sending from Koblip's number", own: "Sending from your number" },
   useOwnNumber: "Use your own number",
-  untilApproved: (names: string) => `Koblip's number sends until Meta approves ${names}.`,
+  untilApproved: "Koblip's number sends until Meta approves {names}.",
   // The same, when normal messages go inside 24 hours (D35).
-  untilApprovedWindow: (names: string) =>
-    `Your number answers recent chats; Koblip's sends the rest until Meta approves ${names}.`,
+  untilApprovedWindow:
+    "Your number answers recent chats; Koblip's sends the rest until Meta approves {names}.",
   // The card's short line; the whole sentence above is behind its ⓘ.
   untilApprovedShort: "Until Meta approves your messages.",
   koblipWording: "Koblip's ready-made wording. Use your own number to change it.",
@@ -86,13 +88,14 @@ const whatsapp = {
     turnOn: "Turn on messages",
   },
   // "Submit to Meta" asks first (D37).
-  submitTitle: (n: number) => (n === 1 ? "Submit 1 message to Meta?" : `Submit ${n} messages to Meta?`),
+  submitTitle:
+    "{n, plural, one {Submit # message to Meta?} other {Submit # messages to Meta?}}",
   submitConfirm: "Submit",
   submitCancel: "Cancel",
   setup: "Setup",
-  setupProgress: (done: number, total: number) => `${done} of ${total} done`,
+  setupProgress: "{done, number} of {total, number} done",
   setupDone: "Setup done",
-  statsTitle: (days: number) => (days === 1 ? "Last day" : `Last ${days} days`),
+  statsTitle: "{days, plural, one {Last day} other {Last # days}}",
   stats: { sent: "Sent", read: "Read", replied: "Replies", failed: "Failed" },
   steps: {
     connected: "Connected",
@@ -147,8 +150,9 @@ const whatsapp = {
     approved: "Approved",
     rejected: "Rejected by Meta",
   },
-  edit: (name: string) => `Edit ${name.toLowerCase()}`,
-  turnOn: (name: string) => `Send ${name.toLowerCase()}`,
+  // The message's name comes lowercase.
+  edit: "Edit {name}",
+  turnOn: "Send {name}",
   english: "English",
   spanish: "Spanish",
   title: "Title",
@@ -184,7 +188,7 @@ const whatsapp = {
   // The buttons under a message, and what each one does.
   buttons: "Buttons",
   addButton: "Add button",
-  removeButton: (label: string) => `Remove ${label}`,
+  removeButton: "Remove {label}",
   buttonKinds: {
     confirm: "Confirms the visit",
     cantCome: "Says they can't come",
@@ -211,11 +215,11 @@ const whatsapp = {
     sameButton: "Each button needs its own text.",
     notConnected: "Connect Koblip Chat first.",
     noNumber: "Add a WhatsApp number in Koblip Chat first.",
-  } as Record<string, string>,
+  },
   reminders: "Reminders",
-  before: (time: string) => `${time} before`,
+  before: "{time} before",
   addReminder: "Add reminder",
-  removeReminder: (time: string) => `Remove ${time} reminder`,
+  removeReminder: "Remove {time} reminder",
   noReminders: "No reminders",
   quietHours: "Quiet hours",
   quietHint: "No messages at night. Long reminders go the evening before.",
@@ -257,14 +261,14 @@ const whatsapp = {
   clearFilters: "Clear filters",
   // "Send again" on a failed message.
   sendAgain: "Send again",
-  sendAgainLabel: (name: string) => `Send again: ${name}`,
+  sendAgainLabel: "Send again: {name}",
   sentAgain: "It goes out in a moment.",
   sendAgainFailed: "Couldn't send it again. Try again.",
   sendAgainProblems: {
     notFailed: "It's already on its way.",
     cancelled: "The booking was cancelled.",
     late: "Too late: the visit has started.",
-  } as Record<string, string>,
+  },
   via: { text: "Normal message", template: "Template" },
   replies: { confirm: "I'll be there", cantCome: "Can't make it", ok: "OK" },
   states: {
@@ -276,7 +280,7 @@ const whatsapp = {
     replied: "Answered",
     failed: "Failed",
     skipped: "Not sent",
-  } as Record<string, string>,
+  },
   // Automation runs in Activity (D18).
   automations: {
     filter: "Automations",
@@ -286,7 +290,7 @@ const whatsapp = {
       servicesList: "Services list",
       serviceLink: "Service link",
       handoff: "Talk to us",
-    } as Record<string, string>,
+    },
   },
   // Why a message was not sent; anything else reads as `other`.
   reasons: {
@@ -308,7 +312,7 @@ const whatsapp = {
     windowClosed: "Customer's 24 hours ended",
     monthlyLimit: "Koblip's monthly limit reached",
     other: "Koblip Chat error",
-  } as Record<string, string>,
-}
+  },
+} as const
 
 export default whatsapp

@@ -1,16 +1,22 @@
-import { formatDuration } from "@/lib/format-duration"
+import type { useTranslations } from "next-intl"
+
 import type { NotificationRuleKey } from "@/lib/notification-rules"
-import type { AdminMessages } from "../i18n"
 import { RULE_UNITS } from "./whatsapp-rules"
 
-// A rule's value as words, in its unit ("24 h, 2 h, 30 min", "25 characters").
+// The Rules screen's words (useTranslations or getTranslations).
+export type RuleWords = ReturnType<typeof useTranslations<"admin.whatsapp.rules">>
+
+// A rule's value as words, in its unit ("24 h, 2 h, 30 min", "25 characters"),
+// numbers as `locale` writes them and lengths of time as `formatDuration`
+// does (useFormatDuration).
 export function formatRuleValue(
   key: NotificationRuleKey,
   value: unknown,
-  m: AdminMessages
+  t: RuleWords,
+  locale: string,
+  formatDuration: (minutes: number) => string
 ) {
-  const t = m.whatsapp.rules
-  const number = new Intl.NumberFormat(m.locale)
+  const number = new Intl.NumberFormat(locale)
   switch (RULE_UNITS[key]) {
     case "minutesList":
       return Array.isArray(value)
@@ -19,19 +25,19 @@ export function formatRuleValue(
     case "minutes":
       return formatDuration(Number(value))
     case "seconds":
-      return t.seconds(Number(value))
+      return t("seconds", { n: Number(value) })
     case "characters":
-      return t.characters(Number(value))
+      return t("characters", { n: Number(value) })
     case "words":
-      return t.words(Number(value))
+      return t("words", { n: Number(value) })
     case "days":
-      return t.days(Number(value))
+      return t("days", { n: Number(value) })
     case "percent":
-      return new Intl.NumberFormat(m.locale, { style: "percent" }).format(Number(value) / 100)
+      return new Intl.NumberFormat(locale, { style: "percent" }).format(Number(value) / 100)
     case "switch":
-      return value ? t.on : t.off
+      return value ? t("on") : t("off")
     case "cantCome":
-      return value === "cancel" ? t.cantCome.cancel : t.cantCome.alertOnly
+      return value === "cancel" ? t("cantCome.cancel") : t("cantCome.alertOnly")
     case "clock":
       return String(value)
     case "count":

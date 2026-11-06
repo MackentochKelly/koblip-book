@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { ExternalLinkIcon, LinkIcon, ShareIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
@@ -13,19 +14,17 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { shareLink } from "@/lib/share-link"
-import { useOwnerMessages } from "../i18n/provider"
 
 // The Share your page widget: the booking page's link, ready to open or
 // share.
 export function SharePageCard({ slug, name }: { slug: string; name: string }) {
-  const m = useOwnerMessages()
-  const t = m.settings.share
+  const t = useTranslations("owner.settings.share")
   const path = `/b/${slug}`
 
   const share = async () => {
     const url = new URL(path, window.location.origin).toString()
     const result = await shareLink({ title: name, url })
-    if (result === "copied") toast.success(t.linkCopied)
+    if (result === "copied") toast.success(t("linkCopied"))
   }
 
   return (
@@ -43,14 +42,14 @@ export function SharePageCard({ slug, name }: { slug: string; name: string }) {
         <div className="flex flex-col gap-2 md:flex-row">
           <Button onClick={() => void share()}>
             <ShareIcon data-icon="inline-start" />
-            {t.shareLink}
+            {t("shareLink")}
           </Button>
           <Button
             variant="outline"
             nativeButton={false}
             render={<a href={path} target="_blank" rel="noreferrer" />}
           >
-            {t.viewPage}
+            {t("viewPage")}
             <ExternalLinkIcon data-icon="inline-end" />
           </Button>
         </div>

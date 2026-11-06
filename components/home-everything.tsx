@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 
 import { Scene } from "@/components/feature-preview"
@@ -28,18 +29,28 @@ import {
 } from "@/components/ui/item"
 import { Marquee } from "@/components/ui/marquee"
 import { Logo } from "@/components/works-with"
-import type { AppKey } from "@/lib/app-words"
-import type { Messages } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
-
-type Home = Messages["home"]
-type Words = Home["everything"]
 
 // The picture's still colour wash, as on "What you get".
 const WASH = {
   colors: ["--background", "--hero-accent", "--chart-1"],
   seed: 360,
 } as const
+
+// The apps' keys in the shared words (lib/i18n/en/app.ts).
+type AppKey =
+  | "muse"
+  | "googleMaps"
+  | "whatsapp"
+  | "googleCalendar"
+  | "koblipChat"
+  | "stripe"
+  | "instagram"
+  | "facebook"
+  | "googleBusiness"
+  | "appleCalendar"
+  | "outlook"
+  | "sms"
 
 type App = { key: AppKey; logo: string; logoDark?: string; name: string }
 
@@ -85,15 +96,19 @@ const APPS_SOON: App[] = [
 ]
 
 // The apps the business connects to, under a big title.
-export function HomeEverything({ words }: { words: Home }) {
-  const t = words.everything
+export function HomeEverything() {
+  const t = useTranslations("public.home.everything")
   return (
     <section
       id={HOME_SECTION_IDS.everything}
       className="mx-auto w-full max-w-page px-2 sm:px-4"
     >
-      <HomeBigTitle start={t.titleStart} end={t.titleEnd} line={t.subtitle} />
-      <AppsCard words={t} soon={words.soon} />
+      <HomeBigTitle
+        start={t("titleStart")}
+        end={t("titleEnd")}
+        line={t("subtitle")}
+      />
+      <AppsCard />
     </section>
   )
 }
@@ -101,7 +116,10 @@ export function HomeEverything({ words }: { words: Home }) {
 // The apps: the ones working today slide one way, the ones coming the other
 // (marked "Coming soon" only in the list of every app),
 // and keep sliding under the mouse. Tap one to see what Koblip does with it.
-function AppsCard({ words, soon }: { words: Words; soon: string }) {
+function AppsCard() {
+  const t = useTranslations("public.home")
+  const apps = useTranslations("app")
+  const soon = t("soon")
   const [open, setOpen] = useState(false)
   const [allOpen, setAllOpen] = useState(false)
   // Kept while the panel slides away, so its words stay.
@@ -110,7 +128,6 @@ function AppsCard({ words, soon }: { words: Words; soon: string }) {
     setShown(app)
     setOpen(true)
   }
-  const details = words.appDetails[shown.key]
   return (
     <Card className={showcaseCardClassName}>
       <ShowcasePicture className="aspect-auto h-56">
@@ -150,19 +167,19 @@ function AppsCard({ words, soon }: { words: Words; soon: string }) {
         </Scene>
       </ShowcasePicture>
       <CardHeader>
-        <CardTitle>{words.items.apps.title}</CardTitle>
-        <CardDescription>{words.items.apps.text}</CardDescription>
+        <CardTitle>{t("everything.items.apps.title")}</CardTitle>
+        <CardDescription>{t("everything.items.apps.text")}</CardDescription>
         <CardAction className="self-center">
           <Button variant="outline" onClick={() => setAllOpen(true)}>
-            {words.allApps.button}
+            {t("everything.allApps.button")}
           </Button>
         </CardAction>
       </CardHeader>
       <DetailsDialog
         open={open}
         onOpenChange={setOpen}
-        title={details.name}
-        text={details.description}
+        title={apps(`${shown.key}.name`)}
+        text={apps(`${shown.key}.description`)}
         media={<AppLogo app={shown} className="size-12" />}
       />
       {/* Every app: a large dialog on a computer, a sheet that scrolls on a
@@ -170,20 +187,12 @@ function AppsCard({ words, soon }: { words: Words; soon: string }) {
       <ResponsivePanel
         open={allOpen}
         onClose={() => setAllOpen(false)}
-        title={words.allApps.title}
+        title={t("everything.allApps.title")}
         wide
       >
         <div className="flex flex-col gap-6">
-          <AppList
-            title={words.allApps.ready}
-            apps={APPS_WORKING}
-            details={words.appDetails}
-          />
-          <AppList
-            title={words.allApps.soon}
-            apps={APPS_SOON}
-            details={words.appDetails}
-          />
+          <AppList title={t("everything.allApps.ready")} apps={APPS_WORKING} />
+          <AppList title={t("everything.allApps.soon")} apps={APPS_SOON} />
         </div>
       </ResponsivePanel>
     </Card>
@@ -238,15 +247,8 @@ function AppChip({ app, onClick }: { app: App; onClick: () => void }) {
 
 // One group in the list of every app: its title, then each app with its
 // logo, name and what Koblip does with it.
-function AppList({
-  title,
-  apps,
-  details,
-}: {
-  title: string
-  apps: App[]
-  details: Words["appDetails"]
-}) {
+function AppList({ title, apps }: { title: string; apps: App[] }) {
+  const t = useTranslations("app")
   return (
     <section className="flex flex-col gap-3">
       <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
@@ -258,10 +260,10 @@ function AppList({
                 <AppLogo app={app} className="size-10" />
               </ItemMedia>
               <ItemContent>
-                <ItemTitle>{details[app.key].name}</ItemTitle>
+                <ItemTitle>{t(`${app.key}.name`)}</ItemTitle>
                 {/* The whole text: this list is where it is read. */}
                 <ItemDescription className="line-clamp-none">
-                  {details[app.key].description}
+                  {t(`${app.key}.description`)}
                 </ItemDescription>
               </ItemContent>
             </Item>

@@ -1,36 +1,25 @@
 // @vitest-environment node
-import { expect, test, vi } from "vitest"
+import { expect, test } from "vitest"
 
-vi.mock("server-only", () => ({}))
+import { serverWords } from "@/i18n/testing"
+import type { ServerWords } from "../types"
 
-const { serverMessagesFor } = await import("./server")
+const t: ServerWords = await serverWords().getTranslations("assistantServer")
 
-test("english stays english", () => {
-  const t = serverMessagesFor("en")
-  expect(t.locale).toBe("en-US")
-  expect(t.languageLine).toBe("Reply in English.")
-  expect(t.steps.services).toBe("Listing services…")
-  expect(t.cards.cancel).toBe("Cancel this booking?")
-  expect(t.cancel.done).toBe("Cancelled the booking.")
+test("the server's lines read as next-intl gives them", () => {
+  expect(t("languageLine")).toBe("Reply in English.")
+  expect(t("steps.services")).toBe("Listing services…")
+  expect(t("cards.cancel")).toBe("Cancel this booking?")
+  expect(t("cancel.done")).toBe("Cancelled the booking.")
+  expect(t("confirm.unchanged")).toBe("Okay, nothing was changed.")
 })
 
-test("spanish translates chips, cards and results", () => {
-  const t = serverMessagesFor("es")
-  expect(t.locale).toBe("es-US")
-  expect(t.languageLine).toBe("Responde en español.")
-  expect(t.steps.services).toBe("Listando servicios…")
-  expect(t.cards.cancel).toBe("¿Cancelar esta reserva?")
-  expect(t.cancel.done).toBe("Reserva cancelada.")
-  expect(t.confirm.unchanged).toBe("Vale, no se cambió nada.")
-  expect(t.loop.stopped).toBe(
-    "Eso llevó demasiados pasos. ¿Puedes preguntar algo más concreto?"
+test("fields fill in with the old functions' parameter names", () => {
+  expect(
+    t("booking.booked", { name: "Ana", service: "Cut", when: "Friday" })
+  ).toBe("Done! Ana is booked for Cut on Friday.")
+  expect(t("errors.queryInvalid", { max: "80" })).toBe(
+    "query must be 1-80 characters"
   )
-})
-
-test("unknown or missing language falls back to english", () => {
-  for (const language of ["fr", "", undefined, null]) {
-    const t = serverMessagesFor(language as never)
-    expect(t.locale).toBe("en-US")
-    expect(t.steps.services).toBe("Listing services…")
-  }
+  expect(t("booking.minutes", { durationMinutes: "30" })).toBe("30 min")
 })

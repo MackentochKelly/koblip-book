@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, expect, test, vi } from "vitest"
 
+import { WithWords } from "@/i18n/testing"
+
 const { actions, toast } = vi.hoisted(() => ({
   actions: { saveMessageWording: vi.fn(), submitMessageToMeta: vi.fn() },
   toast: { success: vi.fn(), error: vi.fn() },
@@ -42,7 +44,9 @@ const limits = { maxHeader: 60, maxBody: 1024, maxFooter: 60, maxButtons: 3, max
 
 function open(item: Message, onClose = vi.fn()) {
   render(
-    <BusinessMessageEditor businessId="b1" item={item} limits={limits} onClose={onClose} />
+    <WithWords>
+      <BusinessMessageEditor businessId="b1" item={item} limits={limits} onClose={onClose} />
+    </WithWords>
   )
   return onClose
 }

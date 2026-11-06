@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl"
+
 import {
   AccessibilityIcon,
   BabyIcon,
@@ -9,8 +11,6 @@ import {
   ToiletIcon,
   type Icon,
 } from "@/components/ui/icons"
-import { messagesFor } from "@/lib/i18n"
-import type { PageLanguage } from "@/lib/page-language"
 import type { Amenity } from "../types"
 
 const ICONS: Record<Amenity, Icon> = {
@@ -25,14 +25,8 @@ const ICONS: Record<Amenity, Icon> = {
 }
 
 // What Google says is true of the place (wheelchair access, parking…).
-export function BusinessAmenities({
-  amenities,
-  language,
-}: {
-  amenities: Amenity[]
-  language: PageLanguage
-}) {
-  const labels = messagesFor(language).amenities
+export function BusinessAmenities({ amenities }: { amenities: Amenity[] }) {
+  const t = useTranslations("public.amenities")
   return (
     <ul className="flex flex-col gap-3 text-sm">
       {amenities.map((amenity) => {
@@ -43,7 +37,7 @@ export function BusinessAmenities({
             className="flex items-center gap-3 [&_svg]:size-5 [&_svg]:shrink-0"
           >
             <Icon aria-hidden="true" />
-            {labels[amenity]}
+            {t(amenity)}
           </li>
         )
       })}

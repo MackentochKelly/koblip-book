@@ -1,4 +1,5 @@
-// The owner's bookings and customers: lists, details, the add form.
+// The owner's bookings and customers: lists, details, the add form, in
+// English as ICU messages (docs/plans/translations.md, G4).
 const bookings = {
   title: "Bookings",
   add: "Add",
@@ -19,8 +20,7 @@ const bookings = {
   failed: "That did not work. Please try again.",
   cancel: {
     title: "Cancel this booking?",
-    description: (name: string, day: string, time: string) =>
-      `${name}, ${day} at ${time}.`,
+    description: "{name}, {day} at {time}.",
     keep: "Keep it",
     confirm: "Cancel booking",
     done: "Booking cancelled",
@@ -59,8 +59,8 @@ const bookings = {
   },
   details: {
     free: "Free",
-    with: (name: string) => `with ${name}`,
-    reason: (reason: string) => `Cancelled: ${reason}`,
+    with: "with {name}",
+    reason: "Cancelled: {reason}",
   },
   contact: {
     call: "Call",
@@ -71,8 +71,8 @@ const bookings = {
   // AM with Sofia".
   brief: {
     none: "No bookings today",
-    count: (n: number) => (n === 1 ? "1 booking today" : `${n} bookings today`),
-    next: (time: string, name: string) => `next at ${time} with ${name}`,
+    count: "{n, plural, one {# booking today} other {# bookings today}}",
+    next: "next at {time} with {name}",
     noneLeft: "none left to start",
   },
   viewAll: "View all",
@@ -118,25 +118,24 @@ const bookings = {
     team: "Team",
     filters: "Filters",
     clearAll: "Clear all",
-    showResults: (count: number) =>
-      count === 1 ? "Show 1 booking" : `Show ${count} bookings`,
+    showResults:
+      "{count, plural, one {Show # booking} other {Show # bookings}}",
     status: "Status",
     clear: "Clear",
-    extras: (count: number) => (count === 1 ? "+1 extra" : `+${count} extras`),
+    extras: "{count, plural, one {+# extra} other {+# extras}}",
     noMatch: "No bookings match",
     noneInRange: "No bookings in these dates",
-    showing: (from: number, to: number, total: number) =>
-      `${from}–${to} of ${total}`,
+    showing: "{from, number}–{to, number} of {total, number}",
     rows: "Rows",
     first: "First page",
     previous: "Previous page",
     next: "Next page",
     last: "Last page",
-    page: (page: number, pages: number) => `Page ${page} of ${pages}`,
+    page: "Page {page, number} of {pages, number}",
     showMore: "Show more",
     actions: "Actions",
     open: "Open",
-    sortBy: (column: string) => `Sort by ${column}`,
+    sortBy: "Sort by {column}",
   },
   calendar: {
     today: "Today",
@@ -145,16 +144,15 @@ const bookings = {
     moreDates: "Pick a date",
     previousMonth: "Previous month",
     nextMonth: "Next month",
-    count: (count: number) =>
-      count === 1 ? "1 booking" : `${count} bookings`,
+    count: "{count, plural, one {# booking} other {# bookings}}",
     free: "No bookings this day",
     anyone: "Anyone",
   },
   // The Analytics page's look back over the last 30 days.
   analytics: {
     period: "Period",
-    periods: { 7: "7 days", 30: "30 days", 90: "3 months" },
-    last: { 7: "Last 7 days", 30: "Last 30 days", 90: "Last 3 months" },
+    periods: { "7": "7 days", "30": "30 days", "90": "3 months" },
+    last: { "7": "Last 7 days", "30": "Last 30 days", "90": "Last 3 months" },
     bookings: "Bookings",
     revenue: "Revenue",
     newCustomers: "New customers",
@@ -164,8 +162,7 @@ const bookings = {
     newAndReturning: "New and returning customers",
     showUps: "Show-ups",
     showedUp: "Showed up",
-    showUpSplit: (showed: string, missed: string) =>
-      `${showed} showed up · ${missed} missed`,
+    showUpSplit: "{showed} showed up · {missed} missed",
     topServices: "Top services",
     topCategories: "Top categories",
     otherServices: "Everything else",
@@ -213,7 +210,7 @@ const bookings = {
       morning: "Morning",
       afternoon: "Afternoon",
       evening: "Evening",
-      timesOf: (part: string) => `${part} times`,
+      timesOf: "{part} times",
     },
     customer: "Customer",
     addName: "Add a name",
@@ -225,28 +222,28 @@ const bookings = {
   },
   customers: {
     title: "Customers",
-    people: (n: number): string => (n === 1 ? "1 person" : `${n} people`),
+    people: "{n, plural, one {# person} other {# people}}",
     search: "Name or phone…",
     searchLabel: "Search customers",
     noneFound: "No one found",
     clearSearch: "Clear search",
     none: "No customers yet",
     customer: "Customer",
-    visits: (n: number): string => (n === 1 ? "1 visit" : `${n} visits`),
-    next: (visits: string, day: string) => `${visits} · Next ${day}`,
-    last: (visits: string, day: string) => `${visits} · Last ${day}`,
-    bookings: (n: number): string => (n === 1 ? "1 booking" : `${n} bookings`),
+    visits: "{n, plural, one {# visit} other {# visits}}",
+    next: "{visits} · Next {day}",
+    last: "{visits} · Last {day}",
+    bookings: "{n, plural, one {# booking} other {# bookings}}",
     visitsLabel: "Visits",
     noShows: "No-shows",
     spent: "Spent",
     add: "Add customer",
     name: "Name",
     phone: "Phone (optional)",
-    added: (name: string) => `${name} added`,
+    added: "{name} added",
     nameRequired: "Add a name",
     badPhone: "Check the phone number",
     exists: "Already in your customers",
   },
-}
+} as const
 
 export default bookings

@@ -1,6 +1,7 @@
 import "server-only"
 
 import { isDeepStrictEqual } from "node:util"
+import { getTranslations } from "next-intl/server"
 import type OpenAI from "openai"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
 import type { PageLanguage } from "@/lib/page-language"
@@ -13,7 +14,6 @@ import type {
   DescribedConfirm,
   SourceKind,
 } from "../types"
-import { serverMessagesFor } from "../i18n/server"
 import {
   buildClockLine,
   buildLanguageLine,
@@ -268,7 +268,10 @@ async function* handleConfirmCall(
   callId: string,
   history: OpenAI.Chat.ChatCompletionMessageParam[]
 ): AsyncGenerator<AssistantStreamEvent, DescribedConfirm | null> {
-  const t = serverMessagesFor(context.language)
+  const t = await getTranslations({
+    locale: context.language,
+    namespace: "assistantServer",
+  })
   const fail = (message: string): void => {
     history.push({
       role: "tool",
@@ -280,14 +283,14 @@ async function* handleConfirmCall(
   try {
     args = JSON.parse(argsText)
   } catch {
-    fail(t.loop.invalidArgs)
+    fail(t("loop.invalidArgs"))
     return null
   }
   let card: DescribedConfirm | { error: string }
   try {
     card = await confirm.describe(args)
   } catch {
-    fail(t.loop.lookupFailed)
+    fail(t("loop.lookupFailed"))
     return null
   }
   if ("error" in card) {
@@ -301,7 +304,7 @@ async function* handleConfirmCall(
     args: card.args === undefined ? args : card.args,
   })
   if ("error" in stored) {
-    fail(t.loop.tooMany)
+    fail(t("loop.tooMany"))
     return null
   }
   yield {
@@ -336,7 +339,10 @@ export async function* runChat(
     yield { type: "error", code: "unavailable" }
     return
   }
-  const t = serverMessagesFor(context.language)
+  const t = await getTranslations({
+    locale: context.language,
+    namespace: "assistantServer",
+  })
   const byName = new Map(tools.map((t) => [t.definition.name, t]))
   // ask_owner, confirm_card and decline_card are the loop's own tools, typed
   // and talking alike: talking mode shows the same buttons while the question
@@ -674,7 +680,7 @@ export async function* runChat(
         if (text.trim() === "" && !reached) {
           yield {
             type: "text",
-            delta: t.loop.stopped,
+            delta: t("loop.stopped"),
           }
           yield* memoryEvent()
           yield { type: "done" }
@@ -730,7 +736,7 @@ export async function* runChat(
               role: "tool",
               tool_call_id: call.id,
               content: JSON.stringify({
-                error: accept ? t.loop.noCard : t.loop.noCardToDecline,
+                error: accept ? t("loop.noCard") : t("loop.noCardToDecline"),
               }),
             })
             continue
@@ -741,7 +747,7 @@ export async function* runChat(
           if (accept) {
             yield { type: "accepted", id: taken.id }
             ranThisReply.push(taken)
-            outcome = { ok: false, text: t.confirm.unknown }
+            outcome = { ok: false, text: t("confirm.unknown") }
             for await (const event of runPending(taken, pendingTool, t)) {
               if (event.type === "result") {
                 outcome = { ok: event.ok, text: event.text }
@@ -752,7 +758,7 @@ export async function* runChat(
             yield { type: "declined", id: taken.id }
             outcome = {
               ok: true,
-              text: pendingTool?.confirm?.declinedText ?? t.confirm.unchanged,
+              text: pendingTool?.confirm?.declinedText ?? t("confirm.unchanged"),
             }
           }
           if (context.voice !== true) {
@@ -797,7 +803,7 @@ export async function* runChat(
             history.push({
               role: "tool",
               tool_call_id: call.id,
-              content: JSON.stringify({ error: t.loop.askInvalid }),
+              content: JSON.stringify({ error: t("loop.askInvalid") }),
             })
             continue
           }
@@ -826,7 +832,7 @@ export async function* runChat(
             history.push({
               role: "tool",
               tool_call_id: call.id,
-              content: JSON.stringify({ error: t.loop.oneCard }),
+              content: JSON.stringify({ error: t("loop.oneCard") }),
             })
             continue
           }
@@ -841,8 +847,8 @@ export async function* runChat(
               content: JSON.stringify({
                 error:
                   repeated === "waiting"
-                    ? t.loop.cardStillWaiting
-                    : t.loop.cardAlreadyRan,
+                    ? t("loop.cardStillWaiting")
+                    : t("loop.cardAlreadyRan"),
               }),
             })
             continue
@@ -879,7 +885,7 @@ export async function* runChat(
         yield {
           type: "step",
           id: stepId,
-          label: tool?.label ?? t.steps.working,
+          label: tool?.label ?? t("steps.working"),
           status: "running",
           ...(line !== "" &&
           line.split(/\s+/).length <= ASSISTANT_RULES.maxLookupLineWords &&
@@ -932,7 +938,7 @@ export async function* runChat(
           }
         } catch {
           ok = false
-          result = { error: t.loop.lookupFailed }
+          result = { error: t("loop.lookupFailed") }
         }
         history.push({
           role: "tool",
@@ -943,8 +949,8 @@ export async function* runChat(
           type: "step",
           id: stepId,
           label: ok
-            ? (tool?.doneLabel ?? t.stepsDone.working)
-            : (tool?.label ?? t.steps.working),
+            ? (tool?.doneLabel ?? t("stepsDone.working"))
+            : (tool?.label ?? t("steps.working")),
           status: ok ? "done" : "failed",
         }
       }
@@ -961,7 +967,7 @@ export async function* runChat(
     if (!reached) {
       yield {
         type: "text",
-        delta: t.loop.stopped,
+        delta: t("loop.stopped"),
       }
     }
     yield* memoryEvent()

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { FormActions } from "@/components/form-actions"
@@ -16,8 +17,8 @@ import {
 import { PhoneInput } from "@/components/phone-input"
 import { Spinner } from "@/components/ui/spinner"
 import { PHONE_PATTERN } from "@/lib/booking-rules"
+import { languageOf } from "@/lib/page-language"
 import { saveNotificationSettings } from "../api/notification-actions"
-import { useOwnerMessages } from "../i18n/provider"
 import type { NotificationMessage, NotificationSettings } from "../types/notifications"
 import type { EditorLimits } from "@/components/message-editor"
 import { isCustomerMessage } from "../utils/customer-messages"
@@ -36,8 +37,8 @@ export function WhatsappAlerts({
   settings: NotificationSettings
   limits: EditorLimits
 }) {
-  const m = useOwnerMessages()
-  const t = m.whatsapp
+  const t = useTranslations("owner.whatsapp")
+  const locale = useLocale()
   const router = useRouter()
   const [phone, setPhone] = useState(settings.ownerPhone ?? "")
   const [badPhone, setBadPhone] = useState(false)
@@ -53,26 +54,26 @@ export function WhatsappAlerts({
       const result = await saveNotificationSettings(businessId, {
         ownerPhone: phone.trim() || null,
         // The owner's alert goes in the language they use Book in.
-        ownerLanguage: m.locale.startsWith("es") ? "es" : "en",
+        ownerLanguage: languageOf(locale),
         reminders: settings.reminders,
         quietStart: settings.quietStart,
         quietEnd: settings.quietEnd,
       }).catch(() => null)
       if (result?.ok) {
-        toast.success(t.settingsSaved)
+        toast.success(t("settingsSaved"))
         router.refresh()
       } else {
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
   }
 
   return (
     <div className="flex flex-col gap-10">
-      <PageSection id="your-number" title={t.yourNumber}>
+      <PageSection id="your-number" title={t("yourNumber")}>
         <Field data-invalid={badPhone || undefined}>
           <FieldLabel htmlFor="owner-whatsapp" className="sr-only">
-            {t.yourNumber}
+            {t("yourNumber")}
           </FieldLabel>
           <PhoneInput
             id="owner-whatsapp"
@@ -80,20 +81,20 @@ export function WhatsappAlerts({
             value={phone}
             aria-invalid={badPhone || undefined}
             onChange={setPhone}
-            locale={m.locale}
+            locale={locale}
           />
           {badPhone ? (
-            <FieldError>{t.badPhone}</FieldError>
+            <FieldError>{t("badPhone")}</FieldError>
           ) : (
             <FieldDescription>
-              {settings.ownerPhone ? t.yourNumberHint : t.yourNumberNeeded}
+              {settings.ownerPhone ? t("yourNumberHint") : t("yourNumberNeeded")}
             </FieldDescription>
           )}
         </Field>
         <FormActions>
           <Button size="lg" onClick={save} disabled={pending}>
             {pending && <Spinner data-icon="inline-start" />}
-            {t.saveSettings}
+            {t("saveSettings")}
           </Button>
         </FormActions>
       </PageSection>

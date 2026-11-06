@@ -1,11 +1,12 @@
 "use client"
 
+import { useTranslations } from "next-intl"
+
 import { ChevronRightIcon } from "@/components/ui/icons"
 
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { useOwnerMessages } from "../i18n/provider"
 import type { ChatConnection } from "../types/chat-connection"
 import type { Sender } from "@/types/whatsapp"
 
@@ -31,36 +32,36 @@ export function WhatsappPanel({
   onConnect: () => void
   onDisconnect: () => void
 }) {
-  const m = useOwnerMessages()
-  const t = m.integrations
+  const t = useTranslations("owner.integrations")
+  const whatsapp = useTranslations("owner.whatsapp")
   const connected = !!connection && !connection.needsReconnect
 
   return (
     <ResponsivePanel
       open={open}
       onClose={onClose}
-      title={t.whatsapp.name}
+      title={t("whatsapp.name")}
       footer={
         connected ? (
           <Button variant="outline" size="lg" onClick={onDisconnect}>
-            {t.whatsapp.disconnect}
+            {t("whatsapp.disconnect")}
           </Button>
         ) : (
           <Button size="lg" onClick={onConnect} disabled={connecting}>
             {connecting && <Spinner data-icon="inline-start" />}
-            {t.whatsapp.useOwnNumber}
+            {t("whatsapp.useOwnNumber")}
             {!connecting && <ChevronRightIcon data-icon="inline-end" />}
           </Button>
         )
       }
     >
       <div className="flex flex-col gap-2">
-        {sender && <p className="text-sm">{m.whatsapp.sendingFrom[sender]}</p>}
+        {sender && <p className="text-sm">{whatsapp(`sendingFrom.${sender}`)}</p>}
         {connected && (
           <p className="text-sm text-muted-foreground">
             {connection.messages === "ready"
-              ? t.koblipChat.workspace(connection.workspaceName)
-              : t.koblipChat.messages[connection.messages]}
+              ? t("koblipChat.workspace", { name: connection.workspaceName })
+              : t(`koblipChat.messages.${connection.messages}`)}
           </p>
         )}
       </div>

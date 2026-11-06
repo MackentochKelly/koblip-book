@@ -1,15 +1,17 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
+
 import { chatConnectionFor } from "@/features/dashboard/api/chat-templates"
 import { googleCalendarFor } from "@/features/dashboard/api/google-calendar"
 import { senderFor } from "@/features/dashboard/api/notification-sender"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { IntegrationsView } from "@/features/dashboard/components/integrations-view"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { CHAT_CONNECT_RESULTS } from "@/types/chat-connect"
 import { GOOGLE_CONNECT_RESULTS } from "@/types/google-calendar-connect"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.integrations }
+  const t = await getTranslations("owner.shell")
+  return { title: t("nav.integrations") }
 }
 
 type Props = {

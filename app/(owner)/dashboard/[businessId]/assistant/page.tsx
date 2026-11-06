@@ -1,15 +1,15 @@
 import type { Metadata } from "next"
-import { assistantMessagesFor } from "@/features/assistant/i18n"
+import { getLocale, getTranslations } from "next-intl/server"
+
 import { getVoiceChoice } from "@/features/assistant/api/voice-choice"
 import { AssistantChat } from "@/features/assistant/components/assistant-chat"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
-import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { requireOwner } from "@/lib/dal"
+import { languageOf } from "@/lib/page-language"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: assistantMessagesFor(await getOwnerLanguage()).title,
-  }
+  const t = await getTranslations("assistant")
+  return { title: t("title") }
 }
 
 export default async function AssistantPage({
@@ -20,9 +20,8 @@ export default async function AssistantPage({
     requireOwner(`/dashboard/${businessId}/assistant`),
     getOwnerBusiness(businessId),
   ])
-  // Only the language crosses to the browser: the words include
-  // functions (counts), which a server page cannot send.
-  const language = await getOwnerLanguage()
+  // A talk hears and speaks in the owner's language.
+  const language = languageOf(await getLocale())
   const voiceChoice = await getVoiceChoice(owner.userId)
   return (
     <AssistantChat

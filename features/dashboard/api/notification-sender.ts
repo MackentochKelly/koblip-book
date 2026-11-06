@@ -1,6 +1,7 @@
 import "server-only"
 import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, notInArray } from "drizzle-orm"
 import { alias } from "drizzle-orm/sqlite-core"
+import { createTranslator } from "next-intl"
 
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
@@ -16,7 +17,9 @@ import {
   notificationSends,
 } from "@/lib/db/schema"
 import type { NotificationRules } from "@/lib/notification-rules"
+import { DEFAULT_LOCALES } from "@/lib/page-language"
 import { notificationRules } from "@/lib/platform-settings"
+import { wordsFor } from "@/lib/translations/interface-words"
 import { whatsappDigits } from "@/lib/whatsapp-phone"
 import {
   BOOKING_MESSAGES,
@@ -517,6 +520,18 @@ type Outcome =
   // Nothing reached WhatsApp (Chat could not be asked): tried again next time.
   | { state: "pending" }
 
+// A length of time in the message's language (app.duration). Messages go out
+// on the server's timer, with no page behind them, so the words come straight
+// from the app's words, as a Google Calendar event's do
+// (lib/google-calendar-event.ts).
+async function durationWords(language: TemplateLanguage) {
+  return createTranslator({
+    locale: DEFAULT_LOCALES[language],
+    messages: await wordsFor(language),
+    namespace: "app.duration",
+  })
+}
+
 async function deliver(
   send: typeof notificationSends.$inferSelect,
   now: Date,
@@ -574,7 +589,8 @@ async function deliver(
       date: at.date,
       time: at.time,
     },
-    language
+    language,
+    await durationWords(language)
   )
 
   if (kind === "thankYou") {

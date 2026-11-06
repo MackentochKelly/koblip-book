@@ -1,17 +1,15 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { getLocale, getTranslations } from "next-intl/server"
 
 import { claimBusiness } from "@/features/dashboard/api/actions"
 import { getMyBusinesses } from "@/features/dashboard/api/queries"
 import { AccountMenu } from "@/features/dashboard/components/account-menu"
 import { StartScreen } from "@/features/dashboard/components/start-screen"
-import {
-  getOwnerLanguage,
-  getOwnerMessages,
-} from "@/features/dashboard/i18n/server"
 import { LAST_BUSINESS_COOKIE } from "@/features/dashboard/last-business"
 import { GetStarted } from "@/features/onboarding/components/get-started"
 import { getTeamSeats, requireOwner } from "@/lib/dal"
+import { languageOf } from "@/lib/page-language"
 
 // Where every login lands: the business the owner last opened (else their
 // first); a team member with no business of their own, their team area
@@ -37,14 +35,14 @@ export default async function DashboardPage() {
     redirect(`/team/${seat.teamMemberId}`)
   }
   const firstName = owner.name.trim().split(/\s+/)[0]
-  const t = (await getOwnerMessages()).shell.start
-  const language = await getOwnerLanguage()
+  const t = await getTranslations("owner.shell.start")
+  const language = languageOf(await getLocale())
   return (
     <StartScreen
       language={language}
-      welcome={firstName ? t.welcome(firstName) : undefined}
-      title={t.title}
-      hint={t.hint}
+      welcome={firstName ? t("welcome", { name: firstName }) : undefined}
+      title={t("title")}
+      hint={t("hint")}
       action={
         <AccountMenu
           owner={{ name: owner.name, contact: owner.contact, image: owner.image }}

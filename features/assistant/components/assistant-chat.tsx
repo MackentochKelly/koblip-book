@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { useEffect, useEffectEvent, useRef, useState } from "react"
 import { toast } from "sonner"
 import {
@@ -17,7 +18,6 @@ import { ViewTabs } from "@/components/view-tabs"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useVisualViewport } from "@/hooks/use-visual-viewport"
 import type { PageLanguage } from "@/lib/page-language"
-import { assistantMessagesFor } from "../i18n"
 import { useAssistantChat } from "../hooks/use-assistant-chat"
 import { useLiveVoice } from "../hooks/use-live-voice"
 import { useVoiceChoice } from "../hooks/use-voice-choice"
@@ -49,7 +49,7 @@ export function AssistantChat({
   language: PageLanguage
   voiceChoice: VoiceChoice
 }) {
-  const messages = assistantMessagesFor(language)
+  const t = useTranslations("assistant")
   const router = useRouter()
   const chat = useAssistantChat(businessId, httpTransport)
   const voice = useVoiceChoice(voiceChoice)
@@ -76,8 +76,8 @@ export function AssistantChat({
       } else {
         toast.error(
           error === "mic_denied"
-            ? messages.composer.micDenied
-            : messages.errors[error]
+            ? t("composer.micDenied")
+            : t(`errors.${error}`)
         )
       }
     },
@@ -131,7 +131,7 @@ export function AssistantChat({
   const [view, setView] = useState<"chat" | "recent">("chat")
   const openChat = async (id: string) => {
     if (await chat.open(id)) setView("chat")
-    else toast.error(messages.recent.openFailed)
+    else toast.error(t("recent.openFailed"))
   }
   const newChat = () => {
     chat.reset()
@@ -158,12 +158,12 @@ export function AssistantChat({
             computer the row spans the page, so new chat sits at its edge
             under the top bar's buttons, not beside the words. */}
         <div className="mx-auto grid h-14 w-full max-w-3xl grid-cols-[1fr_auto_1fr] items-center gap-2 px-2 md:max-w-none md:px-4">
-          <h1 className="sr-only">{messages.title}</h1>
+          <h1 className="sr-only">{t("title")}</h1>
           <Button
             type="button"
             variant="secondary"
             size="icon"
-            aria-label={messages.back}
+            aria-label={t("back")}
             onClick={back}
             className="justify-self-start md:invisible"
           >
@@ -171,18 +171,18 @@ export function AssistantChat({
           </Button>
           <ViewTabs
             views={[
-              { id: "chat", label: messages.views.chat },
-              { id: "recent", label: messages.views.recent },
+              { id: "chat", label: t("views.chat") },
+              { id: "recent", label: t("views.recent") },
             ]}
             value={view}
             onChange={setView}
-            ariaLabel={messages.views.label}
+            ariaLabel={t("views.label")}
           />
           <Button
             type="button"
             variant="secondary"
             size="icon"
-            aria-label={messages.newChat}
+            aria-label={t("newChat")}
             disabled={chat.busy || (view === "chat" && chat.items.length === 0)}
             onClick={newChat}
             className="justify-self-end"
@@ -197,10 +197,6 @@ export function AssistantChat({
         {view === "recent" ? (
           <RecentChats
             businessId={businessId}
-            language={language}
-            labels={messages.recent}
-            newChatLabel={messages.newChat}
-            retryLabel={messages.retry}
             onOpen={openChat}
             onNew={newChat}
           />
@@ -208,7 +204,6 @@ export function AssistantChat({
           <>
             <MessageList
               businessId={businessId}
-              messages={messages}
               items={chat.items}
               busy={chat.busy}
               error={chat.error}
@@ -226,22 +221,21 @@ export function AssistantChat({
                       variant="ghost"
                       size="lg"
                       className="justify-start font-normal text-muted-foreground"
-                      onClick={() => chat.send(messages.empty.suggestions[key])}
+                      onClick={() => chat.send(t(`empty.suggestions.${key}`))}
                     >
                       <Icon data-icon="inline-start" />
-                      {messages.empty.suggestions[key]}
+                      {t(`empty.suggestions.${key}`)}
                     </Button>
                   ))}
                 </div>
               )}
               <AssistantComposer
-                labels={messages.composer}
                 busy={chat.busy}
                 stoppable={chat.stoppable}
                 onSend={chat.send}
                 onStop={chat.stop}
                 live={live}
-                voice={{ picking: voice, labels: messages.voice, language }}
+                voice={{ picking: voice, language }}
                 startLive={chat.liveRequested}
               />
             </div>

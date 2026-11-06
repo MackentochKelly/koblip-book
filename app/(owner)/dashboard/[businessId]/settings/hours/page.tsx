@@ -1,11 +1,13 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
+
 import { PageSection } from "@/components/page-section"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { HoursForm } from "@/features/dashboard/components/hours-form"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.hours }
+  const t = await getTranslations("owner.shell")
+  return { title: t("nav.hours") }
 }
 
 type Props = {
@@ -14,12 +16,12 @@ type Props = {
 
 export default async function HoursPage({ params }: Props) {
   const { businessId } = await params
-  const [{ hours }, m] = await Promise.all([
+  const [{ hours }, t] = await Promise.all([
     getOwnerBusiness(businessId),
-    getOwnerMessages(),
+    getTranslations("owner.settings"),
   ])
   return (
-    <PageSection id="hours" title={m.settings.parts.hours}>
+    <PageSection id="hours" title={t("parts.hours")}>
       <HoursForm
         businessId={businessId}
         hours={hours.map(({ weekday, opensAt, closesAt }) => ({

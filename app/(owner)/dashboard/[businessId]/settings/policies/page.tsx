@@ -1,12 +1,14 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
+
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { getPolicies } from "@/features/dashboard/api/policy-queries"
 import { PoliciesSection } from "@/features/dashboard/components/policies-section"
 import { PolicyPointsSection } from "@/features/dashboard/components/policy-points-section"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).settings.parts.policies }
+  const t = await getTranslations("owner.settings")
+  return { title: t("parts.policies") }
 }
 
 type Props = {

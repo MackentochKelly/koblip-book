@@ -1,11 +1,13 @@
 import {
   cleanup,
   fireEvent,
-  render,
+  render as renderPart,
   screen,
   waitFor,
 } from "@testing-library/react"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
+
+import { WithWords } from "@/i18n/testing"
 
 const { actions, toast } = vi.hoisted(() => ({
   actions: {
@@ -23,6 +25,8 @@ vi.mock("../api/actions", () => actions)
 vi.mock("../api/improve-details", () => ({ improveDetails: vi.fn() }))
 
 const { HoursForm } = await import("./hours-form")
+// Each form with the app's English words.
+const render = (ui: React.ReactElement) => renderPart(ui, { wrapper: WithWords })
 const { DetailsForm } = await import("./details-form")
 
 const details = {

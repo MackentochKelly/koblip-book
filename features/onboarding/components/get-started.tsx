@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   useTransition,
@@ -9,6 +10,7 @@ import {
 } from "react"
 import { flushSync } from "react-dom"
 import { AnimatePresence, motion } from "motion/react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import {
   ArrowLeftIcon,
@@ -64,7 +66,6 @@ import { useSearchLocation } from "../hooks/use-search-location"
 import { SuggestionList } from "./suggestion-list"
 import { noAutofill } from "@/lib/no-autofill"
 import type { PageLanguage } from "@/lib/page-language"
-import { onboardingWordsFor, type OnboardingWords } from "../i18n"
 
 type ClaimResult =
   { ok: true; businessId: string } | { ok: false; error: string }
@@ -85,6 +86,9 @@ type Choose = (
 ) => void
 
 type Mode = "search" | "link"
+
+// The example lines typed in the empty search box, in this order.
+const EXAMPLES = ["search", "sample", "kinds"] as const
 
 // On a phone the search box grows into a full screen search when tapped
 // (Motion layout animation: motion.dev/docs/react-layout-animations).
@@ -125,12 +129,13 @@ export function GetStarted({
   googleError?: string | null
   // Phone codes can be sent (lib/phone-sign-in.ts).
   phoneSignIn?: boolean
+  // The page's, for the links it makes.
   language: PageLanguage
 }) {
-  const t = onboardingWordsFor(language)
+  const t = useTranslations("onboarding")
   const modes: ViewTab<Mode>[] = [
-    { id: "search", label: t.modes.search, icon: <SearchIcon /> },
-    { id: "link", label: t.modes.link, icon: <LinkIcon /> },
+    { id: "search", label: t("modes.search"), icon: <SearchIcon /> },
+    { id: "link", label: t("modes.link"), icon: <LinkIcon /> },
   ]
   const router = useRouter()
   const [mode, setMode] = useState<Mode>("search")
@@ -198,7 +203,7 @@ export function GetStarted({
       const claimed = await claim(result.slug).catch(() => null)
       if (!current) return
       if (claimed?.ok) router.replace(`/setup/${claimed.businessId}/google`)
-      else { setResuming(false); setError(t.errors.failed) }
+      else { setResuming(false); setError(t("errors.failed")) }
     })
     return () => { current = false }
   }, [resumePending, signedIn, picked, claim, router, t])
@@ -251,7 +256,7 @@ export function GetStarted({
     void picked.prepared.then((result) => {
       if (!current) return
       setPrepared(result)
-      if (!result.ok) setError(t.errors[result.error])
+      if (!result.ok) setError(t(`errors.${result.error}`))
     })
     return () => {
       current = false
@@ -293,7 +298,7 @@ export function GetStarted({
     }
     const claimed = await claim(result.slug).catch(() => null)
     if (!claimed?.ok) {
-      setError(t.errors.failed)
+      setError(t("errors.failed"))
       setFinishing(false)
       return
     }
@@ -314,7 +319,7 @@ export function GetStarted({
           views={modes}
           value={mode}
           onChange={setMode}
-          ariaLabel={t.modes.label}
+          ariaLabel={t("modes.label")}
           listClassName={cn(
             glassClassName,
             glassEdgeClassName,
@@ -399,7 +404,7 @@ export function GetStarted({
       {!picked && hint && (
         <p className="flex items-center gap-2 text-sm font-medium">
           <CornerLeftUpIcon className="size-4" />
-          {t.hint}
+          {t("hint")}
         </p>
       )}
     </div>
@@ -411,7 +416,7 @@ export function GetStarted({
     return box(
       <Button size="lg" disabled className="w-full">
         <Spinner data-icon="inline-start" />
-        {t.building}
+        {t("building")}
       </Button>
     )
   }
@@ -419,7 +424,7 @@ export function GetStarted({
   if (!picked) {
     return box(
       mode === "link" ? (
-        <PasteLink onChoose={choose} busy={handingOver} t={t} />
+        <PasteLink onChoose={choose} busy={handingOver} />
       ) : (
         <FindBusiness
           onChoose={(found, prepare) => {
@@ -430,7 +435,6 @@ export function GetStarted({
           expanded={open}
           onExpand={expand}
           onCollapse={collapse}
-          t={t}
         />
       )
     )
@@ -441,7 +445,7 @@ export function GetStarted({
   const facts = ready
     ? [
         ready.category,
-        ready.openDays > 0 ? t.found.openDays(ready.openDays) : null,
+        ready.openDays > 0 ? t("found.openDays", { days: ready.openDays }) : null,
       ]
         .filter(Boolean)
         .join(" · ")
@@ -494,13 +498,13 @@ export function GetStarted({
           <FieldError>{error}</FieldError>
           <Button variant="outline" size="lg" onClick={back}>
             <ArrowLeftIcon data-icon="inline-start" />
-            {t.searchAgain}
+            {t("searchAgain")}
           </Button>
         </Field>
       ) : signedIn ? (
         <Button size="lg" disabled>
           <Spinner data-icon="inline-start" />
-          {t.building}
+          {t("building")}
         </Button>
       ) : (
         <>
@@ -519,7 +523,7 @@ export function GetStarted({
             language={language}
           />
           <Button variant="ghost" onClick={back} disabled={finishing}>
-            {t.notYours}
+            {t("notYours")}
           </Button>
         </>
       )}
@@ -537,7 +541,6 @@ function FindBusiness({
   expanded,
   onExpand,
   onCollapse,
-  t,
 }: {
   onChoose: Choose
   // The picked business's sign-up page is on its way: its row spins.
@@ -545,13 +548,18 @@ function FindBusiness({
   expanded: boolean
   onExpand: () => void
   onCollapse: () => void
-  t: OnboardingWords
 }) {
+  const t = useTranslations("onboarding")
   const [query, setQuery] = useState("")
   const [focused, setFocused] = useState(false)
+  // One list while the words stay the same: a new one restarts the typing.
+  const examples = useMemo(
+    () => EXAMPLES.map((key) => t(`businessNameExamples.${key}`)),
+    [t]
+  )
   const placeholder = useTypingPlaceholder({
-    lines: t.businessNameExamples,
-    rest: t.businessName,
+    lines: examples,
+    rest: t("businessName"),
     paused: focused || query !== "",
   })
   const [results, setResults] = useState<BusinessSearchResult[] | null>(null)
@@ -663,13 +671,13 @@ function FindBusiness({
           ) : (
             <MapPinIcon data-icon="inline-start" />
           )}
-          {area?.isCurrentLocation ? t.nearMe : (area?.label ?? t.anywhere)}
+          {area?.isCurrentLocation ? t("nearMe") : (area?.label ?? t("anywhere"))}
         </Button>
         {expanded && (
           <Button
             variant="outline"
             size="icon"
-            aria-label={t.closeSearch}
+            aria-label={t("closeSearch")}
             onClick={onCollapse}
             className="ml-auto"
           >
@@ -695,14 +703,14 @@ function FindBusiness({
           }}
           placeholder={placeholder}
           className="text-base [&::-webkit-search-cancel-button]:appearance-none"
-          aria-label={t.businessName}
+          aria-label={t("businessName")}
           enterKeyHint="search"
         />
         {query && (
           <InputGroupAddon align="inline-end">
             <InputGroupButton
               size="icon-xs"
-              aria-label={t.clear}
+              aria-label={t("clear")}
               onClick={() => setQuery("")}
             >
               <XIcon />
@@ -717,7 +725,7 @@ function FindBusiness({
         )}
       >
         {results && results.length === 0 && !searching && (
-          <p className="px-1 text-sm text-muted-foreground">{t.noneFound}</p>
+          <p className="px-1 text-sm text-muted-foreground">{t("noneFound")}</p>
         )}
         {results && results.length > 0 && (
           <SuggestionList
@@ -770,7 +778,6 @@ function FindBusiness({
         pending={location.view.pending}
         canLocate={location.view.canLocate}
         locationAlert={location.view.alert}
-        words={t.area}
       />
     </div>
   )
@@ -780,12 +787,11 @@ function FindBusiness({
 function PasteLink({
   onChoose,
   busy,
-  t,
 }: {
   onChoose: Choose
   busy: boolean
-  t: OnboardingWords
 }) {
+  const t = useTranslations("onboarding")
   const [link, setLink] = useState("")
   const [sending, setSending] = useState(false)
   const [error, setError] = useState("")
@@ -794,7 +800,7 @@ function PasteLink({
     event.preventDefault()
     if (sending) return
     if (!link.trim()) {
-      setError(t.errors.invalid)
+      setError(t("errors.invalid"))
       return
     }
     setSending(true)
@@ -804,7 +810,7 @@ function PasteLink({
     )
     setSending(false)
     if (!result.ok) {
-      setError(t.errors[result.error])
+      setError(t(`errors.${result.error}`))
       return
     }
     onChoose(
@@ -833,7 +839,7 @@ function PasteLink({
             onChange={(event) => setLink(event.target.value)}
             placeholder="https://maps.app.goo.gl/…"
             className="text-base"
-            aria-label={t.mapsLink}
+            aria-label={t("mapsLink")}
             aria-invalid={Boolean(error) || undefined}
             autoFocus
           />
@@ -842,7 +848,7 @@ function PasteLink({
       </Field>
       <Button type="submit" size="lg" disabled={waiting}>
         {waiting && <Spinner data-icon="inline-start" />}
-        {t.continue}
+        {t("continue")}
       </Button>
     </form>
   )

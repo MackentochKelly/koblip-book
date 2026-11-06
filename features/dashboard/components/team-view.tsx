@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -83,7 +84,6 @@ import {
   sendTeamCalendarLink,
 } from "../api/google-calendar-actions"
 import type { TeamCalendar } from "../types/google-calendar"
-import { useOwnerMessages } from "../i18n/provider"
 import { ConfirmRemove } from "./confirm-remove"
 import { RemoveGoogleEvents } from "./remove-google-events"
 
@@ -122,8 +122,9 @@ export function TeamView({
   team: MemberRow[]
 }) {
   const router = useRouter()
-  const messages = useOwnerMessages()
-  const { common: c, team: t } = messages.catalog
+  const c = useTranslations("owner.catalog.common")
+  const t = useTranslations("owner.catalog.team")
+  const calendar = useTranslations("owner.integrations.googleCalendar")
   const [editing, setEditing] = useState<MemberRow | "new" | null>(null)
   const [formKey, setFormKey] = useState(0)
   const [removing, setRemoving] = useState<MemberRow | null>(null)
@@ -142,7 +143,7 @@ export function TeamView({
     setEditing(member)
   }
   // On a phone the tab bar's middle button adds a person.
-  useTabBarAction({ label: t.addPerson, onClick: () => openForm("new") })
+  useTabBarAction({ label: t("addPerson"), onClick: () => openForm("new") })
   const move = (index: number, by: number) => {
     const ids = team.map((member) => member.id)
     const [id] = ids.splice(index, 1)
@@ -150,19 +151,19 @@ export function TeamView({
     startTransition(async () => {
       const result = await reorderTeam(businessId, ids)
       if (result.ok) router.refresh()
-      else toast.error(c.failed)
+      else toast.error(c("failed"))
     })
   }
   const remove = (member: MemberRow) =>
     startTransition(async () => {
       const result = await deleteTeamMember(businessId, member.id)
       if (result.ok) {
-        toast.success(t.removed(member.name))
+        toast.success(t("removed", { name: member.name }))
         router.refresh()
       } else if (result.error === "has_bookings") {
-        toast.error(t.hasBookings(member.name))
+        toast.error(t("hasBookings", { name: member.name }))
       } else {
-        toast.error(c.failed)
+        toast.error(c("failed"))
       }
     })
 
@@ -172,19 +173,19 @@ export function TeamView({
     startTransition(async () => {
       const result = await sendTeamCalendarLink(businessId, member.id).catch(() => null)
       if (!result?.ok) {
-        toast.error(c.failed)
+        toast.error(c("failed"))
         return
       }
       if (result.emailedTo) {
-        toast.success(t.calendarLinkSent(result.emailedTo))
+        toast.success(t("calendarLinkSent", { email: result.emailedTo }))
         return
       }
       const shared = await shareLink({
-        title: t.calendarLinkTitle,
-        text: t.calendarLinkText(businessName),
+        title: t("calendarLinkTitle"),
+        text: t("calendarLinkText", { business: businessName }),
         url: result.url,
       })
-      if (shared === "copied") toast.success(t.calendarLinkCopied)
+      if (shared === "copied") toast.success(t("calendarLinkCopied"))
     })
   // A link for the person to open their own dashboard
   // (docs/plans/team-accounts.md): emailed when they have an email, else
@@ -193,39 +194,39 @@ export function TeamView({
     startTransition(async () => {
       const result = await sendTeamInvite(businessId, member.id).catch(() => null)
       if (!result?.ok) {
-        toast.error(c.failed)
+        toast.error(c("failed"))
         return
       }
       if (result.emailedTo) {
-        toast.success(t.inviteSent(result.emailedTo))
+        toast.success(t("inviteSent", { email: result.emailedTo }))
         return
       }
       const shared = await shareLink({
-        title: t.inviteTitle,
-        text: t.inviteText(businessName),
+        title: t("inviteTitle"),
+        text: t("inviteText", { business: businessName }),
         url: result.url,
       })
-      if (shared === "copied") toast.success(t.inviteCopied)
+      if (shared === "copied") toast.success(t("inviteCopied"))
     })
   const revoke = (member: MemberRow) =>
     startTransition(async () => {
       const result = await removeTeamAccess(businessId, member.id).catch(() => null)
       if (result?.ok) {
-        toast.success(t.accessRemoved)
+        toast.success(t("accessRemoved"))
         router.refresh()
       } else {
-        toast.error(c.failed)
+        toast.error(c("failed"))
       }
     })
   const unlinkCalendar = (member: MemberRow) =>
     startTransition(async () => {
       const result = await disconnectTeamCalendar(businessId, member.id, removeEvents).catch(() => null)
       if (result?.ok) {
-        if (result.eventsRemoved) toast.success(t.calendarDisconnected)
-        else toast.error(messages.integrations.googleCalendar.removeEventsFailed)
+        if (result.eventsRemoved) toast.success(t("calendarDisconnected"))
+        else toast.error(calendar("removeEventsFailed"))
         router.refresh()
       } else {
-        toast.error(c.failed)
+        toast.error(c("failed"))
       }
     })
 
@@ -234,10 +235,10 @@ export function TeamView({
       {/* On a phone the top bar names the page and Add is the tab bar's
           middle button, so this header row is a computer's. */}
       <div className="flex items-center justify-between gap-3 max-md:contents">
-        <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{t.title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{t("title")}</h1>
         <Button className="max-md:hidden" onClick={() => openForm("new")}>
           <PlusIcon data-icon="inline-start" />
-          {c.add}
+          {c("add")}
         </Button>
       </div>
 
@@ -247,7 +248,7 @@ export function TeamView({
             <EmptyMedia variant="icon">
               <UsersIcon />
             </EmptyMedia>
-            <EmptyTitle>{t.empty}</EmptyTitle>
+            <EmptyTitle>{t("empty")}</EmptyTitle>
           </EmptyHeader>
         </Empty>
       ) : (
@@ -264,19 +265,19 @@ export function TeamView({
               </ItemMedia>
               <ItemContent>
                 <ItemTitle>{member.name}</ItemTitle>
-                {member.userId && <ItemDescription>{t.hasAccess}</ItemDescription>}
+                {member.userId && <ItemDescription>{t("hasAccess")}</ItemDescription>}
                 {calendars[member.id] && (
                   <ItemDescription>
-                    {calendars[member.id].needsReconnect ? t.calendarStopped : t.calendarConnected}
+                    {calendars[member.id].needsReconnect ? t("calendarStopped") : t("calendarConnected")}
                   </ItemDescription>
                 )}
               </ItemContent>
               <ItemActions>
                 <Button variant="outline" onClick={() => openForm(member)}>
-                  {c.edit}
+                  {c("edit")}
                 </Button>
                 <DropdownMenu>
-                  <MoreMenuTrigger label={c.more} />
+                  <MoreMenuTrigger label={c("more")} />
                   <DropdownMenuContent align="end">
                     <DropdownMenuGroup>
                       <DropdownMenuItem
@@ -284,14 +285,14 @@ export function TeamView({
                         onClick={() => move(index, -1)}
                       >
                         <ArrowUpIcon />
-                        {c.moveUp}
+                        {c("moveUp")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         disabled={index === team.length - 1 || pending}
                         onClick={() => move(index, 1)}
                       >
                         <ArrowDownIcon />
-                        {c.moveDown}
+                        {c("moveDown")}
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
@@ -299,12 +300,12 @@ export function TeamView({
                       {member.userId ? (
                         <DropdownMenuItem disabled={pending} onClick={() => setRevoking(member)}>
                           <UserXIcon />
-                          {t.removeAccess}
+                          {t("removeAccess")}
                         </DropdownMenuItem>
                       ) : (
                         <DropdownMenuItem disabled={pending} onClick={() => invite(member)}>
                           <UserPlusIcon />
-                          {t.invite}
+                          {t("invite")}
                         </DropdownMenuItem>
                       )}
                       {calendars[member.id] && !calendars[member.id].needsReconnect ? (
@@ -316,12 +317,12 @@ export function TeamView({
                           }}
                         >
                           <CalendarIcon />
-                          {t.disconnectCalendar}
+                          {t("disconnectCalendar")}
                         </DropdownMenuItem>
                       ) : (
                         <DropdownMenuItem disabled={pending} onClick={() => sendCalendarLink(member)}>
                           <CalendarIcon />
-                          {t.sendCalendarLink}
+                          {t("sendCalendarLink")}
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuGroup>
@@ -333,7 +334,7 @@ export function TeamView({
                         onClick={() => setRemoving(member)}
                       >
                         <Trash2Icon />
-                        {c.remove}
+                        {c("remove")}
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                   </DropdownMenuContent>
@@ -350,14 +351,14 @@ export function TeamView({
         onConfirm={() => removing && remove(removing)}
       />
       <ConfirmRemove
-        name={unlinking ? t.calendarName(unlinking.name) : null}
+        name={unlinking ? t("calendarName", { name: unlinking.name }) : null}
         onClose={() => setUnlinking(null)}
         onConfirm={() => unlinking && unlinkCalendar(unlinking)}
       >
         <RemoveGoogleEvents checked={removeEvents} onCheckedChange={setRemoveEvents} />
       </ConfirmRemove>
       <ConfirmRemove
-        name={revoking ? t.accessName(revoking.name) : null}
+        name={revoking ? t("accessName", { name: revoking.name }) : null}
         onClose={() => setRevoking(null)}
         onConfirm={() => revoking && revoke(revoking)}
       />
@@ -365,7 +366,7 @@ export function TeamView({
       <ResponsivePanel
         open={editing !== null}
         onClose={() => setEditing(null)}
-        title={editing === "new" ? t.addPerson : t.editPerson}
+        title={editing === "new" ? t("addPerson") : t("editPerson")}
         footer={
           <Button
             type="submit"
@@ -374,7 +375,7 @@ export function TeamView({
             disabled={pending || (editing !== "new" && !changed)}
           >
             {pending && <Spinner data-icon="inline-start" />}
-            {c.save}
+            {c("save")}
           </Button>
         }
       >
@@ -390,7 +391,7 @@ export function TeamView({
             photo={
               editing !== "new" && (
                 <PhotoField
-                  label={t.photo(editing.name)}
+                  label={t("photo", { name: editing.name })}
                   photoUrl={editing.photoUrl}
                   fallback={initials(editing.name)}
                   upload={(formData) =>
@@ -410,7 +411,7 @@ export function TeamView({
                       setTeamMemberPhoto(businessId, result.id, formData)
                     )
                   setEditing(null)
-                  toast.success(c.saved)
+                  toast.success(c("saved"))
                   router.refresh()
                 } else if (
                   result?.error === "name" ||
@@ -419,7 +420,7 @@ export function TeamView({
                 ) {
                   setFormError(result.error)
                 } else {
-                  toast.error(t.saveFailed)
+                  toast.error(t("saveFailed"))
                 }
               })
             }
@@ -453,9 +454,10 @@ function MemberForm({
     photo: File | null
   ) => void
 }) {
-  const m = useOwnerMessages()
-  const c = m.catalog.common
-  const t = m.catalog.team
+  const c = useTranslations("owner.catalog.common")
+  const t = useTranslations("owner.catalog.team")
+  const hoursWords = useTranslations("owner.settings.hours")
+  const locale = useLocale()
   const [same, setSame] = useState(memberHours.length === 0)
   const [rows, setRows] = useState(memberHours.length ? memberHours : hours)
   const [hoursInvalid, setHoursInvalid] = useState(false)
@@ -502,13 +504,13 @@ function MemberForm({
           photo
         ) : (
           <PickedPhotoField
-            label={t.newPhoto}
+            label={t("newPhoto")}
             fallback={name.trim() ? initials(name) : undefined}
             onChange={setNewPhoto}
           />
         )}
         <Field data-invalid={error === "name" || undefined}>
-          <FieldLabel htmlFor="member-name">{c.name}</FieldLabel>
+          <FieldLabel htmlFor="member-name">{c("name")}</FieldLabel>
           <Input
             {...noAutofill("member_name")}
             id="member-name"
@@ -518,24 +520,24 @@ function MemberForm({
             maxLength={BOOKING_RULES.maxTeamName}
             aria-invalid={error === "name" || undefined}
           />
-          {error === "name" && <FieldError>{c.addName}</FieldError>}
+          {error === "name" && <FieldError>{c("addName")}</FieldError>}
         </Field>
         <Field data-invalid={error === "phone" || undefined}>
-          <FieldLabel htmlFor="member-phone">{t.phone}</FieldLabel>
+          <FieldLabel htmlFor="member-phone">{t("phone")}</FieldLabel>
           <PhoneInput
             {...noAutofill("member_phone")}
             id="member-phone"
             className="min-h-11 md:min-h-9"
             value={phone}
             onChange={setPhone}
-            placeholder={c.optional}
+            placeholder={c("optional")}
             aria-invalid={error === "phone" || undefined}
-            locale={m.locale}
+            locale={locale}
           />
-          {error === "phone" && <FieldError>{t.badPhone}</FieldError>}
+          {error === "phone" && <FieldError>{t("badPhone")}</FieldError>}
         </Field>
         <Field data-invalid={error === "email" || undefined}>
-          <FieldLabel htmlFor="member-email">{t.email}</FieldLabel>
+          <FieldLabel htmlFor="member-email">{t("email")}</FieldLabel>
           <Input
             {...noAutofill("member_email")}
             id="member-email"
@@ -545,13 +547,13 @@ function MemberForm({
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             maxLength={BOOKING_RULES.maxEmail}
-            placeholder={c.optional}
+            placeholder={c("optional")}
             aria-invalid={error === "email" || undefined}
           />
-          {error === "email" && <FieldError>{t.badEmail}</FieldError>}
+          {error === "email" && <FieldError>{t("badEmail")}</FieldError>}
         </Field>
         <Field>
-          <FieldLabel htmlFor="member-description">{t.description}</FieldLabel>
+          <FieldLabel htmlFor="member-description">{t("description")}</FieldLabel>
           <Input
             {...noAutofill("member_description")}
             id="member-description"
@@ -559,47 +561,47 @@ function MemberForm({
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             maxLength={BOOKING_RULES.maxTeamDescription}
-            placeholder={c.optional}
+            placeholder={c("optional")}
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="member-about">{t.about}</FieldLabel>
+          <FieldLabel htmlFor="member-about">{t("about")}</FieldLabel>
           <Textarea
             id="member-about"
             value={about}
             onChange={(event) => setAbout(event.target.value)}
             maxLength={TEAM_RULES.aboutMaxLength}
-            placeholder={c.optional}
+            placeholder={c("optional")}
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="member-languages">{t.languages}</FieldLabel>
+          <FieldLabel htmlFor="member-languages">{t("languages")}</FieldLabel>
           <AppSelect
             multiple
             id="member-languages"
             options={TEAM_RULES.languages.map((code) => ({
               value: code,
-              label: languageName(code, m.locale),
+              label: languageName(code, locale),
               disabled:
                 languages.length >= TEAM_RULES.maxLanguages &&
                 !languages.includes(code),
             }))}
             value={languages}
             onValueChange={setLanguages}
-            placeholder={c.optional}
+            placeholder={c("optional")}
             className="w-full"
           />
         </Field>
         <FieldSet>
-          <FieldLegend variant="label">{t.workingHours}</FieldLegend>
+          <FieldLegend variant="label">{t("workingHours")}</FieldLegend>
           <Field orientation="horizontal" className="min-h-11">
             <FieldContent>
-              <FieldLabel htmlFor="member-same-hours">{t.sameHours}</FieldLabel>
+              <FieldLabel htmlFor="member-same-hours">{t("sameHours")}</FieldLabel>
             </FieldContent>
             <Switch id="member-same-hours" checked={same} onCheckedChange={setSame} />
           </Field>
-          {!same && <WeeklyHoursEditor rows={rows} onChange={(next) => { setRows(next); setHoursInvalid(false) }} locale={m.locale} labels={m.settings.hours} />}
-          {hoursInvalid && <FieldError>{rows.length === 0 ? t.hoursRequired : m.settings.hours.fillEvery}</FieldError>}
+          {!same && <WeeklyHoursEditor rows={rows} onChange={(next) => { setRows(next); setHoursInvalid(false) }} locale={locale} labels={{ closed: hoursWords("closed"), opens: (day) => hoursWords("opens", { day }), closes: (day) => hoursWords("closes", { day }), remove: hoursWords("remove"), add: hoursWords("add") }} />}
+          {hoursInvalid && <FieldError>{rows.length === 0 ? t("hoursRequired") : hoursWords("fillEvery")}</FieldError>}
         </FieldSet>
       </FieldGroup>
     </form>

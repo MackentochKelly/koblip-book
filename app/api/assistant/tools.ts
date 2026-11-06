@@ -1,11 +1,14 @@
 import "server-only"
 
-import type { AssistantTool, ResultKind } from "@/features/assistant/types"
-import {
-  serverMessagesFor,
-  type ServerMessages,
-} from "@/features/assistant/i18n/server"
-import type { PageLanguage } from "@/lib/page-language"
+import { getTranslations } from "next-intl/server"
+
+import type {
+  AssistantTool,
+  OwnerWords,
+  ResultKind,
+  ServerWords,
+} from "@/features/assistant/types"
+import { DEFAULT_LOCALES, type PageLanguage } from "@/lib/page-language"
 import {
   cancelBooking,
   createService,
@@ -69,7 +72,6 @@ import {
 } from "@/features/dashboard/api/team-services"
 import { activateTheme } from "@/features/dashboard/api/theme-actions"
 import { setBookingStatus } from "@/features/dashboard/api/booking-actions"
-import { ownerMessagesFor } from "@/features/dashboard/i18n"
 import type {
   CantComeAction,
   MessageButton,
@@ -120,7 +122,7 @@ import {
   formatDay,
   formatWeekday,
 } from "@/lib/format-booking-time"
-import { formatDuration } from "@/lib/format-duration"
+import { durationIn, type DurationWords } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { notificationRules } from "@/lib/platform-settings"
 import { groupServices, inGroupOrder } from "@/lib/service-groups"
@@ -365,15 +367,17 @@ function validHoursRows(value: unknown): HoursInput[] | null {
 }
 
 // Why a time cannot be used that day, with the free ones to offer.
-function notFreeError(t: ServerMessages, times: string[]): string {
+function notFreeError(
+  t: ServerWords,
+  locale: string,
+  times: string[]
+): string {
   return times.length > 0
-    ? t.errors.slotNotFree(
-        times
+    ? t("errors.slotNotFree", { times: times
           .slice(0, 12)
-          .map((time) => `${formatClock(time, t.locale)} (${time})`)
-          .join(", ")
-      )
-    : t.errors.dayNotFree
+          .map((time) => `${formatClock(time, locale)} (${time})`)
+          .join(", ") })
+    : t("errors.dayNotFree")
 }
 
 // A week of hours in time order: one key to compare and one line for a card.
@@ -389,11 +393,11 @@ function hoursKey(rows: HoursInput[]): string {
   )
 }
 
-function hoursLine(t: ServerMessages, rows: HoursInput[]): string {
+function hoursLine(locale: string, rows: HoursInput[]): string {
   return sortedHours(rows)
     .map(
       (row) =>
-        `${formatWeekday(row.weekday, t.locale)} ${formatClock(row.opensAt, t.locale)}–${formatClock(row.closesAt, t.locale)}`
+        `${formatWeekday(row.weekday, locale)} ${formatClock(row.opensAt, locale)}–${formatClock(row.closesAt, locale)}`
     )
     .join(", ")
 }
@@ -429,7 +433,7 @@ async function pickExtras(
   businessId: string,
   service: { id: string; name: string },
   wanted: unknown,
-  t: ServerMessages
+  t: ServerWords
 ): Promise<PickedExtras | { error: string }> {
   const said = wanted === undefined || wanted === null ? [] : wanted
   if (
@@ -437,20 +441,20 @@ async function pickExtras(
     said.length > BOOKING_RULES.maxAddonOptions ||
     said.some((name) => typeof name !== "string" || name.trim() === "")
   ) {
-    return { error: t.errors.extrasInvalid }
+    return { error: t("errors.extrasInvalid") }
   }
   const groups = (await getAddonGroups(businessId)).filter((group) =>
     group.serviceIds.includes(service.id)
   )
   const options = groups.flatMap((group) => group.options)
   if (said.length > 0 && options.length === 0) {
-    return { error: t.errors.noExtras(service.name) }
+    return { error: t("errors.noExtras", { service: service.name }) }
   }
   const ids = new Set<string>()
   for (const name of said as string[]) {
     const pick = pickByName(options, name)
     if ("choices" in pick) {
-      return { error: t.errors.extraWhich(pick.choices.join(", ")) }
+      return { error: t("errors.extraWhich", { names: pick.choices.join(", ") }) }
     }
     ids.add(pick.found.id)
   }
@@ -459,20 +463,16 @@ async function pickExtras(
     const picked = group.options.filter((option) => ids.has(option.id))
     if (picked.length < group.minSelect) {
       return {
-        error: t.errors.extraNeeded(
-          group.prompt || group.name,
-          group.minSelect,
-          group.options.map((option) => option.name).join(", ")
-        ),
+        error: t("errors.extraNeeded", { group: group.prompt || group.name, count: String(group.minSelect), names: group.options.map((option) => option.name).join(", ") }),
       }
     }
     if (group.maxSelect !== null && picked.length > group.maxSelect) {
-      return { error: t.errors.extraTooMany(group.name, group.maxSelect) }
+      return { error: t("errors.extraTooMany", { group: group.name, count: String(group.maxSelect) }) }
     }
   }
   const checked = checkAddons(groups, [...ids])
   if (!checked.ok) {
-    return { error: t.errors.extrasInvalid }
+    return { error: t("errors.extrasInvalid") }
   }
   return {
     ids: checked.options.map((option) => option.id),
@@ -557,14 +557,15 @@ function asBookingToRun(args: unknown): BookingToRun | null {
 async function checkBookingArgs(
   businessId: string,
   args: unknown,
-  t: ServerMessages,
+  t: ServerWords,
+  locale: string,
   now = Date.now()
 ): Promise<CheckedBooking | { error: string }> {
   const a = asRecord(args)
   // Names as the owner said them; ids work too.
   const serviceWanted = a?.service ?? a?.serviceId
   if (!a || typeof serviceWanted !== "string" || serviceWanted.trim() === "") {
-    return { error: t.errors.serviceRequired }
+    return { error: t("errors.serviceRequired") }
   }
   const memberRaw = a.teamMember ?? a.teamMemberId
   const memberWanted =
@@ -573,39 +574,39 @@ async function checkBookingArgs(
     memberWanted !== null &&
     (typeof memberWanted !== "string" || memberWanted.trim() === "")
   ) {
-    return { error: t.errors.teamMemberInvalid }
+    return { error: t("errors.teamMemberInvalid") }
   }
   if (a.day !== undefined && a.day !== "today" && a.day !== "tomorrow") {
-    return { error: t.errors.bookingDayInvalid }
+    return { error: t("errors.bookingDayInvalid") }
   }
   if (
     a.day === undefined &&
     (typeof a.date !== "string" || !isRealDate(a.date))
   ) {
-    return { error: t.errors.dateInvalid }
+    return { error: t("errors.dateInvalid") }
   }
   if (typeof a.time !== "string" || !TIME_RE.test(a.time)) {
-    return { error: t.errors.timeInvalid }
+    return { error: t("errors.timeInvalid") }
   }
   const name = validName(a.name, BOOKING_RULES.maxCustomerName)
   if (!name) {
-    return { error: t.errors.nameRequired }
+    return { error: t("errors.nameRequired") }
   }
   const phoneRaw = a.phone === undefined || a.phone === null ? "" : a.phone
   if (typeof phoneRaw !== "string") {
-    return { error: t.errors.phoneInvalid }
+    return { error: t("errors.phoneInvalid") }
   }
   const phone = phoneRaw.trim() === "" ? null : phoneRaw.trim()
   if (phone !== null && !PHONE_PATTERN.test(phone)) {
-    return { error: t.errors.phoneInvalid }
+    return { error: t("errors.phoneInvalid") }
   }
   const noteRaw = a.note === undefined || a.note === null ? "" : a.note
   if (typeof noteRaw !== "string") {
-    return { error: t.errors.noteInvalid }
+    return { error: t("errors.noteInvalid") }
   }
   const note = noteRaw.trim() === "" ? null : noteRaw.trim()
   if (note !== null && note.length > BOOKING_RULES.maxNote) {
-    return { error: t.errors.noteTooLong }
+    return { error: t("errors.noteTooLong") }
   }
   const { business, services, team } = await getBusinessForNames(businessId)
   const today = zonedToday(now, business.timezone)
@@ -616,18 +617,18 @@ async function checkBookingArgs(
         ? addDaysStr(today, 1)
         : (a.date as string)
   if (date < today) {
-    return { error: t.errors.datePast }
+    return { error: t("errors.datePast") }
   }
   const servicePick = pickByName(services, serviceWanted)
   if ("choices" in servicePick) {
-    return { error: t.errors.serviceWhich(servicePick.choices.join(", ")) }
+    return { error: t("errors.serviceWhich", { names: servicePick.choices.join(", ") }) }
   }
   const service = servicePick.found
   let member: { id: string; name: string } | null = null
   if (memberWanted !== null) {
     const memberPick = pickByName(team, memberWanted)
     if ("choices" in memberPick) {
-      return { error: t.errors.memberWhich(memberPick.choices.join(", ")) }
+      return { error: t("errors.memberWhich", { names: memberPick.choices.join(", ") }) }
     }
     member = memberPick.found
   }
@@ -645,11 +646,11 @@ async function checkBookingArgs(
     extras.ids
   )
   if (!free) {
-    return { error: t.errors.freeTimesUnknown }
+    return { error: t("errors.freeTimesUnknown") }
   }
   const times = free.days.find((day) => day.date === date)?.times ?? []
   if (!times.includes(a.time)) {
-    return { error: notFreeError(t, times) }
+    return { error: notFreeError(t, locale, times) }
   }
   // The total as the booking stores it (createOwnerBooking): no price only
   // when neither the service nor an extra has one.
@@ -666,13 +667,13 @@ async function checkBookingArgs(
     extras,
     durationMinutes: service.durationMinutes + extras.extraMinutes,
     memberId,
-    memberName: member?.name ?? t.booking.anyone,
+    memberName: member?.name ?? t("booking.anyone"),
     date,
     time: a.time,
     name,
     phone,
     note,
-    price: priceText(t, priceMinor, business.currency),
+    price: priceText(t, locale, priceMinor, business.currency),
     timeZone: business.timezone,
   }
 }
@@ -684,32 +685,33 @@ async function checkBookingArgs(
 // gets text it can read (ElevenLabs normalization guide:
 // https://elevenlabs.io/docs/best-practices/prompting/normalization).
 function priceText(
-  t: ServerMessages,
+  t: ServerWords,
+  locale: string,
   priceMinor: number | null,
   currency: string
 ): string {
   return priceMinor === null
-    ? t.booking.noPrice
+    ? t("booking.noPrice")
     : priceMinor === 0
-      ? t.booking.free
-      : formatPrice(priceMinor, currency, t.locale)
+      ? t("booking.free")
+      : formatPrice(priceMinor, currency, locale)
 }
 
-function dayText(t: ServerMessages, date: string | null): string | null {
-  return date === null ? null : formatDay(date, t.locale)
+function dayText(locale: string, date: string | null): string | null {
+  return date === null ? null : formatDay(date, locale)
 }
 
 function hoursText(
-  t: ServerMessages,
+  locale: string,
   rows: { weekday: number; opensAt: string; closesAt: string }[]
 ) {
   return rows.map(({ weekday, opensAt, closesAt }) => ({
     weekday,
     opensAt,
     closesAt,
-    weekdayText: formatWeekday(weekday, t.locale),
-    opensAtText: formatClock(opensAt, t.locale),
-    closesAtText: formatClock(closesAt, t.locale),
+    weekdayText: formatWeekday(weekday, locale),
+    opensAtText: formatClock(opensAt, locale),
+    closesAtText: formatClock(closesAt, locale),
   }))
 }
 
@@ -778,6 +780,27 @@ function sameCategoryName(a: string, b: string): boolean {
   return a.toLocaleLowerCase() === b.toLocaleLowerCase()
 }
 
+// The words the tools write for the owner, in the owner's language (read
+// once per request, never from the body): the assistant's own lines, the
+// owner area's names, lengths of time, and the locale dates, times and
+// prices read in.
+export interface ToolWords {
+  language: PageLanguage
+  locale: string
+  t: ServerWords
+  owner: OwnerWords
+  duration: DurationWords
+}
+
+export async function toolWords(language: PageLanguage): Promise<ToolWords> {
+  const [t, owner, duration] = await Promise.all([
+    getTranslations({ locale: language, namespace: "assistantServer" }),
+    getTranslations({ locale: language, namespace: "owner" }),
+    getTranslations({ locale: language, namespace: "app.duration" }),
+  ])
+  return { language, locale: DEFAULT_LOCALES[language], t, owner, duration }
+}
+
 // Tools closed over the checked businessId and ownerId. The model never
 // sees or sets either. Lists drop rows past the cap and always
 // report total + truncated, so the model never claims a capped list
@@ -785,12 +808,12 @@ function sameCategoryName(a: string, b: string): boolean {
 export function buildAssistantTools(
   businessId: string,
   ownerId: string,
-  language: PageLanguage
+  words: ToolWords
 ): AssistantTool[] {
-  // Every owner-facing line in the owner's language.
-  const t = serverMessagesFor(language)
-  // The owner area's own names for policies, messages and automations.
-  const ownerWords = ownerMessagesFor(language)
+  // Every owner-facing line in the owner's language, and the owner area's
+  // own names for policies, messages and automations.
+  const { language, locale, t, owner: ownerT, duration } = words
+  const formatDuration = (minutes: number) => durationIn(duration, minutes)
   // The booking to cancel, by id, only when the bookings screen would let
   // the owner cancel it (confirmed, not started yet). Describe and execute
   // both use this.
@@ -811,24 +834,24 @@ export function buildAssistantTools(
   ): Promise<CheckedServiceUpdate | { error: string }> => {
     const a = asRecord(args)
     if (!a || typeof a.serviceId !== "string" || a.serviceId === "") {
-      return { error: t.errors.serviceIdRequired }
+      return { error: t("errors.serviceIdRequired") }
     }
     const { business, services, categories } =
       await getOwnerBusiness(businessId)
     const current = services.find((s) => s.id === a.serviceId)
     if (!current) {
-      return { error: t.errors.serviceUnknown }
+      return { error: t("errors.serviceUnknown") }
     }
     const category = pickCategory(a.categoryId, categories)
     if (category === "unknown") {
-      return { error: t.errors.serviceCategoryInvalid }
+      return { error: t("errors.serviceCategoryInvalid") }
     }
     const name =
       a.name === undefined
         ? current.name
         : validName(a.name, BOOKING_RULES.maxServiceName)
     if (!name) {
-      return { error: t.errors.nameInvalid(BOOKING_RULES.maxServiceName) }
+      return { error: t("errors.nameInvalid", { max: String(BOOKING_RULES.maxServiceName) }) }
     }
     const durationMinutes =
       a.minutes === undefined
@@ -836,9 +859,7 @@ export function buildAssistantTools(
         : validMinutes(a.minutes)
     if (!durationMinutes) {
       return {
-        error: t.errors.minutesInvalid(
-          (BOOKING_RULES.serviceMinutes as readonly number[]).join(", ")
-        ),
+        error: t("errors.minutesInvalid", { options: (BOOKING_RULES.serviceMinutes as readonly number[]).join(", ") }),
       }
     }
     const priceMinor =
@@ -846,7 +867,7 @@ export function buildAssistantTools(
         ? current.priceMinor
         : validPriceMinor(a.priceMinor)
     if (priceMinor === "invalid") {
-      return { error: t.errors.priceInvalid }
+      return { error: t("errors.priceInvalid") }
     }
     const description =
       a.description === undefined
@@ -854,7 +875,7 @@ export function buildAssistantTools(
         : validDescription(a.description)
     if (description === "invalid") {
       return {
-        error: t.errors.descriptionInvalid(BOOKING_RULES.maxServiceDescription),
+        error: t("errors.descriptionInvalid", { max: String(BOOKING_RULES.maxServiceDescription) }),
       }
     }
     return {
@@ -888,22 +909,22 @@ export function buildAssistantTools(
   > => {
     const a = asRecord(args)
     if (!a || typeof a.serviceId !== "string" || a.serviceId === "") {
-      return { error: t.errors.serviceIdRequired }
+      return { error: t("errors.serviceIdRequired") }
     }
     if (
       !Array.isArray(a.teamMemberIds) ||
       !a.teamMemberIds.every((id) => typeof id === "string")
     ) {
-      return { error: t.errors.memberUnknown }
+      return { error: t("errors.memberUnknown") }
     }
     const { services, team } = await getOwnerBusiness(businessId)
     const service = services.find((s) => s.id === a.serviceId)
     if (!service) {
-      return { error: t.errors.serviceUnknown }
+      return { error: t("errors.serviceUnknown") }
     }
     const memberIds = [...new Set(a.teamMemberIds as string[])]
     if (memberIds.some((id) => !team.some((m) => m.id === id))) {
-      return { error: t.errors.memberUnknown }
+      return { error: t("errors.memberUnknown") }
     }
     return { service, memberIds, team }
   }
@@ -920,22 +941,22 @@ export function buildAssistantTools(
   > => {
     const a = asRecord(args)
     if (!a || typeof a.teamMemberId !== "string" || a.teamMemberId === "") {
-      return { error: t.errors.memberIdRequired }
+      return { error: t("errors.memberIdRequired") }
     }
     if (
       !Array.isArray(a.serviceIds) ||
       !a.serviceIds.every((id) => typeof id === "string")
     ) {
-      return { error: t.errors.serviceUnknown }
+      return { error: t("errors.serviceUnknown") }
     }
     const { services, team } = await getOwnerBusiness(businessId)
     const member = team.find((m) => m.id === a.teamMemberId)
     if (!member) {
-      return { error: t.errors.memberUnknown }
+      return { error: t("errors.memberUnknown") }
     }
     const serviceIds = [...new Set(a.serviceIds as string[])]
     if (serviceIds.some((id) => !services.some((s) => s.id === id))) {
-      return { error: t.errors.serviceUnknown }
+      return { error: t("errors.serviceUnknown") }
     }
     return { member, serviceIds, services }
   }
@@ -1052,14 +1073,14 @@ export function buildAssistantTools(
   > => {
     const a = asRecord(args)
     if (!a) {
-      return { error: t.errors.optionsInvalid(BOOKING_RULES.maxAddonOptions) }
+      return { error: t("errors.optionsInvalid", { max: String(BOOKING_RULES.maxAddonOptions) }) }
     }
     const name =
       a.name === undefined && current
         ? current.name
         : validName(a.name, BOOKING_RULES.maxAddonName)
     if (!name) {
-      return { error: t.errors.nameInvalid(BOOKING_RULES.maxAddonName) }
+      return { error: t("errors.nameInvalid", { max: String(BOOKING_RULES.maxAddonName) }) }
     }
     const prompt =
       a.prompt === undefined && current
@@ -1067,7 +1088,7 @@ export function buildAssistantTools(
         : validName(a.prompt, BOOKING_RULES.maxAddonPrompt)
     if (!prompt) {
       return {
-        error: t.errors.promptInvalid(BOOKING_RULES.maxAddonPrompt),
+        error: t("errors.promptInvalid", { max: String(BOOKING_RULES.maxAddonPrompt) }),
       }
     }
     const rawOptions =
@@ -1075,12 +1096,12 @@ export function buildAssistantTools(
         ? (current?.options.map((o) => ({ ...o })) ?? null)
         : checkAddonOptions(a.options, current !== null)
     if (!rawOptions) {
-      return { error: t.errors.optionsInvalid(BOOKING_RULES.maxAddonOptions) }
+      return { error: t("errors.optionsInvalid", { max: String(BOOKING_RULES.maxAddonOptions) }) }
     }
     if (current) {
       const currentIds = new Set(current.options.map((o) => o.id))
       if (rawOptions.some((o) => o.id !== null && !currentIds.has(o.id))) {
-        return { error: t.errors.optionsInvalid(BOOKING_RULES.maxAddonOptions) }
+        return { error: t("errors.optionsInvalid", { max: String(BOOKING_RULES.maxAddonOptions) }) }
       }
     }
     const minSelect =
@@ -1096,7 +1117,7 @@ export function buildAssistantTools(
           (maxSelect as number) < Math.max(1, minSelect as number) ||
           (maxSelect as number) > rawOptions.length))
     ) {
-      return { error: t.errors.selectsInvalid }
+      return { error: t("errors.selectsInvalid") }
     }
     const { services } = await getOwnerBusiness(businessId)
     const rawServiceIds =
@@ -1105,11 +1126,11 @@ export function buildAssistantTools(
       !Array.isArray(rawServiceIds) ||
       !rawServiceIds.every((id) => typeof id === "string")
     ) {
-      return { error: t.errors.serviceUnknown }
+      return { error: t("errors.serviceUnknown") }
     }
     const serviceIds = [...new Set(rawServiceIds as string[])]
     if (serviceIds.some((id) => !services.some((s) => s.id === id))) {
-      return { error: t.errors.serviceUnknown }
+      return { error: t("errors.serviceUnknown") }
     }
     return {
       input: {
@@ -1150,7 +1171,7 @@ export function buildAssistantTools(
   > => {
     const a = asRecord(args)
     if (!a) {
-      return { error: t.errors.nothingToChange }
+      return { error: t("errors.nothingToChange") }
     }
     const { business } = await getOwnerBusiness(businessId)
     const current = {
@@ -1167,7 +1188,7 @@ export function buildAssistantTools(
         : validName(a.name, BOOKING_RULES.maxBusinessName)
     if (!name) {
       return {
-        error: t.errors.businessNameInvalid(BOOKING_RULES.maxBusinessName),
+        error: t("errors.businessNameInvalid", { max: String(BOOKING_RULES.maxBusinessName) }),
       }
     }
     const textField = (
@@ -1192,7 +1213,7 @@ export function buildAssistantTools(
     const address = textField(a.address, BOOKING_RULES.maxBusinessAddress)
     if (address === "invalid") {
       return {
-        error: t.errors.addressInvalid(BOOKING_RULES.maxBusinessAddress),
+        error: t("errors.addressInvalid", { max: String(BOOKING_RULES.maxBusinessAddress) }),
       }
     }
     const description = textField(
@@ -1201,7 +1222,7 @@ export function buildAssistantTools(
     )
     if (description === "invalid") {
       return {
-        error: t.errors.aboutInvalid(BOOKING_RULES.maxBusinessDescription),
+        error: t("errors.aboutInvalid", { max: String(BOOKING_RULES.maxBusinessDescription) }),
       }
     }
     const phone =
@@ -1215,7 +1236,7 @@ export function buildAssistantTools(
               ? a.phone.trim()
               : "invalid"
     if (phone === "invalid") {
-      return { error: t.errors.phoneInvalid }
+      return { error: t("errors.phoneInvalid") }
     }
     const website =
       a.website === undefined
@@ -1240,7 +1261,7 @@ export function buildAssistantTools(
               }
             })()
     if (website === "invalid") {
-      return { error: t.errors.websiteInvalid }
+      return { error: t("errors.websiteInvalid") }
     }
     const seats = a.seats === undefined ? current.seats : a.seats
     if (
@@ -1249,7 +1270,7 @@ export function buildAssistantTools(
       seats < 1 ||
       seats > BOOKING_RULES.maxSeats
     ) {
-      return { error: t.errors.seatsInvalid(BOOKING_RULES.maxSeats) }
+      return { error: t("errors.seatsInvalid", { max: String(BOOKING_RULES.maxSeats) }) }
     }
     return {
       current,
@@ -1272,30 +1293,30 @@ export function buildAssistantTools(
   > => {
     const a = asRecord(args)
     if (!a || typeof a.bookingId !== "string" || a.bookingId === "") {
-      return { error: t.errors.bookingIdRequired }
+      return { error: t("errors.bookingIdRequired") }
     }
     if (a.day !== undefined && a.day !== "today" && a.day !== "tomorrow") {
-      return { error: t.errors.bookingDayInvalid }
+      return { error: t("errors.bookingDayInvalid") }
     }
     if (
       a.day === undefined &&
       (typeof a.date !== "string" || !isRealDate(a.date))
     ) {
-      return { error: t.errors.dateInvalid }
+      return { error: t("errors.dateInvalid") }
     }
     if (typeof a.time !== "string" || !TIME_RE.test(a.time)) {
-      return { error: t.errors.timeInvalid }
+      return { error: t("errors.timeInvalid") }
     }
     const booking = await getBooking(businessId, a.bookingId)
     if (!booking) {
-      return { error: t.errors.bookingUnknown }
+      return { error: t("errors.bookingUnknown") }
     }
     if (!bookingActions(booking, new Date().toISOString()).includes("move")) {
       return {
         error:
           booking.status === "cancelled"
-            ? t.errors.bookingCancelled
-            : t.errors.bookingNotMovable,
+            ? t("errors.bookingCancelled")
+            : t("errors.bookingNotMovable"),
       }
     }
     const { business } = await getOwnerBusiness(businessId)
@@ -1307,18 +1328,18 @@ export function buildAssistantTools(
           ? addDaysStr(today, 1)
           : (a.date as string)
     if (date < today) {
-      return { error: t.errors.datePast }
+      return { error: t("errors.datePast") }
     }
     if (date === booking.date && a.time === booking.time) {
-      return { error: t.errors.nothingToChange }
+      return { error: t("errors.nothingToChange") }
     }
     const free = await getMoveAvailability(businessId, ownerId, booking.id)
     if (!free) {
-      return { error: t.errors.moveUnavailable }
+      return { error: t("errors.moveUnavailable") }
     }
     const times = free.days.find((day) => day.date === date)?.times ?? []
     if (!times.includes(a.time)) {
-      return { error: notFreeError(t, times) }
+      return { error: notFreeError(t, locale, times) }
     }
     return { booking, date, time: a.time }
   }
@@ -1329,15 +1350,15 @@ export function buildAssistantTools(
     const a = asRecord(args)
     const name = a && validName(a.name, BOOKING_RULES.maxCustomerName)
     if (!a || !name) {
-      return { error: t.errors.nameRequired }
+      return { error: t("errors.nameRequired") }
     }
     const raw = a.phone === undefined || a.phone === null ? "" : a.phone
     if (typeof raw !== "string") {
-      return { error: t.errors.phoneInvalid }
+      return { error: t("errors.phoneInvalid") }
     }
     const phone = raw.trim() === "" ? null : raw.trim()
     if (phone !== null && !PHONE_PATTERN.test(phone)) {
-      return { error: t.errors.phoneInvalid }
+      return { error: t("errors.phoneInvalid") }
     }
     return { name, phone }
   }
@@ -1349,22 +1370,22 @@ export function buildAssistantTools(
   > => {
     const a = asRecord(args)
     if (!a || typeof a.memberId !== "string" || a.memberId === "") {
-      return { error: t.errors.memberIdRequired }
+      return { error: t("errors.memberIdRequired") }
     }
     const rows = a.rows === null ? null : validHoursRows(a.rows)
     if (a.rows !== null && (!rows || rows.length === 0)) {
-      return { error: t.errors.rowsInvalid(BOOKING_RULES.maxHoursRows) }
+      return { error: t("errors.rowsInvalid", { max: String(BOOKING_RULES.maxHoursRows) }) }
     }
     const { team, memberHours } = await getOwnerBusiness(businessId)
     const member = team.find((m) => m.id === a.memberId)
     if (!member) {
-      return { error: t.errors.memberUnknown }
+      return { error: t("errors.memberUnknown") }
     }
     const custom = memberHours.filter((row) => row.teamMemberId === member.id)
     const unchanged = rows
       ? hoursKey(rows) === hoursKey(custom)
       : custom.length === 0
-    return unchanged ? { error: t.errors.nothingToChange } : { member, rows }
+    return unchanged ? { error: t("errors.nothingToChange") } : { member, rows }
   }
   // One team member by id, for the tools that only name who they act on.
   const findMember = async (
@@ -1374,11 +1395,11 @@ export function buildAssistantTools(
   > => {
     const a = asRecord(args)
     if (!a || typeof a.memberId !== "string" || a.memberId === "") {
-      return { error: t.errors.memberIdRequired }
+      return { error: t("errors.memberIdRequired") }
     }
     const { business, team } = await getOwnerBusiness(businessId)
     const member = team.find((m) => m.id === a.memberId)
-    return member ? { business, member } : { error: t.errors.memberUnknown }
+    return member ? { business, member } : { error: t("errors.memberUnknown") }
   }
   // Shared checks for create_service: the card and the tap read the same.
   const checkCreateServiceArgs = (
@@ -1387,25 +1408,23 @@ export function buildAssistantTools(
     const a = asRecord(args)
     const name = a && validName(a.name, BOOKING_RULES.maxServiceName)
     if (!name) {
-      return { error: t.errors.nameInvalid(BOOKING_RULES.maxServiceName) }
+      return { error: t("errors.nameInvalid", { max: String(BOOKING_RULES.maxServiceName) }) }
     }
     const durationMinutes = a && validMinutes(a.minutes)
     if (!durationMinutes) {
       return {
-        error: t.errors.minutesInvalid(
-          (BOOKING_RULES.serviceMinutes as readonly number[]).join(", ")
-        ),
+        error: t("errors.minutesInvalid", { options: (BOOKING_RULES.serviceMinutes as readonly number[]).join(", ") }),
       }
     }
     const priceMinor =
       a && "priceMinor" in a ? validPriceMinor(a.priceMinor) : "invalid"
     if (priceMinor === "invalid") {
-      return { error: t.errors.priceInvalid }
+      return { error: t("errors.priceInvalid") }
     }
     const description = a ? validDescription(a.description) : "invalid"
     if (description === "invalid") {
       return {
-        error: t.errors.descriptionInvalid(BOOKING_RULES.maxServiceDescription),
+        error: t("errors.descriptionInvalid", { max: String(BOOKING_RULES.maxServiceDescription) }),
       }
     }
     return { name, description, durationMinutes, priceMinor }
@@ -1418,13 +1437,13 @@ export function buildAssistantTools(
   > => {
     const a = asRecord(args)
     if (!a || typeof a.categoryId !== "string" || a.categoryId === "") {
-      return { error: t.errors.serviceCategoryIdRequired }
+      return { error: t("errors.serviceCategoryIdRequired") }
     }
     const { categories } = await getOwnerBusiness(businessId)
     const category = categories.find((c) => c.id === a.categoryId)
     return category
       ? { category, categories }
-      : { error: t.errors.serviceCategoryUnknown }
+      : { error: t("errors.serviceCategoryUnknown") }
   }
   // Shared checks for rename_service_category: the card and the tap read
   // the same. A name another category has is the card's check; the action
@@ -1442,11 +1461,11 @@ export function buildAssistantTools(
     const name = validCategoryName(asRecord(args)?.name)
     if (!name) {
       return {
-        error: t.errors.nameInvalid(BOOKING_RULES.maxServiceCategoryName),
+        error: t("errors.nameInvalid", { max: String(BOOKING_RULES.maxServiceCategoryName) }),
       }
     }
     if (name === found.category.name) {
-      return { error: t.errors.nothingToChange }
+      return { error: t("errors.nothingToChange") }
     }
     return { ...found, name }
   }
@@ -1460,10 +1479,10 @@ export function buildAssistantTools(
     }
     const name = validName(asRecord(args)?.name, BOOKING_RULES.maxTeamName)
     if (!name) {
-      return { error: t.errors.nameInvalid(BOOKING_RULES.maxTeamName) }
+      return { error: t("errors.nameInvalid", { max: String(BOOKING_RULES.maxTeamName) }) }
     }
     if (name === found.member.name) {
-      return { error: t.errors.nothingToChange }
+      return { error: t("errors.nothingToChange") }
     }
     return { member: found.member, name }
   }
@@ -1476,24 +1495,24 @@ export function buildAssistantTools(
   > => {
     const a = asRecord(args)
     if (!a || typeof a.bookingId !== "string" || a.bookingId === "") {
-      return { error: t.errors.bookingIdRequired }
+      return { error: t("errors.bookingIdRequired") }
     }
     const status = settableStatus(a.status)
     if (!status) {
-      return { error: t.errors.statusInvalid }
+      return { error: t("errors.statusInvalid") }
     }
     const booking = await getBooking(businessId, a.bookingId)
     if (!booking) {
-      return { error: t.errors.bookingUnknown }
+      return { error: t("errors.bookingUnknown") }
     }
     if (booking.status === "cancelled") {
-      return { error: t.errors.bookingCancelled }
+      return { error: t("errors.bookingCancelled") }
     }
     if (status !== "confirmed" && booking.startAt > new Date().toISOString()) {
-      return { error: t.errors.bookingNotStarted }
+      return { error: t("errors.bookingNotStarted") }
     }
     if (booking.status === status) {
-      return { error: t.errors.nothingToChange }
+      return { error: t("errors.nothingToChange") }
     }
     return { booking, status }
   }
@@ -1515,20 +1534,20 @@ export function buildAssistantTools(
     const a = asRecord(args) ?? {}
     const body = typeof a.body === "string" ? a.body.trim() : ""
     if (body === "") {
-      return { error: t.errors.policyBodyRequired }
+      return { error: t("errors.policyBodyRequired") }
     }
     if (body.length > POLICY_RULES.maxLength) {
-      return { error: t.errors.policyTooLong(POLICY_RULES.maxLength) }
+      return { error: t("errors.policyTooLong", { max: String(POLICY_RULES.maxLength) }) }
     }
     const { policies } = await getPolicies(businessId)
     const full = policies.length >= POLICY_RULES.maxPolicies
     if (a.kind !== undefined && a.kind !== null && a.kind !== "") {
       if (!isPolicyKind(a.kind)) {
-        return { error: t.errors.policyKindInvalid }
+        return { error: t("errors.policyKindInvalid") }
       }
       const current = policies.find((policy) => policy.kind === a.kind) ?? null
       if (!current && full) {
-        return { error: t.errors.policiesFull(POLICY_RULES.maxPolicies) }
+        return { error: t("errors.policiesFull", { max: String(POLICY_RULES.maxPolicies) }) }
       }
       return { kind: a.kind, current, title: null, body }
     }
@@ -1539,20 +1558,20 @@ export function buildAssistantTools(
           (policy) => policy.id === a.policyId && policy.kind === null
         ) ?? null
       if (!current) {
-        return { error: t.errors.policyUnknown }
+        return { error: t("errors.policyUnknown") }
       }
     } else if (full) {
-      return { error: t.errors.policiesFull(POLICY_RULES.maxPolicies) }
+      return { error: t("errors.policiesFull", { max: String(POLICY_RULES.maxPolicies) }) }
     }
     const title =
       typeof a.title === "string" && a.title.trim() !== ""
         ? a.title.trim()
         : (current?.title ?? "")
     if (title === "") {
-      return { error: t.errors.policyTitleRequired }
+      return { error: t("errors.policyTitleRequired") }
     }
     if (title.length > POLICY_RULES.maxTitle) {
-      return { error: t.errors.policyTitleTooLong(POLICY_RULES.maxTitle) }
+      return { error: t("errors.policyTitleTooLong", { max: String(POLICY_RULES.maxTitle) }) }
     }
     return { kind: null, current, title, body }
   }
@@ -1560,7 +1579,7 @@ export function buildAssistantTools(
   // area's words, the owner's own by its title.
   const policyName = (policy: Pick<OwnerPolicy, "kind" | "title">) =>
     policy.kind
-      ? ownerWords.settings.policies.kinds[policy.kind]
+      ? ownerT(`settings.policies.kinds.${policy.kind}`)
       : (policy.title ?? "")
   // Shared checks for save_policy_point: no pointId adds one; with one, only
   // the given fields change.
@@ -1572,21 +1591,21 @@ export function buildAssistantTools(
   > => {
     const a = asRecord(args)
     if (!a) {
-      return { error: t.errors.pointIdRequired }
+      return { error: t("errors.pointIdRequired") }
     }
     const { points } = await getPolicies(businessId)
     const adding = a.pointId === undefined || a.pointId === null
     const current = adding ? null : points.find((p) => p.id === a.pointId)
     if (current === undefined) {
-      return { error: t.errors.pointUnknown }
+      return { error: t("errors.pointUnknown") }
     }
     if (current === null && points.length >= POLICY_RULES.maxPoints) {
-      return { error: t.errors.pointsFull(POLICY_RULES.maxPoints) }
+      return { error: t("errors.pointsFull", { max: String(POLICY_RULES.maxPoints) }) }
     }
     const icon = a.icon === undefined ? current?.icon : a.icon
     if (!isPolicyPointIcon(icon)) {
       return {
-        error: t.errors.pointIconInvalid(POLICY_POINT_ICONS.join(", ")),
+        error: t("errors.pointIconInvalid", { icons: POLICY_POINT_ICONS.join(", ") }),
       }
     }
     const title =
@@ -1594,14 +1613,14 @@ export function buildAssistantTools(
         ? current.title
         : validName(a.title, POLICY_RULES.maxPointTitle)
     if (!title) {
-      return { error: t.errors.pointTitleInvalid(POLICY_RULES.maxPointTitle) }
+      return { error: t("errors.pointTitleInvalid", { max: String(POLICY_RULES.maxPointTitle) }) }
     }
     const body =
       a.body === undefined && current
         ? current.body
         : validName(a.body, POLICY_RULES.maxPointBody)
     if (!body) {
-      return { error: t.errors.pointBodyInvalid(POLICY_RULES.maxPointBody) }
+      return { error: t("errors.pointBodyInvalid", { max: String(POLICY_RULES.maxPointBody) }) }
     }
     if (
       current &&
@@ -1609,7 +1628,7 @@ export function buildAssistantTools(
       current.title === title &&
       current.body === body
     ) {
-      return { error: t.errors.nothingToChange }
+      return { error: t("errors.nothingToChange") }
     }
     return { current, input: { icon, title, body } }
   }
@@ -1619,15 +1638,15 @@ export function buildAssistantTools(
   ): Promise<{ message: BookingMessage; on: boolean } | { error: string }> => {
     const a = asRecord(args)
     if (!a || !BOOKING_MESSAGES.includes(a.message as BookingMessage)) {
-      return { error: t.errors.messageUnknown }
+      return { error: t("errors.messageUnknown") }
     }
     if (typeof a.on !== "boolean") {
-      return { error: t.errors.onInvalid }
+      return { error: t("errors.onInvalid") }
     }
     const message = a.message as BookingMessage
     const { turnedOff } = await notificationSettingsFor(businessId)
     return turnedOff.includes(message) !== a.on
-      ? { error: t.errors.nothingToChange }
+      ? { error: t("errors.nothingToChange") }
       : { message, on: a.on }
   }
   // Shared checks for save_reminder_settings: the action saves these fields
@@ -1643,7 +1662,7 @@ export function buildAssistantTools(
   > => {
     const a = asRecord(args)
     if (!a) {
-      return { error: t.errors.nothingToChange }
+      return { error: t("errors.nothingToChange") }
     }
     const [current, rules] = await Promise.all([
       notificationSettingsFor(businessId),
@@ -1651,16 +1670,16 @@ export function buildAssistantTools(
     ])
     const phoneRaw = a.ownerPhone === undefined ? current.ownerPhone : a.ownerPhone
     if (phoneRaw !== null && typeof phoneRaw !== "string") {
-      return { error: t.errors.phoneInvalid }
+      return { error: t("errors.phoneInvalid") }
     }
     const ownerPhone = phoneRaw?.trim() || null
     if (ownerPhone !== null && !PHONE_PATTERN.test(ownerPhone)) {
-      return { error: t.errors.phoneInvalid }
+      return { error: t("errors.phoneInvalid") }
     }
     const ownerLanguage =
       a.ownerLanguage === undefined ? current.ownerLanguage : a.ownerLanguage
     if (!TEMPLATE_LANGUAGES.includes(ownerLanguage as TemplateLanguage)) {
-      return { error: t.errors.languageInvalid }
+      return { error: t("errors.languageInvalid") }
     }
     const remindersRaw = a.reminders === undefined ? current.reminders : a.reminders
     const reminders = Array.isArray(remindersRaw)
@@ -1672,10 +1691,7 @@ export function buildAssistantTools(
       reminders.some((minutes) => !rules.reminderChoices.includes(minutes))
     ) {
       return {
-        error: t.errors.remindersInvalid(
-          rules.maxReminders,
-          rules.reminderChoices.join(", ")
-        ),
+        error: t("errors.remindersInvalid", { max: String(rules.maxReminders), choices: rules.reminderChoices.join(", ") }),
       }
     }
     const quietStart = a.quietStart === undefined ? current.quietStart : a.quietStart
@@ -1686,19 +1702,19 @@ export function buildAssistantTools(
       typeof quietEnd !== "string" ||
       !TIME_RE.test(quietEnd)
     ) {
-      return { error: t.errors.quietInvalid }
+      return { error: t("errors.quietInvalid") }
     }
     const freeTextInWindow = flagOr(a.freeTextInWindow, current.freeTextInWindow)
     if (freeTextInWindow === null) {
-      return { error: t.errors.settingInvalid("freeTextInWindow") }
+      return { error: t("errors.settingInvalid", { field: "freeTextInWindow" }) }
     }
     const thankYouReply = flagOr(a.thankYouReply, current.thankYouReply)
     if (thankYouReply === null) {
-      return { error: t.errors.settingInvalid("thankYouReply") }
+      return { error: t("errors.settingInvalid", { field: "thankYouReply" }) }
     }
     const cantCome = a.cantCome === undefined ? current.cantCome : a.cantCome
     if (cantCome !== "cancel" && cantCome !== "alertOnly") {
-      return { error: t.errors.settingInvalid("cantCome") }
+      return { error: t("errors.settingInvalid", { field: "cantCome" }) }
     }
     const next: Omit<NotificationSettings, "turnedOff"> = {
       ownerPhone,
@@ -1729,25 +1745,25 @@ export function buildAssistantTools(
   > => {
     const a = asRecord(args)
     if (!a || !BOOKING_MESSAGES.includes(a.message as BookingMessage)) {
-      return { error: t.errors.messageUnknown }
+      return { error: t("errors.messageUnknown") }
     }
     if (!TEMPLATE_LANGUAGES.includes(a.language as TemplateLanguage)) {
-      return { error: t.errors.languageInvalid }
+      return { error: t("errors.languageInvalid") }
     }
     const message = a.message as BookingMessage
     const language = a.language as TemplateLanguage
     const items = await notificationMessagesFor(businessId)
     const item = items.find((row) => row.message === message)
     if (!item) {
-      return { error: t.errors.messageUnknown }
+      return { error: t("errors.messageUnknown") }
     }
     if (!item.editable) {
-      return { error: t.errors.wordingLocked }
+      return { error: t("errors.wordingLocked") }
     }
     const text = item.texts[language]
     if (a.useDefault === true) {
       return text.isDefault
-        ? { error: t.errors.nothingToChange }
+        ? { error: t("errors.nothingToChange") }
         : { item, language, wording: null, buttons: null }
     }
     const part = (value: unknown, saved: string): string | null =>
@@ -1756,7 +1772,7 @@ export function buildAssistantTools(
     const body = part(a.body, text.wording.body)
     const footer = part(a.footer, text.wording.footer)
     if (header === null || body === null || footer === null) {
-      return { error: t.errors.wordingInvalid }
+      return { error: t("errors.wordingInvalid") }
     }
     const wording: Wording = { header, body, footer }
     const defaults = defaultButtons(message, language)
@@ -1775,7 +1791,7 @@ export function buildAssistantTools(
             !row || typeof row.action !== "string" || typeof row.label !== "string"
         )
       ) {
-        return { error: t.errors.buttonsInvalid }
+        return { error: t("errors.buttonsInvalid") }
       }
       buttons = (rows as Record<string, string>[]).map((row) => ({
         action: row.action as MessageButton["action"],
@@ -1787,19 +1803,16 @@ export function buildAssistantTools(
       (buttons && buttonsProblem(message, buttons))
     if (problem) {
       return {
-        error: t.errors.wordingProblem(
-          t.errors.wordingProblems[problem],
-          messageFields(message)
+        error: t("errors.wordingProblem", { reason: t(`errors.wordingProblems.${problem}`), fields: messageFields(message)
             .map((field) => `{${field}}`)
-            .join(", ")
-        ),
+            .join(", ") }),
       }
     }
     if (
       JSON.stringify(wording) === JSON.stringify(text.wording) &&
       JSON.stringify(buttons ?? defaults) === JSON.stringify(text.buttons)
     ) {
-      return { error: t.errors.nothingToChange }
+      return { error: t("errors.nothingToChange") }
     }
     return { item, language, wording, buttons }
   }
@@ -1809,18 +1822,18 @@ export function buildAssistantTools(
   ): Promise<{ automation: Automation; on: boolean } | { error: string }> => {
     const a = asRecord(args)
     if (!a || typeof a.automationId !== "string" || a.automationId === "") {
-      return { error: t.errors.automationIdRequired }
+      return { error: t("errors.automationIdRequired") }
     }
     if (typeof a.on !== "boolean") {
-      return { error: t.errors.onInvalid }
+      return { error: t("errors.onInvalid") }
     }
     const automations = await automationsFor(businessId)
     const automation = automations.find((row) => row.id === a.automationId)
     if (!automation) {
-      return { error: t.errors.automationUnknown }
+      return { error: t("errors.automationUnknown") }
     }
     return automation.on === a.on
-      ? { error: t.errors.nothingToChange }
+      ? { error: t("errors.nothingToChange") }
       : { automation, on: a.on }
   }
   // One whole list in a new order. The card shows the names in that order;
@@ -1864,14 +1877,14 @@ export function buildAssistantTools(
         const current = rows.map((row) => row.id)
         const ids = newOrder(asRecord(args)?.[config.argument], current)
         if (!ids) {
-          return { error: t.errors.orderInvalid(config.listTool) }
+          return { error: t("errors.orderInvalid", { source: config.listTool }) }
         }
         if (ids.join() === current.join()) {
-          return { error: t.errors.nothingToChange }
+          return { error: t("errors.nothingToChange") }
         }
         return {
           title: config.title,
-          action: t.actions.reorder,
+          action: t("actions.reorder"),
           summary: ids
             .map((id) => rows.find((row) => row.id === id)!.name)
             .join(", "),
@@ -1883,7 +1896,7 @@ export function buildAssistantTools(
         const result = await config.save(ids as string[])
         return result.ok
           ? { ok: true, doneText: config.doneText }
-          : { ok: false, doneText: t.reorder.failed(result.error) }
+          : { ok: false, doneText: t("reorder.failed", { error: result.error }) }
       },
     },
   })
@@ -1896,8 +1909,8 @@ export function buildAssistantTools(
         parameters: schema({}),
         needsConfirm: false,
       },
-      label: t.steps.overview,
-      doneLabel: t.stepsDone.overview,
+      label: t("steps.overview"),
+      doneLabel: t("stepsDone.overview"),
       run: async () => {
         const [{ business, hours }, counts, photos] = await Promise.all([
           getOwnerBusiness(businessId),
@@ -1910,7 +1923,7 @@ export function buildAssistantTools(
           phone: business.phone,
           timezone: business.timezone,
           currency: business.currency,
-          hours: hoursText(t, hours),
+          hours: hoursText(locale, hours),
           todayBookings: counts.today,
           upcomingBookings: counts.upcoming,
           about: business.description,
@@ -1930,8 +1943,8 @@ export function buildAssistantTools(
         parameters: schema({}),
         needsConfirm: false,
       },
-      label: t.steps.services,
-      doneLabel: t.stepsDone.services,
+      label: t("steps.services"),
+      doneLabel: t("stepsDone.services"),
       run: async () => {
         const [owned, teams, groups] = await Promise.all([
           getOwnerBusiness(businessId),
@@ -1949,7 +1962,7 @@ export function buildAssistantTools(
             categoryName: category?.name ?? null,
             durationMinutes: s.durationMinutes,
             priceMinor: s.priceMinor,
-            priceText: priceText(t, s.priceMinor, business.currency),
+            priceText: priceText(t, locale, s.priceMinor, business.currency),
             description: s.description,
             hasPhoto: s.photoUrl !== null,
             teamMemberIds: teams[s.id] ?? [],
@@ -1975,8 +1988,8 @@ export function buildAssistantTools(
         parameters: schema({}),
         needsConfirm: false,
       },
-      label: t.steps.addons,
-      doneLabel: t.stepsDone.addons,
+      label: t("steps.addons"),
+      doneLabel: t("stepsDone.addons"),
       run: async () => {
         const [groups, { business }] = await Promise.all([
           getAddonGroups(businessId),
@@ -1994,7 +2007,7 @@ export function buildAssistantTools(
             name: o.name,
             description: o.description,
             priceMinor: o.priceMinor,
-            priceText: priceText(t, o.priceMinor, business.currency),
+            priceText: priceText(t, locale, o.priceMinor, business.currency),
             durationMinutes: o.durationMinutes,
           })),
         }))
@@ -2014,8 +2027,8 @@ export function buildAssistantTools(
         parameters: schema({}),
         needsConfirm: false,
       },
-      label: t.steps.team,
-      doneLabel: t.stepsDone.team,
+      label: t("steps.team"),
+      doneLabel: t("stepsDone.team"),
       run: async () => {
         const [{ team, memberHours }, teams] = await Promise.all([
           getOwnerBusiness(businessId),
@@ -2034,7 +2047,7 @@ export function buildAssistantTools(
           name: m.name,
           hasPhoto: m.photoUrl !== null,
           hours: hoursText(
-            t,
+            locale,
             memberHours.filter((row) => row.teamMemberId === m.id)
           ),
           serviceIds: serviceIdsByMember.get(m.id) ?? [],
@@ -2076,20 +2089,20 @@ export function buildAssistantTools(
         }),
         needsConfirm: false,
       },
-      label: t.steps.bookings,
-      doneLabel: t.stepsDone.bookings,
+      label: t("steps.bookings"),
+      doneLabel: t("stepsDone.bookings"),
       run: async (args: unknown) => {
         const a = { ...((args ?? {}) as Record<string, unknown>) }
         if (a.day !== undefined) {
           if (!Object.hasOwn(DAY_OFFSETS, a.day as string)) {
-            return bad(t.errors.dayChoiceInvalid)
+            return bad(t("errors.dayChoiceInvalid"))
           }
           if (
             a.from !== undefined ||
             a.to !== undefined ||
             a.range !== undefined
           ) {
-            return bad(t.errors.dayAlone)
+            return bad(t("errors.dayAlone"))
           }
           const { business } = await getOwnerBusiness(businessId)
           a.from = a.to = addDaysStr(
@@ -2099,21 +2112,21 @@ export function buildAssistantTools(
         }
         const range = a.range ?? "upcoming"
         if (range !== "upcoming" && range !== "past") {
-          return bad(t.errors.rangeInvalid)
+          return bad(t("errors.rangeInvalid"))
         }
         for (const key of ["from", "to"] as const) {
           if (
             a[key] !== undefined &&
             (typeof a[key] !== "string" || !DATE_RE.test(a[key]))
           ) {
-            return bad(t.errors.dayInvalid(key))
+            return bad(t("errors.dayInvalid", { key }))
           }
         }
         if (
           a.status !== undefined &&
           !STATUSES.includes(a.status as (typeof STATUSES)[number])
         ) {
-          return bad(t.errors.statusUnknown)
+          return bad(t("errors.statusUnknown"))
         }
         // One now per call for every comparison below.
         const now = new Date().toISOString()
@@ -2166,9 +2179,9 @@ export function buildAssistantTools(
           date: b.date,
           time: b.time,
           endTime: b.endTime,
-          dayText: formatDay(b.date, t.locale),
-          timeText: formatClock(b.time, t.locale),
-          endTimeText: formatClock(b.endTime, t.locale),
+          dayText: formatDay(b.date, locale),
+          timeText: formatClock(b.time, locale),
+          endTimeText: formatClock(b.endTime, locale),
           when:
             b.endAt < now
               ? ("past" as const)
@@ -2183,20 +2196,20 @@ export function buildAssistantTools(
           durationMinutes: b.durationMinutes,
           priceMinor: b.priceMinor,
           currency: b.currency,
-          priceText: priceText(t, b.priceMinor, b.currency),
+          priceText: priceText(t, locale, b.priceMinor, b.currency),
           source: b.source,
           note: b.note,
           addons: b.addons.map((a) => ({
             name: a.name,
             priceMinor: a.priceMinor,
-            priceText: priceText(t, a.priceMinor, b.currency),
+            priceText: priceText(t, locale, a.priceMinor, b.currency),
             durationMinutes: a.durationMinutes,
           })),
         }))
         return {
           // The date a plain day stood for, so the answer can name it.
           ...(a.day !== undefined
-            ? { date: a.from, dayText: dayText(t, a.from as string) }
+            ? { date: a.from, dayText: dayText(locale, a.from as string) }
             : {}),
           bookings: capped,
           total: filtered.length,
@@ -2215,8 +2228,8 @@ export function buildAssistantTools(
         ),
         needsConfirm: false,
       },
-      label: t.steps.customer,
-      doneLabel: t.stepsDone.customer,
+      label: t("steps.customer"),
+      doneLabel: t("stepsDone.customer"),
       run: async (args: unknown) => {
         const query = (args as Record<string, unknown> | null)?.query
         if (
@@ -2224,7 +2237,7 @@ export function buildAssistantTools(
           query.trim().length === 0 ||
           query.length > ASSISTANT_RULES.maxCustomerQuery
         ) {
-          return bad(t.errors.queryInvalid(ASSISTANT_RULES.maxCustomerQuery))
+          return bad(t("errors.queryInvalid", { max: String(ASSISTANT_RULES.maxCustomerQuery) }))
         }
         const q = query.trim().toLowerCase()
         const digits = q.replace(/\D/g, "")
@@ -2249,16 +2262,16 @@ export function buildAssistantTools(
               lastVisit: c.lastVisit,
               nextBooking: c.nextBooking,
               firstBooking: c.firstBooking,
-              lastVisitText: dayText(t, c.lastVisit),
-              nextBookingText: dayText(t, c.nextBooking),
-              firstBookingText: dayText(t, c.firstBooking),
+              lastVisitText: dayText(locale, c.lastVisit),
+              nextBookingText: dayText(locale, c.nextBooking),
+              firstBookingText: dayText(locale, c.firstBooking),
               spentMinor: c.spentMinor,
-              spentText: formatPrice(c.spentMinor, c.currency, t.locale),
+              spentText: formatPrice(c.spentMinor, c.currency, locale),
               recent: recent.slice(0, 3).map((b) => ({
                 date: b.date,
                 time: b.time,
-                dayText: formatDay(b.date, t.locale),
-                timeText: formatClock(b.time, t.locale),
+                dayText: formatDay(b.date, locale),
+                timeText: formatClock(b.time, locale),
                 service: b.serviceName,
                 status: b.status,
               })),
@@ -2292,18 +2305,18 @@ export function buildAssistantTools(
         ),
         needsConfirm: false,
       },
-      label: t.steps.stats,
-      doneLabel: t.stepsDone.stats,
+      label: t("steps.stats"),
+      doneLabel: t("stepsDone.stats"),
       run: async (args: unknown) => {
         const a = asRecord(args) ?? {}
         if (typeof a.from !== "string" || !isRealDate(a.from)) {
-          return bad(t.errors.dayInvalid("from"))
+          return bad(t("errors.dayInvalid", { key: "from" }))
         }
         if (typeof a.to !== "string" || !isRealDate(a.to) || a.to < a.from) {
-          return bad(t.errors.toInvalid)
+          return bad(t("errors.toInvalid"))
         }
         if (daysInRange(a.from, a.to) > ASSISTANT_RULES.maxStatsRangeDays) {
-          return bad(t.errors.rangeTooLong(ASSISTANT_RULES.maxStatsRangeDays))
+          return bad(t("errors.rangeTooLong", { max: String(ASSISTANT_RULES.maxStatsRangeDays) }))
         }
         const [rows, { business }] = await Promise.all([
           getBookingsBetween(businessId, a.from, a.to),
@@ -2313,20 +2326,20 @@ export function buildAssistantTools(
         const stats = bookingStats(rows, now, business.currency)
         return {
           ...stats,
-          earnedText: formatPrice(stats.earnedMinor, stats.currency, t.locale),
-          expectedText: formatPrice(stats.expectedMinor, stats.currency, t.locale),
+          earnedText: formatPrice(stats.earnedMinor, stats.currency, locale),
+          expectedText: formatPrice(stats.expectedMinor, stats.currency, locale),
           byWeekday: stats.byWeekday.map((row) => ({
             ...row,
-            weekdayText: formatWeekday(row.weekday, t.locale),
+            weekdayText: formatWeekday(row.weekday, locale),
           })),
           byHour: stats.byHour.map((row) => ({
             ...row,
-            hourText: formatClock(`${row.hour}:00`, t.locale),
+            hourText: formatClock(`${row.hour}:00`, locale),
           })),
           from: a.from,
           to: a.to,
-          fromText: formatDay(a.from, t.locale),
-          toText: formatDay(a.to, t.locale),
+          fromText: formatDay(a.from, locale),
+          toText: formatDay(a.to, locale),
         }
       },
     },
@@ -2347,8 +2360,8 @@ export function buildAssistantTools(
         }),
         needsConfirm: false,
       },
-      label: t.steps.customers,
-      doneLabel: t.stepsDone.customers,
+      label: t("steps.customers"),
+      doneLabel: t("stepsDone.customers"),
       run: async (args: unknown) => {
         const a = asRecord(args) ?? {}
         const sorts = [
@@ -2359,13 +2372,13 @@ export function buildAssistantTools(
         ] as const
         const sort = a.sort === undefined ? ("lastVisit" as const) : a.sort
         if (!sorts.includes(sort as (typeof sorts)[number])) {
-          return bad(t.errors.sortInvalid)
+          return bad(t("errors.sortInvalid"))
         }
         if (
           a.newSince !== undefined &&
           (typeof a.newSince !== "string" || !isRealDate(a.newSince))
         ) {
-          return bad(t.errors.dayInvalid("newSince"))
+          return bad(t("errors.dayInvalid", { key: "newSince" }))
         }
         const newSince = typeof a.newSince === "string" ? a.newSince : undefined
         const all = await getCustomers(businessId)
@@ -2413,12 +2426,12 @@ export function buildAssistantTools(
           firstBooking: c.firstBooking,
           lastVisit: c.lastVisit,
           nextBooking: c.nextBooking,
-          firstBookingText: dayText(t, c.firstBooking),
-          lastVisitText: dayText(t, c.lastVisit),
-          nextBookingText: dayText(t, c.nextBooking),
+          firstBookingText: dayText(locale, c.firstBooking),
+          lastVisitText: dayText(locale, c.lastVisit),
+          nextBookingText: dayText(locale, c.nextBooking),
           spentMinor: c.spentMinor,
           currency: c.currency,
-          spentText: formatPrice(c.spentMinor, c.currency, t.locale),
+          spentText: formatPrice(c.spentMinor, c.currency, locale),
         }))
         return {
           customers: capped,
@@ -2461,9 +2474,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "services",
       },
-      label: t.steps.createService,
-      doneLabel: t.stepsDone.createService,
-      run: async () => ({ error: t.tapFirst.createService }),
+      label: t("steps.createService"),
+      doneLabel: t("stepsDone.createService"),
+      run: async () => ({ error: t("tapFirst.createService") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = checkCreateServiceArgs(args)
@@ -2474,21 +2487,21 @@ export function buildAssistantTools(
             await getOwnerBusiness(businessId)
           const category = pickCategory(asRecord(args)?.categoryId, categories)
           if (category === "unknown") {
-            return { error: t.errors.serviceCategoryInvalid }
+            return { error: t("errors.serviceCategoryInvalid") }
           }
           if (services.length >= BOOKING_RULES.maxServices) {
-            return { error: t.errors.servicesFull(BOOKING_RULES.maxServices) }
+            return { error: t("errors.servicesFull", { max: String(BOOKING_RULES.maxServices) }) }
           }
           if (services.some((service) => sameService(service, checked))) {
-            return { error: t.errors.serviceExists(checked.name) }
+            return { error: t("errors.serviceExists", { name: checked.name }) }
           }
           return {
-            title: t.cards.createService,
-            action: t.actions.createService,
+            title: t("cards.createService"),
+            action: t("actions.createService"),
             summary: [
               checked.name,
-              t.booking.minutes(checked.durationMinutes),
-              priceText(t, checked.priceMinor, business.currency),
+              t("booking.minutes", { durationMinutes: String(checked.durationMinutes) }),
+              priceText(t, locale, checked.priceMinor, business.currency),
               ...(category ? [category.name] : []),
               ...(checked.description ? [checked.description] : []),
             ].join(" · "),
@@ -2500,7 +2513,7 @@ export function buildAssistantTools(
           if ("error" in checked) {
             return {
               ok: false,
-              doneText: t.createService.failed(checked.error),
+              doneText: t("createService.failed", { error: checked.error }),
             }
           }
           // Two cards can wait for the same service, or one come after another
@@ -2509,9 +2522,7 @@ export function buildAssistantTools(
           if (services.some((service) => sameService(service, checked))) {
             return {
               ok: false,
-              doneText: t.createService.failed(
-                t.errors.serviceExists(checked.name)
-              ),
+              doneText: t("createService.failed", { error: t("errors.serviceExists", { name: checked.name }) }),
             }
           }
           // A category removed since the card showed is refused, never
@@ -2520,7 +2531,7 @@ export function buildAssistantTools(
           if (category === "unknown") {
             return {
               ok: false,
-              doneText: t.createService.failed(t.errors.serviceCategoryInvalid),
+              doneText: t("createService.failed", { error: t("errors.serviceCategoryInvalid") }),
             }
           }
           const result = await createService(
@@ -2532,10 +2543,10 @@ export function buildAssistantTools(
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.createService.failed(result.error),
+              doneText: t("createService.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.createService.done(checked.name) }
+          return { ok: true, doneText: t("createService.done", { name: checked.name }) }
         },
       },
     },
@@ -2571,9 +2582,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "services",
       },
-      label: t.steps.updateService,
-      doneLabel: t.stepsDone.updateService,
-      run: async () => ({ error: t.tapFirst.updateService }),
+      label: t("steps.updateService"),
+      doneLabel: t("stepsDone.updateService"),
+      run: async () => ({ error: t("tapFirst.updateService") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkUpdateServiceArgs(args)
@@ -2587,12 +2598,12 @@ export function buildAssistantTools(
           }
           if (checked.priceMinor !== checked.current.priceMinor) {
             parts.push(
-              `${priceText(t, checked.current.priceMinor, checked.currency)} → ${priceText(t, checked.priceMinor, checked.currency)}`
+              `${priceText(t, locale, checked.current.priceMinor, checked.currency)} → ${priceText(t, locale, checked.priceMinor, checked.currency)}`
             )
           }
           if (checked.durationMinutes !== checked.current.durationMinutes) {
             parts.push(
-              `${t.booking.minutes(checked.current.durationMinutes)} → ${t.booking.minutes(checked.durationMinutes)}`
+              `${t("booking.minutes", { durationMinutes: String(checked.current.durationMinutes) })} → ${t("booking.minutes", { durationMinutes: String(checked.durationMinutes) })}`
             )
           }
           const oldDescription = checked.current.description ?? null
@@ -2605,17 +2616,17 @@ export function buildAssistantTools(
             checked.category?.id !== checked.currentCategory?.id
           ) {
             const categoryName = (category: CategoryRow | null) =>
-              category?.name ?? ownerWords.catalog.categories.none
+              category?.name ?? ownerT("catalog.categories.none")
             parts.push(
               `${categoryName(checked.currentCategory)} → ${categoryName(checked.category)}`
             )
           }
           if (parts.length === 0) {
-            return { error: t.errors.nothingToChange }
+            return { error: t("errors.nothingToChange") }
           }
           return {
-            title: t.cards.updateService,
-            action: t.actions.updateService,
+            title: t("cards.updateService"),
+            action: t("actions.updateService"),
             summary: nameChanged
               ? parts.join(" · ")
               : `${checked.current.name} · ${parts.join(" · ")}`,
@@ -2626,14 +2637,14 @@ export function buildAssistantTools(
           const checked = await checkUpdateServiceArgs(args)
           if ("error" in checked) {
             if (
-              checked.error === t.errors.serviceUnknown ||
-              checked.error === t.errors.serviceIdRequired
+              checked.error === t("errors.serviceUnknown") ||
+              checked.error === t("errors.serviceIdRequired")
             ) {
-              return { ok: false, doneText: t.updateService.unknown }
+              return { ok: false, doneText: t("updateService.unknown") }
             }
             return {
               ok: false,
-              doneText: t.updateService.failed(checked.error),
+              doneText: t("updateService.failed", { error: checked.error }),
             }
           }
           const result = await updateService(businessId, checked.current.id, {
@@ -2649,10 +2660,10 @@ export function buildAssistantTools(
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.updateService.failed(result.error),
+              doneText: t("updateService.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.updateService.done }
+          return { ok: true, doneText: t("updateService.done") }
         },
       },
     },
@@ -2674,9 +2685,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "team",
       },
-      label: t.steps.renameMember,
-      doneLabel: t.stepsDone.renameMember,
-      run: async () => ({ error: t.tapFirst.renameMember }),
+      label: t("steps.renameMember"),
+      doneLabel: t("stepsDone.renameMember"),
+      run: async () => ({ error: t("tapFirst.renameMember") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkRenameArgs(args)
@@ -2684,8 +2695,8 @@ export function buildAssistantTools(
             return checked
           }
           return {
-            title: t.cards.renameMember,
-            action: t.actions.renameMember,
+            title: t("cards.renameMember"),
+            action: t("actions.renameMember"),
             summary: `${checked.member.name} → ${checked.name}`,
             destructive: false,
           }
@@ -2696,10 +2707,10 @@ export function buildAssistantTools(
             return {
               ok: false,
               doneText:
-                checked.error === t.errors.memberUnknown ||
-                checked.error === t.errors.memberIdRequired
-                  ? t.renameMember.unknown
-                  : t.renameMember.failed(checked.error),
+                checked.error === t("errors.memberUnknown") ||
+                checked.error === t("errors.memberIdRequired")
+                  ? t("renameMember.unknown")
+                  : t("renameMember.failed", { error: checked.error }),
             }
           }
           const result = await renameTeamMember(
@@ -2708,9 +2719,9 @@ export function buildAssistantTools(
             checked.name
           )
           if (!result.ok) {
-            return { ok: false, doneText: t.renameMember.failed(result.error) }
+            return { ok: false, doneText: t("renameMember.failed", { error: result.error }) }
           }
-          return { ok: true, doneText: t.renameMember.done(checked.name) }
+          return { ok: true, doneText: t("renameMember.done", { name: checked.name }) }
         },
       },
     },
@@ -2729,9 +2740,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "bookings",
       },
-      label: t.steps.setBookingStatus,
-      doneLabel: t.stepsDone.setBookingStatus,
-      run: async () => ({ error: t.tapFirst.bookingStatus }),
+      label: t("steps.setBookingStatus"),
+      doneLabel: t("stepsDone.setBookingStatus"),
+      run: async () => ({ error: t("tapFirst.bookingStatus") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkBookingStatusArgs(args)
@@ -2740,9 +2751,9 @@ export function buildAssistantTools(
           }
           const { booking, status } = checked
           return {
-            title: t.cards.bookingStatus[status],
-            action: t.actions.bookingStatus[status],
-            summary: `${booking.customerName} · ${booking.serviceName} · ${formatDay(booking.date, t.locale)} · ${formatClock(booking.time, t.locale)}`,
+            title: t(`cards.bookingStatus.${status}`),
+            action: t(`actions.bookingStatus.${status}`),
+            summary: `${booking.customerName} · ${booking.serviceName} · ${formatDay(booking.date, locale)} · ${formatClock(booking.time, locale)}`,
             destructive: false,
           }
         },
@@ -2755,22 +2766,22 @@ export function buildAssistantTools(
             a.bookingId === "" ||
             !status
           ) {
-            return { ok: false, doneText: t.bookingStatus.unknown }
+            return { ok: false, doneText: t("bookingStatus.unknown") }
           }
           const result = await setBookingStatus(businessId, a.bookingId, status)
           if (!result.ok) {
             const refusals: Record<string, string> = {
-              not_found: t.bookingStatus.unknown,
-              cancelled: t.bookingStatus.cancelled,
-              not_started: t.bookingStatus.notStarted,
+              not_found: t("bookingStatus.unknown"),
+              cancelled: t("bookingStatus.cancelled"),
+              not_started: t("bookingStatus.notStarted"),
             }
             return {
               ok: false,
               doneText:
-                refusals[result.error] ?? t.bookingStatus.failed(result.error),
+                refusals[result.error] ?? t("bookingStatus.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.bookingStatus.done[status] }
+          return { ok: true, doneText: t(`bookingStatus.done.${status}`) }
         },
       },
     },
@@ -2788,30 +2799,30 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "bookings",
       },
-      label: t.steps.cancelBooking,
-      doneLabel: t.stepsDone.cancelBooking,
-      run: async () => ({ error: t.tapFirst.cancel }),
+      label: t("steps.cancelBooking"),
+      doneLabel: t("stepsDone.cancelBooking"),
+      run: async () => ({ error: t("tapFirst.cancel") }),
       confirm: {
         describe: async (args: unknown) => {
           const a = asRecord(args)
           if (!a || typeof a.bookingId !== "string" || a.bookingId === "") {
-            return { error: t.errors.bookingIdRequired }
+            return { error: t("errors.bookingIdRequired") }
           }
           const found = await cancellableBooking(a.bookingId)
           if (found === "unknown") {
-            return { error: t.errors.bookingUnknown }
+            return { error: t("errors.bookingUnknown") }
           }
           if (found === "cancelled") {
-            return { error: t.errors.bookingCancelled }
+            return { error: t("errors.bookingCancelled") }
           }
           if (found === "started") {
-            return { error: t.errors.bookingStarted }
+            return { error: t("errors.bookingStarted") }
           }
           const booking = found
           return {
-            title: t.cards.cancel,
-            action: t.actions.cancelBooking,
-            summary: `${booking.customerName} · ${booking.serviceName} · ${formatDay(booking.date, t.locale)} · ${formatClock(booking.time, t.locale)}`,
+            title: t("cards.cancel"),
+            action: t("actions.cancelBooking"),
+            summary: `${booking.customerName} · ${booking.serviceName} · ${formatDay(booking.date, locale)} · ${formatClock(booking.time, locale)}`,
             destructive: true,
           }
         },
@@ -2819,28 +2830,28 @@ export function buildAssistantTools(
           const a = asRecord(args)
           const bookingId = a?.bookingId
           if (typeof bookingId !== "string" || bookingId === "") {
-            return { ok: false, doneText: t.cancel.unknown }
+            return { ok: false, doneText: t("cancel.unknown") }
           }
           // Checked again at the tap: it may have started or been
           // cancelled since the card showed.
           const found = await cancellableBooking(bookingId)
           if (found === "unknown") {
-            return { ok: false, doneText: t.cancel.unknown }
+            return { ok: false, doneText: t("cancel.unknown") }
           }
           if (found === "cancelled") {
-            return { ok: false, doneText: t.cancel.alreadyCancelled }
+            return { ok: false, doneText: t("cancel.alreadyCancelled") }
           }
           if (found === "started") {
-            return { ok: false, doneText: t.cancel.started }
+            return { ok: false, doneText: t("cancel.started") }
           }
           const result = await cancelBooking(businessId, bookingId)
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.cancel.failed(result.error),
+              doneText: t("cancel.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.cancel.done }
+          return { ok: true, doneText: t("cancel.done") }
         },
       },
     },
@@ -2858,24 +2869,24 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "services",
       },
-      label: t.steps.deleteService,
-      doneLabel: t.stepsDone.deleteService,
-      run: async () => ({ error: t.tapFirst.deleteService }),
+      label: t("steps.deleteService"),
+      doneLabel: t("stepsDone.deleteService"),
+      run: async () => ({ error: t("tapFirst.deleteService") }),
       confirm: {
         describe: async (args: unknown) => {
           const a = asRecord(args)
           if (!a || typeof a.serviceId !== "string" || a.serviceId === "") {
-            return { error: t.errors.serviceIdRequired }
+            return { error: t("errors.serviceIdRequired") }
           }
           const { services } = await getOwnerBusiness(businessId)
           const service = services.find((s) => s.id === a.serviceId)
           if (!service) {
-            return { error: t.errors.serviceUnknown }
+            return { error: t("errors.serviceUnknown") }
           }
           return {
-            title: t.cards.deleteService,
-            action: t.actions.deleteService,
-            summary: `${service.name} · ${t.booking.minutes(service.durationMinutes)}`,
+            title: t("cards.deleteService"),
+            action: t("actions.deleteService"),
+            summary: `${service.name} · ${t("booking.minutes", { durationMinutes: String(service.durationMinutes) })}`,
             destructive: true,
           }
         },
@@ -2883,16 +2894,16 @@ export function buildAssistantTools(
           const a = asRecord(args)
           const serviceId = a?.serviceId
           if (typeof serviceId !== "string" || serviceId === "") {
-            return { ok: false, doneText: t.deleteService.unknown }
+            return { ok: false, doneText: t("deleteService.unknown") }
           }
           const result = await deleteService(businessId, serviceId)
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.deleteService.failed(result.error),
+              doneText: t("deleteService.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.deleteService.done }
+          return { ok: true, doneText: t("deleteService.done") }
         },
       },
     },
@@ -2912,31 +2923,29 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "services",
       },
-      label: t.steps.createServiceCategory,
-      doneLabel: t.stepsDone.createServiceCategory,
-      run: async () => ({ error: t.tapFirst.createServiceCategory }),
+      label: t("steps.createServiceCategory"),
+      doneLabel: t("stepsDone.createServiceCategory"),
+      run: async () => ({ error: t("tapFirst.createServiceCategory") }),
       confirm: {
         describe: async (args: unknown) => {
           const name = validCategoryName(asRecord(args)?.name)
           if (!name) {
             return {
-              error: t.errors.nameInvalid(BOOKING_RULES.maxServiceCategoryName),
+              error: t("errors.nameInvalid", { max: String(BOOKING_RULES.maxServiceCategoryName) }),
             }
           }
           const { categories } = await getOwnerBusiness(businessId)
           if (categories.length >= BOOKING_RULES.maxServiceCategories) {
             return {
-              error: t.errors.serviceCategoriesFull(
-                BOOKING_RULES.maxServiceCategories
-              ),
+              error: t("errors.serviceCategoriesFull", { max: String(BOOKING_RULES.maxServiceCategories) }),
             }
           }
           if (categories.some((c) => sameCategoryName(c.name, name))) {
-            return { error: t.errors.serviceCategoryExists(name) }
+            return { error: t("errors.serviceCategoryExists", { name }) }
           }
           return {
-            title: t.cards.createServiceCategory,
-            action: t.actions.createServiceCategory,
+            title: t("cards.createServiceCategory"),
+            action: t("actions.createServiceCategory"),
             summary: name,
             destructive: false,
           }
@@ -2947,9 +2956,7 @@ export function buildAssistantTools(
           if (!name) {
             return {
               ok: false,
-              doneText: t.createServiceCategory.failed(
-                t.errors.nameInvalid(BOOKING_RULES.maxServiceCategoryName)
-              ),
+              doneText: t("createServiceCategory.failed", { error: t("errors.nameInvalid", { max: String(BOOKING_RULES.maxServiceCategoryName) }) }),
             }
           }
           const result = await createServiceCategory(businessId, { name })
@@ -2958,11 +2965,11 @@ export function buildAssistantTools(
               ok: false,
               doneText:
                 result.error === "taken"
-                  ? t.createServiceCategory.taken(name)
-                  : t.createServiceCategory.failed(result.error),
+                  ? t("createServiceCategory.taken", { name })
+                  : t("createServiceCategory.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.createServiceCategory.done(name) }
+          return { ok: true, doneText: t("createServiceCategory.done", { name }) }
         },
       },
     },
@@ -2987,9 +2994,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "services",
       },
-      label: t.steps.renameServiceCategory,
-      doneLabel: t.stepsDone.renameServiceCategory,
-      run: async () => ({ error: t.tapFirst.renameServiceCategory }),
+      label: t("steps.renameServiceCategory"),
+      doneLabel: t("stepsDone.renameServiceCategory"),
+      run: async () => ({ error: t("tapFirst.renameServiceCategory") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkRenameCategoryArgs(args)
@@ -3003,11 +3010,11 @@ export function buildAssistantTools(
                 sameCategoryName(c.name, checked.name)
             )
           ) {
-            return { error: t.errors.serviceCategoryExists(checked.name) }
+            return { error: t("errors.serviceCategoryExists", { name: checked.name }) }
           }
           return {
-            title: t.cards.renameServiceCategory,
-            action: t.actions.renameServiceCategory,
+            title: t("cards.renameServiceCategory"),
+            action: t("actions.renameServiceCategory"),
             summary: `${checked.category.name} → ${checked.name}`,
             destructive: false,
           }
@@ -3018,10 +3025,10 @@ export function buildAssistantTools(
             return {
               ok: false,
               doneText:
-                checked.error === t.errors.serviceCategoryUnknown ||
-                checked.error === t.errors.serviceCategoryIdRequired
-                  ? t.renameServiceCategory.unknown
-                  : t.renameServiceCategory.failed(checked.error),
+                checked.error === t("errors.serviceCategoryUnknown") ||
+                checked.error === t("errors.serviceCategoryIdRequired")
+                  ? t("renameServiceCategory.unknown")
+                  : t("renameServiceCategory.failed", { error: checked.error }),
             }
           }
           // Only its name: its colour stays.
@@ -3032,19 +3039,19 @@ export function buildAssistantTools(
           )
           if (!result.ok) {
             const refusals: Record<string, string> = {
-              not_found: t.renameServiceCategory.unknown,
-              taken: t.renameServiceCategory.taken(checked.name),
+              not_found: t("renameServiceCategory.unknown"),
+              taken: t("renameServiceCategory.taken", { name: checked.name }),
             }
             return {
               ok: false,
               doneText:
                 refusals[result.error] ??
-                t.renameServiceCategory.failed(result.error),
+                t("renameServiceCategory.failed", { error: result.error }),
             }
           }
           return {
             ok: true,
-            doneText: t.renameServiceCategory.done(checked.name),
+            doneText: t("renameServiceCategory.done", { name: checked.name }),
           }
         },
       },
@@ -3066,9 +3073,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "services",
       },
-      label: t.steps.deleteServiceCategory,
-      doneLabel: t.stepsDone.deleteServiceCategory,
-      run: async () => ({ error: t.tapFirst.deleteServiceCategory }),
+      label: t("steps.deleteServiceCategory"),
+      doneLabel: t("stepsDone.deleteServiceCategory"),
+      run: async () => ({ error: t("tapFirst.deleteServiceCategory") }),
       confirm: {
         describe: async (args: unknown) => {
           const found = await findServiceCategory(args)
@@ -3076,17 +3083,17 @@ export function buildAssistantTools(
             return found
           }
           return {
-            title: t.cards.deleteServiceCategory,
-            action: t.actions.deleteServiceCategory,
+            title: t("cards.deleteServiceCategory"),
+            action: t("actions.deleteServiceCategory"),
             // The same words as the Services screen's own removal.
-            summary: `${found.category.name} · ${ownerWords.catalog.categories.movesToOther}`,
+            summary: `${found.category.name} · ${ownerT("catalog.categories.movesToOther")}`,
             destructive: true,
           }
         },
         execute: async (args: unknown) => {
           const categoryId = asRecord(args)?.categoryId
           if (typeof categoryId !== "string" || categoryId === "") {
-            return { ok: false, doneText: t.deleteServiceCategory.unknown }
+            return { ok: false, doneText: t("deleteServiceCategory.unknown") }
           }
           const result = await deleteServiceCategory(businessId, categoryId)
           if (!result.ok) {
@@ -3094,11 +3101,11 @@ export function buildAssistantTools(
               ok: false,
               doneText:
                 result.error === "not_found"
-                  ? t.deleteServiceCategory.unknown
-                  : t.deleteServiceCategory.failed(result.error),
+                  ? t("deleteServiceCategory.unknown")
+                  : t("deleteServiceCategory.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.deleteServiceCategory.done }
+          return { ok: true, doneText: t("deleteServiceCategory.done") }
         },
       },
     },
@@ -3114,23 +3121,23 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "team",
       },
-      label: t.steps.deleteMember,
-      doneLabel: t.stepsDone.deleteMember,
-      run: async () => ({ error: t.tapFirst.deleteMember }),
+      label: t("steps.deleteMember"),
+      doneLabel: t("stepsDone.deleteMember"),
+      run: async () => ({ error: t("tapFirst.deleteMember") }),
       confirm: {
         describe: async (args: unknown) => {
           const a = asRecord(args)
           if (!a || typeof a.memberId !== "string" || a.memberId === "") {
-            return { error: t.errors.memberIdRequired }
+            return { error: t("errors.memberIdRequired") }
           }
           const { team } = await getOwnerBusiness(businessId)
           const member = team.find((m) => m.id === a.memberId)
           if (!member) {
-            return { error: t.errors.memberUnknown }
+            return { error: t("errors.memberUnknown") }
           }
           return {
-            title: t.cards.deleteMember,
-            action: t.actions.deleteMember,
+            title: t("cards.deleteMember"),
+            action: t("actions.deleteMember"),
             summary: member.name,
             destructive: true,
           }
@@ -3141,17 +3148,17 @@ export function buildAssistantTools(
           if (typeof memberId !== "string" || memberId === "") {
             return {
               ok: false,
-              doneText: t.deleteMember.unknown,
+              doneText: t("deleteMember.unknown"),
             }
           }
           const result = await deleteTeamMember(businessId, memberId)
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.deleteMember.failed(result.error),
+              doneText: t("deleteMember.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.deleteMember.done }
+          return { ok: true, doneText: t("deleteMember.done") }
         },
       },
     },
@@ -3163,9 +3170,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "team",
       },
-      label: t.steps.createMember,
-      doneLabel: t.stepsDone.createMember,
-      run: async () => ({ error: t.tapFirst.createMember }),
+      label: t("steps.createMember"),
+      doneLabel: t("stepsDone.createMember"),
+      run: async () => ({ error: t("tapFirst.createMember") }),
       confirm: {
         describe: async (args: unknown) => {
           const name = validName(
@@ -3173,15 +3180,15 @@ export function buildAssistantTools(
             BOOKING_RULES.maxTeamName
           )
           if (!name) {
-            return { error: t.errors.nameInvalid(BOOKING_RULES.maxTeamName) }
+            return { error: t("errors.nameInvalid", { max: String(BOOKING_RULES.maxTeamName) }) }
           }
           const { team } = await getOwnerBusiness(businessId)
           if (team.length >= BOOKING_RULES.maxTeam) {
-            return { error: t.errors.teamFull(BOOKING_RULES.maxTeam) }
+            return { error: t("errors.teamFull", { max: String(BOOKING_RULES.maxTeam) }) }
           }
           return {
-            title: t.cards.createMember,
-            action: t.actions.createMember,
+            title: t("cards.createMember"),
+            action: t("actions.createMember"),
             summary: name,
             destructive: false,
           }
@@ -3194,16 +3201,14 @@ export function buildAssistantTools(
           if (!name) {
             return {
               ok: false,
-              doneText: t.createMember.failed(
-                t.errors.nameInvalid(BOOKING_RULES.maxTeamName)
-              ),
+              doneText: t("createMember.failed", { error: t("errors.nameInvalid", { max: String(BOOKING_RULES.maxTeamName) }) }),
             }
           }
           const result = await createTeamMember(businessId, name)
           if (!result.ok) {
-            return { ok: false, doneText: t.createMember.failed(result.error) }
+            return { ok: false, doneText: t("createMember.failed", { error: result.error }) }
           }
-          return { ok: true, doneText: t.createMember.done(name) }
+          return { ok: true, doneText: t("createMember.done", { name }) }
         },
       },
     },
@@ -3226,9 +3231,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "services",
       },
-      label: t.steps.serviceTeam,
-      doneLabel: t.stepsDone.serviceTeam,
-      run: async () => ({ error: t.tapFirst.serviceTeam }),
+      label: t("steps.serviceTeam"),
+      doneLabel: t("stepsDone.serviceTeam"),
+      run: async () => ({ error: t("tapFirst.serviceTeam") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkServiceTeamArgs(args)
@@ -3239,9 +3244,9 @@ export function buildAssistantTools(
             (id) => checked.team.find((m) => m.id === id)!.name
           )
           return {
-            title: t.cards.serviceTeam,
-            action: t.actions.serviceTeam,
-            summary: `${checked.service.name} · ${names.length > 0 ? names.join(", ") : t.serviceTeam.anyone}`,
+            title: t("cards.serviceTeam"),
+            action: t("actions.serviceTeam"),
+            summary: `${checked.service.name} · ${names.length > 0 ? names.join(", ") : t("serviceTeam.anyone")}`,
             destructive: false,
           }
         },
@@ -3249,14 +3254,14 @@ export function buildAssistantTools(
           const checked = await checkServiceTeamArgs(args)
           if ("error" in checked) {
             if (
-              checked.error === t.errors.serviceUnknown ||
-              checked.error === t.errors.serviceIdRequired
+              checked.error === t("errors.serviceUnknown") ||
+              checked.error === t("errors.serviceIdRequired")
             ) {
-              return { ok: false, doneText: t.serviceTeam.unknown }
+              return { ok: false, doneText: t("serviceTeam.unknown") }
             }
             return {
               ok: false,
-              doneText: t.serviceTeam.failed(checked.error),
+              doneText: t("serviceTeam.failed", { error: checked.error }),
             }
           }
           const result = await setServiceTeam(
@@ -3267,10 +3272,10 @@ export function buildAssistantTools(
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.serviceTeam.failed(result.error),
+              doneText: t("serviceTeam.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.serviceTeam.done }
+          return { ok: true, doneText: t("serviceTeam.done") }
         },
       },
     },
@@ -3293,9 +3298,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "team",
       },
-      label: t.steps.memberServices,
-      doneLabel: t.stepsDone.memberServices,
-      run: async () => ({ error: t.tapFirst.memberServices }),
+      label: t("steps.memberServices"),
+      doneLabel: t("stepsDone.memberServices"),
+      run: async () => ({ error: t("tapFirst.memberServices") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkMemberServicesArgs(args)
@@ -3306,9 +3311,9 @@ export function buildAssistantTools(
             (id) => checked.services.find((s) => s.id === id)!.name
           )
           return {
-            title: t.cards.memberServices,
-            action: t.actions.memberServices,
-            summary: `${checked.member.name} · ${names.length > 0 ? names.join(", ") : t.memberServices.none}`,
+            title: t("cards.memberServices"),
+            action: t("actions.memberServices"),
+            summary: `${checked.member.name} · ${names.length > 0 ? names.join(", ") : t("memberServices.none")}`,
             destructive: false,
           }
         },
@@ -3316,14 +3321,14 @@ export function buildAssistantTools(
           const checked = await checkMemberServicesArgs(args)
           if ("error" in checked) {
             if (
-              checked.error === t.errors.memberUnknown ||
-              checked.error === t.errors.memberIdRequired
+              checked.error === t("errors.memberUnknown") ||
+              checked.error === t("errors.memberIdRequired")
             ) {
-              return { ok: false, doneText: t.memberServices.unknown }
+              return { ok: false, doneText: t("memberServices.unknown") }
             }
             return {
               ok: false,
-              doneText: t.memberServices.failed(checked.error),
+              doneText: t("memberServices.failed", { error: checked.error }),
             }
           }
           const result = await setMemberServices(
@@ -3334,10 +3339,10 @@ export function buildAssistantTools(
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.memberServices.failed(result.error),
+              doneText: t("memberServices.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.memberServices.done }
+          return { ok: true, doneText: t("memberServices.done") }
         },
       },
     },
@@ -3376,9 +3381,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "services",
       },
-      label: t.steps.createAddon,
-      doneLabel: t.stepsDone.createAddon,
-      run: async () => ({ error: t.tapFirst.createAddon }),
+      label: t("steps.createAddon"),
+      doneLabel: t("stepsDone.createAddon"),
+      run: async () => ({ error: t("tapFirst.createAddon") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkAddonGroupArgs(args, null)
@@ -3386,8 +3391,8 @@ export function buildAssistantTools(
             return checked
           }
           return {
-            title: t.cards.createAddon,
-            action: t.actions.createAddon,
+            title: t("cards.createAddon"),
+            action: t("actions.createAddon"),
             summary: `${checked.input.name} · ${checked.input.prompt} · ${checked.input.options.map((o) => o.name).join(", ")}`,
             destructive: false,
           }
@@ -3397,7 +3402,7 @@ export function buildAssistantTools(
           if ("error" in checked) {
             return {
               ok: false,
-              doneText: t.createAddon.failed(checked.error),
+              doneText: t("createAddon.failed", { error: checked.error }),
             }
           }
           const result = await createAddonGroup(businessId, {
@@ -3407,10 +3412,10 @@ export function buildAssistantTools(
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.createAddon.failed(result.error),
+              doneText: t("createAddon.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.createAddon.done }
+          return { ok: true, doneText: t("createAddon.done") }
         },
       },
     },
@@ -3449,19 +3454,19 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "services",
       },
-      label: t.steps.updateAddon,
-      doneLabel: t.stepsDone.updateAddon,
-      run: async () => ({ error: t.tapFirst.updateAddon }),
+      label: t("steps.updateAddon"),
+      doneLabel: t("stepsDone.updateAddon"),
+      run: async () => ({ error: t("tapFirst.updateAddon") }),
       confirm: {
         describe: async (args: unknown) => {
           const a = asRecord(args)
           if (!a || typeof a.groupId !== "string" || a.groupId === "") {
-            return { error: t.errors.groupIdRequired }
+            return { error: t("errors.groupIdRequired") }
           }
           const groups = await getAddonGroups(businessId)
           const current = groups.find((g) => g.id === a.groupId)
           if (!current) {
-            return { error: t.errors.groupUnknown }
+            return { error: t("errors.groupUnknown") }
           }
           const checked = await checkAddonGroupArgs(args, current)
           if ("error" in checked) {
@@ -3504,11 +3509,11 @@ export function buildAssistantTools(
             }
           }
           if (parts.length === 0) {
-            return { error: t.errors.nothingToChange }
+            return { error: t("errors.nothingToChange") }
           }
           return {
-            title: t.cards.updateAddon,
-            action: t.actions.updateAddon,
+            title: t("cards.updateAddon"),
+            action: t("actions.updateAddon"),
             summary: `${current.name} · ${parts.join(" · ")}`,
             destructive: false,
           }
@@ -3516,18 +3521,18 @@ export function buildAssistantTools(
         execute: async (args: unknown) => {
           const a = asRecord(args)
           if (!a || typeof a.groupId !== "string" || a.groupId === "") {
-            return { ok: false, doneText: t.updateAddon.unknown }
+            return { ok: false, doneText: t("updateAddon.unknown") }
           }
           const groups = await getAddonGroups(businessId)
           const current = groups.find((g) => g.id === a.groupId)
           if (!current) {
-            return { ok: false, doneText: t.updateAddon.unknown }
+            return { ok: false, doneText: t("updateAddon.unknown") }
           }
           const checked = await checkAddonGroupArgs(args, current)
           if ("error" in checked) {
             return {
               ok: false,
-              doneText: t.updateAddon.failed(checked.error),
+              doneText: t("updateAddon.failed", { error: checked.error }),
             }
           }
           const result = await updateAddonGroup(
@@ -3538,10 +3543,10 @@ export function buildAssistantTools(
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.updateAddon.failed(result.error),
+              doneText: t("updateAddon.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.updateAddon.done }
+          return { ok: true, doneText: t("updateAddon.done") }
         },
       },
     },
@@ -3559,23 +3564,23 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "services",
       },
-      label: t.steps.deleteAddon,
-      doneLabel: t.stepsDone.deleteAddon,
-      run: async () => ({ error: t.tapFirst.deleteAddon }),
+      label: t("steps.deleteAddon"),
+      doneLabel: t("stepsDone.deleteAddon"),
+      run: async () => ({ error: t("tapFirst.deleteAddon") }),
       confirm: {
         describe: async (args: unknown) => {
           const a = asRecord(args)
           if (!a || typeof a.groupId !== "string" || a.groupId === "") {
-            return { error: t.errors.groupIdRequired }
+            return { error: t("errors.groupIdRequired") }
           }
           const groups = await getAddonGroups(businessId)
           const group = groups.find((g) => g.id === a.groupId)
           if (!group) {
-            return { error: t.errors.groupUnknown }
+            return { error: t("errors.groupUnknown") }
           }
           return {
-            title: t.cards.deleteAddon,
-            action: t.actions.deleteAddon,
+            title: t("cards.deleteAddon"),
+            action: t("actions.deleteAddon"),
             summary: `${group.name} · ${group.options.map((o) => o.name).join(", ")}`,
             destructive: true,
           }
@@ -3584,16 +3589,16 @@ export function buildAssistantTools(
           const a = asRecord(args)
           const groupId = a?.groupId
           if (typeof groupId !== "string" || groupId === "") {
-            return { ok: false, doneText: t.deleteAddon.unknown }
+            return { ok: false, doneText: t("deleteAddon.unknown") }
           }
           const result = await deleteAddonGroup(businessId, groupId)
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.deleteAddon.failed(result.error),
+              doneText: t("deleteAddon.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.deleteAddon.done }
+          return { ok: true, doneText: t("deleteAddon.done") }
         },
       },
     },
@@ -3613,9 +3618,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "settings",
       },
-      label: t.steps.updateBusiness,
-      doneLabel: t.stepsDone.updateBusiness,
-      run: async () => ({ error: t.tapFirst.updateBusiness }),
+      label: t("steps.updateBusiness"),
+      doneLabel: t("stepsDone.updateBusiness"),
+      run: async () => ({ error: t("tapFirst.updateBusiness") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkBusinessDetailsArgs(args)
@@ -3624,19 +3629,18 @@ export function buildAssistantTools(
           }
           const short = (value: string | null): string =>
             value === null ? "" : value.length > 60 ? value.slice(0, 60) : value
-          const fields = t.updateBusiness.fields
           const rows: [string, string | null, string | null][] = [
-            [fields.name, checked.current.name, checked.input.name],
-            [fields.address, checked.current.address, checked.input.address],
+            [t("updateBusiness.fields.name"), checked.current.name, checked.input.name],
+            [t("updateBusiness.fields.address"), checked.current.address, checked.input.address],
             [
-              fields.about,
+              t("updateBusiness.fields.about"),
               checked.current.description,
               checked.input.description,
             ],
-            [fields.phone, checked.current.phone, checked.input.phone],
-            [fields.website, checked.current.website, checked.input.website],
+            [t("updateBusiness.fields.phone"), checked.current.phone, checked.input.phone],
+            [t("updateBusiness.fields.website"), checked.current.website, checked.input.website],
             [
-              fields.seats,
+              t("updateBusiness.fields.seats"),
               String(checked.current.seats),
               String(checked.input.seats),
             ],
@@ -3648,11 +3652,11 @@ export function buildAssistantTools(
                 `${label} · ${short(old)} → ${short(next)}`
             )
           if (parts.length === 0) {
-            return { error: t.errors.nothingToChange }
+            return { error: t("errors.nothingToChange") }
           }
           return {
-            title: t.cards.updateBusiness,
-            action: t.actions.updateBusiness,
+            title: t("cards.updateBusiness"),
+            action: t("actions.updateBusiness"),
             summary: parts.join(" · "),
             destructive: false,
           }
@@ -3662,17 +3666,17 @@ export function buildAssistantTools(
           if ("error" in checked) {
             return {
               ok: false,
-              doneText: t.updateBusiness.failed(checked.error),
+              doneText: t("updateBusiness.failed", { error: checked.error }),
             }
           }
           const result = await updateBusinessDetails(businessId, checked.input)
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.updateBusiness.failed(result.error),
+              doneText: t("updateBusiness.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.updateBusiness.done }
+          return { ok: true, doneText: t("updateBusiness.done") }
         },
       },
     },
@@ -3702,43 +3706,43 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "hours",
       },
-      label: t.steps.hours,
-      doneLabel: t.stepsDone.hours,
+      label: t("steps.hours"),
+      doneLabel: t("stepsDone.hours"),
       run: async () => ({
-        error: t.tapFirst.hours,
+        error: t("tapFirst.hours"),
       }),
       confirm: {
         describe: async (args: unknown) => {
           const rows = validHoursRows(asRecord(args)?.rows)
           if (!rows) {
-            return { error: t.errors.rowsInvalid(BOOKING_RULES.maxHoursRows) }
+            return { error: t("errors.rowsInvalid", { max: String(BOOKING_RULES.maxHoursRows) }) }
           }
           const lines = [...rows]
             .sort((x, y) => x.weekday - y.weekday)
             .map(
               (r) =>
-                `${formatWeekday(r.weekday, t.locale)} ${r.opensAt}–${r.closesAt}`
+                `${formatWeekday(r.weekday, locale)} ${r.opensAt}–${r.closesAt}`
             )
           return {
-            title: t.cards.hours,
-            action: t.actions.hours,
-            summary: lines.length > 0 ? lines.join(", ") : t.booking.closedWeek,
+            title: t("cards.hours"),
+            action: t("actions.hours"),
+            summary: lines.length > 0 ? lines.join(", ") : t("booking.closedWeek"),
             destructive: true,
           }
         },
         execute: async (args: unknown) => {
           const rows = validHoursRows(asRecord(args)?.rows)
           if (!rows) {
-            return { ok: false, doneText: t.hours.invalid }
+            return { ok: false, doneText: t("hours.invalid") }
           }
           const result = await saveHours(businessId, rows)
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.hours.failed(result.error),
+              doneText: t("hours.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.hours.done }
+          return { ok: true, doneText: t("hours.done") }
         },
       },
     },
@@ -3767,8 +3771,8 @@ export function buildAssistantTools(
         }),
         needsConfirm: false,
       },
-      label: t.steps.freeTimes,
-      doneLabel: t.stepsDone.freeTimes,
+      label: t("steps.freeTimes"),
+      doneLabel: t("stepsDone.freeTimes"),
       run: async (args: unknown) => {
         const a = asRecord(args)
         const serviceWanted = a?.service ?? a?.serviceId
@@ -3777,7 +3781,7 @@ export function buildAssistantTools(
           typeof serviceWanted !== "string" ||
           serviceWanted.trim() === ""
         ) {
-          return bad(t.errors.serviceRequired)
+          return bad(t("errors.serviceRequired"))
         }
         const memberRaw = a.teamMember ?? a.teamMemberId
         const memberWanted =
@@ -3786,19 +3790,19 @@ export function buildAssistantTools(
           memberWanted !== null &&
           (typeof memberWanted !== "string" || memberWanted.trim() === "")
         ) {
-          return bad(t.errors.teamMemberInvalid)
+          return bad(t("errors.teamMemberInvalid"))
         }
         const { business, services, team } =
           await getBusinessForNames(businessId)
         const servicePick = pickByName(services, serviceWanted)
         if ("choices" in servicePick) {
-          return bad(t.errors.serviceWhich(servicePick.choices.join(", ")))
+          return bad(t("errors.serviceWhich", { names: servicePick.choices.join(", ") }))
         }
         let teamMember: { id: string; name: string } | null = null
         if (memberWanted !== null) {
           const memberPick = pickByName(team, memberWanted)
           if ("choices" in memberPick) {
-            return bad(t.errors.memberWhich(memberPick.choices.join(", ")))
+            return bad(t("errors.memberWhich", { names: memberPick.choices.join(", ") }))
           }
           teamMember = memberPick.found
         }
@@ -3806,13 +3810,13 @@ export function buildAssistantTools(
         const from = a.from === undefined ? today : a.from
         const to = a.to === undefined ? addDaysStr(today, 6) : a.to
         if (typeof from !== "string" || !isRealDate(from) || from < today) {
-          return bad(t.errors.fromInvalid)
+          return bad(t("errors.fromInvalid"))
         }
         if (typeof to !== "string" || !isRealDate(to) || to < from) {
-          return bad(t.errors.toInvalid)
+          return bad(t("errors.toInvalid"))
         }
         if (daysInRange(from, to) > ASSISTANT_RULES.maxFreeTimesDays) {
-          return bad(t.errors.spanInvalid(ASSISTANT_RULES.maxFreeTimesDays))
+          return bad(t("errors.spanInvalid", { max: String(ASSISTANT_RULES.maxFreeTimesDays) }))
         }
         const extras = await pickExtras(
           businessId,
@@ -3830,7 +3834,7 @@ export function buildAssistantTools(
           extras.ids
         )
         if (!found) {
-          return bad(t.errors.freeTimesUnknown)
+          return bad(t("errors.freeTimesUnknown"))
         }
         const inRange = found.days.filter((d) => d.date >= from && d.date <= to)
         const capped = inRange.slice(0, ASSISTANT_RULES.maxFreeTimesDays)
@@ -3839,8 +3843,8 @@ export function buildAssistantTools(
           teamMember: teamMember?.name ?? null,
           days: capped.map((day) => ({
             ...day,
-            dayText: formatDay(day.date, t.locale),
-            timesText: day.times.map((time) => formatClock(time, t.locale)),
+            dayText: formatDay(day.date, locale),
+            timesText: day.times.map((time) => formatClock(time, locale)),
           })),
           total: inRange.length,
           truncated: inRange.length > capped.length,
@@ -3889,34 +3893,34 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "bookings",
       },
-      label: t.steps.booking,
-      doneLabel: t.stepsDone.booking,
-      run: async () => ({ error: t.tapFirst.booking }),
+      label: t("steps.booking"),
+      doneLabel: t("stepsDone.booking"),
+      run: async () => ({ error: t("tapFirst.booking") }),
       confirm: {
         describe: async (args: unknown) => {
-          const checked = await checkBookingArgs(businessId, args, t)
+          const checked = await checkBookingArgs(businessId, args, t, locale)
           if ("error" in checked) {
             return checked
           }
           return {
-            title: t.cards.book,
-            action: t.actions.book,
+            title: t("cards.book"),
+            action: t("actions.book"),
             summary:
               `${checked.name} · ${[checked.service.name, ...checked.extras.names].join(" + ")} · ` +
-              `${formatDay(checked.date, t.locale)} · ${formatClock(checked.time, t.locale)} · ` +
-              `${checked.memberName} · ${t.booking.minutes(checked.durationMinutes)} · ${checked.price}`,
+              `${formatDay(checked.date, locale)} · ${formatClock(checked.time, locale)} · ` +
+              `${checked.memberName} · ${t("booking.minutes", { durationMinutes: String(checked.durationMinutes) })} · ${checked.price}`,
             destructive: false,
             args: bookingToRun(checked),
           }
         },
-        declinedText: t.booking.declined,
+        declinedText: t("booking.declined"),
         // Books the stored booking as the card showed it, by ids, with no
         // name or day looked up again. createOwnerBooking still checks the
         // service, the team member and that the time is free.
         execute: async (args: unknown) => {
           const booking = asBookingToRun(args)
           if (!booking) {
-            return { ok: false, doneText: t.booking.failed }
+            return { ok: false, doneText: t("booking.failed") }
           }
           // allowConflict is always false: the model can never double-book.
           const result = await createOwnerBooking({
@@ -3931,40 +3935,31 @@ export function buildAssistantTools(
             note: booking.note,
             allowConflict: false,
           })
-          const when = t.booking.at(
-            formatDay(booking.date, t.locale),
-            formatClock(booking.time, t.locale)
-          )
+          const when = t("booking.at", { day: formatDay(booking.date, locale), time: formatClock(booking.time, locale) })
           if (result.status === "booked") {
             return {
               ok: true,
-              doneText: t.booking.booked(
-                booking.name,
-                booking.serviceName,
-                when
-              ),
+              doneText: t("booking.booked", { name: booking.name, service: booking.serviceName, when }),
             }
           }
           if (result.status === "conflict") {
             return {
               ok: false,
-              doneText: t.booking.couldNotBook(
-                result.reason === "closed"
-                  ? t.booking.conflictClosed
-                  : t.booking.conflictTaken
-              ),
+              doneText: t("booking.couldNotBook", { reason: result.reason === "closed"
+                  ? t("booking.conflictClosed")
+                  : t("booking.conflictTaken") }),
             }
           }
           if (result.status === "invalid") {
-            const fields: Record<string, string> = { ...t.booking.fields }
+            const field = `booking.fields.${result.field}` as const
             return {
               ok: false,
-              doneText: t.booking.couldNotBook(
-                fields[result.field] ?? t.booking.invalidFallback
-              ),
+              doneText: t("booking.couldNotBook", {
+                reason: t.has(field) ? t(field) : t("booking.invalidFallback"),
+              }),
             }
           }
-          return { ok: false, doneText: t.booking.failed }
+          return { ok: false, doneText: t("booking.failed") }
         },
       },
     },
@@ -3992,9 +3987,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "bookings",
       },
-      label: t.steps.moveBooking,
-      doneLabel: t.stepsDone.moveBooking,
-      run: async () => ({ error: t.tapFirst.moveBooking }),
+      label: t("steps.moveBooking"),
+      doneLabel: t("stepsDone.moveBooking"),
+      run: async () => ({ error: t("tapFirst.moveBooking") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkMoveArgs(args)
@@ -4003,12 +3998,12 @@ export function buildAssistantTools(
           }
           const { booking, date, time } = checked
           return {
-            title: t.cards.moveBooking,
-            action: t.actions.moveBooking,
+            title: t("cards.moveBooking"),
+            action: t("actions.moveBooking"),
             summary:
               `${booking.customerName} · ${booking.serviceName} · ` +
-              `${t.booking.at(formatDay(booking.date, t.locale), formatClock(booking.time, t.locale))} → ` +
-              t.booking.at(formatDay(date, t.locale), formatClock(time, t.locale)),
+              `${t("booking.at", { day: formatDay(booking.date, locale), time: formatClock(booking.time, locale) })} → ` +
+              t("booking.at", { day: formatDay(date, locale), time: formatClock(time, locale) }),
             destructive: false,
             // The date the card showed, so the tap moves exactly this even
             // after midnight.
@@ -4024,7 +4019,7 @@ export function buildAssistantTools(
             typeof a.date !== "string" ||
             typeof a.time !== "string"
           ) {
-            return { ok: false, doneText: t.moveBooking.invalid }
+            return { ok: false, doneText: t("moveBooking.invalid") }
           }
           const result = await moveOwnerBooking({
             businessId,
@@ -4036,35 +4031,26 @@ export function buildAssistantTools(
           if (result.status === "moved") {
             return {
               ok: true,
-              doneText: t.moveBooking.done(
-                t.booking.at(
-                  formatDay(a.date, t.locale),
-                  formatClock(a.time, t.locale)
-                )
-              ),
+              doneText: t("moveBooking.done", { when: t("booking.at", { day: formatDay(a.date, locale), time: formatClock(a.time, locale) }) }),
             }
           }
           if (result.status === "conflict") {
             return {
               ok: false,
-              doneText: t.moveBooking.couldNotMove(
-                result.reason === "closed"
-                  ? t.booking.conflictClosed
-                  : t.booking.conflictTaken
-              ),
+              doneText: t("moveBooking.couldNotMove", { reason: result.reason === "closed"
+                  ? t("booking.conflictClosed")
+                  : t("booking.conflictTaken") }),
             }
           }
           if (result.status === "invalid") {
             return {
               ok: false,
-              doneText: t.moveBooking.couldNotMove(
-                result.field === "date"
-                  ? t.moveBooking.badDate
-                  : t.moveBooking.badTime
-              ),
+              doneText: t("moveBooking.couldNotMove", { reason: result.field === "date"
+                  ? t("moveBooking.badDate")
+                  : t("moveBooking.badTime") }),
             }
           }
-          return { ok: false, doneText: t.moveBooking.failed }
+          return { ok: false, doneText: t("moveBooking.failed") }
         },
       },
     },
@@ -4086,9 +4072,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "customers",
       },
-      label: t.steps.addCustomer,
-      doneLabel: t.stepsDone.addCustomer,
-      run: async () => ({ error: t.tapFirst.addCustomer }),
+      label: t("steps.addCustomer"),
+      doneLabel: t("stepsDone.addCustomer"),
+      run: async () => ({ error: t("tapFirst.addCustomer") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = checkCustomerArgs(args)
@@ -4096,8 +4082,8 @@ export function buildAssistantTools(
             return checked
           }
           return {
-            title: t.cards.addCustomer,
-            action: t.actions.addCustomer,
+            title: t("cards.addCustomer"),
+            action: t("actions.addCustomer"),
             summary: checked.phone
               ? `${checked.name} · ${checked.phone}`
               : checked.name,
@@ -4107,7 +4093,7 @@ export function buildAssistantTools(
         execute: async (args: unknown) => {
           const checked = checkCustomerArgs(args)
           if ("error" in checked) {
-            return { ok: false, doneText: t.addCustomer.invalid }
+            return { ok: false, doneText: t("addCustomer.invalid") }
           }
           const result = await addCustomer(businessId, checked)
           if (!result.ok) {
@@ -4115,11 +4101,11 @@ export function buildAssistantTools(
               ok: false,
               doneText:
                 result.error === "exists"
-                  ? t.addCustomer.exists
-                  : t.addCustomer.failed(result.error),
+                  ? t("addCustomer.exists")
+                  : t("addCustomer.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.addCustomer.done }
+          return { ok: true, doneText: t("addCustomer.done") }
         },
       },
     },
@@ -4150,9 +4136,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "team",
       },
-      label: t.steps.memberHours,
-      doneLabel: t.stepsDone.memberHours,
-      run: async () => ({ error: t.tapFirst.memberHours }),
+      label: t("steps.memberHours"),
+      doneLabel: t("stepsDone.memberHours"),
+      run: async () => ({ error: t("tapFirst.memberHours") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkMemberHoursArgs(args)
@@ -4160,12 +4146,12 @@ export function buildAssistantTools(
             return checked
           }
           return {
-            title: t.cards.memberHours,
-            action: t.actions.memberHours,
+            title: t("cards.memberHours"),
+            action: t("actions.memberHours"),
             summary: `${checked.member.name} · ${
               checked.rows
-                ? hoursLine(t, checked.rows)
-                : t.memberHours.sameAsBusiness
+                ? hoursLine(locale, checked.rows)
+                : t("memberHours.sameAsBusiness")
             }`,
             destructive: true,
           }
@@ -4177,14 +4163,14 @@ export function buildAssistantTools(
           const checked = await checkMemberHoursArgs(args)
           if ("error" in checked) {
             if (
-              checked.error === t.errors.memberUnknown ||
-              checked.error === t.errors.memberIdRequired
+              checked.error === t("errors.memberUnknown") ||
+              checked.error === t("errors.memberIdRequired")
             ) {
-              return { ok: false, doneText: t.memberHours.unknown }
+              return { ok: false, doneText: t("memberHours.unknown") }
             }
             return {
               ok: false,
-              doneText: t.memberHours.failed(checked.error),
+              doneText: t("memberHours.failed", { error: checked.error }),
             }
           }
           const { member, rows } = checked
@@ -4204,10 +4190,10 @@ export function buildAssistantTools(
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.memberHours.failed(result.error),
+              doneText: t("memberHours.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.memberHours.done }
+          return { ok: true, doneText: t("memberHours.done") }
         },
       },
     },
@@ -4223,9 +4209,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "team",
       },
-      label: t.steps.invite,
-      doneLabel: t.stepsDone.invite,
-      run: async () => ({ error: t.tapFirst.invite }),
+      label: t("steps.invite"),
+      doneLabel: t("stepsDone.invite"),
+      run: async () => ({ error: t("tapFirst.invite") }),
       confirm: {
         describe: async (args: unknown) => {
           const found = await findMember(args)
@@ -4234,14 +4220,14 @@ export function buildAssistantTools(
           }
           const { member } = found
           if (member.userId) {
-            return { error: t.errors.memberJoined }
+            return { error: t("errors.memberJoined") }
           }
           if (!member.email) {
-            return { error: t.errors.memberNoEmail }
+            return { error: t("errors.memberNoEmail") }
           }
           return {
-            title: t.cards.invite,
-            action: t.actions.invite,
+            title: t("cards.invite"),
+            action: t("actions.invite"),
             summary: `${member.name} · ${member.email}`,
             destructive: false,
           }
@@ -4252,18 +4238,18 @@ export function buildAssistantTools(
         execute: async (args: unknown) => {
           const found = await findMember(args)
           if ("error" in found) {
-            return { ok: false, doneText: t.invite.unknown }
+            return { ok: false, doneText: t("invite.unknown") }
           }
           if (!found.member.email) {
-            return { ok: false, doneText: t.invite.noEmail }
+            return { ok: false, doneText: t("invite.noEmail") }
           }
           const result = await sendTeamInvite(businessId, found.member.id)
           if (!result.ok) {
-            return { ok: false, doneText: t.invite.failed }
+            return { ok: false, doneText: t("invite.failed") }
           }
           return result.emailedTo
-            ? { ok: true, doneText: t.invite.done(found.member.name) }
-            : { ok: false, doneText: t.invite.notEmailed }
+            ? { ok: true, doneText: t("invite.done", { name: found.member.name }) }
+            : { ok: false, doneText: t("invite.notEmailed") }
         },
       },
     },
@@ -4279,9 +4265,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "team",
       },
-      label: t.steps.removeAccess,
-      doneLabel: t.stepsDone.removeAccess,
-      run: async () => ({ error: t.tapFirst.removeAccess }),
+      label: t("steps.removeAccess"),
+      doneLabel: t("stepsDone.removeAccess"),
+      run: async () => ({ error: t("tapFirst.removeAccess") }),
       confirm: {
         describe: async (args: unknown) => {
           const found = await findMember(args)
@@ -4289,11 +4275,11 @@ export function buildAssistantTools(
             return found
           }
           if (!found.member.userId) {
-            return { error: t.errors.memberNoAccess }
+            return { error: t("errors.memberNoAccess") }
           }
           return {
-            title: t.cards.removeAccess,
-            action: t.actions.removeAccess,
+            title: t("cards.removeAccess"),
+            action: t("actions.removeAccess"),
             summary: found.member.name,
             destructive: true,
           }
@@ -4302,12 +4288,12 @@ export function buildAssistantTools(
         execute: async (args: unknown) => {
           const found = await findMember(args)
           if ("error" in found) {
-            return { ok: false, doneText: t.removeAccess.unknown }
+            return { ok: false, doneText: t("removeAccess.unknown") }
           }
           const result = await removeTeamAccess(businessId, found.member.id)
           return result.ok
-            ? { ok: true, doneText: t.removeAccess.done }
-            : { ok: false, doneText: t.removeAccess.failed }
+            ? { ok: true, doneText: t("removeAccess.done") }
+            : { ok: false, doneText: t("removeAccess.failed") }
         },
       },
     },
@@ -4319,13 +4305,13 @@ export function buildAssistantTools(
         parameters: schema({}),
         needsConfirm: false,
       },
-      label: t.steps.suggestServices,
-      doneLabel: t.stepsDone.suggestServices,
+      label: t("steps.suggestServices"),
+      doneLabel: t("stepsDone.suggestServices"),
       run: async () => {
         const result = await suggestServices(businessId, language)
         if (!result.ok) {
           return bad(
-            result.error === "ai_off" ? t.errors.aiOff : t.errors.suggestFailed
+            result.error === "ai_off" ? t("errors.aiOff") : t("errors.suggestFailed")
           )
         }
         return { services: result.services, saved: false }
@@ -4339,13 +4325,13 @@ export function buildAssistantTools(
         parameters: schema({}),
         needsConfirm: false,
       },
-      label: t.steps.suggestAddons,
-      doneLabel: t.stepsDone.suggestAddons,
+      label: t("steps.suggestAddons"),
+      doneLabel: t("stepsDone.suggestAddons"),
       run: async () => {
         const result = await suggestAddonGroups(businessId, language)
         if (!result.ok) {
           return bad(
-            result.error === "ai_off" ? t.errors.aiOff : t.errors.suggestFailed
+            result.error === "ai_off" ? t("errors.aiOff") : t("errors.suggestFailed")
           )
         }
         return { groups: result.groups, saved: false }
@@ -4359,8 +4345,8 @@ export function buildAssistantTools(
         parameters: schema({}),
         needsConfirm: false,
       },
-      label: t.steps.improveDetails,
-      doneLabel: t.stepsDone.improveDetails,
+      label: t("steps.improveDetails"),
+      doneLabel: t("stepsDone.improveDetails"),
       run: async () => {
         const { business } = await getOwnerBusiness(businessId)
         const result = await improveDetails(businessId, {
@@ -4369,7 +4355,7 @@ export function buildAssistantTools(
         })
         if (!result.ok) {
           return bad(
-            result.error === "ai_off" ? t.errors.aiOff : t.errors.suggestFailed
+            result.error === "ai_off" ? t("errors.aiOff") : t("errors.suggestFailed")
           )
         }
         return {
@@ -4391,9 +4377,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "team",
       },
-      label: t.steps.drawPhoto,
-      doneLabel: t.stepsDone.drawPhoto,
-      run: async () => ({ error: t.tapFirst.drawPhoto }),
+      label: t("steps.drawPhoto"),
+      doneLabel: t("stepsDone.drawPhoto"),
+      run: async () => ({ error: t("tapFirst.drawPhoto") }),
       confirm: {
         // The same two rules as the action, so no card is shown for a photo
         // it would refuse to draw.
@@ -4403,14 +4389,14 @@ export function buildAssistantTools(
             return found
           }
           if (found.member.photoUrl) {
-            return { error: t.errors.memberHasPhoto }
+            return { error: t("errors.memberHasPhoto") }
           }
           if (found.business.setupFinishedAt !== null) {
-            return { error: t.errors.photoSetupOnly }
+            return { error: t("errors.photoSetupOnly") }
           }
           return {
-            title: t.cards.drawPhoto,
-            action: t.actions.drawPhoto,
+            title: t("cards.drawPhoto"),
+            action: t("actions.drawPhoto"),
             summary: found.member.name,
             destructive: false,
           }
@@ -4418,12 +4404,12 @@ export function buildAssistantTools(
         execute: async (args: unknown) => {
           const memberId = asRecord(args)?.memberId
           if (typeof memberId !== "string" || memberId === "") {
-            return { ok: false, doneText: t.drawPhoto.unknown }
+            return { ok: false, doneText: t("drawPhoto.unknown") }
           }
           const result = await drawTeamPhoto(businessId, memberId)
           return result.ok
-            ? { ok: true, doneText: t.drawPhoto.done }
-            : { ok: false, doneText: t.drawPhoto.failed }
+            ? { ok: true, doneText: t("drawPhoto.done") }
+            : { ok: false, doneText: t("drawPhoto.failed") }
         },
       },
     },
@@ -4444,14 +4430,14 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "photos",
       },
-      label: t.steps.deletePhoto,
-      doneLabel: t.stepsDone.deletePhoto,
-      run: async () => ({ error: t.tapFirst.deletePhoto }),
+      label: t("steps.deletePhoto"),
+      doneLabel: t("stepsDone.deletePhoto"),
+      run: async () => ({ error: t("tapFirst.deletePhoto") }),
       confirm: {
         describe: async (args: unknown) => {
           const photos = await getBusinessPhotos(businessId)
           if (photos.length === 0) {
-            return { error: t.errors.noPhotos }
+            return { error: t("errors.noPhotos") }
           }
           const position = asRecord(args)?.position
           if (
@@ -4459,12 +4445,12 @@ export function buildAssistantTools(
             (position as number) < 1 ||
             (position as number) > photos.length
           ) {
-            return { error: t.errors.photoPositionInvalid(photos.length) }
+            return { error: t("errors.photoPositionInvalid", { total: String(photos.length) }) }
           }
           return {
-            title: t.cards.deletePhoto,
-            action: t.actions.deletePhoto,
-            summary: t.photos.one(position as number, photos.length),
+            title: t("cards.deletePhoto"),
+            action: t("actions.deletePhoto"),
+            summary: t("photos.one", { position: String(position as number), total: String(photos.length) }),
             destructive: true,
             // The photo itself, so a change in the order never deletes
             // another one.
@@ -4474,7 +4460,7 @@ export function buildAssistantTools(
         execute: async (args: unknown) => {
           const photoId = asRecord(args)?.photoId
           if (typeof photoId !== "string" || photoId === "") {
-            return { ok: false, doneText: t.photos.unknown }
+            return { ok: false, doneText: t("photos.unknown") }
           }
           const result = await deleteBusinessPhoto(businessId, photoId)
           if (!result.ok) {
@@ -4482,11 +4468,11 @@ export function buildAssistantTools(
               ok: false,
               doneText:
                 result.error === "not_found"
-                  ? t.photos.unknown
-                  : t.photos.failed(result.error),
+                  ? t("photos.unknown")
+                  : t("photos.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.photos.deleted }
+          return { ok: true, doneText: t("photos.deleted") }
         },
       },
     },
@@ -4508,14 +4494,14 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "photos",
       },
-      label: t.steps.reorderPhotos,
-      doneLabel: t.stepsDone.reorderPhotos,
-      run: async () => ({ error: t.tapFirst.reorderPhotos }),
+      label: t("steps.reorderPhotos"),
+      doneLabel: t("stepsDone.reorderPhotos"),
+      run: async () => ({ error: t("tapFirst.reorderPhotos") }),
       confirm: {
         describe: async (args: unknown) => {
           const photos = await getBusinessPhotos(businessId)
           if (photos.length === 0) {
-            return { error: t.errors.noPhotos }
+            return { error: t("errors.noPhotos") }
           }
           const numbers = photos.map((_, index) => index + 1)
           const order = asRecord(args)?.order
@@ -4524,15 +4510,15 @@ export function buildAssistantTools(
             numbers.map(String)
           )
           if (!wanted) {
-            return { error: t.errors.photoOrderInvalid(photos.length) }
+            return { error: t("errors.photoOrderInvalid", { total: String(photos.length) }) }
           }
           if (wanted.join() === numbers.join()) {
-            return { error: t.errors.nothingToChange }
+            return { error: t("errors.nothingToChange") }
           }
           return {
-            title: t.cards.reorderPhotos,
-            action: t.actions.reorder,
-            summary: t.photos.order(wanted.join(", ")),
+            title: t("cards.reorderPhotos"),
+            action: t("actions.reorder"),
+            summary: t("photos.order", { positions: wanted.join(", ") }),
             destructive: false,
             // The photos themselves, in the order the card showed.
             args: {
@@ -4548,7 +4534,7 @@ export function buildAssistantTools(
             !Array.isArray(photoIds) ||
             new Set(photoIds).size !== photoIds.length
           ) {
-            return { ok: false, doneText: t.photos.unknown }
+            return { ok: false, doneText: t("photos.unknown") }
           }
           const result = await reorderBusinessPhotos(
             businessId,
@@ -4559,11 +4545,11 @@ export function buildAssistantTools(
               ok: false,
               doneText:
                 result.error === "not_found"
-                  ? t.photos.unknown
-                  : t.photos.failed(result.error),
+                  ? t("photos.unknown")
+                  : t("photos.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.photos.ordered }
+          return { ok: true, doneText: t("photos.ordered") }
         },
       },
     },
@@ -4573,11 +4559,11 @@ export function buildAssistantTools(
       listTool: "list_services",
       things: "services",
       resultKind: "services",
-      label: t.steps.reorderServices,
-      doneLabel: t.stepsDone.reorderServices,
-      tapFirst: t.tapFirst.reorderServices,
-      title: t.cards.reorderServices,
-      doneText: t.reorder.services,
+      label: t("steps.reorderServices"),
+      doneLabel: t("stepsDone.reorderServices"),
+      tapFirst: t("tapFirst.reorderServices"),
+      title: t("cards.reorderServices"),
+      doneText: t("reorder.services"),
       // In the order list_services shows, so the same list is no change.
       list: async () =>
         servicesInShownOrder(await getOwnerBusiness(businessId)),
@@ -4590,11 +4576,11 @@ export function buildAssistantTools(
       listTool: "list_services categories",
       things: "service categories",
       resultKind: "services",
-      label: t.steps.reorderServiceCategories,
-      doneLabel: t.stepsDone.reorderServiceCategories,
-      tapFirst: t.tapFirst.reorderServiceCategories,
-      title: t.cards.reorderServiceCategories,
-      doneText: t.reorder.serviceCategories,
+      label: t("steps.reorderServiceCategories"),
+      doneLabel: t("stepsDone.reorderServiceCategories"),
+      tapFirst: t("tapFirst.reorderServiceCategories"),
+      title: t("cards.reorderServiceCategories"),
+      doneText: t("reorder.serviceCategories"),
       list: async () => (await getOwnerBusiness(businessId)).categories,
       save: (ids) => reorderServiceCategories(businessId, ids),
     }),
@@ -4604,11 +4590,11 @@ export function buildAssistantTools(
       listTool: "list_team",
       things: "team members",
       resultKind: "team",
-      label: t.steps.reorderTeam,
-      doneLabel: t.stepsDone.reorderTeam,
-      tapFirst: t.tapFirst.reorderTeam,
-      title: t.cards.reorderTeam,
-      doneText: t.reorder.team,
+      label: t("steps.reorderTeam"),
+      doneLabel: t("stepsDone.reorderTeam"),
+      tapFirst: t("tapFirst.reorderTeam"),
+      title: t("cards.reorderTeam"),
+      doneText: t("reorder.team"),
       list: async () => (await getOwnerBusiness(businessId)).team,
       save: (ids) => reorderTeam(businessId, ids),
     }),
@@ -4618,11 +4604,11 @@ export function buildAssistantTools(
       listTool: "list_addons",
       things: "extras groups",
       resultKind: "services",
-      label: t.steps.reorderAddons,
-      doneLabel: t.stepsDone.reorderAddons,
-      tapFirst: t.tapFirst.reorderAddons,
-      title: t.cards.reorderAddons,
-      doneText: t.reorder.addons,
+      label: t("steps.reorderAddons"),
+      doneLabel: t("stepsDone.reorderAddons"),
+      tapFirst: t("tapFirst.reorderAddons"),
+      title: t("cards.reorderAddons"),
+      doneText: t("reorder.addons"),
       list: () => getAddonGroups(businessId),
       save: (ids) => reorderAddonGroups(businessId, ids),
     }),
@@ -4634,8 +4620,8 @@ export function buildAssistantTools(
         parameters: schema({}),
         needsConfirm: false,
       },
-      label: t.steps.policies,
-      doneLabel: t.stepsDone.policies,
+      label: t("steps.policies"),
+      doneLabel: t("stepsDone.policies"),
       run: () => getPolicies(businessId),
     },
     {
@@ -4660,9 +4646,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "policies",
       },
-      label: t.steps.savePolicy,
-      doneLabel: t.stepsDone.savePolicy,
-      run: async () => ({ error: t.tapFirst.savePolicy }),
+      label: t("steps.savePolicy"),
+      doneLabel: t("stepsDone.savePolicy"),
+      run: async () => ({ error: t("tapFirst.savePolicy") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkPolicyArgs(args)
@@ -4675,7 +4661,7 @@ export function buildAssistantTools(
             current.body === body &&
             (kind !== null || current.title === title)
           ) {
-            return { error: t.errors.nothingToChange }
+            return { error: t("errors.nothingToChange") }
           }
           const name =
             current && kind === null && current.title !== title
@@ -4683,8 +4669,8 @@ export function buildAssistantTools(
               : policyName({ kind, title })
           // The whole text: it goes live on the page as the owner's words.
           return {
-            title: current ? t.cards.savePolicy : t.cards.addPolicy,
-            action: current ? t.actions.savePolicy : t.actions.addPolicy,
+            title: current ? t("cards.savePolicy") : t("cards.addPolicy"),
+            action: current ? t("actions.savePolicy") : t("actions.addPolicy"),
             summary: `${name} · ${body}`,
             destructive: false,
           }
@@ -4695,9 +4681,9 @@ export function buildAssistantTools(
             return {
               ok: false,
               doneText:
-                checked.error === t.errors.policyUnknown
-                  ? t.savePolicy.unknown
-                  : t.savePolicy.failed(checked.error),
+                checked.error === t("errors.policyUnknown")
+                  ? t("savePolicy.unknown")
+                  : t("savePolicy.failed", { error: checked.error }),
             }
           }
           const { kind, current, title, body } = checked
@@ -4709,11 +4695,11 @@ export function buildAssistantTools(
                   body,
                 })
           if (!result.ok) {
-            return { ok: false, doneText: t.savePolicy.failed(result.error) }
+            return { ok: false, doneText: t("savePolicy.failed", { error: result.error }) }
           }
           return {
             ok: true,
-            doneText: current ? t.savePolicy.done : t.savePolicy.added,
+            doneText: current ? t("savePolicy.done") : t("savePolicy.added"),
           }
         },
       },
@@ -4730,23 +4716,23 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "policies",
       },
-      label: t.steps.removePolicy,
-      doneLabel: t.stepsDone.removePolicy,
-      run: async () => ({ error: t.tapFirst.removePolicy }),
+      label: t("steps.removePolicy"),
+      doneLabel: t("stepsDone.removePolicy"),
+      run: async () => ({ error: t("tapFirst.removePolicy") }),
       confirm: {
         describe: async (args: unknown) => {
           const policyId = asRecord(args)?.policyId
           if (typeof policyId !== "string" || policyId === "") {
-            return { error: t.errors.policyIdRequired }
+            return { error: t("errors.policyIdRequired") }
           }
           const { policies } = await getPolicies(businessId)
           const policy = policies.find((p) => p.id === policyId)
           if (!policy) {
-            return { error: t.errors.policyUnknown }
+            return { error: t("errors.policyUnknown") }
           }
           return {
-            title: t.cards.removePolicy,
-            action: t.actions.removePolicy,
+            title: t("cards.removePolicy"),
+            action: t("actions.removePolicy"),
             summary: policyName(policy),
             destructive: true,
           }
@@ -4754,7 +4740,7 @@ export function buildAssistantTools(
         execute: async (args: unknown) => {
           const policyId = asRecord(args)?.policyId
           if (typeof policyId !== "string" || policyId === "") {
-            return { ok: false, doneText: t.savePolicy.unknown }
+            return { ok: false, doneText: t("savePolicy.unknown") }
           }
           const result = await removePolicy(businessId, policyId)
           if (!result.ok) {
@@ -4762,11 +4748,11 @@ export function buildAssistantTools(
               ok: false,
               doneText:
                 result.error === "not_found"
-                  ? t.savePolicy.unknown
-                  : t.savePolicy.failed(result.error),
+                  ? t("savePolicy.unknown")
+                  : t("savePolicy.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.savePolicy.removed }
+          return { ok: true, doneText: t("savePolicy.removed") }
         },
       },
     },
@@ -4783,9 +4769,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "policies",
       },
-      label: t.steps.savePolicyPoint,
-      doneLabel: t.stepsDone.savePolicyPoint,
-      run: async () => ({ error: t.tapFirst.savePolicyPoint }),
+      label: t("steps.savePolicyPoint"),
+      doneLabel: t("stepsDone.savePolicyPoint"),
+      run: async () => ({ error: t("tapFirst.savePolicyPoint") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkPolicyPointArgs(args)
@@ -4794,10 +4780,10 @@ export function buildAssistantTools(
           }
           const { current, input } = checked
           return {
-            title: current ? t.cards.savePolicyPoint : t.cards.addPolicyPoint,
+            title: current ? t("cards.savePolicyPoint") : t("cards.addPolicyPoint"),
             action: current
-              ? t.actions.savePolicyPoint
-              : t.actions.addPolicyPoint,
+              ? t("actions.savePolicyPoint")
+              : t("actions.addPolicyPoint"),
             summary:
               current && current.title !== input.title
                 ? `${current.title} → ${input.title} · ${input.body}`
@@ -4808,15 +4794,15 @@ export function buildAssistantTools(
         execute: async (args: unknown) => {
           const checked = await checkPolicyPointArgs(args)
           if ("error" in checked) {
-            if (checked.error === t.errors.pointUnknown) {
-              return { ok: false, doneText: t.policyPoint.unknown }
+            if (checked.error === t("errors.pointUnknown")) {
+              return { ok: false, doneText: t("policyPoint.unknown") }
             }
-            if (checked.error === t.errors.pointsFull(POLICY_RULES.maxPoints)) {
-              return { ok: false, doneText: t.policyPoint.full }
+            if (checked.error === t("errors.pointsFull", { max: String(POLICY_RULES.maxPoints) })) {
+              return { ok: false, doneText: t("policyPoint.full") }
             }
             return {
               ok: false,
-              doneText: t.policyPoint.failed(checked.error),
+              doneText: t("policyPoint.failed", { error: checked.error }),
             }
           }
           const { current, input } = checked
@@ -4828,12 +4814,12 @@ export function buildAssistantTools(
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.policyPoint.failed(result.error),
+              doneText: t("policyPoint.failed", { error: result.error }),
             }
           }
           return {
             ok: true,
-            doneText: current ? t.policyPoint.done : t.policyPoint.added,
+            doneText: current ? t("policyPoint.done") : t("policyPoint.added"),
           }
         },
       },
@@ -4850,23 +4836,23 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "policies",
       },
-      label: t.steps.removePolicyPoint,
-      doneLabel: t.stepsDone.removePolicyPoint,
-      run: async () => ({ error: t.tapFirst.removePolicyPoint }),
+      label: t("steps.removePolicyPoint"),
+      doneLabel: t("stepsDone.removePolicyPoint"),
+      run: async () => ({ error: t("tapFirst.removePolicyPoint") }),
       confirm: {
         describe: async (args: unknown) => {
           const pointId = asRecord(args)?.pointId
           if (typeof pointId !== "string" || pointId === "") {
-            return { error: t.errors.pointIdRequired }
+            return { error: t("errors.pointIdRequired") }
           }
           const { points } = await getPolicies(businessId)
           const point = points.find((p) => p.id === pointId)
           if (!point) {
-            return { error: t.errors.pointUnknown }
+            return { error: t("errors.pointUnknown") }
           }
           return {
-            title: t.cards.removePolicyPoint,
-            action: t.actions.removePolicyPoint,
+            title: t("cards.removePolicyPoint"),
+            action: t("actions.removePolicyPoint"),
             summary: `${point.title} · ${point.body}`,
             destructive: true,
           }
@@ -4879,16 +4865,16 @@ export function buildAssistantTools(
             typeof pointId !== "string" ||
             !points.some((p) => p.id === pointId)
           ) {
-            return { ok: false, doneText: t.policyPoint.unknown }
+            return { ok: false, doneText: t("policyPoint.unknown") }
           }
           const result = await removePolicyPoint(businessId, pointId)
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.policyPoint.failed(result.error),
+              doneText: t("policyPoint.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.policyPoint.removed }
+          return { ok: true, doneText: t("policyPoint.removed") }
         },
       },
     },
@@ -4906,9 +4892,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "theme",
       },
-      label: t.steps.theme,
-      doneLabel: t.stepsDone.theme,
-      run: async () => ({ error: t.tapFirst.theme }),
+      label: t("steps.theme"),
+      doneLabel: t("stepsDone.theme"),
+      run: async () => ({ error: t("tapFirst.theme") }),
       confirm: {
         describe: async (args: unknown) => {
           const wanted = asRecord(args)?.theme
@@ -4918,22 +4904,20 @@ export function buildAssistantTools(
             .join(", ")
           if (!theme) {
             return {
-              error: t.errors.themeUnknown(
-                THEMES.map((row) => row.id).join(", ")
-              ),
+              error: t("errors.themeUnknown", { names: THEMES.map((row) => row.id).join(", ") }),
             }
           }
           if (!theme.available) {
-            return { error: t.errors.themeComingSoon(theme.name, ready) }
+            return { error: t("errors.themeComingSoon", { name: theme.name, ready }) }
           }
           const { business } = await getOwnerBusiness(businessId)
           if (business.theme === theme.id) {
-            return { error: t.errors.nothingToChange }
+            return { error: t("errors.nothingToChange") }
           }
           const now = THEMES.find((row) => row.id === business.theme)
           return {
-            title: t.cards.theme,
-            action: t.actions.theme,
+            title: t("cards.theme"),
+            action: t("actions.theme"),
             summary: `${now?.name ?? business.theme} → ${theme.name}`,
             destructive: false,
           }
@@ -4944,8 +4928,8 @@ export function buildAssistantTools(
             String(asRecord(args)?.theme)
           )
           return result.ok
-            ? { ok: true, doneText: t.theme.done }
-            : { ok: false, doneText: t.theme.failed(result.error) }
+            ? { ok: true, doneText: t("theme.done") }
+            : { ok: false, doneText: t("theme.failed", { error: result.error }) }
         },
       },
     },
@@ -4957,8 +4941,8 @@ export function buildAssistantTools(
         parameters: schema({}),
         needsConfirm: false,
       },
-      label: t.steps.whatsapp,
-      doneLabel: t.stepsDone.whatsapp,
+      label: t("steps.whatsapp"),
+      doneLabel: t("stepsDone.whatsapp"),
       run: async () => {
         const [settings, rules, messages, automations] = await Promise.all([
           notificationSettingsFor(businessId),
@@ -4974,8 +4958,8 @@ export function buildAssistantTools(
             remindersText: settings.reminders.map(formatDuration),
             quietStart: settings.quietStart,
             quietEnd: settings.quietEnd,
-            quietStartText: formatClock(settings.quietStart, t.locale),
-            quietEndText: formatClock(settings.quietEnd, t.locale),
+            quietStartText: formatClock(settings.quietStart, locale),
+            quietEndText: formatClock(settings.quietEnd, locale),
             freeTextInWindow: settings.freeTextInWindow,
             cantCome: settings.cantCome,
             thankYouReply: settings.thankYouReply,
@@ -4984,7 +4968,7 @@ export function buildAssistantTools(
           maxReminders: rules.maxReminders,
           messages: messages.map((item) => ({
             message: item.message,
-            name: ownerWords.whatsapp.names[item.message],
+            name: ownerT(`whatsapp.names.${item.message}`),
             on: item.on,
             editable: item.editable,
             fields: messageFields(item.message),
@@ -5002,7 +4986,7 @@ export function buildAssistantTools(
           })),
           automations: automations.map((row) => ({
             id: row.id,
-            name: ownerWords.whatsapp.flows.names[row.trigger],
+            name: ownerT(`whatsapp.flows.names.${row.trigger}`),
             on: row.on,
           })),
         }
@@ -5023,9 +5007,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "messages",
       },
-      label: t.steps.messageOn,
-      doneLabel: t.stepsDone.messageOn,
-      run: async () => ({ error: t.tapFirst.messageOn }),
+      label: t("steps.messageOn"),
+      doneLabel: t("stepsDone.messageOn"),
+      run: async () => ({ error: t("tapFirst.messageOn") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkMessageOnArgs(args)
@@ -5033,9 +5017,9 @@ export function buildAssistantTools(
             return checked
           }
           return {
-            title: checked.on ? t.cards.messageOn : t.cards.messageOff,
-            action: checked.on ? t.actions.turnOn : t.actions.turnOff,
-            summary: ownerWords.whatsapp.names[checked.message],
+            title: checked.on ? t("cards.messageOn") : t("cards.messageOff"),
+            action: checked.on ? t("actions.turnOn") : t("actions.turnOff"),
+            summary: ownerT(`whatsapp.names.${checked.message}`),
             destructive: false,
           }
         },
@@ -5048,12 +5032,12 @@ export function buildAssistantTools(
             a?.on as boolean
           )
           if (!result.ok) {
-            return { ok: false, doneText: t.messageOn.failed(result.error) }
+            return { ok: false, doneText: t("messageOn.failed", { error: result.error }) }
           }
-          const name = ownerWords.whatsapp.names[message]
+          const name = ownerT(`whatsapp.names.${message}`)
           return {
             ok: true,
-            doneText: a?.on ? t.messageOn.on(name) : t.messageOn.off(name),
+            doneText: a?.on ? t("messageOn.on", { name }) : t("messageOn.off", { name }),
           }
         },
       },
@@ -5076,9 +5060,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "timing",
       },
-      label: t.steps.reminderSettings,
-      doneLabel: t.stepsDone.reminderSettings,
-      run: async () => ({ error: t.tapFirst.reminderSettings }),
+      label: t("steps.reminderSettings"),
+      doneLabel: t("stepsDone.reminderSettings"),
+      run: async () => ({ error: t("tapFirst.reminderSettings") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkReminderSettingsArgs(args)
@@ -5086,48 +5070,47 @@ export function buildAssistantTools(
             return checked
           }
           const { current, next } = checked
-          const words = t.reminderSettings
-          const onOff = (value: boolean) => (value ? words.on : words.off)
+          const onOff = (value: boolean) => (value ? t("reminderSettings.on") : t("reminderSettings.off"))
           const reminders = (list: number[]) =>
-            list.length > 0 ? list.map(formatDuration).join(", ") : words.none
+            list.length > 0 ? list.map(formatDuration).join(", ") : t("reminderSettings.none")
           const rows: [string, string, string][] = [
             [
-              words.fields.ownerPhone,
-              current.ownerPhone ?? words.none,
-              next.ownerPhone ?? words.none,
+              t("reminderSettings.fields.ownerPhone"),
+              current.ownerPhone ?? t("reminderSettings.none"),
+              next.ownerPhone ?? t("reminderSettings.none"),
             ],
             [
-              words.fields.ownerLanguage,
-              words.languages[current.ownerLanguage],
-              words.languages[next.ownerLanguage],
+              t("reminderSettings.fields.ownerLanguage"),
+              t(`reminderSettings.languages.${current.ownerLanguage}`),
+              t(`reminderSettings.languages.${next.ownerLanguage}`),
             ],
             [
-              words.fields.reminders,
+              t("reminderSettings.fields.reminders"),
               reminders(current.reminders),
               reminders(next.reminders),
             ],
             [
-              words.fields.quietStart,
-              formatClock(current.quietStart, t.locale),
-              formatClock(next.quietStart, t.locale),
+              t("reminderSettings.fields.quietStart"),
+              formatClock(current.quietStart, locale),
+              formatClock(next.quietStart, locale),
             ],
             [
-              words.fields.quietEnd,
-              formatClock(current.quietEnd, t.locale),
-              formatClock(next.quietEnd, t.locale),
+              t("reminderSettings.fields.quietEnd"),
+              formatClock(current.quietEnd, locale),
+              formatClock(next.quietEnd, locale),
             ],
             [
-              words.fields.freeTextInWindow,
+              t("reminderSettings.fields.freeTextInWindow"),
               onOff(current.freeTextInWindow),
               onOff(next.freeTextInWindow),
             ],
             [
-              words.fields.cantCome,
-              words.cantCome[current.cantCome],
-              words.cantCome[next.cantCome],
+              t("reminderSettings.fields.cantCome"),
+              t(`reminderSettings.cantCome.${current.cantCome}`),
+              t(`reminderSettings.cantCome.${next.cantCome}`),
             ],
             [
-              words.fields.thankYouReply,
+              t("reminderSettings.fields.thankYouReply"),
               onOff(current.thankYouReply),
               onOff(next.thankYouReply),
             ],
@@ -5136,11 +5119,11 @@ export function buildAssistantTools(
             .filter(([, before, after]) => before !== after)
             .map(([label, before, after]) => `${label} · ${before} → ${after}`)
           if (parts.length === 0) {
-            return { error: t.errors.nothingToChange }
+            return { error: t("errors.nothingToChange") }
           }
           return {
-            title: t.cards.reminderSettings,
-            action: t.actions.reminderSettings,
+            title: t("cards.reminderSettings"),
+            action: t("actions.reminderSettings"),
             summary: parts.join(" · "),
             destructive: false,
           }
@@ -5150,7 +5133,7 @@ export function buildAssistantTools(
           if ("error" in checked) {
             return {
               ok: false,
-              doneText: t.reminderSettings.failed(checked.error),
+              doneText: t("reminderSettings.failed", { error: checked.error }),
             }
           }
           const result = await saveNotificationSettings(
@@ -5160,10 +5143,10 @@ export function buildAssistantTools(
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.reminderSettings.failed(result.error),
+              doneText: t("reminderSettings.failed", { error: result.error }),
             }
           }
-          return { ok: true, doneText: t.reminderSettings.done }
+          return { ok: true, doneText: t("reminderSettings.done") }
         },
       },
     },
@@ -5201,9 +5184,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "messages",
       },
-      label: t.steps.messageWording,
-      doneLabel: t.stepsDone.messageWording,
-      run: async () => ({ error: t.tapFirst.messageWording }),
+      label: t("steps.messageWording"),
+      doneLabel: t("stepsDone.messageWording"),
+      run: async () => ({ error: t("tapFirst.messageWording") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkWordingArgs(args)
@@ -5211,26 +5194,26 @@ export function buildAssistantTools(
             return checked
           }
           const { item, language, wording, buttons } = checked
-          const name = `${ownerWords.whatsapp.names[item.message]} · ${t.messageWording.languages[language]}`
+          const name = `${ownerT(`whatsapp.names.${item.message}`)} · ${t(`messageWording.languages.${language}`)}`
           if (!wording) {
             return {
-              title: t.cards.messageReset,
-              action: t.actions.messageReset,
+              title: t("cards.messageReset"),
+              action: t("actions.messageReset"),
               summary: name,
               destructive: true,
             }
           }
           const shown = buttons ?? defaultButtons(item.message, language)
           return {
-            title: t.cards.messageWording,
-            action: t.actions.messageWording,
+            title: t("cards.messageWording"),
+            action: t("actions.messageWording"),
             summary: [
               name,
               wording.header,
               wording.body,
               wording.footer,
               shown.map((button) => button.label).join(", "),
-              t.messageWording.draftNote,
+              t("messageWording.draftNote"),
             ]
               .filter((part) => part !== "")
               .join(" · "),
@@ -5243,7 +5226,7 @@ export function buildAssistantTools(
           if ("error" in checked) {
             return {
               ok: false,
-              doneText: t.messageWording.failed(checked.error),
+              doneText: t("messageWording.failed", { error: checked.error }),
             }
           }
           const { item, language, wording, buttons } = checked
@@ -5257,14 +5240,14 @@ export function buildAssistantTools(
           if (!result.ok) {
             return {
               ok: false,
-              doneText: t.messageWording.failed(result.error),
+              doneText: t("messageWording.failed", { error: result.error }),
             }
           }
           return {
             ok: true,
             doneText: wording
-              ? t.messageWording.done
-              : t.messageWording.resetDone,
+              ? t("messageWording.done")
+              : t("messageWording.resetDone"),
           }
         },
       },
@@ -5287,9 +5270,9 @@ export function buildAssistantTools(
         needsConfirm: true,
         resultKind: "flows",
       },
-      label: t.steps.automationOn,
-      doneLabel: t.stepsDone.automationOn,
-      run: async () => ({ error: t.tapFirst.automationOn }),
+      label: t("steps.automationOn"),
+      doneLabel: t("stepsDone.automationOn"),
+      run: async () => ({ error: t("tapFirst.automationOn") }),
       confirm: {
         describe: async (args: unknown) => {
           const checked = await checkAutomationArgs(args)
@@ -5297,9 +5280,9 @@ export function buildAssistantTools(
             return checked
           }
           return {
-            title: checked.on ? t.cards.automationOn : t.cards.automationOff,
-            action: checked.on ? t.actions.turnOn : t.actions.turnOff,
-            summary: ownerWords.whatsapp.flows.names[checked.automation.trigger],
+            title: checked.on ? t("cards.automationOn") : t("cards.automationOff"),
+            action: checked.on ? t("actions.turnOn") : t("actions.turnOff"),
+            summary: ownerT(`whatsapp.flows.names.${checked.automation.trigger}`),
             destructive: false,
           }
         },
@@ -5309,10 +5292,10 @@ export function buildAssistantTools(
             return {
               ok: false,
               doneText:
-                checked.error === t.errors.automationUnknown ||
-                checked.error === t.errors.automationIdRequired
-                  ? t.automationOn.unknown
-                  : t.automationOn.failed(checked.error),
+                checked.error === t("errors.automationUnknown") ||
+                checked.error === t("errors.automationIdRequired")
+                  ? t("automationOn.unknown")
+                  : t("automationOn.failed", { error: checked.error }),
             }
           }
           const result = await setAutomationOn(
@@ -5325,19 +5308,19 @@ export function buildAssistantTools(
               ok: false,
               doneText:
                 result.error === "noOwnNumber"
-                  ? t.automationOn.noOwnNumber
+                  ? t("automationOn.noOwnNumber")
                   : result.error === "not_found"
-                    ? t.automationOn.unknown
-                    : t.automationOn.failed(result.error),
+                    ? t("automationOn.unknown")
+                    : t("automationOn.failed", { error: result.error }),
             }
           }
           const name =
-            ownerWords.whatsapp.flows.names[checked.automation.trigger]
+            ownerT(`whatsapp.flows.names.${checked.automation.trigger}`)
           return {
             ok: true,
             doneText: checked.on
-              ? t.automationOn.on(name)
-              : t.automationOn.off(name),
+              ? t("automationOn.on", { name })
+              : t("automationOn.off", { name }),
           }
         },
       },

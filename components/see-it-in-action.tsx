@@ -1,6 +1,7 @@
 "use client"
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { useLocale, useTranslations } from "next-intl"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { BoxCard } from "@/components/feature-preview"
@@ -35,12 +36,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useElementHeight } from "@/hooks/use-element-height"
 import { useFindBusiness } from "@/hooks/use-find-business"
 import { DEMO_VIEWS, type DemoPaths, type DemoView } from "@/lib/demo-rules"
-import type { Messages } from "@/lib/i18n"
-import type { PageLanguage } from "@/lib/page-language"
 import { FADE_IN, LARGE_MOVE, SMALL_FADE } from "@/lib/motion-tokens"
+import { languageOf } from "@/lib/page-language"
 import { cn } from "@/lib/utils"
-
-type Words = Messages["home"]["action"]
 
 type Demo =
   | { state: "waiting" | "opening" | "failed" | "tooMany" }
@@ -68,15 +66,10 @@ const SCREEN = "h-[min(44rem,72dvh)]"
 // app as an icon beside it, and nothing under the phone. Each screen opens
 // on first use and is kept, so a booking started there survives switching
 // steps.
-export function SeeItInAction({
-  words,
-  findBusinessLabel,
-  language,
-}: {
-  words: Words
-  findBusinessLabel: string
-  language: PageLanguage
-}) {
+export function SeeItInAction() {
+  const t = useTranslations("public.home.action")
+  const home = useTranslations("public.home")
+  const language = languageOf(useLocale())
   const findBusiness = useFindBusiness()
   const box = useRef<HTMLElement>(null)
   const look = useHomeLook()
@@ -154,11 +147,11 @@ export function SeeItInAction({
     <ViewTabs
       views={DEMO_VIEWS.map((view) => ({
         id: view,
-        label: words.tabs[view],
+        label: t(`tabs.${view}`),
       }))}
       value={tab}
       onChange={choose}
-      ariaLabel={words.tabsLabel}
+      ariaLabel={t("tabsLabel")}
       className="min-w-0"
     />
   )
@@ -181,7 +174,7 @@ export function SeeItInAction({
           />
         }
       >
-        {words.open.dashboard}
+        {t("open.dashboard")}
         <ExternalLinkIcon data-icon="inline-end" />
       </Button>
       <div className="flex flex-wrap justify-center gap-2">
@@ -197,12 +190,12 @@ export function SeeItInAction({
             />
           }
         >
-          {words.open.page}
+          {t("open.page")}
           <ExternalLinkIcon data-icon="inline-end" />
         </Button>
         <Button variant="ghost" onClick={findBusiness}>
           <SearchIcon data-icon="inline-start" />
-          {findBusinessLabel}
+          {home("cta.button")}
         </Button>
       </div>
     </div>
@@ -211,7 +204,7 @@ export function SeeItInAction({
   const nextStep = STEPS[STEPS.indexOf(step) + 1]
   const nextButton = nextStep ? (
     <Button size="lg" className="w-full" onClick={() => choose(nextStep)}>
-      {words.steps[nextStep]}
+      {t(`steps.${nextStep}`)}
       <ArrowRightIcon data-icon="inline-end" />
     </Button>
   ) : (
@@ -223,13 +216,13 @@ export function SeeItInAction({
       <Empty>
         <EmptyHeader>
           <EmptyTitle>
-            {demo.state === "tooMany" ? words.tooMany : words.failed}
+            {demo.state === "tooMany" ? t("tooMany") : t("failed")}
           </EmptyTitle>
         </EmptyHeader>
         {demo.state === "failed" && (
           <EmptyContent>
             <Button variant="outline" onClick={() => void open()}>
-              {words.retry}
+              {t("retry")}
             </Button>
           </EmptyContent>
         )}
@@ -243,9 +236,9 @@ export function SeeItInAction({
       className="mx-auto flex w-full max-w-page flex-col gap-4 px-2 sm:px-4"
     >
       <HomeBigTitle
-        start={words.titleStart}
-        end={words.titleEnd}
-        line={words.subtitle}
+        start={t("titleStart")}
+        end={t("titleEnd")}
+        line={t("subtitle")}
       />
       <div
         className={cn(
@@ -271,7 +264,7 @@ export function SeeItInAction({
               <Button
                 variant="outline"
                 size="icon"
-                aria-label={words.open.dashboard}
+                aria-label={t("open.dashboard")}
                 disabled={!paths}
                 nativeButton={false}
                 render={
@@ -287,18 +280,18 @@ export function SeeItInAction({
               {demo.state === "ready" && !tipsHidden && (
                 <TipBubble
                   anchor={activeTab}
-                  text={words.hints[tab]}
-                  closeLabel={words.hideTips}
+                  text={t(`hints.${tab}`)}
+                  closeLabel={t("hideTips")}
                   onClose={() => setTipsHidden(true)}
                 />
               )}
             </div>
             <p className="sr-only lg:hidden" aria-live="polite">
-              {words.hints[tab]}
+              {t(`hints.${tab}`)}
             </p>
             <div
               role="group"
-              aria-label={words.tabsLabel}
+              aria-label={t("tabsLabel")}
               className="hidden w-full max-w-md flex-col gap-2 justify-self-end lg:flex"
             >
               {/* Changing step, like an accordion: the step opening
@@ -323,10 +316,10 @@ export function SeeItInAction({
                             <div className="flex flex-col gap-2">
                               <Badge>{index + 1}</Badge>
                               <h3 className="font-display text-2xl font-medium tracking-tight">
-                                {words.steps[view]}
+                                {t(`steps.${view}`)}
                               </h3>
                               <p className="text-base text-muted-foreground">
-                                {words.hints[view]}
+                                {t(`hints.${view}`)}
                               </p>
                             </div>
                             {nextButton}
@@ -358,7 +351,7 @@ export function SeeItInAction({
                           </ItemMedia>
                           <ItemContent>
                             <ItemTitle className="text-base">
-                              {words.steps[view]}
+                              {t(`steps.${view}`)}
                             </ItemTitle>
                           </ItemContent>
                         </Item>
@@ -394,7 +387,7 @@ export function SeeItInAction({
                           ? `${demo.paths.page}?lang=${language}`
                           : demo.paths[view]
                       }
-                      title={words.frames[view]}
+                      title={t(`frames.${view}`)}
                       className={cn(
                         "w-full flex-1 bg-background",
                         view !== tab && "hidden"

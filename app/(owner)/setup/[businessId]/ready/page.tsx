@@ -1,18 +1,19 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 
 import { GlassCard } from "@/components/glass-frame"
 import { Toaster } from "@/components/ui/sonner"
 import { getBusinessPage } from "@/features/business-page/api/get-business-page"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { TopBar } from "@/features/dashboard/components/top-bar"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { LiveCard } from "@/features/onboarding/components/live-card"
 import { requireAccount } from "@/lib/dal"
 import { fontDisplay } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.titles.live }
+  const t = await getTranslations("owner.shell.titles")
+  return { title: t("live") }
 }
 
 // The step after "Check your details": the page is live, share it. Same
@@ -25,7 +26,7 @@ export default async function ReadyPage({
   const owner = await requireAccount(`/setup/${businessId}/ready`)
   const { business } = await getOwnerBusiness(businessId)
   const page = await getBusinessPage(business.slug)
-  const share = (await getOwnerMessages()).settings.share
+  const share = await getTranslations("owner.settings.share")
   return (
     <div
       className={cn(
@@ -47,11 +48,11 @@ export default async function ReadyPage({
             slug={business.slug}
             dashboardHref={`/dashboard/${businessId}`}
             labels={{
-              live: share.live,
-              linkCopied: share.linkCopied,
-              shareLink: share.shareLink,
-              viewMyPage: share.viewMyPage,
-              toDashboard: share.toDashboard,
+              live: share("live"),
+              linkCopied: share("linkCopied"),
+              shareLink: share("shareLink"),
+              viewMyPage: share("viewMyPage"),
+              toDashboard: share("toDashboard"),
             }}
           />
         </GlassCard>

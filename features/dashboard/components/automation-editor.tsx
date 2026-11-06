@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { AddButtonSelect, ButtonField } from "@/components/button-fields"
@@ -21,8 +22,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { WhatsappPreview } from "@/components/whatsapp-preview"
 import { CONTROL_SIZE } from "@/lib/control-size"
+import { languageOf } from "@/lib/page-language"
 import { saveAutomation } from "../api/automation-actions"
-import { useOwnerMessages } from "../i18n/provider"
 import type {
   Automation,
   AutomationAction,
@@ -72,8 +73,8 @@ export function AutomationEditor({
   adding?: AutomationAction["type"]
   onClose: () => void
 }) {
-  const m = useOwnerMessages()
-  const t = m.whatsapp
+  const t = useTranslations("owner.whatsapp")
+  const locale = useLocale()
   const router = useRouter()
   const saved = (): Draft | null =>
     automation ? { wording: automation.wording, buttons: automation.buttons } : null
@@ -83,9 +84,7 @@ export function AutomationEditor({
       ? { ...start, buttons: [...start.buttons, newButton(adding)] }
       : start
   })
-  const [language, setLanguage] = useState<AutomationLanguage>(
-    m.locale.startsWith("es") ? "es" : "en"
-  )
+  const [language, setLanguage] = useState<AutomationLanguage>(languageOf(locale))
   const [problem, setProblem] = useState<Problem | null>(null)
   const [pending, startTransition] = useTransition()
   const body = useRef<HTMLTextAreaElement>(null)
@@ -112,7 +111,7 @@ export function AutomationEditor({
 
   // The problem's message when it belongs to this field.
   const errorFor = (field: string) =>
-    problem?.field === field ? t.flows.problems[problem.error] : null
+    problem?.field === field ? t(`flows.problems.${problem.error}`) : null
   // A problem no single field shows, under the buttons.
   const shown = (field?: string) =>
     !!field &&
@@ -140,7 +139,7 @@ export function AutomationEditor({
       setProblem(null)
       const result = await saveAutomation(businessId, automation.id, next).catch(() => null)
       if (result?.ok) {
-        toast.success(t.flows.saved)
+        toast.success(t("flows.saved"))
         if (!next) onClose()
         router.refresh()
       } else if (result) {
@@ -148,11 +147,11 @@ export function AutomationEditor({
         if (other) setLanguage(other)
         setProblem({ error: result.error, field: result.field })
       } else {
-        toast.error(t.failed)
+        toast.error(t("failed"))
       }
     })
 
-  const name = automation ? t.flows.names[automation.trigger] : ""
+  const name = automation ? t(`flows.names.${automation.trigger}`) : ""
   // The words a button's reply uses, under the buttons that send them.
   const replies = draft?.buttons.flatMap((button, index) => {
     const key =
@@ -162,7 +161,7 @@ export function AutomationEditor({
           ? ("servicesIntro" as const)
           : null
     if (!key) return []
-    const label = button.label[language] || t.flows.actions[button.action.type]
+    const label = button.label[language] || t(`flows.actions.${button.action.type}`)
     return [{ key, index, label }]
   })
 
@@ -170,12 +169,12 @@ export function AutomationEditor({
     <ResponsivePanel
       open={open}
       onClose={onClose}
-      title={t.edit(name)}
+      title={t("edit", { name: name.toLowerCase() })}
       footer={
         <>
           {automation && !automation.isDefault && (
             <Button variant="ghost" size="lg" disabled={pending} onClick={() => save(null)}>
-              {t.reset}
+              {t("reset")}
             </Button>
           )}
           <Button
@@ -185,7 +184,7 @@ export function AutomationEditor({
             disabled={pending || !changed}
           >
             {pending && <Spinner data-icon="inline-start" />}
-            {t.save}
+            {t("save")}
           </Button>
         </>
       }
@@ -205,17 +204,17 @@ export function AutomationEditor({
                 {/* The words below are in this language: a small switch on
                     the first field's row, as in the message editor. */}
                 <div className="flex items-center justify-between gap-2">
-                  <FieldLabel htmlFor="automation-body">{t.text}</FieldLabel>
+                  <FieldLabel htmlFor="automation-body">{t("text")}</FieldLabel>
                   <Tabs
                     value={language}
                     onValueChange={(value) => setLanguage(value as AutomationLanguage)}
                   >
                     <TabsList className={CONTROL_SIZE.tabsList}>
                       <TabsTrigger value="en" className={CONTROL_SIZE.tab}>
-                        {t.english}
+                        {t("english")}
                       </TabsTrigger>
                       <TabsTrigger value="es" className={CONTROL_SIZE.tab}>
-                        {t.spanish}
+                        {t("spanish")}
                       </TabsTrigger>
                     </TabsList>
                   </Tabs>
@@ -236,14 +235,14 @@ export function AutomationEditor({
               <div className="-mt-4 flex flex-wrap gap-2">
                 <Button type="button" variant="outline" onClick={insertBusiness}>
                   <PlusIcon data-icon="inline-start" />
-                  {t.flows.businessName}
+                  {t("flows.businessName")}
                 </Button>
               </div>
 
               <FieldSet>
-                <FieldLegend variant="label">{t.buttons}</FieldLegend>
+                <FieldLegend variant="label">{t("buttons")}</FieldLegend>
                 {draft.buttons.map((button, index) => {
-                  const kind = t.flows.actions[button.action.type]
+                  const kind = t(`flows.actions.${button.action.type}`)
                   const label = button.label[language] || kind
                   return (
                     <ButtonField
@@ -260,7 +259,7 @@ export function AutomationEditor({
                           )
                         )
                       }
-                      moveUpLabel={t.flows.moveUp(label)}
+                      moveUpLabel={t("flows.moveUp", { label })}
                       onMoveUp={
                         index > 0
                           ? () =>
@@ -275,7 +274,7 @@ export function AutomationEditor({
                               )
                           : undefined
                       }
-                      removeLabel={t.removeButton(label)}
+                      removeLabel={t("removeButton", { label })}
                       // At least one button stays.
                       onRemove={
                         draft.buttons.length > 1
@@ -287,15 +286,15 @@ export function AutomationEditor({
                 })}
                 {canAdd && (
                   <AddButtonSelect
-                    items={unused.map((action) => ({ value: action, label: t.flows.actions[action] }))}
-                    label={t.addButton}
+                    items={unused.map((action) => ({ value: action, label: t(`flows.actions.${action}`) }))}
+                    label={t("addButton")}
                     onAdd={(action) =>
                       setButtons([...draft.buttons, newButton(action)])
                     }
                   />
                 )}
                 {problem && !shown(problem.field) && (
-                  <FieldError>{t.flows.problems[problem.error]}</FieldError>
+                  <FieldError>{t(`flows.problems.${problem.error}`)}</FieldError>
                 )}
               </FieldSet>
 
@@ -304,7 +303,7 @@ export function AutomationEditor({
                 const error = errorFor(field)
                 return (
                   <Field key={key} data-invalid={error ? true : undefined}>
-                    <FieldLabel htmlFor={`automation-${key}`}>{t.flows.replyFor(label)}</FieldLabel>
+                    <FieldLabel htmlFor={`automation-${key}`}>{t("flows.replyFor", { label })}</FieldLabel>
                     <Textarea
                       id={`automation-${key}`}
                       rows={2}
@@ -323,7 +322,7 @@ export function AutomationEditor({
                 body={words.body.replaceAll(BUSINESS_FIELD, businessName)}
                 buttons={draft.buttons.map((button) => ({
                   key: button.id,
-                  label: button.label[language] || t.flows.actions[button.action.type],
+                  label: button.label[language] || t(`flows.actions.${button.action.type}`),
                 }))}
               />
             </FieldGroup>

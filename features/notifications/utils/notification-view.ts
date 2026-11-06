@@ -1,26 +1,36 @@
 import type { InAppKind } from "@/types/in-app-notifications"
+import { BOOKING_MESSAGES } from "@/lib/whatsapp-messages"
 import type { BookingMessage } from "@/types/whatsapp"
-import type { NotificationMessages } from "../i18n"
-import type { InAppNotification } from "../types/notifications"
+import type {
+  InAppNotification,
+  NotificationWords,
+} from "../types/notifications"
+
+function isBookingMessage(value: string | undefined): value is BookingMessage {
+  return BOOKING_MESSAGES.some((message) => message === value)
+}
 
 // Who a notification is about: the customer's name, else their number, else
 // "a customer".
-function who(item: InAppNotification, t: NotificationMessages) {
+function who(item: InAppNotification, t: NotificationWords) {
   const { customerName, customerPhone } = item.data
   if (customerName) return customerName
   if (customerPhone) return `+${customerPhone}`
-  return t.someone
+  return t("someone")
 }
 
 // A notification's short title, from its kind and facts, in the reader's
-// language (N-D1).
+// language (N-D1); numbers read as in `locale`.
 export function titleOf(
   item: InAppNotification,
-  t: NotificationMessages
+  t: NotificationWords,
+  locale: string
 ): string {
-  const number = new Intl.NumberFormat(t.locale)
-  const message = () =>
-    t.messages[item.data.message as BookingMessage] ?? t.aMessage
+  const number = new Intl.NumberFormat(locale)
+  const message = () => {
+    const { message } = item.data
+    return isBookingMessage(message) ? t(`messages.${message}`) : t("aMessage")
+  }
   switch (item.kind) {
     case "newBooking":
     case "customerCancelled":
@@ -29,18 +39,18 @@ export function titleOf(
     case "customerMoved":
     case "customerReplied":
     case "messageFailed":
-      return t.kinds[item.kind](who(item, t))
+      return t(`kinds.${item.kind}`, { who: who(item, t) })
     case "templateApproved":
     case "templateRejected":
-      return t.kinds[item.kind](message())
+      return t(`kinds.${item.kind}`, { message: message() })
     case "koblipLimitNear":
-      return t.kinds.koblipLimitNear(
-        number.format(item.data.sent ?? 0),
-        number.format(item.data.limit ?? 0)
-      )
+      return t("kinds.koblipLimitNear", {
+        sent: number.format(item.data.sent ?? 0),
+        limit: number.format(item.data.limit ?? 0),
+      })
     case "koblipLimitReached":
     case "connectionRenew":
-      return t.kinds[item.kind]
+      return t(`kinds.${item.kind}`)
   }
 }
 

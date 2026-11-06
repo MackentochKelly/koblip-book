@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslations } from "next-intl"
+
 import { FlowCanvas } from "@/components/flow-canvas"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,7 +14,6 @@ import {
   UsersIcon,
   WhatsAppIcon,
 } from "@/components/ui/icons"
-import { useOwnerMessages } from "../i18n/provider"
 import type { Automation, AutomationAction, AutomationLanguage } from "../types/automations"
 import { flowGraph, type FlowIcon } from "../utils/flow-graph"
 
@@ -44,15 +45,28 @@ export function WhatsappFlowCanvas({
   maxButtons: number
   onOpen: (adding?: AutomationAction["type"]) => void
 }) {
-  const t = useOwnerMessages().whatsapp.flows
-  const c = t.canvas
+  const t = useTranslations("owner.whatsapp.flows")
+  const c = useTranslations("owner.whatsapp.flows.canvas")
+  const actions = {
+    bookingLink: t("actions.bookingLink"),
+    servicesList: t("actions.servicesList"),
+    handoff: t("actions.handoff"),
+  }
   const { steps, links } = flowGraph(automation, language, businessName, {
-    trigger: t.triggers[automation.trigger],
-    steps: c.steps,
-    bookingLink: t.actions.bookingLink,
-    serviceLink: c.serviceLink,
-    notify: t.actions.handoff,
-    actions: t.actions,
+    trigger: t(`triggers.${automation.trigger}`),
+    steps: {
+      customerWrites: c("steps.customerWrites"),
+      sendMessage: c("steps.sendMessage"),
+      bookingLink: c("steps.bookingLink"),
+      servicesList: c("steps.servicesList"),
+      serviceLink: c("steps.serviceLink"),
+      notify: c("steps.notify"),
+      reply: c("steps.reply"),
+    },
+    bookingLink: actions.bookingLink,
+    serviceLink: c("serviceLink"),
+    notify: actions.handoff,
+    actions,
   })
   const full = automation.buttons.length >= maxButtons
   const inUse = (action: AutomationAction["type"]) =>
@@ -62,19 +76,19 @@ export function WhatsappFlowCanvas({
     <div className="flex h-[70svh] min-h-96 overflow-hidden rounded-4xl bg-card ring-1 ring-border">
       {/* Computers only: a phone adds buttons from the editor. */}
       <div className="hidden w-64 shrink-0 flex-col gap-4 overflow-y-auto border-r p-3 md:flex">
-        <PaletteGroup title={c.groups.start}>
-          <PaletteStep icon={ICONS.trigger} title={c.steps.customerWrites} used={c.inUse} onClick={() => onOpen()} />
+        <PaletteGroup title={c("groups.start")}>
+          <PaletteStep icon={ICONS.trigger} title={c("steps.customerWrites")} used={c("inUse")} onClick={() => onOpen()} />
         </PaletteGroup>
-        <PaletteGroup title={c.groups.messages}>
-          <PaletteStep icon={ICONS.whatsapp} title={c.steps.sendMessage} used={c.inUse} onClick={() => onOpen()} />
+        <PaletteGroup title={c("groups.messages")}>
+          <PaletteStep icon={ICONS.whatsapp} title={c("steps.sendMessage")} used={c("inUse")} onClick={() => onOpen()} />
         </PaletteGroup>
-        <PaletteGroup title={c.groups.buttons}>
+        <PaletteGroup title={c("groups.buttons")}>
           {ACTIONS.map((action) => (
             <PaletteStep
               key={action}
               icon={ICONS[action]}
-              title={c.palette[action]}
-              used={inUse(action) ? c.inUse : undefined}
+              title={c(`palette.${action}`)}
+              used={inUse(action) ? c("inUse") : undefined}
               disabled={!inUse(action) && full}
               onClick={() => onOpen(inUse(action) ? undefined : action)}
             />
@@ -83,10 +97,15 @@ export function WhatsappFlowCanvas({
       </div>
       <div className="min-w-0 flex-1">
         <FlowCanvas
-          label={t.stepsLabel(t.names[automation.trigger])}
-          steps={steps.map((step) => ({ ...step, icon: ICONS[step.icon], kind: c.kinds[step.kind] }))}
+          label={t("stepsLabel", { name: t(`names.${automation.trigger}`) })}
+          steps={steps.map((step) => ({ ...step, icon: ICONS[step.icon], kind: c(`kinds.${step.kind}`) }))}
           links={links}
-          labels={c.zoom}
+          labels={{
+            zoomOut: c("zoom.zoomOut"),
+            zoomIn: c("zoom.zoomIn"),
+            resetZoom: c("zoom.resetZoom"),
+            fit: c("zoom.fit"),
+          }}
           onOpenStep={() => onOpen()}
         />
       </div>

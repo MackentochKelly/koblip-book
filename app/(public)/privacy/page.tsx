@@ -1,23 +1,15 @@
 import type { Metadata } from "next"
-import { headers } from "next/headers"
+import { getTranslations } from "next-intl/server"
 
 import { LegalPage } from "@/features/legal/components/legal-page"
-import { legalWordsFor } from "@/features/legal/content"
-import { pickLanguage } from "@/lib/page-language"
 
-// ?lang= wins, then the visitor's browser language, else English.
-async function pageLanguage(searchParams: PageProps<"/privacy">["searchParams"]) {
-  const { lang } = await searchParams
-  return pickLanguage(lang, (await headers()).get("accept-language"))
+// The page's language (proxy.ts): ?lang= wins, then the visitor's browser
+// language, else English.
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("public.legal.privacy")
+  return { title: `${t("title")} · Koblip Book` }
 }
 
-export async function generateMetadata({
-  searchParams,
-}: PageProps<"/privacy">): Promise<Metadata> {
-  const t = legalWordsFor(await pageLanguage(searchParams)).privacy
-  return { title: `${t.title} · Koblip Book` }
-}
-
-export default async function Page({ searchParams }: PageProps<"/privacy">) {
-  return <LegalPage language={await pageLanguage(searchParams)} doc="privacy" />
+export default function Page() {
+  return <LegalPage doc="privacy" />
 }

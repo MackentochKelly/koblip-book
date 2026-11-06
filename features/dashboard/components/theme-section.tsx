@@ -2,6 +2,7 @@
 
 import { useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { PageSection } from "@/components/page-section"
@@ -18,7 +19,6 @@ import {
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { THEMES, type ThemeId } from "@/lib/theme-rules"
-import { useOwnerMessages } from "../i18n/provider"
 import { activateTheme } from "../api/theme-actions"
 
 // The public page's looks: the active one, the others to turn on, and the
@@ -30,23 +30,23 @@ export function ThemeSection({
   businessId: string
   active: ThemeId
 }) {
-  const m = useOwnerMessages()
-  const t = m.settings.theme
+  const settings = useTranslations("owner.settings")
+  const t = useTranslations("owner.settings.theme")
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const activate = (theme: ThemeId) =>
     startTransition(async () => {
       const result = await activateTheme(businessId, theme).catch(() => null)
       if (result?.ok) {
-        toast.success(t.activated)
+        toast.success(t("activated"))
         router.refresh()
       } else {
-        toast.error(m.settings.tryAgain)
+        toast.error(settings("tryAgain"))
       }
     })
 
   return (
-    <PageSection id="theme" title={t.title}>
+    <PageSection id="theme" title={t("title")}>
       <ItemGroup>
         {THEMES.map((theme) => (
           <Item key={theme.id} variant="outline" role="listitem">
@@ -58,14 +58,14 @@ export function ThemeSection({
             </ItemContent>
             <ItemActions>
               {theme.id === active ? (
-                <Badge variant="success">{t.active}</Badge>
+                <Badge variant="success">{t("active")}</Badge>
               ) : theme.available ? (
                 <Button onClick={() => activate(theme.id)} disabled={pending}>
                   {pending && <Spinner data-icon="inline-start" />}
-                  {t.activate}
+                  {t("activate")}
                 </Button>
               ) : (
-                <Badge variant="secondary">{t.comingSoon}</Badge>
+                <Badge variant="secondary">{t("comingSoon")}</Badge>
               )}
             </ItemActions>
           </Item>

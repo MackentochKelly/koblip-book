@@ -1,6 +1,7 @@
 "use client"
 
 import { usePathname, useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { useRef, useState } from "react"
 
 import { FloatingLink } from "@/components/floating-link"
@@ -16,10 +17,8 @@ import {
 import { VoiceGlobe } from "@/components/voice-globe"
 import { useIsDesktop } from "@/hooks/use-is-desktop"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
-import type { PageLanguage } from "@/lib/page-language"
 import { cn } from "@/lib/utils"
 import { useJustLoaded } from "../hooks/use-just-loaded"
-import { assistantMessagesFor } from "../i18n"
 import { handOff } from "../utils/ask-handoff"
 
 // Ideas a tap sends, none of them already on Home's Ask card.
@@ -36,14 +35,8 @@ type IdeaKey = (typeof IDEAS)[number]["key"]
 // assistant. For a moment after the page loads, a few short ideas rest next to
 // it, each on its own card that can be closed. It stays mounted on the
 // assistant's own page, so a closed idea stays closed after coming back.
-export function AssistantFloat({
-  businessId,
-  language,
-}: {
-  businessId: string
-  language: PageLanguage
-}) {
-  const messages = assistantMessagesFor(language)
+export function AssistantFloat({ businessId }: { businessId: string }) {
+  const t = useTranslations("assistant")
   const router = useRouter()
   const openFromGlobe = useGlobeOpening()
   const desktop = useIsDesktop()
@@ -75,7 +68,7 @@ export function AssistantFloat({
     <FloatingLink
       id="assistant"
       href={href}
-      label={messages.title}
+      label={t("title")}
       bare
       prefetch
       onClick={(event) => {
@@ -102,10 +95,10 @@ export function AssistantFloat({
               type="button"
               variant="ghost"
               className="justify-start text-muted-foreground"
-              onClick={() => ask(messages.empty.suggestions[key])}
+              onClick={() => ask(t(`empty.suggestions.${key}`))}
             >
               <Icon data-icon="inline-start" />
-              {messages.empty.shortIdeas[key]}
+              {t(`empty.shortIdeas.${key}`)}
             </Button>
           </Card>
           {/* Comes up with the pointer or the keyboard; always there on a
@@ -114,7 +107,9 @@ export function AssistantFloat({
             type="button"
             variant="secondary"
             size="icon-xs"
-            aria-label={`${messages.empty.closeIdea}: ${messages.empty.shortIdeas[key]}`}
+            aria-label={t("empty.closeIdea", {
+              idea: t(`empty.shortIdeas.${key}`),
+            })}
             className="absolute -top-2 -right-2 opacity-0 group-hover/idea:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
             onClick={() => setClosed((keys) => [...keys, key])}
           >

@@ -38,12 +38,12 @@ export async function sendTeamInvite(
     !!member.email &&
     (await sendEmail({
       to: member.email,
-      ...teamInviteEmail({
+      ...(await teamInviteEmail({
         businessName: owned.business.name,
         url,
         days: TEAM_RULES.inviteDays,
         language: await getOwnerLanguage(),
-      }),
+      })),
     }))
   return { ok: true, url, emailedTo: emailed ? member.email : null }
 }

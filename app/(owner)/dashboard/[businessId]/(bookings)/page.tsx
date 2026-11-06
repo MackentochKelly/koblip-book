@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { getLocale, getTranslations } from "next-intl/server"
 import { getFirstVisits } from "@/features/dashboard/api/customers"
 import {
   getBookingCounts,
@@ -13,16 +14,12 @@ import {
   getBusinessPhotos,
   getServiceTeams,
 } from "@/features/dashboard/api/team-service-queries"
-import {
-  getOwnerLanguage,
-  getOwnerMessages,
-} from "@/features/dashboard/i18n/server"
 import { AskCard } from "@/features/assistant/components/ask-card"
 import { BookingsView } from "@/features/dashboard/components/bookings-view"
 import { periodSummary } from "@/features/dashboard/utils/analytics"
 import { bookingsPerDay } from "@/features/dashboard/utils/bookings-per-day"
 import { newCustomers } from "@/features/dashboard/utils/new-customers"
-import { partOfDay } from "@/features/dashboard/utils/part-of-day"
+import { EVENING_FROM, partOfDay } from "@/features/dashboard/utils/part-of-day"
 import { SetupList } from "@/features/dashboard/components/setup-list"
 import { setupTasks } from "@/features/dashboard/utils/setup-tasks"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
@@ -36,9 +33,11 @@ import { BOOKING_RULES } from "@/lib/booking-rules"
 import { addDaysTo, todayIn } from "@/lib/format-booking-time"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 import { requireOwner } from "@/lib/dal"
+import { languageOf } from "@/lib/page-language"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.nav.dashboard }
+  const t = await getTranslations("owner.shell")
+  return { title: t("nav.dashboard") }
 }
 
 type Props = {
@@ -81,9 +80,12 @@ export default async function BookingsPage({ params }: Props) {
   const firstName = session.isGuest
     ? undefined
     : session.name.trim().split(/\s+/)[0] || undefined
-  const words = (await getOwnerMessages()).shell.greeting
-  const greeting =
-    words[partOfDay(business.timezone, words.eveningFrom)](firstName)
+  const t = await getTranslations("owner.shell.greeting")
+  const language = languageOf(await getLocale())
+  const part = partOfDay(business.timezone, EVENING_FROM[language])
+  const greeting = firstName
+    ? t(part, { name: firstName })
+    : t(`noName.${part}`)
   const openDays = new Set(owner.hours.map((hour) => hour.weekday)).size
   const confirmed = business.detailsConfirmedAt !== null
   const steps = setupTasks(
@@ -113,10 +115,7 @@ export default async function BookingsPage({ params }: Props) {
         // Check your details step confirms what came from Google Maps.)
         setup={settingUp ? <SetupList steps={steps} /> : undefined}
         assistant={
-          <AskCard
-            businessId={businessId}
-            language={await getOwnerLanguage()}
-          />
+          <AskCard businessId={businessId} />
         }
         summary={periodSummary(lastDays, firstVisits, today, 7, now)}
         widgets={{

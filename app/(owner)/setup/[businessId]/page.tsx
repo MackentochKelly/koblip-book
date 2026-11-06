@@ -1,18 +1,19 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 
 import { GlassCard } from "@/components/glass-frame"
 import { Toaster } from "@/components/ui/sonner"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { DetailsForm } from "@/features/dashboard/components/details-form"
 import { TopBar } from "@/features/dashboard/components/top-bar"
-import { getOwnerMessages } from "@/features/dashboard/i18n/server"
 import { requireAccount } from "@/lib/dal"
 import { fontDisplay } from "@/lib/fonts"
 import { isMetaAiEnabled } from "@/lib/meta-ai"
 import { cn } from "@/lib/utils"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await getOwnerMessages()).shell.titles.checkDetails }
+  const t = await getTranslations("owner.shell.titles")
+  return { title: t("checkDetails") }
 }
 
 // Right after sign-up: the owner checks and fixes what came from Google
@@ -25,7 +26,7 @@ export default async function SetupPage({
   const { businessId } = await params
   const owner = await requireAccount(`/setup/${businessId}`)
   const { business, team } = await getOwnerBusiness(businessId)
-  const m = await getOwnerMessages()
+  const t = await getTranslations("owner.shell.titles")
   return (
     <div
       className={cn(
@@ -43,7 +44,7 @@ export default async function SetupPage({
           <DetailsForm
             businessId={businessId}
             hasTeam={team.length > 0}
-            title={m.shell.titles.checkDetails}
+            title={t("checkDetails")}
             next={`/setup/${businessId}/preparing`}
             canImprove={isMetaAiEnabled()}
             details={{

@@ -1,8 +1,8 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useEffect, useRef, useState } from "react"
 
-import { useMessages } from "@/components/language-provider"
 import { ViewTabs, type ViewTab } from "@/components/view-tabs"
 import { useScrollSpy } from "@/hooks/use-scroll-spy"
 import { cn } from "@/lib/utils"
@@ -14,7 +14,7 @@ const ACTIVE_LINE = 120
 // sections; then they slide in pinned at the top (like Fresha), and leave at
 // once. -mt-8 undoes the column gap, so no empty space is left where they sit.
 export function SectionTabs({ sections }: { sections: ViewTab<string>[] }) {
-  const m = useMessages()
+  const t = useTranslations("public.sections")
   const ref = useRef<HTMLDivElement>(null)
   const [pinned, setPinned] = useState(false)
   const ids = sections.map((section) => section.id)
@@ -62,7 +62,7 @@ export function SectionTabs({ sections }: { sections: ViewTab<string>[] }) {
               .getElementById(id)
               ?.scrollIntoView({ behavior: "smooth", block: "start" })
           }
-          ariaLabel={m.sections.pageSections}
+          ariaLabel={t("pageSections")}
         />
       </div>
     </div>
