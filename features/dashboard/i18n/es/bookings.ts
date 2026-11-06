@@ -110,6 +110,7 @@ const bookings: typeof en = {
       last90: "Últimos 3 meses",
       around: "Últimos 30 días y próximos 3 meses",
     },
+    categories: "Categorías",
     services: "Servicios",
     team: "Equipo",
     filters: "Filtros",

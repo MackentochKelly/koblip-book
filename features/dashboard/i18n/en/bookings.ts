@@ -113,6 +113,7 @@ const bookings = {
       last90: "Last 3 months",
       around: "Last 30 days and next 3 months",
     },
+    categories: "Categories",
     services: "Services",
     team: "Team",
     filters: "Filters",

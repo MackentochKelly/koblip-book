@@ -23,6 +23,7 @@ import {
   byStatus,
   matchBookings,
   NO_FILTERS,
+  OTHER_CATEGORY,
   STATUS_FILTERS,
   statusCounts,
 } from "../utils/booking-filters"
@@ -34,8 +35,8 @@ import type { useBookingPanels } from "./booking-panels"
 type Panels = ReturnType<typeof useBookingPanels>
 
 // The Bookings tab: the bookings in a date range, searched and filtered by
-// status, service (grouped by category) and team, as the shared list with
-// pages.
+// status, category, service (grouped by category) and team, as the shared
+// list with pages.
 export function BookingsTable({
   bookings,
   now,
@@ -54,7 +55,7 @@ export function BookingsTable({
   range: DayRangeValue
   onRangeChange: (range: DayRangeValue) => void
   services: { id: string; name: string; categoryId: string | null }[]
-  // In their order: the Services filter's groups.
+  // In their order: the Categories filter and the Services filter's groups.
   categories: OwnerServiceCategory[]
   team: { id: string; name: string }[]
   panels: Panels
@@ -66,12 +67,20 @@ export function BookingsTable({
   const set = (change: Partial<BookingFilters>) => {
     setFilters((current) => ({ ...current, ...change }))
   }
-  const matched = matchBookings(bookings, filters)
+  // A booking's category is its service's; none, or a service since
+  // removed, is Other.
+  const serviceCategory = new Map(
+    services.map(({ id, categoryId }) => [id, categoryId])
+  )
+  const categoryOf = (booking: OwnerBooking) =>
+    (booking.serviceId && serviceCategory.get(booking.serviceId)) || null
+  const matched = matchBookings(bookings, filters, categoryOf)
   const counts = statusCounts(matched, now)
   const rows = byStatus(matched, filters.status, now)
   const total = rows.length
   const filtered =
     filters.search.trim() !== "" ||
+    filters.categoryIds.length > 0 ||
     filters.serviceIds.length > 0 ||
     filters.teamIds.length > 0
 
@@ -89,6 +98,14 @@ export function BookingsTable({
     categories,
     m.catalog.categories.other
   )
+  // Each category, then Other when a service or booking has none.
+  const categoryOptions = [
+    ...categories.map(({ id, name }) => ({ value: id, label: name })),
+    ...(services.some((service) => !service.categoryId) ||
+    bookings.some((booking) => categoryOf(booking) === null)
+      ? [{ value: OTHER_CATEGORY, label: m.catalog.categories.other }]
+      : []),
+  ]
   const teamOptions = team.map(({ id, name }) => ({ value: id, label: name }))
   // The phone's Filters count: a status other than All, the dates when not
   // the usual ones, and each list with something ticked.
@@ -96,6 +113,7 @@ export function BookingsTable({
   const filterCount =
     (filters.status === NO_FILTERS.status ? 0 : 1) +
     (usualDates ? 0 : 1) +
+    (filters.categoryIds.length > 0 ? 1 : 0) +
     (filters.serviceIds.length > 0 ? 1 : 0) +
     (filters.teamIds.length > 0 ? 1 : 0)
 
@@ -153,6 +171,26 @@ export function BookingsTable({
               />
             ),
           },
+          // Only once the business has categories.
+          ...(categories.length > 0
+            ? [
+                {
+                  key: "categories",
+                  label: t.categories,
+                  control: (
+                    <AppSelect
+                      multiple
+                      options={categoryOptions}
+                      value={filters.categoryIds}
+                      onValueChange={(categoryIds) => set({ categoryIds })}
+                      placeholder={t.categories}
+                      aria-label={t.categories}
+                      className="w-full md:w-auto"
+                    />
+                  ),
+                },
+              ]
+            : []),
           ...(services.length > 1
             ? [
                 {
@@ -194,7 +232,12 @@ export function BookingsTable({
         ]}
         count={filterCount}
         onClear={() => {
-          set({ status: NO_FILTERS.status, serviceIds: [], teamIds: [] })
+          set({
+            status: NO_FILTERS.status,
+            categoryIds: [],
+            serviceIds: [],
+            teamIds: [],
+          })
           if (!usualDates) onRangeChange(presetRange("around", today))
         }}
         rowClear={

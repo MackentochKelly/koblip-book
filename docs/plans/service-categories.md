@@ -52,6 +52,7 @@ How to use this file: [Plans](README.md).
 | C8 | Admin "Service categories": every business's categories with their service count; Remove | C2 | Done (2026-11-06) |
 | C9 | Optional: a category colour that becomes the Google Calendar colour of its services that have none | C3 | Done (2026-11-06) |
 | C10 | Optional: "Top categories" in Analytics | C2 | Done (2026-11-06) |
+| C11 | A Categories filter on the Bookings list, beside Services (Other included), only once there are categories; asked by the owner 2026-11-06 | C5 | Done (2026-11-06) |
 
 ## Build order (several builders, asked by the owner 2026-11-06)
 
@@ -87,6 +88,7 @@ How to use this file: [Plans](README.md).
 | Admin nav, empty, row | Service categories · No service categories yet · 3 services | Categorías de servicios · Aún no hay categorías de servicios · 3 servicios |
 | Service colour option, when its category has a colour (C9) | Category's colour | Color de la categoría |
 | Analytics card (C10) | Top categories | Categorías más pedidas |
+| Bookings filter (C11) | Categories | Categorías |
 
 ## Decisions log
 
@@ -99,6 +101,7 @@ How to use this file: [Plans](README.md).
 | Categories have their own position; services keep theirs, read inside their category; Move up and Move down in ⋮ menus | `reorderServices` keeps its contract; same as services today and Vagaro's arrows | M Kelly B, 2026-11-06 |
 | No "Featured" tab on the public page | There is no featured flag | M Kelly B, 2026-11-06 |
 | One Services filter, grouped by category | One filter instead of two | M Kelly B, 2026-11-06 |
+| Also a Categories filter on Bookings (C11), next to the grouped Services filter | The owner asked to pick a whole category at once; the help pages of Fresha and Square show no such filter | M Kelly B, 2026-11-06 |
 | Starter catalog saves categories only when there are 2 or more | A one-kind business stays flat; a draft never fails on categories | M Kelly B, 2026-11-06 |
 | One grouping helper in `lib/` and all words written in C2 | Four parts group services; features can't import each other, and parallel builders must not edit the same files | M Kelly B, 2026-11-06 |
 | The Suggest panel's category is C3's, C6 stays server side | The panel lives in the Services screen file C3 owns | M Kelly B, 2026-11-06 |

@@ -5,6 +5,7 @@ import {
   bookingState,
   byStatus,
   matchBookings,
+  OTHER_CATEGORY,
   statusCounts,
 } from "./booking-filters"
 
@@ -63,15 +64,30 @@ test("each status tab counts its bookings", () => {
 })
 
 test("search matches names, service and phone digits; filters narrow", () => {
-  const none = { serviceIds: [], teamIds: [] }
+  const none = { categoryIds: [], serviceIds: [], teamIds: [] }
   expect(matchBookings(rows, { ...none, search: "luis beard" })).toHaveLength(1)
   expect(matchBookings(rows, { ...none, search: "555 0101" })).toHaveLength(4)
   expect(
-    matchBookings(rows, { search: "", serviceIds: ["s2"], teamIds: [] })
+    matchBookings(rows, { ...none, search: "", serviceIds: ["s2"] })
   ).toHaveLength(1)
   expect(
-    matchBookings(rows, { search: "", serviceIds: [], teamIds: ["t1"] })
+    matchBookings(rows, { ...none, search: "", teamIds: ["t1"] })
   ).toHaveLength(3)
+})
+
+test("a category filter keeps its services' bookings, Other those with none", () => {
+  const none = { search: "", serviceIds: [], teamIds: [] }
+  // s1 is in Hair; s2 has no category.
+  const categoryOf = (row: OwnerBooking) =>
+    row.serviceId === "s1" ? "hair" : null
+  const ids = (categoryIds: string[]) =>
+    matchBookings(rows, { ...none, categoryIds }, categoryOf).map(
+      (row) => row.id
+    )
+  expect(ids([])).toEqual(["future", "ended", "done", "gone"])
+  expect(ids(["hair"])).toEqual(["future", "done", "gone"])
+  expect(ids([OTHER_CATEGORY])).toEqual(["ended"])
+  expect(ids(["hair", OTHER_CATEGORY])).toHaveLength(4)
 })
 
 test("what can be done depends on the time and status", () => {

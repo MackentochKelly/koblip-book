@@ -23,14 +23,21 @@ export type StatusFilter = (typeof STATUS_FILTERS)[number]
 export interface BookingFilters {
   search: string
   status: StatusFilter
-  // Empty: every service / every team member.
+  // Empty: every category / every service / every team member. Categories
+  // are category ids, OTHER_CATEGORY for Other.
+  categoryIds: string[]
   serviceIds: string[]
   teamIds: string[]
 }
 
+// Other in the Categories filter: a booking whose service has no category,
+// or is gone (docs/plans/service-categories.md).
+export const OTHER_CATEGORY = "other"
+
 export const NO_FILTERS: BookingFilters = {
   search: "",
   status: "all",
+  categoryIds: [],
   serviceIds: [],
   teamIds: [],
 }
@@ -41,15 +48,22 @@ export function bookingState(booking: OwnerBooking, now: string): BookingState {
   return booking.endAt >= now ? "upcoming" : "unmarked"
 }
 
-// The bookings that match the search, services and team; the status is
-// left to `byStatus`, so each tab can show how many it holds.
+// The bookings that match the search, categories, services and team; the
+// status is left to `byStatus`, so each tab can show how many it holds.
+// `categoryOf`: the category of a booking's service, null for Other.
 export function matchBookings(
   bookings: OwnerBooking[],
-  filters: Omit<BookingFilters, "status">
+  filters: Omit<BookingFilters, "status">,
+  categoryOf: (booking: OwnerBooking) => string | null = () => null
 ): OwnerBooking[] {
   const words = filters.search.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const digits = filters.search.replace(/\D/g, "")
   return bookings.filter((booking) => {
+    if (
+      filters.categoryIds.length > 0 &&
+      !filters.categoryIds.includes(categoryOf(booking) ?? OTHER_CATEGORY)
+    )
+      return false
     if (
       filters.serviceIds.length > 0 &&
       !(booking.serviceId && filters.serviceIds.includes(booking.serviceId))
