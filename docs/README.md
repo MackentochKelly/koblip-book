@@ -9,6 +9,7 @@ Start with the [project overview](../README.md), then use the guides below.
 | [Local setup](setup.md)                | Installation, environment variables, database and checks |
 | [Architecture](architecture.md)        | Folder responsibilities, import boundaries and runtime   |
 | [Deploying](deploy.md)                 | Putting `main` live and what happens if it fails         |
+| [Billing](billing.md)                  | Stripe set-up, keys, local testing and going live        |
 | [Repository conventions](../AGENTS.md) | Working rules and project standards                      |
 | [UI standards](ui-rules/README.md)     | Design rules and official sources                        |
 | [UI checklist](ui-rules/checklist.md)  | Checks before and after interface changes                |
