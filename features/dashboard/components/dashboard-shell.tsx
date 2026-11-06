@@ -187,9 +187,9 @@ export function DashboardShell({
                   <Button
                     size="icon-lg"
                     variant="ghost"
-                    // The +'s ring colour (its near-white ring over the
-                    // brand colour), with a 2 px gap around the globe.
-                    className="size-11 rounded-full border-2 border-[color-mix(in_oklch,var(--primary-foreground)_45%,var(--primary))] p-0.5 hover:bg-transparent dark:hover:bg-transparent"
+                    // The app's hairline in its border colour, like its
+                    // cards, with a 2 px gap around the globe.
+                    className="size-11 rounded-full border-(length:--hairline) border-border p-0.5 hover:bg-transparent dark:hover:bg-transparent"
                     aria-label={m.assistant}
                     nativeButton={false}
                     render={<Link href={assistantHref} />}
