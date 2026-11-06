@@ -30,7 +30,11 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
+import {
+  Progress,
+  ProgressLabel,
+  ProgressValue,
+} from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 
 export type SetupStepItem = {
@@ -107,7 +111,9 @@ export function SetupSteps({
             </ItemMedia>
             <ItemContent className="min-w-0">
               <ItemTitle
-                className={cn(!step.done && !isCurrent && "text-muted-foreground")}
+                className={cn(
+                  !step.done && !isCurrent && "text-muted-foreground"
+                )}
               >
                 {step.title}
                 <span className="sr-only">
@@ -116,7 +122,9 @@ export function SetupSteps({
                 </span>
               </ItemTitle>
               {isCurrent && !boxed && (
-                <ItemDescription className="line-clamp-none">{step.hint}</ItemDescription>
+                <ItemDescription className="line-clamp-none">
+                  {step.hint}
+                </ItemDescription>
               )}
             </ItemContent>
             {step.href && (
@@ -142,7 +150,7 @@ export function SetupSteps({
   if (boxed && !(folded ?? !current)) {
     return (
       <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-16">
-        <Card size="sm" className="gap-3 border bg-muted/50 ring-0">
+        <Card size="sm" variant="muted" className="gap-3">
           <CardHeader>
             <CardTitle id={`${id}-title`}>{t.title}</CardTitle>
             <CardAction className="text-sm text-muted-foreground tabular-nums">

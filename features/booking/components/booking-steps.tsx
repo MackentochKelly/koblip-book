@@ -50,7 +50,6 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BOOKING_RULES } from "@/lib/booking-rules"
-import { cn } from "@/lib/utils"
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { formatClock, formatDay, todayIn } from "@/lib/format-booking-time"
@@ -467,7 +466,7 @@ export function BookingSummary({
   const total = totals ? priceLabel(totals.priceMinor, page.currency, m) : null
   return (
     // The same soft grey box as the dashboard's "Start here" card.
-    <Card className={cn("border bg-muted/50 ring-0", className)}>
+    <Card variant="muted" className={className}>
       {/* Like a Wallet pass: a calendar and the name on top, then when, big. */}
       <CardHeader className="flex items-center gap-3">
         <Avatar size="lg">
@@ -642,7 +641,7 @@ export function PoliciesStep({
       {policies.points.length > 0 && (
         <ItemGroup className="grid gap-3 sm:grid-cols-2">
           {policies.points.map((point) => (
-            <Item key={point.id} variant="muted" className="items-start">
+            <Item key={point.id} variant="box" className="items-start">
               <ItemMedia variant="icon">
                 <PolicyPointIcon icon={point.icon} />
               </ItemMedia>
