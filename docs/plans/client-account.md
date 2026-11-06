@@ -60,8 +60,8 @@ Same rules as above: shared parts only (`PageSection`, `Item`, `Empty`, `BottomP
 | C12 | Notifications open the booking (D11) | C11 | `lib/in-app-notifications.ts` (`CLIENT_LINK`) | Done (Nov 6, see commit) |
 | C13 | Add to calendar (D12): `.ics` route and the menu on the booking page | C11 | `app/api/account/bookings/`, `lib/booking-calendar.ts` | Done (Nov 6, see commit) |
 | C14 | My places (D13): query, page, menu item, empty state | C10 | `app/(customer)/account/places/`, `features/customer-account/api/places.ts`, `features/customer-account/components/places-list.tsx`, `features/customer-account/nav.ts` | Done (Nov 6, see commit) |
-| C15 | Reviews, data (D15): table, migration, rules, save/edit action, bell ask on the timer, admin list | C11 | `lib/db/schema.ts` (reviews), `drizzle/`, `lib/review-rules.ts`, `features/reviews/api/`, `features/admin/` (reviews screen) | To do |
-| C16 | Reviews, screens (D15): stars on the booking page, owner's Reviews tab with hide, average and latest on the business page | C15 | `features/reviews/components/`, the owner Customers page, `features/business-page/` (reviews section) | To do |
+| C15 | Reviews, data (D15): table, migration, rules, save/edit action, bell ask on the timer, admin list | C11 | `lib/db/schema.ts` (reviews), `drizzle/`, `lib/review-rules.ts`, `features/reviews/api/`, `features/admin/` (reviews screen) | Working on: M Kelly B, Nov 6 |
+| C16 | Reviews, screens (D15): stars on the booking page, owner's Reviews tab with hide, average and latest on the business page | C15 | `features/reviews/components/`, the owner Customers page, `features/business-page/` (reviews section) | Working on: M Kelly B, Nov 6 |
 | C17 | Reminder channel (D16): setting, email reminders on the timer, admin view | – | `lib/db/schema.ts` (channel), `drizzle/`, `features/customer-account/components/settings-form.tsx`, `lib/client-reminders.ts` | To do |
 | C18 | Checks: phone and computer, light and dark, English and Spanish, typecheck, lint, tests, build | all | – | To do |
 
