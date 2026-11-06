@@ -466,10 +466,9 @@ export function BookingSummary({
   const total = totals ? priceLabel(totals.priceMinor, page.currency, m) : null
   return (
     <Card className={className}>
-      {/* Like a Wallet pass: who it is with on top, then when, big. */}
+      {/* Like a Wallet pass: the shop's icon and name on top, then when, big. */}
       <CardHeader className="flex items-center gap-3">
         <Avatar size="lg">
-          {page.photoUrl && <AvatarImage src={page.photoUrl} alt="" />}
           <AvatarFallback>
             <StoreIcon className="size-5" />
           </AvatarFallback>
