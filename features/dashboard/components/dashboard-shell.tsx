@@ -187,9 +187,9 @@ export function DashboardShell({
                   <Button
                     size="icon-lg"
                     variant="ghost"
-                    // The app's hairline in its border colour, like its
-                    // cards, with a 2 px gap around the globe.
-                    className="size-11 rounded-full border-(length:--hairline) border-border p-0.5 hover:bg-transparent dark:hover:bg-transparent"
+                    // The app's hairline, a little darker than the cards'
+                    // edge so it reads around the globe, with a 2 px gap.
+                    className="size-11 rounded-full border-(length:--hairline) border-foreground/20 p-0.5 hover:bg-transparent dark:hover:bg-transparent"
                     aria-label={m.assistant}
                     nativeButton={false}
                     render={<Link href={assistantHref} />}
