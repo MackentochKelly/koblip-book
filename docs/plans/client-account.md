@@ -57,8 +57,8 @@ Same rules as above: shared parts only (`PageSection`, `Item`, `Empty`, `BottomP
 | --- | --- | --- | --- | --- |
 | C10 | Empty states (D14): Bookings gets "Find a business" | – | `features/customer-account/components/my-bookings-list.tsx`, `lib/i18n/en/public.ts` (account) | Done (Nov 6, see commit) |
 | C11 | Booking page (D11): route, query, page, rows link to it | – | `app/(customer)/account/bookings/`, `features/customer-account/api/booking.ts`, `features/customer-account/components/booking-page.tsx` | Done (Nov 6, see commit) |
-| C12 | Notifications open the booking (D11) | C11 | `lib/in-app-notifications.ts` (`CLIENT_LINK`) | To do |
-| C13 | Add to calendar (D12): `.ics` route and the menu on the booking page | C11 | `app/api/account/bookings/`, `lib/booking-calendar.ts` | To do |
+| C12 | Notifications open the booking (D11) | C11 | `lib/in-app-notifications.ts` (`CLIENT_LINK`) | Working on: M Kelly B, Nov 6 |
+| C13 | Add to calendar (D12): `.ics` route and the menu on the booking page | C11 | `app/api/account/bookings/`, `lib/booking-calendar.ts` | Working on: M Kelly B, Nov 6 |
 | C14 | My places (D13): query, page, menu item, empty state | C10 | `app/(customer)/account/places/`, `features/customer-account/api/places.ts`, `features/customer-account/components/places-list.tsx`, `features/customer-account/nav.ts` | To do |
 | C15 | Reviews, data (D15): table, migration, rules, save/edit action, bell ask on the timer, admin list | C11 | `lib/db/schema.ts` (reviews), `drizzle/`, `lib/review-rules.ts`, `features/reviews/api/`, `features/admin/` (reviews screen) | To do |
 | C16 | Reviews, screens (D15): stars on the booking page, owner's Reviews tab with hide, average and latest on the business page | C15 | `features/reviews/components/`, the owner Customers page, `features/business-page/` (reviews section) | To do |
