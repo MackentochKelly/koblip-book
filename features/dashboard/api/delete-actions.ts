@@ -2,24 +2,20 @@
 
 import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
-import { ACCOUNT_RULES } from "@/lib/account-rules"
 import { auth } from "@/lib/auth"
 import { requireAccount, requireAdmin } from "@/lib/dal"
+import { hasFreshLogin } from "@/lib/fresh-login"
 import { deleteBusinesses, ownedBusinessIds } from "./delete-businesses"
 
-export type DeleteResult = { ok: true } | { ok: false; error: "login" | "failed" }
+import type { DeleteResult } from "@/types/delete-account"
 
 // Settings → Account: the owner deletes their account, with every business
 // they own. Needs a recent login (ACCOUNT_RULES.freshLoginHours), checked
 // before anything goes, so nothing is half deleted; older, they log in again.
 export async function deleteAccount(): Promise<DeleteResult> {
   const owner = await requireAccount()
+  if (!(await hasFreshLogin())) return { ok: false, error: "login" }
   const request = { headers: await headers() }
-  const current = await auth.api.getSession(request)
-  const loggedInAt = current ? new Date(current.session.createdAt).getTime() : 0
-  if (Date.now() - loggedInAt >= ACCOUNT_RULES.freshLoginHours * 3_600_000) {
-    return { ok: false, error: "login" }
-  }
   try {
     await deleteBusinesses(await ownedBusinessIds(owner.userId))
     await auth.api.deleteUser({ ...request, body: {} })

@@ -46,9 +46,7 @@ export async function myBookings(
     })
     .from(bookings)
     .innerJoin(businesses, eq(businesses.id, bookings.businessId))
-    .where(
-and(ownBookings(customer), eq(businesses.isDemo, false))
-    )
+    .where(and(ownBookings(customer), eq(businesses.isDemo, false)))
     .orderBy(desc(bookings.startAt))
     .limit(LIMIT)
 

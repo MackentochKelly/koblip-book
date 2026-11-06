@@ -28,6 +28,7 @@ import type { Owner } from "@/components/account-menu"
 import { BusinessSwitcher } from "./business-switcher"
 import { useCommandMenu } from "./command-menu"
 import { NAV_ICON_SIZE, NavMain } from "@/components/nav-main"
+import { useClientBookingsLink } from "@/components/account-menu"
 import { NavUser } from "@/components/nav-user"
 
 // The owner area's menu, built like Koblip Sales' AppSidebar (shadcn
@@ -52,6 +53,7 @@ export function AppSidebar({
   const plans = useTranslations("app.planLocked.plans")
   const { isMobile, setOpenMobile } = useSidebar()
   const openCommandMenu = useCommandMenu()
+  const bookingsLink = useClientBookingsLink()
   const base = `/dashboard/${business.id}`
   const openSearch = () => {
     if (isMobile) setOpenMobile(false)
@@ -129,7 +131,11 @@ export function AppSidebar({
         ))}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser owner={owner} settingsHref={`${base}/settings`} />
+        <NavUser
+          owner={owner}
+          settingsHref={`${base}/settings`}
+          links={[bookingsLink]}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

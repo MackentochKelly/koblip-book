@@ -15,6 +15,8 @@ const OWNER = {
   banned: false,
   createdAt: "2026-11-01T00:00:00.000Z",
   businesses: 1,
+  phone: null,
+  bookings: 0,
 }
 
 test("admin shows the account voice name", () => {
@@ -45,4 +47,17 @@ test("a missing choice and a removed voice remain visible", () => {
   )
   expect(screen.getByText("Voice: None chosen")).toBeDefined()
   expect(screen.getByText("Voice: removed-voice")).toBeDefined()
+})
+
+test("an account shows its phone and its bookings as a client", () => {
+  render(
+    <WithWords>
+      <OwnersList
+        owners={[{ ...OWNER, email: null, phone: "+18095550134", bookings: 2, voice: null }]}
+        selfId="u1"
+        onDelete={async () => ({ ok: true })}
+      />
+    </WithWords>
+  )
+  expect(screen.getByText("+18095550134 · 1 business · 2 bookings")).toBeTruthy()
 })

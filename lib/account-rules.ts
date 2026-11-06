@@ -6,4 +6,7 @@ export const ACCOUNT_RULES = {
   // How long a "Forgot password" link works (minutes). Better Auth's
   // default, set here so the email's words match it.
   passwordResetMinutes: 60,
+  // The longest name an account can have (the client account's Profile),
+  // the same as a booking's customer name.
+  maxName: 80,
 } as const

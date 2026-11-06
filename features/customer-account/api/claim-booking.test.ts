@@ -2,14 +2,27 @@
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { afterAll, afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest"
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  expect,
+  test,
+  vi,
+} from "vitest"
 import { newBookingClaim } from "@/lib/booking-claim"
 import { bookings, businesses, user } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 const signedIn = {
-  session: null as { userId: string; name: string; phone: string | null; isGuest: boolean } | null,
+  session: null as {
+    userId: string
+    name: string
+    phone: string | null
+    isGuest: boolean
+  } | null,
 }
 vi.mock("@/lib/dal", () => ({ getSession: async () => signedIn.session }))
 
@@ -65,7 +78,10 @@ afterEach(() => {
 })
 
 // A booking made signed out at 10:00 tomorrow, with its claim's hash.
-async function bookedSignedOut(id: string, customerUserId: string | null = null) {
+async function bookedSignedOut(
+  id: string,
+  customerUserId: string | null = null
+) {
   const { db } = await import("@/lib/db")
   const claim = newBookingClaim()
   await db.insert(bookings).values({
@@ -97,7 +113,9 @@ test("a booking made signed out joins the account that claims it, once", async (
   // Signed out, or a wrong secret: nothing.
   expect(await claimBooking({ bookingId, token })).toEqual({ claimed: false })
   signedIn.session = LUIS
-  expect(await claimBooking({ bookingId, token: "wrong" })).toEqual({ claimed: false })
+  expect(await claimBooking({ bookingId, token: "wrong" })).toEqual({
+    claimed: false,
+  })
 
   expect(await claimBooking({ bookingId, token })).toEqual({ claimed: true })
   const { upcoming } = await myBookings(LUIS, "en", new Date(NOW))

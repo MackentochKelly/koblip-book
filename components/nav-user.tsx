@@ -15,6 +15,7 @@ import {
 import {
   AccountMenuContent,
   OwnerAvatar,
+  type AccountMenuLink,
   type Owner,
 } from "@/components/account-menu"
 
@@ -24,9 +25,11 @@ import {
 export function NavUser({
   owner,
   settingsHref,
+  links,
 }: {
   owner: Owner
   settingsHref?: string
+  links?: AccountMenuLink[]
 }) {
   const { isMobile } = useSidebar()
   return (
@@ -54,6 +57,7 @@ export function NavUser({
           <AccountMenuContent
             owner={owner}
             settingsHref={settingsHref}
+            links={links}
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}

@@ -32,7 +32,7 @@ import { PHONE_PATTERN } from "@/lib/booking-rules"
 import {
   BOOKED_PHONE_KEY,
   BOOKING_CLAIM_KEY,
-  myBookingsHref,
+  MY_BOOKINGS_PATH,
 } from "@/lib/my-bookings-links"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { languageOf } from "@/lib/page-language"
@@ -664,7 +664,7 @@ function BookedPage({
                   nativeButton={false}
                   render={
                     <Link
-                      href={myBookingsHref(language)}
+                      href={MY_BOOKINGS_PATH}
                       onClick={() => rememberBookedPhone(phone)}
                     />
                   }

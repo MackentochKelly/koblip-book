@@ -27,7 +27,13 @@ import { CantComeButton } from "./cant-come-button"
 
 // One booking. What is ahead carries its "Can't make it"; what is over
 // opens the business's page, to book again.
-function BookingRow({ booking, ahead }: { booking: MyBooking; ahead: boolean }) {
+function BookingRow({
+  booking,
+  ahead,
+}: {
+  booking: MyBooking
+  ahead: boolean
+}) {
   const t = useTranslations("public")
   const locale = useLocale()
   const language = languageOf(locale)
@@ -89,7 +95,7 @@ function BookingRow({ booking, ahead }: { booking: MyBooking; ahead: boolean }) 
             <Button
               variant="outline"
               nativeButton={false}
-              render={<Link href={rescheduleHref(booking.id, language)} />}
+              render={<Link href={rescheduleHref(booking.id)} />}
             >
               {t("account.reschedule")}
             </Button>
@@ -126,28 +132,18 @@ export function MyBookingsList({
         {upcoming.length ? (
           <ItemGroup className="gap-3">
             {upcoming.map((booking) => (
-              <BookingRow
-                key={booking.id}
-                booking={booking}
-                ahead
-              />
+              <BookingRow key={booking.id} booking={booking} ahead />
             ))}
           </ItemGroup>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            {t("noneUpcoming")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("noneUpcoming")}</p>
         )}
       </PageSection>
       {past.length > 0 && (
         <PageSection id="past" title={t("past")}>
           <ItemGroup className="gap-3">
             {past.map((booking) => (
-              <BookingRow
-                key={booking.id}
-                booking={booking}
-                ahead={false}
-              />
+              <BookingRow key={booking.id} booking={booking} ahead={false} />
             ))}
           </ItemGroup>
         </PageSection>

@@ -10,7 +10,9 @@ import { ACCOUNT_RULES } from "./account-rules"
 import { LOGIN_PATH } from "./auth-links"
 import { db } from "./db"
 import * as authSchema from "./db/auth-schema"
+import { bookings } from "./db/schema"
 import { sendEmail } from "./email"
+import { deletePhoto } from "./uploads"
 import { stripeClient, stripeKeys } from "./stripe"
 import { PAID_PLANS } from "./subscription-rules"
 import { resetPasswordEmail, verificationEmail } from "./email-templates"
@@ -127,6 +129,18 @@ export const auth = betterAuth({
           const phone = (user as { phoneNumber?: string | null }).phoneNumber
           const name = phone ? await latestBookingName(phone) : null
           return { data: { ...user, name: name ?? user.name } }
+        },
+      },
+      // However an account goes (its own Settings, the owner's, the admin):
+      // its bookings stay with the businesses, no longer the account's
+      // (docs/plans/client-account.md, D7), and its uploaded photo goes.
+      delete: {
+        before: async (user) => {
+          await db
+            .update(bookings)
+            .set({ customerUserId: null })
+            .where(eq(bookings.customerUserId, user.id))
+          await deletePhoto(user.image ?? null)
         },
       },
     },

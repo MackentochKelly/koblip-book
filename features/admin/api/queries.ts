@@ -2,6 +2,7 @@ import "server-only"
 
 import { and, asc, count, desc, eq, gt, gte, isNotNull, isNull, sql } from "drizzle-orm"
 import { getAccountVoices } from "@/lib/account-voices"
+import { isPhoneAccountEmail } from "@/lib/phone-sign-in"
 import { requireAdmin } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { bookings, businesses, customers, serviceCategories, services, teamInvites, teamMembers, teamMemberHours, ownerVoices, user } from "@/lib/db/schema"
@@ -93,11 +94,16 @@ export async function getBusinesses(): Promise<AdminBusiness[]> {
 export interface AdminOwner {
   id: string
   name: string
-  email: string
+  // Null for an account made by phone (its email is a placeholder).
+  email: string | null
+  // The verified phone (phone sign-in), as +18095550123.
+  phone: string | null
   image: string | null
   banned: boolean
   createdAt: string
   businesses: number
+  // Bookings that are this account's as a client (made or claimed with it).
+  bookings: number
   voice: { voiceId: string; name: string | null } | null
 }
 
@@ -109,27 +115,41 @@ export async function getOwners(): Promise<AdminOwner[]> {
     .where(realBusiness)
     .groupBy(businesses.ownerId)
     .as("owned")
+  const booked = db
+    .select({
+      userId: bookings.customerUserId,
+      bookingCount: count().as("booking_count"),
+    })
+    .from(bookings)
+    .groupBy(bookings.customerUserId)
+    .as("booked")
   const rows = await db
     .select({
       id: user.id,
       name: user.name,
       email: user.email,
+      phoneNumber: user.phoneNumber,
+      phoneNumberVerified: user.phoneNumberVerified,
       image: user.image,
       banned: user.banned,
       voiceId: ownerVoices.voiceId,
       createdAt: user.createdAt,
       businesses: sql<number>`coalesce(${owned.n}, 0)`,
+      bookings: sql<number>`coalesce(${booked.bookingCount}, 0)`,
     })
     .from(user)
     .leftJoin(owned, eq(owned.ownerId, user.id))
+    .leftJoin(booked, eq(booked.userId, user.id))
     .leftJoin(ownerVoices, eq(ownerVoices.ownerId, user.id))
     .where(realUser)
     .orderBy(desc(user.createdAt))
     .limit(MAX_ROWS)
   const voices = await getAccountVoices()
   const names = new Map(voices?.map((voice) => [voice.voiceId, voice.name]))
-  return rows.map(({ voiceId, ...row }) => ({
+  return rows.map(({ voiceId, phoneNumber, phoneNumberVerified, ...row }) => ({
     ...row,
+    email: isPhoneAccountEmail(row.email) ? null : row.email,
+    phone: phoneNumberVerified ? phoneNumber : null,
     voice: voiceId === null ? null : { voiceId, name: names.get(voiceId) ?? null },
     banned: row.banned === true,
     createdAt: row.createdAt.toISOString(),

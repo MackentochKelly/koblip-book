@@ -32,9 +32,7 @@ export async function cantCome(bookingId: unknown): Promise<CantComeResult> {
     .select({ booking: bookings, slug: businesses.slug })
     .from(bookings)
     .innerJoin(businesses, eq(businesses.id, bookings.businessId))
-    .where(
-and(eq(bookings.id, bookingId), ownBookings(customer))
-    )
+    .where(and(eq(bookings.id, bookingId), ownBookings(customer)))
     .limit(1)
   if (!found) return { ok: false, error: "notFound" }
   const { booking } = found

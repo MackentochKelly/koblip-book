@@ -13,9 +13,10 @@ import {
 } from "@/lib/page-language"
 
 // The language a page is shown in, as its own page picks it: a business,
-// home, legal or customer's own page from ?lang= or the phone's language,
-// the owner area from the owner's pick or the phone's language. The login
-// and new password pages keep the language their link names (?lang=) first.
+// home or legal page from ?lang= or the phone's language, an app area
+// (owner, team, client) from the pick made in it or the phone's language.
+// The login and new password pages keep the language their link names
+// (?lang=) first.
 function pageLanguage(request: NextRequest): PageLanguage {
   const { pathname, searchParams } = request.nextUrl
   const accept = request.headers.get("accept-language")
@@ -23,8 +24,7 @@ function pageLanguage(request: NextRequest): PageLanguage {
     pathname.startsWith("/b/") ||
     pathname === "/" ||
     pathname === "/privacy" ||
-    pathname === "/terms" ||
-    pathname.startsWith("/my-bookings")
+    pathname === "/terms"
   ) {
     return pickLanguage(searchParams.getAll("lang"), accept)
   }

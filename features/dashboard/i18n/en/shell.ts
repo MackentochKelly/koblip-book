@@ -39,6 +39,8 @@ const shell = {
   appearanceChoice: "Appearance: {theme}",
   languageChoice: "Language: {language}",
   signOut: "Sign out",
+  // The account's own bookings as a client.
+  myBookings: "My bookings",
   // The bar over the full app for a home page demo guest.
   demo: {
     title: "This is a demo",

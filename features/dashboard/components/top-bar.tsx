@@ -9,7 +9,7 @@ import { ExternalLinkIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { navKeyFor } from "../navigation"
-import { AccountMenu } from "@/components/account-menu"
+import { AccountMenu, useClientBookingsLink } from "@/components/account-menu"
 
 // The owner area's top bar: the page's name (the business name before setup
 // is done), its public page and the account menu. Pinned, with a line under
@@ -35,6 +35,7 @@ export function TopBar({
 }) {
   const t = useTranslations("owner.shell")
   const pathname = usePathname()
+  const bookingsLink = useClientBookingsLink()
   // In the dashboard the bar names the page, like an app's title bar; the
   // page's own big title then shows only on a computer.
   const key = menu
@@ -73,6 +74,7 @@ export function TopBar({
       <AccountMenu
         owner={owner}
         settingsHref={menu ? `/dashboard/${business.id}/settings` : undefined}
+        links={[bookingsLink]}
       />
     </AppTopBar>
   )

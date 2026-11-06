@@ -2,7 +2,7 @@
 
 A client's own area in the app, built like the owner dashboard and the team area, ready for the client features coming next. It grows out of My bookings ([customer-accounts.md](customer-accounts.md)).
 
-**Status (Nov 6):** planned, waiting for the owner's go.
+**Status (Nov 6):** C1–C7 built. C8: typecheck, lint and tests pass; phone pages checked in light. Left: computer and dark, Spanish, build.
 
 ## What the client gets
 

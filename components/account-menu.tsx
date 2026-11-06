@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import type { Route } from "next"
 import {
+  CalendarDaysIcon,
   ChevronDownIcon,
   LanguagesIcon,
   LogOutIcon,
@@ -37,10 +38,30 @@ import {
   PAGE_LANGUAGES,
 } from "@/lib/page-language"
 import { initials } from "@/lib/initials"
+import { MY_BOOKINGS_PATH } from "@/lib/my-bookings-links"
 import { cn } from "@/lib/utils"
 
 // Who is logged in, in any app area (owner, team, client). Its words are
 // the owner area's shell words (owner.shell), which every area loads.
+// A page the account menu links to beside Settings: the client's bookings
+// from the owner area, the business from the client's.
+export interface AccountMenuLink {
+  href: string
+  label: string
+  icon: React.ReactNode
+}
+
+// The account's own bookings as a client (docs/plans/client-account.md),
+// from the owner and team areas' account menus.
+export function useClientBookingsLink(): AccountMenuLink {
+  const t = useTranslations("owner.shell")
+  return {
+    href: MY_BOOKINGS_PATH,
+    label: t("myBookings"),
+    icon: <CalendarDaysIcon />,
+  }
+}
+
 export interface Owner {
   name: string
   // The account's email, else its phone.
@@ -90,9 +111,11 @@ export function useSignOut() {
 export function AccountMenu({
   owner,
   settingsHref,
+  links,
 }: {
   owner: Owner
   settingsHref?: string
+  links?: AccountMenuLink[]
 }) {
   const t = useTranslations("owner.shell")
   return (
@@ -118,6 +141,7 @@ export function AccountMenu({
       <AccountMenuContent
         owner={owner}
         settingsHref={settingsHref}
+        links={links}
         align="end"
       />
     </DropdownMenu>
@@ -130,6 +154,7 @@ export function AccountMenu({
 export function AccountMenuContent({
   owner,
   settingsHref,
+  links = [],
   side,
   align,
   sideOffset,
@@ -137,6 +162,7 @@ export function AccountMenuContent({
 }: {
   owner: Owner
   settingsHref?: string
+  links?: AccountMenuLink[]
 } & Pick<
   React.ComponentProps<typeof DropdownMenuContent>,
   "side" | "align" | "sideOffset" | "className"
@@ -166,12 +192,23 @@ export function AccountMenuContent({
         </DropdownMenuLabel>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
-      {settingsHref && (
+      {(settingsHref || links.length > 0) && (
         <>
-          <DropdownMenuItem render={<Link href={settingsHref as Route} />}>
-            <SettingsIcon />
-            {t("nav.settings")}
-          </DropdownMenuItem>
+          {settingsHref && (
+            <DropdownMenuItem render={<Link href={settingsHref as Route} />}>
+              <SettingsIcon />
+              {t("nav.settings")}
+            </DropdownMenuItem>
+          )}
+          {links.map((link) => (
+            <DropdownMenuItem
+              key={link.href}
+              render={<Link href={link.href as Route} />}
+            >
+              {link.icon}
+              {link.label}
+            </DropdownMenuItem>
+          ))}
           <DropdownMenuSeparator />
         </>
       )}

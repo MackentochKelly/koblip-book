@@ -47,7 +47,14 @@ export function OwnersList({
                 {owner.banned && <Badge variant="destructive">{t("owners.blocked")}</Badge>}
               </ItemTitle>
               <ItemDescription className="truncate">
-                {`${owner.email} · ${t("owners.businesses", { n: owner.businesses })}`}
+                {[
+                  owner.email,
+                  owner.phone,
+                  t("owners.businesses", { n: owner.businesses }),
+                  t("owners.bookings", { n: owner.bookings }),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </ItemDescription>
               <ItemDescription className="truncate" title={owner.voice?.voiceId}>
                 {`${t("owners.voice")}: ${owner.voice?.name ?? owner.voice?.voiceId ?? t("owners.noVoice")}`}

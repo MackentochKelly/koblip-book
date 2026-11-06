@@ -38,6 +38,18 @@ const nextConfig: NextConfig = {
         destination: "/dashboard/:businessId/settings/notifications",
         permanent: true,
       },
+      // My bookings is the client account's Bookings
+      // (docs/plans/client-account.md, D3): links already sent keep working.
+      {
+        source: "/my-bookings",
+        destination: "/account",
+        permanent: true,
+      },
+      {
+        source: "/my-bookings/:bookingId/reschedule",
+        destination: "/account/reschedule/:bookingId",
+        permanent: true,
+      },
       // Settings → Spanish is gone: Google translates by itself
       // (docs/plans/translations.md, G3).
       {

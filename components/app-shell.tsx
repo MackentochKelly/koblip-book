@@ -1,6 +1,6 @@
 "use client"
 
-import { type Owner } from "@/components/account-menu"
+import { type AccountMenuLink, type Owner } from "@/components/account-menu"
 import { AppInset } from "@/components/app-inset"
 import { AppTopBar } from "@/components/app-top-bar"
 import { BottomTabBar, TabBarLink } from "@/components/bottom-tab-bar"
@@ -36,6 +36,7 @@ export function AppShell({
   menuLabel,
   account,
   settingsHref,
+  accountLinks,
   children,
 }: {
   // The menu's title, and the tab bar's name for screen readers.
@@ -44,6 +45,8 @@ export function AppShell({
   menuLabel: string
   account?: Owner
   settingsHref?: string
+  // More pages in the account menu, beside Settings.
+  accountLinks?: AccountMenuLink[]
   children: React.ReactNode
 }) {
   const open = items.find((item) => item.active)
@@ -60,7 +63,11 @@ export function AppShell({
           </SidebarContent>
           {account && (
             <SidebarFooter>
-              <NavUser owner={account} settingsHref={settingsHref} />
+              <NavUser
+                owner={account}
+                settingsHref={settingsHref}
+                links={accountLinks}
+              />
             </SidebarFooter>
           )}
           <SidebarRail />

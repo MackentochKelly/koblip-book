@@ -2,8 +2,7 @@ import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { getLocale, getTranslations } from "next-intl/server"
 
-import { HeroCardPage } from "@/components/hero-card-page"
-import { WordsProvider } from "@/components/words-provider"
+import { PageSection } from "@/components/page-section"
 import {
   customerBookingToMove,
   moveAvailability,
@@ -13,9 +12,8 @@ import { myBookingsLoginHref } from "@/lib/my-bookings-links"
 import { getCustomer } from "@/lib/customer-dal"
 import { languageOf } from "@/lib/page-language"
 
-type Props = PageProps<"/my-bookings/[bookingId]/reschedule">
+type Props = PageProps<"/account/reschedule/[bookingId]">
 
-// The page's language is ?lang=, then the phone's (proxy.ts).
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("public.account")
   return { title: t("newTime"), robots: { index: false } }
@@ -41,22 +39,20 @@ export default async function ReschedulePage({ params }: Props) {
     timeZone: business.timezone,
   }).format(new Date(booking.startAt))
   return (
-    <WordsProvider namespaces={["app", "public"]}>
-      <HeroCardPage language={language} title={t("newTime")}>
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-1">
-            <p className="font-medium">
-              {business.name} · {booking.serviceName}
-            </p>
-            <p className="text-sm text-muted-foreground">{t("now", { when })}</p>
-          </div>
-          <RescheduleForm
-            bookingId={booking.id}
-            availability={await moveAvailability(business, booking)}
-            timeZone={business.timezone}
-          />
+    <PageSection id="reschedule" title={t("newTime")}>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-1">
+          <p className="font-medium">
+            {business.name} · {booking.serviceName}
+          </p>
+          <p className="text-sm text-muted-foreground">{t("now", { when })}</p>
         </div>
-      </HeroCardPage>
-    </WordsProvider>
+        <RescheduleForm
+          bookingId={booking.id}
+          availability={await moveAvailability(business, booking)}
+          timeZone={business.timezone}
+        />
+      </div>
+    </PageSection>
   )
 }

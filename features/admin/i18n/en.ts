@@ -516,6 +516,8 @@ const words = {
     admin: "Admin",
     blocked: "Blocked",
     businesses: "{n, plural, one {# business} other {# businesses}}",
+    // The account's own bookings as a client (docs/plans/client-account.md).
+    bookings: "{n, plural, one {# booking} other {# bookings}}",
     block: "Block",
     unblock: "Unblock",
     blockTitle: "Block {name}?",

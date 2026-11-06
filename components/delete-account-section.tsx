@@ -20,18 +20,28 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
 import { loginHref } from "@/lib/auth-links"
-import { deleteAccount } from "../api/delete-actions"
+import type { DeleteResult } from "@/types/delete-account"
 
-// Settings → Account: the owner deletes their account and every business
-// they own, after a confirm. A login too old to delete with asks them to
-// log in again and come back here.
-export function AccountSection({
+// Deleting the account, after a confirm, for any app area (owner Settings
+// → Account, the client's Settings). The area passes its delete action and
+// what goes with the account (`hint`, `confirmText`). A login too old to
+// delete with asks to log in again and come back here.
+export function DeleteAccountSection({
   contact,
   returnTo,
+  deleteAccount,
+  hint,
+  confirmText,
+  ownerError,
 }: {
   // The account's email, else its phone.
   contact: string
   returnTo: string
+  deleteAccount: () => Promise<DeleteResult>
+  hint: string
+  confirmText: string
+  // Why it can't go while it owns a business (the client's Settings).
+  ownerError?: string
 }) {
   const settings = useTranslations("owner.settings")
   const t = useTranslations("owner.settings.account")
@@ -49,6 +59,8 @@ export function AccountSection({
       if (result?.ok) {
         router.replace("/")
         router.refresh()
+      } else if (result?.error === "owner" && ownerError) {
+        toast.error(ownerError)
       } else if (result?.error === "login") {
         toast.error(t("loginAgain"), {
           action: { label: t("logIn"), onClick: () => void logInAgain() },
@@ -68,7 +80,7 @@ export function AccountSection({
           <ItemTitle className="max-w-full">
             <span className="truncate">{contact}</span>
           </ItemTitle>
-          <ItemDescription className="break-words">{t("deleteHint")}</ItemDescription>
+          <ItemDescription className="break-words">{hint}</ItemDescription>
         </ItemContent>
         <ItemActions>
           <Button
@@ -84,7 +96,7 @@ export function AccountSection({
       <ConfirmDialog
         open={asking}
         title={t("confirmTitle")}
-        description={t("confirmText")}
+        description={confirmText}
         confirm={t("delete")}
         cancel={t("cancel")}
         onConfirm={remove}
