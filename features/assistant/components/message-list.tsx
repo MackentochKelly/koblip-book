@@ -73,7 +73,6 @@ const RESULT_PAGES: Record<ResultKind, string> = {
   photos: "/settings/portfolio",
   policies: "/settings/policies",
   theme: "/settings/theme",
-  spanish: "/settings/spanish",
   messages: "/automations/messages",
   timing: "/automations/timing",
   flows: "/automations/flows",

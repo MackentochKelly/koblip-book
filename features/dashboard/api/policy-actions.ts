@@ -10,6 +10,7 @@ import {
 } from "@/lib/policy-rules"
 import type { ActionResult, OwnPolicyInput, PolicyPointInput } from "../types"
 import { revalidateBusiness } from "@/lib/revalidate-business"
+import { translateBusinessSoon } from "@/lib/translations/business-texts"
 import { ownedBusiness } from "./owned-business"
 
 // A policy's text: required, up to POLICY_RULES.maxLength; null when not.
@@ -66,6 +67,7 @@ export async function savePolicy(
       set: { body: text, updatedAt: new Date().toISOString() },
     })
   revalidateBusiness(business.slug)
+  translateBusinessSoon(business.id)
   return { ok: true }
 }
 
@@ -117,6 +119,7 @@ export async function saveOwnPolicy(
     }
   }
   revalidateBusiness(business.slug)
+  translateBusinessSoon(business.id)
   return { ok: true }
 }
 
@@ -146,6 +149,7 @@ export async function removePolicy(
     return { ok: false, error: "not_found" }
   }
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   return { ok: true }
 }
 
@@ -197,6 +201,7 @@ export async function savePolicyPoint(
       .where(eq(businessPolicyPoints.id, pointId))
   }
   revalidateBusiness(business.slug)
+  translateBusinessSoon(business.id)
   return { ok: true }
 }
 
@@ -218,5 +223,6 @@ export async function removePolicyPoint(
       )
     )
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   return { ok: true }
 }

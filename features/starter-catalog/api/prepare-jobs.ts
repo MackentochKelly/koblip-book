@@ -119,8 +119,8 @@ export function photoJob(
 
 // Starts everything, for a business the caller has checked is the owner's:
 // the catalog and policies side by side, the team photos as soon as the
-// team is written, then `translate` (the Spanish version, which includes
-// them all). Resolves when the work is done; nothing here throws.
+// team is written, then `translate` (Google translates the page's texts,
+// all of them by then). Resolves when the work is done; nothing here throws.
 export async function startPreparing(
   business: Business,
   translate: () => Promise<unknown>

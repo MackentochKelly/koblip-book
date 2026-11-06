@@ -9,10 +9,33 @@ import {
   services,
   teamMemberServices,
   teamMembers,
-  translations,
+  translationEntries,
 } from "@/lib/db/schema"
+import { sourceHash } from "@/lib/translations/markup"
 
 vi.mock("server-only", () => ({}))
+
+// Shown translations, as Google (or Meta before it) left them.
+function shown(
+  rows: {
+    businessId: string
+    entityId: string
+    field: string
+    language: string
+    sourceText: string
+    text: string
+  }[]
+) {
+  return rows.map(({ entityId, field, ...row }) => ({
+    ...row,
+    scope: "business" as const,
+    module: field,
+    key: `${entityId}:${field}`,
+    sourceHash: sourceHash(row.sourceText),
+    status: "automatic" as const,
+    origin: "google" as const,
+  }))
+}
 vi.stubEnv("GOOGLE_MAPS_PLATFORM_KEY", "test-key")
 
 let getBusinessPage: typeof import("./get-business-page").getBusinessPage
@@ -67,7 +90,7 @@ beforeAll(async () => {
     teamMemberId: "tm-1",
     serviceId: "svc-a",
   })
-  await db.insert(translations).values([
+  await db.insert(translationEntries).values(shown([
     { businessId: "biz-lang", entityId: "biz-lang", field: "business.category", language: "es", sourceText: "Photography studio", text: "Estudio de fotografía" },
     {
       businessId: "biz-lang",
@@ -102,7 +125,7 @@ beforeAll(async () => {
       sourceText: "Beard Trim",
       text: "Arreglo de Barba",
     },
-  ])
+  ]))
 
   globalThis.fetch = (async (url: string) => {
     seenUrls.push(String(url))
@@ -167,7 +190,7 @@ test("Spanish keeps the English category when its translation is stale or missin
     { id: "biz-stale", slug: "stale-category", name: "Stale Category", category: "Photography studio", timezone: "America/Santo_Domingo", currency: "DOP" },
     { id: "biz-missing", slug: "missing-category", name: "Missing Category", category: "Photography studio", timezone: "America/Santo_Domingo", currency: "DOP" },
   ])
-  await db.insert(translations).values({ businessId: "biz-stale", entityId: "biz-stale", field: "business.category", language: "es", sourceText: "Barber shop", text: "Barbería" })
+  await db.insert(translationEntries).values(shown([{ businessId: "biz-stale", entityId: "biz-stale", field: "business.category", language: "es", sourceText: "Barber shop", text: "Barbería" }]))
   expect((await getBusinessPage("stale-category", "es"))?.business.category).toBe("Photography studio")
   expect((await getBusinessPage("missing-category", "es"))?.business.category).toBe("Photography studio")
 })
@@ -179,10 +202,10 @@ test("Spanish names a service category from its up-to-date translation, else in 
     { id: "cat-hair", businessId: "biz-groups", name: "Haircuts", position: 0 },
     { id: "cat-nails", businessId: "biz-groups", name: "Nails", position: 1 },
   ])
-  await db.insert(translations).values([
+  await db.insert(translationEntries).values(shown([
     { businessId: "biz-groups", entityId: "cat-hair", field: "service_category.name", language: "es", sourceText: "Haircuts", text: "Cortes" },
     { businessId: "biz-groups", entityId: "cat-nails", field: "service_category.name", language: "es", sourceText: "Manicure", text: "Manicura" },
-  ])
+  ]))
   expect((await getBusinessPage("groups-shop", "es"))?.serviceCategories).toEqual([
     { id: "cat-hair", name: "Cortes" },
     { id: "cat-nails", name: "Nails" },

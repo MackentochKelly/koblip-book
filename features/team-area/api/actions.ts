@@ -14,6 +14,7 @@ import {
   type StartingCounts,
   type TeamProfile,
 } from "@/lib/team-rules"
+import { translateBusinessSoon } from "@/lib/translations/business-texts"
 import { deletePhoto, savePhoto } from "@/lib/uploads"
 import type { PhotoResult } from "@/types/photo"
 
@@ -36,6 +37,7 @@ export async function saveMyProfile(
     .where(eq(teamMembers.id, seat.teamMemberId))
   revalidatePath(`/b/${seat.business.slug}`, "layout")
   revalidatePath(`/team/${seat.teamMemberId}`, "layout")
+  translateBusinessSoon(seat.business.id)
   return { ok: true }
 }
 

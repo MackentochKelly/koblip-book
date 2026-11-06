@@ -1,11 +1,12 @@
 import "server-only"
 import { cache } from "react"
-import { and, eq, inArray, isNull } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { businessPolicies, businesses, translations } from "@/lib/db/schema"
+import { businessPolicies, businesses } from "@/lib/db/schema"
 import { messagesFor } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
 import { isPolicyKind } from "@/lib/policy-rules"
+import { getBusinessTranslations } from "@/lib/translations/business-texts"
 
 export interface BusinessPolicy {
   business: { name: string; slug: string; isDemo: boolean }
@@ -18,8 +19,8 @@ export interface BusinessPolicy {
 // One of a business's policies for its page, by its address
 // (lib/policy-rules' policySegment): a standard kind, or the id of one of
 // the owner's own. Null when the business or the policy does not exist.
-// Spanish uses a translation only while it was made from the current
-// English text, like the rest of the page.
+// In another language, a translation shows only while it was made from the
+// current English, like the rest of the page.
 async function loadBusinessPolicy(
   slug: string,
   segment: string,
@@ -32,6 +33,7 @@ async function loadBusinessPolicy(
       title: businessPolicies.title,
       body: businessPolicies.body,
       updatedAt: businessPolicies.updatedAt,
+      businessId: businesses.id,
       name: businesses.name,
       isDemo: businesses.isDemo,
     })
@@ -49,41 +51,13 @@ async function loadBusinessPolicy(
   if (!row) {
     return null
   }
-  let title = row.kind
+  const translated = await getBusinessTranslations(row.businessId, language)
+  const title = row.kind
     ? messagesFor(language).policies[row.kind]
-    : (row.title ?? "")
-  let body = row.body
-  if (language === "es") {
-    const rows = await db
-      .select({
-        field: translations.field,
-        sourceText: translations.sourceText,
-        text: translations.text,
-      })
-      .from(translations)
-      .where(
-        and(
-          eq(translations.entityId, row.id),
-          inArray(translations.field, ["policy.title", "policy.body"]),
-          eq(translations.language, "es")
-        )
-      )
-    for (const translation of rows) {
-      if (
-        translation.field === "policy.body" &&
-        translation.sourceText === row.body
-      ) {
-        body = translation.text
-      }
-      if (
-        !row.kind &&
-        translation.field === "policy.title" &&
-        translation.sourceText === row.title
-      ) {
-        title = translation.text
-      }
-    }
-  }
+    : row.title
+      ? translated(row.id, "policy.title", row.title)
+      : ""
+  const body = translated(row.id, "policy.body", row.body)
   return {
     business: { name: row.name, slug, isDemo: row.isDemo },
     title,

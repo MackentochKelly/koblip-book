@@ -8,6 +8,7 @@ import { serviceCategories, services } from "@/lib/db/schema"
 import { isGoogleEventColor } from "@/lib/google-calendar-colors"
 import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { revalidateBusiness } from "@/lib/revalidate-business"
+import { translateBusinessSoon } from "@/lib/translations/business-texts"
 import type { ActionResult, ServiceCategoryInput } from "../types"
 import { ownedBusiness } from "./owned-business"
 
@@ -87,6 +88,7 @@ async function addCategory(
     ),
   })
   revalidateBusiness(business.slug)
+  translateBusinessSoon(business.id)
   return { ok: true, id }
 }
 
@@ -161,6 +163,7 @@ export async function updateServiceCategory(
     return { ok: false, error: "not_found" }
   }
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   // Its services' events carry its colour.
   if (normalized.calendarColor !== undefined) {
     requestGoogleSync(owned.business.id)
@@ -206,6 +209,7 @@ export async function deleteServiceCategory(
     db.delete(serviceCategories).where(eq(serviceCategories.id, category.id)),
   ])
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   // Its services' events lose its colour.
   if (category.calendarColor !== null) {
     requestGoogleSync(owned.business.id)

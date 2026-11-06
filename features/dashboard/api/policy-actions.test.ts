@@ -7,6 +7,12 @@ import { businesses, businessPolicies, user } from "@/lib/db/schema"
 import { POLICY_RULES } from "@/lib/policy-rules"
 
 vi.mock("server-only", () => ({}))
+// Saves send their changed texts to Google after the answer (tested in
+// lib/translations); here only that they ask to.
+const { translateBusinessSoon } = vi.hoisted(() => ({
+  translateBusinessSoon: vi.fn(),
+}))
+vi.mock("@/lib/translations/business-texts", () => ({ translateBusinessSoon }))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 vi.mock("@/lib/dal", () => ({
   requireOwner: vi.fn(async () => ({
@@ -79,6 +85,7 @@ afterAll(() => {
 })
 
 test("adds standard and own policies, the standard ones first", async () => {
+  translateBusinessSoon.mockClear()
   expect(
     await saveOwnPolicy("biz-mine", null, {
       title: "  Late arrivals ",
@@ -105,6 +112,9 @@ test("adds standard and own policies, the standard ones first", async () => {
       body: "Ten minutes late: we may shorten it.",
     },
   ])
+  // Each save sends its texts to Google.
+  expect(translateBusinessSoon).toHaveBeenCalledTimes(3)
+  expect(translateBusinessSoon).toHaveBeenCalledWith("biz-mine")
 })
 
 test("a standard kind keeps one row; the owner's own can be many", async () => {

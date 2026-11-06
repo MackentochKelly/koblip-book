@@ -12,12 +12,12 @@ const { businesses } = await import("../lib/db/schema")
 const { isMetaAiEnabled } = await import("../lib/meta-ai")
 const { draftPoliciesFor, policyParts, writeMissingPolicies } =
   await import("../features/starter-catalog/api/fill-policies")
-const { translateBusinessTexts } =
-  await import("../features/dashboard/api/translate-business")
+const { translateBusinessNow } =
+  await import("../lib/translations/business-texts")
 
 // Muse writes the booking policy, terms, privacy notice and key points for
 // every real business (or only the slugs given) missing any of them, then
-// translates them. Only missing parts are written, so owners' edits stay.
+// sends them to Google Translate. Only missing parts are written, so owners' edits stay.
 // Demo copies are skipped.
 //
 //   npm run policies:fill            every real business missing some
@@ -54,8 +54,10 @@ for (const business of targets) {
   // business, meanwhile. One business failing never stops the others.
   try {
     await writeMissingPolicies(business, policies, await policyParts(business.id))
-    const spanish = await translateBusinessTexts(business)
-    console.log(`✓ ${business.slug}: policies written, Spanish ${spanish.ok ? "done" : "failed"}`)
+    const translated = await translateBusinessNow(business.id)
+    console.log(
+      `✓ ${business.slug}: policies written, translations ${translated.status === "done" ? "sent to Google" : "waiting: Google not set up"}`
+    )
   } catch (error) {
     failed += 1
     console.log(`✗ ${business.slug}: could not save (${error instanceof Error ? error.message : "error"})`)

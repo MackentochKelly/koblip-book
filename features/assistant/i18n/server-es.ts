@@ -46,7 +46,6 @@ const messages: typeof en = {
     suggestAddons: "Pensando extras…",
     improveDetails: "Puliendo tus datos…",
     drawPhoto: "Dibujando foto…",
-    translate: "Traduciendo tu página…",
     deletePhoto: "Eliminando foto…",
     reorderPhotos: "Ordenando fotos…",
     reorderServices: "Ordenando servicios…",
@@ -105,7 +104,6 @@ const messages: typeof en = {
     suggestAddons: "Extras sugeridos",
     improveDetails: "Datos pulidos",
     drawPhoto: "Foto dibujada",
-    translate: "Página traducida",
     deletePhoto: "Foto eliminada",
     reorderPhotos: "Fotos ordenadas",
     reorderServices: "Servicios ordenados",
@@ -173,7 +171,6 @@ const messages: typeof en = {
     invite: "invitar necesita tu toque primero",
     removeAccess: "quitar el acceso necesita tu toque primero",
     drawPhoto: "dibujar una foto necesita tu toque primero",
-    translate: "traducir necesita tu toque primero",
     deletePhoto: "eliminar una foto necesita tu toque primero",
     reorderPhotos: "ordenar las fotos necesita tu toque primero",
     reorderServices: "ordenar los servicios necesita tu toque primero",
@@ -221,7 +218,6 @@ const messages: typeof en = {
     invite: "¿Invitar a este miembro?",
     removeAccess: "¿Quitar el acceso de esta persona?",
     drawPhoto: "¿Dibujar una foto para este miembro?",
-    translate: "¿Traducir tu página al español?",
     deletePhoto: "¿Eliminar esta foto?",
     reorderPhotos: "¿Cambiar el orden de las fotos?",
     reorderServices: "¿Cambiar el orden de los servicios?",
@@ -273,7 +269,6 @@ const messages: typeof en = {
     invite: "Enviar invitación",
     removeAccess: "Quitar acceso",
     drawPhoto: "Dibujar",
-    translate: "Traducir",
     deletePhoto: "Eliminar",
     reorder: "Guardar",
     addPolicy: "Agregar",
@@ -463,14 +458,6 @@ const messages: typeof en = {
     failed: "No se pudo dibujar la foto.",
     done: "Foto dibujada.",
   },
-  translate: {
-    summary: (count: number) =>
-      count === 1 ? "1 texto por traducir" : `${count} textos por traducir`,
-    aiOff: "Traducir está desactivado ahora mismo.",
-    failed: "No se pudo traducir tu página. Inténtalo de nuevo.",
-    done: (count: number) =>
-      count === 1 ? "1 texto traducido." : `${count} textos traducidos.`,
-  },
   photos: {
     one: (position: number, total: number) => `Foto ${position} de ${total}`,
     order: (positions: string) => `Nuevo orden: fotos ${positions}`,
@@ -659,7 +646,6 @@ const messages: typeof en = {
       "las fotos del equipo solo se dibujan durante la configuración; después, el dueño agrega una foto en la página de Equipo",
     aiOff: "las sugerencias de IA están desactivadas ahora mismo",
     suggestFailed: "esa sugerencia falló: ofrece intentarlo de nuevo",
-    translateUpToDate: "la página en español ya está al día",
     noPhotos: "este negocio no tiene fotos",
     photoPositionInvalid: (total: number) =>
       `position debe ser un número de foto del 1 al ${total}`,

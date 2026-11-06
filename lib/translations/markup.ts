@@ -62,9 +62,11 @@ export function billedCharacters(html: string): number {
   return [...html].length
 }
 
-// The English text's fingerprint: same text, same fingerprint.
+// The English text's fingerprint: same text, same fingerprint. SHA3-256,
+// because the database computes the same one itself (libSQL's `sha3()`), so
+// a migration can fill it in: lower(hex(sha3(text))).
 export function sourceHash(text: string): string {
-  return createHash("sha256").update(text).digest("hex")
+  return createHash("sha3-256").update(text, "utf8").digest("hex")
 }
 
 function sameParts(found: string[], kept: string[]): boolean {

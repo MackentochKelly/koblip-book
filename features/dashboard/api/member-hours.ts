@@ -13,6 +13,7 @@ import { validHours, type HoursRow } from "@/lib/hours-rules"
 import { checkTeamProfile, randomStartingCounts, type TeamProfile } from "@/lib/team-rules"
 import type { ActionResult } from "../types"
 import { revalidateBusiness } from "@/lib/revalidate-business"
+import { translateBusinessSoon } from "@/lib/translations/business-texts"
 import { ownedBusiness } from "./owned-business"
 
 // Their profile (job title, about, languages) customers see on their page
@@ -119,5 +120,6 @@ export async function saveTeamMemberWithHours(
       : []),
   ])
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   return { ok: true, id }
 }

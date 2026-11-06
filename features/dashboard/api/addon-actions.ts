@@ -20,6 +20,7 @@ import type {
   AddonOptionSuggestion,
 } from "../types"
 import { revalidateBusiness } from "@/lib/revalidate-business"
+import { translateBusinessSoon } from "@/lib/translations/business-texts"
 import { ownedBusiness } from "./owned-business"
 
 function invalid(): { ok: false; error: string } {
@@ -220,6 +221,7 @@ export async function createAddonGroup(
       : []),
   ])
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   return { ok: true, groupId }
 }
 
@@ -320,6 +322,7 @@ export async function updateAddonGroup(
       : []),
   ])
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   return { ok: true }
 }
 
@@ -346,6 +349,7 @@ export async function deleteAddonGroup(
   }
   await db.delete(addonGroups).where(eq(addonGroups.id, group.id))
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   return { ok: true }
 }
 

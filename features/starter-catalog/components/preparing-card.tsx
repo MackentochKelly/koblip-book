@@ -55,7 +55,7 @@ function shortList(names: string[], more: (count: number) => string): string {
 
 // Between "Check your details" and "Your page is live": Meta AI writes the
 // new page's services, extras, prices, team and policies, and Muse Image
-// draws the team. The Spanish version is made on the server meanwhile
+// draws the team. Google translates the page on the server meanwhile
 // (the page starts it), without a row: it is for customers, and nobody
 // waits for it. Each row turns from waiting to working to
 // done as the real work finishes, then the success page opens. A business

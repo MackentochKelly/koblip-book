@@ -65,9 +65,6 @@ vi.mock("@/features/dashboard/api/improve-details", () => ({
 vi.mock("@/features/starter-catalog/api/prepare-actions", () => ({
   drawTeamPhoto: vi.fn(),
 }))
-vi.mock("@/features/dashboard/api/translation-actions", () => ({
-  translateBusiness: vi.fn(),
-}))
 vi.mock("@/features/dashboard/api/photo-actions", () => ({
   deleteBusinessPhoto: vi.fn(),
   reorderBusinessPhotos: vi.fn(),
@@ -124,8 +121,7 @@ vi.mock("@/features/dashboard/api/team-service-queries", () => ({
 vi.mock("@/features/dashboard/api/addon-queries", () => ({
   getAddonGroups: vi.fn(),
 }))
-vi.mock("@/features/dashboard/api/translation-queries", () => ({
-  getTranslationStatus: vi.fn(),
+vi.mock("@/lib/translations/business-texts", () => ({
   getServiceNameTranslations: vi.fn(),
 }))
 
@@ -177,8 +173,6 @@ const { improveDetails } =
   await import("@/features/dashboard/api/improve-details")
 const { drawTeamPhoto } =
   await import("@/features/starter-catalog/api/prepare-actions")
-const { translateBusiness } =
-  await import("@/features/dashboard/api/translation-actions")
 const { deleteBusinessPhoto, reorderBusinessPhotos } =
   await import("@/features/dashboard/api/photo-actions")
 const {
@@ -211,8 +205,8 @@ const { getBusinessPhotos, getServiceTeams } =
   await import("@/features/dashboard/api/team-service-queries")
 const { getAddonGroups } =
   await import("@/features/dashboard/api/addon-queries")
-const { getTranslationStatus, getServiceNameTranslations } =
-  await import("@/features/dashboard/api/translation-queries")
+const { getServiceNameTranslations } =
+  await import("@/lib/translations/business-texts")
 const { buildAssistantTools } = await import("./tools")
 
 const BUSINESS = {
@@ -255,7 +249,6 @@ test("every needsConfirm tool carries its result kind", () => {
     ["invite_team_member", "team"],
     ["remove_team_access", "team"],
     ["draw_team_photo", "team"],
-    ["translate_page", "spanish"],
     ["delete_photo", "photos"],
     ["reorder_photos", "photos"],
     ["reorder_services", "services"],
@@ -307,12 +300,6 @@ beforeEach(() => {
   vi.mocked(getAvailability).mockResolvedValue({
     days: [{ date: "2099-01-01", times: ["10:00", "10:30"] }],
   })
-  vi.mocked(getTranslationStatus).mockResolvedValue({
-    language: "es",
-    enabled: false,
-    total: 0,
-    upToDate: 0,
-  })
 })
 
 test("business_overview returns business fields and counts", async () => {
@@ -351,7 +338,7 @@ test("list_services drops rows past the cap with total and truncated", async () 
   expect(result.truncated).toBe(true)
 })
 
-test("business_overview carries about, website, category, seats, bookingPath, photoCount and spanish", async () => {
+test("business_overview carries about, website, category, seats, bookingPath and photoCount", async () => {
   vi.mocked(getOwnerBusiness).mockResolvedValue({
     business: {
       ...BUSINESS,
@@ -369,12 +356,6 @@ test("business_overview carries about, website, category, seats, bookingPath, ph
     { id: "p1", url: "https://img/1" },
     { id: "p2", url: "https://img/2" },
   ])
-  vi.mocked(getTranslationStatus).mockResolvedValue({
-    language: "es",
-    enabled: true,
-    total: 10,
-    upToDate: 7,
-  })
   const result = (await byName("business_overview").run({})) as Record<
     string,
     unknown
@@ -387,7 +368,6 @@ test("business_overview carries about, website, category, seats, bookingPath, ph
     seats: 3,
     bookingPath: "/b/salon",
     photoCount: 2,
-    spanish: { enabled: true, total: 10, upToDate: 7 },
   })
 })
 
@@ -3171,7 +3151,6 @@ const CHANGES: [string, string][] = [
   ["invite_team_member", "team"],
   ["remove_team_access", "team"],
   ["draw_team_photo", "team"],
-  ["translate_page", "spanish"],
   ["delete_photo", "photos"],
   ["reorder_photos", "photos"],
   ["reorder_services", "services"],
@@ -3524,37 +3503,6 @@ test("draw_team_photo follows the action's rules before showing a card", async (
   vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
   expect(await tool.confirm!.describe({ memberId: "m1" })).toEqual({
     error: expect.stringContaining("during setup"),
-  })
-})
-
-test("translate_page shows what waits and refuses when there is nothing", async () => {
-  const tool = byName("translate_page")
-  vi.mocked(getTranslationStatus).mockResolvedValue({
-    language: "es",
-    enabled: true,
-    total: 10,
-    upToDate: 7,
-  })
-  expect(await tool.confirm!.describe({})).toEqual({
-    title: "Translate your page to Spanish?",
-    action: "Translate",
-    summary: "3 texts to translate",
-    destructive: false,
-  })
-  expect(vi.mocked(translateBusiness)).not.toHaveBeenCalled()
-  vi.mocked(translateBusiness).mockResolvedValue({ ok: true, translated: 3 })
-  expect(await tool.confirm!.execute({})).toEqual({
-    ok: true,
-    doneText: "Translated 3 texts.",
-  })
-  vi.mocked(getTranslationStatus).mockResolvedValue({
-    language: "es",
-    enabled: true,
-    total: 10,
-    upToDate: 10,
-  })
-  expect(await tool.confirm!.describe({})).toEqual({
-    error: "the Spanish page is already up to date",
   })
 })
 

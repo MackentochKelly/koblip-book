@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { createClient } from "@libsql/client"
 import { expect, test } from "vitest"
 import {
   billedCharacters,
@@ -64,4 +65,17 @@ test("billed characters are code points, tags included", () => {
 test("the same English has the same fingerprint", () => {
   expect(sourceHash("Haircut")).toBe(sourceHash("Haircut"))
   expect(sourceHash("Haircut")).not.toBe(sourceHash("Haircut "))
+})
+
+// Migrations fill fingerprints in SQL (drizzle/0056_move_translations.sql).
+test("the database computes the same fingerprint", async () => {
+  const client = createClient({ url: ":memory:" })
+  for (const text of ["Haircut", "Corte clásico ✂️", "Line one\nline two"]) {
+    const result = await client.execute({
+      sql: "select lower(hex(sha3(?))) as hash",
+      args: [text],
+    })
+    expect(result.rows[0]?.hash).toBe(sourceHash(text))
+  }
+  client.close()
 })

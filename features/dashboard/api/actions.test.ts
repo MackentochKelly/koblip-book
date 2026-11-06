@@ -9,6 +9,12 @@ import { businesses, serviceCategories, services, user } from "@/lib/db/schema"
 import type { BusinessDetailsInput } from "../types"
 
 vi.mock("server-only", () => ({}))
+// Saves send their changed texts to Google after the answer (tested in
+// lib/translations); here only that they ask to.
+const { translateBusinessSoon } = vi.hoisted(() => ({
+  translateBusinessSoon: vi.fn(),
+}))
+vi.mock("@/lib/translations/business-texts", () => ({ translateBusinessSoon }))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 vi.mock("@/lib/dal", () => ({
   requireOwner: vi.fn(async () => ({
@@ -294,6 +300,8 @@ test("updateBusinessDetails saves a new name and address, slug unchanged", async
     name: "New Name",
     address: "2 Other St",
   })
+  // Its About goes to Google if it changed.
+  expect(translateBusinessSoon).toHaveBeenCalledWith("biz-mine")
 })
 
 test("updateBusinessDetails changes the currency, and keeps it when left out", async () => {

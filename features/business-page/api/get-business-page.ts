@@ -1,6 +1,6 @@
 import "server-only"
 import { cache } from "react"
-import { and, asc, eq } from "drizzle-orm"
+import { asc, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   addonGroups,
@@ -15,11 +15,11 @@ import {
   services,
   teamMemberServices,
   teamMembers,
-  translations,
 } from "@/lib/db/schema"
 import { DEFAULT_LANGUAGE, type PageLanguage } from "@/lib/page-language"
 import { placePhotoUrl } from "@/lib/place-photo"
 import { orderPolicies, type PolicyLink } from "@/lib/policy-rules"
+import { getBusinessTranslations } from "@/lib/translations/business-texts"
 import type { Amenity, BusinessPageData, PagePhoto, PageReview } from "../types"
 import { mapAmenities } from "../utils/map-amenities"
 
@@ -203,7 +203,7 @@ async function loadBusinessPage(
     team,
     ownPhotos,
     teamLinks,
-    translationRows,
+    translated,
     addonGroupRows,
     addonOptionRows,
     addonLinkRows,
@@ -247,17 +247,7 @@ async function loadBusinessPage(
         })
         .from(teamMemberServices)
         .where(eq(teamMemberServices.businessId, business.id)),
-      language === "es"
-        ? db
-            .select()
-            .from(translations)
-            .where(
-              and(
-                eq(translations.businessId, business.id),
-                eq(translations.language, "es")
-              )
-            )
-        : Promise.resolve([]),
+      getBusinessTranslations(business.id, language),
       db
         .select()
         .from(addonGroups)
@@ -310,99 +300,63 @@ async function loadBusinessPage(
     ;(serviceTeams[link.serviceId] ??= []).push(link.teamMemberId)
   }
 
-  // Spanish: replace About, category, each service's name/description and
-  // each service category's name with its up-to-date translation where there
-  // is one. A translation counts only while its sourceText still equals the
-  // current English text exactly.
-  let pageBusiness = business
-  let pageServices = serviceRows
-  let pageCategories = categoryRows
-  let pageTeam = team
-  let pagePoints = pointRows
-  let pagePolicies: PolicyLink[] = orderPolicies(policyRows).map(
-    ({ id, kind, title }) => ({ id, kind, title })
-  )
-  if (language === "es") {
-    const byKey = new Map(
-      translationRows.map((row) => [`${row.entityId}\n${row.field}`, row])
-    )
-    if (business.description) {
-      const row = byKey.get(`${business.id}\nbusiness.description`)
-      if (row && row.sourceText === business.description) {
-        pageBusiness = { ...business, description: row.text }
-      }
-    }
-    if (business.category) {
-      const row = byKey.get(`${business.id}\nbusiness.category`)
-      if (row && row.sourceText === business.category) {
-        pageBusiness = { ...pageBusiness, category: row.text }
-      }
-    }
-    pageServices = serviceRows.map((service) => {
-      let next = service
-      const nameRow = byKey.get(`${service.id}\nservice.name`)
-      if (nameRow && nameRow.sourceText === service.name) {
-        next = { ...next, name: nameRow.text }
-      }
-      if (service.description) {
-        const descriptionRow = byKey.get(`${service.id}\nservice.description`)
-        if (
-          descriptionRow &&
-          descriptionRow.sourceText === service.description
-        ) {
-          next = { ...next, description: descriptionRow.text }
-        }
-      }
-      return next
-    })
-    pageCategories = categoryRows.map((category) => {
-      const row = byKey.get(`${category.id}\nservice_category.name`)
-      return row && row.sourceText === category.name
-        ? { ...category, name: row.text }
-        : category
-    })
-    pageTeam = team.map((member) => {
-      const row = member.description
-        ? byKey.get(`${member.id}\nteam_member.description`)
-        : undefined
-      return row && row.sourceText === member.description
-        ? { ...member, description: row.text }
-        : member
-    })
-    // The owner's own policies' titles; a standard one's name is the page's.
-    pagePolicies = pagePolicies.map((policy) => {
-      const row = byKey.get(`${policy.id}\npolicy.title`)
-      return row && row.sourceText === policy.title
-        ? { ...policy, title: row.text }
-        : policy
-    })
-    pagePoints = pointRows.map((point) => {
-      const titleRow = byKey.get(`${point.id}\npolicy_point.title`)
-      const bodyRow = byKey.get(`${point.id}\npolicy_point.body`)
-      return {
-        ...point,
-        title:
-          titleRow && titleRow.sourceText === point.title
-            ? titleRow.text
-            : point.title,
-        body:
-          bodyRow && bodyRow.sourceText === point.body ? bodyRow.text : point.body,
-      }
-    })
+  // In another language: each text's translation where there is one made
+  // from the current English (lib/translations/business-texts), else the
+  // English.
+  const pageBusiness = {
+    ...business,
+    description:
+      business.description &&
+      translated(business.id, "business.description", business.description),
+    category:
+      business.category &&
+      translated(business.id, "business.category", business.category),
   }
+  const pageServices = serviceRows.map((service) => ({
+    ...service,
+    name: translated(service.id, "service.name", service.name),
+    description:
+      service.description &&
+      translated(service.id, "service.description", service.description),
+  }))
+  const pageCategories = categoryRows.map((category) => ({
+    ...category,
+    name: translated(category.id, "service_category.name", category.name),
+  }))
+  const pageTeam = team.map((member) => ({
+    ...member,
+    description:
+      member.description &&
+      translated(member.id, "team_member.description", member.description),
+  }))
+  // The owner's own policies' titles; a standard one's name is the page's.
+  const pagePolicies: PolicyLink[] = orderPolicies(policyRows).map(
+    ({ id, kind, title }) => ({
+      id,
+      kind,
+      title: title && translated(id, "policy.title", title),
+    })
+  )
+  const pagePoints = pointRows.map((point) => ({
+    ...point,
+    title: translated(point.id, "policy_point.title", point.title),
+    body: translated(point.id, "policy_point.body", point.body),
+  }))
 
   // Add-on groups show only when linked to at least one service and
   // holding at least one option.
   const serviceOrder = new Map(
     serviceRows.map((service, index) => [service.id, index] as const)
   )
-  let pageAddonGroups = addonGroupRows.flatMap((group) => {
+  const pageAddonGroups = addonGroupRows.flatMap((group) => {
     const options = addonOptionRows
       .filter((option) => option.groupId === group.id)
       .map((option) => ({
         id: option.id,
-        name: option.name,
-        description: option.description,
+        name: translated(option.id, "addon.name", option.name),
+        description:
+          option.description &&
+          translated(option.id, "addon.description", option.description),
         priceMinor: option.priceMinor,
         durationMinutes: option.durationMinutes,
       }))
@@ -416,7 +370,7 @@ async function loadBusinessPage(
     return [
       {
         id: group.id,
-        prompt: group.prompt,
+        prompt: translated(group.id, "addon_group.prompt", group.prompt),
         minSelect: group.minSelect,
         maxSelect: group.maxSelect,
         serviceIds,
@@ -424,47 +378,6 @@ async function loadBusinessPage(
       },
     ]
   })
-
-  // Spanish: replace each add-on prompt, option name and option
-  // description with its up-to-date translation where there is one.
-  if (language === "es") {
-    const addonTranslations = new Map(
-      translationRows.map((row) => [`${row.entityId}\n${row.field}`, row])
-    )
-    pageAddonGroups = pageAddonGroups.map((group) => {
-      const promptRow = addonTranslations.get(
-        `${group.id}\naddon_group.prompt`
-      )
-      const prompt =
-        promptRow && promptRow.sourceText === group.prompt
-          ? promptRow.text
-          : group.prompt
-      return {
-        ...group,
-        prompt,
-        options: group.options.map((option) => {
-          const nameRow = addonTranslations.get(`${option.id}\naddon.name`)
-          const name =
-            nameRow && nameRow.sourceText === option.name
-              ? nameRow.text
-              : option.name
-          let description = option.description
-          if (description) {
-            const descriptionRow = addonTranslations.get(
-              `${option.id}\naddon.description`
-            )
-            if (
-              descriptionRow &&
-              descriptionRow.sourceText === description
-            ) {
-              description = descriptionRow.text
-            }
-          }
-          return { ...option, name, description }
-        }),
-      }
-    })
-  }
 
   // The five Google extras ride on the page business so every .tsx stays
   // as it is; they are live values, never read from the database.

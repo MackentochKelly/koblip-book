@@ -32,6 +32,7 @@ import type {
 } from "../types"
 import { claimBusinessForUser } from "./claim"
 import { revalidateBusiness } from "@/lib/revalidate-business"
+import { translateBusinessSoon } from "@/lib/translations/business-texts"
 import { ownedBusiness } from "./owned-business"
 
 import { validHours } from "@/lib/hours-rules"
@@ -113,6 +114,7 @@ export async function updateBusinessDetails(
     })
     .where(eq(businesses.id, owned.business.id))
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   return { ok: true }
 }
 
@@ -255,6 +257,7 @@ export async function createService(
     position: nextPosition(existing),
   })
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   return { ok: true, id }
 }
 
@@ -303,6 +306,7 @@ export async function updateService(
     })
     .where(eq(services.id, service.id))
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   // Its bookings' events carry its colour (G7).
   requestGoogleSync(owned.business.id)
   return { ok: true }
@@ -328,6 +332,7 @@ export async function deleteService(
   }
   await db.delete(services).where(eq(services.id, service.id))
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   return { ok: true }
 }
 
@@ -476,6 +481,7 @@ export async function deleteTeamMember(
     db.delete(teamMembers).where(eq(teamMembers.id, member.id)),
   ])
   revalidateBusiness(owned.business.slug)
+  translateBusinessSoon(owned.business.id)
   return { ok: true }
 }
 

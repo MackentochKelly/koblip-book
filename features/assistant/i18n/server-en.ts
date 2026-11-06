@@ -48,7 +48,6 @@ const messages = {
     suggestAddons: "Thinking of extras…",
     improveDetails: "Polishing your details…",
     drawPhoto: "Drawing photo…",
-    translate: "Translating your page…",
     deletePhoto: "Deleting photo…",
     reorderPhotos: "Ordering photos…",
     reorderServices: "Ordering services…",
@@ -107,7 +106,6 @@ const messages = {
     suggestAddons: "Suggested extras",
     improveDetails: "Polished your details",
     drawPhoto: "Drew photo",
-    translate: "Translated your page",
     deletePhoto: "Deleted photo",
     reorderPhotos: "Ordered photos",
     reorderServices: "Ordered services",
@@ -175,7 +173,6 @@ const messages = {
     invite: "inviting needs the owner's tap first",
     removeAccess: "removing access needs the owner's tap first",
     drawPhoto: "drawing a photo needs the owner's tap first",
-    translate: "translating needs the owner's tap first",
     deletePhoto: "deleting a photo needs the owner's tap first",
     reorderPhotos: "ordering photos needs the owner's tap first",
     reorderServices: "ordering services needs the owner's tap first",
@@ -222,7 +219,6 @@ const messages = {
     invite: "Invite this team member?",
     removeAccess: "Remove this person's access?",
     drawPhoto: "Draw a photo for this team member?",
-    translate: "Translate your page to Spanish?",
     deletePhoto: "Delete this photo?",
     reorderPhotos: "Change the photo order?",
     reorderServices: "Change the service order?",
@@ -274,7 +270,6 @@ const messages = {
     invite: "Send invite",
     removeAccess: "Remove access",
     drawPhoto: "Draw",
-    translate: "Translate",
     deletePhoto: "Delete",
     reorder: "Save",
     addPolicy: "Add",
@@ -461,14 +456,6 @@ const messages = {
     failed: "Could not draw the photo.",
     done: "Photo drawn.",
   },
-  translate: {
-    summary: (count: number) =>
-      count === 1 ? "1 text to translate" : `${count} texts to translate`,
-    aiOff: "Translating is off right now.",
-    failed: "Could not translate your page. Try again.",
-    done: (count: number) =>
-      count === 1 ? "Translated 1 text." : `Translated ${count} texts.`,
-  },
   photos: {
     one: (position: number, total: number) => `Photo ${position} of ${total}`,
     order: (positions: string) => `New order: photos ${positions}`,
@@ -653,7 +640,6 @@ const messages = {
       "team photos can only be drawn during setup; after that, the owner adds a photo on the Team page",
     aiOff: "AI suggestions are off right now",
     suggestFailed: "that suggestion failed: offer to try again",
-    translateUpToDate: "the Spanish page is already up to date",
     noPhotos: "this business has no photos",
     photoPositionInvalid: (total: number) =>
       `position must be a photo number from 1 to ${total}`,

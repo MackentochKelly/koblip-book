@@ -68,7 +68,6 @@ import {
   setServiceTeam,
 } from "@/features/dashboard/api/team-services"
 import { activateTheme } from "@/features/dashboard/api/theme-actions"
-import { translateBusiness } from "@/features/dashboard/api/translation-actions"
 import { setBookingStatus } from "@/features/dashboard/api/booking-actions"
 import { ownerMessagesFor } from "@/features/dashboard/i18n"
 import type {
@@ -106,10 +105,6 @@ import {
   getBusinessPhotos,
   getServiceTeams,
 } from "@/features/dashboard/api/team-service-queries"
-import {
-  getServiceNameTranslations,
-  getTranslationStatus,
-} from "@/features/dashboard/api/translation-queries"
 import { createOwnerBooking } from "@/features/booking/api/create-owner-booking"
 import {
   getAvailability,
@@ -137,6 +132,7 @@ import {
   isPolicyPointIcon,
 } from "@/lib/policy-rules"
 import { THEMES } from "@/lib/theme-rules"
+import { getServiceNameTranslations } from "@/lib/translations/business-texts"
 import { bookingActions } from "@/features/dashboard/utils/booking-filters"
 import type {
   OwnerBooking,
@@ -273,18 +269,16 @@ function pickByName<
   return { choices: (near.length > 0 ? near : list).map((item) => item.name) }
 }
 
-// The business with each service's up-to-date Spanish name added as
-// `otherNames`, for pickByName.
+// The business with each service's up-to-date names in the other
+// languages added as `otherNames`, for pickByName.
 async function getBusinessForNames(businessId: string) {
-  const [owned, spanish] = await Promise.all([
-    getOwnerBusiness(businessId),
-    getServiceNameTranslations(businessId),
-  ])
+  const owned = await getOwnerBusiness(businessId)
+  const translated = await getServiceNameTranslations(owned.business.id)
   return {
     ...owned,
     services: owned.services.map((service) => ({
       ...service,
-      otherNames: spanish
+      otherNames: translated
         .filter(
           (row) =>
             row.serviceId === service.id && row.sourceText === service.name
@@ -1898,20 +1892,18 @@ export function buildAssistantTools(
       definition: {
         name: "business_overview",
         description:
-          "Name, address, phone, hours, booking counts, about, website, category, seats, bookingPath, photoCount and Spanish status.",
+          "Name, address, phone, hours, booking counts, about, website, category, seats, bookingPath and photoCount.",
         parameters: schema({}),
         needsConfirm: false,
       },
       label: t.steps.overview,
       doneLabel: t.stepsDone.overview,
       run: async () => {
-        const [{ business, hours }, counts, photos, spanish] =
-          await Promise.all([
-            getOwnerBusiness(businessId),
-            getBookingCounts(businessId),
-            getBusinessPhotos(businessId),
-            getTranslationStatus(businessId),
-          ])
+        const [{ business, hours }, counts, photos] = await Promise.all([
+          getOwnerBusiness(businessId),
+          getBookingCounts(businessId),
+          getBusinessPhotos(businessId),
+        ])
         return {
           name: business.name,
           address: business.address,
@@ -1927,11 +1919,6 @@ export function buildAssistantTools(
           seats: business.seats,
           bookingPath: `/b/${business.slug}`,
           photoCount: photos.length,
-          spanish: {
-            enabled: spanish.enabled,
-            total: spanish.total,
-            upToDate: spanish.upToDate,
-          },
         }
       },
     },
@@ -4437,50 +4424,6 @@ export function buildAssistantTools(
           return result.ok
             ? { ok: true, doneText: t.drawPhoto.done }
             : { ok: false, doneText: t.drawPhoto.failed }
-        },
-      },
-    },
-    {
-      definition: {
-        name: "translate_page",
-        description:
-          "Bring the Spanish version of the page up to date: only new or changed texts are translated. Needs the owner's tap.",
-        parameters: schema({}),
-        needsConfirm: true,
-        resultKind: "spanish",
-      },
-      label: t.steps.translate,
-      doneLabel: t.stepsDone.translate,
-      run: async () => ({ error: t.tapFirst.translate }),
-      confirm: {
-        describe: async () => {
-          const status = await getTranslationStatus(businessId)
-          if (!status.enabled) {
-            return { error: t.errors.aiOff }
-          }
-          const waiting = status.total - status.upToDate
-          if (waiting === 0) {
-            return { error: t.errors.translateUpToDate }
-          }
-          return {
-            title: t.cards.translate,
-            action: t.actions.translate,
-            summary: t.translate.summary(waiting),
-            destructive: false,
-          }
-        },
-        execute: async () => {
-          const result = await translateBusiness(businessId)
-          if (!result.ok) {
-            return {
-              ok: false,
-              doneText:
-                result.error === "ai_off"
-                  ? t.translate.aiOff
-                  : t.translate.failed,
-            }
-          }
-          return { ok: true, doneText: t.translate.done(result.translated) }
         },
       },
     },

@@ -14,7 +14,6 @@ export type ResultKind =
   | "photos"
   | "policies"
   | "theme"
-  | "spanish"
   | "messages"
   | "timing"
   | "flows"

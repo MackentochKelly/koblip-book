@@ -9,10 +9,33 @@ import {
   businesses,
   serviceAddonGroups,
   services,
-  translations,
+  translationEntries,
 } from "@/lib/db/schema"
+import { sourceHash } from "@/lib/translations/markup"
 
 vi.mock("server-only", () => ({}))
+
+// Shown translations, as Google (or Meta before it) left them.
+function shown(
+  rows: {
+    businessId: string
+    entityId: string
+    field: string
+    language: string
+    sourceText: string
+    text: string
+  }[]
+) {
+  return rows.map(({ entityId, field, ...row }) => ({
+    ...row,
+    scope: "business" as const,
+    module: field,
+    key: `${entityId}:${field}`,
+    sourceHash: sourceHash(row.sourceText),
+    status: "automatic" as const,
+    origin: "google" as const,
+  }))
+}
 vi.stubEnv("GOOGLE_MAPS_PLATFORM_KEY", "")
 
 let getBusinessPage: typeof import("./get-business-page").getBusinessPage
@@ -58,7 +81,7 @@ beforeAll(async () => {
     { businessId: "biz-pa", serviceId: "svc-1", groupId: "g1", position: 0 },
     { businessId: "biz-pa", serviceId: "svc-1", groupId: "g2", position: 1 },
   ])
-  await db.insert(translations).values([
+  await db.insert(translationEntries).values(shown([
     {
       businessId: "biz-pa",
       entityId: "g1",
@@ -84,7 +107,7 @@ beforeAll(async () => {
       sourceText: "An old description",
       text: "Una descripción vieja",
     },
-  ])
+  ]))
 
   ;({ getBusinessPage } = await import("./get-business-page"))
 })

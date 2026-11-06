@@ -1,4 +1,4 @@
-// Settings, Hours, photos, the Spanish page, and the setup and welcome steps.
+// Settings, Hours, photos, and the setup and welcome steps.
 const settings = {
   // The page's parts (tabs, pinned under the top bar on a phone).
   parts: {
@@ -6,7 +6,6 @@ const settings = {
     hours: "Hours",
     portfolio: "Portfolio",
     policies: "Policies",
-    spanish: "Spanish",
     theme: "Theme",
     notifications: "Notifications",
     account: "Account",
@@ -66,17 +65,6 @@ const settings = {
     tooBig: "That photo is too big.",
     wrongType: "Use a JPEG, PNG or WebP photo.",
     limit: (max: number) => `Up to ${max} photos.`,
-  },
-  spanish: {
-    title: "Spanish",
-    translated: "Translated",
-    aiOff: "Meta AI is off",
-    aiOffToast: "Meta AI is off.",
-    failed: "Could not translate. Please try again.",
-    upToDate: "Up to date",
-    toTranslate: (n: number) => `${n} to translate`,
-    translate: "Translate",
-    view: "View in Spanish",
   },
   policies: {
     title: "Policies",

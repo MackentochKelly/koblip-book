@@ -22,7 +22,7 @@ import {
   teamMembers,
   teamMemberHours,
   customers,
-  translations,
+  translationEntries,
   user,
 } from "@/lib/db/schema"
 import { DEMO_RULES } from "@/lib/demo-rules"
@@ -85,8 +85,8 @@ export async function purgeOldDemos(now: number = Date.now()): Promise<void> {
               .delete(businessPhotos)
               .where(inArray(businessPhotos.businessId, ids)),
             db
-              .delete(translations)
-              .where(inArray(translations.businessId, ids)),
+              .delete(translationEntries)
+              .where(inArray(translationEntries.businessId, ids)),
             db
               .delete(assistantActions)
               .where(inArray(assistantActions.businessId, ids)),

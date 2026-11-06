@@ -12,12 +12,12 @@ const { businesses } = await import("../lib/db/schema")
 const { isMetaAiEnabled } = await import("../lib/meta-ai")
 const { catalogSummary, draftFor, drawMemberPhoto, replaceCatalog } =
   await import("../features/starter-catalog/api/fill-catalog")
-const { translateBusinessTexts } =
-  await import("../features/dashboard/api/translate-business")
+const { translateBusinessNow } =
+  await import("../lib/translations/business-texts")
 
 // Replaces the services, extras, prices and team of every real business
 // (or only the slugs given) with a fresh Meta AI catalog and Muse Image
-// team photos, then translates it. Demo copies are skipped. A business
+// team photos, then sends its changed texts to Google Translate. Demo copies are skipped. A business
 // whose new catalog fails keeps what it had. Back up the database first.
 //
 //   npm run catalog:refill            every real business
@@ -51,10 +51,11 @@ for (const business of targets) {
       drawMemberPhoto(business, member.id, business.ownerId ?? "refill")
     )
   )
-  const spanish = await translateBusinessTexts(business)
+  const translated = await translateBusinessNow(business.id)
   console.log(
     `✓ ${business.slug}: ${catalog.services.length} services, ${catalog.extras.options.length} extras, ` +
-      `${photos.filter(Boolean).length}/${team.length} photos, Spanish ${spanish.ok ? "done" : "failed"}`
+      `${photos.filter(Boolean).length}/${team.length} photos, ` +
+      `translations ${translated.status === "done" ? "sent to Google" : "waiting: Google not set up"}`
   )
 }
 console.log(`${targets.length - failed} of ${targets.length} businesses refilled`)

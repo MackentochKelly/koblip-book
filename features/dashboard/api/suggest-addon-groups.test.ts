@@ -6,6 +6,12 @@ import { afterAll, beforeAll, expect, test, vi } from "vitest"
 import { addonGroups, businesses, services, user } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
+// Saves send their changed texts to Google after the answer (tested in
+// lib/translations); here only that they ask to.
+const { translateBusinessSoon } = vi.hoisted(() => ({
+  translateBusinessSoon: vi.fn(),
+}))
+vi.mock("@/lib/translations/business-texts", () => ({ translateBusinessSoon }))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 vi.mock("@/lib/dal", () => ({
   requireOwner: vi.fn(async () => ({

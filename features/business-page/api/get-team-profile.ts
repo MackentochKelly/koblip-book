@@ -4,14 +4,15 @@ import { cache } from "react"
 import { and, countDistinct, count, eq, lt, notInArray, sql } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { bookings, teamMemberHours, teamMembers, translations } from "@/lib/db/schema"
+import { bookings, teamMemberHours, teamMembers } from "@/lib/db/schema"
 import type { PageLanguage } from "@/lib/page-language"
+import { getBusinessTranslations } from "@/lib/translations/business-texts"
 import type { TeamProfilePage } from "../types/team-profile"
 import { getBusinessPage } from "./get-business-page"
 
 // A team member's public profile (docs/plans/team-accounts.md): the
 // business page's data (its translated services, who does what), their
-// About (in Spanish when its translation is up to date) and languages,
+// About (translated when its translation is up to date) and languages,
 // and what they have done here. Null when the business or the person
 // doesn't exist.
 async function loadTeamProfile(
@@ -23,7 +24,7 @@ async function loadTeamProfile(
   const member = data?.team.find((person) => person.id === memberId)
   if (!data || !member) return null
   const now = new Date().toISOString()
-  const [[profile], [done], [aboutEs], ownHours] = await Promise.all([
+  const [[profile], [done], translated, ownHours] = await Promise.all([
     db
       .select({
         about: teamMembers.about,
@@ -52,19 +53,7 @@ async function loadTeamProfile(
           notInArray(bookings.status, ["cancelled", "no_show"])
         )
       ),
-    language === "es"
-      ? db
-          .select({ sourceText: translations.sourceText, text: translations.text })
-          .from(translations)
-          .where(
-            and(
-              eq(translations.entityId, member.id),
-              eq(translations.field, "team_member.about"),
-              eq(translations.language, "es")
-            )
-          )
-          .limit(1)
-      : [],
+    getBusinessTranslations(data.business.id, language),
     db
       .select({
         weekday: teamMemberHours.weekday,
@@ -75,12 +64,11 @@ async function loadTeamProfile(
       .where(eq(teamMemberHours.teamMemberId, member.id)),
   ])
   const about = profile?.about ?? null
-  // A translation counts only while its source is the current English.
   return {
     data,
     member: {
       ...member,
-      about: about && aboutEs?.sourceText === about ? aboutEs.text : about,
+      about: about && translated(member.id, "team_member.about", about),
       languages: profile?.languages ?? [],
     },
     // The services they do: a service with no team list is everyone's.

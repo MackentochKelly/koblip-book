@@ -283,7 +283,7 @@ export function toMessages(
 // Saved chats carry this number. Raise it whenever ChatItem changes:
 // a chat saved by another version starts fresh instead of breaking the
 // screen.
-export const CHAT_STORAGE_VERSION = 10
+export const CHAT_STORAGE_VERSION = 11
 
 const isText = (value: unknown): value is string => typeof value === "string"
 

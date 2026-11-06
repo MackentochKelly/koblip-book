@@ -9,6 +9,12 @@ import type { GoogleEventColor } from "@/lib/google-calendar-colors"
 import { businesses, serviceCategories, services, user } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
+// Saves send their changed texts to Google after the answer (tested in
+// lib/translations); here only that they ask to.
+const { translateBusinessSoon } = vi.hoisted(() => ({
+  translateBusinessSoon: vi.fn(),
+}))
+vi.mock("@/lib/translations/business-texts", () => ({ translateBusinessSoon }))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 const { requestGoogleSync } = vi.hoisted(() => ({ requestGoogleSync: vi.fn() }))
 vi.mock("@/lib/google-calendar-sync", () => ({ requestGoogleSync }))
@@ -100,11 +106,14 @@ async function myCategories() {
 }
 
 test("adds categories in order, tidies names and refuses the same name", async () => {
+  translateBusinessSoon.mockClear()
   const hair = await createServiceCategory("biz-mine", {
     name: "  Hair   cuts ",
   })
   const nails = await createServiceCategory("biz-mine", { name: "Nails" })
   expect(hair.ok && nails.ok).toBe(true)
+  // Each new name goes to Google; a refused one never does.
+  expect(translateBusinessSoon).toHaveBeenCalledTimes(2)
   expect(await myCategories()).toMatchObject([
     { name: "Hair cuts" },
     { name: "Nails" },

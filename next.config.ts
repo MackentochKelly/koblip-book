@@ -33,6 +33,13 @@ const nextConfig: NextConfig = {
         destination: "/dashboard/:businessId/settings/notifications",
         permanent: true,
       },
+      // Settings → Spanish is gone: Google translates by itself
+      // (docs/plans/translations.md, G3).
+      {
+        source: "/dashboard/:businessId/settings/spanish",
+        destination: "/dashboard/:businessId/settings",
+        permanent: true,
+      },
     ]
   },
 }

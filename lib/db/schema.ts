@@ -490,30 +490,6 @@ export const teamMemberServices = sqliteTable(
   ]
 )
 
-export const translations = sqliteTable(
-  "translations",
-  {
-    id: id(),
-    businessId: text()
-      .notNull()
-      .references(() => businesses.id, { onDelete: "cascade" }),
-    entityId: text().notNull(),
-    field: text().notNull(),
-    language: text().notNull(),
-    sourceText: text().notNull(),
-    text: text().notNull(),
-    ...timestamps(),
-  },
-  (table) => [
-    uniqueIndex("translations_entity_field_language_idx").on(
-      table.entityId,
-      table.field,
-      table.language
-    ),
-    index("translations_business_idx").on(table.businessId, table.language),
-  ]
-)
-
 // Every translated text (docs/plans/translations.md): the app's own words
 // (scope "interface", no business) and each business's texts (scope
 // "business"), one row per text and language, with the English it is made

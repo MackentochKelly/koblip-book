@@ -8,6 +8,12 @@ import { businesses, serviceCategories, services } from "@/lib/db/schema"
 
 const { revalidatePath } = vi.hoisted(() => ({ revalidatePath: vi.fn() }))
 vi.mock("server-only", () => ({}))
+// Saves send their changed texts to Google after the answer (tested in
+// lib/translations); here only that they ask to.
+const { translateBusinessSoon } = vi.hoisted(() => ({
+  translateBusinessSoon: vi.fn(),
+}))
+vi.mock("@/lib/translations/business-texts", () => ({ translateBusinessSoon }))
 vi.mock("next/cache", () => ({ revalidatePath }))
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }))
 vi.mock("@/lib/auth", () => ({ auth: { api: {} } }))

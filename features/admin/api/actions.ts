@@ -9,6 +9,7 @@ import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { businesses, serviceCategories, services } from "@/lib/db/schema"
 import { revalidateBusiness } from "@/lib/revalidate-business"
+import { translateBusinessSoon } from "@/lib/translations/business-texts"
 
 export type AdminActionResult = { ok: true } | { ok: false }
 
@@ -47,7 +48,11 @@ export async function adminDeleteServiceCategory(
     return { ok: false }
   }
   const [category] = await db
-    .select({ id: serviceCategories.id, slug: businesses.slug })
+    .select({
+      id: serviceCategories.id,
+      businessId: serviceCategories.businessId,
+      slug: businesses.slug,
+    })
     .from(serviceCategories)
     .innerJoin(businesses, eq(businesses.id, serviceCategories.businessId))
     .where(eq(serviceCategories.id, categoryId))
@@ -61,6 +66,7 @@ export async function adminDeleteServiceCategory(
       db.delete(serviceCategories).where(eq(serviceCategories.id, category.id)),
     ])
     revalidateBusiness(category.slug)
+    translateBusinessSoon(category.businessId)
   }
   revalidatePath("/admin/service-categories")
   return { ok: true }

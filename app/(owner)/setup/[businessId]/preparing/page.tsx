@@ -4,7 +4,6 @@ import { after } from "next/server"
 
 import { GlassCard } from "@/components/glass-frame"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
-import { translateBusinessTexts } from "@/features/dashboard/api/translate-business"
 import { TopBar } from "@/features/dashboard/components/top-bar"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { startPreparing } from "@/features/starter-catalog/api/prepare-jobs"
@@ -12,6 +11,7 @@ import { PreparingCard } from "@/features/starter-catalog/components/preparing-c
 import { starterMessagesFor } from "@/features/starter-catalog/i18n"
 import { requireAccount } from "@/lib/dal"
 import { fontDisplay } from "@/lib/fonts"
+import { translateBusinessNow } from "@/lib/translations/business-texts"
 import { cn } from "@/lib/utils"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -31,11 +31,11 @@ export default async function PreparingPage({
   if (business.setupFinishedAt !== null) {
     redirect(`/setup/${businessId}/ready`)
   }
-  // The Spanish version, on the server, nobody waiting: it joins the work
-  // started on the Google details screen, and translates what the owner
-  // changed on "Check your details" since.
+  // The page's translations, on the server, nobody waiting: it joins the
+  // work started on the Google details screen, and sends Google what the
+  // owner changed on "Check your details" since.
   after(() =>
-    startPreparing(business, () => translateBusinessTexts(business))
+    startPreparing(business, () => translateBusinessNow(business.id))
   )
   const language = await getOwnerLanguage()
   return (
