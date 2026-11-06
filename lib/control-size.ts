@@ -20,9 +20,8 @@ const TAB =
   "h-9 pointer-coarse:before:absolute pointer-coarse:before:inset-x-0 pointer-coarse:before:top-1/2 pointer-coarse:before:min-h-11 pointer-coarse:before:-translate-y-1/2"
 
 export const CONTROL_SIZE = {
-  // TabsList (default look): a 6px track around 36px tabs, so the open
-  // tab's edge has room.
-  tabsList: "p-1.5 group-data-horizontal/tabs:h-12",
+  // TabsList (default look): the 4px track around 36px tabs.
+  tabsList: "group-data-horizontal/tabs:h-11",
   tab: TAB,
   // A search box (InputGroup), kept at 36px on a touch screen.
   search: "pointer-coarse:h-9",
