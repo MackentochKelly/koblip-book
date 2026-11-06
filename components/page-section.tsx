@@ -23,7 +23,7 @@ export function PageSection({
       className={cn("flex scroll-mt-16 flex-col gap-3", className)}
     >
       <div className="flex items-center justify-between gap-2">
-        <h2 id={`${id}-title`} className="text-xl font-bold tracking-tight">
+        <h2 id={`${id}-title`} className="text-lg font-bold tracking-tight">
           {title}
         </h2>
         {action}
