@@ -467,7 +467,7 @@ export function BookingSummary({
   const total = totals ? priceLabel(totals.priceMinor, page.currency, m) : null
   return (
     // The same soft grey box as the dashboard's "Start here" card.
-    <Card className={cn("border bg-muted/50 ring-0", className)}>
+    <Card className={cn("gap-4 border bg-muted/50 ring-0", className)}>
       {/* Like a Wallet pass: a calendar and the name on top, then when, big. */}
       <CardHeader className="flex items-center gap-3">
         <CalendarIcon aria-hidden="true" className="size-5 shrink-0" />
