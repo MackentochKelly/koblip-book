@@ -15,10 +15,8 @@ export interface ViewTab<T extends string> {
   badge?: string
 }
 
-// `chips`: each tab outlined on its own with no track around them, the open
-// one filled with the main colour, like the filter chips (FilterChips).
-const CHIP_LIST =
-  "gap-2 bg-transparent p-0 in-data-[surface=app]:bg-transparent in-data-[surface=app]:inset-ring-0"
+// `chips`: the open chip filled with the main colour, like the filter chips
+// (FilterChips).
 const CHIP_TAB =
   "border-border! bg-background data-active:border-primary! data-active:bg-primary data-active:text-primary-foreground data-active:hover:bg-primary/80 data-active:hover:text-primary-foreground in-data-[surface=app]:data-active:bg-primary dark:data-active:bg-primary dark:data-active:text-primary-foreground dark:data-active:hover:text-primary-foreground dark:in-data-[surface=app]:data-active:bg-primary"
 
@@ -79,16 +77,9 @@ export function ViewTabs<T extends string>({
         className="-my-1.5 no-scrollbar min-w-0 flex-1 scroll-fade-x overflow-x-auto py-1.5 whitespace-nowrap"
       >
         <TabsList
-          variant={line ? "line" : "default"}
+          variant={variant}
           aria-label={ariaLabel}
-          className={cn(
-            line
-              ? "min-w-full justify-start"
-              : chips
-                ? CHIP_LIST
-                : CONTROL_SIZE.tabsList,
-            listClassName
-          )}
+          className={cn(line && "min-w-full justify-start", listClassName)}
         >
           {views.map((view) => (
             <TabsTrigger
@@ -96,7 +87,7 @@ export function ViewTabs<T extends string>({
               value={view.id}
               disabled={disabled}
               className={cn(
-                line || chips ? CONTROL_SIZE.tab : CONTROL_SIZE.segment,
+                line || chips ? CONTROL_SIZE.tab : CONTROL_SIZE.tabTapArea,
                 chips && CHIP_TAB
               )}
             >

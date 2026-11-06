@@ -22,17 +22,11 @@ const TAP_AREA =
 // Each tab in its row: a chip's height.
 const TAB = `h-9 ${TAP_AREA}`
 
-// Each part of the switcher (the default tabs' track), like Apple's
-// segmented control: lower and wider than a chip, so the words sit in a
-// long pill rather than a square one.
-const SEGMENT = `h-8 px-4 ${TAP_AREA}`
 
 export const CONTROL_SIZE = {
-  // TabsList (default look): the 4px track around 32px segments, as tall
-  // as a chip with its edge.
-  tabsList: "group-data-horizontal/tabs:h-10",
   tab: TAB,
-  segment: SEGMENT,
+  // A switcher's part (sized by components/ui/tabs.tsx): its tap area only.
+  tabTapArea: TAP_AREA,
   // A search box (InputGroup), kept at 36px on a touch screen.
   search: "pointer-coarse:h-9",
   // A Select in a toolbar, like a table's rows per page.

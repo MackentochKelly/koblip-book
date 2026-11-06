@@ -29,7 +29,6 @@ import { WhatsappPreview } from "@/components/whatsapp-preview"
 import { CONTROL_SIZE } from "@/lib/control-size"
 import type { NotificationRules } from "@/lib/notification-rules"
 import { LANGUAGE_NAMES, PAGE_LANGUAGES, type PageLanguage } from "@/lib/page-language"
-import { cn } from "@/lib/utils"
 import type { ButtonAction, TemplateReview } from "@/types/whatsapp"
 
 const EDITOR_FORM = "message-editor"
@@ -272,11 +271,11 @@ export function MessageEditor({
         >
           <FieldGroup>
             <Tabs value={part} onValueChange={(value) => setPart(value as Part)}>
-              <TabsList className={cn("w-full", CONTROL_SIZE.tabsList)}>
-                <TabsTrigger value="normal" className={CONTROL_SIZE.segment}>
+              <TabsList className="w-full">
+                <TabsTrigger value="normal" className={CONTROL_SIZE.tabTapArea}>
                   {t.normalMessage}
                 </TabsTrigger>
-                <TabsTrigger value="template" className={CONTROL_SIZE.segment}>
+                <TabsTrigger value="template" className={CONTROL_SIZE.tabTapArea}>
                   {t.template}
                 </TabsTrigger>
               </TabsList>
