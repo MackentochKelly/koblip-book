@@ -86,3 +86,72 @@ test("an empty tag travels as a kept part", () => {
     "Guardado <icon></icon> ya"
   )
 })
+
+test("brand names are kept; Google may move them, never change them", () => {
+  const icu = toGoogleIcu("Koblip Book's wording")!
+  expect(icu.htmls).toEqual(['<span translate="no">Koblip Book</span>\'s wording'])
+  expect(icu.assemble(['Texto do <span translate="no">Koblip Book</span>'])).toBe(
+    "Texto do Koblip Book"
+  )
+  expect(icu.assemble(["Texto do livro"])).toBeNull()
+  expect(icu.assemble(['Texto do <span translate="no">Livro</span>'])).toBeNull()
+})
+
+test("brands are kept inside each plural option and as often as the English has them", () => {
+  const icu = toGoogleIcu(
+    "{n, plural, one {# WhatsApp message to Google} other {# WhatsApp messages to Google}}"
+  )!
+  expect(icu.htmls).toEqual([
+    '<span translate="no">#</span> <span translate="no">WhatsApp</span> message to <span translate="no">Google</span>',
+    '<span translate="no">#</span> <span translate="no">WhatsApp</span> messages to <span translate="no">Google</span>',
+  ])
+  expect(icu.assemble(icu.htmls.map((html) => html.replace(" to ", " para ")))).toBe(
+    "{n,plural,one{# WhatsApp message para Google} other{# WhatsApp messages para Google}}"
+  )
+  expect(
+    icu.assemble(icu.htmls.map((html) => html.replace(/<span translate="no">Google<\/span>/, "Google")))
+  ).toBeNull()
+})
+
+test("a message of only brand names and fields never goes to Google", () => {
+  const icu = toGoogleIcu("WhatsApp · {count}")!
+  expect(icu.htmls).toEqual([])
+  expect(icu.assemble([])).toBe("WhatsApp · {count}")
+})
+
+test("links and emails are kept, as in business texts; a lost or changed one is not used", () => {
+  const icu = toGoogleIcu("Write to hello@koblip.com or see https://koblip.com/help.")!
+  expect(icu.htmls).toEqual([
+    'Write to <span translate="no">hello@koblip.com</span> or see <span translate="no">https://koblip.com/help</span>.',
+  ])
+  expect(
+    icu.assemble([
+      'Mira <span translate="no">https://koblip.com/help</span> o escribe a <span translate="no">hello@koblip.com</span>.',
+    ])
+  ).toBe("Mira https://koblip.com/help o escribe a hello@koblip.com.")
+  // Lost: the link left out, or back as plain words.
+  expect(icu.assemble(['Escribe a <span translate="no">hello@koblip.com</span>.'])).toBeNull()
+  expect(
+    icu.assemble(['Escribe a <span translate="no">hello@koblip.com</span> o mira https://koblip.com/help.'])
+  ).toBeNull()
+  // Changed.
+  expect(
+    icu.assemble([
+      'Escribe a <span translate="no">hola@koblip.com</span> o mira <span translate="no">https://koblip.com/help</span>.',
+    ])
+  ).toBeNull()
+  expect(
+    icu.assemble([
+      'Escribe a <span translate="no">hello@koblip.com</span> o mira <span translate="no">https://koblip.com/ayuda</span>.',
+    ])
+  ).toBeNull()
+})
+
+test("an email holding a brand name is kept whole; a lone link never goes to Google", () => {
+  expect(toGoogleIcu("Mail hello@Koblip.com")!.htmls).toEqual([
+    'Mail <span translate="no">hello@Koblip.com</span>',
+  ])
+  const icu = toGoogleIcu("https://koblip.com")!
+  expect(icu.htmls).toEqual([])
+  expect(icu.assemble([])).toBe("https://koblip.com")
+})

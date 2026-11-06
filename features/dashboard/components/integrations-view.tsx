@@ -548,7 +548,8 @@ function IntegrationRow({
             label={t("about", { name })}
           />
         </ItemTitle>
-        <ItemDescription>{description}</ItemDescription>
+        {/* break-words: a long email or name wraps instead of being cut. */}
+        <ItemDescription className="break-words">{description}</ItemDescription>
       </ItemContent>
       <ItemActions>{action}</ItemActions>
     </Item>

@@ -6,20 +6,29 @@ import {
 } from "@formatjs/icu-messageformat-parser"
 import { hoistSelectors } from "@formatjs/icu-messageformat-parser/manipulator.js"
 import { printAST } from "@formatjs/icu-messageformat-parser/printer.js"
-import { decodeEntities, escapeHtml, escapeText } from "./markup"
+import {
+  decodeEntities,
+  escapeHtml,
+  escapeText,
+  KEPT_WORDS_PATTERN,
+} from "./markup"
 
 // The app's own words are ICU messages (next-intl,
 // docs/plans/translations.md G4): "{count, plural, one {# booking} other
 // {# bookings}}". Google gets only their sentences: plurals and selects are
 // first lifted to the front (formatjs's hoistSelectors), so each option is a
 // whole sentence ("Based on # booking"); each option's words go as their own
-// HTML text, fields kept with `translate="no"` and tags as marked spans; the
-// plural and select frame stays as it is, and the answer is put back into
-// it. A translation is used
-// only when it has the English's fields with the same types
+// HTML text, fields, links, emails and brand names (./brands.ts) kept with
+// `translate="no"` (the same links, emails and brands as business texts,
+// ./markup.ts) and tags as marked spans; the plural and select frame stays
+// as it is, and the answer is put back into it. A translation is used only
+// when every field, tag, link, email and brand name came back as it went,
+// and it has the English's fields with the same types
 // (`isStructurallySame`, formatjs's own check).
 
 const KEEP = 'translate="no"'
+
+const KEPT_WORDS = new RegExp(KEPT_WORDS_PATTERN, "gu")
 
 // Parses an ICU message, or null when it isn't one.
 export function parseIcu(text: string): MessageFormatElement[] | null {
@@ -55,7 +64,8 @@ export interface IcuGoogle {
 
 // What a run's HTML is made from, kept to read Google's answer back.
 interface Run {
-  // The fields, in the order the HTML has them ("{name}", "#").
+  // The fields, links, emails and brand names, in the order the HTML has
+  // them ("{name}", "#", "hello@koblip.com", "WhatsApp").
   kept: MessageFormatElement[]
   // The tags (<link>…</link>), by their index in the HTML.
   tags: string[]
@@ -111,7 +121,7 @@ function isRunElement(element: MessageFormatElement): boolean {
 
 // Elements in order, with each run of words (text, fields, tags) replaced
 // by a slot; plurals and selects keep their place with their options split
-// the same way. A run of only spaces or fields stays as it is.
+// the same way. A run of only spaces and kept parts stays as it is.
 function splitRuns(
   elements: MessageFormatElement[],
   htmls: string[],
@@ -162,7 +172,8 @@ function splitRuns(
 function hasWords(elements: MessageFormatElement[]): boolean {
   return elements.some(
     (element) =>
-      (element.type === TYPE.literal && /\p{L}/u.test(element.value)) ||
+      (element.type === TYPE.literal &&
+        /\p{L}/u.test(element.value.replace(KEPT_WORDS, " "))) ||
       (element.type === TYPE.tag && hasWords(element.children))
   )
 }
@@ -171,7 +182,7 @@ function runHtml(elements: MessageFormatElement[], run: Run): string {
   let html = ""
   for (const element of elements) {
     if (element.type === TYPE.literal) {
-      html += escapeText(element.value)
+      html += literalHtml(element.value, run)
     } else if (element.type === TYPE.tag && hasWords(element.children)) {
       run.tags.push(element.value)
       html += `<span data-t="${run.tags.length - 1}">${runHtml(element.children, run)}</span>`
@@ -180,14 +191,34 @@ function runHtml(elements: MessageFormatElement[], run: Run): string {
       throw new Error("A plural or select inside a tag can't be translated")
     } else {
       run.kept.push(element)
-      html += `<span ${KEEP}>${escapeHtml(printAST([element]))}</span>`
+      html += `<span ${KEEP}>${escapeHtml(keptText(element))}</span>`
     }
   }
   return html
 }
 
+// Words as HTML, each link, email and brand name kept as it is.
+function literalHtml(text: string, run: Run): string {
+  let html = ""
+  let last = 0
+  for (const match of text.matchAll(KEPT_WORDS)) {
+    html += escapeText(text.slice(last, match.index))
+    const element = { type: TYPE.literal, value: match[0] } as MessageFormatElement
+    run.kept.push(element)
+    html += `<span ${KEEP}>${escapeHtml(keptText(element))}</span>`
+    last = match.index + match[0].length
+  }
+  return html + escapeText(text.slice(last))
+}
+
+// A kept part as the HTML has it: a field as ICU writes it ("{name}", "#"),
+// kept words as they are (ICU would quote a "{" in a link).
+function keptText(element: MessageFormatElement): string {
+  return element.type === TYPE.literal ? element.value : printAST([element])
+}
+
 // Google's answer as ICU elements, or null when it lost, added or changed a
-// field or tag.
+// field, tag, link, email or brand name.
 function readRun(html: string, run: Run): MessageFormatElement[] | null {
   if (html.replace(/<[^>]*>/g, "").trim() === "") return null
   const tokens = html.split(/(<span\b[^>]*>|<\/span>|<br\s*\/?>)/i)
@@ -199,7 +230,7 @@ function readRun(html: string, run: Run): MessageFormatElement[] | null {
   const usedTags = new Set<number>()
   let inField: MessageFormatElement | null = null
   let fieldText = ""
-  const keptByText = new Map(run.kept.map((element) => [printAST([element]), element]))
+  const keptByText = new Map(run.kept.map((element) => [keptText(element), element]))
   for (const token of tokens) {
     if (token === "") continue
     const top = stack[stack.length - 1]
@@ -223,8 +254,14 @@ function readRun(html: string, run: Run): MessageFormatElement[] | null {
       if (inField) {
         const element = keptByText.get(decodeEntities(fieldText))
         if (!element) return null
-        usedFields.push(printAST([element]))
-        top.children.push(element)
+        usedFields.push(keptText(element))
+        // Kept words (a link, email or brand name) join the text around
+        // them (a copy, as pushText adds to the last text).
+        if (element.type === TYPE.literal) {
+          pushText(top.children, element.value)
+        } else {
+          top.children.push(element)
+        }
         inField = null
         continue
       }
@@ -250,7 +287,7 @@ function readRun(html: string, run: Run): MessageFormatElement[] | null {
   }
   if (inField || stack.length !== 1) return null
   if (usedTags.size !== run.tags.length) return null
-  const expected = run.kept.map((element) => printAST([element])).sort()
+  const expected = run.kept.map(keptText).sort()
   if (usedFields.sort().join("\u0000") !== expected.join("\u0000")) return null
   return withEdges(stack[0].children, run)
 }

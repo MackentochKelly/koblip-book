@@ -427,7 +427,6 @@ const words = {
         share: "Share",
         newBooking: "New booking",
         bookingService: "Haircut",
-        bookingTime: "15:00",
       },
     },
     features: {

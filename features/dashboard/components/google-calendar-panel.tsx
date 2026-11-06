@@ -134,7 +134,7 @@ export function GoogleCalendarPanel({
       }
     >
       <div className="flex flex-col gap-6">
-        <p className="text-sm text-muted-foreground">{t("account", { email: connection.googleEmail })}</p>
+        <p className="text-sm break-words text-muted-foreground">{t("account", { email: connection.googleEmail })}</p>
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
             {!lastSyncAt ? t("notSynced") : now !== null &&

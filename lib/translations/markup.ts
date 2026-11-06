@@ -1,14 +1,31 @@
 import { createHash } from "node:crypto"
+import { BRAND_PATTERN } from "./brands"
 
 // Texts go to Google as HTML (`text/html`), so the parts that must stay as
 // they are can be marked `translate="no"`, which Google leaves untouched
 // (https://docs.cloud.google.com/translate/troubleshooting). Kept as they
-// are: fields like {name}, links and email addresses. Line breaks travel as
-// <br>, since HTML treats a new line as a space.
+// are: fields like {name}, links, email addresses and brand names
+// (./brands.ts). Line breaks travel as <br>, since HTML treats a new line as
+// a space.
 
-// A field, a link (without the full stop or bracket after it) or an email.
-const PROTECTED =
-  /\{[A-Za-z0-9_.]+\}|https?:\/\/[^\s<>"']*[^\s<>"'.,;:!?)]|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g
+// A field like {name}.
+const FIELD = /\{[A-Za-z0-9_.]+\}/u
+
+// A link (without the full stop or bracket after it) or an email.
+const LINK_OR_EMAIL =
+  /https?:\/\/[^\s<>"']*[^\s<>"'.,;:!?)]|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/u
+
+// A field, a link or an email.
+const FIELDS = new RegExp(`${FIELD.source}|${LINK_OR_EMAIL.source}`, "gu")
+
+// The words kept as they are: a link, an email or a brand name, as one
+// regular expression source for the `u` flag. Brands come last, so a link
+// or email that holds one ("hello@Koblip.com") is kept whole. The app's own
+// words (./icu.ts) keep these too; their fields are ICU's own.
+export const KEPT_WORDS_PATTERN = `${LINK_OR_EMAIL.source}|${BRAND_PATTERN}`
+
+// A field, or the words kept.
+const PROTECTED = new RegExp(`${FIELD.source}|${KEPT_WORDS_PATTERN}`, "gu")
 
 const KEEP_OPEN = '<span translate="no">'
 const KEEP_CLOSE = "</span>"
@@ -70,9 +87,14 @@ export function sourceHash(text: string): string {
 }
 
 // An admin's own translation keeps the English's fields, links and emails,
-// as Google's must (fromGoogleHtml).
+// as Google's must (fromGoogleHtml). Brand names are Google's rule only: an
+// admin decides, as for the app's own words (sameIcuFields).
 export function keepsProtectedParts(english: string, translation: string): boolean {
-  return sameParts(toGoogleHtml(translation).kept, toGoogleHtml(english).kept)
+  return sameParts(fieldsIn(translation), fieldsIn(english))
+}
+
+function fieldsIn(text: string): string[] {
+  return [...text.matchAll(FIELDS)].map((match) => match[0])
 }
 
 function sameParts(found: string[], kept: string[]): boolean {

@@ -12,6 +12,7 @@ import {
   POP,
   ReplayButton,
   RISE,
+  SAMPLE_BOOKING_TIME,
   SAMPLE_PEOPLE,
   SAMPLE_SERVICES,
   SAMPLE_TEAM,
@@ -94,7 +95,7 @@ function BookingsPicture() {
       fresh: false,
     })),
     {
-      time: steps("bookingTime"),
+      time: SAMPLE_BOOKING_TIME,
       label: `${steps("bookingService")} · ${firstName(SAMPLE_PEOPLE[2])}`,
       fresh: true,
     },

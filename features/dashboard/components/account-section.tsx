@@ -68,7 +68,7 @@ export function AccountSection({
           <ItemTitle className="max-w-full">
             <span className="truncate">{contact}</span>
           </ItemTitle>
-          <ItemDescription>{t("deleteHint")}</ItemDescription>
+          <ItemDescription className="break-words">{t("deleteHint")}</ItemDescription>
         </ItemContent>
         <ItemActions>
           <Button

@@ -10,6 +10,7 @@ import {
   firstName,
   POP,
   RISE,
+  SAMPLE_BOOKING_TIME,
   SAMPLE_BUSINESS,
   SAMPLE_PEOPLE,
   SAMPLE_SERVICES,
@@ -177,7 +178,7 @@ export function HeroSideCards() {
                 >
                   <BookingRow
                     title={t("newBooking")}
-                    detail={`${firstName(SAMPLE_PEOPLE[BOOKED])} · ${t("bookingService")} · ${formatClock(t("bookingTime"), locale)}`}
+                    detail={`${firstName(SAMPLE_PEOPLE[BOOKED])} · ${t("bookingService")} · ${formatClock(SAMPLE_BOOKING_TIME, locale)}`}
                     icon
                   />
                   <div className="h-3" />

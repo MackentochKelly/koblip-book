@@ -19,6 +19,7 @@ import {
   isTranslationLanguage,
   TRANSLATION_LANGUAGES,
 } from "./languages"
+import { keepsProtectedParts } from "./markup"
 import {
   type QueueResult,
   runTranslationQueue,
@@ -243,8 +244,11 @@ export async function translateBusinessNow(
 const SHOWN_STATUSES = TRANSLATION_STATUSES.filter(isShown)
 
 // The business's translations in the page's language, as a lookup that
-// gives the English back when there is none to show or it was made from
-// other English (changed since, Google not done yet).
+// gives the English back when there is none to show, it was made from
+// other English (changed since, Google not done yet), or it lacks a field,
+// link or email of the current English (an admin's edit that needs review
+// after the owner changed one), as the app's own words do
+// (lib/translations/interface-words.ts).
 async function loadBusinessTranslations(
   businessId: string,
   language: PageLanguage
@@ -270,7 +274,10 @@ async function loadBusinessTranslations(
   const byKey = new Map(rows.map((row) => [row.key, row]))
   return (entityId, field, english) => {
     const row = byKey.get(businessTextKey(entityId, field))
-    return row && row.text !== null && row.sourceText === english
+    return row &&
+      row.text !== null &&
+      row.sourceText === english &&
+      keepsProtectedParts(english, row.text)
       ? row.text
       : english
   }

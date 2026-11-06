@@ -11,6 +11,8 @@ import type { Messages } from "next-intl"
 import ts from "typescript"
 import { db } from "@/lib/db"
 import { translationEntries } from "@/lib/db/schema"
+import { LANGUAGE_NAMES } from "@/lib/page-language"
+import { BRAND_NAMES } from "./brands"
 import { sameIcuFields } from "./icu"
 import { flattenWords } from "./interface-words"
 import { SOURCE_LANGUAGE } from "./languages"
@@ -100,35 +102,17 @@ export function severityOf(finding: CoverageFinding): CoverageSeverity {
   return COVERAGE_CHECKS[finding.check].severity
 }
 
-// Names that stay as they are in every language: brands, and each
+// Names that stay as they are in every language: the brands Google is
+// told to keep (lib/translations/brands.ts), a few more that are also
+// everyday words in business texts so they aren't kept there, and each
 // language's own name in a language menu.
 export const KEPT_NAMES = [
-  "Koblip Book",
-  "Koblip Chat",
-  "Koblip",
-  "Google Calendar",
-  "Google Maps",
-  "Google",
-  "WhatsApp",
-  "Meta AI",
-  "Meta",
-  "Muse",
-  "ElevenLabs",
-  "Instagram",
-  "Facebook",
-  "TikTok",
+  ...BRAND_NAMES,
   "Apple",
-  "iPhone",
-  "iPad",
-  "Android",
-  "Gmail",
   "Outlook",
   "Stripe",
-  "English",
-  "Español",
-  "Português",
-  "Français",
-] as const
+  ...Object.values(LANGUAGE_NAMES),
+]
 
 const KEPT_NAME = new RegExp(
   `(?<![\\p{L}\\p{N}])(?:${[...KEPT_NAMES]

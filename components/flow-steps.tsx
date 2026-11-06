@@ -41,8 +41,10 @@ function StepRow({ step, last }: { step: FlowStep; last: boolean }) {
         <span aria-hidden className="absolute top-12 bottom-0 left-8 w-px bg-border" />
       )}
       <StepItem step={step} className="relative" />
+      {/* The branches: w-auto, so the indent comes out of the width
+          instead of pushing past the screen. */}
       {step.branches && step.branches.length > 0 && (
-        <ItemGroup role="list" className="ml-8 gap-2 border-l pl-4">
+        <ItemGroup role="list" className="ml-8 w-auto gap-2 border-l pl-4">
           {step.branches.map((branch) => (
             <StepItem key={branch.id} step={branch} role="listitem" />
           ))}

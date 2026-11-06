@@ -35,6 +35,10 @@ import { cn } from "@/lib/utils"
 // public.home.steps.sample).
 export const SAMPLE_BUSINESS = "Lumen Studio"
 
+// The new booking's time in the samples, formatted for the page's
+// language (formatClock); a value, never a word to translate.
+export const SAMPLE_BOOKING_TIME = "15:00"
+
 // People in the samples; the third is the one who books.
 export const SAMPLE_PEOPLE = [
   "Luis Romero",

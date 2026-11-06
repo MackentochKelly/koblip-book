@@ -12,6 +12,7 @@ import {
   POP,
   ReplayButton,
   RISE,
+  SAMPLE_BOOKING_TIME,
   SAMPLE_BUSINESS,
   SAMPLE_PEOPLE,
   SAMPLE_PHOTO,
@@ -420,7 +421,7 @@ function SharePreview() {
                   </span>
                   <span className="truncate text-xs text-muted-foreground">
                     {person.split(" ")[0]} · {t("bookingService")} ·{" "}
-                    {formatClock(t("bookingTime"), locale)}
+                    {formatClock(SAMPLE_BOOKING_TIME, locale)}
                   </span>
                 </div>
               </motion.div>
