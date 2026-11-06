@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/icons"
 import { useTheme } from "next-themes"
 
+import { Badge } from "@/components/ui/badge"
 import {
   Command,
   CommandDialog,
@@ -18,12 +19,14 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandShortcut,
   CommandList,
 } from "@/components/ui/command"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { LANGUAGE_NAMES, PAGE_LANGUAGES } from "@/lib/page-language"
 import { useOwnerLanguage } from "../i18n/provider"
-import { NAV_GROUPS } from "../navigation"
+import { NAV_GROUPS, navFeature } from "../navigation"
+import type { LockedPlans } from "../types"
 import { THEMES, useSignOut } from "./account-menu"
 
 const CommandMenuContext = createContext<(open: boolean) => void>(() => {})
@@ -33,9 +36,12 @@ const CommandMenuContext = createContext<(open: boolean) => void>(() => {})
 // Search box and ⌘K (Ctrl+K) open it.
 export function CommandMenuProvider({
   business,
+  lockedPlans,
   children,
 }: {
   business: { id: string; slug: string }
+  // A page the plan lacks shows its plan (docs/plans/subscriptions.md, P5e).
+  lockedPlans: LockedPlans
   children: React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -52,7 +58,12 @@ export function CommandMenuProvider({
   return (
     <CommandMenuContext value={setOpen}>
       {children}
-      <CommandMenu business={business} open={open} onOpenChange={setOpen} />
+      <CommandMenu
+        business={business}
+        lockedPlans={lockedPlans}
+        open={open}
+        onOpenChange={setOpen}
+      />
     </CommandMenuContext>
   )
 }
@@ -63,15 +74,18 @@ export function useCommandMenu() {
 
 function CommandMenu({
   business,
+  lockedPlans,
   open,
   onOpenChange,
 }: {
   business: { id: string; slug: string }
+  lockedPlans: LockedPlans
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
   const router = useRouter()
   const t = useTranslations("owner.shell")
+  const plans = useTranslations("app.planLocked.plans")
   const { setTheme } = useTheme()
   const [, setLanguage] = useOwnerLanguage()
   const signOut = useSignOut()
@@ -100,20 +114,30 @@ function CommandMenu({
                 group.key === "main" ? undefined : t(`groups.${group.key}`)
               }
             >
-              {group.items.map((item) => (
-                <CommandItem
-                  key={item.key}
-                  onSelect={() =>
-                    run(() => router.push(`${base}${item.path}` as Route))
-                  }
-                >
-                  <item.icon />
-                  {/* As in the menu: Dashboard on a computer. */}
-                  {item.key === "home" && !phone
-                    ? t("nav.dashboard")
-                    : t(`nav.${item.key}`)}
-                </CommandItem>
-              ))}
+              {group.items.map((item) => {
+                const feature = navFeature(item)
+                const needs = feature ? lockedPlans[feature] : undefined
+                return (
+                  <CommandItem
+                    key={item.key}
+                    onSelect={() =>
+                      run(() => router.push(`${base}${item.path}` as Route))
+                    }
+                  >
+                    <item.icon />
+                    {/* As in the menu: Dashboard on a computer. */}
+                    {item.key === "home" && !phone
+                      ? t("nav.dashboard")
+                      : t(`nav.${item.key}`)}
+                    {/* At the row's end, where shadcn puts a shortcut. */}
+                    {needs && (
+                      <CommandShortcut>
+                        <Badge variant="secondary">{plans(needs)}</Badge>
+                      </CommandShortcut>
+                    )}
+                  </CommandItem>
+                )
+              })}
             </CommandGroup>
           ))}
           <CommandGroup heading={t("account")}>

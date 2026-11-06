@@ -121,7 +121,7 @@ How to use this file: [Plans](README.md).
 | P4 | Owner screen Settings → Plan (`features/billing`): current plan, trial days left, Upgrade (Checkout), Manage billing (portal); its own ESLint zone; 4 languages | P2 | To do |
 | P5a | Plan checks for 11 features (page, actions, routes): analytics, widgets, page themes, more than one business, assistant by typing and by voice, AI writing, WhatsApp automations, own WhatsApp number, team accounts, Google Calendar | P0 | Done (2026-11-06) |
 | P5b | Locked entry points: a plan badge on the menu's Analytics, Widgets and assistant pages (they open the "Part of Pro" screen); the floating assistant and Home's assistant box hide | P5a | Done (2026-11-06) |
-| P5e | Plan badge on Settings' tabs (Theme) and in Search; the phone tab bar's assistant button | P5b | To do |
+| P5e | Plan badge on Settings' tabs (Theme) and in Search; the phone tab bar's assistant button hides when the assistant is locked | P5b | Done (2026-11-06) |
 | P5c | Plan checks for the other built features, one at a time; Google Calendar sync and automations stop on a downgrade | P5a | To do |
 | P5d | `koblipMonthlyTemplates` per plan (Pro limit in `lib/subscription-rules.ts`) | P2, O3 | To do |
 | P6 | Emails: trial ends in 3 days, payment failed, back to Free (Better Auth hooks + `customer.subscription.trial_will_end`) | P2 | To do |

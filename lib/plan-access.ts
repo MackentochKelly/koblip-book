@@ -131,3 +131,16 @@ export async function ownerHasFeature(userId: string, key: PlanFeatureKey): Prom
   for (const { id } of owned) if (await hasFeature(id, key)) return true
   return false
 }
+
+// The features this business's plan lacks, each with the lowest plan that
+// has it: for plan badges on menus and tabs.
+export async function lockedPlans(
+  businessId: string
+): Promise<Partial<Record<PlanFeatureKey, Plan>>> {
+  const [features, plans] = await Promise.all([businessFeatures(businessId), featurePlans()])
+  return Object.fromEntries(
+    (Object.keys(features) as PlanFeatureKey[])
+      .filter((key) => !features[key])
+      .map((key) => [key, plans[key]])
+  )
+}

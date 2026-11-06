@@ -164,7 +164,7 @@ export function DashboardShell({
   // the menu, under the top bar.
   return (
     <TooltipProvider>
-      <CommandMenuProvider business={business}>
+      <CommandMenuProvider business={business} lockedPlans={lockedPlans}>
         <GlobeOpeningProvider>
           <SidebarProvider>
             <AppSidebar
@@ -236,7 +236,9 @@ export function DashboardShell({
                         <PlusIcon className="size-6" />
                       </span>
                     </Button>
-                  ) : (
+                  ) : lockedPlans.assistantChat ? null : (
+                    // Not in the plan: no shortcut, as the floating one on a
+                    // computer; the ☰ menu's Assistant shows its plan.
                     <AssistantTabButton
                       href={assistantHref}
                       label={t("shell.nav.assistant")}

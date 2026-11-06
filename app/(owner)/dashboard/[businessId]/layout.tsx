@@ -15,8 +15,7 @@ import { NotificationBell } from "@/features/notifications/components/notificati
 import { NotificationsProvider } from "@/features/notifications/components/notifications-provider"
 import { VerifyEmailAlert } from "@/features/owner-auth/components/verify-email-alert"
 import { requireOwner } from "@/lib/dal"
-import { businessFeatures, featurePlans } from "@/lib/plan-access"
-import type { PlanFeatureKey } from "@/lib/plan-features"
+import { lockedPlans } from "@/lib/plan-access"
 import { notificationRules } from "@/lib/platform-settings"
 
 export default async function BusinessDashboardLayout({
@@ -26,20 +25,14 @@ export default async function BusinessDashboardLayout({
   const { businessId } = await params
   const owner = await requireOwner(`/dashboard/${businessId}`)
   const { business } = await getOwnerBusiness(businessId)
-  const [verify, unread, rules, businesses, features, plans] = await Promise.all([
+  const [verify, unread, rules, businesses, locked] = await Promise.all([
     getTranslations("owner.settings.verify"),
     getUnreadCount(),
     notificationRules(),
     getMyBusinesses(),
-    businessFeatures(businessId),
-    featurePlans(),
+    // What this business's plan lacks, for the plan badges.
+    lockedPlans(businessId),
   ])
-  // What this business's plan lacks, for the menu's plan badges.
-  const lockedPlans = Object.fromEntries(
-    (Object.keys(features) as PlanFeatureKey[])
-      .filter((key) => !features[key])
-      .map((key) => [key, plans[key]])
-  )
   // One bell state for the page; the first count is rendered here, then the
   // bell keeps it current (docs/plans/in-app-notifications.md, N-D3).
   return (
@@ -53,9 +46,9 @@ export default async function BusinessDashboardLayout({
         businesses={businesses}
         owner={{ name: owner.name, contact: owner.contact, image: owner.image }}
         bell={<NotificationBell />}
-        lockedPlans={lockedPlans}
+        lockedPlans={locked}
         assistantFloat={
-          features.assistantChat ? (
+          !locked.assistantChat ? (
             <AssistantFloat businessId={business.id} />
           ) : undefined
         }

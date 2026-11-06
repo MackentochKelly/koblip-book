@@ -12,6 +12,7 @@ export interface SectionPart<T extends string> {
   id: T
   label: string
   href: string
+  badge?: string
 }
 
 // A page made of parts, the same on the business page and in the admin
@@ -79,7 +80,7 @@ export function SectionParts<T extends string>({
           variant="line"
           listClassName="max-md:px-4"
           ariaLabel={ariaLabel}
-          views={parts.map((part) => ({ id: part.id, label: part.label }))}
+          views={parts.map(({ id, label, badge }) => ({ id, label, badge }))}
           value={current}
           onChange={(next) => {
             const part = parts.find((item) => item.id === next)

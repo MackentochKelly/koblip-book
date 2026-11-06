@@ -10,7 +10,7 @@ import { PLAN_FEATURES, PLANS, planIncludes } from "@/lib/plan-features"
 
 vi.mock("server-only", () => ({}))
 
-const { PlanFeatureError, featurePlans, setFeaturePlan } = await import("./plan-access")
+const { PlanFeatureError, featurePlans, lockedPlans, setFeaturePlan } = await import("./plan-access")
 
 let dir: string
 let closeDb: () => void
@@ -82,4 +82,10 @@ test("unknown features and plans are refused, and stale rows ignored", async () 
 
   await db.insert(planFeatures).values({ featureKey: "removedFeature", plan: "pro" })
   expect(await featurePlans()).not.toHaveProperty("removedFeature")
+})
+
+test("nothing is locked while billing is not live", async () => {
+  await setFeaturePlan({ key: "analytics", plan: "pro", userId: "admin" })
+  expect(await lockedPlans("any-business")).toEqual({})
+  await setFeaturePlan({ key: "analytics", plan: null, userId: "admin" })
 })

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react"
 
+import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CONTROL_SIZE } from "@/lib/control-size"
 import { cn } from "@/lib/utils"
@@ -10,6 +11,8 @@ export interface ViewTab<T extends string> {
   id: T
   label: string
   icon?: React.ReactNode
+  // A short word after the label, such as the plan a part needs.
+  badge?: string
 }
 
 // `chips`: each tab outlined on its own with no track around them, the open
@@ -92,6 +95,7 @@ export function ViewTabs<T extends string>({
             >
               {view.icon}
               {view.label}
+              {view.badge && <Badge variant="secondary">{view.badge}</Badge>}
             </TabsTrigger>
           ))}
         </TabsList>
