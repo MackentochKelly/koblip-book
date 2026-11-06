@@ -99,10 +99,7 @@ export async function applyButtonReply(reply: ButtonReply) {
       .where(
         and(
           eq(notificationSends.id, send.id),
-          or(
-            isNull(notificationSends.repliedAt),
-            lt(notificationSends.repliedAt, reply.at)
-          )
+          or(isNull(notificationSends.repliedAt), lt(notificationSends.repliedAt, reply.at))
         )
       ),
   ]
