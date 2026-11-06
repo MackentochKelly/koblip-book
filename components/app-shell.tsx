@@ -7,6 +7,7 @@ import { BottomTabBar, TabBarLink } from "@/components/bottom-tab-bar"
 import { NavMain, type NavItem } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import { PageContent } from "@/components/page-content"
+import { TopBarAccount } from "@/components/top-bar-account"
 import {
   Sidebar,
   SidebarContent,
@@ -29,7 +30,8 @@ const TAB_COLUMNS = {
 // beside the page on a computer (folding to icons), a tab bar on a phone,
 // and the top bar with the open page's name. With `account`, the menu ends
 // with who is logged in, opening the account menu (appearance, language,
-// log out). The area passes only its pages.
+// log out), and the top bar ends with them too, after the area's `bell`,
+// so a phone (no menu in view) has them. The area passes only its pages.
 export function AppShell({
   title,
   items,
@@ -37,6 +39,7 @@ export function AppShell({
   account,
   settingsHref,
   accountLinks,
+  bell,
   children,
 }: {
   // The menu's title, and the tab bar's name for screen readers.
@@ -47,6 +50,8 @@ export function AppShell({
   settingsHref?: string
   // More pages in the account menu, beside Settings.
   accountLinks?: AccountMenuLink[]
+  // The area's notifications, at the top bar's end.
+  bell?: React.ReactNode
   children: React.ReactNode
 }) {
   const open = items.find((item) => item.active)
@@ -73,7 +78,17 @@ export function AppShell({
           <SidebarRail />
         </Sidebar>
         <AppInset>
-          <AppTopBar title={open?.label ?? title} menuLabel={menuLabel} />
+          <AppTopBar title={open?.label ?? title} menuLabel={menuLabel}>
+            {account && (
+              <TopBarAccount
+                owner={account}
+                settingsHref={settingsHref}
+                links={accountLinks}
+              >
+                {bell}
+              </TopBarAccount>
+            )}
+          </AppTopBar>
           <PageContent className="pb-28">{children}</PageContent>
         </AppInset>
         <BottomTabBar label={title} className={cn(columns)}>

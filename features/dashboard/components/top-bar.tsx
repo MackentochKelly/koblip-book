@@ -7,9 +7,9 @@ import { AppTopBar } from "@/components/app-top-bar"
 import { ExternalLinkIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { navKeyFor } from "../navigation"
-import { AccountMenu, useClientBookingsLink } from "@/components/account-menu"
+import { useClientBookingsLink } from "@/components/account-menu"
+import { TopBarAccount } from "@/components/top-bar-account"
 
 // The owner area's top bar: the page's name (the business name before setup
 // is done), its public page and the account menu. Pinned, with a line under
@@ -47,7 +47,11 @@ export function TopBar({
       menuLabel={menu ? t("menu") : undefined}
       className={className}
     >
-      <div className="flex items-center gap-2">
+      <TopBarAccount
+        owner={owner}
+        settingsHref={menu ? `/dashboard/${business.id}/settings` : undefined}
+        links={[bookingsLink]}
+      >
         {viewPage && (
           <Button
             variant="outline"
@@ -66,16 +70,7 @@ export function TopBar({
           </Button>
         )}
         {bell}
-      </div>
-      <Separator
-        orientation="vertical"
-        className="data-vertical:h-5 data-vertical:self-center"
-      />
-      <AccountMenu
-        owner={owner}
-        settingsHref={menu ? `/dashboard/${business.id}/settings` : undefined}
-        links={[bookingsLink]}
-      />
+      </TopBarAccount>
     </AppTopBar>
   )
 }
