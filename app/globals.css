@@ -259,9 +259,9 @@
       0 1px 2px oklch(0 0 0 / 3%), 0 2px 6px -2px oklch(0 0 0 / 3%);
     --radius: 0.625rem;
     /* Frame lines and card edges (sidebar edge, top bar, cards, rows, tab
-       tracks, a list's filter selects): half a pixel, one real pixel on a sharp (2x) screen, like
-       Apple's hairlines. */
-    --hairline: 0.5px;
+       tracks, a list's filter selects): one real screen pixel, like Apple's
+       hairlines. 1px here; sharper screens below. */
+    --hairline: 1px;
     --sidebar: oklch(1 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.511 0.262 276.966);
@@ -332,6 +332,22 @@
     --sidebar-ring: oklch(0.556 0 0);
     /* A shadow can't show on a dark page; the card's ring draws the edge. */
     --card-shadow: 0 0 transparent;
+}
+
+/* The hairline is one real screen pixel on every screen: half a CSS pixel
+   on a 2x screen, a third on a 3x one (most iPhones). A fixed half pixel
+   fell between pixels on 3x screens and looked soft, sharp only when
+   zoomed in. In between (2.625x on some Androids) it takes the 2x size,
+   so it never falls under one pixel. */
+@media (min-resolution: 2dppx) {
+  :root {
+    --hairline: 0.5px;
+  }
+}
+@media (min-resolution: 3dppx) {
+  :root {
+    --hairline: calc(1px / 3);
+  }
 }
 
 /* Reduce Transparency on: every glass piece and frosted menu turns solid,
