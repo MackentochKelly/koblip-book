@@ -8,7 +8,7 @@ function Card({
   ...props
 }: React.ComponentProps<"div"> & {
   size?: "default" | "sm"
-  // muted: the soft grey box with a thin border, Item's "box" twin.
+  // muted: the soft grey box with the hairline edge, Item's "box" twin.
   variant?: "default" | "muted"
 }) {
   // The stock shadow-md is swapped for the theme's faint shadow-card
@@ -21,7 +21,7 @@ function Card({
       data-variant={variant}
       className={cn(
         "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-4xl bg-card py-(--card-spacing) text-sm text-card-foreground shadow-card ring-(length:--hairline) ring-foreground/5 [--card-spacing:--spacing(6)] has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] dark:ring-foreground/10 *:[img:first-child]:rounded-t-4xl *:[img:last-child]:rounded-b-4xl",
-        variant === "muted" && "border bg-muted/50 ring-0 dark:ring-0",
+        variant === "muted" && "border border-(length:--hairline) bg-muted/50 ring-0 dark:ring-0",
         className
       )}
       {...props}
