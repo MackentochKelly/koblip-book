@@ -51,6 +51,9 @@ export interface BookingPage {
   addonGroups: BookingAddonGroup[]
   // Whether the business sends WhatsApp booking messages (consent asked).
   whatsapp: boolean
+  // Whether customers can sign in to manage their bookings
+  // (lib/customer-sign-in.ts): "Manage your booking" after booking.
+  customerSignIn: boolean
   policies: BookingPolicies
 }
 
@@ -94,7 +97,9 @@ export function serviceAddonGroups(
   serviceId: string | null
 ): BookingAddonGroup[] {
   if (!serviceId) return []
-  return page.addonGroups.filter((group) => group.serviceIds.includes(serviceId))
+  return page.addonGroups.filter((group) =>
+    group.serviceIds.includes(serviceId)
+  )
 }
 
 // The service with the chosen extras: whether the choice is complete, the
@@ -137,6 +142,7 @@ export function toBookingPage(data: {
   serviceTeams: Record<string, string[]>
   addonGroups: BookingAddonGroup[]
   whatsapp: boolean
+  customerSignIn: boolean
   policies: PolicyKind[]
   policyPoints: BookingPolicyPoint[]
 }): BookingPage {
@@ -149,12 +155,14 @@ export function toBookingPage(data: {
     phone: data.business.phone,
     timeZone: data.business.timezone,
     currency: data.business.currency,
-    services: data.services.map(({ id, name, durationMinutes, priceMinor }) => ({
-      id,
-      name,
-      durationMinutes,
-      priceMinor,
-    })),
+    services: data.services.map(
+      ({ id, name, durationMinutes, priceMinor }) => ({
+        id,
+        name,
+        durationMinutes,
+        priceMinor,
+      })
+    ),
     team: data.team.map(({ id, name, photoUrl, description }) => ({
       id,
       name,
@@ -164,6 +172,7 @@ export function toBookingPage(data: {
     serviceTeams: data.serviceTeams,
     addonGroups: data.addonGroups,
     whatsapp: data.whatsapp,
+    customerSignIn: data.customerSignIn,
     policies: { documents: data.policies, points: data.policyPoints },
   }
 }

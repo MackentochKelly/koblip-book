@@ -120,6 +120,11 @@ const eslintConfig = defineConfig([
               from: "./features",
               except: ["./team-area"],
             },
+            {
+              target: "./features/customer-account",
+              from: "./features",
+              except: ["./customer-account"],
+            },
             // shared code cannot import from features/ or app/
             { target: "./components", from: "./features" },
             { target: "./components", from: "./app" },

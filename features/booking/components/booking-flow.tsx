@@ -17,7 +17,7 @@ import { BottomBar } from "@/components/bottom-bar"
 import { BottomPanel } from "@/components/bottom-panel"
 import { Celebration } from "@/components/celebration"
 import { GlassCard } from "@/components/glass-frame"
-import { useMessages } from "@/components/language-provider"
+import { useMessages, usePageLanguage } from "@/components/language-provider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,6 +28,7 @@ import {
 import { Item, ItemContent } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { PHONE_PATTERN } from "@/lib/booking-rules"
+import { BOOKED_PHONE_KEY, MY_BOOKINGS_PATH } from "@/lib/customer-auth-path"
 import { formatDuration } from "@/lib/format-duration"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { shareLink } from "@/lib/share-link"
@@ -466,6 +467,7 @@ export function BookingFlow({
           <BookedPage
             page={page}
             booking={booked}
+            phone={details.phone}
             onDone={() => {
               pushes.current = 0
               replaceUrl(businessPath)
@@ -481,6 +483,7 @@ export function BookingFlow({
       <BookedPage
         page={page}
         booking={booked}
+        phone={details.phone}
         onDone={() => router.replace(businessPath)}
       />
     )
@@ -547,16 +550,28 @@ export function BookingFlow({
 // back to the business page. It takes the place of the business page (which
 // globals.css hides while it is there) rather than covering it, so the
 // phone's bars take its white like any page's.
+// Kept for this tab only, so sign-in opens with it filled in. A browser
+// that refuses storage just asks for the number.
+function rememberBookedPhone(phone: string) {
+  try {
+    sessionStorage.setItem(BOOKED_PHONE_KEY, phone)
+  } catch {}
+}
+
 function BookedPage({
   page,
   booking,
+  phone,
   onDone,
 }: {
   page: BookingPage
   booking: BookingConfirmation
+  // The phone they booked with, filled in on sign-in.
+  phone: string
   onDone: () => void
 }) {
   const m = useMessages()
+  const language = usePageLanguage()
   const price = priceLabel(booking.priceMinor, booking.currency, m)
   const when = `${formatDay(booking.date, m.locale)} · ${formatClock(booking.time, m.locale)}`
   useLayoutEffect(() => {
@@ -609,9 +624,24 @@ function BookedPage({
                     {m.actions.directions}
                   </Button>
                 )}
-                <Button variant="link" onClick={onDone}>
-                  {m.booking.done}
-                </Button>
+                {page.customerSignIn ? (
+                  <Button
+                    variant="link"
+                    nativeButton={false}
+                    render={
+                      <Link
+                        href={`${MY_BOOKINGS_PATH}?lang=${language}`}
+                        onClick={() => rememberBookedPhone(phone)}
+                      />
+                    }
+                  >
+                    {m.booking.manage}
+                  </Button>
+                ) : (
+                  <Button variant="link" onClick={onDone}>
+                    {m.booking.done}
+                  </Button>
+                )}
               </>
             }
           >

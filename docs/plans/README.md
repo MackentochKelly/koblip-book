@@ -17,6 +17,7 @@ current.
 | [Integrations tabs](integrations.md) | Done |
 | [Message editing](message-editing.md) | To do |
 | [WhatsApp automations](whatsapp-automations.md) | Done |
+| [Customer accounts](customer-accounts.md) | In progress |
 
 ## How to work with a plan
 

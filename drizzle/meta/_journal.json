@@ -351,6 +351,13 @@
       "when": 1793559831151,
       "tag": "0049_gigantic_stone_men",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "6",
+      "when": 1793929841833,
+      "tag": "0050_customer_sign_in",
+      "breakpoints": true
     }
   ]
 }

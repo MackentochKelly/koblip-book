@@ -5,6 +5,7 @@ import { LanguageProvider } from "@/components/language-provider"
 import { getSession } from "@/lib/dal"
 import { messagesFor } from "@/lib/i18n"
 import { pickLanguage } from "@/lib/page-language"
+import { customerSignInReady } from "@/lib/customer-sign-in"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { BottomBar } from "@/components/bottom-bar"
@@ -80,7 +81,9 @@ export default async function BusinessPage({ params, searchParams }: Props) {
     hoursCount: hours.length,
   })
   const sections = [
-    ...(services.length > 0 ? [{ id: "services", label: m.sections.services }] : []),
+    ...(services.length > 0
+      ? [{ id: "services", label: m.sections.services }]
+      : []),
     ...(team.length > 0 ? [{ id: "team", label: m.sections.team }] : []),
     ...detailSections(data, language),
   ]
@@ -118,7 +121,11 @@ export default async function BusinessPage({ params, searchParams }: Props) {
             />
             {team.length > 0 && (
               <>
-                <TeamList slug={business.slug} team={team} language={language} />
+                <TeamList
+                  slug={business.slug}
+                  team={team}
+                  language={language}
+                />
                 <Separator />
               </>
             )}
@@ -151,7 +158,16 @@ export default async function BusinessPage({ params, searchParams }: Props) {
           />
         </BottomBar>
       )}
-      {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp })} mode="drawer" />}
+      {bookable && (
+        <BookingFlow
+          page={toBookingPage({
+            ...data,
+            whatsapp,
+            customerSignIn: customerSignInReady(),
+          })}
+          mode="drawer"
+        />
+      )}
       {isOwner && <OwnerBackButton businessId={business.id} />}
       <Toaster />
     </LanguageProvider>

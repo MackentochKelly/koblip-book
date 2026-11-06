@@ -13,9 +13,9 @@ import {
 } from "@/lib/page-language"
 
 // The language a page is shown in, as its own page picks it: a business,
-// home or legal page from ?lang= or the phone's language, the owner area
-// from the owner's pick or the phone's language. The login and new password
-// pages keep the language their link names (?lang=) first.
+// home, legal or customer's own page from ?lang= or the phone's language,
+// the owner area from the owner's pick or the phone's language. The login
+// and new password pages keep the language their link names (?lang=) first.
 function pageLanguage(request: NextRequest): PageLanguage {
   const { pathname, searchParams } = request.nextUrl
   const accept = request.headers.get("accept-language")
@@ -23,7 +23,8 @@ function pageLanguage(request: NextRequest): PageLanguage {
     pathname.startsWith("/b/") ||
     pathname === "/" ||
     pathname === "/privacy" ||
-    pathname === "/terms"
+    pathname === "/terms" ||
+    pathname.startsWith("/my-bookings")
   ) {
     return pickLanguage(searchParams.getAll("lang"), accept)
   }
@@ -32,7 +33,10 @@ function pageLanguage(request: NextRequest): PageLanguage {
       ? languageParam(searchParams.getAll("lang"))
       : null
   if (linked) return linked
-  return pickOwnerLanguage(request.cookies.get(OWNER_LANGUAGE_COOKIE)?.value, accept)
+  return pickOwnerLanguage(
+    request.cookies.get(OWNER_LANGUAGE_COOKIE)?.value,
+    accept
+  )
 }
 
 // Optimistic cookie check only on the dashboard; every page and action
@@ -44,7 +48,10 @@ export function proxy(request: NextRequest) {
     !getSessionCookie(request)
   ) {
     return NextResponse.redirect(
-      new URL(loginHref({ next: request.nextUrl.pathname }), request.nextUrl.href)
+      new URL(
+        loginHref({ next: request.nextUrl.pathname }),
+        request.nextUrl.href
+      )
     )
   }
   const forwarded = new Headers(request.headers)
