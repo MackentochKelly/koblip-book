@@ -6,7 +6,9 @@ import { ChartContainer } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
 
 // A number's days as a thin line with a very faint fill under it, in the
-// colour of the text around it (currentColor), from zero at the bottom:
+// colour of the text around it (currentColor; a tone's TONE_TEXT), from
+// zero at the bottom. The line is as light as a tone icon's ring in
+// StatStrip (1px, a quarter of the colour):
 // no axes, grid, labels or tooltip. Only a picture, so the number beside
 // it says it in words. Fills its box; `className` sizes it.
 export function Sparkline({
@@ -29,7 +31,8 @@ export function Sparkline({
           dataKey="value"
           type="monotone"
           stroke="currentColor"
-          strokeWidth={1.5}
+          strokeOpacity={0.25}
+          strokeWidth={1}
           fill="currentColor"
           fillOpacity={0.08}
           dot={false}
