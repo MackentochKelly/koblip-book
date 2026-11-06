@@ -145,7 +145,7 @@ How to use this file: [Plans](README.md).
 | P5e | Plan badge on Settings' tabs (Theme) and in Search; the phone tab bar's assistant button hides when the assistant is locked | P5b | Done (2026-11-06) |
 | P5c | Downgrades stop background work for every checked feature (S15): Google Calendar sync and busy times, the own WhatsApp number, the team area; automations already did | P5a | Done (2026-11-06) |
 | P5d | Monthly templates on Koblip's number by plan (O4): rules `koblipMonthlyTemplates` (Free) and `koblipMonthlyTemplatesPro`, `koblipTemplateLimit()` in `lib/koblip-usage.ts`; the sender and Admin → Usage read it | P2, O3 | Done (2026-11-06) |
-| P6 | Emails: payment failed, back to Free (Better Auth hooks) | P2 | To do |
+| P6 | Emails to the owner, in their language, linking to Settings → Plan (`lib/billing-emails.ts`, the Stripe plugin's hooks): payment failed, once when the subscription moves into `past_due`; back to Free, when it ends. An owner who signed up by phone has no email, so gets neither | P2 | Done (2026-11-06) |
 | P7 | Admin screen Subscriptions: every business's plan, status, renewal date, Stripe links, history; admin can give Pro for free (a 100% coupon in Stripe, logged) | P2 | To do |
 | P8 | Home pricing: Pro's button opens sign-up then Checkout; "Soon" goes; prices read from `lib/pricing-rules.ts` | P4, O3 | To do |
 | P9 | Terms and privacy: price, cancelling, refunds, Stripe as processor; owners told before the first charge (Terms already promise this) | O1, O2 | To do |

@@ -35,6 +35,17 @@ const words = {
       lead: "{businessName} invites you to your own space on {app}: your bookings, your hours and your profile.",
       note: "The link works for {days, number} days, once.",
     },
+    // App subscriptions (docs/plans/subscriptions.md, P6), to the owner.
+    paymentFailed: {
+      subject: "Pro payment for {businessName} didn't go through",
+      lead: "Stripe couldn't charge your card for {businessName}'s Pro plan. Update your card to keep Pro:",
+      note: "Stripe tries again over the next few days. If it still can't, {businessName} goes back to Free. Nothing is deleted.",
+    },
+    backToFree: {
+      subject: "{businessName} is back on Free",
+      lead: "{businessName}'s Pro plan has ended, so it's on Free now. Upgrade any time:",
+      note: "Nothing was deleted. Your Pro settings come back when you upgrade.",
+    },
   },
 } as const
 

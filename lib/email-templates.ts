@@ -121,3 +121,36 @@ export async function teamInviteEmail(input: {
     note: t("teamInvite.note", { days }),
   })
 }
+
+// The owner's card wasn't charged for Pro (docs/plans/subscriptions.md, P6):
+// the link opens the business's Settings → Plan.
+export async function paymentFailedEmail(input: {
+  businessName: string
+  url: string
+  language: PageLanguage
+}): Promise<LinkEmail> {
+  const { businessName, url } = input
+  const t = await emailWords(input.language)
+  return linkEmail({
+    url,
+    subject: t("paymentFailed.subject", { businessName }),
+    lead: t("paymentFailed.lead", { businessName }),
+    note: t("paymentFailed.note", { businessName }),
+  })
+}
+
+// A business's Pro plan ended, so it's on Free (P6).
+export async function backToFreeEmail(input: {
+  businessName: string
+  url: string
+  language: PageLanguage
+}): Promise<LinkEmail> {
+  const { businessName, url } = input
+  const t = await emailWords(input.language)
+  return linkEmail({
+    url,
+    subject: t("backToFree.subject", { businessName }),
+    lead: t("backToFree.lead", { businessName }),
+    note: t("backToFree.note"),
+  })
+}

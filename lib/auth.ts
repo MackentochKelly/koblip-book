@@ -8,6 +8,7 @@ import { admin, anonymous, phoneNumber } from "better-auth/plugins"
 import { stripe } from "@better-auth/stripe"
 import { eq } from "drizzle-orm"
 import { ACCOUNT_RULES } from "./account-rules"
+import { billingEmailHooks } from "./billing-emails"
 import { LOGIN_PATH } from "./auth-links"
 import { db } from "./db"
 import * as authSchema from "./db/auth-schema"
@@ -217,6 +218,8 @@ export const auth = betterAuth({
                   customer_update: { address: "auto", name: "auto" },
                 },
               }),
+              // The owner hears of a failed payment and of the drop to Free.
+              ...billingEmailHooks,
               // referenceId is a business id; only its owner acts on it.
               authorizeReference: ({ user, referenceId }) =>
                 canBillBusiness(user.id, referenceId),
