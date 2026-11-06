@@ -100,7 +100,11 @@ export function ServiceStep({
       {page.services.map((service) => {
         const price = priceLabel(service.priceMinor, page.currency, m)
         return (
-          <FieldLabel key={service.id} htmlFor={`service-${service.id}`}>
+          <FieldLabel
+            variant="box"
+            key={service.id}
+            htmlFor={`service-${service.id}`}
+          >
             <Field orientation="horizontal">
               <FieldContent>
                 <FieldTitle>{service.name}</FieldTitle>
@@ -182,7 +186,11 @@ export function ExtrasStep({
                   .filter(Boolean)
                   .join(" · ")
                 return (
-                  <FieldLabel key={option.id} htmlFor={`extra-${option.id}`}>
+                  <FieldLabel
+                    variant="box"
+                    key={option.id}
+                    htmlFor={`extra-${option.id}`}
+                  >
                     <Field orientation="horizontal">
                       <FieldContent>
                         <FieldTitle>{option.name}</FieldTitle>
@@ -238,7 +246,11 @@ export function MemberStep({
       aria-label={m.booking.titles.member}
     >
       {options.map((option) => (
-        <FieldLabel key={option.id} htmlFor={`member-${option.id}`}>
+        <FieldLabel
+          variant="box"
+          key={option.id}
+          htmlFor={`member-${option.id}`}
+        >
           <Field orientation="horizontal">
             <Avatar size="lg">
               {option.photoUrl && <AvatarImage src={option.photoUrl} alt="" />}

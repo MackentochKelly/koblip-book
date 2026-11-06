@@ -100,14 +100,22 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
 
 function FieldLabel({
   className,
+  variant = "default",
   ...props
-}: React.ComponentProps<typeof Label>) {
+}: React.ComponentProps<typeof Label> & {
+  // box: a choice card in the soft grey box, like Card "muted" and Item
+  // "box" (same background, border and faint shadow).
+  variant?: "default" | "box"
+}) {
   return (
     <Label
       data-slot="field-label"
+      data-variant={variant}
       className={cn(
         "group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-data-checked:bg-input/30 has-[>[data-slot=field]]:rounded-2xl has-[>[data-slot=field]]:border has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-input/40 has-[>[data-slot=field]]:has-[:focus-visible]:border-ring has-[>[data-slot=field]]:has-[:focus-visible]:ring-3 has-[>[data-slot=field]]:has-[:focus-visible]:ring-ring/50 *:data-[slot=field]:p-4",
         "has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col",
+        variant === "box" &&
+          "has-[>[data-slot=field]]:rounded-4xl has-[>[data-slot=field]]:bg-muted/50 has-[>[data-slot=field]]:shadow-card",
         className
       )}
       {...props}

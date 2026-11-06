@@ -42,8 +42,9 @@ const itemVariants = cva(
         default: "border-transparent",
         outline: "border-border",
         muted: "border-transparent bg-muted/50",
-        // The soft grey box with a thin border, Card's "muted" twin.
-        box: "border-border bg-muted/50",
+        // The soft grey box with a thin border and the faint card shadow,
+        // Card's "muted" twin.
+        box: "rounded-4xl border-border bg-muted/50 shadow-card",
       },
       size: {
         default: "gap-3.5 px-4 py-3.5",
