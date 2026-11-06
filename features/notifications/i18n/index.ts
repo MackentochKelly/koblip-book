@@ -66,7 +66,14 @@ const en = {
       koblipLimitReached: "Monthly limit reached",
       connectionRenew: "Connection to renew",
     },
-    open: "Choose which notifications you get",
+    // Each group's ⓘ, beside its name.
+    moreInfo: "More info",
+    about: {
+      bookings:
+        "A bell alert when a customer books, confirms, can't make it, moves or cancels.",
+      whatsapp:
+        "A bell alert about your WhatsApp: customer replies, messages that didn't go, Meta's reviews and your monthly limit.",
+    },
     failed: "Couldn't save. Try again.",
   },
 }
@@ -132,7 +139,13 @@ const es: NotificationMessages = {
       koblipLimitReached: "Límite mensual alcanzado",
       connectionRenew: "Conexión por renovar",
     },
-    open: "Elige qué notificaciones recibes",
+    moreInfo: "Más información",
+    about: {
+      bookings:
+        "Un aviso en la campana cuando un cliente reserva, confirma, no puede ir, cambia o cancela.",
+      whatsapp:
+        "Un aviso en la campana sobre tu WhatsApp: respuestas de clientes, mensajes que no salieron, revisiones de Meta y tu límite mensual.",
+    },
     failed: "No se pudo guardar. Inténtalo de nuevo.",
   },
 }

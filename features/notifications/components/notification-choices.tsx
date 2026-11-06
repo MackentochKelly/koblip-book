@@ -12,6 +12,7 @@ import {
   FieldSet,
   FieldTitle,
 } from "@/components/ui/field"
+import { InfoTip } from "@/components/info-tip"
 import { Switch } from "@/components/ui/switch"
 import type { PageLanguage } from "@/lib/page-language"
 import type { InAppKind } from "@/types/in-app-notifications"
@@ -50,34 +51,37 @@ export function NotificationChoices({
     })
 
   return (
-    <div className="flex flex-col gap-6">
-      <p className="text-muted-foreground">{t.choices.open}</p>
-      <FieldGroup>
-        {CHOICE_GROUPS.map((group) => (
-          <FieldSet key={group.id}>
-            <FieldLegend>{t.choices.groups[group.id]}</FieldLegend>
-            <FieldGroup className="gap-3">
-              {group.kinds.map((kind) => {
-                const id = `notify-${kind}`
-                return (
-                  <FieldLabel key={kind} htmlFor={id}>
-                    <Field orientation="horizontal">
-                      <FieldContent>
-                        <FieldTitle>{t.choices.names[kind]}</FieldTitle>
-                      </FieldContent>
-                      <Switch
-                        id={id}
-                        checked={on(kind)}
-                        onCheckedChange={(next) => change(kind, next)}
-                      />
-                    </Field>
-                  </FieldLabel>
-                )
-              })}
-            </FieldGroup>
-          </FieldSet>
-        ))}
-      </FieldGroup>
-    </div>
+    <FieldGroup>
+      {CHOICE_GROUPS.map((group) => (
+        <FieldSet key={group.id}>
+          {/* The ⓘ keeps the name's line height (32px button, 24px line). */}
+          <FieldLegend className="flex items-center gap-1">
+            {t.choices.groups[group.id]}
+            <InfoTip label={t.choices.moreInfo} className="-my-1">
+              {t.choices.about[group.id]}
+            </InfoTip>
+          </FieldLegend>
+          <FieldGroup className="gap-3">
+            {group.kinds.map((kind) => {
+              const id = `notify-${kind}`
+              return (
+                <FieldLabel key={kind} htmlFor={id}>
+                  <Field orientation="horizontal">
+                    <FieldContent>
+                      <FieldTitle>{t.choices.names[kind]}</FieldTitle>
+                    </FieldContent>
+                    <Switch
+                      id={id}
+                      checked={on(kind)}
+                      onCheckedChange={(next) => change(kind, next)}
+                    />
+                  </Field>
+                </FieldLabel>
+              )
+            })}
+          </FieldGroup>
+        </FieldSet>
+      ))}
+    </FieldGroup>
   )
 }

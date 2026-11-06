@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { ChevronLeftIcon } from "@/components/ui/icons"
 import { ViewTabs } from "@/components/view-tabs"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 export interface SectionPart<T extends string> {
   id: T
@@ -19,8 +20,11 @@ export interface SectionPart<T extends string> {
 // page scrolls. `notice` is one short line under the title.
 // `back` is for a screen opened from inside a part (one business in a list):
 // it then leads back to that part, on a phone and a computer.
+// `titleHidden`: the title is for screen readers only, so the tabs lead the
+// page (Settings, whose name is already in the top bar and the menu).
 export function SectionParts<T extends string>({
   title,
+  titleHidden = false,
   parts,
   current,
   ariaLabel,
@@ -29,6 +33,7 @@ export function SectionParts<T extends string>({
   children,
 }: {
   title: string
+  titleHidden?: boolean
   // The first is the overview, the page itself.
   parts: readonly SectionPart<T>[]
   current: T
@@ -41,7 +46,9 @@ export function SectionParts<T extends string>({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
+      {/* A hidden title leaves no box and no gap behind: its block melts
+          away and the title itself is out of the page's flow. */}
+      <div className={cn("flex flex-col gap-2", titleHidden && "contents")}>
         {back && (
           <Button
             variant="ghost"
@@ -53,7 +60,14 @@ export function SectionParts<T extends string>({
             {back.label}
           </Button>
         )}
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1
+          className={cn(
+            "text-2xl font-semibold tracking-tight",
+            titleHidden && "sr-only"
+          )}
+        >
+          {title}
+        </h1>
         {notice}
       </div>
 

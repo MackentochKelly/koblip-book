@@ -21,6 +21,7 @@ type Part = (typeof PARTS)[number]
 
 // Settings' frame around its parts: the shared SectionParts, as on
 // Automations (D19): a row of tabs, pinned under the top bar on a phone.
+// No title on the page: the top bar and the menu already name it.
 export function SettingsFrame({
   businessId,
   children,
@@ -37,6 +38,7 @@ export function SettingsFrame({
   return (
     <SectionParts
       title={m.shell.nav.settings}
+      titleHidden
       parts={PARTS.map((item) => ({
         id: item,
         label: m.settings.parts[item],
