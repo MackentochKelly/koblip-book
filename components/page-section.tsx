@@ -20,7 +20,7 @@ export function PageSection({
     <section
       id={id}
       aria-labelledby={`${id}-title`}
-      className={cn("flex scroll-mt-16 flex-col gap-4", className)}
+      className={cn("flex scroll-mt-16 flex-col gap-3", className)}
     >
       <div className="flex items-center justify-between gap-2">
         <h2 id={`${id}-title`} className="text-xl font-bold tracking-tight">
