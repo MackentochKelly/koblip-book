@@ -89,7 +89,9 @@ export function DayStrip({
               data-day={day}
               aria-label={formatDay(day, locale)}
               disabled={isDisabled?.(day)}
-              className="h-auto min-w-16 flex-col gap-0 py-2"
+              // The picked day is filled with the main colour, like the
+              // picked time under it.
+              className="h-auto min-w-16 flex-col gap-0 py-2 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
             >
               <span className="text-xs font-normal">
                 {day === today
@@ -100,7 +102,7 @@ export function DayStrip({
               </span>
               <span className="text-base font-semibold">{dayOfMonth(day)}</span>
               {note && (
-                <span className="text-xs font-normal text-muted-foreground">
+                <span className="text-xs font-normal text-muted-foreground group-aria-pressed/toggle:text-primary-foreground/80">
                   {note(day)}
                 </span>
               )}
@@ -113,7 +115,7 @@ export function DayStrip({
           render={
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               size="icon-lg"
               aria-label={labels.moreDates}
               className="h-auto self-stretch"

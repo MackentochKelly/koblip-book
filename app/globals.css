@@ -451,6 +451,19 @@
   :root:not(.dark) [data-surface="app"] [data-slot="field-label"]:has(> [data-slot="field"]):not(:hover) {
     @apply bg-card;
   }
+  /* Same for the time picker: the day-part box is a white card with the
+     hairline edge (an open part stays white), and the day and time chips
+     are white until picked. */
+  :root:not(.dark) [data-surface="app"] [data-slot="accordion"] {
+    @apply bg-card shadow-card;
+    border-width: var(--hairline);
+  }
+  :root:not(.dark) [data-surface="app"] [data-slot="accordion-item"] {
+    @apply bg-card;
+  }
+  :root:not(.dark) [data-surface="app"] [data-slot="toggle-group-item"][data-variant="outline"]:not([aria-pressed="true"]):not(:hover) {
+    @apply bg-card;
+  }
 }
 
 /* The sidebar's edge on a computer is a hairline (--hairline). Outside the
