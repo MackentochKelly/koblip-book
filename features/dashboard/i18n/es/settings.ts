@@ -13,11 +13,13 @@ const settings: typeof en = {
     account: "Cuenta",
   },
   partsLabel: "Partes de ajustes",
+  moreInfo: "Más información",
   save: "Guardar",
   continue: "Continuar",
   saved: "Guardado",
   tryAgain: "No funcionó. Inténtalo de nuevo.",
   details: {
+    info: "Tu nombre, Acerca de, teléfono, dirección y sitio web salen en tu página de reservas.",
     name: "Nombre",
     addName: "Escribe el nombre del negocio",
     about: "Acerca de",

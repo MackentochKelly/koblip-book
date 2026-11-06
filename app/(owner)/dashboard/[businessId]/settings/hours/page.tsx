@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { PageSection } from "@/components/page-section"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { HoursForm } from "@/features/dashboard/components/hours-form"
 import { getOwnerMessages } from "@/features/dashboard/i18n/server"
@@ -13,9 +14,12 @@ type Props = {
 
 export default async function HoursPage({ params }: Props) {
   const { businessId } = await params
-  const { hours } = await getOwnerBusiness(businessId)
+  const [{ hours }, m] = await Promise.all([
+    getOwnerBusiness(businessId),
+    getOwnerMessages(),
+  ])
   return (
-    <div className="flex flex-col gap-6">
+    <PageSection id="hours" title={m.settings.parts.hours}>
       <HoursForm
         businessId={businessId}
         hours={hours.map(({ weekday, opensAt, closesAt }) => ({
@@ -24,6 +28,6 @@ export default async function HoursPage({ params }: Props) {
           closesAt,
         }))}
       />
-    </div>
+    </PageSection>
   )
 }

@@ -44,7 +44,7 @@ export function DetailsForm({
   businessId: string
   details: BusinessDetailsInput
   hasTeam: boolean
-  // null: no heading (Settings' frame gives it).
+  // null: no heading (Settings gives it the section title every part has).
   title?: string | null
   next?: string
   canImprove?: boolean

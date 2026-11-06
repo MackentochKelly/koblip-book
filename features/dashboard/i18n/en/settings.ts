@@ -12,12 +12,15 @@ const settings = {
     account: "Account",
   },
   partsLabel: "Settings parts",
+  // A section title's ⓘ (PageSection's infoLabel).
+  moreInfo: "More info",
   save: "Save",
   // A form's button when it moves on to the next setup step.
   continue: "Continue",
   saved: "Saved",
   tryAgain: "That did not work. Please try again.",
   details: {
+    info: "Your name, About, phone, address and website show on your booking page.",
     name: "Name",
     addName: "Add the business name",
     about: "About",
