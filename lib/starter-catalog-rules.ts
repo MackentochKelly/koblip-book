@@ -5,6 +5,11 @@ export const STARTER_CATALOG_RULES = {
   maxServices: 6,
   minExtras: 3,
   maxExtras: 4,
+  // Service categories, like "Haircuts" and "Beard": saved only when the
+  // services have this many different ones, so a business of one kind
+  // stays a flat list (docs/plans/service-categories.md).
+  minCategories: 2,
+  maxCategories: 3,
   teamSize: 3,
   // Tries per catalog: a failed check is sent back with its reasons.
   attempts: 2,

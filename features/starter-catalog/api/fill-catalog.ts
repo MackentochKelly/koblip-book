@@ -8,6 +8,7 @@ import {
   addonOptions,
   type businesses,
   serviceAddonGroups,
+  serviceCategories,
   services,
   teamMembers,
 } from "@/lib/db/schema"
@@ -84,17 +85,42 @@ export function draftFor(business: Business): Promise<CheckedCatalog | null> {
   })
 }
 
-// The writes for a catalog: services, one extras group offered on every
-// service, and the team (no team_member_services rows, so everyone does
-// every service).
+// The writes for a catalog: its service categories in the order they
+// first come (check-catalog keeps them only when there are enough, each
+// spelled one way), services, one extras group offered on every service,
+// and the team (no team_member_services rows, so everyone does every
+// service).
 function catalogInserts(business: Business, catalog: CheckedCatalog) {
+  const categoryIds = new Map<string, string>()
+  for (const service of catalog.services) {
+    if (service.category !== null && !categoryIds.has(service.category)) {
+      categoryIds.set(service.category, crypto.randomUUID())
+    }
+  }
   const serviceIds = catalog.services.map(() => crypto.randomUUID())
   const groupId = crypto.randomUUID()
   return [
+    // Before the services, which point at them.
+    ...(categoryIds.size > 0
+      ? [
+          db.insert(serviceCategories).values(
+            [...categoryIds].map(([name, id], position) => ({
+              id,
+              businessId: business.id,
+              name,
+              position,
+            }))
+          ),
+        ]
+      : []),
     db.insert(services).values(
       catalog.services.map((service, position) => ({
         id: serviceIds[position],
         businessId: business.id,
+        categoryId:
+          service.category === null
+            ? null
+            : (categoryIds.get(service.category) ?? null),
         name: service.name,
         description: service.description || null,
         durationMinutes: service.durationMinutes,
@@ -192,11 +218,11 @@ export async function drawMemberPhoto(
   return photoUrl
 }
 
-// Swaps a business's services, extras and team for the catalog in one
-// batch, so it ends with the old one or the new one, never neither. The
-// old items' links, hours and calendar links go with them; bookings keep
-// their own copies of the names. Then the old photo files are removed.
-// For the refill script only.
+// Swaps a business's services, service categories, extras and team for
+// the catalog in one batch, so it ends with the old one or the new one,
+// never neither. The old items' links, hours and calendar links go with
+// them; bookings keep their own copies of the names. Then the old photo
+// files are removed. For the refill script only.
 export async function replaceCatalog(
   business: Business,
   catalog: CheckedCatalog
@@ -213,6 +239,9 @@ export async function replaceCatalog(
   ])
   await saveAll([
     db.delete(services).where(eq(services.businessId, business.id)),
+    db
+      .delete(serviceCategories)
+      .where(eq(serviceCategories.businessId, business.id)),
     db.delete(addonGroups).where(eq(addonGroups.businessId, business.id)),
     db.delete(teamMembers).where(eq(teamMembers.businessId, business.id)),
     ...catalogInserts(business, catalog),

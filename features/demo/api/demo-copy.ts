@@ -18,6 +18,7 @@ import {
   businessHours,
   businessPhotos,
   serviceAddonGroups,
+  serviceCategories,
   services,
   teamMemberServices,
   teamMemberHours,
@@ -69,6 +70,7 @@ export async function createDemoCopy(
   const sample = DEMO_SAMPLE
   const businessId = crypto.randomUUID()
   const slug = `${sample.slugPrefix}-${businessId.slice(0, 8)}`
+  const categoryIds = sample.serviceCategories.map(() => crypto.randomUUID())
   const serviceIds = sample.services.map(() => crypto.randomUUID())
   const memberIds = sample.team.map(() => crypto.randomUUID())
   const groupIds = sample.extras.map(() => crypto.randomUUID())
@@ -129,11 +131,21 @@ export async function createDemoCopy(
       .values(
         sample.photos.map((url, position) => ({ businessId, url, position }))
       ),
+    // Before the services, which point at them.
+    db.insert(serviceCategories).values(
+      sample.serviceCategories.map((name, position) => ({
+        id: categoryIds[position],
+        businessId,
+        name,
+        position,
+      }))
+    ),
     db.insert(services).values(
-      sample.services.map((service, index) => ({
+      sample.services.map(({ category, ...service }, index) => ({
         id: serviceIds[index],
         businessId,
         ...service,
+        categoryId: categoryIds[category],
         position: index,
       }))
     ),

@@ -14,6 +14,7 @@ export interface BusinessFacts {
 
 const SYSTEM_MESSAGE = `You set up the booking page of a real local business, from its Google Maps details. Write what this kind of business really offers, in plain English, the way the owner would.
 - services: ${RULES.minServices} to ${RULES.maxServices} of its most booked services, most popular first. Short names (2 to 4 words), one plain sentence each.
+- category: each service's kind in 1 to 3 plain words, like "Haircuts", "Beard" or "Nails". Only clearly different kinds get their own category, at most ${RULES.maxCategories}; when every service is one kind, give them all the same one.
 - extras: ${RULES.minExtras} to ${RULES.maxExtras} add-ons a customer can add to any service, never a copy of a service, plus the group's short name (1 to 3 words) and a short question asked over them.
 - price: a typical price in the given currency's main unit for this kind of place in its city, as a plain number. Round it the way local price lists do.
 - durationMinutes: how long it really takes.
@@ -31,11 +32,16 @@ const ITEM = {
   },
   required: ["name", "description", "durationMinutes", "price"],
 } as const
+const SERVICE = {
+  ...ITEM,
+  properties: { ...ITEM.properties, category: STRING },
+  required: [...ITEM.required, "category"],
+} as const
 
 const CATALOG_SCHEMA = {
   type: "object",
   properties: {
-    services: { type: "array", items: ITEM },
+    services: { type: "array", items: SERVICE },
     extras: {
       type: "object",
       properties: {
@@ -64,10 +70,12 @@ const CATALOG_SCHEMA = {
   required: ["services", "extras", "team"],
 } as const
 
+// The Google category is called the business type here, so the model never
+// takes it for a service's own category.
 function factsMessage(facts: BusinessFacts): string {
   return [
     `Business name: ${facts.name}`,
-    `Category: ${facts.category ?? "unknown"}`,
+    `Business type: ${facts.category ?? "unknown"}`,
     `Address: ${facts.address ?? "unknown"}`,
     `Currency: ${facts.currency}`,
     facts.description ? `About: ${facts.description}` : null,

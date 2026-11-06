@@ -5,7 +5,7 @@ import { join } from "node:path"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import { BOOKING_RULES } from "@/lib/booking-rules"
-import { businesses, services, user } from "@/lib/db/schema"
+import { businesses, serviceCategories, services, user } from "@/lib/db/schema"
 import type { BusinessDetailsInput } from "../types"
 
 vi.mock("server-only", () => ({}))
@@ -123,6 +123,63 @@ test("snaps durations, drops duplicates and long names, caps at 8", async () => 
   expect(
     result.services.every((service) => service.name !== "classic cut")
   ).toBe(true)
+})
+
+test("gives each suggestion an existing category's spelling, a new short one, or none", async () => {
+  await loadFresh()
+  const { db } = await import("@/lib/db")
+  await db.insert(serviceCategories).values([
+    { id: "cat-cuts", businessId: "biz-mine", name: "Haircuts", position: 0 },
+    { id: "cat-beard", businessId: "biz-mine", name: "Beard", position: 1 },
+  ])
+  createMock.mockResolvedValue(
+    reply([
+      { name: "Skin Fade", durationMinutes: 30, category: " haircuts " },
+      { name: "Beard Oil", durationMinutes: 15, category: "BEARD" },
+      { name: "Hot Towel Shave", durationMinutes: 30, category: "  Shaves  " },
+      { name: "Kids Cut", durationMinutes: 30, category: "x".repeat(41) },
+      { name: "Hair Wash", durationMinutes: 15, category: "   " },
+      { name: "Eyebrows", durationMinutes: 15 },
+      { name: "Scalp Massage", durationMinutes: 15, category: 7 },
+    ])
+  )
+  try {
+    const result = await suggestServices("biz-mine", "en")
+    expect(result.ok && result.services.map((service) => service.category)).toEqual([
+      "Haircuts",
+      "Beard",
+      "Shaves",
+      null,
+      null,
+      null,
+      null,
+    ])
+    const request = createMock.mock.calls[0][0]
+    expect(request.messages[1].content).toContain(
+      "Existing service categories: Haircuts, Beard"
+    )
+    expect(request.messages[1].content).toContain("Business type: Barber shop")
+    const item =
+      request.response_format.json_schema.schema.properties.services.items
+    expect(item.properties.category).toEqual({ type: "string" })
+    expect(item.required).toContain("category")
+  } finally {
+    await db
+      .delete(serviceCategories)
+      .where(eq(serviceCategories.businessId, "biz-mine"))
+  }
+})
+
+test("leaves the categories line out for a business with none", async () => {
+  await loadFresh()
+  createMock.mockResolvedValue(
+    reply([{ name: "Skin Fade", durationMinutes: 30, category: "Haircuts" }])
+  )
+  const result = await suggestServices("biz-mine", "en")
+  expect(result.ok && result.services[0].category).toBe("Haircuts")
+  expect(createMock.mock.calls[0][0].messages[1].content).not.toContain(
+    "service categories"
+  )
 })
 
 test("returns ai_off when the key is missing", async () => {

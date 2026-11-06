@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq, gte } from "drizzle-orm"
+import { and, asc, eq, gte } from "drizzle-orm"
 import {
   BOOKING_RULES,
   type CancelReason,
@@ -558,7 +558,7 @@ export async function claimBusiness(
 }
 
 const SUGGEST_SYSTEM_MESSAGE =
-  "You suggest the bookable services for a local business's booking page. Return up to 8 common services this kind of business offers, each with a short name (max 60 characters), an optional one-line description (max 120 characters) and a typical length in minutes. Never include prices. Never repeat a service the business already has."
+  "You suggest the bookable services for a local business's booking page. Return up to 8 common services this kind of business offers, each with a short name (max 60 characters), an optional one-line description (max 120 characters), a typical length in minutes and a category: one of the business's existing service categories, written exactly as given, when one fits, else a short new one (1 to 3 plain words, like \"Haircuts\"), or empty when none is needed. Never include prices. Never repeat a service the business already has."
 
 function languageLine(language: PageLanguage): string {
   return language === "es"
@@ -576,9 +576,32 @@ function snapDuration(minutes: number): number {
   return best
 }
 
+// A suggestion's category: an existing one in its saved spelling when the
+// names match whatever their capitals, else a new name that fits, else
+// none (Other).
+function suggestedCategory(
+  value: unknown,
+  categoryNames: string[]
+): string | null {
+  if (typeof value !== "string") {
+    return null
+  }
+  const name = value.trim().replace(/\s+/g, " ")
+  const existing = categoryNames.find(
+    (category) => category.toLocaleLowerCase() === name.toLocaleLowerCase()
+  )
+  if (existing) {
+    return existing
+  }
+  return name.length > 0 && name.length <= BOOKING_RULES.maxServiceCategoryName
+    ? name
+    : null
+}
+
 function mapSuggestions(
   raw: unknown,
-  existingNames: string[]
+  existingNames: string[],
+  categoryNames: string[]
 ): ServiceSuggestion[] | null {
   if (!Array.isArray(raw)) {
     return null
@@ -596,6 +619,7 @@ function mapSuggestions(
       name?: unknown
       description?: unknown
       durationMinutes?: unknown
+      category?: unknown
     }
     if (typeof candidate.name !== "string") {
       continue
@@ -624,7 +648,7 @@ function mapSuggestions(
           ? description.slice(0, 120)
           : description,
       durationMinutes: snapDuration(duration),
-      category: null,
+      category: suggestedCategory(candidate.category, categoryNames),
     })
   }
   return suggestions
@@ -646,10 +670,18 @@ export async function suggestServices(
     return { ok: false, error: "ai_off" }
   }
   const lang = isPageLanguage(language) ? language : "en"
-  const existing = await db
-    .select({ name: services.name })
-    .from(services)
-    .where(eq(services.businessId, owned.business.id))
+  const [existing, categories] = await Promise.all([
+    db
+      .select({ name: services.name })
+      .from(services)
+      .where(eq(services.businessId, owned.business.id)),
+    db
+      .select({ name: serviceCategories.name })
+      .from(serviceCategories)
+      .where(eq(serviceCategories.businessId, owned.business.id))
+      .orderBy(asc(serviceCategories.position)),
+  ])
+  const categoryNames = categories.map((row) => row.name)
   try {
     const completion = await client.chat.completions.create(
       {
@@ -663,11 +695,16 @@ export async function suggestServices(
             role: "user",
             content: [
               `Business name: ${owned.business.name}`,
+              // The Google category, named so the model never takes it for
+              // a service category.
               owned.business.category
-                ? `Category: ${owned.business.category}`
+                ? `Business type: ${owned.business.category}`
                 : null,
               existing.length > 0
                 ? `Existing services: ${existing.map((row) => row.name).join(", ")}`
+                : null,
+              categoryNames.length > 0
+                ? `Existing service categories: ${categoryNames.join(", ")}`
                 : null,
             ]
               .filter((line) => line !== null)
@@ -689,8 +726,9 @@ export async function suggestServices(
                       name: { type: "string" },
                       description: { type: "string" },
                       durationMinutes: { type: "integer" },
+                      category: { type: "string" },
                     },
-                    required: ["name", "durationMinutes"],
+                    required: ["name", "durationMinutes", "category"],
                   },
                 },
               },
@@ -708,7 +746,8 @@ export async function suggestServices(
     const parsed = JSON.parse(content) as { services?: unknown }
     const suggestions = mapSuggestions(
       parsed.services,
-      existing.map((row) => row.name)
+      existing.map((row) => row.name),
+      categoryNames
     )
     if (!suggestions) {
       return { ok: false, error: "failed" }

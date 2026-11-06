@@ -70,3 +70,46 @@ test("rejects repeats and an answer that is not a catalog", () => {
   expect(checkCatalog(null).ok).toBe(false)
   expect(checkCatalog("nonsense").ok).toBe(false)
 })
+
+const withCategories = (...categories: unknown[]) => {
+  const draft = good()
+  return {
+    ...draft,
+    services: draft.services.map((service, index) => ({ ...service, category: categories[index] })),
+  }
+}
+const categoriesOf = (draft: unknown) => {
+  const check = checkCatalog(draft)
+  if (!check.ok) throw new Error(check.problems.join(" "))
+  return check.catalog.services.map((service) => service.category)
+}
+
+test("keeps 2 or 3 categories, trimmed, each spelled as first seen", () => {
+  expect(categoriesOf(withCategories(" Haircuts ", "Beard", "haircuts", "Beard  care"))).toEqual([
+    "Haircuts",
+    "Beard",
+    "Haircuts",
+    "Beard care",
+  ])
+  // A service with no usable category goes to Other.
+  expect(categoriesOf(withCategories("Haircuts", "Beard", "", "x".repeat(41)))).toEqual([
+    "Haircuts",
+    "Beard",
+    null,
+    null,
+  ])
+})
+
+test("saves no category when there is one kind or too many", () => {
+  expect(categoriesOf(withCategories("Haircuts", "haircuts", "Haircuts", "HAIRCUTS"))).toEqual([null, null, null, null])
+  expect(categoriesOf(withCategories("Haircuts", "Beard", "Kids", "Shaves"))).toEqual([null, null, null, null])
+  expect(categoriesOf(good())).toEqual([null, null, null, null])
+})
+
+test("never fails or sends a draft back for its categories", () => {
+  expect(checkCatalog(withCategories(42, null, { name: "Hair" }, ["Beard"])).ok).toBe(true)
+  const draft = withCategories("Haircuts", "Beard", "x".repeat(200), "  ")
+  draft.services[1].price = 0
+  const check = checkCatalog(draft)
+  expect(!check.ok && check.problems).toEqual(["services 2: price must be a positive amount in the local currency."])
+})

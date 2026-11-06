@@ -1,9 +1,11 @@
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { STARTER_CATALOG_RULES as RULES } from "@/lib/starter-catalog-rules"
-import type { DraftCatalog, DraftItem } from "../types"
+import type { DraftCatalog, DraftItem, DraftService } from "../types"
 
 export type CheckedCatalog = Pick<DraftCatalog, "team"> & {
-  services: Array<DraftItem & { priceMinor: number }>
+  // `category`: the service's category, spelled the same for every service
+  // in it; null for all when the catalog keeps no categories.
+  services: Array<DraftItem & { priceMinor: number; category: string | null }>
   extras: {
     name: string
     prompt: string
@@ -78,10 +80,49 @@ function checkItems(
   })
 }
 
+// A category name as the owner's own category actions save it: trimmed,
+// single spaces, 1 to maxServiceCategoryName long. Anything else is none.
+function categoryName(value: unknown): string | null {
+  const name = text(value).replace(/\s+/g, " ")
+  return name.length > 0 && name.length <= BOOKING_RULES.maxServiceCategoryName
+    ? name
+    : null
+}
+
+// Each checked service's category. Kept only when the services have
+// RULES.minCategories to RULES.maxCategories different ones (whatever
+// their capitals, each spelled as first seen); otherwise none at all, so
+// the page stays the flat list it is without categories. Never a problem
+// for the model: a draft is never sent back for its categories.
+function checkCategories(raw: unknown, count: number): Array<string | null> {
+  const items: unknown[] = Array.isArray(raw) ? raw.slice(0, count) : []
+  const spellings = new Map<string, string>()
+  const names = items.map((item) => {
+    const name = categoryName((item as Partial<DraftService> | null)?.category)
+    if (!name) {
+      return null
+    }
+    const key = name.toLocaleLowerCase()
+    const known = spellings.get(key)
+    if (known) {
+      return known
+    }
+    spellings.set(key, name)
+    return name
+  })
+  const keep =
+    spellings.size >= RULES.minCategories &&
+    spellings.size <= RULES.maxCategories
+  return Array.from({ length: count }, (_, index) =>
+    keep ? (names[index] ?? null) : null
+  )
+}
+
 // Fixed-rule check of Meta AI's catalog before anything is saved: right
 // shape, counts and lengths, real prices, lengths the booking page offers
 // (snapped to the nearest one), no repeats, and no extra that repeats a
-// service. Problems are written for the model, so they can be sent back.
+// service; then the services' categories, which are never a problem.
+// Problems are written for the model, so they can be sent back.
 export function checkCatalog(draft: unknown): CatalogCheck {
   const problems: string[] = []
   const value = (draft ?? {}) as Partial<DraftCatalog>
@@ -139,10 +180,14 @@ export function checkCatalog(draft: unknown): CatalogCheck {
   if (problems.length > 0) {
     return { ok: false, problems }
   }
+  const categories = checkCategories(value.services, services.length)
   return {
     ok: true,
     catalog: {
-      services,
+      services: services.map((service, index) => ({
+        ...service,
+        category: categories[index],
+      })),
       extras: { name: groupName, prompt, options },
       team: { role, members: team },
     },

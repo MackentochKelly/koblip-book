@@ -8,6 +8,7 @@ import {
   addonOptions,
   businesses,
   serviceAddonGroups,
+  serviceCategories,
   services,
   teamMembers,
   user,
@@ -116,6 +117,64 @@ test("writes services, extras, prices and team, all linked", async () => {
   expect(await db.select().from(teamMembers).where(eq(teamMembers.businessId, businessId))).toHaveLength(3)
 })
 
+// The fixture with each service's category, in order.
+const grouped = (...categories: string[]) => ({
+  ...catalog,
+  services: catalog.services.map((service, index) => ({ ...service, category: categories[index] })),
+})
+
+async function savedGroups(businessId: string) {
+  const { db } = await import("@/lib/db")
+  const { asc, eq } = await import("drizzle-orm")
+  const categories = await db
+    .select()
+    .from(serviceCategories)
+    .where(eq(serviceCategories.businessId, businessId))
+    .orderBy(asc(serviceCategories.position))
+  const rows = await db
+    .select()
+    .from(services)
+    .where(eq(services.businessId, businessId))
+    .orderBy(asc(services.position))
+  const names = new Map(categories.map((category) => [category.id, category.name]))
+  return {
+    categories: categories.map((category) => category.name),
+    services: rows.map((row) => [row.name, row.categoryId === null ? null : names.get(row.categoryId)]),
+  }
+}
+
+test("saves the catalog's categories in first-seen order, with their services", async () => {
+  const { startStarterCatalog } = await import("./prepare-actions")
+  const businessId = await seedBusiness()
+  createMock.mockResolvedValue(reply(grouped("Haircuts", "Beard", "haircuts", "Beard")))
+
+  await startStarterCatalog(businessId)
+
+  expect(await savedGroups(businessId)).toEqual({
+    categories: ["Haircuts", "Beard"],
+    services: [
+      ["Haircut", "Haircuts"],
+      ["Beard trim", "Beard"],
+      ["Kids cut", "Haircuts"],
+      ["Shave", "Beard"],
+    ],
+  })
+  const schema = createMock.mock.calls[0][0].response_format.json_schema.schema
+  expect(schema.properties.services.items.required).toContain("category")
+})
+
+test("a catalog of one kind is saved flat, with no category", async () => {
+  const { startStarterCatalog } = await import("./prepare-actions")
+  const businessId = await seedBusiness()
+  createMock.mockResolvedValue(reply(grouped("Haircuts", "Haircuts", "Haircuts", "Haircuts")))
+
+  await startStarterCatalog(businessId)
+
+  const saved = await savedGroups(businessId)
+  expect(saved.categories).toEqual([])
+  expect(saved.services.every(([, category]) => category === null)).toBe(true)
+})
+
 test("sends failed checks back to the model once, then gives up", async () => {
   const { startStarterCatalog } = await import("./prepare-actions")
   const businessId = await seedBusiness()
@@ -168,10 +227,14 @@ test("the refill swaps the old catalog for the new one in one save", async () =>
   const { db } = await import("@/lib/db")
   const { eq } = await import("drizzle-orm")
   const businessId = await seedBusiness()
-  await db.insert(services).values({ businessId, name: "Old cut", durationMinutes: 30 })
+  const [oldCategory] = await db
+    .insert(serviceCategories)
+    .values({ businessId, name: "Old cuts" })
+    .returning()
+  await db.insert(services).values({ businessId, name: "Old cut", durationMinutes: 30, categoryId: oldCategory.id })
   await db.insert(teamMembers).values({ businessId, name: "Old barber" })
   const [business] = await db.select().from(businesses).where(eq(businesses.id, businessId))
-  const check = checkCatalog(catalog)
+  const check = checkCatalog(grouped("Haircuts", "Beard", "Haircuts", "Beard"))
   if (!check.ok) throw new Error("bad fixture")
 
   await replaceCatalog(business, check.catalog)
@@ -179,6 +242,7 @@ test("the refill swaps the old catalog for the new one in one save", async () =>
   const names = (await db.select().from(services).where(eq(services.businessId, businessId))).map((row) => row.name)
   expect(names).not.toContain("Old cut")
   expect(names).toHaveLength(4)
+  expect((await savedGroups(businessId)).categories).toEqual(["Haircuts", "Beard"])
   const team = (await db.select().from(teamMembers).where(eq(teamMembers.businessId, businessId))).map((row) => row.name)
   expect(team).toEqual(["Luis", "Ana", "Marco"])
 })

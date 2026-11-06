@@ -15,6 +15,7 @@ import {
   businessHours,
   businessPhotos,
   serviceAddonGroups,
+  serviceCategories,
   services,
   session,
   teamMemberServices,
@@ -72,6 +73,9 @@ export async function purgeOldDemos(now: number = Date.now()): Promise<void> {
               .where(inArray(addonOptions.businessId, ids)),
             db.delete(addonGroups).where(inArray(addonGroups.businessId, ids)),
             db.delete(services).where(inArray(services.businessId, ids)),
+            db
+              .delete(serviceCategories)
+              .where(inArray(serviceCategories.businessId, ids)),
             db.delete(teamMemberHours).where(inArray(teamMemberHours.businessId, ids)),
             db.delete(teamMembers).where(inArray(teamMembers.businessId, ids)),
             db

@@ -2,7 +2,7 @@
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { eq } from "drizzle-orm"
+import { asc, eq } from "drizzle-orm"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
 import {
   addonOptions,
@@ -11,6 +11,7 @@ import {
   businessHours,
   businessPhotos,
   serviceAddonGroups,
+  serviceCategories,
   services,
   session,
   teamMemberServices,
@@ -86,6 +87,33 @@ test("a copy is the full sample, owned by the guest and marked demo", async () =
   const count = async (table: typeof services | typeof teamMembers) =>
     (await db.select().from(table).where(eq(table.businessId, copy.id))).length
   expect(await count(services)).toBe(DEMO_SAMPLE.services.length)
+  // The sample's service categories in order, each with its services.
+  const categories = await db
+    .select()
+    .from(serviceCategories)
+    .where(eq(serviceCategories.businessId, copy.id))
+    .orderBy(asc(serviceCategories.position))
+  expect(categories.map((category) => category.name)).toEqual([
+    "Hair",
+    "Nails",
+    "Face & brows",
+  ])
+  const categoryName = new Map(categories.map((category) => [category.id, category.name]))
+  const serviceRows = await db
+    .select()
+    .from(services)
+    .where(eq(services.businessId, copy.id))
+    .orderBy(asc(services.position))
+  expect(
+    serviceRows.map((row) => [row.name, row.categoryId && categoryName.get(row.categoryId)])
+  ).toEqual([
+    ["Haircut", "Hair"],
+    ["Colour", "Hair"],
+    ["Blow-dry", "Hair"],
+    ["Manicure", "Nails"],
+    ["Facial", "Face & brows"],
+    ["Brows", "Face & brows"],
+  ])
   expect(
     (
       await db
@@ -163,6 +191,12 @@ test("the purge deletes old copies with their rows, and old guests", async () =>
   ).toHaveLength(0)
   expect(
     await db.select().from(services).where(eq(services.businessId, old.id))
+  ).toHaveLength(0)
+  expect(
+    await db
+      .select()
+      .from(serviceCategories)
+      .where(eq(serviceCategories.businessId, old.id))
   ).toHaveLength(0)
   const users = await db.select({ id: user.id }).from(user)
   expect(users.map((row) => row.id).sort()).toEqual(["guest", "owner"])

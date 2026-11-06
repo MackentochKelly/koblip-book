@@ -35,40 +35,50 @@ export const DEMO_SAMPLE = {
     { weekday: 5, opensAt: "09:00", closesAt: "19:00" },
     { weekday: 6, opensAt: "10:00", closesAt: "16:00" },
   ],
+  // Its service categories, in order. Not `category` above, which is the
+  // studio's own type.
+  serviceCategories: ["Hair", "Nails", "Face & brows"],
+  // `category`: an index into serviceCategories above.
   services: [
     {
       name: "Haircut",
       description: "Wash, cut and style.",
+      category: 0,
       durationMinutes: 45,
       priceMinor: 2500,
     },
     {
       name: "Colour",
       description: "All-over colour with a gloss finish.",
+      category: 0,
       durationMinutes: 90,
       priceMinor: 6000,
     },
     {
       name: "Blow-dry",
       description: "Wash and a smooth blow-dry.",
+      category: 0,
       durationMinutes: 30,
       priceMinor: 2000,
     },
     {
       name: "Manicure",
       description: "Shape, cuticle care and polish.",
+      category: 1,
       durationMinutes: 40,
       priceMinor: 1800,
     },
     {
       name: "Facial",
       description: "Deep clean and hydration for every skin type.",
+      category: 2,
       durationMinutes: 60,
       priceMinor: 4500,
     },
     {
       name: "Brows",
       description: "Shape and tidy.",
+      category: 2,
       durationMinutes: 20,
       priceMinor: 1200,
     },
