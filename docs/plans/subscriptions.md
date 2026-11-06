@@ -89,10 +89,12 @@ How to use this file: [Plans](README.md).
   defaults; a feature removed from the list drops its stored row's effect.
   No change log (owner, 2026-11-06: not needed); each row keeps who set it
   last (`updatedBy`). (Backend dev)
-- **S11. Nothing locks before billing.** `SUBSCRIPTION_RULES.billingLive`
-  (`lib/subscription-rules.ts`) is false until P1: every business counts as
-  on the top plan. `businessPlan()` reads the subscription from P2 on.
-  (Backend dev, 2026-11-06)
+- **S11. A business that never paid is on Free** (owner, 2026-11-06,
+  replacing "nothing locks before billing"). `businessPlan()` always reads
+  the subscription; there is no switch. Free's limits (O4) apply to
+  everyone today, and a feature the admin moves to Pro locks for every
+  business that hasn't paid, so move one only once the live site can take
+  payments (docs/billing.md).
 - **S12. Only checked features move.** Admin → Plans lets a built feature
   leave its default plan only once its code asks for the plan
   (`PLAN_CHECKED_FEATURES`); `lib/plan-checks.test.ts` fails if that list
@@ -159,6 +161,7 @@ How to use this file: [Plans](README.md).
 | 2026-11-06 | Owner | Plans page: no change log; group chips; the app's switcher |
 | 2026-11-06 | Owner | O1–O3: $19/month or $190/year; no trial; free stays free |
 | 2026-11-06 | Owner | O4: 30 template messages a month on Free, 200 on Pro |
+| 2026-11-06 | Owner | S11: every business that hasn't paid counts as Free now; the billingLive switch is gone |
 | 2026-11-06 | Backend dev | S14: prices before tax; Pro product and prices made in the Stripe sandbox |
 | 2026-11-06 | Backend dev | S15: what a downgrade stops; other features get checks only when they move to a paid plan |
 | 2026-11-06 | Backend dev | S11, S12: nothing locks before billing; only checked features move |

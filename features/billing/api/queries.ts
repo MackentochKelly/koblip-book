@@ -6,7 +6,7 @@ import { and, desc, eq, isNotNull, notInArray } from "drizzle-orm"
 import { requireAccount } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { subscription } from "@/lib/db/schema"
-import { canBillBusiness, subscribedPlan } from "@/lib/plan-access"
+import { businessPlan, canBillBusiness } from "@/lib/plan-access"
 import type { Plan } from "@/lib/plan-features"
 import { stripeClient } from "@/lib/stripe"
 import { PAID_PLANS } from "@/lib/subscription-rules"
@@ -41,7 +41,7 @@ export async function getBilling(businessId: string): Promise<Billing> {
   const owner = await requireAccount(`/dashboard/${businessId}/settings/plan`)
   if (!(await canBillBusiness(owner.userId, businessId))) notFound()
   const [plan, prices, [current]] = await Promise.all([
-    subscribedPlan(businessId),
+    businessPlan(businessId),
     proPrices(),
     db
       .select({

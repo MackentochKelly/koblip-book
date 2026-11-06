@@ -5,7 +5,6 @@ import { join } from "node:path"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
 import { db } from "@/lib/db"
 import { businessSettings, businesses } from "@/lib/db/schema"
-import { NOTIFICATION_RULES } from "@/lib/notification-rules"
 
 vi.mock("server-only", () => ({}))
 
@@ -15,6 +14,7 @@ vi.mock("@/lib/plan-access", () => ({
 }))
 
 const { koblipTemplateLimit } = await import("./koblip-usage")
+const { notificationRules } = await import("./platform-settings")
 
 let dir: string
 let closeDb: () => void
@@ -36,7 +36,8 @@ afterAll(() => {
 })
 
 test("each plan has its own monthly templates, and a business's own limit wins", async () => {
-  const rules = { ...NOTIFICATION_RULES, koblipMonthlyTemplates: 30, koblipMonthlyTemplatesPro: 200 }
+  // The defaults: 30 on Free, 200 on Pro (O4).
+  const rules = await notificationRules()
   expect(await koblipTemplateLimit("free", rules)).toBe(30)
   expect(await koblipTemplateLimit("pro", rules)).toBe(200)
 

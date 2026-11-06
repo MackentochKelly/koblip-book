@@ -14,7 +14,6 @@ import {
   type Plan,
   type PlanFeatureKey,
 } from "@/lib/plan-features"
-import { SUBSCRIPTION_RULES } from "@/lib/subscription-rules"
 
 // Which plan has which feature (docs/plans/subscriptions.md, S9): the
 // defaults in lib/plan-features.ts with the admin's choices over them. Only
@@ -79,9 +78,10 @@ export async function setFeaturePlan({
 // them. Any other (past_due while Stripe retries, canceled, unpaid…) is Free.
 const PAID_STATUSES = ["active", "trialing"]
 
-// The highest plan the business's paid subscriptions give, or the first
-// plan with none. A plan name the app no longer knows is ignored.
-export async function subscribedPlan(businessId: string): Promise<Plan> {
+// The plan a business is on: the highest one its paid subscriptions give,
+// else the first (Free). A business that never paid is on Free. A plan name
+// the app no longer knows is ignored.
+export async function businessPlan(businessId: string): Promise<Plan> {
   const rows = await db
     .select({ plan: subscription.plan })
     .from(subscription)
@@ -91,14 +91,6 @@ export async function subscribedPlan(businessId: string): Promise<Plan> {
   let best: Plan = PLANS[0]
   for (const { plan } of rows) if (isPlan(plan) && planIncludes(plan, best)) best = plan
   return best
-}
-
-// The plan a business is on. Until billing is live every business counts
-// as on the top plan (SUBSCRIPTION_RULES.billingLive); then it comes from
-// its subscription.
-export async function businessPlan(businessId: string): Promise<Plan> {
-  if (!SUBSCRIPTION_RULES.billingLive) return PLANS[PLANS.length - 1]
-  return subscribedPlan(businessId)
 }
 
 // Who may pay for, change, cancel or see a business's plan (S2): its owner,

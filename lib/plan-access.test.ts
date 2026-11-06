@@ -9,7 +9,7 @@ import { PLAN_FEATURES, PLANS, planIncludes } from "@/lib/plan-features"
 
 vi.mock("server-only", () => ({}))
 
-const { PlanFeatureError, canBillBusiness, featurePlans, lockedPlans, setFeaturePlan, subscribedPlan } =
+const { PlanFeatureError, businessPlan, canBillBusiness, featurePlans, lockedPlans, setFeaturePlan } =
   await import("./plan-access")
 
 let dir: string
@@ -76,9 +76,17 @@ test("unknown features and plans are refused, and stale rows ignored", async () 
   expect(await featurePlans()).not.toHaveProperty("removedFeature")
 })
 
-test("nothing is locked while billing is not live", async () => {
+test("a business that never paid is on Free: a feature moved to Pro locks", async () => {
+  expect(await lockedPlans("never-paid")).toEqual({
+    // The "soon" ones start on Pro.
+    ...Object.fromEntries(
+      Object.entries(PLAN_FEATURES)
+        .filter(([, feature]) => feature.defaultPlan === "pro")
+        .map(([key]) => [key, "pro"])
+    ),
+  })
   await setFeaturePlan({ key: "analytics", plan: "pro", userId: "admin" })
-  expect(await lockedPlans("any-business")).toEqual({})
+  expect(await lockedPlans("never-paid")).toMatchObject({ analytics: "pro" })
   await setFeaturePlan({ key: "analytics", plan: null, userId: "admin" })
 })
 
@@ -92,7 +100,7 @@ test("a business is on Pro only while its subscription is paid", async () => {
     ownerId: "admin",
   })
   await db.insert(businesses).values([business("paid"), business("retrying")])
-  expect(await subscribedPlan("paid")).toBe("free")
+  expect(await businessPlan("paid")).toBe("free")
 
   await db.insert(subscription).values([
     { id: "s1", plan: "pro", referenceId: "paid", status: "active" },
@@ -101,11 +109,11 @@ test("a business is on Pro only while its subscription is paid", async () => {
     // A plan name the app no longer knows counts for nothing.
     { id: "s3", plan: "gold", referenceId: "retrying", status: "active" },
   ])
-  expect(await subscribedPlan("paid")).toBe("pro")
-  expect(await subscribedPlan("retrying")).toBe("free")
+  expect(await businessPlan("paid")).toBe("pro")
+  expect(await businessPlan("retrying")).toBe("free")
 
   await db.update(subscription).set({ status: "canceled" })
-  expect(await subscribedPlan("paid")).toBe("free")
+  expect(await businessPlan("paid")).toBe("free")
 })
 
 test("only a real business's owner may bill it", async () => {
