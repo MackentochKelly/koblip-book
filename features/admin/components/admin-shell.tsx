@@ -9,6 +9,7 @@ import {
   SparklesIcon,
   WhatsAppIcon,
   StoreIcon,
+  TagIcon,
   UsersIcon,
 } from "@/components/ui/icons"
 
@@ -32,6 +33,7 @@ const NAV = [
   { path: "/businesses", key: "businesses", icon: StoreIcon },
   { path: "/owners", key: "owners", icon: ContactIcon },
   { path: "/team", key: "team", icon: UsersIcon },
+  { path: "/service-categories", key: "serviceCategories", icon: TagIcon },
   { path: "/bookings", key: "bookings", icon: CalendarDaysIcon },
   { path: "/whatsapp", key: "whatsapp", icon: WhatsAppIcon },
   { path: "/notifications", key: "notifications", icon: BellIcon },

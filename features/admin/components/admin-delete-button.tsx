@@ -10,8 +10,9 @@ import { Trash2Icon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { useAdminMessages } from "../i18n/provider"
 
-// Delete on an Owners or Businesses row: asks first, then runs the page's
-// delete action (passed in by the page) and shows how it went.
+// Delete on an Owners, Businesses or Service categories row: asks first,
+// then runs the page's delete action (passed in by the page) and shows how
+// it went.
 export function AdminDeleteButton({
   name,
   description,

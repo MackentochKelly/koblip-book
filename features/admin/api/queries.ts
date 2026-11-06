@@ -4,7 +4,7 @@ import { and, asc, count, desc, eq, gt, gte, isNotNull, isNull, sql } from "driz
 import { getAccountVoices } from "@/lib/account-voices"
 import { requireAdmin } from "@/lib/dal"
 import { db } from "@/lib/db"
-import { bookings, businesses, customers, teamInvites, teamMembers, teamMemberHours, ownerVoices, user } from "@/lib/db/schema"
+import { bookings, businesses, customers, serviceCategories, services, teamInvites, teamMembers, teamMemberHours, ownerVoices, user } from "@/lib/db/schema"
 
 // Every list stops here; the newest come first.
 const MAX_ROWS = 200
@@ -223,4 +223,52 @@ export async function getTeamAccounts(): Promise<{
       .limit(MAX_ROWS),
   ])
   return { joined, invites }
+}
+
+export interface AdminServiceCategory {
+  id: string
+  name: string
+  // How many services are in it.
+  services: number
+}
+
+export interface AdminCategoryBusiness {
+  id: string
+  name: string
+  categories: AdminServiceCategory[]
+}
+
+// Each business with service categories, by name, and its categories in
+// the owner's order with how many services each holds
+// (docs/plans/service-categories.md). Demo copies are left out.
+export async function getServiceCategories(): Promise<AdminCategoryBusiness[]> {
+  await requireAdmin()
+  const serviceCount = db
+    .select({ categoryId: services.categoryId, n: count().as("n") })
+    .from(services)
+    .where(isNotNull(services.categoryId))
+    .groupBy(services.categoryId)
+    .as("service_count")
+  const rows = await db
+    .select({
+      id: serviceCategories.id,
+      name: serviceCategories.name,
+      services: sql<number>`coalesce(${serviceCount.n}, 0)`,
+      businessId: businesses.id,
+      businessName: businesses.name,
+    })
+    .from(serviceCategories)
+    .innerJoin(businesses, eq(businesses.id, serviceCategories.businessId))
+    .leftJoin(serviceCount, eq(serviceCount.categoryId, serviceCategories.id))
+    .where(realBusiness)
+    // By id too, so two businesses with one name stay apart.
+    .orderBy(asc(businesses.name), asc(businesses.id), asc(serviceCategories.position))
+    .limit(MAX_ROWS)
+  const list: AdminCategoryBusiness[] = []
+  for (const { businessId, businessName, ...category } of rows) {
+    const last = list.at(-1)
+    if (last?.id === businessId) last.categories.push(category)
+    else list.push({ id: businessId, name: businessName, categories: [category] })
+  }
+  return list
 }

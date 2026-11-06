@@ -420,12 +420,15 @@ const en = {
     bookings: (n: number) => (n === 1 ? "1 booking" : `${n} bookings`),
     open: (name: string) => `Open ${name}'s page`,
   },
-  // Team members with their own account, and their open invite links
-  // (docs/plans/team-accounts.md).
+  // Every business's service categories (docs/plans/service-categories.md).
   serviceCategories: {
     none: "No service categories yet",
     services: (n: number) => (n === 1 ? "1 service" : `${n} services`),
+    // Under "Delete Hair?".
+    movesToOther: "Its services move to Other.",
   },
+  // Team members with their own account, and their open invite links
+  // (docs/plans/team-accounts.md).
   team: {
     none: "No team accounts or invite links yet",
     joined: "Joined",
@@ -954,6 +957,7 @@ const es: AdminMessages = {
   serviceCategories: {
     none: "Aún no hay categorías de servicios",
     services: (n: number) => (n === 1 ? "1 servicio" : `${n} servicios`),
+    movesToOther: "Sus servicios pasan a Otros.",
   },
   team: {
     none: "Aún no hay cuentas del equipo ni enlaces de invitación",
