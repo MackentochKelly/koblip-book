@@ -18,11 +18,15 @@ import { useOwnerMessages } from "../i18n/provider"
 // choice about how to remove it, under the description.
 export function ConfirmRemove({
   name,
+  description,
   onConfirm,
   onClose,
   children,
 }: {
   name: string | null
+  // The line under the title, for what removing it does instead (a
+  // category's services move to Other). Left out: it can't be undone.
+  description?: string
   onConfirm: () => void
   onClose: () => void
   children?: React.ReactNode
@@ -41,7 +45,7 @@ export function ConfirmRemove({
             {name && c.confirmRemove.title(name)}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {c.confirmRemove.description}
+            {description ?? c.confirmRemove.description}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {children}

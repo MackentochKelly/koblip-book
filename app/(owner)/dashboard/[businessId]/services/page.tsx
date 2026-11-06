@@ -16,18 +16,23 @@ type Props = {
 
 export default async function ServicesPage({ params }: Props) {
   const { businessId } = await params
-  const [{ business, services, team }, serviceTeams, addonGroups, googleCalendar] =
-    await Promise.all([
-      getOwnerBusiness(businessId),
-      getServiceTeams(businessId),
-      getAddonGroups(businessId),
-      usesGoogleCalendar(businessId),
-    ])
+  const [
+    { business, services, team, categories },
+    serviceTeams,
+    addonGroups,
+    googleCalendar,
+  ] = await Promise.all([
+    getOwnerBusiness(businessId),
+    getServiceTeams(businessId),
+    getAddonGroups(businessId),
+    usesGoogleCalendar(businessId),
+  ])
   return (
     <ServicesView
       businessId={businessId}
       currency={business.currency}
       services={services}
+      categories={categories}
       team={team.map(({ id, name }) => ({ id, name }))}
       serviceTeams={serviceTeams}
       addonGroups={addonGroups}
