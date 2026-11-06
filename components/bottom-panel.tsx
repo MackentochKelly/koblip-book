@@ -127,8 +127,9 @@ export function BottomPanel({
   description?: string
   header?: React.ReactNode
   footer?: React.ReactNode
-  // "app": the dashboard's grey page (bg-app-background), on which choice
-  // cards and rows are white cards (app/globals.css).
+  // "app": the list sits on the dashboard's grey page (bg-app-background),
+  // on which choice cards and rows are white cards (app/globals.css); the
+  // header and the buttons stay white, each with a line, like iOS bars.
   surface?: "app"
   children: React.ReactNode
 }) {
@@ -175,7 +176,6 @@ export function BottomPanel({
         <DrawerContent
           ref={popup}
           data-full={full ? "" : undefined}
-          data-surface={surface}
           style={
             height === null
               ? undefined
@@ -202,9 +202,7 @@ export function BottomPanel({
             "data-full:rounded-b-none data-full:border-x-0 data-full:border-b-0 data-full:[--drawer-inset:0px]",
             // Pulled up past where it rests, the strip under it is the
             // sheet's colour, so no gap opens at the bottom.
-            "data-full:[--drawer-bleed-background:var(--color-popover)]",
-            surface === "app" &&
-              "bg-app-background data-full:[--drawer-bleed-background:var(--color-app-background)]"
+            "data-full:[--drawer-bleed-background:var(--color-popover)]"
           )}
         >
           {header ?? (
@@ -217,8 +215,10 @@ export function BottomPanel({
           )}
           <div
             ref={scroll}
+            data-surface={surface}
             className={cn(
               "min-h-0 flex-1 overflow-y-auto overscroll-contain p-4",
+              surface === "app" && "border-t bg-app-background",
               // A line between the list and the buttons, with room above it.
               footer && "border-b pb-16"
             )}
