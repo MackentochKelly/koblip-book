@@ -165,8 +165,10 @@ export function InstallStepsPanel({
       title={t.installTitle}
       footer={
         <div className="flex flex-col gap-2">
-          <Button onClick={onClose}>{t.gotIt}</Button>
-          <Button variant="ghost" onClick={playAgain}>
+          <Button size="lg" onClick={onClose}>
+            {t.gotIt}
+          </Button>
+          <Button variant="ghost" size="lg" onClick={playAgain}>
             <RefreshIcon data-icon="inline-start" />
             {t.playAgain}
           </Button>

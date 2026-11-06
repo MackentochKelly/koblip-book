@@ -25,7 +25,6 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
-import { CONTROL_SIZE } from "@/lib/control-size"
 import { isGoogleEventColor } from "@/lib/google-calendar-colors"
 import type { OwnerServiceCategory } from "../types"
 import { useOwnerMessages } from "../i18n/provider"
@@ -74,11 +73,7 @@ export function CategoriesPanel({
   const c = m.catalog.common
   const menu = (category: OwnerServiceCategory, index: number) => (
     <DropdownMenu>
-      <MoreMenuTrigger
-        label={c.more}
-        size="icon"
-        className={CONTROL_SIZE.icon}
-      />
+      <MoreMenuTrigger label={c.more} />
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => onAddService(category)}>

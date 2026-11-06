@@ -141,7 +141,6 @@ export function PolicyPointsSection({
       action={
         <Button
           variant="outline"
-          size="sm"
           onClick={() => open("new")}
           disabled={full}
           title={full ? t.limit(POLICY_RULES.maxPoints) : undefined}
@@ -173,7 +172,7 @@ export function PolicyPointsSection({
                 <ItemDescription>{point.body}</ItemDescription>
               </ItemContent>
               <ItemActions>
-                <Button variant="outline" size="sm" onClick={() => open(point)}>
+                <Button variant="outline" onClick={() => open(point)}>
                   {c.edit}
                 </Button>
                 <DropdownMenu>

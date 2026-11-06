@@ -28,7 +28,9 @@ import {
 } from "../utils/booking-filters"
 import { RANGE_PRESETS, presetOf, presetRange } from "../utils/booking-range"
 import { serviceSelectOptions } from "../utils/service-options"
+import { CONTROL_SIZE } from "@/lib/control-size"
 import { OTHER_GROUP } from "@/lib/service-groups"
+import { cn } from "@/lib/utils"
 import { BookingList } from "./booking-list"
 import type { useBookingPanels } from "./booking-panels"
 
@@ -158,7 +160,8 @@ export function BookingsTable({
                 locale={m.locale}
                 label={t.dates}
                 choices={rangeChoices}
-                className="w-full justify-start"
+                // A field in the sheet: a field's height.
+                className={cn("w-full justify-start", CONTROL_SIZE.field)}
               />
             ),
             rowControl: (

@@ -30,7 +30,7 @@ export function BookButton({
   fromAway?: boolean
   label?: string
   variant?: "default" | "outline"
-  size?: "lg" | "sm"
+  size?: "lg" | "default"
   className?: string
 }) {
   const m = useMessages()

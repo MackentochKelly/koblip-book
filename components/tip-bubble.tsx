@@ -101,7 +101,7 @@ export function TipBubble({
           </span>
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             aria-label={closeLabel}
             onClick={onClose}
           >

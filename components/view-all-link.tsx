@@ -10,7 +10,6 @@ export function ViewAllLink({ href, label }: { href: string; label: string }) {
   return (
     <Button
       variant="ghost"
-      size="sm"
       nativeButton={false}
       render={<Link href={href as Route} />}
     >

@@ -34,9 +34,9 @@ export function BusinessSideCard({
           <CardDescription>{business.category}</CardDescription>
         )}
         <CardAction className="flex gap-2">
-          <ThemeToggle size="icon-sm" />
-          <LanguageMenu size="icon-sm" />
-          <ShareButton title={business.name} size="icon-sm" />
+          <ThemeToggle />
+          <LanguageMenu />
+          <ShareButton title={business.name} />
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

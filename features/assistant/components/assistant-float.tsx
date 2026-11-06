@@ -176,8 +176,7 @@ export function AssistantFloat({
             <Button
               type="button"
               variant="ghost"
-              size="sm"
-              className="justify-start text-xs font-normal text-muted-foreground [&_svg:not([class*='size-'])]:size-3.5"
+              className="justify-start text-muted-foreground"
               onClick={() => ask(messages.empty.suggestions[key])}
             >
               <Icon data-icon="inline-start" />

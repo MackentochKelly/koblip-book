@@ -655,7 +655,7 @@ function FindBusiness({
   return (
     <div className={cn("flex flex-col gap-3", expanded && "min-h-0 flex-1")}>
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={location.openPanel}>
+        <Button variant="outline" onClick={location.openPanel}>
           {location.view.busy ? (
             <Spinner data-icon="inline-start" />
           ) : area ? (
@@ -668,7 +668,7 @@ function FindBusiness({
         {expanded && (
           <Button
             variant="outline"
-            size="icon-sm"
+            size="icon"
             aria-label={t.closeSearch}
             onClick={onCollapse}
             className="ml-auto"

@@ -101,7 +101,7 @@ export function WhatsappTiming({
                   <ItemActions>
                     <Button
                       variant="ghost"
-                      size="icon-sm"
+                      size="icon"
                       aria-label={t.removeReminder(time)}
                       onClick={() =>
                         setReminders((list) => list.filter((value) => value !== minutes))

@@ -77,7 +77,7 @@ export function SupportBox({ words }: { words: Messages["home"]["support"] }) {
                 <CardAction>
                   <Button
                     variant="ghost"
-                    size="icon-sm"
+                    size="icon"
                     aria-label={words.close}
                     onClick={close}
                   >

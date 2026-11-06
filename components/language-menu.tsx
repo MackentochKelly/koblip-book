@@ -16,13 +16,7 @@ import { isPageLanguage } from "@/lib/page-language"
 
 // The globe that switches the page between English and Spanish. Each
 // language is named in itself; the choice is kept in the address (?lang=).
-export function LanguageMenu({
-  size = "icon",
-  className,
-}: {
-  size?: "icon" | "icon-sm"
-  className?: string
-}) {
+export function LanguageMenu({ className }: { className?: string }) {
   const m = useMessages()
   const language = usePageLanguage()
   const router = useRouter()
@@ -41,7 +35,7 @@ export function LanguageMenu({
           <Button
             type="button"
             variant="outline"
-            size={size}
+            size="icon"
             className={className}
             aria-label={m.page.language}
             title={m.page.language}

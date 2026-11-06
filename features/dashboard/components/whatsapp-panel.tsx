@@ -42,11 +42,11 @@ export function WhatsappPanel({
       title={t.whatsapp.name}
       footer={
         connected ? (
-          <Button variant="outline" onClick={onDisconnect}>
+          <Button variant="outline" size="lg" onClick={onDisconnect}>
             {t.whatsapp.disconnect}
           </Button>
         ) : (
-          <Button onClick={onConnect} disabled={connecting}>
+          <Button size="lg" onClick={onConnect} disabled={connecting}>
             {connecting && <Spinner data-icon="inline-start" />}
             {t.whatsapp.useOwnNumber}
             {!connecting && <ChevronRightIcon data-icon="inline-end" />}

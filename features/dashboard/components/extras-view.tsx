@@ -65,7 +65,6 @@ import type {
 } from "../types"
 import { CATALOG_FIRST_SHOWN } from "../utils/catalog-list"
 import { serviceSelectOptions } from "../utils/service-options"
-import { CONTROL_SIZE } from "@/lib/control-size"
 import { noAutofill } from "@/lib/no-autofill"
 import { useOwnerMessages } from "../i18n/provider"
 import { ConfirmRemove } from "./confirm-remove"
@@ -181,10 +180,8 @@ export function ExtrasView({
                 </ItemDescription>
               </ItemContent>
               <ItemActions>
-                {/* As tall as the Services tab's controls (lib/control-size). */}
                 <Button
                   variant="outline"
-                  className={CONTROL_SIZE.button}
                   onClick={() => {
                     setFormKey((value) => value + 1)
                     setEditing(group)
@@ -193,11 +190,7 @@ export function ExtrasView({
                   {c.edit}
                 </Button>
                 <DropdownMenu>
-                  <MoreMenuTrigger
-                    label={c.more}
-                    size="icon"
-                    className={CONTROL_SIZE.icon}
-                  />
+                  <MoreMenuTrigger label={c.more} />
                   <DropdownMenuContent align="end">
                     <DropdownMenuGroup>
                       <DropdownMenuItem
@@ -483,7 +476,7 @@ function ExtrasForm({
                       <Button
                         type="button"
                         variant="ghost"
-                        size="icon-sm"
+                        size="icon"
                         aria-label={t.removeOption(index + 1)}
                         onClick={() =>
                           setOptions((current) =>
@@ -564,7 +557,6 @@ function ExtrasForm({
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
                 className="self-start"
                 onClick={() => {
                   setOptions((current) => [

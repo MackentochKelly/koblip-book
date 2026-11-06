@@ -21,6 +21,21 @@ landscape, an iPad in split view and a small laptop window all happen.
 - `any-pointer-*` / `any-hover` = any input present (touch laptops).
 - Never hide an action behind hover only.
 
+## Control sizes
+
+One size for controls, taken from the filter chips (`lib/control-size.ts`):
+
+- **Controls** (buttons, icon buttons, ⋮, tabs, filter chips, search
+  boxes, a list's filters): 36px tall on touch and mouse, 14px words, 16px
+  icons. A text button is as wide as its words, an icon button square.
+  Button's `default`/`icon`, Toggle and `ViewTabs` are this size; never
+  `sm`/`icon-sm` for them. On touch the tap area still grows to 44px,
+  invisibly.
+- **Fields** (Input, Select, Textarea, a date picker) are 44px on touch.
+- **A sheet's or form's main actions** (its footer) are `lg`.
+- Smaller only where a control sits inside a field or a picture (`xs`,
+  `icon-xs`) or beside a line of text (ⓘ).
+
 | | Touch | Mouse |
 |---|---|---|
 | Our minimum | 44x44px | 24x24px (WCAG AA) |

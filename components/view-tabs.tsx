@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { CONTROL_SIZE } from "@/lib/control-size"
 import { cn } from "@/lib/utils"
 
 export interface ViewTab<T extends string> {
@@ -14,11 +15,8 @@ export interface ViewTab<T extends string> {
 // The app's one row of tabs. A row that runs out of room scrolls sideways
 // with no bar and fades the edge where more tabs hide. `line`: plain words
 // with a bar under the open one; the row draws the one line under it.
-// On a touch screen each tab is at least 44px tall to tap (Apple's
-// minimum), drawn invisibly like the buttons' tap area, so the look and the
-// layout don't change. It uses ::before, since ::after is the line tab's bar.
-const TAB_TOUCH_AREA =
-  "pointer-coarse:before:absolute pointer-coarse:before:inset-x-0 pointer-coarse:before:top-1/2 pointer-coarse:before:min-h-11 pointer-coarse:before:-translate-y-1/2"
+// Each tab is a filter chip's size, with a 44px tap area on a touch screen
+// (lib/control-size).
 export function ViewTabs<T extends string>({
   views,
   value,
@@ -27,7 +25,6 @@ export function ViewTabs<T extends string>({
   variant = "default",
   className,
   listClassName,
-  triggerClassName,
 }: {
   views: ViewTab<T>[]
   value: T
@@ -36,8 +33,6 @@ export function ViewTabs<T extends string>({
   variant?: "default" | "line"
   className?: string
   listClassName?: string
-  // Each tab's, like a size from lib/control-size.
-  triggerClassName?: string
 }) {
   const line = variant === "line"
   // Like big apps: the open tab slides into the middle of the row, so a tab
@@ -72,13 +67,16 @@ export function ViewTabs<T extends string>({
         <TabsList
           variant={variant}
           aria-label={ariaLabel}
-          className={cn(line && "min-w-full justify-start", listClassName)}
+          className={cn(
+            line ? "min-w-full justify-start" : CONTROL_SIZE.tabsList,
+            listClassName
+          )}
         >
           {views.map((view) => (
             <TabsTrigger
               key={view.id}
               value={view.id}
-              className={cn(TAB_TOUCH_AREA, triggerClassName)}
+              className={CONTROL_SIZE.tab}
             >
               {view.icon}
               {view.label}

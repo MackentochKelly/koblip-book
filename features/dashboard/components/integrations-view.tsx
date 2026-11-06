@@ -172,20 +172,11 @@ export function IntegrationsView({
       }
       action={
         connection && !connection.needsReconnect ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setManagingWhatsapp(true)}
-          >
+          <Button variant="outline" onClick={() => setManagingWhatsapp(true)}>
             {t.koblipChat.manage}
           </Button>
         ) : (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={connectChat}
-            disabled={waiting}
-          >
+          <Button variant="outline" onClick={connectChat} disabled={waiting}>
             {waiting && <Spinner data-icon="inline-start" />}
             {connection ? t.koblipChat.reconnect : t.koblipChat.connect}
             {!waiting && <ChevronRightIcon data-icon="inline-end" />}
@@ -211,17 +202,12 @@ export function IntegrationsView({
       }
       action={
         googleUsable ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setManagingGoogle(true)}
-          >
+          <Button variant="outline" onClick={() => setManagingGoogle(true)}>
             {t.googleCalendar.manage}
           </Button>
         ) : (
           <Button
             variant="outline"
-            size="sm"
             onClick={() =>
               googleWindow.openWindow(
                 `/api/google-calendar/connect?${query}`,
@@ -246,7 +232,7 @@ export function IntegrationsView({
       name={t.whatsapp.name}
       description={m.whatsapp.sendingFrom[sender]}
       action={
-        <Button variant="outline" size="sm" onClick={() => setManagingWhatsapp(true)}>
+        <Button variant="outline" onClick={() => setManagingWhatsapp(true)}>
           {t.whatsapp.manage}
         </Button>
       }

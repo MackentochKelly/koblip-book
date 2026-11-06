@@ -20,6 +20,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { WhatsappPreview } from "@/components/whatsapp-preview"
+import { CONTROL_SIZE } from "@/lib/control-size"
 import { saveAutomation } from "../api/automation-actions"
 import { useOwnerMessages } from "../i18n/provider"
 import type {
@@ -173,11 +174,16 @@ export function AutomationEditor({
       footer={
         <>
           {automation && !automation.isDefault && (
-            <Button variant="ghost" disabled={pending} onClick={() => save(null)}>
+            <Button variant="ghost" size="lg" disabled={pending} onClick={() => save(null)}>
               {t.reset}
             </Button>
           )}
-          <Button type="submit" form={EDITOR_FORM} disabled={pending || !changed}>
+          <Button
+            type="submit"
+            size="lg"
+            form={EDITOR_FORM}
+            disabled={pending || !changed}
+          >
             {pending && <Spinner data-icon="inline-start" />}
             {t.save}
           </Button>
@@ -204,9 +210,13 @@ export function AutomationEditor({
                     value={language}
                     onValueChange={(value) => setLanguage(value as AutomationLanguage)}
                   >
-                    <TabsList>
-                      <TabsTrigger value="en">{t.english}</TabsTrigger>
-                      <TabsTrigger value="es">{t.spanish}</TabsTrigger>
+                    <TabsList className={CONTROL_SIZE.tabsList}>
+                      <TabsTrigger value="en" className={CONTROL_SIZE.tab}>
+                        {t.english}
+                      </TabsTrigger>
+                      <TabsTrigger value="es" className={CONTROL_SIZE.tab}>
+                        {t.spanish}
+                      </TabsTrigger>
                     </TabsList>
                   </Tabs>
                 </div>
@@ -224,7 +234,7 @@ export function AutomationEditor({
                 )}
               </Field>
               <div className="-mt-4 flex flex-wrap gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={insertBusiness}>
+                <Button type="button" variant="outline" onClick={insertBusiness}>
                   <PlusIcon data-icon="inline-start" />
                   {t.flows.businessName}
                 </Button>

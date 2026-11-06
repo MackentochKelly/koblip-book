@@ -110,7 +110,7 @@ export function VoiceList({
                 <Button
                   type="button"
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
                   aria-label={`${playing ? labels.pause : labels.play} ${shortName(voice.name)}`}
                   onClick={() =>
                     playing ? void preview.pause() : preview.play(id, src)

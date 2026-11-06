@@ -60,11 +60,7 @@ export function ThemeSection({
               {theme.id === active ? (
                 <Badge variant="success">{t.active}</Badge>
               ) : theme.available ? (
-                <Button
-                  size="sm"
-                  onClick={() => activate(theme.id)}
-                  disabled={pending}
-                >
+                <Button onClick={() => activate(theme.id)} disabled={pending}>
                   {pending && <Spinner data-icon="inline-start" />}
                   {t.activate}
                 </Button>

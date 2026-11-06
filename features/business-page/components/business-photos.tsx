@@ -101,8 +101,8 @@ export function BusinessPhotos({ photos }: { photos: PagePhoto[] }) {
         current={current}
         className="absolute bottom-3 left-1/2 -translate-x-1/2 md:hidden"
       />
-      <CarouselPrevious className="left-3 hidden md:inline-flex" />
-      <CarouselNext className="right-3 hidden md:inline-flex" />
+      <CarouselPrevious size="icon" className="left-3 hidden md:inline-flex" />
+      <CarouselNext size="icon" className="right-3 hidden md:inline-flex" />
       {open !== null && (
         <PhotoViewer
           photos={photos}
@@ -168,8 +168,11 @@ function PhotoViewer({
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="left-4 hidden md:inline-flex" />
-          <CarouselNext className="right-4 hidden md:inline-flex" />
+          <CarouselPrevious
+            size="icon"
+            className="left-4 hidden md:inline-flex"
+          />
+          <CarouselNext size="icon" className="right-4 hidden md:inline-flex" />
         </Carousel>
         <p className="min-h-10 truncate px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground">
           {credit &&

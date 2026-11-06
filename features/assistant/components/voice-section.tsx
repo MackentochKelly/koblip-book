@@ -64,7 +64,6 @@ export function VoiceSection({
         <ItemActions>
           <Button
             variant="outline"
-            size="sm"
             disabled={!voice.voices?.length || voice.saving}
             onClick={voice.ask}
           >

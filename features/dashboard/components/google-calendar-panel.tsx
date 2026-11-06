@@ -128,7 +128,7 @@ export function GoogleCalendarPanel({
       onClose={onClose}
       title={t.name}
       footer={
-        <Button variant="outline" onClick={onDisconnect}>
+        <Button variant="outline" size="lg" onClick={onDisconnect}>
           {t.disconnect}
         </Button>
       }
@@ -141,7 +141,7 @@ export function GoogleCalendarPanel({
                 // Never "in 5 seconds" when the clock ticked before the sync.
                 t.synced(formatAgo(lastSyncAt, Math.max(now, Date.parse(lastSyncAt)), m.locale))}
           </p>
-          <Button variant="outline" size="sm" onClick={syncNow} disabled={syncing}>
+          <Button variant="outline" onClick={syncNow} disabled={syncing}>
             {syncing && <Spinner data-icon="inline-start" />}
             {t.syncNow}
           </Button>
@@ -153,7 +153,7 @@ export function GoogleCalendarPanel({
           ) : calendars === null ? (
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">{t.calendarsFailed}</p>
-              <Button variant="outline" size="sm" onClick={() => setLoads((count) => count + 1)}>
+              <Button variant="outline" onClick={() => setLoads((count) => count + 1)}>
                 {t.tryAgain}
               </Button>
             </div>

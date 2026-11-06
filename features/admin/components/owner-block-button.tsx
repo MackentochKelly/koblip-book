@@ -45,7 +45,6 @@ export function OwnerBlockButton({
     <>
       <Button
         variant="outline"
-        size="sm"
         disabled={pending}
         onClick={() => (blocked ? save(false) : setAsking(true))}
       >

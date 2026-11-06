@@ -25,7 +25,9 @@ import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { WhatsappPreview } from "@/components/whatsapp-preview"
+import { CONTROL_SIZE } from "@/lib/control-size"
 import type { NotificationRules } from "@/lib/notification-rules"
+import { cn } from "@/lib/utils"
 import type { ButtonAction, TemplateReview } from "@/types/whatsapp"
 
 const EDITOR_FORM = "message-editor"
@@ -232,17 +234,22 @@ export function MessageEditor({
         editable && (
           <>
             {text && !text.isDefault && (
-              <Button variant="ghost" disabled={pending} onClick={() => save(null)}>
+              <Button variant="ghost" size="lg" disabled={pending} onClick={() => save(null)}>
                 {t.reset}
               </Button>
             )}
             {main === "submit" ? (
-              <Button disabled={pending} onClick={submit}>
+              <Button size="lg" disabled={pending} onClick={submit}>
                 {pending && <Spinner data-icon="inline-start" />}
                 {t.submit}
               </Button>
             ) : (
-              <Button type="submit" form={EDITOR_FORM} disabled={pending || !changed}>
+              <Button
+                type="submit"
+                size="lg"
+                form={EDITOR_FORM}
+                disabled={pending || !changed}
+              >
                 {pending && <Spinner data-icon="inline-start" />}
                 {t.save}
               </Button>
@@ -262,9 +269,13 @@ export function MessageEditor({
         >
           <FieldGroup>
             <Tabs value={part} onValueChange={(value) => setPart(value as Part)}>
-              <TabsList className="w-full">
-                <TabsTrigger value="normal">{t.normalMessage}</TabsTrigger>
-                <TabsTrigger value="template">{t.template}</TabsTrigger>
+              <TabsList className={cn("w-full", CONTROL_SIZE.tabsList)}>
+                <TabsTrigger value="normal" className={CONTROL_SIZE.tab}>
+                  {t.normalMessage}
+                </TabsTrigger>
+                <TabsTrigger value="template" className={CONTROL_SIZE.tab}>
+                  {t.template}
+                </TabsTrigger>
               </TabsList>
             </Tabs>
 
@@ -306,9 +317,13 @@ export function MessageEditor({
                     setProblem(null)
                   }}
                 >
-                  <TabsList>
-                    <TabsTrigger value="en">{t.english}</TabsTrigger>
-                    <TabsTrigger value="es">{t.spanish}</TabsTrigger>
+                  <TabsList className={CONTROL_SIZE.tabsList}>
+                    <TabsTrigger value="en" className={CONTROL_SIZE.tab}>
+                      {t.english}
+                    </TabsTrigger>
+                    <TabsTrigger value="es" className={CONTROL_SIZE.tab}>
+                      {t.spanish}
+                    </TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
@@ -344,7 +359,6 @@ export function MessageEditor({
                       key={field}
                       type="button"
                       variant="outline"
-                      size="sm"
                       onClick={() => insert(field)}
                     >
                       <PlusIcon data-icon="inline-start" />

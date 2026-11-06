@@ -49,6 +49,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { CONTROL_SIZE } from "@/lib/control-size"
 import { formatClock, formatDayNear } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
 import { initials } from "@/lib/initials"
@@ -316,7 +317,7 @@ export function BookingList({
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">{t.rows}</span>
                 <AppSelect
-                  size="sm"
+                  className={CONTROL_SIZE.select}
                   aria-label={t.rows}
                   value={String(pageSize)}
                   onValueChange={(value) => table.setPageSize(Number(value))}
@@ -332,7 +333,7 @@ export function BookingList({
               <div className="flex items-center gap-1">
                 <Button
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
                   aria-label={t.previous}
                   disabled={!table.getCanPreviousPage()}
                   onClick={() => table.previousPage()}
@@ -341,7 +342,7 @@ export function BookingList({
                 </Button>
                 <Button
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
                   aria-label={t.next}
                   disabled={!table.getCanNextPage()}
                   onClick={() => table.nextPage()}

@@ -16,6 +16,8 @@ import {
   dayFromDate,
   formatDayShort,
 } from "@/lib/format-booking-time"
+import { CONTROL_SIZE } from "@/lib/control-size"
+import { cn } from "@/lib/utils"
 
 // The app's own day picker (shadcn's Date Picker: a button that opens the
 // month calendar), in place of the browser's date box. Days are
@@ -47,7 +49,11 @@ export function DatePicker({
             variant="outline"
             id={id}
             aria-invalid={invalid || undefined}
-            className="w-full justify-between font-normal"
+            // A field in a form: a field's height (lib/control-size).
+            className={cn(
+              "w-full justify-between font-normal",
+              CONTROL_SIZE.field
+            )}
           />
         }
       >

@@ -58,8 +58,8 @@ export function SiteFooter({ language }: { language: PageLanguage }) {
           © {new Date().getFullYear()} Koblip
         </p>
         <div className="flex items-center gap-2">
-          <LanguageMenu size="icon-sm" />
-          <ThemeToggle size="icon-sm" />
+          <LanguageMenu />
+          <ThemeToggle />
         </div>
         <a href="#" className={cn(linkClassName, "flex items-center gap-1")}>
           {t.backToTop}

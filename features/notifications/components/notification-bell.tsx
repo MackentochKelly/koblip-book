@@ -30,7 +30,6 @@ function MarkAllButton({ className }: { className?: string }) {
   return (
     <Button
       variant="ghost"
-      size="sm"
       className={className}
       disabled={unread === 0}
       onClick={markAll}
@@ -47,7 +46,7 @@ function SettingsButton({ onOpen }: { onOpen: () => void }) {
   return (
     <Button
       variant="ghost"
-      size="icon-sm"
+      size="icon"
       aria-label={t.settings}
       nativeButton={false}
       render={<Link href={settingsHref} onClick={onOpen} />}

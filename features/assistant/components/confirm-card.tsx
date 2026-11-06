@@ -62,7 +62,6 @@ export function ConfirmCard({
       <ItemActions className="ml-auto">
         <Button
           variant="outline"
-          size="sm"
           disabled={disabled}
           onClick={() => onAnswer(false)}
         >
@@ -70,7 +69,6 @@ export function ConfirmCard({
         </Button>
         <Button
           variant={confirm.destructive ? "destructive" : "default"}
-          size="sm"
           disabled={disabled}
           onClick={() => onAnswer(true)}
         >

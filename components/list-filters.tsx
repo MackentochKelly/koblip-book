@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { FieldLegend, FieldSet } from "@/components/ui/field"
 import { FilterIcon, XIcon } from "@/components/ui/icons"
+import { CONTROL_SIZE } from "@/lib/control-size"
+import { cn } from "@/lib/utils"
 
 export interface ListFilter {
   key: string
@@ -27,7 +29,8 @@ export interface ListFiltersWords {
 }
 
 // Every list's search and filters. A computer: search and the filters in
-// one row, with Clear while one is on. A phone: search and one "Filters 2"
+// one row, with Clear while one is on, all a filter chip's size
+// (lib/control-size). A phone: search and one "Filters 2"
 // button for a bottom sheet with every filter, labelled; a change shows at
 // once, Clear all and the results button sit at the foot.
 export function ListFilters({
@@ -71,12 +74,13 @@ export function ListFilters({
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="outline"
+                size="lg"
                 onClick={onClear}
                 disabled={count === 0}
               >
                 {words.clearAll}
               </Button>
-              <Button onClick={() => setOpen(false)}>
+              <Button size="lg" onClick={() => setOpen(false)}>
                 {words.showResults}
               </Button>
             </div>
@@ -92,7 +96,12 @@ export function ListFilters({
           </div>
         </BottomPanel>
       </div>
-      <div className="flex flex-wrap items-center gap-2 max-md:hidden">
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-2 max-md:hidden",
+          CONTROL_SIZE.filterRow
+        )}
+      >
         {filters.map(
           (filter) =>
             filter.rowControl !== null && (

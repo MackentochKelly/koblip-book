@@ -73,7 +73,6 @@ export function AccountSection({
         <ItemActions>
           <Button
             variant="destructive"
-            size="sm"
             disabled={pending}
             onClick={() => setAsking(true)}
           >

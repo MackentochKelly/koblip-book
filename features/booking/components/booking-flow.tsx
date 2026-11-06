@@ -280,14 +280,19 @@ export function BookingFlow({
     disabled: boolean,
     props: React.ComponentProps<typeof Button>
   ) => (
-    <Button disabled={sending || disabled} {...props}>
+    <Button size="lg" disabled={sending || disabled} {...props}>
       {sending && <Spinner data-icon="inline-start" />}
       {sending ? m.booking.sending : m.booking.confirm}
     </Button>
   )
   const action =
     step === "details" && withPolicies ? (
-      <Button type="submit" form={DETAILS_FORM} disabled={!detailsFilled}>
+      <Button
+        type="submit"
+        size="lg"
+        form={DETAILS_FORM}
+        disabled={!detailsFilled}
+      >
         {m.booking.continue}
       </Button>
     ) : step === "details" ? (
@@ -295,7 +300,7 @@ export function BookingFlow({
     ) : step === "policies" ? (
       confirm(false, { type: "button", onClick: () => void submit(details) })
     ) : (
-      <Button type="button" onClick={next} disabled={!canContinue}>
+      <Button type="button" size="lg" onClick={next} disabled={!canContinue}>
         {m.booking.continue}
       </Button>
     )
@@ -428,7 +433,12 @@ export function BookingFlow({
             <div className="flex items-center gap-2">
               <div className="me-4 min-w-0 flex-1">{total}</div>
               {shownIndex > 0 && (
-                <Button type="button" variant="outline" onClick={back}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={back}
+                >
                   {m.booking.back}
                 </Button>
               )}
@@ -454,7 +464,12 @@ export function BookingFlow({
             footer={
               <div className="flex items-center gap-2">
                 <div className="me-4 min-w-0 flex-1">{total}</div>
-                <Button type="button" variant="outline" onClick={back}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={back}
+                >
                   {m.booking.back}
                 </Button>
                 {action}

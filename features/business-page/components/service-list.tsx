@@ -144,7 +144,7 @@ export function ServiceList({
                   fromAway={fromAway}
                   label={m.actions.book}
                   variant="outline"
-                  size="sm"
+                  size="default"
                 />
               </ItemActions>
             )}

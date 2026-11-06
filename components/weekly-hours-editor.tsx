@@ -113,7 +113,6 @@ export function WeeklyHoursEditor({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="min-h-11 min-w-11 md:min-h-9 md:min-w-9"
                     aria-label={t.remove}
                     onClick={() =>
                       update(
@@ -131,8 +130,7 @@ export function WeeklyHoursEditor({
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
-                className="min-h-11 min-w-11 self-start md:min-h-8"
+                className="self-start"
                 disabled={total >= BOOKING_RULES.maxHoursRows}
                 onClick={() =>
                   update(weekday, [...ranges, { opensAt: "", closesAt: "" }])

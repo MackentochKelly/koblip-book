@@ -3,10 +3,10 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 
 // On a touch screen a button's tap area is at least 44 px each way (Apple's
-// minimum), drawn invisibly around the smaller sizes. The default, large
-// and icon sizes are at least 44 px there themselves, like Input and Select,
-// so buttons and fields line up; links stay text-sized. Not on the xs
-// sizes, which sit inside fields.
+// minimum), drawn invisibly so the default and icon sizes keep the filter
+// chips' 36 px look (lib/control-size). The large sizes, a form's main
+// action, are at least 44 px there themselves, like Input and Select;
+// links stay text-sized. Not on the xs sizes, which sit inside fields.
 const touchArea =
   "relative pointer-coarse:after:absolute pointer-coarse:after:top-1/2 pointer-coarse:after:left-1/2 pointer-coarse:after:size-full pointer-coarse:after:min-h-11 pointer-coarse:after:min-w-11 pointer-coarse:after:-translate-1/2"
 
@@ -27,11 +27,11 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: `${touchArea} h-9 pointer-coarse:min-h-11 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5`,
+        default: `${touchArea} h-9 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5`,
         xs: `${touchArea} h-6 gap-1 px-2.5 text-xs has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3`,
         sm: `${touchArea} h-8 gap-1 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2`,
         lg: `${touchArea} h-10 pointer-coarse:min-h-11 gap-1.5 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3`,
-        icon: `${touchArea} size-9 pointer-coarse:min-h-11 pointer-coarse:min-w-11`,
+        icon: `${touchArea} size-9`,
         "icon-xs": `${touchArea} size-6 [&_svg:not([class*='size-'])]:size-3`,
         "icon-sm": `${touchArea} size-8`,
         "icon-lg": `${touchArea} size-10 pointer-coarse:min-h-11 pointer-coarse:min-w-11`,

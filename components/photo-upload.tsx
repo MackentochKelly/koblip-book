@@ -233,7 +233,6 @@ function PhotoRow({
         <Button
           type="button"
           variant="outline"
-          size="sm"
           disabled={busy}
           onClick={onPick}
         >
@@ -244,7 +243,6 @@ function PhotoRow({
           <Button
             type="button"
             variant="ghost"
-            size="sm"
             disabled={busy}
             onClick={onRemove}
           >

@@ -188,7 +188,7 @@ export function ProfileForm({
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 self-start md:min-h-9"
+              className="self-start"
               disabled={counts.pastAppointments === 0 && counts.pastClients === 0}
               onClick={() => {
                 setPastAppointments("0")

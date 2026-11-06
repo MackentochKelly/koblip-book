@@ -65,14 +65,14 @@ export function SpanishSection({
         </ItemContent>
         <ItemActions>
           {missing > 0 && status.enabled && (
-            <Button size="sm" onClick={translate} disabled={pending}>
+            <Button onClick={translate} disabled={pending}>
               {pending && <Spinner data-icon="inline-start" />}
               {t.translate}
             </Button>
           )}
           <Button
             variant="outline"
-            size="icon-sm"
+            size="icon"
             aria-label={t.view}
             title={t.view}
             nativeButton={false}

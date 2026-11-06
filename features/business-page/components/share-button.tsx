@@ -8,13 +8,7 @@ import { Button } from "@/components/ui/button"
 import { shareLink } from "@/lib/share-link"
 
 // The phone's share sheet, or the link copied where there is none.
-export function ShareButton({
-  title,
-  size = "icon",
-}: {
-  title: string
-  size?: "icon" | "icon-sm"
-}) {
+export function ShareButton({ title }: { title: string }) {
   const m = useMessages()
   const share = async () => {
     const result = await shareLink({ title, url: window.location.href })
@@ -24,7 +18,7 @@ export function ShareButton({
     <Button
       type="button"
       variant="outline"
-      size={size}
+      size="icon"
       aria-label={m.page.share}
       title={m.page.share}
       onClick={() => void share()}

@@ -29,7 +29,6 @@ export function DemoBar() {
       <AlertAction>
         <Button
           variant="outline"
-          size="sm"
           nativeButton={false}
           render={<Link href={`/#${GET_STARTED_ID}`} />}
         >

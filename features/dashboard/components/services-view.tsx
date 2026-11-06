@@ -63,8 +63,6 @@ import {
   isGoogleEventColor,
   type GoogleEventColor,
 } from "@/lib/google-calendar-colors"
-import { CONTROL_SIZE } from "@/lib/control-size"
-import { cn } from "@/lib/utils"
 import { parsePrice } from "@/lib/parse-price"
 import {
   groupServices,
@@ -317,19 +315,11 @@ export function ServicesView({
           </ItemDescription>
         </ItemContent>
         <ItemActions>
-          <Button
-            variant="outline"
-            className={CONTROL_SIZE.button}
-            onClick={() => openForm(service)}
-          >
+          <Button variant="outline" onClick={() => openForm(service)}>
             {c.edit}
           </Button>
           <DropdownMenu>
-            <MoreMenuTrigger
-              label={c.more}
-              size="icon"
-              className={CONTROL_SIZE.icon}
-            />
+            <MoreMenuTrigger label={c.more} />
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
                 <DropdownMenuItem
@@ -400,9 +390,7 @@ export function ServicesView({
         value={view}
         onChange={setView}
         ariaLabel={t.tabs.label}
-        // As tall as the chips under them.
-        listClassName={cn("w-full md:w-fit", CONTROL_SIZE.tabsList)}
-        triggerClassName={CONTROL_SIZE.tab}
+        listClassName="w-full md:w-fit"
       />
 
       {/* The category chips, which scroll, then the Categories button that
@@ -421,7 +409,7 @@ export function ServicesView({
           )}
           <Button
             variant="outline"
-            className={cn("ml-auto", CONTROL_SIZE.button)}
+            className="ml-auto"
             onClick={() => setCategoriesOpen(true)}
           >
             <TagIcon data-icon="inline-start" />

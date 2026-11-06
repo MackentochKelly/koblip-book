@@ -55,7 +55,7 @@ export function VerifyEmailAlert({
         {labels.sentTo}
       </AlertDescription>
       <AlertAction>
-        <Button variant="outline" size="sm" onClick={resend} disabled={sending}>
+        <Button variant="outline" onClick={resend} disabled={sending}>
           {sending && <Spinner data-icon="inline-start" />}
           {labels.resend}
         </Button>

@@ -232,7 +232,7 @@ function AnswerAction({
           <Button
             type="button"
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             aria-label={label}
             onClick={onClick}
           />
@@ -429,7 +429,7 @@ export function MessageList({
                 <AlertCircleIcon />
                 <AlertDescription>{m.errors[error]}</AlertDescription>
                 {RETRYABLE.includes(error) && (
-                  <Button variant="outline" size="sm" onClick={onRetry}>
+                  <Button variant="outline" onClick={onRetry}>
                     {m.retry}
                   </Button>
                 )}

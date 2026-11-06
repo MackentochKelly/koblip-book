@@ -403,7 +403,6 @@ function SendAgainButton({
   return (
     <Button
       variant="outline"
-      size="sm"
       disabled={pending}
       onClick={again}
       aria-label={t.sendAgainLabel(t.names[row.message])}
@@ -443,7 +442,6 @@ function CancelButton({
     <>
       <Button
         variant="outline"
-        size="sm"
         disabled={pending}
         onClick={() => setAsking(true)}
         aria-label={t.label(name)}

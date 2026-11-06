@@ -64,10 +64,15 @@ export function ShowcaseRow({
               more. */}
           <div className={cn("flex gap-2", items.length <= 3 && "md:hidden")}>
             <CarouselPrevious
+              size="icon"
               className="static translate-none"
               aria-label={previous}
             />
-            <CarouselNext className="static translate-none" aria-label={next} />
+            <CarouselNext
+              size="icon"
+              className="static translate-none"
+              aria-label={next}
+            />
           </div>
         </div>
         {/* p-px: room for the card edge, which the carousel would clip. */}

@@ -96,13 +96,13 @@ export function PoliciesSection({
                 <ItemDescription>{shown ? t.shown : t.hidden}</ItemDescription>
               </ItemContent>
               <ItemActions>
-                <Button variant="outline" size="sm" onClick={() => open(kind)}>
+                <Button variant="outline" onClick={() => open(kind)}>
                   {m.catalog.common.edit}
                 </Button>
                 {shown && (
                   <Button
                     variant="outline"
-                    size="icon-sm"
+                    size="icon"
                     aria-label={t.view}
                     title={t.view}
                     nativeButton={false}

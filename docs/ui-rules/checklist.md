@@ -20,6 +20,8 @@ Every UI change, before and after. Each line must pass.
 - [ ] No sideways scroll: `document.documentElement.scrollWidth` = 375.
 - [ ] Works at 320px wide too (WCAG reflow).
 - [ ] Every tap target is at least 44x44px (visible or invisible tap area).
+- [ ] Controls are the filter chips' size, fields and footers as in
+      [Control sizes](devices.md#control-sizes).
 - [ ] Nothing under the notch, home bar or keyboard (safe areas).
 - [ ] The page scrolls, not a box inside it (except full-screen app views).
 - [ ] Text inputs are at least 16px text (stops iPhone zoom).

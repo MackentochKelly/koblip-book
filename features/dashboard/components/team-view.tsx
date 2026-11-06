@@ -272,11 +272,7 @@ export function TeamView({
                 )}
               </ItemContent>
               <ItemActions>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openForm(member)}
-                >
+                <Button variant="outline" onClick={() => openForm(member)}>
                   {c.edit}
                 </Button>
                 <DropdownMenu>
