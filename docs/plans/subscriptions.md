@@ -99,38 +99,37 @@ How to use this file: [Plans](README.md).
   and the code disagree. A locked page shows "Part of Pro" with one
   action (`components/plan-locked.tsx`); a locked action returns
   `locked`; background work (WhatsApp flows) skips. (Backend dev)
+- **S13. No trial** (O2): the plugin's `freeTrial` stays off, and P6 sends
+  no trial emails. (Backend dev, 2026-11-06)
 - **S8. Secrets** `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` only in
   `.env.local`; Stripe test mode on the Mac, live keys only on the server.
 
-## Open (owner's call)
+## Owner's answers (2026-11-06)
 
-- **O1. Price.** Keep Pro at $19/month? A yearly price (e.g. 2 months
-  free)?
-- **O2. Trial.** Pro trial length, and with or without a card?
-- **O3. What Free keeps and Pro adds.** Proposed: everything free today
-  stays free forever; Pro adds the four "Soon" features and higher limits
-  (more WhatsApp messages a month). Pro is sold only once its first feature
-  ships.
+- **O1. Price.** Pro is $19 a month, or $190 a year (2 months free).
+- **O2. Trial.** No trial: Pro starts when paid.
+- **O3. Free stays free.** Everything free today stays free forever; Pro
+  adds the "Soon" features and higher limits.
 
 ## Tasks
 
 | Task | What | Needs | Status |
 | --- | --- | --- | --- |
 | P0 | Feature list (`lib/plan-features.ts`), `plan_features` table, `featurePlans()` and `setFeaturePlan()` (`lib/plan-access.ts`), Admin → Plans with each feature's plan | | Done (2026-11-06) |
-| P1 | Packages: `better-auth` and `@better-auth/stripe` 1.7.18, `stripe` ^23; plugin in `lib/auth.ts` and `stripeClient` in `lib/auth-client.ts`, plan list in `lib/subscription-rules.ts`; migration for `subscription` and `user.stripeCustomerId` | O1, O2 | To do |
+| P1 | Packages: `better-auth` and `@better-auth/stripe` 1.7.18, `stripe` ^23; plugin in `lib/auth.ts` and `stripeClient` in `lib/auth-client.ts`, plan list in `lib/subscription-rules.ts`; migration for `subscription` and `user.stripeCustomerId` | | To do |
 | P2 | `authorizeReference` (owner of the business only) and `businessPlan()` in `lib/dal.ts`, with tests | P1 | To do |
 | P3 | Stripe set-up doc `docs/billing.md`: product, prices with lookup keys, tax code `txcd_10103001`, Stripe Tax, portal settings, webhook URL and events, test clocks | P1 | To do |
-| P4 | Owner screen Settings → Plan (`features/billing`): current plan, trial days left, Upgrade (Checkout), Manage billing (portal); its own ESLint zone; 4 languages | P2 | To do |
+| P4 | Owner screen Settings → Plan (`features/billing`): current plan, monthly or yearly, Upgrade (Checkout), Manage billing (portal); its own ESLint zone; 4 languages | P2 | To do |
 | P5a | Plan checks for 11 features (page, actions, routes): analytics, widgets, page themes, more than one business, assistant by typing and by voice, AI writing, WhatsApp automations, own WhatsApp number, team accounts, Google Calendar | P0 | Done (2026-11-06) |
 | P5b | Locked entry points: a plan badge on the menu's Analytics, Widgets and assistant pages (they open the "Part of Pro" screen); the floating assistant and Home's assistant box hide | P5a | Done (2026-11-06) |
 | P5e | Plan badge on Settings' tabs (Theme) and in Search; the phone tab bar's assistant button hides when the assistant is locked | P5b | Done (2026-11-06) |
 | P5c | Plan checks for the other built features, one at a time; Google Calendar sync and automations stop on a downgrade | P5a | To do |
 | P5d | `koblipMonthlyTemplates` per plan (Pro limit in `lib/subscription-rules.ts`) | P2, O3 | To do |
-| P6 | Emails: trial ends in 3 days, payment failed, back to Free (Better Auth hooks + `customer.subscription.trial_will_end`) | P2 | To do |
-| P7 | Admin screen Subscriptions: every business's plan, status, trial end, Stripe links, history; admin can give Pro for free (a 100% coupon in Stripe, logged) | P2 | To do |
+| P6 | Emails: payment failed, back to Free (Better Auth hooks) | P2 | To do |
+| P7 | Admin screen Subscriptions: every business's plan, status, renewal date, Stripe links, history; admin can give Pro for free (a 100% coupon in Stripe, logged) | P2 | To do |
 | P8 | Home pricing: Pro's button opens sign-up then Checkout; "Soon" goes; prices read from `lib/pricing-rules.ts` | P4, O3 | To do |
-| P9 | Terms and privacy: price, trial, cancelling, refunds, Stripe as processor; owners told before the first charge (Terms already promise this) | O1, O2 | To do |
-| P10 | Tests and live checks in Stripe test mode: trial, upgrade, cancel, restore, failed card, two businesses on one owner | P1–P8 | To do |
+| P9 | Terms and privacy: price, cancelling, refunds, Stripe as processor; owners told before the first charge (Terms already promise this) | O1, O2 | To do |
+| P10 | Tests and live checks in Stripe test mode: upgrade monthly and yearly, cancel, restore, failed card, two businesses on one owner | P1–P8 | To do |
 
 ## Decisions log
 
@@ -140,4 +139,5 @@ How to use this file: [Plans](README.md).
 | 2026-11-06 | Owner | S9: features-by-plan screen first |
 | 2026-11-06 | Backend dev | S10: defaults and the change log |
 | 2026-11-06 | Owner | Plans page: no change log; group chips; the app's switcher |
+| 2026-11-06 | Owner | O1–O3: $19/month or $190/year; no trial; free stays free |
 | 2026-11-06 | Backend dev | S11, S12: nothing locks before billing; only checked features move |
