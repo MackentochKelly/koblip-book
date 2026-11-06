@@ -96,9 +96,10 @@ export function ListFilters({
           </div>
         </BottomPanel>
       </div>
+      {/* The row's selects take the app's hairline edge, like its cards. */}
       <div
         className={cn(
-          "flex flex-wrap items-center gap-2 max-md:hidden",
+          "flex flex-wrap items-center gap-2 max-md:hidden **:data-[slot=select-trigger]:border-(length:--hairline) **:data-[slot=select-trigger]:border-border",
           CONTROL_SIZE.filterRow
         )}
       >

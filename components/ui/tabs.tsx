@@ -27,7 +27,10 @@ const tabsListVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-muted",
+        // The owner area's tracks take its hairline edge, like its cards
+        // and rows; inset, so a row that scrolls sideways never clips it.
+        default:
+          "bg-muted in-data-[surface=app]:inset-ring-(length:--hairline) in-data-[surface=app]:inset-ring-border",
         line: "gap-1 bg-transparent p-0",
       },
     },

@@ -15,7 +15,7 @@ export interface ViewTab<T extends string> {
 // `chips`: each tab outlined on its own with no track around them, the open
 // one filled with the main colour, like the filter chips (FilterChips).
 const CHIP_LIST =
-  "gap-2 bg-transparent p-0 in-data-[surface=app]:bg-transparent"
+  "gap-2 bg-transparent p-0 in-data-[surface=app]:bg-transparent in-data-[surface=app]:inset-ring-0"
 const CHIP_TAB =
   "border-border! bg-background data-active:border-primary! data-active:bg-primary data-active:text-primary-foreground data-active:hover:bg-primary/80 data-active:hover:text-primary-foreground in-data-[surface=app]:data-active:bg-primary dark:data-active:bg-primary dark:data-active:text-primary-foreground dark:data-active:hover:text-primary-foreground dark:in-data-[surface=app]:data-active:bg-primary"
 
