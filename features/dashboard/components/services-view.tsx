@@ -6,7 +6,6 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   PlusIcon,
-  SquarePenIcon,
   TagIcon,
   SparklesIcon,
   Trash2Icon,
@@ -17,6 +16,7 @@ import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { ViewTabs } from "@/components/view-tabs"
 import { useShowFirst } from "@/hooks/use-show-first"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -70,7 +70,6 @@ import {
   OTHER_GROUP,
   showsGroups,
 } from "@/lib/service-groups"
-import { FilterChips } from "@/components/filter-chips"
 import {
   createService,
   deleteService,
@@ -95,6 +94,7 @@ import type {
   ServiceInput,
 } from "../types"
 import { CATALOG_FIRST_SHOWN } from "../utils/catalog-list"
+import { CategoriesPanel } from "./categories-panel"
 import { ConfirmRemove } from "./confirm-remove"
 import { ExtrasView } from "./extras-view"
 import { ListFooter, ShowMore } from "./list-footer"
@@ -131,7 +131,8 @@ const NO_CATEGORY = "" as const
 
 // What the business sells: add, edit, reorder and remove services, or let
 // Meta AI suggest the usual ones for this kind of business. Once there is a
-// category, the services show in their categories, Other last.
+// category, the list shows them in their categories' order, Other last;
+// the Categories button picks which it shows and manages the categories.
 export function ServicesView({
   businessId,
   currency,
@@ -181,7 +182,9 @@ export function ServicesView({
   const [categoryTaken, setCategoryTaken] = useState(false)
   const [removingCategory, setRemovingCategory] =
     useState<OwnerServiceCategory | null>(null)
-  // The category chips that are on (OTHER_GROUP for Other); none = all.
+  // The Categories panel, and the groups it shows (a category's id,
+  // OTHER_GROUP for Other); none = all.
+  const [categoriesOpen, setCategoriesOpen] = useState(false)
   const [shownCategories, setShownCategories] = useState<string[]>([])
 
   const openForm = (
@@ -211,19 +214,26 @@ export function ServicesView({
   // one group of every service, shown as the flat list it always was.
   const groups = groupServices(services, categories, { keepEmpty: true })
   const grouped = showsGroups(groups)
-  // The category chips: every group there is, in order. One that is on
-  // and since removed no longer counts.
+  // The groups the list shows; one since removed no longer counts.
   const groupKey = (category: OwnerServiceCategory | null) =>
     category?.id ?? OTHER_GROUP
-  const categoryOptions = groups.map(({ category }) => ({
-    value: groupKey(category),
-    label: category?.name ?? k.other,
-  }))
   const ticked = shownCategories.filter((key) =>
-    categoryOptions.some((option) => option.value === key)
+    groups.some(({ category }) => groupKey(category) === key)
   )
   const shows = (category: OwnerServiceCategory | null) =>
     ticked.length === 0 || ticked.includes(groupKey(category))
+  // With categories, one list of every service the filter shows, in the
+  // categories' order; each keeps its group's index for Move up and down.
+  const rows = groups.flatMap(({ category, services: list }, groupIndex) =>
+    shows(category)
+      ? list.map((service, index) => ({
+          service,
+          groupIndex,
+          index,
+          count: list.length,
+        }))
+      : []
+  )
   // Up or down inside its group; the server gets every service in the new
   // shown order.
   const move = (groupIndex: number, index: number, by: number) => {
@@ -340,66 +350,6 @@ export function ServicesView({
     )
   }
 
-  // A real category's ⋮ menu, beside its heading; Other has none.
-  const categoryMenu = (category: OwnerServiceCategory, index: number) => (
-    <DropdownMenu>
-      <MoreMenuTrigger label={c.more} />
-      <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => openForm("new", category.id)}>
-            <PlusIcon />
-            {t.addService}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => openCategory(category)}>
-            <SquarePenIcon />
-            {c.edit}
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            disabled={index === 0 || pending}
-            onClick={() => moveCategory(index, -1)}
-          >
-            <ArrowUpIcon />
-            {c.moveUp}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={index === categories.length - 1 || pending}
-            onClick={() => moveCategory(index, 1)}
-          >
-            <ArrowDownIcon />
-            {c.moveDown}
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            variant="destructive"
-            disabled={pending}
-            onClick={() => setRemovingCategory(category)}
-          >
-            <Trash2Icon />
-            {c.remove}
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-
-  // A phone's Add category, under Suggest services; a computer's is in the
-  // header.
-  const phoneAddCategory = (
-    <Button
-      variant="outline"
-      className="md:hidden"
-      onClick={() => openCategory("new")}
-    >
-      <PlusIcon data-icon="inline-start" />
-      {k.add}
-    </Button>
-  )
-
   return (
     <div className="flex flex-col gap-6">
       {/* On a phone the top bar names the page, Suggest sits at the foot of
@@ -416,12 +366,6 @@ export function ServicesView({
             <SparklesIcon data-icon="inline-start" />
             {t.suggest}
           </Button>
-          {view === "services" && (
-            <Button variant="outline" onClick={() => openCategory("new")}>
-              <PlusIcon data-icon="inline-start" />
-              {k.add}
-            </Button>
-          )}
           <Button
             onClick={() =>
               view === "services" ? openForm("new") : setAddingExtras(true)
@@ -433,25 +377,30 @@ export function ServicesView({
           </Button>
         </div>
       </div>
-      <ViewTabs
-        views={[
-          { id: "services" as const, label: t.tabs.services },
-          { id: "extras" as const, label: t.tabs.extras },
-        ]}
-        value={view}
-        onChange={setView}
-        ariaLabel={t.tabs.label}
-        listClassName="w-full md:w-fit"
-      />
-
-      {view === "services" && grouped && (
-        <FilterChips
-          label={k.filter}
-          options={categoryOptions}
-          value={ticked}
-          onValueChange={setShownCategories}
+      {/* Categories, for the services list: under the tabs on a phone,
+          at the tabs' end on a computer. */}
+      <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
+        <ViewTabs
+          views={[
+            { id: "services" as const, label: t.tabs.services },
+            { id: "extras" as const, label: t.tabs.extras },
+          ]}
+          value={view}
+          onChange={setView}
+          ariaLabel={t.tabs.label}
+          className="w-full md:w-auto"
+          listClassName="w-full md:w-fit"
         />
-      )}
+        {view === "services" && (
+          <Button variant="outline" onClick={() => setCategoriesOpen(true)}>
+            <TagIcon data-icon="inline-start" />
+            {k.title}
+            {ticked.length > 0 && (
+              <Badge variant="secondary">{ticked.length}</Badge>
+            )}
+          </Button>
+        )}
+      </div>
 
       {view === "extras" ? (
         <ExtrasView
@@ -467,45 +416,6 @@ export function ServicesView({
           onAddClosed={() => setAddingExtras(false)}
           phoneSuggest={phoneSuggest}
         />
-      ) : grouped ? (
-        // Each category under its heading, every service shown; the filter
-        // hides the others, each keeping its own index for its menus.
-        groups.map(
-          ({ category, services: list }, groupIndex) =>
-            shows(category) && (
-              <section key={groupKey(category)} className="flex flex-col gap-3">
-                {/* As tall as the ⋮ button, so Other's heading lines up too. */}
-                <div className="flex min-h-8 items-center justify-between gap-3">
-                  <h2 className="flex min-w-0 items-center gap-2 text-sm font-medium text-muted-foreground">
-                    {googleCalendar &&
-                      isGoogleEventColor(category?.calendarColor) && (
-                        <GoogleEventDot color={category.calendarColor} />
-                      )}
-                    {category?.name ?? k.other}
-                  </h2>
-                  {/* Every category has its group, so its index is its own. */}
-                  {category && categoryMenu(category, groupIndex)}
-                </div>
-                {/* Only a category can be empty: Other shows only with services. */}
-                {category && list.length === 0 ? (
-                  <Button
-                    variant="outline"
-                    className="self-start"
-                    onClick={() => openForm("new", category.id)}
-                  >
-                    <PlusIcon data-icon="inline-start" />
-                    {t.addService}
-                  </Button>
-                ) : (
-                  <ItemGroup className="gap-3">
-                    {list.map((service, index) =>
-                      serviceItem(service, groupIndex, index, list.length)
-                    )}
-                  </ItemGroup>
-                )}
-              </section>
-            )
-        )
       ) : services.length === 0 ? (
         <Empty className="border">
           <EmptyHeader>
@@ -515,6 +425,27 @@ export function ServicesView({
             <EmptyTitle>{t.empty}</EmptyTitle>
           </EmptyHeader>
         </Empty>
+      ) : grouped ? (
+        rows.length === 0 ? (
+          // Only empty categories are ticked.
+          <Empty className="border">
+            <EmptyHeader>
+              <EmptyTitle>{k.noneShown}</EmptyTitle>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button variant="outline" onClick={() => setShownCategories([])}>
+                {k.all}
+              </Button>
+            </EmptyContent>
+          </Empty>
+        ) : (
+          // Every service the filter shows, no Show more.
+          <ItemGroup className="gap-3">
+            {rows.map(({ service, groupIndex, index, count }) =>
+              serviceItem(service, groupIndex, index, count)
+            )}
+          </ItemGroup>
+        )
       ) : (
         // No category: one group of every service, with Show more.
         <ItemGroup className="gap-3">
@@ -528,7 +459,6 @@ export function ServicesView({
         <ListFooter
           showMore={!grouped && first.hidden > 0 && <ShowMore label={c.showMore(first.hidden)} onClick={first.showAll} />}
           suggest={phoneSuggest}
-          add={phoneAddCategory}
         />
       )}
 
@@ -541,67 +471,93 @@ export function ServicesView({
         }
       />
 
-      <ConfirmRemove
-        name={removingCategory?.name ?? null}
-        description={k.movesToOther}
-        onClose={() => setRemovingCategory(null)}
-        onConfirm={() =>
-          removingCategory &&
-          run(
-            () => deleteServiceCategory(businessId, removingCategory.id),
-            k.removed
-          )
-        }
-      />
-
-      <ResponsivePanel
-        open={editingCategory !== null}
-        onClose={() => setEditingCategory(null)}
-        title={editingCategory === "new" ? k.addTitle : k.editTitle}
-        footer={
-          <Button
-            type="submit"
-            size="lg"
-            form={CATEGORY_FORM}
-            disabled={pending || (editingCategory !== "new" && !categoryChanged)}
-          >
-            {pending && <Spinner data-icon="inline-start" />}
-            {c.save}
-          </Button>
-        }
+      <CategoriesPanel
+        open={categoriesOpen}
+        onClose={() => setCategoriesOpen(false)}
+        groups={groups.map(({ category, services: list }) => ({
+          category,
+          services: list.length,
+        }))}
+        total={services.length}
+        shown={ticked}
+        onShownChange={setShownCategories}
+        googleCalendar={googleCalendar}
+        pending={pending}
+        onAdd={() => openCategory("new")}
+        onAddService={(category) => {
+          // The service form is the list's own, so this panel makes way.
+          setCategoriesOpen(false)
+          openForm("new", category.id)
+        }}
+        onEdit={openCategory}
+        onMove={moveCategory}
+        onRemove={setRemovingCategory}
       >
-        {editingCategory !== null && (
-          <CategoryForm
-            key={categoryKey}
-            category={editingCategory === "new" ? null : editingCategory}
-            googleCalendar={googleCalendar}
-            taken={categoryTaken}
-            onChanged={setCategoryChanged}
-            onSave={(input) => {
-              setCategoryTaken(false)
-              startTransition(async () => {
-                const result =
-                  editingCategory === "new"
-                    ? await createServiceCategory(businessId, input)
-                    : await updateServiceCategory(
-                        businessId,
-                        editingCategory.id,
-                        input
-                      )
-                if (result.ok) {
-                  setEditingCategory(null)
-                  toast.success(c.saved)
-                  router.refresh()
-                } else if (result.error === "taken") {
-                  setCategoryTaken(true)
-                } else {
-                  toast.error(c.checkFields)
-                }
-              })
-            }}
-          />
-        )}
-      </ResponsivePanel>
+        {/* On top of the panel, back to it once done. */}
+        <ConfirmRemove
+          name={removingCategory?.name ?? null}
+          description={k.movesToOther}
+          onClose={() => setRemovingCategory(null)}
+          onConfirm={() =>
+            removingCategory &&
+            run(
+              () => deleteServiceCategory(businessId, removingCategory.id),
+              k.removed
+            )
+          }
+        />
+
+        <ResponsivePanel
+          open={editingCategory !== null}
+          onClose={() => setEditingCategory(null)}
+          title={editingCategory === "new" ? k.addTitle : k.editTitle}
+          footer={
+            <Button
+              type="submit"
+              size="lg"
+              form={CATEGORY_FORM}
+              disabled={
+                pending || (editingCategory !== "new" && !categoryChanged)
+              }
+            >
+              {pending && <Spinner data-icon="inline-start" />}
+              {c.save}
+            </Button>
+          }
+        >
+          {editingCategory !== null && (
+            <CategoryForm
+              key={categoryKey}
+              category={editingCategory === "new" ? null : editingCategory}
+              googleCalendar={googleCalendar}
+              taken={categoryTaken}
+              onChanged={setCategoryChanged}
+              onSave={(input) => {
+                setCategoryTaken(false)
+                startTransition(async () => {
+                  const result =
+                    editingCategory === "new"
+                      ? await createServiceCategory(businessId, input)
+                      : await updateServiceCategory(
+                          businessId,
+                          editingCategory.id,
+                          input
+                        )
+                  if (result.ok) {
+                    setEditingCategory(null)
+                    toast.success(c.saved)
+                    router.refresh()
+                  } else if (result.error === "taken") {
+                    setCategoryTaken(true)
+                  } else {
+                    toast.error(c.checkFields)
+                  }
+                })
+              }}
+            />
+          )}
+        </ResponsivePanel>
+      </CategoriesPanel>
 
       <ResponsivePanel
         open={editing !== null}

@@ -107,14 +107,23 @@ function view(
   )
 }
 
-const headings = () =>
-  screen
-    .queryAllByRole("heading", { level: 2 })
-    .map((heading) => heading.textContent)
+// The services the list shows, in order.
+const names = () =>
+  Array.from(document.querySelectorAll("[data-slot=item-title]"))
+    .filter((title) => !title.closest("[role=dialog]"))
+    .map((title) => title.textContent)
 
-// The group under this heading.
-const group = (name: string) =>
-  screen.getByRole("heading", { level: 2, name }).closest("section")!
+// Opens the Categories panel.
+function openCategories() {
+  fireEvent.click(screen.getByRole("button", { name: /^Categories/ }))
+  return screen.getByRole("dialog", { name: "Categories" })
+}
+
+// A category's row in the Categories panel.
+const categoryRow = (panel: HTMLElement, name: string) =>
+  within(panel)
+    .getByText(name, { selector: "label" })
+    .closest("[data-slot=item]") as HTMLElement
 
 // Opens the ⋮ menu inside `scope` (the first one there) and picks `item`.
 function pick(scope: HTMLElement, item: string) {
@@ -130,12 +139,11 @@ const row = (name: string) =>
 
 test("with no category the list stays flat, Show more included", () => {
   view(["a", "b", "c", "d", "e", "f", "g", "h"].map((id) => service(id)))
-  expect(headings()).toEqual([])
   expect(screen.queryByText("h")).toBeNull()
   expect(screen.getByRole("button", { name: "Show 1 more" })).toBeTruthy()
 })
 
-test("with categories each group has its heading, Other last", () => {
+test("with categories it is one list in their order, Other last", () => {
   view(
     [
       service("Fade", "c1"),
@@ -146,48 +154,67 @@ test("with categories each group has its heading, Other last", () => {
     ],
     [hair, nails, brows]
   )
-  expect(headings()).toEqual(["Hair", "Nails", "Brows", "Other"])
-  expect(within(group("Hair")).getByText("Fade")).toBeTruthy()
-  expect(within(group("Hair")).getByText("Trim")).toBeTruthy()
-  expect(within(group("Other")).getByText("Wax")).toBeTruthy()
+  // No headings or menus of their own: the categories are in their panel.
+  expect(screen.queryAllByRole("heading", { level: 2 })).toEqual([])
+  expect(names()).toEqual([
+    "Fade",
+    "Trim",
+    "Gel",
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "Wax",
+  ])
   // Every service shows, no Show more.
-  expect(within(group("Nails")).getByText("e")).toBeTruthy()
   expect(screen.queryByRole("button", { name: /^Show/ })).toBeNull()
-  // An empty category offers to add a service; Other has no menu.
-  expect(
-    within(group("Brows")).getByRole("button", { name: "Add a service" })
-  ).toBeTruthy()
-  expect(
-    within(group("Other").firstElementChild as HTMLElement).queryByRole(
-      "button"
-    )
-  ).toBeNull()
 })
 
-test("the category chips show only the ones that are on, Other included", async () => {
+test("the Categories panel shows only the ticked ones, Other included", async () => {
   view(
     [service("Fade", "c1"), service("Wax"), service("Gel", "c2")],
     [hair, nails]
   )
-  const chips = screen.getByRole("group", { name: "Categories" })
-  const chip = (name: string) => within(chips).getByRole("button", { name })
+  const panel = openCategories()
+  const box = (name: string) => within(panel).getByRole("checkbox", { name })
   expect(
-    within(chips)
-      .getAllByRole("button")
-      .map((button) => button.textContent)
-  ).toEqual(["Hair", "Nails", "Other"])
-  for (const name of ["Nails", "Other"]) fireEvent.click(chip(name))
-  await waitFor(() => expect(headings()).toEqual(["Nails", "Other"]))
-  expect(chip("Nails").getAttribute("aria-pressed")).toBe("true")
-  expect(chip("Hair").getAttribute("aria-pressed")).toBe("false")
-  // Turning every chip off again shows them all.
-  for (const name of ["Nails", "Other"]) fireEvent.click(chip(name))
-  await waitFor(() => expect(headings()).toEqual(["Hair", "Nails", "Other"]))
+    within(panel)
+      .getAllByRole("checkbox")
+      .map((item) => item.getAttribute("aria-checked"))
+  ).toEqual(["true", "false", "false", "false"])
+  fireEvent.click(box("Nails"))
+  fireEvent.click(box("Other"))
+  await waitFor(() => expect(names()).toEqual(["Gel", "Wax"]))
+  expect(box("All services").getAttribute("aria-checked")).toBe("false")
+  // The button says how many are ticked (hidden behind the open panel).
+  expect(
+    screen.getByRole("button", { name: /^Categories\s*2$/, hidden: true })
+  ).toBeTruthy()
+  // All services shows every one again.
+  fireEvent.click(box("All services"))
+  await waitFor(() => expect(names()).toEqual(["Fade", "Gel", "Wax"]))
+  expect(box("Nails").getAttribute("aria-checked")).toBe("false")
 })
 
-test("without categories there are no category chips", () => {
+test("only empty categories ticked: nothing here, All services back", async () => {
+  view([service("Fade", "c1")], [hair, brows])
+  const panel = openCategories()
+  fireEvent.click(within(panel).getByRole("checkbox", { name: "Brows" }))
+  fireEvent.click(within(panel).getByRole("button", { name: "Close" }))
+  expect(await screen.findByText("No services here")).toBeTruthy()
+  fireEvent.click(screen.getByRole("button", { name: "All services" }))
+  await waitFor(() => expect(names()).toEqual(["Fade"]))
+})
+
+test("without categories the panel offers to add one", () => {
   view([service("Fade"), service("Wax")])
-  expect(screen.queryByRole("group", { name: "Categories" })).toBeNull()
+  const panel = openCategories()
+  expect(within(panel).getByText("No categories yet")).toBeTruthy()
+  expect(within(panel).queryByRole("checkbox")).toBeNull()
+  expect(
+    within(panel).getByRole("button", { name: "Add category" })
+  ).toBeTruthy()
 })
 
 test("a service moves inside its group, with every id sent", async () => {
@@ -204,7 +231,7 @@ test("a service moves inside its group, with every id sent", async () => {
 
 test("a category moves with every category id", async () => {
   view([service("Fade", "c1")], [hair, nails, brows])
-  pick(group("Hair"), "Move down")
+  pick(categoryRow(openCategories(), "Hair"), "Move down")
   await waitFor(() =>
     expect(categoryActions.reorderServiceCategories).toHaveBeenCalledWith(
       "b1",
@@ -215,7 +242,7 @@ test("a category moves with every category id", async () => {
 
 test("removing a category says its services move to Other", async () => {
   view([service("Fade", "c1")], [hair])
-  pick(group("Hair"), "Remove")
+  pick(categoryRow(openCategories(), "Hair"), "Remove")
   const dialog = screen.getByRole("alertdialog")
   expect(within(dialog).getByText("Its services move to Other.")).toBeTruthy()
   fireEvent.click(within(dialog).getByRole("button", { name: "Remove" }))
@@ -227,10 +254,8 @@ test("removing a category says its services move to Other", async () => {
 
 test("a service added from a category starts in it", async () => {
   view([service("Fade", "c1")], [hair, brows])
-  fireEvent.click(
-    within(group("Brows")).getByRole("button", { name: "Add a service" })
-  )
-  const dialog = screen.getByRole("dialog")
+  pick(categoryRow(openCategories(), "Brows"), "Add a service")
+  const dialog = await screen.findByRole("dialog", { name: "Add a service" })
   expect(
     within(dialog).getByRole("combobox", { name: "Category" }).textContent
   ).toContain("Brows")
@@ -282,8 +307,10 @@ test("a new category needs a name it doesn't already have", async () => {
     error: "taken",
   })
   view([service("Fade")])
-  // The computer's, in the header (the phone's is under the list).
-  fireEvent.click(screen.getAllByRole("button", { name: "Add category" })[0])
+  // At the Categories panel's foot; its form opens on top of it.
+  fireEvent.click(
+    within(openCategories()).getByRole("button", { name: "Add category" })
+  )
   const dialog = screen.getByRole("dialog", { name: "Add a category" })
   fireEvent.click(within(dialog).getByRole("button", { name: "Save" }))
   expect(within(dialog).getByText("Add a name")).toBeTruthy()
@@ -304,7 +331,7 @@ test("a new category needs a name it doesn't already have", async () => {
 
 test("renaming a category waits for a change", async () => {
   view([service("Fade", "c1")], [hair])
-  pick(group("Hair"), "Edit")
+  pick(categoryRow(openCategories(), "Hair"), "Edit")
   const dialog = screen.getByRole("dialog", { name: "Edit category" })
   const save = within(dialog).getByRole("button", { name: "Save" })
   expect(save).toHaveProperty("disabled", true)
@@ -323,7 +350,7 @@ test("renaming a category waits for a change", async () => {
 
 test("with Google Calendar a category saves its colour", async () => {
   view([service("Fade", "c1")], [hair], true)
-  pick(group("Hair"), "Edit")
+  pick(categoryRow(openCategories(), "Hair"), "Edit")
   const dialog = screen.getByRole("dialog", { name: "Edit category" })
   const field = within(dialog).getByRole("combobox", {
     name: "Calendar colour",

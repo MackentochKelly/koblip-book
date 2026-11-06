@@ -79,7 +79,10 @@ const catalog: typeof en = {
     taken: "Ya tienes esta categoría",
     removed: "Categoría quitada",
     movesToOther: "Sus servicios pasan a Otros.",
-    filter: "Categorías",
+    title: "Categorías",
+    all: "Todos los servicios",
+    empty: "Aún no hay categorías",
+    noneShown: "No hay servicios aquí",
   },
   extras: {
     suggested: "Extras sugeridos",

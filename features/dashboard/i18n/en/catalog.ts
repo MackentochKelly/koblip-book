@@ -86,8 +86,12 @@ const catalog = {
     removed: "Category removed",
     // Under "Remove Hair?".
     movesToOther: "Its services move to Other.",
-    // The Services screen's category chips, for screen readers (C12).
-    filter: "Categories",
+    // The Services screen's Categories button and its panel (C12).
+    title: "Categories",
+    all: "All services",
+    empty: "No categories yet",
+    // The list when only empty categories are ticked.
+    noneShown: "No services here",
   },
   extras: {
     suggested: "Suggested extras",
