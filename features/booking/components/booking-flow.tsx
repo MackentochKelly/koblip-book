@@ -108,7 +108,8 @@ export function BookingFlow({
 
   // Booked from a team member's profile (?with=): only the services they
   // do, and they are the professional, so that step is left out.
-  const pinned = page.team.find((item) => item.id === params.get("with")) ?? null
+  const pinned =
+    page.team.find((item) => item.id === params.get("with")) ?? null
   const shownPage = pinned
     ? {
         ...page,
@@ -275,7 +276,10 @@ export function BookingFlow({
     }
   }
 
-  const confirm = (disabled: boolean, props: React.ComponentProps<typeof Button>) => (
+  const confirm = (
+    disabled: boolean,
+    props: React.ComponentProps<typeof Button>
+  ) => (
     <Button disabled={sending || disabled} {...props}>
       {sending && <Spinner data-icon="inline-start" />}
       {sending ? m.booking.sending : m.booking.confirm}
@@ -372,7 +376,7 @@ export function BookingFlow({
             service={service}
             groups={groups}
             addonIds={addonIds}
-            memberName={member?.name ?? null}
+            member={member}
             slot={slot}
             className="md:hidden"
           />
@@ -528,7 +532,7 @@ export function BookingFlow({
             service={service}
             groups={groups}
             addonIds={addonIds}
-            memberName={member?.name ?? null}
+            member={member}
             slot={slot}
             footer={action}
             className="sticky top-20"

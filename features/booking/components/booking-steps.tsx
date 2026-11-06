@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { CalendarX2Icon, UsersIcon } from "@/components/ui/icons"
+import { Fragment, useEffect, useState } from "react"
+import { CalendarX2Icon, StoreIcon, UsersIcon } from "@/components/ui/icons"
 
 import { InfoTip } from "@/components/info-tip"
 import { PolicyPointIcon } from "@/components/policy-point-icon"
@@ -39,14 +39,15 @@ import { Input } from "@/components/ui/input"
 import { PhoneInput } from "@/components/phone-input"
 import {
   Item,
+  ItemActions,
   ItemContent,
   ItemDescription,
   ItemGroup,
   ItemMedia,
+  ItemSeparator,
   ItemTitle,
 } from "@/components/ui/item"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { formatDuration } from "@/lib/format-duration"
@@ -443,7 +444,7 @@ export function BookingSummary({
   service,
   groups,
   addonIds,
-  memberName,
+  member,
   slot,
   footer,
   className,
@@ -452,7 +453,7 @@ export function BookingSummary({
   service: BookingService | null
   groups: BookingAddonGroup[]
   addonIds: string[]
-  memberName: string | null
+  member: { name: string; photoUrl: string | null } | null
   slot: BookingSlot | null
   footer?: React.ReactNode
   className?: string
@@ -465,51 +466,91 @@ export function BookingSummary({
   const total = totals ? priceLabel(totals.priceMinor, page.currency, m) : null
   return (
     <Card className={className}>
-      <CardHeader>
-        <CardTitle>{page.name}</CardTitle>
+      {/* Like a Wallet pass: who it is with on top, then when, big. */}
+      <CardHeader className="flex items-center gap-3">
+        <Avatar size="lg">
+          {page.photoUrl && <AvatarImage src={page.photoUrl} alt="" />}
+          <AvatarFallback>
+            <StoreIcon className="size-5" />
+          </AvatarFallback>
+        </Avatar>
+        <CardTitle className="min-w-0 truncate">{page.name}</CardTitle>
       </CardHeader>
       {(service || slot) && (
-        <CardContent className="flex flex-col gap-3 text-sm">
+        <CardContent className="flex flex-col gap-4 text-sm">
           {slot && (
-            <p>
-              {formatDay(slot.date, m.locale)} ·{" "}
-              {formatClock(slot.time, m.locale)}
-            </p>
+            <div className="flex flex-col gap-0.5">
+              <p className="text-2xl font-semibold tracking-tight tabular-nums">
+                {formatClock(slot.time, m.locale)}
+              </p>
+              <p className="text-muted-foreground">
+                {formatDay(slot.date, m.locale)}
+              </p>
+            </div>
           )}
           {service && totals && (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium">{service.name}</p>
-                  <p className="text-muted-foreground">
+            // Rows split by thin lines, like a list in the iPhone's Settings.
+            <ItemGroup className="gap-0">
+              <Item size="xs" className="px-0">
+                {member && (
+                  <ItemMedia>
+                    <Avatar>
+                      {member.photoUrl && (
+                        <AvatarImage src={member.photoUrl} alt="" />
+                      )}
+                      <AvatarFallback>{initials(member.name)}</AvatarFallback>
+                    </Avatar>
+                  </ItemMedia>
+                )}
+                <ItemContent className="min-w-0">
+                  <ItemTitle>{service.name}</ItemTitle>
+                  <ItemDescription>
                     {formatDuration(totals.durationMinutes)}
-                    {memberName && ` · ${m.booking.with(memberName)}`}
-                  </p>
-                </div>
-                {servicePrice && <p>{servicePrice}</p>}
-              </div>
+                    {member && ` · ${m.booking.with(member.name)}`}
+                  </ItemDescription>
+                </ItemContent>
+                {servicePrice && (
+                  <ItemActions className="tabular-nums">
+                    {servicePrice}
+                  </ItemActions>
+                )}
+              </Item>
               {totals.extras.map((extra) => {
                 const price = priceLabel(extra.priceMinor, page.currency, m)
                 return (
-                  <div
-                    key={extra.id}
-                    className="flex justify-between gap-3 text-muted-foreground"
-                  >
-                    <span className="min-w-0">+ {extra.name}</span>
-                    {price && <span>{price}</span>}
-                  </div>
+                  <Fragment key={extra.id}>
+                    <ItemSeparator className="my-0" />
+                    <Item size="xs" className="px-0">
+                      <ItemContent className="min-w-0">
+                        <ItemTitle className="font-normal">
+                          + {extra.name}
+                        </ItemTitle>
+                      </ItemContent>
+                      {price && (
+                        <ItemActions className="text-muted-foreground tabular-nums">
+                          {price}
+                        </ItemActions>
+                      )}
+                    </Item>
+                  </Fragment>
                 )
               })}
-            </div>
-          )}
-          {total && (
-            <>
-              <Separator />
-              <div className="flex justify-between font-semibold">
-                <span>{m.booking.total}</span>
-                <span>{total}</span>
-              </div>
-            </>
+              {total && (
+                <>
+                  <ItemSeparator className="my-0" />
+                  <Item size="xs" className="px-0">
+                    <ItemContent>
+                      <ItemTitle className="font-semibold">
+                        {m.booking.total}
+                      </ItemTitle>
+                    </ItemContent>
+                    <ItemActions className="font-semibold tabular-nums">
+                      {total}
+                    </ItemActions>
+                  </Item>
+                </>
+              )}
+            </ItemGroup>
           )}
         </CardContent>
       )}
