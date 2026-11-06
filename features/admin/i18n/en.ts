@@ -437,6 +437,8 @@ const words = {
     soon: "Soon",
     byDefault: "Default: {plan}",
     defaultPlan: "Default",
+    // A built feature that doesn't check its plan yet, so it stays put.
+    noCheck: "No plan check yet",
     saved: "Saved",
     failed: "That did not work. Please try again.",
     groups: {

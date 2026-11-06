@@ -87,6 +87,16 @@ How to use this file: [Plans](README.md).
   feature on Pro (as the home page says). Stored choices go over the
   defaults; a feature removed from the list drops its stored row's effect.
   Every change is logged (who, when, before, after). (Backend dev)
+- **S11. Nothing locks before billing.** `SUBSCRIPTION_RULES.billingLive`
+  (`lib/subscription-rules.ts`) is false until P1: every business counts as
+  on the top plan. `businessPlan()` reads the subscription from P2 on.
+  (Backend dev, 2026-11-06)
+- **S12. Only checked features move.** Admin → Plans lets a built feature
+  leave its default plan only once its code asks for the plan
+  (`PLAN_CHECKED_FEATURES`); `lib/plan-checks.test.ts` fails if that list
+  and the code disagree. A locked page shows "Part of Pro" with one
+  action (`components/plan-locked.tsx`); a locked action returns
+  `locked`; background work (WhatsApp flows) skips. (Backend dev)
 - **S8. Secrets** `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` only in
   `.env.local`; Stripe test mode on the Mac, live keys only on the server.
 
@@ -109,7 +119,10 @@ How to use this file: [Plans](README.md).
 | P2 | `authorizeReference` (owner of the business only) and `businessPlan()` in `lib/dal.ts`, with tests | P1 | To do |
 | P3 | Stripe set-up doc `docs/billing.md`: product, prices with lookup keys, tax code `txcd_10103001`, Stripe Tax, portal settings, webhook URL and events, test clocks | P1 | To do |
 | P4 | Owner screen Settings → Plan (`features/billing`): current plan, trial days left, Upgrade (Checkout), Manage billing (portal); its own ESLint zone; 4 languages | P2 | To do |
-| P5 | Plan checks: each feature asks `businessPlan()` and `featurePlans()` (P0) before it runs; also `koblipMonthlyTemplates` (Pro limit in `lib/subscription-rules.ts`) | P0, P2, O3 | To do |
+| P5a | Plan checks for 11 features (page, actions, routes): analytics, widgets, page themes, more than one business, assistant by typing and by voice, AI writing, WhatsApp automations, own WhatsApp number, team accounts, Google Calendar | P0 | Done (2026-11-06) |
+| P5b | Hide locked entry points too: menu items, Home's assistant box, Settings links, with a Pro badge | P5a | To do |
+| P5c | Plan checks for the other built features, one at a time; Google Calendar sync and automations stop on a downgrade | P5a | To do |
+| P5d | `koblipMonthlyTemplates` per plan (Pro limit in `lib/subscription-rules.ts`) | P2, O3 | To do |
 | P6 | Emails: trial ends in 3 days, payment failed, back to Free (Better Auth hooks + `customer.subscription.trial_will_end`) | P2 | To do |
 | P7 | Admin screen Subscriptions: every business's plan, status, trial end, Stripe links, history; admin can give Pro for free (a 100% coupon in Stripe, logged) | P2 | To do |
 | P8 | Home pricing: Pro's button opens sign-up then Checkout; "Soon" goes; prices read from `lib/pricing-rules.ts` | P4, O3 | To do |
@@ -123,3 +136,4 @@ How to use this file: [Plans](README.md).
 | 2026-11-06 | Backend dev | S1–S8 above, from the docs and the audit |
 | 2026-11-06 | Owner | S9: features-by-plan screen first |
 | 2026-11-06 | Backend dev | S10: defaults and the change log |
+| 2026-11-06 | Backend dev | S11, S12: nothing locks before billing; only checked features move |

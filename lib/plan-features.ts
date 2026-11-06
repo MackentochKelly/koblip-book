@@ -74,6 +74,29 @@ export const PLAN_FEATURES = {
 
 export type PlanFeatureKey = keyof typeof PLAN_FEATURES
 
+// The built features that already ask for their plan before they run
+// (hasFeature, ownerHasFeature: lib/plan-access.ts). Admin → Plans lets
+// the admin move only these and the "soon" ones (which will check when they
+// are built); plan-checks.test.ts keeps this list and the code in step.
+export const PLAN_CHECKED_FEATURES: readonly PlanFeatureKey[] = [
+  "analytics",
+  "widgets",
+  "pageThemes",
+  "multipleBusinesses",
+  "assistantChat",
+  "assistantVoice",
+  "aiWriting",
+  "whatsappAutomations",
+  "whatsappOwnNumber",
+  "teamAccounts",
+  "googleCalendar",
+]
+
+// Whether Admin → Plans may move this feature to another plan.
+export function planMovable(key: PlanFeatureKey): boolean {
+  return PLAN_FEATURES[key].status === "soon" || PLAN_CHECKED_FEATURES.includes(key)
+}
+
 export function isPlan(value: unknown): value is Plan {
   return typeof value === "string" && (PLANS as readonly string[]).includes(value)
 }

@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm"
 import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
+import { hasFeature } from "@/lib/plan-access"
 import { businesses } from "@/lib/db/schema"
 import type { ActionResult } from "../types"
 import { normalizeLayout } from "../utils/widget-layout"
@@ -19,6 +20,7 @@ export async function saveWidgetLayout(
 ): Promise<ActionResult> {
   const owned = await ownedBusiness(businessId)
   if (!owned) return { ok: false, error: "notFound" }
+  if (!(await hasFeature(businessId, "widgets"))) return { ok: false, error: "locked" }
   const clean = normalizeLayout(layout)
   const store = await cookies()
   const name = WIDGETS_COOKIE_PREFIX + businessId

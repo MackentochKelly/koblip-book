@@ -2,6 +2,8 @@
 import { beforeEach, expect, test, vi } from "vitest"
 
 vi.mock("server-only", () => ({}))
+// Every feature is in the plan here (lib/plan-access.ts is tested on its own).
+vi.mock("@/lib/plan-access", () => ({ hasFeature: vi.fn(async () => true) }))
 
 const { createMock, ownedMock } = vi.hoisted(() => ({
   createMock: vi.fn(),

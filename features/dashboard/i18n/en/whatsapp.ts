@@ -65,6 +65,8 @@ const whatsapp = {
       noOwnNumber: "Works on your own number only.",
       not_found: "Couldn't find this. Reload the page.",
       invalid: "Couldn't save. Try again.",
+      // Automations aren't in the business's plan (docs/plans/subscriptions.md).
+      locked: "Not in your plan.",
     },
   },
   partsLabel: "Notification parts",

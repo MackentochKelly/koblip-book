@@ -4,6 +4,7 @@ import { checkAssistantRateLimit } from "@/features/assistant/api/rate-limit"
 import { isCrossSiteRequest } from "@/features/assistant/api/request-guard"
 import { getOwnerVoiceId } from "@/lib/account-voices"
 import { ownedBusiness } from "@/features/dashboard/api/owned-business"
+import { hasFeature } from "@/lib/plan-access"
 import { getSession } from "@/lib/dal"
 import { VOICE_RULES } from "@/lib/voice-rules"
 
@@ -39,6 +40,9 @@ export async function GET(request: Request) {
   const owned = businessId ? await ownedBusiness(businessId) : null
   if (!owned) {
     return Response.json({ error: "not_found" }, { status: 404 })
+  }
+  if (!(await hasFeature(owned.business.id, "assistantVoice"))) {
+    return Response.json({ error: "locked" }, { status: 403 })
   }
 
   const voiceId = await getOwnerVoiceId(session.userId)

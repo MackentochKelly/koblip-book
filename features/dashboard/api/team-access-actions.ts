@@ -2,6 +2,7 @@
 
 import { and, eq, isNull } from "drizzle-orm"
 
+import { hasFeature } from "@/lib/plan-access"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { teamInvites, teamMembers } from "@/lib/db/schema"
@@ -23,6 +24,7 @@ export async function sendTeamInvite(
 ): Promise<{ ok: true; url: string; emailedTo: string | null } | { ok: false }> {
   const owned = await ownedBusiness(businessId)
   if (!owned || typeof teamMemberId !== "string") return { ok: false }
+  if (!(await hasFeature(businessId, "teamAccounts"))) return { ok: false }
   const [member] = await db
     .select({ id: teamMembers.id, email: teamMembers.email, userId: teamMembers.userId })
     .from(teamMembers)

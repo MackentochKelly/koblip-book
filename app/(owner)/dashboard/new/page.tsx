@@ -9,7 +9,9 @@ import { claimBusiness } from "@/features/dashboard/api/actions"
 import { AccountMenu } from "@/features/dashboard/components/account-menu"
 import { StartScreen } from "@/features/dashboard/components/start-screen"
 import { GetStarted } from "@/features/onboarding/components/get-started"
+import { PlanLocked } from "@/components/plan-locked"
 import { requireAccount } from "@/lib/dal"
+import { ownerHasFeature } from "@/lib/plan-access"
 import { languageOf } from "@/lib/page-language"
 import { getMyBusinesses } from "@/features/dashboard/api/queries"
 import { MyBusinessesCard } from "@/features/dashboard/components/my-businesses-card"
@@ -24,10 +26,11 @@ export async function generateMetadata(): Promise<Metadata> {
 // businesses the owner already has. ✕ goes back to the one they had open.
 export default async function NewBusinessPage() {
   const owner = await requireAccount("/dashboard/new")
-  const [t, locale, businesses] = await Promise.all([
+  const [t, locale, businesses, canAdd] = await Promise.all([
     getTranslations("owner.shell.businesses"),
     getLocale(),
     getMyBusinesses(),
+    ownerHasFeature(owner.userId, "multipleBusinesses"),
   ])
   const language = languageOf(locale)
   return (
@@ -54,12 +57,16 @@ export default async function NewBusinessPage() {
         </Button>
       }
     >
-      <GetStarted
-        signedIn
-        claim={claimBusiness}
-        hint={false}
-        language={language}
-      />
+      {canAdd ? (
+        <GetStarted
+          signedIn
+          claim={claimBusiness}
+          hint={false}
+          language={language}
+        />
+      ) : (
+        <PlanLocked feature="multipleBusinesses" />
+      )}
       {businesses.length > 0 && (
         <MyBusinessesCard
           businesses={businesses}

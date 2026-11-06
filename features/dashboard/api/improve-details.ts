@@ -1,5 +1,6 @@
 "use server"
 
+import { hasFeature } from "@/lib/plan-access"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { getMetaAiClient, META_TEXT_MODEL } from "@/lib/meta-ai"
 import type { ActionResult } from "../types"
@@ -28,6 +29,9 @@ export async function improveDetails(
   const owned = await ownedBusiness(businessId)
   if (!owned) {
     return { ok: false, error: "not_found" }
+  }
+  if (!(await hasFeature(businessId, "aiWriting"))) {
+    return { ok: false, error: "locked" }
   }
   const client = getMetaAiClient()
   if (!client) {

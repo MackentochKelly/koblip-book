@@ -7,6 +7,7 @@ import {
   isCancelReason,
   PHONE_PATTERN,
 } from "@/lib/booking-rules"
+import { hasFeature } from "@/lib/plan-access"
 import { requireAccount } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { isGoogleEventColor } from "@/lib/google-calendar-colors"
@@ -666,6 +667,9 @@ export async function suggestServices(
   const owned = await ownedBusiness(businessId)
   if (!owned) {
     return { ok: false, error: "not_found" }
+  }
+  if (!(await hasFeature(businessId, "aiWriting"))) {
+    return { ok: false, error: "locked" }
   }
   if (!isMetaAiEnabled()) {
     return { ok: false, error: "ai_off" }

@@ -35,7 +35,7 @@ export type Automation = {
 
 export type AutomationProblem =
   | "empty" | "tooLong" | "tooManyButtons" | "duplicateLabel"
-  | "badField" | "noOwnNumber" | "not_found" | "invalid"
+  | "badField" | "noOwnNumber" | "not_found" | "invalid" | "locked"
 
 export type AutomationSaveResult =
   | { ok: true }

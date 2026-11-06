@@ -1,6 +1,7 @@
 "use server"
 
 import { and, eq } from "drizzle-orm"
+import { hasFeature } from "@/lib/plan-access"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
@@ -536,6 +537,9 @@ export async function suggestAddonGroups(
   const owned = await ownedBusiness(businessId)
   if (!owned) {
     return { ok: false, error: "not_found" }
+  }
+  if (!(await hasFeature(businessId, "aiWriting"))) {
+    return { ok: false, error: "locked" }
   }
   if (!isMetaAiEnabled()) {
     return { ok: false, error: "ai_off" }

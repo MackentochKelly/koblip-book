@@ -8,6 +8,7 @@ import {
   startChatConnect,
 } from "@/features/dashboard/api/chat-oauth"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
+import { hasFeature } from "@/lib/plan-access"
 import { requireAccount } from "@/lib/dal"
 
 // Opened in the Chat window by Connect on the Integrations page: remembers
@@ -17,6 +18,9 @@ export async function GET(request: NextRequest) {
   const session = await requireAccount()
   // Only the business's owner gets past here.
   await getOwnerBusiness(businessId)
+  if (!(await hasFeature(businessId, "whatsappOwnNumber"))) {
+    return NextResponse.redirect(chatDoneUrl({ businessId }, "failed"))
+  }
   let started: ReturnType<typeof startChatConnect>
   try {
     started = startChatConnect({ businessId }, session.userId)

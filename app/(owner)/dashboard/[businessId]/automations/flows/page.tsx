@@ -5,6 +5,8 @@ import { automationsFor } from "@/features/dashboard/api/automation-queries"
 import { chatConnectionFor } from "@/features/dashboard/api/chat-templates"
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { WhatsappFlows } from "@/features/dashboard/components/whatsapp-flows"
+import { PlanLocked } from "@/components/plan-locked"
+import { hasFeature } from "@/lib/plan-access"
 import { automationRules } from "@/lib/platform-settings"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,6 +21,9 @@ export default async function WhatsappFlowsPage({
   const { businessId } = await params
   // Only the business's owner gets here.
   const { business } = await getOwnerBusiness(businessId)
+  if (!(await hasFeature(businessId, "whatsappAutomations"))) {
+    return <PlanLocked feature="whatsappAutomations" />
+  }
   const [automations, connection, rules] = await Promise.all([
     automationsFor(businessId),
     chatConnectionFor(businessId),

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
+import { hasFeature } from "@/lib/plan-access"
 import { requireAccount } from "@/lib/dal"
 import {
   GOOGLE_ATTEMPT_COOKIE,
@@ -17,6 +18,9 @@ export async function GET(request: NextRequest) {
   const session = await requireAccount()
   // Only the business's owner gets past here.
   await getOwnerBusiness(businessId)
+  if (!(await hasFeature(businessId, "googleCalendar"))) {
+    return NextResponse.redirect(googleCalendarDoneUrl(businessId, "failed"))
+  }
   let started: ReturnType<typeof startGoogleCalendarConnect>
   try {
     started = startGoogleCalendarConnect({ businessId, userId: session.userId }, session.email ?? undefined)

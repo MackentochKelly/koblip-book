@@ -27,6 +27,7 @@ import {
   PLAN_FEATURE_GROUPS,
   PLAN_FEATURES,
   PLANS,
+  planMovable,
   type Plan,
   type PlanFeatureKey,
 } from "@/lib/plan-features"
@@ -38,7 +39,9 @@ const KEYS = Object.keys(PLAN_FEATURES) as PlanFeatureKey[]
 
 // Admin → Plans (docs/plans/subscriptions.md, P0): every feature in its
 // group with the lowest plan that has it, picked right on the row; a
-// changed one shows its default. Below, every change, newest first.
+// changed one shows its default. A built feature with no plan check yet
+// can't move (lib/plan-features.ts, planMovable). Below, every change,
+// newest first.
 export function PlanFeatures({
   plans,
   changes,
@@ -95,6 +98,7 @@ export function PlanFeatures({
                 const feature = PLAN_FEATURES[key]
                 const plan = shown[key]
                 const changed = plan !== feature.defaultPlan
+                const movable = planMovable(key)
                 return (
                   <Item key={key} variant="outline">
                     <ItemContent className="min-w-0">
@@ -111,12 +115,16 @@ export function PlanFeatures({
                           })}
                         </ItemDescription>
                       )}
+                      {!movable && (
+                        <ItemDescription>{t("noCheck")}</ItemDescription>
+                      )}
                     </ItemContent>
                     <ItemActions>
                       <ToggleGroup
                         variant="outline"
                         aria-labelledby={`plan-feature-${key}`}
                         value={[plan]}
+                        disabled={!movable}
                         onValueChange={(next) => {
                           const picked = next[0]
                           if (isPlan(picked) && picked !== plan) pick(key, picked)

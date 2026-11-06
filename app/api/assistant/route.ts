@@ -9,6 +9,7 @@ import type {
   AssistantStreamEvent,
 } from "@/features/assistant/types"
 import { ownedBusiness } from "@/features/dashboard/api/owned-business"
+import { hasFeature } from "@/lib/plan-access"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
 import { cleanMemory } from "@/features/assistant/utils/memory"
 import { ASSISTANT_RULES } from "@/lib/assistant-rules"
@@ -118,6 +119,10 @@ export async function POST(request: Request) {
   // 4. The business must belong to this owner.
   const owned = await ownedBusiness(businessId)
   if (!owned) {
+    return errorEvent("not_allowed")
+  }
+  // The business's plan has this way of talking (docs/plans/subscriptions.md).
+  if (!(await hasFeature(businessId, voice ? "assistantVoice" : "assistantChat"))) {
     return errorEvent("not_allowed")
   }
 

@@ -18,6 +18,8 @@ import { bookingsPerDay } from "@/features/dashboard/utils/bookings-per-day"
 import type { OwnerBooking } from "@/features/dashboard/types"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { addDaysTo, todayIn } from "@/lib/format-booking-time"
+import { PlanLocked } from "@/components/plan-locked"
+import { hasFeature } from "@/lib/plan-access"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("owner.shell")
@@ -29,6 +31,9 @@ export default async function AnalyticsPage({
 }: PageProps<"/dashboard/[businessId]/analytics">) {
   const { businessId } = await params
   const { business, services, categories } = await getOwnerBusiness(businessId)
+  if (!(await hasFeature(businessId, "analytics"))) {
+    return <PlanLocked feature="analytics" />
+  }
   const today = todayIn(business.timezone)
   // The longest period and the one before it, so each can be compared.
   const longest = Math.max(...PERIODS)

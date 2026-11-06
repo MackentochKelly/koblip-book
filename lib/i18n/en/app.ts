@@ -108,6 +108,12 @@ const words = {
     text: "Try again in a few minutes.",
     retry: "Try again",
   },
+  // A feature the business's plan doesn't include (components/plan-locked.tsx).
+  planLocked: {
+    title: "Part of {plan}",
+    plans: { free: "Free", pro: "Pro" },
+    seePlans: "See plans",
+  },
   // The shadcn parts in components/ui: words people see or hear (screen
   // readers included). A part that takes a word as a prop uses its word
   // here when the caller gives none.

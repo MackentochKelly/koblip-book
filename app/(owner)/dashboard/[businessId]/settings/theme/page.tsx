@@ -3,6 +3,8 @@ import { getTranslations } from "next-intl/server"
 
 import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { ThemeSection } from "@/features/dashboard/components/theme-section"
+import { PlanLocked } from "@/components/plan-locked"
+import { hasFeature } from "@/lib/plan-access"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("owner.settings")
@@ -16,5 +18,8 @@ type Props = {
 export default async function ThemePage({ params }: Props) {
   const { businessId } = await params
   const { business } = await getOwnerBusiness(businessId)
+  if (!(await hasFeature(businessId, "pageThemes"))) {
+    return <PlanLocked feature="pageThemes" />
+  }
   return <ThemeSection businessId={businessId} active={business.theme} />
 }

@@ -2,6 +2,7 @@
 
 import { and, eq } from "drizzle-orm"
 
+import { hasFeature } from "@/lib/plan-access"
 import { db } from "@/lib/db"
 import { googleCalendarConnections, teamMembers } from "@/lib/db/schema"
 import { requireOwner } from "@/lib/dal"
@@ -158,6 +159,7 @@ export async function sendTeamCalendarLink(
   const { business, team } = await getOwnerBusiness(businessId)
   const member = team.find((row) => row.id === teamMemberId)
   if (typeof teamMemberId !== "string" || !member) return { ok: false }
+  if (!(await hasFeature(businessId, "googleCalendar"))) return { ok: false }
   const session = await requireOwner()
   const { url } = await createGoogleInvite({
     businessId,

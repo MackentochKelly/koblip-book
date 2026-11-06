@@ -75,6 +75,11 @@ test("unknown features and plans are refused, and stale rows ignored", async () 
     setFeaturePlan({ key: "analytics", plan: "gold" as never, userId: "admin" })
   ).rejects.toBeInstanceOf(PlanFeatureError)
 
+  // Bookings has no plan check yet, so it can't leave its default plan.
+  await expect(
+    setFeaturePlan({ key: "bookings", plan: "pro", userId: "admin" })
+  ).rejects.toBeInstanceOf(PlanFeatureError)
+
   await db.insert(planFeatures).values({ featureKey: "removedFeature", plan: "pro" })
   expect(await featurePlans()).not.toHaveProperty("removedFeature")
 })

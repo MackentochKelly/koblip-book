@@ -1,6 +1,7 @@
 import "server-only"
 import { and, asc, desc, eq, inArray } from "drizzle-orm"
 
+import { hasFeature } from "@/lib/plan-access"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import {
@@ -233,7 +234,10 @@ export async function runAutomations(value: unknown, previousReplyAt: string | n
       for (const connection of candidates) {
         if (!(await claimAutomationEvent(connection.businessId, connection.phoneNumberId!, event))) continue
         if (event.type === "outbound") await applyOutbound(connection, event)
-        else await applyInbound(connection, event, previousReplyAt)
+        // Automations answer only for a business whose plan has them.
+        else if (await hasFeature(connection.businessId, "whatsappAutomations")) {
+          await applyInbound(connection, event, previousReplyAt)
+        }
       }
     })
   } catch {

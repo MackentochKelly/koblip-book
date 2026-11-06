@@ -4,6 +4,7 @@ import "server-only"
 import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
+import { hasFeature } from "@/lib/plan-access"
 import { db } from "@/lib/db"
 import { PAGE_LANGUAGES } from "@/lib/page-language"
 import { saveAll } from "@/lib/db/save-all"
@@ -69,6 +70,7 @@ export async function saveAutomation(
   } catch {
     return { ok: false, error: "not_found" }
   }
+  if (!(await hasFeature(businessId, "whatsappAutomations"))) return { ok: false, error: "locked" }
   if (typeof automationId !== "string" || !automationId.trim()) return { ok: false, error: "invalid" }
   try {
     return await runInTurn(`automation:${businessId}:${automationId}`, async () => {
@@ -105,6 +107,7 @@ export async function setAutomationOn(
   } catch {
     return { ok: false, error: "not_found" }
   }
+  if (!(await hasFeature(businessId, "whatsappAutomations"))) return { ok: false, error: "locked" }
   if (typeof automationId !== "string" || !automationId.trim() || typeof on !== "boolean") {
     return { ok: false, error: "invalid" }
   }
