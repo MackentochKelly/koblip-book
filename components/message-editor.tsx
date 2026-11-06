@@ -273,10 +273,10 @@ export function MessageEditor({
           <FieldGroup>
             <Tabs value={part} onValueChange={(value) => setPart(value as Part)}>
               <TabsList className={cn("w-full", CONTROL_SIZE.tabsList)}>
-                <TabsTrigger value="normal" className={CONTROL_SIZE.tab}>
+                <TabsTrigger value="normal" className={CONTROL_SIZE.segment}>
                   {t.normalMessage}
                 </TabsTrigger>
-                <TabsTrigger value="template" className={CONTROL_SIZE.tab}>
+                <TabsTrigger value="template" className={CONTROL_SIZE.segment}>
                   {t.template}
                 </TabsTrigger>
               </TabsList>

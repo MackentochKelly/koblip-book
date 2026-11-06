@@ -95,7 +95,10 @@ export function ViewTabs<T extends string>({
               key={view.id}
               value={view.id}
               disabled={disabled}
-              className={cn(CONTROL_SIZE.tab, chips && CHIP_TAB)}
+              className={cn(
+                line || chips ? CONTROL_SIZE.tab : CONTROL_SIZE.segment,
+                chips && CHIP_TAB
+              )}
             >
               {view.icon}
               {view.label}

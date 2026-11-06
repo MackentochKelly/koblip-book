@@ -14,15 +14,25 @@
 // Button's default and icon sizes and Toggle are controls already; the
 // rest is set here.
 
-// Each tab in its row: a chip's height, with a 44px tap area on a touch
-// screen. ::before, since ::after is the line tab's bar.
-const TAB =
-  "h-9 pointer-coarse:before:absolute pointer-coarse:before:inset-x-0 pointer-coarse:before:top-1/2 pointer-coarse:before:min-h-11 pointer-coarse:before:-translate-y-1/2"
+// A 44px tap area on a touch screen, drawn invisibly. ::before, since
+// ::after is the line tab's bar.
+const TAP_AREA =
+  "pointer-coarse:before:absolute pointer-coarse:before:inset-x-0 pointer-coarse:before:top-1/2 pointer-coarse:before:min-h-11 pointer-coarse:before:-translate-y-1/2"
+
+// Each tab in its row: a chip's height.
+const TAB = `h-9 ${TAP_AREA}`
+
+// Each part of the switcher (the default tabs' track), like Apple's
+// segmented control: lower and wider than a chip, so the words sit in a
+// long pill rather than a square one.
+const SEGMENT = `h-8 px-4 ${TAP_AREA}`
 
 export const CONTROL_SIZE = {
-  // TabsList (default look): the 4px track around 36px tabs.
-  tabsList: "group-data-horizontal/tabs:h-11",
+  // TabsList (default look): the 4px track around 32px segments, as tall
+  // as a chip with its edge.
+  tabsList: "group-data-horizontal/tabs:h-10",
   tab: TAB,
+  segment: SEGMENT,
   // A search box (InputGroup), kept at 36px on a touch screen.
   search: "pointer-coarse:h-9",
   // A Select in a toolbar, like a table's rows per page.
