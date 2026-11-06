@@ -23,7 +23,7 @@ const MIN_TOP = 3
 
 // What is booked ahead: today, tomorrow, the next 7 days and everything
 // upcoming, then confirmed bookings per day for the next 14 days.
-// `titled={false}` where a section title above already names it (Home).
+// `titled={false}` where a section title above already says it all (Home).
 export function ComingUpCard({
   today,
   upcoming,
@@ -53,10 +53,12 @@ export function ComingUpCard({
 
   return (
     <Card>
-      <CardHeader>
-        {titled && <CardTitle>{a.comingUp}</CardTitle>}
-        <CardDescription>{a.nextTwoWeeks}</CardDescription>
-      </CardHeader>
+      {titled && (
+        <CardHeader>
+          <CardTitle>{a.comingUp}</CardTitle>
+          <CardDescription>{a.nextTwoWeeks}</CardDescription>
+        </CardHeader>
+      )}
       <CardContent className="flex flex-col gap-6">
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {counts.map((count) => (

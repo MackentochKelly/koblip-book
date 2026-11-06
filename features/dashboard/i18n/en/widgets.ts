@@ -11,6 +11,19 @@ const widgets = {
     share: "Share your page",
     install: "Get the app",
   },
+  // Each widget's title above it on Home: a short phrase, like an Apple
+  // app's sections ("Get the most out of your iPhone"). The names above
+  // stay the widgets' short labels.
+  headings: {
+    stats: "Your last 7 days",
+    today: "Ask Koblip",
+    bookings: "Your bookings",
+    next: "Your next client",
+    chart: "The next 14 days",
+    newCustomers: "New faces this week",
+    share: "Share your page",
+    install: "The app on your Home Screen",
+  },
   edit: "Edit widgets",
   done: "Done",
   add: "Add widget",
