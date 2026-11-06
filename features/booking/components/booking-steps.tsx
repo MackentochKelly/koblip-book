@@ -1,7 +1,7 @@
 "use client"
 
 import { Fragment, useEffect, useState } from "react"
-import { CalendarX2Icon, StoreIcon, UsersIcon } from "@/components/ui/icons"
+import { CalendarIcon, CalendarX2Icon, UsersIcon } from "@/components/ui/icons"
 
 import { InfoTip } from "@/components/info-tip"
 import { PolicyPointIcon } from "@/components/policy-point-icon"
@@ -466,11 +466,11 @@ export function BookingSummary({
   const total = totals ? priceLabel(totals.priceMinor, page.currency, m) : null
   return (
     <Card className={className}>
-      {/* Like a Wallet pass: the shop's icon and name on top, then when, big. */}
+      {/* Like a Wallet pass: a calendar and the name on top, then when, big. */}
       <CardHeader className="flex items-center gap-3">
         <Avatar size="lg">
           <AvatarFallback>
-            <StoreIcon className="size-5" />
+            <CalendarIcon className="size-5" />
           </AvatarFallback>
         </Avatar>
         <CardTitle className="min-w-0 truncate">{page.name}</CardTitle>
