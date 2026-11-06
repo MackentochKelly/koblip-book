@@ -33,10 +33,7 @@ function pageLanguage(request: NextRequest): PageLanguage {
       ? languageParam(searchParams.getAll("lang"))
       : null
   if (linked) return linked
-  return pickOwnerLanguage(
-    request.cookies.get(OWNER_LANGUAGE_COOKIE)?.value,
-    accept
-  )
+  return pickOwnerLanguage(request.cookies.get(OWNER_LANGUAGE_COOKIE)?.value, accept)
 }
 
 // Optimistic cookie check only on the dashboard; every page and action
@@ -48,10 +45,7 @@ export function proxy(request: NextRequest) {
     !getSessionCookie(request)
   ) {
     return NextResponse.redirect(
-      new URL(
-        loginHref({ next: request.nextUrl.pathname }),
-        request.nextUrl.href
-      )
+      new URL(loginHref({ next: request.nextUrl.pathname }), request.nextUrl.href)
     )
   }
   const forwarded = new Headers(request.headers)

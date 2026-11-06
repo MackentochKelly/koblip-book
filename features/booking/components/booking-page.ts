@@ -97,9 +97,7 @@ export function serviceAddonGroups(
   serviceId: string | null
 ): BookingAddonGroup[] {
   if (!serviceId) return []
-  return page.addonGroups.filter((group) =>
-    group.serviceIds.includes(serviceId)
-  )
+  return page.addonGroups.filter((group) => group.serviceIds.includes(serviceId))
 }
 
 // The service with the chosen extras: whether the choice is complete, the
@@ -155,14 +153,12 @@ export function toBookingPage(data: {
     phone: data.business.phone,
     timeZone: data.business.timezone,
     currency: data.business.currency,
-    services: data.services.map(
-      ({ id, name, durationMinutes, priceMinor }) => ({
-        id,
-        name,
-        durationMinutes,
-        priceMinor,
-      })
-    ),
+    services: data.services.map(({ id, name, durationMinutes, priceMinor }) => ({
+      id,
+      name,
+      durationMinutes,
+      priceMinor,
+    })),
     team: data.team.map(({ id, name, photoUrl, description }) => ({
       id,
       name,

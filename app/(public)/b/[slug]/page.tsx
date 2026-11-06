@@ -81,9 +81,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
     hoursCount: hours.length,
   })
   const sections = [
-    ...(services.length > 0
-      ? [{ id: "services", label: m.sections.services }]
-      : []),
+    ...(services.length > 0 ? [{ id: "services", label: m.sections.services }] : []),
     ...(team.length > 0 ? [{ id: "team", label: m.sections.team }] : []),
     ...detailSections(data, language),
   ]
@@ -121,11 +119,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
             />
             {team.length > 0 && (
               <>
-                <TeamList
-                  slug={business.slug}
-                  team={team}
-                  language={language}
-                />
+                <TeamList slug={business.slug} team={team} language={language} />
                 <Separator />
               </>
             )}
@@ -158,16 +152,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
           />
         </BottomBar>
       )}
-      {bookable && (
-        <BookingFlow
-          page={toBookingPage({
-            ...data,
-            whatsapp,
-            customerSignIn: customerSignInReady(),
-          })}
-          mode="drawer"
-        />
-      )}
+      {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp, customerSignIn: customerSignInReady() })} mode="drawer" />}
       {isOwner && <OwnerBackButton businessId={business.id} />}
       <Toaster />
     </LanguageProvider>

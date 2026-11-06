@@ -55,14 +55,7 @@ export default async function BookPage({ params, searchParams }: Props) {
   return (
     <LanguageProvider language={language}>
       <div lang={language}>
-        <BookingFlow
-          page={toBookingPage({
-            ...data,
-            whatsapp,
-            customerSignIn: customerSignInReady(),
-          })}
-          mode="page"
-        />
+        <BookingFlow page={toBookingPage({ ...data, whatsapp, customerSignIn: customerSignInReady() })} mode="page" />
       </div>
       <Toaster />
     </LanguageProvider>
