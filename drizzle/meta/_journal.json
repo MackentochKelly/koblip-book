@@ -442,6 +442,13 @@
       "when": 1794001499365,
       "tag": "0062_drop_plan_feature_changes",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "6",
+      "when": 1794002872962,
+      "tag": "0063_booking_account",
+      "breakpoints": true
     }
   ]
 }

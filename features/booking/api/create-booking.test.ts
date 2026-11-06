@@ -17,6 +17,11 @@ import {
 } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
+// Customers book signed out, unless a test signs one in.
+const signedIn = {
+  session: null as { userId: string; isGuest: boolean } | null,
+}
+vi.mock("@/lib/dal", () => ({ getSession: async () => signedIn.session }))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 
 const { createBooking } = await import("./create-booking")
@@ -82,6 +87,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks()
+  signedIn.session = null
 })
 
 test("books a valid slot and picks the free team member", async () => {
@@ -310,4 +316,53 @@ test("a business without policies books without the box, and saves no agreement"
     .from(bookings)
     .where(eq(bookings.businessId, "biz-plain"))
   expect(row.policiesAcceptedAt).toBeNull()
+})
+
+test("signed in, the booking is the account's; signed out, it gets a one-time claim", async () => {
+  const { serviceId } = await seedShop("claim-shop", "biz-claim")
+  const { db } = await import("@/lib/db")
+  const { user } = await import("@/lib/db/schema")
+  await db.insert(user).values({
+    id: "u-ana",
+    name: "Ana",
+    email: "ana@example.test",
+    emailVerified: true,
+  })
+  const book = (time: string) =>
+    createBooking({
+      slug: "claim-shop",
+      serviceId,
+      teamMemberId: null,
+      addonIds: [],
+      date: "2026-06-01",
+      time,
+      name: "Ana",
+      phone: "+18095550134",
+    })
+
+  signedIn.session = { userId: "u-ana", isGuest: false }
+  const mine = await book("10:00")
+  expect(mine).toMatchObject({ status: "booked", claimToken: null })
+
+  signedIn.session = null
+  const theirs = await book("11:00")
+  expect(theirs).toMatchObject({ status: "booked", claimToken: expect.any(String) })
+
+  if (mine.status !== "booked" || theirs.status !== "booked") return
+  const { bookingClaimHash } = await import("@/lib/booking-claim")
+  const rows = await db
+    .select({ id: bookings.id, customerUserId: bookings.customerUserId, claimTokenHash: bookings.claimTokenHash })
+    .from(bookings)
+    .where(eq(bookings.businessId, "biz-claim"))
+  expect(rows).toEqual(
+    expect.arrayContaining([
+      { id: mine.booking.id, customerUserId: "u-ana", claimTokenHash: null },
+      {
+        id: theirs.booking.id,
+        customerUserId: null,
+        // Only the secret's hash is stored, never the secret.
+        claimTokenHash: bookingClaimHash(theirs.claimToken!),
+      },
+    ])
+  )
 })

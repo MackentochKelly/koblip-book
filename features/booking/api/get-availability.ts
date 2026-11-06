@@ -1,7 +1,8 @@
 import "server-only"
 import { and, asc, eq, gte, lte, ne } from "drizzle-orm"
 import { BOOKING_RULES } from "@/lib/booking-rules"
-import { customerKey } from "@/lib/customer-key"
+import { ownBookings } from "@/lib/customer-bookings"
+import type { CustomerSession } from "@/lib/customer-dal"
 import { db } from "@/lib/db"
 import { googleBusyTimes } from "@/lib/google-calendar-busy"
 import {
@@ -137,17 +138,14 @@ type Booking = typeof bookings.$inferSelect
 // signed in with: lib/customer-key.ts), with its business; null otherwise.
 export async function customerBookingToMove(
   bookingId: string,
-  phone: string
+  customer: CustomerSession
 ): Promise<{ business: Business; booking: Booking } | null> {
   const [row] = await db
     .select({ business: businesses, booking: bookings })
     .from(bookings)
     .innerJoin(businesses, eq(businesses.id, bookings.businessId))
     .where(
-      and(
-        eq(bookings.id, bookingId),
-        eq(bookings.customerKey, customerKey(phone, ""))
-      )
+and(eq(bookings.id, bookingId), ownBookings(customer))
     )
     .limit(1)
   if (

@@ -43,7 +43,6 @@ const page = (
   serviceTeams: {},
   addonGroups: [],
   whatsapp: false,
-  manageBookings: false,
   policies: { documents: [], points: [] },
 })
 

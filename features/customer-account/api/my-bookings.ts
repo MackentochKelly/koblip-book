@@ -2,7 +2,8 @@ import "server-only"
 import { and, desc, eq, inArray } from "drizzle-orm"
 
 import { cantComeSettingsFor } from "@/lib/customer-cant-come"
-import { customerKey } from "@/lib/customer-key"
+import { ownBookings } from "@/lib/customer-bookings"
+import type { CustomerSession } from "@/lib/customer-dal"
 import { db } from "@/lib/db"
 import {
   bookingAddons,
@@ -16,11 +17,11 @@ import type { MyBooking } from "../types"
 // How many bookings the page lists, newest first.
 const LIMIT = 100
 
-// Every booking made with this phone, at any business (bookings group one
-// customer by the phone's digits: lib/customer-key.ts), split into what is
-// still ahead and what is over. Only what the customer's own page shows.
+// The customer's own bookings at every business (lib/customer-dal.ts),
+// split into what is still ahead and what is over. Only what the
+// customer's own page shows.
 export async function myBookings(
-  phone: string,
+  customer: CustomerSession,
   locale: string,
   now: Date = new Date()
 ): Promise<{ upcoming: MyBooking[]; past: MyBooking[] }> {
@@ -46,10 +47,7 @@ export async function myBookings(
     .from(bookings)
     .innerJoin(businesses, eq(businesses.id, bookings.businessId))
     .where(
-      and(
-        eq(bookings.customerKey, customerKey(phone, "")),
-        eq(businesses.isDemo, false)
-      )
+and(ownBookings(customer), eq(businesses.isDemo, false))
     )
     .orderBy(desc(bookings.startAt))
     .limit(LIMIT)

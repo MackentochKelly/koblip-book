@@ -2,7 +2,9 @@
 
 import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { newBookingClaim } from "@/lib/booking-claim"
 import { customerKey } from "@/lib/customer-key"
+import { getSession } from "@/lib/dal"
 import { internationalPhone } from "@/lib/whatsapp-phone"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
@@ -60,7 +62,9 @@ async function hasPolicies(businessId: string): Promise<boolean> {
   return Boolean(text || point)
 }
 
-// No sign-in needed for customers. Every unexpected error becomes "failed".
+// No sign-in needed for customers: signed in, the booking is the account's
+// (My bookings); signed out, it gets a claim for the account logged in
+// after it. Every unexpected error becomes "failed".
 export async function createBooking(
   input: BookingInput
 ): Promise<BookingResult> {
@@ -164,6 +168,10 @@ export async function createBooking(
     )
     const endInstant = startInstant + totalMinutes * 60_000
 
+    // Whose booking it is on My bookings (a demo guest isn't anyone yet).
+    const session = await getSession()
+    const owner = session && !session.isGuest ? session.userId : null
+    const claim = owner ? null : newBookingClaim()
     const confirmation = await inBookingTurn(business.id, async () => {
       const dayStart = zonedInstant(input.date, 0, business.timezone)
       const dayEnd = zonedInstant(addDays(input.date, 1), 0, business.timezone)
@@ -256,6 +264,8 @@ export async function createBooking(
           customerName: name,
           customerPhone: internationalPhone(phone, business),
           customerKey: customerKey(internationalPhone(phone, business), name),
+          customerUserId: owner,
+          claimTokenHash: claim?.hash ?? null,
           // The booking page names the business in the ⓘ on Phone whenever
           // it sends WhatsApp booking messages: booking is the yes.
           whatsappOptIn: whatsapp,
@@ -305,7 +315,11 @@ export async function createBooking(
     revalidatePath("/dashboard", "layout")
     // Google Calendar hears of it now, without the booking waiting.
     requestGoogleSync(business.id)
-    return { status: "booked", booking: confirmation }
+    return {
+      status: "booked",
+      booking: confirmation,
+      claimToken: claim?.token ?? null,
+    }
   } catch {
     console.error("createBooking failed")
     return { status: "failed" }

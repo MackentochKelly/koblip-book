@@ -9,8 +9,8 @@ import {
   cantComeSettingsFor,
   customerCantComeWrites,
 } from "@/lib/customer-cant-come"
+import { ownBookings } from "@/lib/customer-bookings"
 import { getCustomer } from "@/lib/customer-dal"
-import { customerKey } from "@/lib/customer-key"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { bookings, businesses } from "@/lib/db/schema"
@@ -33,10 +33,7 @@ export async function cantCome(bookingId: unknown): Promise<CantComeResult> {
     .from(bookings)
     .innerJoin(businesses, eq(businesses.id, bookings.businessId))
     .where(
-      and(
-        eq(bookings.id, bookingId),
-        eq(bookings.customerKey, customerKey(customer.phone, ""))
-      )
+and(eq(bookings.id, bookingId), ownBookings(customer))
     )
     .limit(1)
   if (!found) return { ok: false, error: "notFound" }

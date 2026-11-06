@@ -13,6 +13,8 @@ import {
 } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
+// Customers book signed out.
+vi.mock("@/lib/dal", () => ({ getSession: vi.fn(async () => null) }))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 
 const { createBooking } = await import("./create-booking")

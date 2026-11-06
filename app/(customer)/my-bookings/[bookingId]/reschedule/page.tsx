@@ -28,7 +28,7 @@ export default async function ReschedulePage({ params }: Props) {
   const customer = await getCustomer()
   if (!customer) redirect(myBookingsLoginHref(language))
   const { bookingId } = await params
-  const found = await customerBookingToMove(bookingId, customer.phone)
+  const found = await customerBookingToMove(bookingId, customer)
   if (!found) notFound()
   const { business, booking } = found
   const t = await getTranslations("public.account")

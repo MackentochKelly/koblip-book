@@ -48,13 +48,13 @@ export async function moveCustomerBooking(input: {
     ) {
       return { status: "invalid" }
     }
-    const found = await customerBookingToMove(bookingId, customer.phone)
+    const found = await customerBookingToMove(bookingId, customer)
     if (!found) return { status: "notFound" }
     const { business } = found
 
     const outcome = await inBookingTurn(business.id, async () => {
       // Read again inside the turn: nothing else moves it meanwhile.
-      const current = await customerBookingToMove(bookingId, customer.phone)
+      const current = await customerBookingToMove(bookingId, customer)
       if (!current) return { status: "notFound" } as const
       const { booking } = current
       const free = await moveAvailability(business, booking)

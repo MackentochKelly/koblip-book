@@ -25,6 +25,8 @@ import {
 vi.mock("server-only", () => ({}))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 vi.mock("@/lib/dal", () => ({
+  // Customers book signed out.
+  getSession: vi.fn(async () => null),
   requireOwner: vi.fn(async () => ({ userId: "owner" })),
 }))
 const { createBooking } = await import("./create-booking")

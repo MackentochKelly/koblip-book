@@ -13,7 +13,9 @@ export interface BookingConfirmation {
   addons: { name: string; priceMinor: number | null; durationMinutes: number }[]
 }
 export type BookingResult =
-  | { status: "booked"; booking: BookingConfirmation }
+  // claimToken: booked signed out, the one-time secret that joins it to
+  // the account logged in from "Manage your booking" (lib/booking-claim.ts).
+  | { status: "booked"; booking: BookingConfirmation; claimToken: string | null }
   | { status: "taken" }
   | { status: "invalid"; field: "service" | "teamMember" | "addons" | "time" | "name" | "phone" | "policies" }
   | { status: "failed" }

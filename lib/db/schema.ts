@@ -419,6 +419,15 @@ export const bookings = sqliteTable(
     // set on every new booking. Null only on bookings made before it
     // existed, until `npm run customers:backfill` fills them.
     customerKey: text(),
+    // The account the booking belongs to on My bookings: the signed-in
+    // person who booked it, or the one who logged in from "Manage your
+    // booking" (claimToken). Null for owner-made bookings and bookings
+    // nobody claimed; those still show by the account's verified phone.
+    customerUserId: text().references(() => user.id, { onDelete: "set null" }),
+    // A booking made signed out: the SHA-256 of a one-time secret kept in
+    // the booker's tab, so only that tab can join it to an account.
+    // Cleared once claimed.
+    claimTokenHash: text(),
     source: text().notNull().default("online"),
     note: text(),
     status: text().notNull().default("confirmed"),
@@ -442,6 +451,10 @@ export const bookings = sqliteTable(
     index("bookings_customer_idx").on(
       table.businessId,
       table.customerKey,
+      table.startAt
+    ),
+    index("bookings_customer_user_idx").on(
+      table.customerUserId,
       table.startAt
     ),
   ]

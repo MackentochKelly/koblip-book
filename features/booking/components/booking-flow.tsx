@@ -29,7 +29,11 @@ import { Item, ItemContent } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { useFormatDuration } from "@/hooks/use-format-duration"
 import { PHONE_PATTERN } from "@/lib/booking-rules"
-import { BOOKED_PHONE_KEY, myBookingsHref } from "@/lib/my-bookings-links"
+import {
+  BOOKED_PHONE_KEY,
+  BOOKING_CLAIM_KEY,
+  myBookingsHref,
+} from "@/lib/my-bookings-links"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { languageOf } from "@/lib/page-language"
 import { shareLink } from "@/lib/share-link"
@@ -257,6 +261,9 @@ export function BookingFlow({
     }).catch(() => ({ status: "failed" as const }))
     setSending(false)
     if (result.status === "booked") {
+      if (result.claimToken) {
+        rememberClaim(result.booking.id, result.claimToken)
+      }
       setBooked(result.booking)
     } else if (result.status === "taken") {
       setSlot(null)
@@ -488,10 +495,6 @@ export function BookingFlow({
             page={page}
             booking={booked}
             phone={details.phone}
-            onDone={() => {
-              pushes.current = 0
-              replaceUrl(businessPath)
-            }}
           />
         )}
       </>
@@ -504,7 +507,6 @@ export function BookingFlow({
         page={page}
         booking={booked}
         phone={details.phone}
-        onDone={() => router.replace(businessPath)}
       />
     )
   }
@@ -579,17 +581,26 @@ function rememberBookedPhone(phone: string) {
   } catch {}
 }
 
+// Booked signed out: the booking's one-time secret, so the account logged
+// in from "Manage your booking" gets it (My bookings claims it).
+function rememberClaim(bookingId: string, token: string) {
+  try {
+    sessionStorage.setItem(
+      BOOKING_CLAIM_KEY,
+      JSON.stringify({ bookingId, token })
+    )
+  } catch {}
+}
+
 function BookedPage({
   page,
   booking,
   phone,
-  onDone,
 }: {
   page: BookingPage
   booking: BookingConfirmation
   // The phone they booked with, filled in on sign-in.
   phone: string
-  onDone: () => void
 }) {
   const t = useTranslations("public")
   const locale = useLocale()
@@ -648,24 +659,18 @@ function BookedPage({
                     {t("actions.directions")}
                   </Button>
                 )}
-                {page.manageBookings ? (
-                  <Button
-                    variant="link"
-                    nativeButton={false}
-                    render={
-                      <Link
-                        href={myBookingsHref(language)}
-                        onClick={() => rememberBookedPhone(phone)}
-                      />
-                    }
-                  >
-                    {t("booking.manage")}
-                  </Button>
-                ) : (
-                  <Button variant="link" onClick={onDone}>
-                    {t("booking.done")}
-                  </Button>
-                )}
+                <Button
+                  variant="link"
+                  nativeButton={false}
+                  render={
+                    <Link
+                      href={myBookingsHref(language)}
+                      onClick={() => rememberBookedPhone(phone)}
+                    />
+                  }
+                >
+                  {t("booking.manage")}
+                </Button>
               </>
             }
           >
