@@ -198,8 +198,9 @@ export function DashboardShell({
                   <Button
                     size="icon-lg"
                     variant="ghost"
-                    // The globe fills the whole 44 px, with no ring.
-                    className="size-11 rounded-full border-0 hover:bg-transparent dark:hover:bg-transparent"
+                    // The globe fills the whole 44 px, edged with the app's
+                    // hairline in its own brand colour, with no gap.
+                    className="size-11 rounded-full border-(length:--hairline) border-primary/60 hover:bg-transparent dark:hover:bg-transparent"
                     aria-label={m.assistant}
                     nativeButton={false}
                     render={<Link href={assistantHref} />}
