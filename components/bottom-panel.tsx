@@ -96,8 +96,11 @@ function useSheetSize(
 // iOS's medium sheet: half the screen.
 const MEDIUM = 0.5
 
-// Whether this panel opens on top of another one.
-const StackedContext = React.createContext(false)
+// Set when this panel opens on top of another one: whether the one under it
+// has finished sliding in and knows its height. Until then the panel on top
+// waits, so the two never rise together (the one on top would rise floating
+// before its height is known, then stretch to the screen's sides).
+const StackedContext = React.createContext<{ ready: boolean } | null>(null)
 
 // The one phone panel: the stock Drawer as a bottom sheet. It always opens
 // at its content's height and slides to a new height when the content
@@ -128,11 +131,15 @@ export function BottomPanel({
   const popup = React.useRef<HTMLDivElement | null>(null)
   const scroll = React.useRef<HTMLDivElement | null>(null)
   const inner = React.useRef<HTMLDivElement | null>(null)
-  const stacked = React.useContext(StackedContext)
+  const under = React.useContext(StackedContext)
+  const stacked = under !== null
+  // On top of another panel, it opens once that one is ready, like iOS: the
+  // panel behind slides up first, then this one over it.
+  const opened = open && (under?.ready ?? true)
   // Shown from opening until it has slid away, so its size holds while it
   // closes.
-  const [shown, setShown] = React.useState(open)
-  if (open && !shown) setShown(true)
+  const [shown, setShown] = React.useState(opened)
+  if (opened && !shown) setShown(true)
   // Once it has slid in. Until then it takes its edges at once, so it rises
   // already the right width.
   const [settled, setSettled] = React.useState(false)
@@ -141,10 +148,13 @@ export function BottomPanel({
   // Taller than iOS's medium sheet (half the screen) it is a large sheet:
   // anchored to the screen's edges.
   const full = !!size && height !== null && height > size.max * MEDIUM
+  // What a panel opened on top of this one waits for.
+  const ready = settled && size !== null
+  const stackedValue = React.useMemo(() => ({ ready }), [ready])
 
   return (
     <Drawer
-      open={open}
+      open={opened}
       onOpenChange={(next) => {
         if (!next) onClose()
       }}
@@ -207,7 +217,7 @@ export function BottomPanel({
             )}
           >
             <div ref={inner}>
-              <StackedContext.Provider value>
+              <StackedContext.Provider value={stackedValue}>
                 {children}
               </StackedContext.Provider>
             </div>
