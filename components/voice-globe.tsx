@@ -56,7 +56,15 @@ export function VoiceGlobe({
     <div aria-hidden className={cn("@container aspect-square", className)}>
       <div
         ref={ball}
-        className="relative isolate size-full overflow-hidden rounded-full shadow-[0_16cqw_31cqw_-12cqw_color-mix(in_oklch,var(--primary)_35%,transparent)]"
+        className={cn(
+          "relative isolate size-full overflow-hidden rounded-full shadow-[0_16cqw_31cqw_-12cqw_color-mix(in_oklch,var(--primary)_35%,transparent)]",
+          // The screen-sized one is filled in its colours from its first
+          // frame: its moving canvas takes a few frames to start, and without
+          // it the globe would show up only once already big, not grow out of
+          // the tapped one.
+          screen &&
+            "bg-[radial-gradient(circle_at_42%_38%,var(--chart-1),var(--chart-2))]"
+        )}
       >
         <HeroGradient
           look="globe"
