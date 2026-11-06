@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import {
+  AudioLinesIcon,
   CalendarDaysIcon,
   LayoutDashboardIcon,
   PlusIcon,
@@ -203,7 +204,12 @@ export function DashboardShell({
                     nativeButton={false}
                     render={<Link href={assistantHref} />}
                   >
-                    <VoiceGlobe className="size-full" />
+                    {/* The composer's voice wave on the globe, in the globe's
+                        near-white light. */}
+                    <span className="grid size-full place-items-center *:col-start-1 *:row-start-1">
+                      <VoiceGlobe className="size-full" />
+                      <AudioLinesIcon className="relative size-5 text-primary-foreground" />
+                    </span>
                   </Button>
                 )}
               </SpinSwap>
