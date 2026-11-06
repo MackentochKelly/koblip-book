@@ -259,9 +259,9 @@ const words = {
           q: "Can I change my page later?",
           a: "Yes. Edit it in your dashboard, or just ask your AI assistant.",
         },
-        spanish: {
-          q: "Does it work in Spanish?",
-          a: "Yes. Your page shows in your client's language, English or Spanish.",
+        languages: {
+          q: "Does it work in other languages?",
+          a: "Yes. Your page shows in your client's language: English, Spanish, Portuguese or French.",
         },
       },
     },
@@ -283,7 +283,7 @@ const words = {
           assistant: "AI assistant, by typing or voice",
           reminders: "Reminders on WhatsApp",
           calendar: "Google Calendar",
-          languages: "English and Spanish",
+          languages: "English, Spanish, Portuguese and French",
         },
       },
       pro: {
@@ -441,7 +441,7 @@ const words = {
       assistant: "Just ask your AI assistant",
       assistantText: "Bookings, services and hours, by typing or voice.",
       language: "In your clients' language",
-      languageText: "Your page shows in English or Spanish.",
+      languageText: "Your page shows in English, Spanish, Portuguese or French.",
       // The sample app shown in the card pictures.
       sample: {
         book: "Book",

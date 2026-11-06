@@ -421,6 +421,13 @@
       "when": 1793994963136,
       "tag": "0059_whatsapp_spanish_words",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "6",
+      "when": 1793997886861,
+      "tag": "0060_home_languages_spanish",
+      "breakpoints": true
     }
   ]
 }

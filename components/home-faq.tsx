@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils"
 
 // The questions, in order.
-const QUESTIONS = ["free", "start", "who", "app", "change", "spanish"] as const
+const QUESTIONS = ["free", "start", "who", "app", "change", "languages"] as const
 
 // The home page's short questions, one open at a time (shadcn Accordion),
 // each in its own soft card. On computers the big title sits on the left
