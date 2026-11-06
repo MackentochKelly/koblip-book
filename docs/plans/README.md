@@ -19,6 +19,7 @@ current.
 | [WhatsApp automations](whatsapp-automations.md) | Done |
 | [Customer accounts](customer-accounts.md) | In progress |
 | [Service categories](service-categories.md) | Done |
+| [Automatic Spanish](auto-spanish.md) | To do |
 
 ## How to work with a plan
 
