@@ -164,7 +164,11 @@ export async function getOwnerBusiness(businessId: string) {
     db.select().from(teamMemberHours).where(eq(teamMemberHours.businessId, business.id)).orderBy(asc(teamMemberHours.weekday), asc(teamMemberHours.opensAt)),
     // Service categories in the owner's order (docs/plans/service-categories.md).
     db
-      .select({ id: serviceCategories.id, name: serviceCategories.name })
+      .select({
+        id: serviceCategories.id,
+        name: serviceCategories.name,
+        calendarColor: serviceCategories.calendarColor,
+      })
       .from(serviceCategories)
       .where(eq(serviceCategories.businessId, business.id))
       .orderBy(asc(serviceCategories.position)),

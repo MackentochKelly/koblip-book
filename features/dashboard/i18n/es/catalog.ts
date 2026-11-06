@@ -45,6 +45,7 @@ const catalog: typeof en = {
     whoDoesIt: "Quién lo hace",
     calendarColor: "Color en el calendario",
     calendarColorNone: "Color del calendario",
+    calendarColorCategory: "Color de la categoría",
     calendarColors: {
       "1": "Lavanda",
       "2": "Salvia",

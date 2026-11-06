@@ -59,6 +59,7 @@ import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import {
   GOOGLE_EVENT_COLORS,
+  eventColorOf,
   isGoogleEventColor,
   type GoogleEventColor,
 } from "@/lib/google-calendar-colors"
@@ -76,14 +77,15 @@ import {
   createServiceCategory,
   deleteServiceCategory,
   findOrAddServiceCategory,
-  renameServiceCategory,
   reorderServiceCategories,
+  updateServiceCategory,
 } from "../api/category-actions"
 import { removeServicePhoto, setServicePhoto } from "../api/photo-actions"
 import { setServiceTeam } from "../api/team-services"
 import type {
   OwnerAddonGroup,
   OwnerServiceCategory,
+  ServiceCategoryInput,
   ServiceInput,
 } from "../types"
 import { CATALOG_FIRST_SHOWN } from "../utils/catalog-list"
@@ -247,67 +249,75 @@ export function ServicesView({
     </Button>
   )
 
+  // A category's colour, for its services that have none (C9).
+  const categoryColor = (categoryId: string | null) =>
+    categories.find((category) => category.id === categoryId)?.calendarColor ??
+    null
+
   // One service's row, the same in a group or in the flat list. Move up and
-  // down stay inside its group.
+  // down stay inside its group. Its dot is its events' colour.
   const serviceItem = (
     service: ServiceRow,
     groupIndex: number,
     index: number,
     count: number
-  ) => (
-    <Item key={service.id} variant="outline">
-      <ItemContent>
-        <ItemTitle>
-          {googleCalendar && isGoogleEventColor(service.calendarColor) && (
-            <GoogleEventDot color={service.calendarColor} />
-          )}
-          {service.name}
-        </ItemTitle>
-        <ItemDescription>
-          {formatDuration(service.durationMinutes)}
-          {service.priceMinor !== null &&
-            ` · ${service.priceMinor === 0 ? c.free : formatPrice(service.priceMinor, currency, m.locale)}`}
-        </ItemDescription>
-      </ItemContent>
-      <ItemActions>
-        <Button variant="outline" size="sm" onClick={() => openForm(service)}>
-          {c.edit}
-        </Button>
-        <DropdownMenu>
-          <MoreMenuTrigger label={c.more} />
-          <DropdownMenuContent align="end">
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                disabled={index === 0 || pending}
-                onClick={() => move(groupIndex, index, -1)}
-              >
-                <ArrowUpIcon />
-                {c.moveUp}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={index === count - 1 || pending}
-                onClick={() => move(groupIndex, index, 1)}
-              >
-                <ArrowDownIcon />
-                {c.moveDown}
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                variant="destructive"
-                disabled={pending}
-                onClick={() => setRemoving(service)}
-              >
-                <Trash2Icon />
-                {c.remove}
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </ItemActions>
-    </Item>
-  )
+  ) => {
+    const color = googleCalendar
+      ? eventColorOf(service.calendarColor, categoryColor(service.categoryId))
+      : null
+    return (
+      <Item key={service.id} variant="outline">
+        <ItemContent>
+          <ItemTitle>
+            {color && <GoogleEventDot color={color} />}
+            {service.name}
+          </ItemTitle>
+          <ItemDescription>
+            {formatDuration(service.durationMinutes)}
+            {service.priceMinor !== null &&
+              ` · ${service.priceMinor === 0 ? c.free : formatPrice(service.priceMinor, currency, m.locale)}`}
+          </ItemDescription>
+        </ItemContent>
+        <ItemActions>
+          <Button variant="outline" size="sm" onClick={() => openForm(service)}>
+            {c.edit}
+          </Button>
+          <DropdownMenu>
+            <MoreMenuTrigger label={c.more} />
+            <DropdownMenuContent align="end">
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  disabled={index === 0 || pending}
+                  onClick={() => move(groupIndex, index, -1)}
+                >
+                  <ArrowUpIcon />
+                  {c.moveUp}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={index === count - 1 || pending}
+                  onClick={() => move(groupIndex, index, 1)}
+                >
+                  <ArrowDownIcon />
+                  {c.moveDown}
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  variant="destructive"
+                  disabled={pending}
+                  onClick={() => setRemoving(service)}
+                >
+                  <Trash2Icon />
+                  {c.remove}
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </ItemActions>
+      </Item>
+    )
+  }
 
   // A real category's ⋮ menu, beside its heading; Other has none.
   const categoryMenu = (category: OwnerServiceCategory, index: number) => (
@@ -433,7 +443,11 @@ export function ServicesView({
           <section key={category?.id ?? "other"} className="flex flex-col gap-3">
             {/* As tall as the ⋮ button, so Other's heading lines up too. */}
             <div className="flex min-h-8 items-center justify-between gap-3">
-              <h2 className="min-w-0 text-sm font-medium text-muted-foreground">
+              <h2 className="flex min-w-0 items-center gap-2 text-sm font-medium text-muted-foreground">
+                {googleCalendar &&
+                  isGoogleEventColor(category?.calendarColor) && (
+                    <GoogleEventDot color={category.calendarColor} />
+                  )}
                 {category?.name ?? k.other}
               </h2>
               {/* Every category has its group, so its index is its own. */}
@@ -526,18 +540,19 @@ export function ServicesView({
           <CategoryForm
             key={categoryKey}
             category={editingCategory === "new" ? null : editingCategory}
+            googleCalendar={googleCalendar}
             taken={categoryTaken}
             onChanged={setCategoryChanged}
-            onSave={(name) => {
+            onSave={(input) => {
               setCategoryTaken(false)
               startTransition(async () => {
                 const result =
                   editingCategory === "new"
-                    ? await createServiceCategory(businessId, name)
-                    : await renameServiceCategory(
+                    ? await createServiceCategory(businessId, input)
+                    : await updateServiceCategory(
                         businessId,
                         editingCategory.id,
-                        name
+                        input
                       )
                 if (result.ok) {
                   setEditingCategory(null)
@@ -687,10 +702,6 @@ function ServiceForm({
   const [memberIds, setMemberIds] = useState(initialMembers)
   const savedColor = isGoogleEventColor(service?.calendarColor) ? service.calendarColor : NO_COLOR
   const [color, setColor] = useState<GoogleEventColor | typeof NO_COLOR>(savedColor)
-  const colors: { value: GoogleEventColor | typeof NO_COLOR; label: string }[] = [
-    { value: NO_COLOR, label: t.calendarColorNone },
-    ...GOOGLE_EVENT_COLORS.map((value) => ({ value, label: t.calendarColors[value] })),
-  ]
   // None when it has none, or its category is gone.
   const savedCategory =
     categories.find((item) => item.id === initialCategory)?.id ?? NO_CATEGORY
@@ -699,6 +710,11 @@ function ServiceForm({
     { value: NO_CATEGORY, label: k.none },
     ...categories.map((item) => ({ value: item.id, label: item.name })),
   ]
+  // No colour of its own takes the picked category's, if it has one.
+  const categoryColor = eventColorOf(
+    null,
+    categories.find((item) => item.id === category)?.calendarColor
+  )
   const [invalid, setInvalid] = useState<"name" | "price" | "team" | null>(null)
   const changed =
     name !== (service?.name ?? "") ||
@@ -817,44 +833,93 @@ function ServiceForm({
           </Field>
         )}
         {googleCalendar && (
-          <Field>
-            <FieldLabel htmlFor="service-color">{t.calendarColor}</FieldLabel>
-            <AppSelect
-              id="service-color"
-              options={colors.map((item) => ({
-                ...item,
-                icon: item.value !== NO_COLOR && <GoogleEventDot color={item.value} />,
-              }))}
-              value={color}
-              onValueChange={(value) => setColor(isGoogleEventColor(value) ? value : NO_COLOR)}
-              className="w-full"
-            />
-          </Field>
+          <CalendarColorField
+            id="service-color"
+            value={color}
+            onChange={setColor}
+            none={
+              categoryColor
+                ? { label: t.calendarColorCategory, color: categoryColor }
+                : { label: t.calendarColorNone, color: null }
+            }
+          />
         )}
       </FieldGroup>
     </form>
   )
 }
 
-// A category's one field, its name. `taken`: the last save found another
-// category with it.
+// The Google Calendar colour (G7) of a service or a category. `none` is
+// what having no colour of its own gives: the calendar's, or for a service
+// its category's.
+function CalendarColorField({
+  id,
+  value,
+  onChange,
+  none,
+}: {
+  id: string
+  value: GoogleEventColor | typeof NO_COLOR
+  onChange: (value: GoogleEventColor | typeof NO_COLOR) => void
+  none: { label: string; color: GoogleEventColor | null }
+}) {
+  const t = useOwnerMessages().catalog.services
+  const options = [
+    {
+      value: NO_COLOR,
+      label: none.label,
+      icon: none.color && <GoogleEventDot color={none.color} />,
+    },
+    ...GOOGLE_EVENT_COLORS.map((color) => ({
+      value: color,
+      label: t.calendarColors[color],
+      icon: <GoogleEventDot color={color} />,
+    })),
+  ]
+  return (
+    <Field>
+      <FieldLabel htmlFor={id}>{t.calendarColor}</FieldLabel>
+      <AppSelect
+        id={id}
+        options={options}
+        value={value}
+        onValueChange={(picked) =>
+          onChange(isGoogleEventColor(picked) ? picked : NO_COLOR)
+        }
+        className="w-full"
+      />
+    </Field>
+  )
+}
+
+// A category's name, and with Google Calendar its colour for its services
+// that have none (C9). `taken`: the last save found another category with
+// that name.
 function CategoryForm({
   category,
+  googleCalendar,
   taken,
   onChanged,
   onSave,
 }: {
   category: OwnerServiceCategory | null
+  googleCalendar: boolean
   taken: boolean
   onChanged: (changed: boolean) => void
-  onSave: (name: string) => void
+  onSave: (input: ServiceCategoryInput) => void
 }) {
   const m = useOwnerMessages()
   const c = m.catalog.common
   const k = m.catalog.categories
   const [name, setName] = useState(category?.name ?? "")
   const [empty, setEmpty] = useState(false)
-  const changed = name !== (category?.name ?? "")
+  const savedColor = isGoogleEventColor(category?.calendarColor)
+    ? category.calendarColor
+    : NO_COLOR
+  const [color, setColor] = useState<GoogleEventColor | typeof NO_COLOR>(
+    savedColor
+  )
+  const changed = name !== (category?.name ?? "") || color !== savedColor
   useEffect(() => onChanged(changed), [changed, onChanged])
   const invalid = empty || taken
 
@@ -866,7 +931,11 @@ function CategoryForm({
         event.preventDefault()
         if (!name.trim()) return setEmpty(true)
         setEmpty(false)
-        onSave(name.trim())
+        onSave({
+          name: name.trim(),
+          // Kept as it is while the form doesn't show it.
+          ...(googleCalendar ? { calendarColor: color || null } : {}),
+        })
       }}
     >
       <FieldGroup>
@@ -883,6 +952,14 @@ function CategoryForm({
           />
           {invalid && <FieldError>{empty ? c.addName : k.taken}</FieldError>}
         </Field>
+        {googleCalendar && (
+          <CalendarColorField
+            id="category-color"
+            value={color}
+            onChange={setColor}
+            none={{ label: m.catalog.services.calendarColorNone, color: null }}
+          />
+        )}
       </FieldGroup>
     </form>
   )

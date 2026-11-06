@@ -10,3 +10,14 @@ export type GoogleEventColor = (typeof GOOGLE_EVENT_COLORS)[number]
 export function isGoogleEventColor(value: unknown): value is GoogleEventColor {
   return (GOOGLE_EVENT_COLORS as readonly unknown[]).includes(value)
 }
+
+// The colour a service's events get: its own, else its category's
+// (docs/plans/service-categories.md, C9), else none (the calendar's).
+export function eventColorOf(
+  serviceColor: unknown,
+  categoryColor: unknown
+): GoogleEventColor | null {
+  if (isGoogleEventColor(serviceColor)) return serviceColor
+  if (isGoogleEventColor(categoryColor)) return categoryColor
+  return null
+}

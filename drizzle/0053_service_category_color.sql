@@ -1,0 +1,1 @@
+ALTER TABLE `service_categories` ADD `calendar_color` text;

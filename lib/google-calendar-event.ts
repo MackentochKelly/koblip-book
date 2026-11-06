@@ -66,7 +66,8 @@ export function eventOf(
   booking: EventBooking,
   extras: string[],
   place: EventPlace,
-  // The service's colour (a Google colorId); null keeps the calendar's.
+  // The service's colour, else its category's (eventColorOf, a Google
+  // colorId); null keeps the calendar's.
   color: string | null = null
 ) {
   const t = WORDS[place.language]

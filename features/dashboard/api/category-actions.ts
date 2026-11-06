@@ -5,13 +5,16 @@ import { BOOKING_RULES } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { serviceCategories, services } from "@/lib/db/schema"
+import { isGoogleEventColor } from "@/lib/google-calendar-colors"
+import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { revalidateBusiness } from "@/lib/revalidate-business"
-import type { ActionResult } from "../types"
+import type { ActionResult, ServiceCategoryInput } from "../types"
 import { ownedBusiness } from "./owned-business"
 
 // The owner's service categories (docs/plans/service-categories.md): add,
-// rename, remove and reorder. A name is used once per business, whatever
-// its capitals; "taken" says so.
+// change, remove and reorder. A name is used once per business, whatever
+// its capitals; "taken" says so. Its calendar colour (C9) goes to its
+// services' Google Calendar events when they have none of their own.
 
 function normalizeName(name: unknown): string | null {
   if (typeof name !== "string") {
@@ -25,6 +28,18 @@ function normalizeName(name: unknown): string | null {
     return null
   }
   return trimmed
+}
+
+// The input with a tidy name and a known colour, or null.
+function normalizeInput(
+  input: ServiceCategoryInput
+): { name: string; calendarColor?: string | null } | null {
+  const name = normalizeName(input?.name)
+  const color = input?.calendarColor
+  if (!name || (color !== undefined && color !== null && !isGoogleEventColor(color))) {
+    return null
+  }
+  return { name, ...(color !== undefined ? { calendarColor: color } : {}) }
 }
 
 function sameName(a: string, b: string): boolean {
@@ -51,7 +66,7 @@ function categoriesOf(businessId: string, except?: string) {
 
 async function addCategory(
   business: { id: string; slug: string },
-  name: string
+  { name, calendarColor = null }: { name: string; calendarColor?: string | null }
 ): Promise<ActionResult<{ id: string }>> {
   const existing = await categoriesOf(business.id)
   if (existing.some((category) => sameName(category.name, name))) {
@@ -65,6 +80,7 @@ async function addCategory(
     id,
     businessId: business.id,
     name,
+    calendarColor,
     position: existing.reduce(
       (last, category) => Math.max(last, category.position + 1),
       0
@@ -76,16 +92,17 @@ async function addCategory(
 
 export async function createServiceCategory(
   businessId: string,
-  name: string
+  input: ServiceCategoryInput
 ): Promise<ActionResult<{ id: string }>> {
   const owned = await ownedBusiness(businessId)
   if (!owned) {
     return { ok: false, error: "not_found" }
   }
-  const normalized = normalizeName(name)
+  const normalized = normalizeInput(input)
   if (!normalized) {
     return { ok: false, error: "invalid" }
   }
+  // New, so no service has it yet: nothing to send to Google.
   return addCategory(owned.business, normalized)
 }
 
@@ -109,29 +126,30 @@ export async function findOrAddServiceCategory(
   if (found) {
     return { ok: true, id: found.id }
   }
-  return addCategory(owned.business, normalized)
+  return addCategory(owned.business, { name: normalized })
 }
 
-export async function renameServiceCategory(
+// Its name, and its colour unless left out.
+export async function updateServiceCategory(
   businessId: string,
   categoryId: string,
-  name: string
+  input: ServiceCategoryInput
 ): Promise<ActionResult> {
   const owned = await ownedBusiness(businessId)
   if (!owned) {
     return { ok: false, error: "not_found" }
   }
-  const normalized = normalizeName(name)
+  const normalized = normalizeInput(input)
   if (!normalized) {
     return { ok: false, error: "invalid" }
   }
   const others = await categoriesOf(owned.business.id, categoryId)
-  if (others.some((category) => sameName(category.name, normalized))) {
+  if (others.some((category) => sameName(category.name, normalized.name))) {
     return { ok: false, error: "taken" }
   }
-  const renamed = await db
+  const updated = await db
     .update(serviceCategories)
-    .set({ name: normalized })
+    .set(normalized)
     .where(
       and(
         eq(serviceCategories.id, categoryId),
@@ -139,10 +157,14 @@ export async function renameServiceCategory(
       )
     )
     .returning({ id: serviceCategories.id })
-  if (renamed.length === 0) {
+  if (updated.length === 0) {
     return { ok: false, error: "not_found" }
   }
   revalidateBusiness(owned.business.slug)
+  // Its services' events carry its colour.
+  if (normalized.calendarColor !== undefined) {
+    requestGoogleSync(owned.business.id)
+  }
   return { ok: true }
 }
 
@@ -156,7 +178,10 @@ export async function deleteServiceCategory(
     return { ok: false, error: "not_found" }
   }
   const [category] = await db
-    .select({ id: serviceCategories.id })
+    .select({
+      id: serviceCategories.id,
+      calendarColor: serviceCategories.calendarColor,
+    })
     .from(serviceCategories)
     .where(
       and(
@@ -181,6 +206,10 @@ export async function deleteServiceCategory(
     db.delete(serviceCategories).where(eq(serviceCategories.id, category.id)),
   ])
   revalidateBusiness(owned.business.slug)
+  // Its services' events lose its colour.
+  if (category.calendarColor !== null) {
+    requestGoogleSync(owned.business.id)
+  }
   return { ok: true }
 }
 

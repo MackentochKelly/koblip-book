@@ -32,8 +32,8 @@ import { automationsFor } from "@/features/dashboard/api/automation-queries"
 import {
   createServiceCategory,
   deleteServiceCategory,
-  renameServiceCategory,
   reorderServiceCategories,
+  updateServiceCategory,
 } from "@/features/dashboard/api/category-actions"
 import { addCustomer } from "@/features/dashboard/api/customer-actions"
 import { improveDetails } from "@/features/dashboard/api/improve-details"
@@ -2910,7 +2910,7 @@ export function buildAssistantTools(
               ),
             }
           }
-          const result = await createServiceCategory(businessId, name)
+          const result = await createServiceCategory(businessId, { name })
           if (!result.ok) {
             return {
               ok: false,
@@ -2982,10 +2982,11 @@ export function buildAssistantTools(
                   : t.renameServiceCategory.failed(checked.error),
             }
           }
-          const result = await renameServiceCategory(
+          // Only its name: its colour stays.
+          const result = await updateServiceCategory(
             businessId,
             checked.category.id,
-            checked.name
+            { name: checked.name }
           )
           if (!result.ok) {
             const refusals: Record<string, string> = {

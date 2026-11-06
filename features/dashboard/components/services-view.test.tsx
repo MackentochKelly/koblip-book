@@ -22,8 +22,8 @@ const { actions, categoryActions, toast } = vi.hoisted(() => ({
     createServiceCategory: vi.fn(),
     deleteServiceCategory: vi.fn(),
     findOrAddServiceCategory: vi.fn(),
-    renameServiceCategory: vi.fn(),
     reorderServiceCategories: vi.fn(),
+    updateServiceCategory: vi.fn(),
   },
   toast: { success: vi.fn(), error: vi.fn() },
 }))
@@ -84,13 +84,14 @@ const service = (id: string, categoryId: string | null = null) => ({
   categoryId,
 })
 
-const hair = { id: "c1", name: "Hair" }
-const nails = { id: "c2", name: "Nails" }
-const brows = { id: "c3", name: "Brows" }
+const hair = { id: "c1", name: "Hair", calendarColor: null }
+const nails = { id: "c2", name: "Nails", calendarColor: null }
+const brows = { id: "c3", name: "Brows", calendarColor: null }
 
 function view(
   services: ReturnType<typeof service>[],
-  categories: OwnerServiceCategory[] = []
+  categories: OwnerServiceCategory[] = [],
+  googleCalendar = false
 ) {
   return render(
     <ServicesView
@@ -101,7 +102,7 @@ function view(
       team={[]}
       serviceTeams={{}}
       addonGroups={[]}
-      googleCalendar={false}
+      googleCalendar={googleCalendar}
     />
   )
 }
@@ -269,10 +270,10 @@ test("a new category needs a name it doesn't already have", async () => {
       within(dialog).getByText("You already have this category")
     ).toBeTruthy()
   )
-  expect(categoryActions.createServiceCategory).toHaveBeenCalledWith(
-    "b1",
-    "Hair"
-  )
+  // No colour without Google Calendar.
+  expect(categoryActions.createServiceCategory).toHaveBeenCalledWith("b1", {
+    name: "Hair",
+  })
 })
 
 test("renaming a category waits for a change", async () => {
@@ -287,11 +288,44 @@ test("renaming a category waits for a change", async () => {
   expect(save).toHaveProperty("disabled", false)
   fireEvent.click(save)
   await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Saved"))
-  expect(categoryActions.renameServiceCategory).toHaveBeenCalledWith(
+  expect(categoryActions.updateServiceCategory).toHaveBeenCalledWith(
     "b1",
     "c1",
-    "Hair and beard"
+    { name: "Hair and beard" }
   )
+})
+
+test("with Google Calendar a category saves its colour", async () => {
+  view([service("Fade", "c1")], [hair], true)
+  pick(group("Hair"), "Edit")
+  const dialog = screen.getByRole("dialog", { name: "Edit category" })
+  const field = within(dialog).getByRole("combobox", {
+    name: "Calendar colour",
+  })
+  expect(field.textContent).toContain("Calendar's colour")
+  fireEvent.click(field)
+  // A real click starts on the item (Base UI ignores one that doesn't).
+  const tomato = await screen.findByRole("option", { name: "Tomato" })
+  fireEvent.pointerDown(tomato, { pointerType: "mouse" })
+  fireEvent.click(tomato)
+  fireEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+  await waitFor(() =>
+    expect(categoryActions.updateServiceCategory).toHaveBeenCalledWith(
+      "b1",
+      "c1",
+      { name: "Hair", calendarColor: "11" }
+    )
+  )
+})
+
+test("a service with no colour of its own takes its category's", () => {
+  view([service("Fade", "c1")], [{ ...hair, calendarColor: "2" }], true)
+  fireEvent.click(within(row("Fade")).getByRole("button", { name: "Edit" }))
+  const dialog = screen.getByRole("dialog")
+  expect(
+    within(dialog).getByRole("combobox", { name: "Calendar colour" })
+      .textContent
+  ).toContain("Category's colour")
 })
 
 test("a suggestion goes into its category, added when new", async () => {

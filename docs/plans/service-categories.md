@@ -50,7 +50,7 @@ How to use this file: [Plans](README.md).
 | C6 | Meta AI, server side only: the starter catalog gives each service a category (saved only with 2 or more), `replaceCatalog` clears old ones; `suggestServices` returns an existing or new category for each; demo sample grouped | C2 | Done (2026-11-06) |
 | C7 | Assistant: `list_services` shows categories; `create_service`/`update_service` take one; confirm-card tools to create, rename, remove and reorder categories | C2 | Done (2026-11-06) |
 | C8 | Admin "Service categories": every business's categories with their service count; Remove | C2 | Done (2026-11-06) |
-| C9 | Optional: a category colour that becomes the Google Calendar colour of its services that have none | C3 | Decision |
+| C9 | Optional: a category colour that becomes the Google Calendar colour of its services that have none | C3 | Done (2026-11-06) |
 | C10 | Optional: "Top categories" in Analytics | C2 | Decision |
 
 ## Build order (several builders, asked by the owner 2026-11-06)
@@ -85,6 +85,7 @@ How to use this file: [Plans](README.md).
 | Remove dialog line | Its services move to Other. | Sus servicios pasan a Otros. |
 | Tabs label (screen readers) | Service categories | Categorías de servicios |
 | Admin nav, empty, row | Service categories · No service categories yet · 3 services | Categorías de servicios · Aún no hay categorías de servicios · 3 servicios |
+| Service colour option, when its category has a colour (C9) | Category's colour | Color de la categoría |
 
 ## Decisions log
 
@@ -100,4 +101,7 @@ How to use this file: [Plans](README.md).
 | Starter catalog saves categories only when there are 2 or more | A one-kind business stays flat; a draft never fails on categories | M Kelly B, 2026-11-06 |
 | One grouping helper in `lib/` and all words written in C2 | Four parts group services; features can't import each other, and parallel builders must not edit the same files | M Kelly B, 2026-11-06 |
 | The Suggest panel's category is C3's, C6 stays server side | The panel lives in the Services screen file C3 owns | M Kelly B, 2026-11-06 |
+| C9 and C10 built, one at a time | The owner's go, 2026-11-06 | M Kelly B, 2026-11-06 |
+| A category's colour shows only with Google Calendar connected, like a service's; a service's own colour wins, then its category's (`eventColorOf`) | Vagaro's way; the colour only matters on Google Calendar | M Kelly B, 2026-11-06 |
+| Category actions take `{ name, calendarColor? }`; `renameServiceCategory` became `updateServiceCategory`, the assistant still changes only the name | Name and colour save in one write, like a service's | M Kelly B, 2026-11-06 |
 | The migration's `ADD category_id` line carries `ON DELETE set null` by hand | drizzle-kit 0.31 leaves it out of SQLite ADD COLUMN although the snapshot has it; removal also clears the services itself | M Kelly B, 2026-11-06 |

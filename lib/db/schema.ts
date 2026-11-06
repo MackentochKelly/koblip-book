@@ -114,6 +114,9 @@ export const serviceCategories = sqliteTable(
       .notNull()
       .references(() => businesses.id, { onDelete: "cascade" }),
     name: text().notNull(),
+    // The Google Calendar colour (a Google colorId) of its services that
+    // have none of their own; null leaves them in the calendar's colour.
+    calendarColor: text(),
     position: integer().notNull().default(0),
     ...timestamps(),
   },

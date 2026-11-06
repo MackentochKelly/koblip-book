@@ -35,7 +35,7 @@ vi.mock("@/features/dashboard/api/team-services", () => ({
 }))
 vi.mock("@/features/dashboard/api/category-actions", () => ({
   createServiceCategory: vi.fn(),
-  renameServiceCategory: vi.fn(),
+  updateServiceCategory: vi.fn(),
   deleteServiceCategory: vi.fn(),
   reorderServiceCategories: vi.fn(),
 }))
@@ -153,8 +153,8 @@ const { setMemberServices, setServiceTeam } =
 const {
   createServiceCategory,
   deleteServiceCategory,
-  renameServiceCategory,
   reorderServiceCategories,
+  updateServiceCategory,
 } = await import("@/features/dashboard/api/category-actions")
 const {
   createAddonGroup,
@@ -1583,7 +1583,9 @@ test("create_service_category shows a card and adds on the tap only", async () =
     ok: true,
     doneText: "Added the category Brows and lashes.",
   })
-  expect(createServiceCategory).toHaveBeenCalledWith("b1", "Brows and lashes")
+  expect(createServiceCategory).toHaveBeenCalledWith("b1", {
+    name: "Brows and lashes",
+  })
 })
 
 test("create_service_category says plainly when the category already exists", async () => {
@@ -1636,7 +1638,7 @@ test("create_service_category refuses a bad name and a full list", async () => {
 
 test("rename_service_category shows old and new names and renames on the tap only", async () => {
   mockCategoryShop()
-  vi.mocked(renameServiceCategory).mockResolvedValue({ ok: true })
+  vi.mocked(updateServiceCategory).mockResolvedValue({ ok: true })
   const tool = byName("rename_service_category")
   const args = { categoryId: "c1", name: " Hairdressing " }
   expect(await tool.confirm!.describe(args)).toEqual({
@@ -1645,12 +1647,14 @@ test("rename_service_category shows old and new names and renames on the tap onl
     summary: "Hair → Hairdressing",
     destructive: false,
   })
-  expect(renameServiceCategory).not.toHaveBeenCalled()
+  expect(updateServiceCategory).not.toHaveBeenCalled()
   expect(await tool.confirm!.execute(args)).toEqual({
     ok: true,
     doneText: "Renamed to Hairdressing.",
   })
-  expect(renameServiceCategory).toHaveBeenCalledWith("b1", "c1", "Hairdressing")
+  expect(updateServiceCategory).toHaveBeenCalledWith("b1", "c1", {
+    name: "Hairdressing",
+  })
 })
 
 test("rename_service_category refuses what it cannot do", async () => {
@@ -1678,8 +1682,8 @@ test("rename_service_category refuses what it cannot do", async () => {
   expect(
     await tool.confirm!.execute({ categoryId: "c9", name: "Cuts" })
   ).toEqual({ ok: false, doneText: "Could not rename: unknown category." })
-  expect(renameServiceCategory).not.toHaveBeenCalled()
-  vi.mocked(renameServiceCategory).mockResolvedValue({
+  expect(updateServiceCategory).not.toHaveBeenCalled()
+  vi.mocked(updateServiceCategory).mockResolvedValue({
     ok: false,
     error: "taken",
   })
@@ -1689,7 +1693,7 @@ test("rename_service_category refuses what it cannot do", async () => {
     ok: false,
     doneText: "Not renamed: you already have a category called Nails.",
   })
-  vi.mocked(renameServiceCategory).mockResolvedValue({
+  vi.mocked(updateServiceCategory).mockResolvedValue({
     ok: false,
     error: "not_found",
   })
@@ -1732,7 +1736,7 @@ test("delete_service_category says its services move to Other and removes on the
 test("category tools act on the signed-in owner's business, never the model's", async () => {
   mockCategoryShop()
   vi.mocked(createServiceCategory).mockResolvedValue({ ok: true, id: "c3" })
-  vi.mocked(renameServiceCategory).mockResolvedValue({ ok: true })
+  vi.mocked(updateServiceCategory).mockResolvedValue({ ok: true })
   vi.mocked(deleteServiceCategory).mockResolvedValue({ ok: true })
   vi.mocked(reorderServiceCategories).mockResolvedValue({ ok: true })
   const businessId = "evil"
@@ -1755,7 +1759,7 @@ test("category tools act on the signed-in owner's business, never the model's", 
   })
   for (const mock of [
     vi.mocked(createServiceCategory),
-    vi.mocked(renameServiceCategory),
+    vi.mocked(updateServiceCategory),
     vi.mocked(deleteServiceCategory),
     vi.mocked(reorderServiceCategories),
     vi.mocked(getOwnerBusiness),
@@ -2358,7 +2362,7 @@ test("risky tools never run directly", async () => {
   expect(vi.mocked(deleteAddonGroup)).not.toHaveBeenCalled()
   expect(vi.mocked(updateBusinessDetails)).not.toHaveBeenCalled()
   expect(vi.mocked(createServiceCategory)).not.toHaveBeenCalled()
-  expect(vi.mocked(renameServiceCategory)).not.toHaveBeenCalled()
+  expect(vi.mocked(updateServiceCategory)).not.toHaveBeenCalled()
   expect(vi.mocked(deleteServiceCategory)).not.toHaveBeenCalled()
   expect(vi.mocked(reorderServiceCategories)).not.toHaveBeenCalled()
 })

@@ -10,9 +10,11 @@ import {
   googleCalendarConnections,
   googleCalendarEvents,
   notificationSettings,
+  serviceCategories,
   services,
 } from "@/lib/db/schema"
 import { GoogleCalendarError, googleCalendarApi, googleTurnKey } from "@/lib/google-calendar"
+import { eventColorOf } from "@/lib/google-calendar-colors"
 import { refreshGoogleBusy } from "@/lib/google-calendar-busy"
 import { ensureGoogleChannels } from "@/lib/google-calendar-channels"
 import { eventOf, type EventPlace, type GoogleEvent } from "@/lib/google-calendar-event"
@@ -140,9 +142,15 @@ async function syncConnection(connectionId: string, busy: "when_due" | "now" = "
     const calendarId = connection.calendarId ?? (await makeCalendar(connection.id, timeZone))
     const since = new Date(Date.now() - GOOGLE_CALENDAR_RULES.keepPastHours * 3_600_000).toISOString()
     const rows = await db
-      .select({ booking: bookings, sent: googleCalendarEvents, color: services.calendarColor })
+      .select({
+        booking: bookings,
+        sent: googleCalendarEvents,
+        serviceColor: services.calendarColor,
+        categoryColor: serviceCategories.calendarColor,
+      })
       .from(bookings)
       .leftJoin(services, eq(services.id, bookings.serviceId))
+      .leftJoin(serviceCategories, eq(serviceCategories.id, services.categoryId))
       .leftJoin(
         googleCalendarEvents,
         and(
@@ -173,7 +181,8 @@ async function syncConnection(connectionId: string, busy: "when_due" | "now" = "
     }
 
     let sent = 0
-    for (const { booking, sent: before, color } of rows) {
+    for (const { booking, sent: before, serviceColor, categoryColor } of rows) {
+      const color = eventColorOf(serviceColor, categoryColor)
       const event = eventOf(booking, extras.get(booking.id) ?? [], place, color)
       const fingerprint = fingerprintOf(booking, event)
       // Unchanged, or cancelled before it was ever sent.

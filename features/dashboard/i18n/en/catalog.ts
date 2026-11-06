@@ -48,6 +48,8 @@ const catalog = {
     // Google Calendar (G7): Google's own names for its event colours.
     calendarColor: "Calendar colour",
     calendarColorNone: "Calendar's colour",
+    // A service with no colour of its own, in a category that has one.
+    calendarColorCategory: "Category's colour",
     calendarColors: {
       "1": "Lavender",
       "2": "Sage",
