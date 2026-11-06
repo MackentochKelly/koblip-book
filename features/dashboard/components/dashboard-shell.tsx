@@ -50,10 +50,9 @@ const NAV = [
 const PHONE_LEFT = ["", "/bookings"]
 const PHONE_RIGHT = ["/services", "/team"]
 
-// The tab bar's middle button, the assistant's or a page's +: a 44 px
-// circle inside the app's hairline (a little darker than the cards' edge so
-// it reads around the globe), with a 2 px gap.
-const MIDDLE_BUTTON =
+// A page's + in the tab bar's middle: a 44 px circle inside the app's
+// hairline (a little darker than the cards' edge), with a 2 px gap.
+const ADD_BUTTON =
   "size-11 rounded-full border-(length:--hairline) border-foreground/20 p-0.5 hover:bg-transparent dark:hover:bg-transparent"
 
 // Pages whose middle button is + rather than the assistant. Known from the
@@ -180,7 +179,7 @@ export function DashboardShell({
                   <Button
                     size="icon-lg"
                     variant="ghost"
-                    className={MIDDLE_BUTTON}
+                    className={ADD_BUTTON}
                     aria-label={addLabel}
                     // Until the page hands over its action (while it loads,
                     // or as it closes) the + keeps its look and a tap does
@@ -199,7 +198,8 @@ export function DashboardShell({
                   <Button
                     size="icon-lg"
                     variant="ghost"
-                    className={MIDDLE_BUTTON}
+                    // The globe fills the whole 44 px, with no ring.
+                    className="size-11 rounded-full border-0 hover:bg-transparent dark:hover:bg-transparent"
                     aria-label={m.assistant}
                     nativeButton={false}
                     render={<Link href={assistantHref} />}
