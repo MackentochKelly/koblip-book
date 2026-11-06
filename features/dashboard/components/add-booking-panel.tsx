@@ -43,6 +43,8 @@ import type {
 } from "@/types/owner-booking"
 import { noAutofill } from "@/lib/no-autofill"
 import { useOwnerMessages } from "../i18n/provider"
+import type { OwnerServiceCategory } from "../types"
+import { serviceSelectOptions } from "../utils/service-options"
 import { BookingWhen, firstFreeDay, useFreeTimes } from "./booking-when"
 
 const FORM = "add-booking-form"
@@ -51,7 +53,14 @@ const ANYONE = "any"
 type InvalidField = Extract<OwnerBookingResult, { status: "invalid" }>["field"]
 
 export interface AddBookingOptions {
-  services: { id: string; name: string; durationMinutes: number }[]
+  services: {
+    id: string
+    name: string
+    durationMinutes: number
+    categoryId: string | null
+  }[]
+  // In their order: the service picker's groups.
+  categories: OwnerServiceCategory[]
   team: { id: string; name: string }[]
   // serviceId → the members who do it; missing = everyone.
   serviceTeams: Record<string, string[]>
@@ -192,7 +201,14 @@ function BookingForm({
   const m = useOwnerMessages()
   const t = m.bookings.form
   const locale = m.locale
-  const [serviceId, setServiceId] = useState(options.services[0]?.id ?? "")
+  const services = serviceSelectOptions(
+    options.services,
+    options.categories,
+    m.catalog.categories.other,
+    (service) => `${service.name} · ${formatDuration(service.durationMinutes)}`
+  )
+  // Starts on the list's first service: with categories, the first one's.
+  const [serviceId, setServiceId] = useState(services[0]?.value ?? "")
   const [memberId, setMemberId] = useState(ANYONE)
   const [date, setDate] = useState(options.today)
   const [time, setTime] = useState("")
@@ -218,10 +234,6 @@ function BookingForm({
     group.serviceIds.includes(serviceId)
   )
 
-  const services = options.services.map((service) => ({
-    value: service.id,
-    label: `${service.name} · ${formatDuration(service.durationMinutes)}`,
-  }))
   const allowed = options.serviceTeams[serviceId]
   const members = [
     { value: ANYONE, label: t.anyone },

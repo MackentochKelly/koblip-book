@@ -17,7 +17,7 @@ import {
 import { CalendarDaysIcon } from "@/components/ui/icons"
 import { AppSelect } from "@/components/app-select"
 import { useOwnerMessages } from "../i18n/provider"
-import type { OwnerBooking } from "../types"
+import type { OwnerBooking, OwnerServiceCategory } from "../types"
 import {
   type BookingFilters,
   byStatus,
@@ -27,13 +27,15 @@ import {
   statusCounts,
 } from "../utils/booking-filters"
 import { RANGE_PRESETS, presetOf, presetRange } from "../utils/booking-range"
+import { serviceSelectOptions } from "../utils/service-options"
 import { BookingList } from "./booking-list"
 import type { useBookingPanels } from "./booking-panels"
 
 type Panels = ReturnType<typeof useBookingPanels>
 
 // The Bookings tab: the bookings in a date range, searched and filtered by
-// status, service and team, as the shared list with pages.
+// status, service (grouped by category) and team, as the shared list with
+// pages.
 export function BookingsTable({
   bookings,
   now,
@@ -41,6 +43,7 @@ export function BookingsTable({
   range,
   onRangeChange,
   services,
+  categories,
   team,
   panels,
 }: {
@@ -50,7 +53,9 @@ export function BookingsTable({
   today: string
   range: DayRangeValue
   onRangeChange: (range: DayRangeValue) => void
-  services: { id: string; name: string }[]
+  services: { id: string; name: string; categoryId: string | null }[]
+  // In their order: the Services filter's groups.
+  categories: OwnerServiceCategory[]
   team: { id: string; name: string }[]
   panels: Panels
 }) {
@@ -79,10 +84,11 @@ export function BookingsTable({
     label: t.presets[preset],
     range: presetRange(preset, today),
   }))
-  const serviceOptions = services.map(({ id, name }) => ({
-    value: id,
-    label: name,
-  }))
+  const serviceOptions = serviceSelectOptions(
+    services,
+    categories,
+    m.catalog.categories.other
+  )
   const teamOptions = team.map(({ id, name }) => ({ value: id, label: name }))
   // The phone's Filters count: a status other than All, the dates when not
   // the usual ones, and each list with something ticked.

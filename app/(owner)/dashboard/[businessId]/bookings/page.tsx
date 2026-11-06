@@ -58,11 +58,15 @@ export default async function AllBookingsPage({
         now={new Date().toISOString()}
         businessId={businessId}
         addOptions={{
-          services: owner.services.map(({ id, name, durationMinutes }) => ({
-            id,
-            name,
-            durationMinutes,
-          })),
+          services: owner.services.map(
+            ({ id, name, durationMinutes, categoryId }) => ({
+              id,
+              name,
+              durationMinutes,
+              categoryId,
+            })
+          ),
+          categories: owner.categories,
           team: owner.team.map(({ id, name }) => ({ id, name })),
           serviceTeams,
           addonGroups,

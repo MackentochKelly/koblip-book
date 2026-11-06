@@ -136,11 +136,15 @@ export default async function BookingsPage({ params }: Props) {
         }}
         currency={business.currency}
         addOptions={{
-          services: owner.services.map(({ id, name, durationMinutes }) => ({
-            id,
-            name,
-            durationMinutes,
-          })),
+          services: owner.services.map(
+            ({ id, name, durationMinutes, categoryId }) => ({
+              id,
+              name,
+              durationMinutes,
+              categoryId,
+            })
+          ),
+          categories: owner.categories,
           team: owner.team.map(({ id, name }) => ({ id, name })),
           serviceTeams,
           addonGroups,

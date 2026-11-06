@@ -42,7 +42,7 @@ export function BookingsPageView({
   const pathname = usePathname()
   const [loading, startTransition] = useTransition()
   const panels = useBookingPanels(panelProps)
-  const { services, team } = panelProps.addOptions
+  const { services, categories, team } = panelProps.addOptions
 
   // Only what differs from where the page opens goes in the address.
   const go = (next: { tab?: BookingsTab; range?: DayRangeValue; month?: string }) => {
@@ -104,6 +104,7 @@ export function BookingsPageView({
             range={range}
             onRangeChange={(next) => go({ range: next })}
             services={services}
+            categories={categories}
             team={team}
             panels={panels}
           />

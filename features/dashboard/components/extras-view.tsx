@@ -58,8 +58,13 @@ import {
   reorderAddonGroups,
   updateAddonGroup,
 } from "../api/addon-actions"
-import type { AddonGroupInput, OwnerAddonGroup } from "../types"
+import type {
+  AddonGroupInput,
+  OwnerAddonGroup,
+  OwnerServiceCategory,
+} from "../types"
 import { CATALOG_FIRST_SHOWN } from "../utils/catalog-list"
+import { serviceSelectOptions } from "../utils/service-options"
 import { noAutofill } from "@/lib/no-autofill"
 import { useOwnerMessages } from "../i18n/provider"
 import { ConfirmRemove } from "./confirm-remove"
@@ -85,19 +90,30 @@ function choiceOf(group: { minSelect: number; maxSelect: number | null }) {
   )
 }
 
+// A service an extra can be offered with.
+interface ExtrasService {
+  id: string
+  name: string
+  // Null: Other.
+  categoryId: string | null
+}
+
 // Extras a customer can add to a service (Fresha's add-ons): a group with
 // a question, its options, and the services it is offered with.
 export function ExtrasView({
   businessId,
   groups,
   services,
+  categories,
   adding,
   onAddClosed,
   phoneSuggest,
 }: {
   businessId: string
   groups: OwnerAddonGroup[]
-  services: { id: string; name: string }[]
+  services: ExtrasService[]
+  // In their order: Offered with's groups.
+  categories: OwnerServiceCategory[]
   // The page's Add button opens a new group here.
   adding: boolean
   onAddClosed: () => void
@@ -246,6 +262,7 @@ export function ExtrasView({
             key={`${formKey}-${editing?.id ?? "new"}-${adding}`}
             group={editing}
             services={services}
+            categories={categories}
             onChanged={setChanged}
             onSave={(input) =>
               startTransition(async () => {
@@ -284,15 +301,21 @@ type Invalid = "name" | "prompt" | "options" | null
 function ExtrasForm({
   group,
   services,
+  categories,
   onChanged,
   onSave,
 }: {
   group: OwnerAddonGroup | null
-  services: { id: string; name: string }[]
+  services: ExtrasService[]
+  categories: OwnerServiceCategory[]
   onChanged: (changed: boolean) => void
   onSave: (input: AddonGroupInput) => void
 }) {
-  const { common: c, extras: t } = useOwnerMessages().catalog
+  const {
+    common: c,
+    extras: t,
+    categories: words,
+  } = useOwnerMessages().catalog
   const minutesItems = BOOKING_RULES.addonMinutes.map((minutes) => ({
     value: String(minutes),
     label: minutes === 0 ? t.noExtraTime : `+${formatDuration(minutes)}`,
@@ -565,10 +588,11 @@ function ExtrasForm({
             <AppSelect
               multiple
               id="extras-services"
-              options={services.map((service) => ({
-                value: service.id,
-                label: service.name,
-              }))}
+              options={serviceSelectOptions(
+                services,
+                categories,
+                words.other
+              )}
               value={serviceIds}
               onValueChange={setServiceIds}
               className="w-full"
