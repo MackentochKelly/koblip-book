@@ -33,6 +33,7 @@ const words = {
     clientMoved: "{service} moved to {when}",
     clientCancelled: "{service} on {when} was cancelled",
     clientReminder: "Reminder: {service}, {when}",
+    clientReviewAsk: "How was {service}? Rate your visit",
   },
   // The same names as the WhatsApp page.
   messages: {
@@ -67,6 +68,7 @@ const words = {
       clientMoved: "Booking moved",
       clientCancelled: "Booking cancelled",
       clientReminder: "Reminder before a visit",
+      clientReviewAsk: "Rate a visit",
     },
     // Each group's ⓘ, beside its name.
     moreInfo: "More info",
@@ -76,7 +78,7 @@ const words = {
       whatsapp:
         "A bell alert about your WhatsApp: customer replies, messages that didn't go, Meta's reviews and your monthly limit.",
       visits:
-        "A bell alert when a business books, moves or cancels your visit, and a reminder before it.",
+        "A bell alert when a business books, moves or cancels your visit, a reminder before it, and a nudge to rate it after.",
     },
     failed: "Couldn't save. Try again.",
   },

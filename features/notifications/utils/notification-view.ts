@@ -58,6 +58,7 @@ export function titleOf(
     case "clientMoved":
     case "clientCancelled":
     case "clientReminder":
+    case "clientReviewAsk":
       return t(`kinds.${item.kind}`, {
         service: item.data.serviceName ?? "",
         when: whenOf(item, locale),
@@ -153,6 +154,12 @@ export const CHOICE_GROUPS = [
 export const CLIENT_CHOICE_GROUPS = [
   {
     id: "visits",
-    kinds: ["clientBooked", "clientMoved", "clientCancelled", "clientReminder"],
+    kinds: [
+      "clientBooked",
+      "clientMoved",
+      "clientCancelled",
+      "clientReminder",
+      "clientReviewAsk",
+    ],
   },
 ] as const satisfies readonly ChoiceGroup<ClientInAppKind>[]

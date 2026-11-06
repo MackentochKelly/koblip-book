@@ -49,19 +49,28 @@ export function detailSections(
 
 // The business's reviews, portfolio, opening times, About, extra info and
 // location: the same on its page and on each team member's profile, where
-// `hours` are that person's own.
+// `hours` are that person's own. `clientReviews`: the business's own
+// clients' reviews (the reviews feature), before Google's.
 export function BusinessDetails({
   data,
   hours,
+  clientReviews,
 }: {
   data: BusinessPageData
   hours?: { rows: HourRow[]; title: string }
+  clientReviews?: React.ReactNode
 }) {
   const t = useTranslations("public")
   const locale = useLocale()
   const { business, photos, reviews, amenities } = data
   return (
     <>
+      {clientReviews && (
+        <>
+          {clientReviews}
+          <Separator />
+        </>
+      )}
       <PageSection
         id="reviews"
         title={t("sections.reviews")}

@@ -1,12 +1,13 @@
 import "server-only"
-import { and, eq, gt, isNotNull, lt, lte, ne, or, sql } from "drizzle-orm"
+import { and, eq, gt, isNotNull, isNull, lt, lte, ne, notInArray, or, sql } from "drizzle-orm"
 import type { BatchItem } from "drizzle-orm/batch"
 
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
-import { bookings, businesses, inAppNotificationSettings, inAppNotifications, user } from "@/lib/db/schema"
+import { bookings, businesses, inAppNotificationSettings, inAppNotifications, reviews, user } from "@/lib/db/schema"
 import { accountBookingHref } from "@/lib/my-bookings-links"
 import { notificationRules } from "@/lib/platform-settings"
+import { REVIEW_RULES } from "@/lib/review-rules"
 import type { ClientInAppKind, InAppData, OwnerInAppKind } from "@/types/in-app-notifications"
 
 // Creating the owner's in-app notifications (docs/plans/in-app-notifications.md,
@@ -169,13 +170,50 @@ export async function remindClients(now = new Date()) {
         lte(bookings.startAt, new Date(now.getTime() + lead).toISOString()),
         // Booked or moved after the reminder's time began: just told.
         lte(bookings.updatedAt, sql`strftime('%Y-%m-%dT%H:%M:%fZ', ${bookings.startAt}, ${`-${clientReminderMinutes} minutes`})`),
-        or(
-          isNotNull(bookings.customerUserId),
-          sql`${bookings.customerKey} in (select ${phoneKey} from ${user} where ${user.phoneNumberVerified} = 1)`
-        )
+        accountOwned()
       )
     )
   await saveAll(due.map((booking) => clientInsert(booking, "clientReminder")))
+}
+
+// Bookings some account owns: made or claimed with one, or made with a
+// phone an account has proved.
+function accountOwned() {
+  return or(
+    isNotNull(bookings.customerUserId),
+    sql`${bookings.customerKey} in (select ${phoneKey} from ${user} where ${user.phoneNumberVerified} = 1)`
+  )
+}
+
+// The nudge to rate a visit (D15), `askAfterHours` after it ended, for
+// visits that ended within `askWithinDays`, weren't cancelled or missed,
+// and have no review yet; the server's timer calls this on each check.
+export async function askForReviews(now = new Date()) {
+  const { askAfterHours, askWithinDays } = REVIEW_RULES
+  const due = await db
+    .select({
+      id: bookings.id,
+      businessId: bookings.businessId,
+      moves: bookings.moves,
+      serviceName: bookings.serviceName,
+      startAt: bookings.startAt,
+      customerUserId: bookings.customerUserId,
+      customerKey: bookings.customerKey,
+    })
+    .from(bookings)
+    .innerJoin(businesses, eq(businesses.id, bookings.businessId))
+    .leftJoin(reviews, eq(reviews.bookingId, bookings.id))
+    .where(
+      and(
+        eq(businesses.isDemo, false),
+        notInArray(bookings.status, ["cancelled", "no_show"]),
+        lte(bookings.endAt, new Date(now.getTime() - askAfterHours * 3_600_000).toISOString()),
+        gt(bookings.endAt, new Date(now.getTime() - askWithinDays * 86_400_000).toISOString()),
+        isNull(reviews.id),
+        accountOwned()
+      )
+    )
+  await saveAll(due.map((booking) => clientInsert(booking, "clientReviewAsk")))
 }
 
 // Notifications older than the admin's `inAppKeepDays`, read or not, are

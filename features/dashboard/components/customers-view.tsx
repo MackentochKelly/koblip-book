@@ -116,15 +116,12 @@ export function CustomersView({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* On a phone the top bar names the page and Add is the tab bar's
-          middle button, so Add here is a computer's. */}
+      {/* The page's title is in its frame (CustomersFrame). On a phone Add
+          is the tab bar's middle button, so Add here is a computer's. */}
       <div className="flex items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t("people", { n: customers.length })}
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          {t("people", { n: customers.length })}
+        </p>
         <Button className="max-md:hidden" onClick={startAdding}>
           <PlusIcon data-icon="inline-start" />
           {common("add")}

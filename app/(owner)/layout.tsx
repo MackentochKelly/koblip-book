@@ -20,6 +20,7 @@ export default async function OwnerLayout({
           "owner",
           "ownerAuth",
           "public",
+          "reviews",
           "starterCatalog",
         ]}
       >

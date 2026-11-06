@@ -12,6 +12,7 @@ import { CANCEL_REASONS } from "../booking-rules"
 import { PAGE_LANGUAGES, type PageLanguage } from "../page-language"
 import { PLANS } from "../plan-features"
 import { POLICY_KINDS, POLICY_POINT_ICONS } from "../policy-rules"
+import { REVIEW_HIDE_REASONS } from "../review-rules"
 import { DEFAULT_THEME, type ThemeId } from "../theme-rules"
 import {
   TRANSLATION_ACTIONS,
@@ -1102,6 +1103,32 @@ export const inAppNotificationSettings = sqliteTable("in_app_notification_settin
   turnedOff: text({ mode: "json" }).$type<OwnerInAppKind[]>().notNull(),
   ...timestamps(),
 })
+
+// A client's review of one visit (docs/plans/client-account.md, D15): one
+// per booking. The owner can hide it from their page with a reason, never
+// edit it. `authorName` is the client's first name when they wrote it; the
+// review stays with the business if the account goes.
+export const reviews = sqliteTable(
+  "reviews",
+  {
+    id: id(),
+    bookingId: text()
+      .notNull()
+      .unique()
+      .references(() => bookings.id, { onDelete: "cascade" }),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    userId: text().references(() => user.id, { onDelete: "set null" }),
+    authorName: text().notNull(),
+    stars: integer().notNull(),
+    comment: text(),
+    hiddenAt: text(),
+    hiddenReason: text({ enum: REVIEW_HIDE_REASONS }),
+    ...timestamps(),
+  },
+  (table) => [index("reviews_business").on(table.businessId, table.createdAt)]
+)
 
 // The kinds a client turned off in their account's Settings
 // (docs/plans/client-account.md, D10); no row means all on.

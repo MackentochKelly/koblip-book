@@ -27,6 +27,7 @@ export const CLIENT_IN_APP_KINDS = [
   "clientMoved",
   "clientCancelled",
   "clientReminder",
+  "clientReviewAsk",
 ] as const
 
 export const IN_APP_KINDS = [...OWNER_IN_APP_KINDS, ...CLIENT_IN_APP_KINDS] as const

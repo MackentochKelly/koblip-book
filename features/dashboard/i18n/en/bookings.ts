@@ -222,6 +222,12 @@ const bookings = {
   },
   customers: {
     title: "Customers",
+    // The page's parts (client account D15): everyone, and their reviews.
+    parts: {
+      label: "Customer parts",
+      people: "People",
+      reviews: "Reviews",
+    },
     people: "{n, plural, one {# person} other {# people}}",
     search: "Name or phone…",
     searchLabel: "Search customers",

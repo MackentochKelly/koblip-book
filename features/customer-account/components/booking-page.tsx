@@ -39,7 +39,15 @@ function mapsHref(business: MyBooking["business"]) {
 // business and where it is, the visit (with Add to calendar while it's
 // ahead), then its one action: move or call
 // it off while it's ahead, book again once it's over or cancelled.
-export function BookingPage({ booking }: { booking: MyBooking }) {
+// `review`: the client's review of the visit (from the reviews feature),
+// under the visit.
+export function BookingPage({
+  booking,
+  review,
+}: {
+  booking: MyBooking
+  review?: React.ReactNode
+}) {
   const t = useTranslations("public")
   const language = languageOf(useLocale())
   const { price, service, details } = useBookingFacts(booking)
@@ -135,6 +143,8 @@ export function BookingPage({ booking }: { booking: MyBooking }) {
           ))}
         </ItemGroup>
       </PageSection>
+
+      {review}
 
       {booking.ahead && booking.cantCome ? (
         <ButtonGroup className="self-end">

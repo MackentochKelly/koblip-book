@@ -44,7 +44,7 @@ export default async function AccountLayout({
   // bell keeps it current (docs/plans/client-account.md, D10).
   return (
     <OwnerLanguageProvider language={language}>
-      <WordsProvider namespaces={["app", "owner", "public", "notifications"]}>
+      <WordsProvider namespaces={["app", "owner", "public", "notifications", "reviews"]}>
         <NotificationsProvider
           audience="client"
           initialUnread={unread}

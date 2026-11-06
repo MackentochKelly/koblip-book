@@ -12,6 +12,7 @@ import ownerWidgets from "@/features/dashboard/i18n/en/widgets"
 import notifications from "@/features/notifications/i18n/en"
 import onboarding from "@/features/onboarding/i18n/en"
 import ownerAuth from "@/features/owner-auth/i18n/en"
+import reviews from "@/features/reviews/i18n/en"
 import starterCatalog from "@/features/starter-catalog/i18n/en"
 import teamArea from "@/features/team-area/i18n/en"
 import teamCalendar from "@/features/team-calendar/i18n/en"
@@ -44,6 +45,7 @@ const messages = {
   },
   ownerAuth,
   public: publicPage,
+  reviews,
   starterCatalog,
   teamArea,
   teamCalendar,

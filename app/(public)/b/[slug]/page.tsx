@@ -34,6 +34,11 @@ import { isOpenNow } from "@/features/business-page/utils/is-open-now"
 import { BookingFlow } from "@/features/booking/components/booking-flow"
 import { toBookingPage } from "@/features/booking/components/booking-page"
 import { isBookable } from "@/features/booking/utils/is-bookable"
+import { reviewSummary } from "@/features/reviews/api/queries"
+import {
+  CLIENT_REVIEWS_SECTION,
+  ClientReviews,
+} from "@/features/reviews/components/client-reviews"
 
 type Props = PageProps<"/b/[slug]">
 
@@ -69,7 +74,11 @@ export default async function BusinessPage({ params }: Props) {
   const { business, hours, services, team, photos } = data
   // No hours saved: say nothing rather than "Closed now".
   const open = hours.length > 0 ? isOpenNow(hours, business.timezone) : null
-  const whatsapp = await offersWhatsapp(data.business.id)
+  const [whatsapp, reviews, reviewWords] = await Promise.all([
+    offersWhatsapp(data.business.id),
+    reviewSummary(data.business.id),
+    getTranslations("reviews"),
+  ])
   const isOwner = (await getSession())?.userId === business.ownerId
   const bookable = isBookable({
     status: business.status,
@@ -79,11 +88,14 @@ export default async function BusinessPage({ params }: Props) {
   const sections = [
     ...(services.length > 0 ? [{ id: "services", label: t("sections.services") }] : []),
     ...(team.length > 0 ? [{ id: "team", label: t("sections.team") }] : []),
+    ...(reviews.average !== null
+      ? [{ id: CLIENT_REVIEWS_SECTION, label: reviewWords("page.title") }]
+      : []),
     ...detailSections(data, (section) => t(`sections.${section}`)),
   ]
 
   return (
-    <WordsProvider namespaces={["app", "public"]}>
+    <WordsProvider namespaces={["app", "public", "reviews"]}>
       <LanguageProvider language={language}>
         <main
           lang={language}
@@ -117,7 +129,12 @@ export default async function BusinessPage({ params }: Props) {
                   <Separator />
                 </>
               )}
-              <BusinessDetails data={data} />
+              <BusinessDetails
+                data={data}
+                clientReviews={
+                  reviews.average !== null && <ClientReviews summary={reviews} />
+                }
+              />
               <BusinessFooter
                 name={business.name}
                 slug={business.slug}

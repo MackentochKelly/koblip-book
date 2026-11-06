@@ -18,6 +18,7 @@ const words = {
     owners: "Owners",
     team: "Team accounts",
     bookings: "Bookings",
+    reviews: "Reviews",
     whatsapp: "WhatsApp",
     notifications: "Notifications",
     assistant: "Assistant",
@@ -597,6 +598,7 @@ const words = {
       clientMoved: "Client: booking moved",
       clientCancelled: "Client: booking cancelled",
       clientReminder: "Client: visit reminder",
+      clientReviewAsk: "Client: asked for a review",
     } as const satisfies Record<InAppKind, string>,
   },
   assistant: {

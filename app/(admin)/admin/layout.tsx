@@ -23,7 +23,7 @@ export default async function AdminLayout({
 }) {
   await requireAdmin()
   return (
-    <WordsProvider namespaces={["admin", "app"]}>
+    <WordsProvider namespaces={["admin", "app", "reviews"]}>
       <AdminShell>{children}</AdminShell>
       <Toaster />
     </WordsProvider>
