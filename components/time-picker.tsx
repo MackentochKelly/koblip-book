@@ -105,13 +105,7 @@ export function TimePicker({
       >
         {groups.map((group) => (
           <AccordionItem key={group.key} value={group.key}>
-            <AccordionTrigger>
-              <span className="flex-1">{group.label}</span>
-              <span className="font-normal whitespace-nowrap text-muted-foreground tabular-nums">
-                {formatClock(group.times[0], locale)} –{" "}
-                {formatClock(group.times[group.times.length - 1], locale)}
-              </span>
-            </AccordionTrigger>
+            <AccordionTrigger>{group.label}</AccordionTrigger>
             <AccordionContent>
               <ToggleGroup
                 variant="outline"
