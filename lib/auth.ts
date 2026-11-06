@@ -3,7 +3,7 @@ import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { parseCookies } from "better-auth/cookies"
 import { nextCookies } from "better-auth/next-js"
-import { admin, anonymous } from "better-auth/plugins"
+import { admin, anonymous, phoneNumber } from "better-auth/plugins"
 import { eq } from "drizzle-orm"
 import { ACCOUNT_RULES } from "./account-rules"
 import { LOGIN_PATH } from "./auth-links"
@@ -12,6 +12,13 @@ import * as authSchema from "./db/auth-schema"
 import { sendEmail } from "./email"
 import { resetPasswordEmail, verificationEmail } from "./email-templates"
 import { ONBOARDING_RULES } from "./onboarding-rules"
+import {
+  isSignInPhone,
+  latestBookingName,
+  PHONE_SIGN_IN_RULES,
+  phoneAccountEmail,
+  sendPhoneCode,
+} from "./phone-sign-in"
 import {
   OWNER_LANGUAGE_COOKIE,
   pickOwnerLanguage,
@@ -92,6 +99,33 @@ export const auth = betterAuth({
   user: { deleteUser: { enabled: true } },
   session: { freshAge: ACCOUNT_RULES.freshLoginHours * 3600 },
   advanced: { database: { generateId: () => crypto.randomUUID() } },
+  // Phone sign-in is by code only: the phone-number plugin's password
+  // routes stay off.
+  disabledPaths: [
+    "/sign-in/phone-number",
+    "/phone-number/request-password-reset",
+    "/phone-number/reset-password",
+  ],
+  rateLimit: {
+    customRules: {
+      "/phone-number/send-otp": {
+        window: 60,
+        max: PHONE_SIGN_IN_RULES.codesPerMinute,
+      },
+    },
+  },
+  // An account a phone creates takes the name its latest booking gave.
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const phone = (user as { phoneNumber?: string | null }).phoneNumber
+          const name = phone ? await latestBookingName(phone) : null
+          return { data: { ...user, name: name ?? user.name } }
+        },
+      },
+    },
+  },
   // The app owner's admin area (better-auth.com/docs/plugins/admin): the
   // accounts in ADMIN_USER_IDS (comma-separated user ids, .env.local) are
   // admins; everyone else is an owner. Adds role and ban fields.
@@ -107,6 +141,17 @@ export const auth = betterAuth({
     // on the visitor's own demo copy. A guest owns nothing but that copy
     // (features/demo). Signing up later deletes the guest, as by default.
     anonymous({ generateName: () => "Demo" }),
+    // Sign in with a phone and a code sent to it
+    // (better-auth.com/docs/plugins/phone-number), for any account. A new
+    // phone makes a new account; a signed-in account can add its phone
+    // (verify with updatePhoneNumber), so My bookings finds its bookings.
+    phoneNumber({
+      expiresIn: PHONE_SIGN_IN_RULES.codeMinutes * 60,
+      allowedAttempts: PHONE_SIGN_IN_RULES.codeTries,
+      phoneNumberValidator: isSignInPhone,
+      sendOTP: ({ phoneNumber: phone, code }) => sendPhoneCode(phone, code),
+      signUpOnVerification: { getTempEmail: phoneAccountEmail },
+    }),
     // Must stay last (better-auth.com/docs/integrations/next).
     nextCookies(),
   ],

@@ -27,7 +27,7 @@ export function TopBar({
   className,
 }: {
   business: { id: string; slug: string; name: string }
-  owner: { name: string; email: string; image: string | null }
+  owner: { name: string; contact: string; image: string | null }
   menu?: boolean
   viewPage?: boolean
   bell?: React.ReactNode

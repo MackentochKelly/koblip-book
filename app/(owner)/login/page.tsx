@@ -12,6 +12,7 @@ import { AuthForm } from "@/features/owner-auth/components/auth-form"
 import { authWordsFor } from "@/features/owner-auth/i18n"
 import { getSession } from "@/lib/dal"
 import { languageParam } from "@/lib/page-language"
+import { phoneSignInReady } from "@/lib/phone-sign-in"
 import { safeNext } from "@/lib/safe-next"
 
 export async function generateMetadata({
@@ -55,6 +56,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <AuthForm
           next={target}
           googleError={googleError}
+          phoneSignIn={phoneSignInReady()}
           language={language}
         />
       </HeroCardPage>
@@ -69,6 +71,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         resume={finish === "__place__" ? null : finish}
         resumePending={finish === "__place__"}
         googleError={googleError}
+        phoneSignIn={phoneSignInReady()}
         hint={false}
         // Not awaited: the page shows at once, the card's photo
         // follows when the page is built.

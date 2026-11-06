@@ -40,7 +40,8 @@ import { cn } from "@/lib/utils"
 
 export interface Owner {
   name: string
-  email: string
+  // The account's email, else its phone.
+  contact: string
   image: string | null
 }
 
@@ -157,7 +158,7 @@ export function AccountMenuContent({
             <span className="truncate font-medium text-foreground">
               {owner.name}
             </span>
-            <span className="truncate text-xs">{owner.email}</span>
+            <span className="truncate text-xs">{owner.contact}</span>
           </span>
         </DropdownMenuLabel>
       </DropdownMenuGroup>

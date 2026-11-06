@@ -46,7 +46,7 @@ export default async function GoogleDetailsPage({
       <TopBar
         viewPage={false}
         business={business}
-        owner={{ name: owner.name, email: owner.email, image: owner.image }}
+        owner={{ name: owner.name, contact: owner.contact, image: owner.image }}
       />
       <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-4 pt-6 pb-24">
         <GlassCard>

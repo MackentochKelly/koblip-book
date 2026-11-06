@@ -19,14 +19,6 @@ import { IN_APP_KINDS, type InAppData, type InAppKind } from "../../types/in-app
 
 export { account, session, user, verification }
 
-// Customers' sign-in tables (./customer-auth-schema), apart from the owners'.
-export {
-  customerAccount,
-  customerSession,
-  customerUser,
-  customerVerification,
-} from "./customer-auth-schema"
-
 function timestamps() {
   return {
     createdAt: text()

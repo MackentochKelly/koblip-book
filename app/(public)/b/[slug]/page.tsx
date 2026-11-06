@@ -5,7 +5,7 @@ import { LanguageProvider } from "@/components/language-provider"
 import { getSession } from "@/lib/dal"
 import { messagesFor } from "@/lib/i18n"
 import { pickLanguage } from "@/lib/page-language"
-import { customerSignInReady } from "@/lib/customer-sign-in"
+import { phoneSignInReady } from "@/lib/phone-sign-in"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { BottomBar } from "@/components/bottom-bar"
@@ -152,7 +152,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
           />
         </BottomBar>
       )}
-      {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp, customerSignIn: customerSignInReady() })} mode="drawer" />}
+      {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp, manageBookings: phoneSignInReady() })} mode="drawer" />}
       {isOwner && <OwnerBackButton businessId={business.id} />}
       <Toaster />
     </LanguageProvider>

@@ -1,23 +1,19 @@
 import "server-only"
 import { cache } from "react"
-import { headers } from "next/headers"
 
-import { customerAuth } from "./customer-auth"
+import { getSession } from "./dal"
 
 export interface CustomerSession {
   userId: string
   name: string
-  // Verified by the sign-in code, as +18095550123.
+  // The account's phone, proved by a sign-in code, as +18095550123.
   phone: string
 }
 
-// The signed-in customer (lib/customer-auth.ts), or null. Owners' sessions
-// never count here, nor customers' in the owner area.
+// The signed-in account as a customer: its bookings are the ones made with
+// its verified phone. Null when signed out, a demo guest, or no phone yet.
 export const getCustomer = cache(async (): Promise<CustomerSession | null> => {
-  const session = await customerAuth.api.getSession({
-    headers: await headers(),
-  })
-  const phone = session?.user.phoneNumber
-  if (!session || !phone || !session.user.phoneNumberVerified) return null
-  return { userId: session.user.id, name: session.user.name, phone }
+  const session = await getSession()
+  if (!session || session.isGuest || !session.phone) return null
+  return { userId: session.userId, name: session.name, phone: session.phone }
 })

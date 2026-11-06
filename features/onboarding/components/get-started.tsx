@@ -106,6 +106,7 @@ export function GetStarted({
   handOver = false,
   start,
   googleError = null,
+  phoneSignIn = false,
   language,
 }: {
   signedIn: boolean
@@ -122,6 +123,8 @@ export function GetStarted({
   start?: Picked
   // The sign-up page: the `error` Google sign-in came back with, if any.
   googleError?: string | null
+  // Phone codes can be sent (lib/phone-sign-in.ts).
+  phoneSignIn?: boolean
   language: PageLanguage
 }) {
   const t = onboardingWordsFor(language)
@@ -512,7 +515,7 @@ export function GetStarted({
             }
             googleError={googleError}
             googleReady={Boolean(googleFound)}
-            emailLater
+            phoneSignIn={phoneSignIn}
             language={language}
           />
           <Button variant="ghost" onClick={back} disabled={finishing}>

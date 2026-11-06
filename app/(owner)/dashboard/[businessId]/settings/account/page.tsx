@@ -29,7 +29,7 @@ export default async function AccountPage({ params }: Props) {
   return (
     <div className="flex flex-col gap-10">
       <VoiceSection language={language} voiceChoice={voiceChoice} />
-      <AccountSection email={owner.email} returnTo={returnTo} />
+      <AccountSection contact={owner.contact} returnTo={returnTo} />
     </div>
   )
 }

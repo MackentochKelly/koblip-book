@@ -6,6 +6,9 @@ Every UI change, before and after. Each line must pass.
 
 - [ ] Uses a shared part (`components/ui`, `components/`) or a ready-made
       registry component. No hand-made copy, no one-off variant.
+- [ ] Each control is the shadcn component made for it (a code is
+      `InputOTP`, actions are `Button`/`ButtonGroup`, never loose text
+      links). Missing ones are added with `npx shadcn@latest add`.
 - [ ] `components/ui` files are stock shadcn (only `icons.tsx` is ours).
 - [ ] Colours, radius, spacing come from theme tokens. No hex, no
       arbitrary px.

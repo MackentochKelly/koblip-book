@@ -157,8 +157,8 @@ const en = {
   // The customer's own area: sign in with the phone they booked with and a
   // code on WhatsApp, then their bookings at every business.
   account: {
-    signInTitle: "Your bookings",
-    phoneHelp: "We'll send a code to your WhatsApp.",
+    addPhone: "Add your phone",
+    phoneHelp: "The one you booked with. We'll WhatsApp you a code.",
     sendCode: "Send code",
     sendingCode: "Sending…",
     code: "Code",
@@ -169,6 +169,7 @@ const en = {
     expiredCode: "That code expired. Ask for a new one.",
     tooManyTries: "Too many tries. Ask for a new code.",
     tooFast: "Too many codes. Wait a minute.",
+    phoneTaken: "That phone is on another account.",
     sendFailed: "The code didn't send. Try again.",
     newCode: "Send a new code",
     changePhone: "Change number",
@@ -730,8 +731,8 @@ const es: Messages = {
     manage: "Gestionar tu reserva",
   },
   account: {
-    signInTitle: "Tus reservas",
-    phoneHelp: "Te enviaremos un código por WhatsApp.",
+    addPhone: "Añade tu teléfono",
+    phoneHelp: "El que usaste al reservar. Te enviaremos un código por WhatsApp.",
     sendCode: "Enviar código",
     sendingCode: "Enviando…",
     code: "Código",
@@ -742,6 +743,7 @@ const es: Messages = {
     expiredCode: "Ese código caducó. Pide uno nuevo.",
     tooManyTries: "Demasiados intentos. Pide un código nuevo.",
     tooFast: "Demasiados códigos. Espera un minuto.",
+    phoneTaken: "Ese teléfono está en otra cuenta.",
     sendFailed: "El código no se envió. Inténtalo de nuevo.",
     newCode: "Enviar un código nuevo",
     changePhone: "Cambiar número",

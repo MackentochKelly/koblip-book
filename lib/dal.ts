@@ -3,15 +3,22 @@ import { cache } from "react"
 import { headers } from "next/headers"
 import { notFound, redirect } from "next/navigation"
 import { asc, eq } from "drizzle-orm"
+import { parsePhoneNumberFromString } from "libphonenumber-js"
 import { auth } from "./auth"
 import { loginHref } from "./auth-links"
 import { db } from "./db"
 import { businesses, teamMembers } from "./db/schema"
+import { isPhoneAccountEmail } from "./phone-sign-in"
 
 export interface OwnerSession {
   userId: string
   name: string
-  email: string
+  // Null for an account made by phone (its email is a placeholder).
+  email: string | null
+  // The phone a sign-in code proved, as +18095550123; null without one.
+  phone: string | null
+  // What names the account on screen: its email, else its phone.
+  contact: string
   // The photo from Google login; null for email accounts.
   image: string | null
   // False until a password account opens its sign-up email link.
@@ -28,10 +35,22 @@ export const getSession = cache(async (): Promise<OwnerSession | null> => {
   if (!session?.user) {
     return null
   }
+  const email = isPhoneAccountEmail(session.user.email)
+    ? null
+    : session.user.email
+  const phone = session.user.phoneNumberVerified
+    ? (session.user.phoneNumber ?? null)
+    : null
   return {
     userId: session.user.id,
     name: session.user.name,
-    email: session.user.email,
+    email,
+    phone,
+    contact:
+      email ??
+      (phone && parsePhoneNumberFromString(phone)?.formatInternational()) ??
+      phone ??
+      "",
     image: session.user.image ?? null,
     emailVerified: session.user.emailVerified,
     isGuest: session.user.isAnonymous === true,

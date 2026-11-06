@@ -8,7 +8,7 @@ import {
   moveAvailability,
 } from "@/features/booking/api/get-availability"
 import { RescheduleForm } from "@/features/booking/components/reschedule-form"
-import { CUSTOMER_SIGN_IN_PATH } from "@/lib/customer-auth-path"
+import { myBookingsLoginHref } from "@/lib/my-bookings-links"
 import { getCustomer } from "@/lib/customer-dal"
 import { messagesFor } from "@/lib/i18n"
 import { pickLanguage } from "@/lib/page-language"
@@ -31,7 +31,7 @@ export async function generateMetadata({
 export default async function ReschedulePage({ params, searchParams }: Props) {
   const language = await pageLanguage(searchParams)
   const customer = await getCustomer()
-  if (!customer) redirect(`${CUSTOMER_SIGN_IN_PATH}?lang=${language}`)
+  if (!customer) redirect(myBookingsLoginHref(language))
   const { bookingId } = await params
   const found = await customerBookingToMove(bookingId, customer.phone)
   if (!found) notFound()

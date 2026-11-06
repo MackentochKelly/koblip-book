@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   await getOwnerBusiness(businessId)
   let started: ReturnType<typeof startGoogleCalendarConnect>
   try {
-    started = startGoogleCalendarConnect({ businessId, userId: session.userId }, session.email)
+    started = startGoogleCalendarConnect({ businessId, userId: session.userId }, session.email ?? undefined)
   } catch (error) {
     console.error(error)
     return NextResponse.redirect(googleCalendarDoneUrl(businessId, "failed"))

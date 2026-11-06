@@ -18,7 +18,7 @@ vi.mock("@/lib/dal", () => ({ requireAdmin: vi.fn() }))
 vi.mock("./chat-templates", () => ({ submitKoblipTemplate: vi.fn() }))
 
 const { saveKoblipMessage, submitKoblipMessage } = await import("./koblip-template-actions")
-const admin = { userId: "admin", name: "Admin", email: "admin@example.com", image: null, emailVerified: true, isGuest: false }
+const admin = { userId: "admin", name: "Admin", email: "admin@example.com", phone: null, contact: "admin@example.com", image: null, emailVerified: true, isGuest: false }
 let dir: string
 
 beforeAll(async () => {

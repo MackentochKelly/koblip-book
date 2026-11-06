@@ -15,7 +15,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("Not found") } }))
 vi.mock("@/lib/dal", () => ({ requireOwner: vi.fn() }))
 const { saveAutomation, setAutomationOn } = await import("./automation-actions")
-const owner = { userId: "owner", name: "Owner", email: "owner@example.test", image: null, emailVerified: true, isGuest: false }
+const owner = { userId: "owner", name: "Owner", email: "owner@example.test", phone: null, contact: "owner@example.test", image: null, emailVerified: true, isGuest: false }
 let dir: string
 const row = async (id = "welcome-a") => (await db.select().from(automations).where(eq(automations.id, id)))[0]
 

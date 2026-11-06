@@ -42,7 +42,7 @@ export function NavUser({
             <span className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{owner.name}</span>
               <span className="truncate text-xs text-sidebar-foreground/70">
-                {owner.email}
+                {owner.contact}
               </span>
             </span>
             <ChevronsUpDownIcon className="ml-auto size-4" />

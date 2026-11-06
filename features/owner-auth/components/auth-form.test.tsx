@@ -22,6 +22,15 @@ vi.mock("../api/email-status", () => ({ emailStatus }))
 const { AuthForm } = await import("./auth-form")
 const { authWordsFor } = await import("../i18n")
 
+// The email form unfolds once "Continue with email" is picked.
+function renderEmail(ui: React.ReactElement) {
+  const view = render(ui)
+  fireEvent.click(
+    screen.getByRole("button", { name: /Continue with email|Continuar con correo/ })
+  )
+  return view
+}
+
 afterEach(cleanup)
 beforeEach(() => {
   emailStatus.mockReset().mockResolvedValue({ ok: true, exists: true })
@@ -31,7 +40,7 @@ beforeEach(() => {
 })
 
 test("the login email is the field password managers fill", () => {
-  const { unmount } = render(<AuthForm />)
+  const { unmount } = renderEmail(<AuthForm />)
   const email = screen.getByLabelText("Email")
   expect(email.getAttribute("autocomplete")).toBe("username")
   expect(email.getAttribute("name")).toBe("email")
@@ -39,7 +48,7 @@ test("the login email is the field password managers fill", () => {
 })
 
 test("a log in the server never answers shows an error and frees the form", async () => {
-  render(<AuthForm />)
+  renderEmail(<AuthForm />)
   fireEvent.change(screen.getByLabelText("Email"), {
     target: { value: "owner@example.com" },
   })
@@ -100,7 +109,7 @@ for (const language of ["en", "es"] as const) {
         // These mocks supply the same error shape as Better Auth's client.
         if (code === null) request.mockRejectedValue(new Error("offline"))
         else request.mockResolvedValue({ error: { code, status } })
-        render(<AuthForm language={language} />)
+        renderEmail(<AuthForm language={language} />)
         fireEvent.change(screen.getByLabelText(t.email), { target: { value: "owner@example.com" } })
         fireEvent.click(screen.getByRole("button", { name: t.continue }))
         const password = await screen.findByLabelText(step === "create" ? t.choosePassword : t.password)
@@ -126,7 +135,7 @@ for (const language of ["en", "es"] as const) {
 
   test(`${language}: a missing name marks only the name`, async () => {
     emailStatus.mockResolvedValue({ ok: true, exists: false })
-    render(<AuthForm language={language} />)
+    renderEmail(<AuthForm language={language} />)
     fireEvent.change(screen.getByLabelText(t.email), { target: { value: "new@example.com" } })
     fireEvent.click(screen.getByRole("button", { name: t.continue }))
     await screen.findByLabelText(t.yourName)
@@ -137,7 +146,7 @@ for (const language of ["en", "es"] as const) {
   })
 
   test(`${language}: local short-password validation marks only the password`, async () => {
-    render(<AuthForm language={language} />)
+    renderEmail(<AuthForm language={language} />)
     fireEvent.change(screen.getByLabelText(t.email), { target: { value: "owner@example.com" } })
     fireEvent.click(screen.getByRole("button", { name: t.continue }))
     fireEvent.change(await screen.findByLabelText(t.password), { target: { value: "short" } })
@@ -150,7 +159,7 @@ for (const language of ["en", "es"] as const) {
 
 async function atPasswordStep(language: "en" | "es", next?: string) {
   const t = authWordsFor(language)
-  render(<AuthForm language={language} next={next} />)
+  renderEmail(<AuthForm language={language} next={next} />)
   fireEvent.change(screen.getByLabelText(t.email), {
     target: { value: "owner@example.com" },
   })
@@ -178,7 +187,7 @@ for (const language of ["en", "es"] as const) {
 test("forgot password from the sign-up card comes back to that card", async () => {
   authClient.requestPasswordReset.mockResolvedValue({ data: { status: true }, error: null })
   const t = authWordsFor("en")
-  render(<AuthForm googleNext="/login?business=ana&finish=1" />)
+  renderEmail(<AuthForm googleNext="/login?business=ana&finish=1" />)
   fireEvent.change(screen.getByLabelText(t.email), {
     target: { value: "owner@example.com" },
   })
@@ -210,7 +219,7 @@ test("trying to log in clears the news about the link", async () => {
 test("sign-up has the same quiet way back as log in", async () => {
   emailStatus.mockResolvedValue({ ok: true, exists: false })
   const t = authWordsFor("en")
-  render(<AuthForm />)
+  renderEmail(<AuthForm />)
   fireEvent.change(screen.getByLabelText(t.email), {
     target: { value: "new@example.com" },
   })
@@ -243,7 +252,7 @@ test("forgot password says so when the server can't be reached", async () => {
 test("a new account has no forgot password link", async () => {
   emailStatus.mockResolvedValue({ ok: true, exists: false })
   const t = authWordsFor("en")
-  render(<AuthForm />)
+  renderEmail(<AuthForm />)
   fireEvent.change(screen.getByLabelText(t.email), {
     target: { value: "new@example.com" },
   })

@@ -50,7 +50,7 @@ beforeAll(async () => {
 })
 beforeEach(async () => {
   vi.clearAllMocks()
-  vi.mocked(requireAdmin).mockResolvedValue({ userId: "admin", name: "Admin", email: "admin@example.test", emailVerified: true, image: null, isGuest: false })
+  vi.mocked(requireAdmin).mockResolvedValue({ userId: "admin", name: "Admin", email: "admin@example.test", phone: null, contact: "admin@example.test", emailVerified: true, image: null, isGuest: false })
   await db.delete(businesses)
   await db.insert(businesses).values([
     { id: "one", slug: "one", name: "First business", timezone: "America/New_York", currency: "USD" },

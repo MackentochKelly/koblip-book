@@ -4,14 +4,20 @@ import { useState } from "react"
 import { motion } from "motion/react"
 import { useRouter } from "next/navigation"
 
-import { MailIcon } from "@/components/ui/icons"
+import { PhoneCodeForm } from "@/components/phone-code-form"
+import { ChevronDownIcon, MailIcon, PhoneIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/auth-client"
@@ -62,12 +68,14 @@ function QuietAction({
   )
 }
 
-// Email first: an existing account asks for its password, a new email asks
-// for a name and a new password. One form for both, no sign-up page.
+// The one way in for everyone (owners, team, customers): Google first, the
+// other ways in "More options" (email; phone when `phoneSignIn`), the one
+// picked unfolding under it. Email: an existing account asks for its
+// password, a new email asks for a name and a new password, so there is no
+// sign-up page. Phone: a code on WhatsApp; a new phone makes an account.
 // After it, `onSignedIn` runs, or the screen opens `next`. Google and the
 // "Forgot password" email leave the page: both come back to `googleNext`
-// (default `next`). `language` picks its words. `emailLater`: Google alone at
-// first, the email form unfolds under it when asked for.
+// (default `next`). `language` picks its words.
 export function AuthForm({
   next = AFTER_LOGIN_PATH,
   googleNext = next,
@@ -76,7 +84,7 @@ export function AuthForm({
   googleError = null,
   onSignedIn,
   disabled = false,
-  emailLater = false,
+  phoneSignIn = false,
   language = "en",
 }: {
   next?: string
@@ -88,7 +96,8 @@ export function AuthForm({
   googleError?: string | null
   onSignedIn?: () => Promise<void>
   disabled?: boolean
-  emailLater?: boolean
+  // Phone codes can be sent (lib/phone-sign-in.ts).
+  phoneSignIn?: boolean
   language?: PageLanguage
 }) {
   const t = authWordsFor(language)
@@ -101,7 +110,17 @@ export function AuthForm({
   const [error, setError] = useState<AuthError | null>(null)
   const [resetSent, setResetSent] = useState(false)
   const busy = sending || disabled
-  const [emailOpen, setEmailOpen] = useState(!emailLater)
+  // The way in picked under Google; none at first.
+  const [method, setMethod] = useState<"email" | "phone" | null>(null)
+
+  const signedIn = async () => {
+    if (onSignedIn) {
+      await onSignedIn()
+      return
+    }
+    router.replace(next)
+    router.refresh()
+  }
 
   const checkEmail = async () => {
     const status = await emailStatus(email).catch(() => null)
@@ -143,12 +162,7 @@ export function AuthForm({
       setError(mapped)
       return
     }
-    if (onSignedIn) {
-      await onSignedIn()
-      return
-    }
-    router.replace(next)
-    router.refresh()
+    await signedIn()
   }
 
   // Its link opens the new password page, and that page leads back here.
@@ -204,8 +218,8 @@ export function AuthForm({
             onChange={(event) => setEmail(event.target.value)}
             readOnly={step !== "email"}
             disabled={busy}
-            // Just asked for: the owner types straight away.
-            autoFocus={emailLater}
+            // Just picked: they type straight away.
+            autoFocus
             aria-invalid={error?.field === "email" || undefined}
           />
           {error?.field === "email" && <FieldError id="auth-email-error">{t.errors[error.message]}</FieldError>}
@@ -267,56 +281,95 @@ export function AuthForm({
     </>
   )
 
+  const pick = (picked: "email" | "phone") => {
+    setError(null)
+    setMethod(picked)
+  }
+
+  // The other ways in, shaped like the Google button above them: one menu
+  // when there are two, else the email button itself.
+  const otherWays = phoneSignIn ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button type="button" variant="outline" size="lg" disabled={busy} />
+        }
+      >
+        {t.moreOptions}
+        <ChevronDownIcon data-icon="inline-end" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem onClick={() => pick("email")}>
+          <MailIcon />
+          {t.useEmail}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => pick("phone")}>
+          <PhoneIcon />
+          {t.usePhone}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : (
+    method === null && (
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        disabled={busy}
+        onClick={() => pick("email")}
+      >
+        <MailIcon data-icon="inline-start" />
+        {t.useEmail}
+      </Button>
+    )
+  )
+
   return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault()
-        void run(step === "email" ? checkEmail : logIn)
-      }}
-      noValidate
-    >
-      <FieldGroup>
-        {step === "email" && (
-          <>
-            {googleError && <GoogleError code={googleError} language={language} />}
-            <GoogleButton
-              callbackURL={googleNext}
-              errorCallbackURL={googleErrorNext}
-              disabled={busy || !googleReady}
-              language={language}
+    <FieldGroup>
+      {step === "email" && (
+        <>
+          {googleError && <GoogleError code={googleError} language={language} />}
+          <GoogleButton
+            callbackURL={googleNext}
+            errorCallbackURL={googleErrorNext}
+            disabled={busy || !googleReady}
+            language={language}
+          />
+          {otherWays}
+        </>
+      )}
+      {method && (
+        // Unfolds under the buttons. The padding keeps the fields' focus
+        // rings inside the clipped area.
+        <motion.div
+          key={method}
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          transition={LAYOUT_MOVE}
+          className="-m-1 overflow-hidden p-1"
+        >
+          {method === "email" ? (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault()
+                void run(step === "email" ? checkEmail : logIn)
+              }}
+              noValidate
+            >
+              <FieldGroup>{emailPart}</FieldGroup>
+            </form>
+          ) : (
+            <PhoneCodeForm
+              purpose="signIn"
+              onDone={signedIn}
+              labels={t.phone}
+              locale={language}
+              disabled={disabled}
+              autoFocus
             />
-            <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-              {t.or}
-            </FieldSeparator>
-          </>
-        )}
-        {!emailOpen ? (
-          // The other way in, shaped like the Google button above it.
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            disabled={busy}
-            onClick={() => setEmailOpen(true)}
-          >
-            <MailIcon data-icon="inline-start" />
-            {t.useEmail}
-          </Button>
-        ) : emailLater ? (
-          // Unfolds under the Google button. The padding keeps the fields'
-          // focus rings inside the clipped area.
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            transition={LAYOUT_MOVE}
-            className="-m-1 overflow-hidden p-1"
-          >
-            <FieldGroup>{emailPart}</FieldGroup>
-          </motion.div>
-        ) : (
-          emailPart
-        )}
-      </FieldGroup>
-    </form>
+          )}
+        </motion.div>
+      )}
+    </FieldGroup>
   )
 }

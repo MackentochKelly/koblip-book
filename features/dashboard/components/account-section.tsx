@@ -26,10 +26,11 @@ import { useOwnerMessages } from "../i18n/provider"
 // they own, after a confirm. A login too old to delete with asks them to
 // log in again and come back here.
 export function AccountSection({
-  email,
+  contact,
   returnTo,
 }: {
-  email: string
+  // The account's email, else its phone.
+  contact: string
   returnTo: string
 }) {
   const m = useOwnerMessages().settings
@@ -65,7 +66,7 @@ export function AccountSection({
         </ItemMedia>
         <ItemContent className="min-w-0">
           <ItemTitle className="max-w-full">
-            <span className="truncate">{email}</span>
+            <span className="truncate">{contact}</span>
           </ItemTitle>
           <ItemDescription>{t.deleteHint}</ItemDescription>
         </ItemContent>

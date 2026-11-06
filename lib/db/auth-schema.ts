@@ -24,6 +24,11 @@ export const user = sqliteTable("user", {
   // Better Auth's anonymous plugin (better-auth.com/docs/plugins/anonymous):
   // a home page demo visitor, signed in without an account.
   isAnonymous: integer("is_anonymous", { mode: "boolean" }).default(false),
+  // Better Auth's phone-number plugin (better-auth.com/docs/plugins/phone-number):
+  // the phone a sign-in code proved, as +18095550123, the same form
+  // bookings keep. An account made by phone has a placeholder email.
+  phoneNumber: text("phone_number").unique(),
+  phoneNumberVerified: integer("phone_number_verified", { mode: "boolean" }),
 });
 
 export const session = sqliteTable(

@@ -17,7 +17,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import { rescheduleHref } from "@/lib/customer-auth-path"
+import { rescheduleHref } from "@/lib/my-bookings-links"
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import type { Messages } from "@/lib/i18n"

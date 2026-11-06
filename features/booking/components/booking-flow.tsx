@@ -28,7 +28,7 @@ import {
 import { Item, ItemContent } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { PHONE_PATTERN } from "@/lib/booking-rules"
-import { BOOKED_PHONE_KEY, MY_BOOKINGS_PATH } from "@/lib/customer-auth-path"
+import { BOOKED_PHONE_KEY, myBookingsHref } from "@/lib/my-bookings-links"
 import { formatDuration } from "@/lib/format-duration"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { shareLink } from "@/lib/share-link"
@@ -624,13 +624,13 @@ function BookedPage({
                     {m.actions.directions}
                   </Button>
                 )}
-                {page.customerSignIn ? (
+                {page.manageBookings ? (
                   <Button
                     variant="link"
                     nativeButton={false}
                     render={
                       <Link
-                        href={`${MY_BOOKINGS_PATH}?lang=${language}`}
+                        href={myBookingsHref(language)}
                         onClick={() => rememberBookedPhone(phone)}
                       />
                     }

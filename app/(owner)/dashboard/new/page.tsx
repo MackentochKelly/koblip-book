@@ -38,7 +38,7 @@ export default async function NewBusinessPage() {
       hint={t.addHint}
       action={
         <AccountMenu
-          owner={{ name: owner.name, email: owner.email, image: owner.image }}
+          owner={{ name: owner.name, contact: owner.contact, image: owner.image }}
         />
       }
       close={

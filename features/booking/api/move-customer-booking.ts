@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 
-import { MY_BOOKINGS_PATH } from "@/lib/customer-auth-path"
+import { MY_BOOKINGS_PATH } from "@/lib/my-bookings-links"
 import { getCustomer } from "@/lib/customer-dal"
 import { saveAll } from "@/lib/db/save-all"
 import { requestGoogleSync } from "@/lib/google-calendar-sync"

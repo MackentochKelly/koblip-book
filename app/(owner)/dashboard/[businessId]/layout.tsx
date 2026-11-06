@@ -46,15 +46,16 @@ export default async function BusinessDashboardLayout({
       <DashboardShell
         business={{ id: business.id, slug: business.slug, name: business.name }}
         businesses={businesses}
-        owner={{ name: owner.name, email: owner.email, image: owner.image }}
+        owner={{ name: owner.name, contact: owner.contact, image: owner.image }}
         bell={<NotificationBell />}
         assistantFloat={
           <AssistantFloat businessId={business.id} language={language} />
         }
       >
         {owner.isGuest && <DemoBar />}
-        {/* A demo guest has no email of its own to confirm. */}
-        {!owner.emailVerified && !owner.isGuest && (
+        {/* A demo guest, or an account made by phone, has no email of its
+            own to confirm. */}
+        {!owner.emailVerified && !owner.isGuest && owner.email && (
           <VerifyEmailAlert
             email={owner.email}
             labels={{ ...verify, sentTo: verify.sentTo(owner.email) }}

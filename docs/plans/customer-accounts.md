@@ -1,24 +1,26 @@
 # Customer accounts
 
-Every customer who booked can sign in with the phone they booked with and a code, no email, and see their bookings at every business. "Manage your booking" on the "You're booked" screen opens it.
+Customers use the same account and the same login page as everyone else (`/login`): Google first, then "More options" for email or phone. My bookings shows the bookings made with the account's phone at every business. "Manage your booking" on the "You're booked" screen opens it.
 
-## Built (step 1)
+## Built
 
-- Sign-in: `lib/customer-auth.ts`, a second Better Auth instance with the phone-number plugin, at `/api/customer-auth`.
-- Pages: `/my-bookings/sign-in` (phone, then code) and `/my-bookings` (upcoming, then past; each opens the business page to book again).
-- Profile: made on the first right code, named from the latest booking; bookings join it by the phone's digits (`lib/customer-key.ts`).
-- "You're booked": "Manage your booking" replaces "Done" while sign-in is on; the phone is kept in the tab so sign-in opens filled in.
+- **One sign-in** (`lib/auth.ts`): Better Auth with Google, email and password, and the phone-number plugin (a code on WhatsApp). A new phone makes an account, named from its latest booking.
+- **Login UI** (`features/owner-auth/components/auth-form.tsx`): "Continue with Google", then a "More options" menu (email, phone) whose pick unfolds under it. The code step is shadcn's `InputOTP` and checks itself once full (`components/phone-code-form.tsx`, shared).
+- **My bookings** (`/my-bookings`): signed out → the login page, coming back here. Signed in without a phone (Google, email) → "Add your phone" with a code, then the bookings. Upcoming bookings can be moved or cancelled.
+- **"You're booked"**: "Manage your booking" replaces "Done" while phone codes can be sent; the phone is kept in the tab so phone sign-in opens filled in.
 
 ## Next
 
-1. **Sign-in code on WhatsApp (needs the owner's yes).** An authentication template on Koblip's number, submitted to Meta by hand (Chat already supports the `AUTHENTICATION` category and its copy-code button). Until it is approved, only the dev server signs customers in, with the code in its log; production shows "Done" as before.
-2. **Cancel from the account.** One shared customer-cancel step, used by both this page and the WhatsApp "Can't make it" tap, so both tell the owner, the bell and Google Calendar the same way.
-3. **Admin screen** listing customer accounts (every stored record gets one).
+1. **Sign-in code on WhatsApp (needs the owner's yes).** An authentication template on Koblip's number, submitted to Meta by hand (Chat already supports the `AUTHENTICATION` category and its copy-code button). Until it is approved, only the dev server offers phone sign-in, with the code in its log; production hides the phone option and My bookings, and shows "Done" as before.
+2. **Admin screen** showing each account's phone (every stored record gets one).
+3. **One account, two sign-ins.** A phone already on another account can't be added ("That phone is on another account"); merging two accounts is left for later.
 
 ## Decisions
 
-- **D1. Separate from owners' sign-in.** Own tables (`customer_*`), address and cookie prefix (`koblip-customer`): a customer's session never opens the dashboard, and an owner testing their own page keeps their session. Fresha and Booksy keep customer and business accounts apart the same way.
-- **D2. Codes only go to phones that booked.** Any other phone gets nothing, and the screen looks the same either way, so no one can learn whether a number booked, and WhatsApp costs can't be run up.
-- **D3. Limits.** A code works for 5 minutes and 3 tries; a device may ask for 3 codes a minute; a session lasts 30 days.
-- **D4. Placeholder email.** Better Auth needs one; it is `<digits>@phone.invalid` (a reserved domain, RFC 2606), never mailed.
+- **D1 (replaced by D6). Separate customer sign-in.** Dropped on Nov 5: the owner wants one login page for the whole app.
+- **D2 (replaced). Codes only to phones that booked.** Phone sign-in is now for any account, so any valid phone gets a code; the rate limit (D3) keeps WhatsApp costs down.
+- **D3. Limits.** A code works for 5 minutes and 3 tries; a device may ask for 3 codes a minute.
+- **D4. Placeholder email.** Better Auth needs one; an account made by phone gets `<digits>@phone.invalid` (a reserved domain, RFC 2606), never mailed and never shown: the app shows the phone instead (`OwnerSession.contact`).
 - **D5. Google photos are not stored** (Google's terms), so a booking shows the business's own first photo, else the shop icon.
+- **D6. One account for everyone** (M Kelly B, Nov 5). Owners, team and customers share `/login` and Better Auth's `user` table; phone sign-in is one shared feature. Migration `0051_one_sign_in` drops the `customer_*` tables (never deployed) and adds `phone_number` and `phone_number_verified` to `user`.
+- **D7. Bookings join by the verified phone.** Bookings keep no email, so My bookings needs the account's phone, proved by a code; a Google or email account adds it once.

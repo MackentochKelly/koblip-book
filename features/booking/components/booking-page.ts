@@ -51,9 +51,9 @@ export interface BookingPage {
   addonGroups: BookingAddonGroup[]
   // Whether the business sends WhatsApp booking messages (consent asked).
   whatsapp: boolean
-  // Whether customers can sign in to manage their bookings
-  // (lib/customer-sign-in.ts): "Manage your booking" after booking.
-  customerSignIn: boolean
+  // Whether My bookings is open (it needs phone codes, lib/phone-sign-in.ts):
+  // "Manage your booking" after booking.
+  manageBookings: boolean
   policies: BookingPolicies
 }
 
@@ -140,7 +140,7 @@ export function toBookingPage(data: {
   serviceTeams: Record<string, string[]>
   addonGroups: BookingAddonGroup[]
   whatsapp: boolean
-  customerSignIn: boolean
+  manageBookings: boolean
   policies: PolicyKind[]
   policyPoints: BookingPolicyPoint[]
 }): BookingPage {
@@ -168,7 +168,7 @@ export function toBookingPage(data: {
     serviceTeams: data.serviceTeams,
     addonGroups: data.addonGroups,
     whatsapp: data.whatsapp,
-    customerSignIn: data.customerSignIn,
+    manageBookings: data.manageBookings,
     policies: { documents: data.policies, points: data.policyPoints },
   }
 }

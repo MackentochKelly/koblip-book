@@ -15,6 +15,8 @@ const en = {
   continue: "Continue",
   createAccount: "Create account",
   useEmail: "Continue with email",
+  usePhone: "Continue with phone",
+  moreOptions: "More options",
   google: "Continue with Google",
   forgotPassword: "Forgot password?",
   resetSent: "Check your email for the link.",
@@ -40,6 +42,25 @@ const en = {
       "You signed up with email and password. Log in that way below.",
     fallback: "Google sign-in didn't work. Try again.",
   },
+  // Phone sign-in (components/phone-code-form.tsx).
+  phone: {
+    phone: "Phone",
+    phoneHelp: "We'll send a code to your WhatsApp.",
+    sendCode: "Send code",
+    sendingCode: "Sending…",
+    code: "Code",
+    codeSentTo: (phone: string) => `Enter the code sent to ${phone}.`,
+    verify: "Continue",
+    checking: "Checking…",
+    wrongCode: "That code didn't work. Try again.",
+    expiredCode: "That code expired. Ask for a new one.",
+    tooManyTries: "Too many tries. Ask for a new code.",
+    tooFast: "Too many codes. Wait a minute.",
+    phoneTaken: "That phone is on another account.",
+    sendFailed: "The code didn't send. Try again.",
+    newCode: "Send a new code",
+    changePhone: "Change number",
+  },
 }
 
 export type AuthWords = typeof en
@@ -56,6 +77,8 @@ const es: AuthWords = {
   continue: "Continuar",
   createAccount: "Crear cuenta",
   useEmail: "Continuar con correo",
+  usePhone: "Continuar con teléfono",
+  moreOptions: "Más opciones",
   google: "Continuar con Google",
   forgotPassword: "¿Olvidaste tu contraseña?",
   resetSent: "Revisa tu correo para ver el enlace.",
@@ -81,6 +104,24 @@ const es: AuthWords = {
     accountNotLinked:
       "Te registraste con correo y contraseña. Inicia sesión así abajo.",
     fallback: "No se pudo entrar con Google. Inténtalo de nuevo.",
+  },
+  phone: {
+    phone: "Teléfono",
+    phoneHelp: "Te enviaremos un código por WhatsApp.",
+    sendCode: "Enviar código",
+    sendingCode: "Enviando…",
+    code: "Código",
+    codeSentTo: (phone: string) => `Escribe el código enviado al ${phone}.`,
+    verify: "Continuar",
+    checking: "Comprobando…",
+    wrongCode: "Ese código no funcionó. Inténtalo de nuevo.",
+    expiredCode: "Ese código caducó. Pide uno nuevo.",
+    tooManyTries: "Demasiados intentos. Pide un código nuevo.",
+    tooFast: "Demasiados códigos. Espera un minuto.",
+    phoneTaken: "Ese teléfono está en otra cuenta.",
+    sendFailed: "El código no se envió. Inténtalo de nuevo.",
+    newCode: "Enviar un código nuevo",
+    changePhone: "Cambiar número",
   },
 }
 

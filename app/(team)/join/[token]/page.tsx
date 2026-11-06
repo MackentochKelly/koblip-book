@@ -49,7 +49,7 @@ export default async function JoinPage({ params }: PageProps<"/join/[token]">) {
     <HeroCardPage language={language} title={t.title(invite.businessName)}>
       <div className="flex flex-col gap-4">
         <p className="text-center text-sm text-muted-foreground">
-          {signedIn ? t.signedInAs(session.email) : t.intro(invite.memberName)}
+          {signedIn ? t.signedInAs(session.contact) : t.intro(invite.memberName)}
         </p>
         {signedIn ? (
           <TeamAreaLanguageProvider language={language} locale={locale}>

@@ -8,7 +8,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog"
 import { useMessages, usePageLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { CUSTOMER_SIGN_IN_PATH } from "@/lib/customer-auth-path"
+import { myBookingsLoginHref } from "@/lib/my-bookings-links"
 import { cantCome } from "../api/cant-come"
 import type { MyBooking } from "../types"
 
@@ -40,7 +40,7 @@ export function CantComeButton({ booking }: { booking: MyBooking }) {
         if (result.cancelled) toast.success(t.cancelDone)
         router.refresh()
       } else if (result?.error === "signedOut") {
-        router.replace(`${CUSTOMER_SIGN_IN_PATH}?lang=${language}`)
+        router.replace(myBookingsLoginHref(language))
       } else {
         toast.error(t.actionFailed)
         router.refresh()

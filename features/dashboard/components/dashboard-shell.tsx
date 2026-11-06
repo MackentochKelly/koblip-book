@@ -69,7 +69,7 @@ export function DashboardShell({
 }: {
   business: { id: string; slug: string; name: string }
   businesses: OwnedBusiness[]
-  owner: { name: string; email: string; image: string | null }
+  owner: { name: string; contact: string; image: string | null }
   bell?: React.ReactNode
   assistantFloat?: React.ReactNode
   children: React.ReactNode

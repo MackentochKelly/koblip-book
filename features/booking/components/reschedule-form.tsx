@@ -9,10 +9,7 @@ import { TimePicker } from "@/components/time-picker"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { Spinner } from "@/components/ui/spinner"
-import {
-  CUSTOMER_SIGN_IN_PATH,
-  MY_BOOKINGS_PATH,
-} from "@/lib/customer-auth-path"
+import { myBookingsHref, myBookingsLoginHref } from "@/lib/my-bookings-links"
 import { todayIn } from "@/lib/format-booking-time"
 import { moveCustomerBooking } from "../api/move-customer-booking"
 import type { Availability } from "../types"
@@ -55,9 +52,9 @@ export function RescheduleForm({
       const result = await moveCustomerBooking({ bookingId, date, time })
       if (result.status === "moved") {
         toast.success(t.moved)
-        router.replace(`${MY_BOOKINGS_PATH}?lang=${language}`)
+        router.replace(myBookingsHref(language))
       } else if (result.status === "signedOut") {
-        router.replace(`${CUSTOMER_SIGN_IN_PATH}?lang=${language}`)
+        router.replace(myBookingsLoginHref(language))
       } else if (result.status === "taken") {
         toast.error(t.timeTaken)
         setTime(null)
