@@ -12,15 +12,15 @@ function Card({
   variant?: "default" | "muted"
 }) {
   // The stock shadow-md is swapped for the theme's faint shadow-card
-  // (app/globals.css): just enough lift off the page, with the ring for
-  // the edge.
+  // (app/globals.css): just enough lift off the page, with a hairline ring
+  // (--hairline) for the edge, like Apple's.
   return (
     <div
       data-slot="card"
       data-size={size}
       data-variant={variant}
       className={cn(
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-4xl bg-card py-(--card-spacing) text-sm text-card-foreground shadow-card ring-1 ring-foreground/5 [--card-spacing:--spacing(6)] has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] dark:ring-foreground/10 *:[img:first-child]:rounded-t-4xl *:[img:last-child]:rounded-b-4xl",
+        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-4xl bg-card py-(--card-spacing) text-sm text-card-foreground shadow-card ring-(length:--hairline) ring-foreground/5 [--card-spacing:--spacing(6)] has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] dark:ring-foreground/10 *:[img:first-child]:rounded-t-4xl *:[img:last-child]:rounded-b-4xl",
         variant === "muted" && "border bg-muted/50 ring-0 dark:ring-0",
         className
       )}

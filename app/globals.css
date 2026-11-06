@@ -258,8 +258,9 @@
     --card-shadow:
       0 1px 2px oklch(0 0 0 / 3%), 0 2px 6px -2px oklch(0 0 0 / 3%);
     --radius: 0.625rem;
-    /* The computer's frame lines (sidebar edge, top bar): half a pixel,
-       one real pixel on a sharp (2x) screen, like Apple's hairlines. */
+    /* Frame lines and card edges (sidebar edge, top bar, cards, rows, tab
+       tracks): half a pixel, one real pixel on a sharp (2x) screen, like
+       Apple's hairlines. */
     --hairline: 0.5px;
     --sidebar: oklch(1 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
@@ -382,7 +383,7 @@
   /* Tabs tracks get a faint edge, drawn inside so a scrolling tab row
      cannot clip it. */
   [data-surface="app"] [data-slot="tabs-list"][data-variant="default"] {
-    @apply inset-ring-1 inset-ring-border/60;
+    @apply inset-ring-(length:--hairline) inset-ring-border/60;
   }
   /* The phone's status bar height, which the booking page's pinned bars
      keep clear of: the phone's own (viewport-fit=cover in app/layout.tsx),
@@ -445,4 +446,10 @@
    layers on purpose: the stock sidebar draws it with a border-r utility. */
 [data-slot="sidebar-container"][data-side="left"] {
   border-right-width: var(--hairline);
+}
+
+/* The owner area's rows (Item, outline) take the cards' hairline edge.
+   Outside the layers too: Item draws its edge with a border utility. */
+[data-surface="app"] [data-slot="item"][data-variant="outline"] {
+  border-width: var(--hairline);
 }
