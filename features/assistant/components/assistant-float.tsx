@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 
 import { FloatingLink } from "@/components/floating-link"
-import { useGlobeOpening } from "@/components/globe-opening"
+import { GLOBE_MARK, useGlobeOpening } from "@/components/globe-opening"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -124,7 +124,7 @@ export function AssistantFloat({
       ))}
     >
       {/* Measured for where the opening starts. */}
-      <div ref={globe} className="size-full">
+      <div ref={globe} {...GLOBE_MARK} className="size-full">
         <VoiceGlobe className="size-full" />
       </div>
     </FloatingLink>

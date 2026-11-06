@@ -68,21 +68,9 @@ export const ASSISTANT_RULES = {
   // one starts the next does.
   floatIdeasFadeOutMs: 2600,
   floatIdeasFadeOutGapMs: 1300,
-  // A globe opening the Assistant (the computer's floating one, the phone's
-  // tab bar one; components/globe-opening.tsx), short enough to enjoy every
-  // time: it starts at once and settles softly (the screen is covered at
-  // globeOpenCoveredMs, when the page behind it changes), turns into the page's
-  // own colour, then fades away. It waits at most globeOpenWaitMs for the page.
-  // It grows to globeOpenCover times the way to the screen's farthest corner,
-  // so its lit edge stays off the screen.
-  globeOpenGrowMs: 750,
-  globeOpenGrowEase: "cubic-bezier(0.4, 0, 0.2, 1)",
-  globeOpenCoveredMs: 500,
-  globeOpenWashDelayMs: 380,
-  globeOpenWashMs: 340,
-  globeOpenFadeMs: 400,
+  // A globe opening the Assistant (components/globe-opening.tsx, where each
+  // way to open has its timing): it waits at most this long for the page.
   globeOpenWaitMs: 3000,
-  globeOpenCover: 1.1,
   // The grown globe's moving colours are drawn with at most this many pixels
   // (a full-HD screen), so a phone keeps up; they are soft, so it doesn't show.
   globeOpenMaxPixels: 1920 * 1080,
