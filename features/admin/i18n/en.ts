@@ -25,6 +25,7 @@ const words = {
     serviceCategories: "Service categories",
     translations: "Translations",
     plans: "Plans",
+    subscriptions: "Subscriptions",
   },
   whatsapp: {
     partsLabel: "WhatsApp parts",
@@ -155,6 +156,7 @@ const words = {
         cancelled: "Booking cancelled",
         late: "Too late",
         unsubscribed: "Customer opted out",
+        clientChoice: "Client picked another way",
         templateNotApproved: "Waiting for Meta",
         badPhone: "Wrong number",
         interrupted: "Stopped midway",
@@ -434,6 +436,28 @@ const words = {
     bookings: "{n, plural, one {# booking} other {# bookings}}",
     open: "Open {name}'s page",
   },
+  // Every paid plan, live and ended (docs/plans/subscriptions.md, P7).
+  subscriptions: {
+    none: "No subscriptions yet",
+    noOwner: "No owner",
+    monthly: "Monthly",
+    yearly: "Yearly",
+    renews: "Renews {date}",
+    ends: "Ends {date}",
+    ended: "Ended {date}",
+    customer: "Customer",
+    open: "Open {name}'s subscription in Stripe",
+    status: {
+      active: "Active",
+      trialing: "Trial",
+      past_due: "Payment failed",
+      unpaid: "Unpaid",
+      incomplete: "Not paid yet",
+      incomplete_expired: "Expired",
+      paused: "Paused",
+      canceled: "Canceled",
+    },
+  },
   // Which plan has which feature (docs/plans/subscriptions.md, P0).
   plans: {
     plans: { free: "Free", pro: "Pro" },
@@ -600,6 +624,19 @@ const words = {
       clientReminder: "Client: visit reminder",
       clientReviewAsk: "Client: asked for a review",
     } as const satisfies Record<InAppKind, string>,
+    // How clients get their visit reminders (client account D16).
+    clientReminders: {
+      title: "Client reminders",
+      channels: {
+        whatsapp: "{n, plural, one {# chose WhatsApp} other {# chose WhatsApp}}",
+        email: "{n, plural, one {# chose email} other {# chose email}}",
+        bell: "{n, plural, one {# chose the bell only} other {# chose the bell only}}",
+      },
+      othersWhatsapp: "Everyone else: WhatsApp",
+      emails: "Emails sent",
+      none: "No reminder emails yet",
+      states: { sending: "Sending", sent: "Sent", failed: "Didn't go" },
+    },
   },
   assistant: {
     none: "No cards waiting",

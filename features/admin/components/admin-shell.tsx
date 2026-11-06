@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
 import {
+  BanknoteIcon,
   BellIcon,
   CalendarDaysIcon,
   ContactIcon,
@@ -44,6 +45,7 @@ const NAV = [
   { path: "/translations", key: "translations", icon: LanguagesIcon },
   { path: "/assistant", key: "assistant", icon: SparklesIcon },
   { path: "/plans", key: "plans", icon: CreditCardIcon },
+  { path: "/subscriptions", key: "subscriptions", icon: BanknoteIcon },
 ] as const
 
 // The admin area, built like the owner dashboard: the same menu (folding on
