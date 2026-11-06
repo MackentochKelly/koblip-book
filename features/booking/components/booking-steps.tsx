@@ -581,47 +581,56 @@ export function DetailsStep({
     <form
       id={formId}
       noValidate
+      // Its own section, the summary's twin, with room above it.
+      className="mt-4"
       onSubmit={(event) => {
         event.preventDefault()
         onSubmit({ name: name.trim(), phone: phone.trim() })
       }}
     >
-      <FieldGroup>
-        <Field data-invalid={error === "name" || undefined}>
-          <FieldLabel htmlFor="booking-name">{t("name")}</FieldLabel>
-          <Input
-            {...noAutofill("booking_name")}
-            id="booking-name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            disabled={sending}
-            maxLength={BOOKING_RULES.maxCustomerName}
-            aria-invalid={error === "name" || undefined}
-          />
-          {error === "name" && <FieldError>{t("addName")}</FieldError>}
-        </Field>
-        <Field data-invalid={error === "phone" || undefined}>
-          <div className="flex items-center gap-1">
-            <FieldLabel htmlFor="booking-phone">{t("phone")}</FieldLabel>
-            {whatsappFrom && (
-              <InfoTip label={t("whatsappAbout")}>
-                {t("whatsappNotice", { business: whatsappFrom })}
-              </InfoTip>
-            )}
-          </div>
-          <PhoneInput
-            {...noAutofill("booking_phone")}
-            id="booking-phone"
-            value={phone}
-            onChange={setPhone}
-            disabled={sending}
-            maxLength={25}
-            aria-invalid={error === "phone" || undefined}
-            locale={locale}
-          />
-          {error === "phone" && <FieldError>{t("checkPhone")}</FieldError>}
-        </Field>
-      </FieldGroup>
+      <Card variant="muted">
+        <CardHeader>
+          <CardTitle>{t("contactTitle")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FieldGroup>
+            <Field data-invalid={error === "name" || undefined}>
+              <FieldLabel htmlFor="booking-name">{t("name")}</FieldLabel>
+              <Input
+                {...noAutofill("booking_name")}
+                id="booking-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                disabled={sending}
+                maxLength={BOOKING_RULES.maxCustomerName}
+                aria-invalid={error === "name" || undefined}
+              />
+              {error === "name" && <FieldError>{t("addName")}</FieldError>}
+            </Field>
+            <Field data-invalid={error === "phone" || undefined}>
+              <div className="flex items-center gap-1">
+                <FieldLabel htmlFor="booking-phone">{t("phone")}</FieldLabel>
+                {whatsappFrom && (
+                  <InfoTip label={t("whatsappAbout")}>
+                    {t("whatsappNotice", { business: whatsappFrom })}
+                  </InfoTip>
+                )}
+              </div>
+              <PhoneInput
+                {...noAutofill("booking_phone")}
+                id="booking-phone"
+                value={phone}
+                onChange={setPhone}
+                disabled={sending}
+                maxLength={25}
+                aria-invalid={error === "phone" || undefined}
+                locale={locale}
+              />
+              {error === "phone" && <FieldError>{t("checkPhone")}</FieldError>}
+            </Field>
+          </FieldGroup>
+        </CardContent>
+      </Card>
     </form>
   )
 }

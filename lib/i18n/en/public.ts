@@ -121,6 +121,7 @@ const words = {
     tomorrow: "Tomorrow",
     day: "Day",
     moreDates: "More dates",
+    contactTitle: "Contact info",
     name: "Name",
     phone: "Phone",
     addName: "Add your name",
