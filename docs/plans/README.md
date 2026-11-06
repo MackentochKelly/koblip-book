@@ -20,6 +20,7 @@ current.
 | [Customer accounts](customer-accounts.md) | In progress |
 | [Service categories](service-categories.md) | Done |
 | [Translations (Google)](translations.md) | To do |
+| [App subscriptions](subscriptions.md) | To do |
 
 ## How to work with a plan
 
