@@ -174,7 +174,11 @@ export function DashboardShell({
                     size="icon-lg"
                     className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
                     aria-label={addLabel}
-                    disabled={!action || action.disabled}
+                    // Until the page hands over its action (while it loads,
+                    // or as it closes) the + keeps its look and a tap does
+                    // nothing; it greys out only when the page says so.
+                    disabled={action?.disabled === true}
+                    aria-disabled={action ? undefined : true}
                     onClick={action?.onClick}
                   >
                     <PlusIcon className="size-6" />
