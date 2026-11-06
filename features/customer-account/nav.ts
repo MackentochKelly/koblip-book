@@ -1,5 +1,11 @@
-import { CalendarDaysIcon, SettingsIcon, UserIcon } from "@/components/ui/icons"
 import {
+  CalendarDaysIcon,
+  SettingsIcon,
+  StoreIcon,
+  UserIcon,
+} from "@/components/ui/icons"
+import {
+  ACCOUNT_PLACES_PATH,
   ACCOUNT_PROFILE_PATH,
   ACCOUNT_SETTINGS_PATH,
   MY_BOOKINGS_PATH,
@@ -10,6 +16,7 @@ import {
 // its page under app/(customer)/account.
 export const ACCOUNT_NAV = [
   { href: MY_BOOKINGS_PATH, key: "bookings", icon: CalendarDaysIcon },
+  { href: ACCOUNT_PLACES_PATH, key: "places", icon: StoreIcon },
   { href: ACCOUNT_PROFILE_PATH, key: "profile", icon: UserIcon },
   { href: ACCOUNT_SETTINGS_PATH, key: "settings", icon: SettingsIcon },
 ] as const

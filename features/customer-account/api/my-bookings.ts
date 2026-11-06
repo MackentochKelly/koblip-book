@@ -49,6 +49,26 @@ export async function myBooking(
   return booking ?? null
 }
 
+// Each business's first photo, as on its page.
+export async function firstPhotos(
+  businessIds: string[]
+): Promise<Map<string, string>> {
+  const photos = new Map<string, string>()
+  if (!businessIds.length) return photos
+  const found = await db
+    .select({
+      businessId: businessPhotos.businessId,
+      url: businessPhotos.url,
+    })
+    .from(businessPhotos)
+    .where(inArray(businessPhotos.businessId, [...new Set(businessIds)]))
+    .orderBy(businessPhotos.position)
+  for (const photo of found) {
+    if (!photos.has(photo.businessId)) photos.set(photo.businessId, photo.url)
+  }
+  return photos
+}
+
 async function loadBookings(
   customer: CustomerSession,
   locale: string,
@@ -62,6 +82,7 @@ async function loadBookings(
       endAt: bookings.endAt,
       status: bookings.status,
       moves: bookings.moves,
+      serviceId: bookings.serviceId,
       serviceName: bookings.serviceName,
       teamMemberName: bookings.teamMemberName,
       durationMinutes: bookings.durationMinutes,
@@ -98,25 +119,7 @@ async function loadBookings(
         .orderBy(bookingAddons.position)
     : []
 
-  // Each business's first photo, as on its page.
-  const photos = new Map<string, string>()
-  if (rows.length) {
-    const found = await db
-      .select({
-        businessId: businessPhotos.businessId,
-        url: businessPhotos.url,
-      })
-      .from(businessPhotos)
-      .where(
-        inArray(businessPhotos.businessId, [
-          ...new Set(rows.map((row) => row.business.id)),
-        ])
-      )
-      .orderBy(businessPhotos.position)
-    for (const photo of found) {
-      if (!photos.has(photo.businessId)) photos.set(photo.businessId, photo.url)
-    }
-  }
+  const photos = await firstPhotos(rows.map((row) => row.business.id))
 
   // For what is still ahead: what "Can't make it" does at each business,
   // and the bookings the customer already said it for (at their time now).
@@ -179,6 +182,7 @@ async function loadBookings(
       },
       cantCome: open ? (cantCome.get(row.business.id) ?? null) : null,
       saidCantCome: said.has(`${row.id}:${row.moves}`),
+      serviceId: row.serviceId,
       serviceName: row.serviceName,
       addons: addons
         .filter((addon) => addon.bookingId === row.id)

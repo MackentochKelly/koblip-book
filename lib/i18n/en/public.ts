@@ -178,8 +178,14 @@ const words = {
     menu: "Menu",
     nav: {
       bookings: "Bookings",
+      places: "Places",
       profile: "Profile",
       settings: "Settings",
+    },
+    // The businesses the client has booked with (D13).
+    places: {
+      none: "No places yet",
+      last: "Last booked {when}",
     },
     profile: {
       photo: "Your photo",

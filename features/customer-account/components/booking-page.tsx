@@ -21,7 +21,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import { rescheduleHref } from "@/lib/my-bookings-links"
+import { bookAgainHref, rescheduleHref } from "@/lib/my-bookings-links"
 import { languageOf } from "@/lib/page-language"
 import type { MyBooking } from "../types"
 import { AddToCalendar } from "./add-to-calendar"
@@ -153,7 +153,13 @@ export function BookingPage({ booking }: { booking: MyBooking }) {
             className="self-end"
             nativeButton={false}
             render={
-              <Link href={`/b/${booking.business.slug}?lang=${language}`} />
+              <Link
+                href={bookAgainHref(
+                  booking.business.slug,
+                  booking.serviceId,
+                  language
+                )}
+              />
             }
           >
             {t("account.bookAgain")}

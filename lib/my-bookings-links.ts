@@ -7,9 +7,23 @@ import type { PageLanguage } from "./page-language"
 export const MY_BOOKINGS_PATH = "/account"
 export const ACCOUNT_PROFILE_PATH = "/account/profile"
 export const ACCOUNT_SETTINGS_PATH = "/account/settings"
+export const ACCOUNT_PLACES_PATH = "/account/places"
 // The profile with the add-phone panel open (the empty Bookings page's
 // action: bookings made with that phone then show).
 export const ACCOUNT_ADD_PHONE_PATH = "/account/profile?phone=add"
+
+// "Book again" (D13): the business's booking with the same service picked,
+// or its page when that service is gone.
+export function bookAgainHref(
+  slug: string,
+  serviceId: string | null,
+  language: PageLanguage
+): string {
+  const lang = `lang=${encodeURIComponent(language)}`
+  return serviceId
+    ? `/b/${slug}/book?service=${encodeURIComponent(serviceId)}&${lang}`
+    : `/b/${slug}?${lang}`
+}
 
 // One booking's own page in the client account (D11).
 export function accountBookingHref(bookingId: string): string {

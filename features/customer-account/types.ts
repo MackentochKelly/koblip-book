@@ -1,5 +1,14 @@
 import type { CalendarEvent } from "@/lib/booking-calendar"
 
+// One business the client has booked with (D13), from their bookings.
+export interface MyPlace {
+  business: MyBooking["business"]
+  // The latest booking there: its day and time, and its service for
+  // "Book again".
+  lastWhen: string
+  serviceId: string | null
+}
+
 // One booking on the customer's own page.
 export interface MyBooking {
   id: string
@@ -16,6 +25,8 @@ export interface MyBooking {
   // (cancels, or tells the owner), and whether they already said it.
   cantCome: "cancel" | "alertOnly" | null
   saidCantCome: boolean
+  // Null once the business removed the service.
+  serviceId: string | null
   serviceName: string
   addons: string[]
   teamMemberName: string | null

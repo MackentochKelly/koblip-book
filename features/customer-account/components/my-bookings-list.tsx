@@ -3,13 +3,6 @@ import { useTranslations } from "next-intl"
 
 import { PageSection } from "@/components/page-section"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  Empty,
-  EmptyContent,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty"
 import {
   Item,
   ItemActions,
@@ -19,11 +12,9 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import {
-  ACCOUNT_ADD_PHONE_PATH,
-  accountBookingHref,
-} from "@/lib/my-bookings-links"
+import { accountBookingHref } from "@/lib/my-bookings-links"
 import type { MyBooking } from "../types"
+import { AccountEmpty } from "./account-empty"
 import { BusinessAvatar, useBookingFacts } from "./booking-facts"
 
 // One booking, opening its own page (D11), where it can be moved, called
@@ -72,23 +63,7 @@ export function MyBookingsList({
 }) {
   const t = useTranslations("public.account")
   if (upcoming.length === 0 && past.length === 0) {
-    return (
-      <Empty>
-        <EmptyHeader>
-          <EmptyTitle>{t("none")}</EmptyTitle>
-        </EmptyHeader>
-        {addPhone && (
-          <EmptyContent>
-            <Button
-              nativeButton={false}
-              render={<Link href={ACCOUNT_ADD_PHONE_PATH} />}
-            >
-              {t("profile.addPhone")}
-            </Button>
-          </EmptyContent>
-        )}
-      </Empty>
-    )
+    return <AccountEmpty title={t("none")} addPhone={addPhone} />
   }
   return (
     <div className="flex w-full flex-col gap-8">
