@@ -101,6 +101,12 @@ How to use this file: [Plans](README.md).
   `locked`; background work (WhatsApp flows) skips. (Backend dev)
 - **S13. No trial** (O2): the plugin's `freeTrial` stays off, and P6 sends
   no trial emails. (Backend dev, 2026-11-06)
+- **S14. Prices before tax** (`tax_behavior: exclusive`): $19 is the
+  price, and Stripe Tax adds tax on top where it's owed, as US software
+  prices usually show. Set in the sandbox on 2026-11-06: product
+  `koblip_pro` (tax code `txcd_10103001`), prices `koblip_pro_monthly`
+  ($19/month) and `koblip_pro_yearly` ($190/year). Live mode gets the same
+  in P3. (Backend dev)
 - **S8. Secrets** `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` only in
   `.env.local`; Stripe test mode on the Mac, live keys only on the server.
 
@@ -140,4 +146,5 @@ How to use this file: [Plans](README.md).
 | 2026-11-06 | Backend dev | S10: defaults and the change log |
 | 2026-11-06 | Owner | Plans page: no change log; group chips; the app's switcher |
 | 2026-11-06 | Owner | O1–O3: $19/month or $190/year; no trial; free stays free |
+| 2026-11-06 | Backend dev | S14: prices before tax; Pro product and prices made in the Stripe sandbox |
 | 2026-11-06 | Backend dev | S11, S12: nothing locks before billing; only checked features move |
