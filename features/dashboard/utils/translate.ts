@@ -19,6 +19,7 @@ export type TranslationField =
   | "addon.description"
   | "team_member.description"
   | "team_member.about"
+  | "policy.title"
   | "policy.body"
   | "policy_point.title"
   | "policy_point.body"
@@ -62,7 +63,8 @@ export function collectTranslatableTexts(
   serviceRows: { id: string; name: string; description: string | null }[],
   addonRows: AddonTranslatableRows = { groups: [], options: [] },
   teamRows: { id: string; description: string | null; about?: string | null }[] = [],
-  policyRows: { id: string; body: string }[] = [],
+  // title: the owner's own policy's; a standard one has none.
+  policyRows: { id: string; title?: string | null; body: string }[] = [],
   pointRows: { id: string; title: string; body: string }[] = [],
   serviceCategoryRows: { id: string; name: string }[] = []
 ): TranslatableText[] {
@@ -150,6 +152,14 @@ export function collectTranslatableTexts(
     }
   }
   for (const policy of policyRows) {
+    if (policy.title && policy.title.trim() !== "") {
+      all.push({
+        id: translationId(policy.id, "policy.title"),
+        entityId: policy.id,
+        field: "policy.title",
+        text: policy.title,
+      })
+    }
     if (policy.body.trim() !== "") {
       all.push({
         id: translationId(policy.id, "policy.body"),
@@ -273,6 +283,9 @@ function limitForId(id: string): number {
   }
   if (field === "policy_point.body") {
     return Math.ceil(POLICY_RULES.maxPointBody * 1.5)
+  }
+  if (field === "policy.title") {
+    return Math.ceil(POLICY_RULES.maxTitle * 1.5)
   }
   if (field === "policy.body") {
     return Math.ceil(POLICY_RULES.maxLength * 1.5)

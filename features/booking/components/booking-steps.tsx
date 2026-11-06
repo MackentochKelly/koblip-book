@@ -58,6 +58,7 @@ import { formatPrice } from "@/lib/format-price"
 import { formatClock, formatDay, todayIn } from "@/lib/format-booking-time"
 import type { Messages } from "@/lib/i18n"
 import { initials } from "@/lib/initials"
+import { policySegment } from "@/lib/policy-rules"
 import { groupServices, showsGroups } from "@/lib/service-groups"
 import { cn } from "@/lib/utils"
 import type { Availability } from "../types"
@@ -770,16 +771,18 @@ export function PoliciesStep({
 }) {
   const m = useMessages()
   const language = m.locale.startsWith("es") ? "es" : "en"
-  const links = policies.documents.map((kind) => (
-    <span key={kind}>
-      {m.policies.articles[kind]}{" "}
+  // A standard policy takes its article ("the", "la"); the owner's own goes
+  // by its title alone, since its article can't be known.
+  const links = policies.documents.map((policy) => (
+    <span key={policy.id}>
+      {policy.kind && <>{m.policies.articles[policy.kind]} </>}
       <a
-        href={`/b/${slug}/policies/${kind}?lang=${language}`}
+        href={`/b/${slug}/policies/${policySegment(policy)}?lang=${language}`}
         target="_blank"
         rel="noreferrer"
         className="font-medium text-foreground underline underline-offset-4"
       >
-        {m.policies[kind]}
+        {policy.kind ? m.policies[policy.kind] : policy.title}
       </a>
     </span>
   ))

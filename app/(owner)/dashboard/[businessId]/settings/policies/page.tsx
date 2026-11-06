@@ -24,7 +24,7 @@ export default async function PoliciesPage({ params }: Props) {
       <PoliciesSection
         businessId={businessId}
         slug={business.slug}
-        policies={policies.texts}
+        policies={policies.policies}
       />
       <PolicyPointsSection businessId={businessId} points={policies.points} />
     </div>

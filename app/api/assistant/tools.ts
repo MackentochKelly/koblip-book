@@ -52,7 +52,9 @@ import {
   reorderBusinessPhotos,
 } from "@/features/dashboard/api/photo-actions"
 import {
+  removePolicy,
   removePolicyPoint,
+  saveOwnPolicy,
   savePolicy,
   savePolicyPoint,
 } from "@/features/dashboard/api/policy-actions"
@@ -138,6 +140,7 @@ import { THEMES } from "@/lib/theme-rules"
 import { bookingActions } from "@/features/dashboard/utils/booking-filters"
 import type {
   OwnerBooking,
+  OwnerPolicy,
   OwnerPolicyPoint,
   PolicyPointInput,
   ServiceInput,
@@ -1500,19 +1503,71 @@ export function buildAssistantTools(
     }
     return { booking, status }
   }
-  // Shared checks for save_policy. An empty body removes the policy.
-  const checkPolicyArgs = (
+  // Shared checks for save_policy. kind: a standard policy, added or
+  // replaced. No kind: the owner's own, a new one (title needed) or, with
+  // policyId, one of theirs (title kept when not given). current: the
+  // policy being changed, null when adding.
+  const checkPolicyArgs = async (
     args: unknown
-  ): { kind: (typeof POLICY_KINDS)[number]; body: string } | { error: string } => {
-    const a = asRecord(args)
-    if (!a || !isPolicyKind(a.kind)) {
-      return { error: t.errors.policyKindInvalid }
+  ): Promise<
+    | {
+        kind: (typeof POLICY_KINDS)[number] | null
+        current: OwnerPolicy | null
+        title: string | null
+        body: string
+      }
+    | { error: string }
+  > => {
+    const a = asRecord(args) ?? {}
+    const body = typeof a.body === "string" ? a.body.trim() : ""
+    if (body === "") {
+      return { error: t.errors.policyBodyRequired }
     }
-    if (typeof a.body !== "string" || a.body.trim().length > POLICY_RULES.maxLength) {
+    if (body.length > POLICY_RULES.maxLength) {
       return { error: t.errors.policyTooLong(POLICY_RULES.maxLength) }
     }
-    return { kind: a.kind, body: a.body.trim() }
+    const { policies } = await getPolicies(businessId)
+    const full = policies.length >= POLICY_RULES.maxPolicies
+    if (a.kind !== undefined && a.kind !== null && a.kind !== "") {
+      if (!isPolicyKind(a.kind)) {
+        return { error: t.errors.policyKindInvalid }
+      }
+      const current = policies.find((policy) => policy.kind === a.kind) ?? null
+      if (!current && full) {
+        return { error: t.errors.policiesFull(POLICY_RULES.maxPolicies) }
+      }
+      return { kind: a.kind, current, title: null, body }
+    }
+    let current: OwnerPolicy | null = null
+    if (typeof a.policyId === "string" && a.policyId !== "") {
+      current =
+        policies.find(
+          (policy) => policy.id === a.policyId && policy.kind === null
+        ) ?? null
+      if (!current) {
+        return { error: t.errors.policyUnknown }
+      }
+    } else if (full) {
+      return { error: t.errors.policiesFull(POLICY_RULES.maxPolicies) }
+    }
+    const title =
+      typeof a.title === "string" && a.title.trim() !== ""
+        ? a.title.trim()
+        : (current?.title ?? "")
+    if (title === "") {
+      return { error: t.errors.policyTitleRequired }
+    }
+    if (title.length > POLICY_RULES.maxTitle) {
+      return { error: t.errors.policyTitleTooLong(POLICY_RULES.maxTitle) }
+    }
+    return { kind: null, current, title, body }
   }
+  // A policy's name for a confirm card: a standard one's in the owner
+  // area's words, the owner's own by its title.
+  const policyName = (policy: Pick<OwnerPolicy, "kind" | "title">) =>
+    policy.kind
+      ? ownerWords.settings.policies.kinds[policy.kind]
+      : (policy.title ?? "")
   // Shared checks for save_policy_point: no pointId adds one; with one, only
   // the given fields change.
   const checkPolicyPointArgs = async (
@@ -4632,7 +4687,7 @@ export function buildAssistantTools(
       definition: {
         name: "list_policies",
         description:
-          "The booking policy, terms and privacy notice as written ('' when not written), and the key points customers agree to, with their ids.",
+          "The policies on the business page, with their ids: the standard ones (kind booking, terms or privacy) and the owner's own (kind null, with a title); a standard one missing from the list is not on the page. Then the key points customers agree to, with their ids.",
         parameters: schema({}),
         needsConfirm: false,
       },
@@ -4643,13 +4698,21 @@ export function buildAssistantTools(
     {
       definition: {
         name: "save_policy",
-        description: `Save the booking policy, terms or privacy notice. body replaces the whole text, at most ${POLICY_RULES.maxLength} characters; an empty body removes it from the page. Read it with list_policies first when changing part of it. Needs the owner's tap.`,
+        description: `Add or change a policy on the business page. With kind (booking, terms or privacy): add that standard policy or replace its text. Without kind: the owner's own policy, a new one (title needed) or, with policyId from list_policies, one of theirs (title only when renaming it). body is the whole text, at most ${POLICY_RULES.maxLength} characters; title at most ${POLICY_RULES.maxTitle}. At most ${POLICY_RULES.maxPolicies} policies in all. Read it with list_policies first when changing part of it. Remove one with remove_policy. Needs the owner's tap.`,
         parameters: schema(
           {
             kind: { type: "string", enum: [...POLICY_KINDS] },
+            policyId: {
+              type: "string",
+              description: "Id of one of the owner's own policies, from list_policies",
+            },
+            title: {
+              type: "string",
+              description: "The owner's own policy's title",
+            },
             body: { type: "string", description: "The whole new text" },
           },
-          ["kind", "body"]
+          ["body"]
         ),
         needsConfirm: true,
         resultKind: "policies",
@@ -4659,49 +4722,108 @@ export function buildAssistantTools(
       run: async () => ({ error: t.tapFirst.savePolicy }),
       confirm: {
         describe: async (args: unknown) => {
-          const checked = checkPolicyArgs(args)
+          const checked = await checkPolicyArgs(args)
           if ("error" in checked) {
             return checked
           }
-          const { texts } = await getPolicies(businessId)
-          if (texts[checked.kind] === checked.body) {
+          const { kind, current, title, body } = checked
+          if (
+            current &&
+            current.body === body &&
+            (kind !== null || current.title === title)
+          ) {
             return { error: t.errors.nothingToChange }
           }
-          const name = ownerWords.settings.policies.kinds[checked.kind]
-          if (checked.body === "") {
-            return {
-              title: t.cards.removePolicy,
-              action: t.actions.removePolicy,
-              summary: name,
-              destructive: true,
-            }
-          }
+          const name =
+            current && kind === null && current.title !== title
+              ? `${current.title} → ${title}`
+              : policyName({ kind, title })
           // The whole text: it goes live on the page as the owner's words.
           return {
-            title: t.cards.savePolicy,
-            action: t.actions.savePolicy,
-            summary: `${name} · ${checked.body}`,
+            title: current ? t.cards.savePolicy : t.cards.addPolicy,
+            action: current ? t.actions.savePolicy : t.actions.addPolicy,
+            summary: `${name} · ${body}`,
             destructive: false,
           }
         },
         execute: async (args: unknown) => {
-          const checked = checkPolicyArgs(args)
+          const checked = await checkPolicyArgs(args)
           if ("error" in checked) {
-            return { ok: false, doneText: t.savePolicy.invalid }
+            return {
+              ok: false,
+              doneText:
+                checked.error === t.errors.policyUnknown
+                  ? t.savePolicy.unknown
+                  : t.savePolicy.failed(checked.error),
+            }
           }
-          const result = await savePolicy(
-            businessId,
-            checked.kind,
-            checked.body
-          )
+          const { kind, current, title, body } = checked
+          const result =
+            kind !== null
+              ? await savePolicy(businessId, kind, body)
+              : await saveOwnPolicy(businessId, current?.id ?? null, {
+                  title: title ?? "",
+                  body,
+                })
           if (!result.ok) {
             return { ok: false, doneText: t.savePolicy.failed(result.error) }
           }
           return {
             ok: true,
-            doneText:
-              checked.body === "" ? t.savePolicy.removed : t.savePolicy.done,
+            doneText: current ? t.savePolicy.done : t.savePolicy.added,
           }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "remove_policy",
+        description:
+          "Take one policy off the business page for good, a standard one or the owner's own. Use the id from list_policies. Needs the owner's tap.",
+        parameters: schema(
+          { policyId: { type: "string", description: "Id from list_policies" } },
+          ["policyId"]
+        ),
+        needsConfirm: true,
+        resultKind: "policies",
+      },
+      label: t.steps.removePolicy,
+      doneLabel: t.stepsDone.removePolicy,
+      run: async () => ({ error: t.tapFirst.removePolicy }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const policyId = asRecord(args)?.policyId
+          if (typeof policyId !== "string" || policyId === "") {
+            return { error: t.errors.policyIdRequired }
+          }
+          const { policies } = await getPolicies(businessId)
+          const policy = policies.find((p) => p.id === policyId)
+          if (!policy) {
+            return { error: t.errors.policyUnknown }
+          }
+          return {
+            title: t.cards.removePolicy,
+            action: t.actions.removePolicy,
+            summary: policyName(policy),
+            destructive: true,
+          }
+        },
+        execute: async (args: unknown) => {
+          const policyId = asRecord(args)?.policyId
+          if (typeof policyId !== "string" || policyId === "") {
+            return { ok: false, doneText: t.savePolicy.unknown }
+          }
+          const result = await removePolicy(businessId, policyId)
+          if (!result.ok) {
+            return {
+              ok: false,
+              doneText:
+                result.error === "not_found"
+                  ? t.savePolicy.unknown
+                  : t.savePolicy.failed(result.error),
+            }
+          }
+          return { ok: true, doneText: t.savePolicy.removed }
         },
       },
     },

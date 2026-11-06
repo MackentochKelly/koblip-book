@@ -223,6 +223,18 @@ test("collectTranslatableTexts adds each policy that has text", () => {
   ])
 })
 
+test("collectTranslatableTexts adds the owner's own policy's title", () => {
+  const all = collectTranslatableTexts("biz-1", null, null, [], undefined, [], [
+    { id: "pol-1", title: null, body: "Cancel a day ahead." },
+    { id: "pol-2", title: "Late arrivals", body: "Ten minutes." },
+  ])
+  expect(all.map((item) => [item.entityId, item.field])).toEqual([
+    ["pol-1", "policy.body"],
+    ["pol-2", "policy.title"],
+    ["pol-2", "policy.body"],
+  ])
+})
+
 test("translationBatches splits by count and by length, in order", () => {
   const short = Array.from({ length: 45 }, (_, i) => ({ text: `t${i}` }))
   expect(translationBatches(short).map((batch) => batch.length)).toEqual([40, 5])

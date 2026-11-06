@@ -43,5 +43,8 @@ export interface BusinessDetailsInput { name: string; address: string | null; de
 // Settings > Policies: the three texts ("" = not on the page) and the key
 // points the booking flow asks customers to agree to.
 export interface OwnerPolicyPoint { id: string; icon: PolicyPointIcon; title: string; body: string }
-export interface OwnerPolicies { texts: Record<PolicyKind, string>; points: OwnerPolicyPoint[] }
+// One policy on the page: a standard kind (title null) or the owner's own (kind null).
+export interface OwnerPolicy { id: string; kind: PolicyKind | null; title: string | null; body: string }
+export interface OwnerPolicies { policies: OwnerPolicy[]; points: OwnerPolicyPoint[] }
+export interface OwnPolicyInput { title: string; body: string }
 export interface PolicyPointInput { icon: PolicyPointIcon; title: string; body: string }

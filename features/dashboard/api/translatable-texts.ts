@@ -58,7 +58,11 @@ export async function loadTranslatableTexts(
       .from(teamMembers)
       .where(eq(teamMembers.businessId, business.id)),
     db
-      .select({ id: businessPolicies.id, body: businessPolicies.body })
+      .select({
+        id: businessPolicies.id,
+        title: businessPolicies.title,
+        body: businessPolicies.body,
+      })
       .from(businessPolicies)
       .where(eq(businessPolicies.businessId, business.id)),
     db

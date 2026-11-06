@@ -54,6 +54,7 @@ const messages: typeof en = {
     reorderTeam: "Ordenando el equipo…",
     reorderAddons: "Ordenando extras…",
     savePolicy: "Guardando política…",
+    removePolicy: "Quitando política…",
     savePolicyPoint: "Guardando punto clave…",
     removePolicyPoint: "Quitando punto clave…",
     theme: "Cambiando el tema…",
@@ -112,6 +113,7 @@ const messages: typeof en = {
     reorderTeam: "Equipo ordenado",
     reorderAddons: "Extras ordenados",
     savePolicy: "Política guardada",
+    removePolicy: "Política quitada",
     savePolicyPoint: "Punto clave guardado",
     removePolicyPoint: "Punto clave quitado",
     theme: "Tema cambiado",
@@ -180,6 +182,7 @@ const messages: typeof en = {
     reorderTeam: "ordenar el equipo necesita tu toque primero",
     reorderAddons: "ordenar los extras necesita tu toque primero",
     savePolicy: "cambiar una política necesita tu toque primero",
+    removePolicy: "quitar una política necesita tu toque primero",
     savePolicyPoint: "cambiar un punto clave necesita tu toque primero",
     removePolicyPoint: "quitar un punto clave necesita tu toque primero",
     theme: "cambiar el tema necesita tu toque primero",
@@ -225,6 +228,7 @@ const messages: typeof en = {
     reorderServiceCategories: "¿Cambiar el orden de las categorías?",
     reorderTeam: "¿Cambiar el orden del equipo?",
     reorderAddons: "¿Cambiar el orden de los extras?",
+    addPolicy: "¿Agregar esta política?",
     savePolicy: "¿Guardar esta política?",
     removePolicy: "¿Quitar esta política?",
     addPolicyPoint: "¿Agregar este punto clave?",
@@ -272,6 +276,7 @@ const messages: typeof en = {
     translate: "Traducir",
     deletePhoto: "Eliminar",
     reorder: "Guardar",
+    addPolicy: "Agregar",
     savePolicy: "Guardar",
     removePolicy: "Quitar",
     addPolicyPoint: "Agregar",
@@ -486,7 +491,9 @@ const messages: typeof en = {
     invalid: "No se pudo guardar: texto de la política incorrecto.",
     failed: (error: string) => `No se pudo guardar la política (${error}).`,
     done: "Política guardada.",
+    added: "Política agregada.",
     removed: "Política quitada.",
+    unknown: "No se pudo: política desconocida.",
   },
   policyPoint: {
     unknown: "No se pudo guardar: punto clave desconocido.",
@@ -662,6 +669,17 @@ const messages: typeof en = {
       `lista cada id de ${source} una sola vez, en el nuevo orden`,
     policyKindInvalid: "kind debe ser booking, terms o privacy",
     policyTooLong: (max: number) => `body debe tener como máximo ${max} caracteres`,
+    policyBodyRequired: "body es obligatorio: el texto completo de la política",
+    policyUnknown:
+      "id de política desconocido: llama a list_policies y usa el id de una política propia del dueño (kind null)",
+    policyIdRequired:
+      "policyId es obligatorio: llama a list_policies y usa un id de la lista",
+    policyTitleRequired:
+      "title es obligatorio para una política propia del dueño (sin kind)",
+    policyTitleTooLong: (max: number) =>
+      `title debe tener como máximo ${max} caracteres`,
+    policiesFull: (max: number) =>
+      `ya hay ${max} políticas: cambia o quita una primero`,
     pointUnknown:
       "id de punto clave desconocido: llama a list_policies y usa un id de la lista",
     pointIdRequired:

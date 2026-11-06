@@ -19,7 +19,7 @@ import {
 } from "@/lib/db/schema"
 import { DEFAULT_LANGUAGE, type PageLanguage } from "@/lib/page-language"
 import { placePhotoUrl } from "@/lib/place-photo"
-import { POLICY_KINDS } from "@/lib/policy-rules"
+import { orderPolicies, type PolicyLink } from "@/lib/policy-rules"
 import type { Amenity, BusinessPageData, PagePhoto, PageReview } from "../types"
 import { mapAmenities } from "../utils/map-amenities"
 
@@ -273,7 +273,12 @@ async function loadBusinessPage(
         .from(serviceAddonGroups)
         .where(eq(serviceAddonGroups.businessId, business.id)),
       db
-        .select({ kind: businessPolicies.kind })
+        .select({
+          id: businessPolicies.id,
+          kind: businessPolicies.kind,
+          title: businessPolicies.title,
+          createdAt: businessPolicies.createdAt,
+        })
         .from(businessPolicies)
         .where(eq(businessPolicies.businessId, business.id)),
       db
@@ -314,6 +319,9 @@ async function loadBusinessPage(
   let pageCategories = categoryRows
   let pageTeam = team
   let pagePoints = pointRows
+  let pagePolicies: PolicyLink[] = orderPolicies(policyRows).map(
+    ({ id, kind, title }) => ({ id, kind, title })
+  )
   if (language === "es") {
     const byKey = new Map(
       translationRows.map((row) => [`${row.entityId}\n${row.field}`, row])
@@ -360,6 +368,13 @@ async function loadBusinessPage(
       return row && row.sourceText === member.description
         ? { ...member, description: row.text }
         : member
+    })
+    // The owner's own policies' titles; a standard one's name is the page's.
+    pagePolicies = pagePolicies.map((policy) => {
+      const row = byKey.get(`${policy.id}\npolicy.title`)
+      return row && row.sourceText === policy.title
+        ? { ...policy, title: row.text }
+        : policy
     })
     pagePoints = pointRows.map((point) => {
       const titleRow = byKey.get(`${point.id}\npolicy_point.title`)
@@ -474,10 +489,8 @@ async function loadBusinessPage(
     language,
     serviceTeams,
     addonGroups: pageAddonGroups,
-    // In POLICY_KINDS order, so the footer links never move.
-    policies: POLICY_KINDS.filter((kind) =>
-      policyRows.some((row) => row.kind === kind)
-    ),
+    // In lib/policy-rules' one order, so the footer links never move.
+    policies: pagePolicies,
     policyPoints: pagePoints,
   }
 }

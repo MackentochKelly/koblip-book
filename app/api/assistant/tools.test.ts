@@ -74,6 +74,8 @@ vi.mock("@/features/dashboard/api/photo-actions", () => ({
 }))
 vi.mock("@/features/dashboard/api/policy-actions", () => ({
   savePolicy: vi.fn(),
+  saveOwnPolicy: vi.fn(),
+  removePolicy: vi.fn(),
   savePolicyPoint: vi.fn(),
   removePolicyPoint: vi.fn(),
 }))
@@ -179,8 +181,13 @@ const { translateBusiness } =
   await import("@/features/dashboard/api/translation-actions")
 const { deleteBusinessPhoto, reorderBusinessPhotos } =
   await import("@/features/dashboard/api/photo-actions")
-const { removePolicyPoint, savePolicy, savePolicyPoint } =
-  await import("@/features/dashboard/api/policy-actions")
+const {
+  removePolicy,
+  removePolicyPoint,
+  saveOwnPolicy,
+  savePolicy,
+  savePolicyPoint,
+} = await import("@/features/dashboard/api/policy-actions")
 const { getPolicies } = await import("@/features/dashboard/api/policy-queries")
 const { activateTheme } = await import("@/features/dashboard/api/theme-actions")
 const { saveMessageWording, saveNotificationSettings, setMessageOn } =
@@ -255,6 +262,7 @@ test("every needsConfirm tool carries its result kind", () => {
     ["reorder_team", "team"],
     ["reorder_addons", "services"],
     ["save_policy", "policies"],
+    ["remove_policy", "policies"],
     ["save_policy_point", "policies"],
     ["remove_policy_point", "policies"],
     ["change_theme", "theme"],
@@ -3670,16 +3678,21 @@ test("the reorder tools show the new order and need the whole list", async () =>
 })
 
 const POLICIES = {
-  texts: { booking: "Old text", terms: "", privacy: "" },
+  policies: [
+    { id: "p1", kind: "booking", title: null, body: "Old text" },
+    { id: "p9", kind: null, title: "Late arrivals", body: "Ten minutes." },
+  ],
   points: [
     { id: "q1", icon: "clock", title: "Arrive early", body: "Ten minutes." },
   ],
 } as never
 
-test("save_policy shows the whole text, and an empty one removes it", async () => {
+test("save_policy adds or replaces a standard one, and adds or changes the owner's own", async () => {
   vi.mocked(getPolicies).mockResolvedValue(POLICIES)
   vi.mocked(savePolicy).mockResolvedValue({ ok: true })
+  vi.mocked(saveOwnPolicy).mockResolvedValue({ ok: true })
   const tool = byName("save_policy")
+  // A standard one on the page: its whole new text.
   expect(
     await tool.confirm!.describe({ kind: "booking", body: " New text " })
   ).toEqual({
@@ -3689,17 +3702,50 @@ test("save_policy shows the whole text, and an empty one removes it", async () =
     destructive: false,
   })
   expect(vi.mocked(savePolicy)).not.toHaveBeenCalled()
-  expect(await tool.confirm!.describe({ kind: "booking", body: "" })).toEqual({
-    title: "Remove this policy?",
-    action: "Remove",
-    summary: "Booking policy",
-    destructive: true,
+  // A standard one not on the page yet is added.
+  expect(await tool.confirm!.describe({ kind: "terms", body: "Terms" })).toMatchObject({
+    title: "Add this policy?",
+    action: "Add",
+  })
+  expect(await tool.confirm!.execute({ kind: "terms", body: "Terms" })).toEqual({
+    ok: true,
+    doneText: "Policy added.",
+  })
+  expect(vi.mocked(savePolicy)).toHaveBeenCalledWith("b1", "terms", "Terms")
+  // The owner's own: a new one needs a title.
+  const adding = { title: "Deposits", body: "Half when booking." }
+  expect(await tool.confirm!.describe(adding)).toEqual({
+    title: "Add this policy?",
+    action: "Add",
+    summary: "Deposits · Half when booking.",
+    destructive: false,
+  })
+  await tool.confirm!.execute(adding)
+  expect(vi.mocked(saveOwnPolicy)).toHaveBeenCalledWith("b1", null, adding)
+  expect(await tool.confirm!.describe({ body: "x" })).toEqual({
+    error: expect.stringContaining("title"),
+  })
+  // One of theirs, renamed: the title is kept when not given.
+  expect(
+    await tool.confirm!.describe({ policyId: "p9", title: "Being late", body: "Ten minutes." })
+  ).toMatchObject({
+    title: "Save this policy?",
+    summary: "Late arrivals → Being late · Ten minutes.",
+  })
+  await tool.confirm!.execute({ policyId: "p9", body: "Five minutes." })
+  expect(vi.mocked(saveOwnPolicy)).toHaveBeenLastCalledWith("b1", "p9", {
+    title: "Late arrivals",
+    body: "Five minutes.",
+  })
+  // A standard one can't be changed through policyId.
+  expect(await tool.confirm!.describe({ policyId: "p1", body: "x" })).toEqual({
+    error: expect.stringContaining("list_policies"),
   })
   expect(
-    await tool.confirm!.execute({ kind: "booking", body: "" })
-  ).toEqual({ ok: true, doneText: "Policy removed." })
-  expect(await tool.confirm!.describe({ kind: "terms", body: "" })).toEqual({
-    error: "Nothing to change.",
+    await tool.confirm!.describe({ policyId: "p9", body: "Ten minutes." })
+  ).toEqual({ error: "Nothing to change." })
+  expect(await tool.confirm!.describe({ kind: "booking", body: "" })).toEqual({
+    error: expect.stringContaining("body"),
   })
   expect(await tool.confirm!.describe({ kind: "nope", body: "x" })).toEqual({
     error: expect.stringContaining("kind"),
@@ -3707,6 +3753,55 @@ test("save_policy shows the whole text, and an empty one removes it", async () =
   expect(
     await tool.confirm!.describe({ kind: "terms", body: "x".repeat(3001) })
   ).toEqual({ error: expect.stringContaining("3000") })
+  // Full: nothing more is added, though one on the page still changes.
+  vi.mocked(getPolicies).mockResolvedValue({
+    policies: Array.from({ length: 10 }, (_, n) =>
+      n === 0
+        ? { id: "p1", kind: "booking", title: null, body: "Old text" }
+        : { id: `o${n}`, kind: null, title: `Own ${n}`, body: "x" }
+    ),
+    points: [],
+  } as never)
+  expect(await tool.confirm!.describe(adding)).toEqual({
+    error: expect.stringContaining("already 10"),
+  })
+  expect(await tool.confirm!.describe({ kind: "terms", body: "x" })).toEqual({
+    error: expect.stringContaining("already 10"),
+  })
+  expect(
+    await tool.confirm!.describe({ kind: "booking", body: "New" })
+  ).toMatchObject({ title: "Save this policy?" })
+})
+
+test("remove_policy takes off a standard one or the owner's own", async () => {
+  vi.mocked(getPolicies).mockResolvedValue(POLICIES)
+  vi.mocked(removePolicy).mockResolvedValue({ ok: true })
+  const tool = byName("remove_policy")
+  expect(await tool.confirm!.describe({ policyId: "p1" })).toEqual({
+    title: "Remove this policy?",
+    action: "Remove",
+    summary: "Booking policy",
+    destructive: true,
+  })
+  expect(await tool.confirm!.describe({ policyId: "p9" })).toMatchObject({
+    summary: "Late arrivals",
+  })
+  expect(await tool.confirm!.execute({ policyId: "p9" })).toEqual({
+    ok: true,
+    doneText: "Policy removed.",
+  })
+  expect(vi.mocked(removePolicy)).toHaveBeenCalledWith("b1", "p9")
+  expect(await tool.confirm!.describe({ policyId: "nope" })).toEqual({
+    error: expect.stringContaining("list_policies"),
+  })
+  expect(await tool.confirm!.describe({})).toEqual({
+    error: expect.stringContaining("policyId"),
+  })
+  vi.mocked(removePolicy).mockResolvedValue({ ok: false, error: "not_found" })
+  expect(await tool.confirm!.execute({ policyId: "nope" })).toEqual({
+    ok: false,
+    doneText: "Could not do it: unknown policy.",
+  })
 })
 
 test("save_policy_point adds one, or changes only the given fields", async () => {
@@ -3744,7 +3839,7 @@ test("save_policy_point adds one, or changes only the given fields", async () =>
     error: expect.stringContaining("icon"),
   })
   vi.mocked(getPolicies).mockResolvedValue({
-    texts: {},
+    policies: [],
     points: [1, 2, 3, 4].map((n) => ({
       id: `q${n}`,
       icon: "info",
@@ -4114,11 +4209,14 @@ test("spanish cards for the new tools use the owner area's own names", async () 
   expect(byNameLang("move_booking", "es").label).toBe("Moviendo reserva…")
   vi.mocked(getPolicies).mockResolvedValue(POLICIES)
   expect(
-    await byNameLang("save_policy", "es").confirm!.describe({
-      kind: "booking",
-      body: "",
+    await byNameLang("remove_policy", "es").confirm!.describe({
+      policyId: "p1",
     })
-  ).toMatchObject({ title: "¿Quitar esta política?", action: "Quitar" })
+  ).toMatchObject({
+    title: "¿Quitar esta política?",
+    action: "Quitar",
+    summary: "Política de reservas",
+  })
 })
 
 // A new tool that changes something has to be added here on purpose: only

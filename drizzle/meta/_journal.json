@@ -379,6 +379,13 @@
       "when": 1793966185673,
       "tag": "0053_service_category_color",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "6",
+      "when": 1793978495650,
+      "tag": "0054_own_policies",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import type { PageLanguage } from "@/lib/page-language"
-import type { PolicyKind, PolicyPointIcon } from "@/lib/policy-rules"
+import type { PolicyLink, PolicyPointIcon } from "@/lib/policy-rules"
 import type {
   businessHours,
   businessPhotos,
@@ -73,8 +73,9 @@ export interface BusinessPageData {
   // service missing from the record is done by everyone.
   serviceTeams: Record<string, string[]>
   addonGroups: { id: string; prompt: string; minSelect: number; maxSelect: number | null; serviceIds: string[]; options: { id: string; name: string; description: string | null; priceMinor: number | null; durationMinutes: number }[] }[]
-  // The business's policies that have text, linked from the footer.
-  policies: PolicyKind[]
+  // The business's policies, linked from the footer and the booking flow's
+  // last step, in lib/policy-rules' order.
+  policies: PolicyLink[]
   // Its key policy points, agreed to in the booking flow's last step.
   policyPoints: PolicyPoint[]
 }

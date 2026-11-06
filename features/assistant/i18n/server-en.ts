@@ -56,6 +56,7 @@ const messages = {
     reorderTeam: "Ordering team…",
     reorderAddons: "Ordering extras…",
     savePolicy: "Saving policy…",
+    removePolicy: "Removing policy…",
     savePolicyPoint: "Saving key point…",
     removePolicyPoint: "Removing key point…",
     theme: "Changing theme…",
@@ -114,6 +115,7 @@ const messages = {
     reorderTeam: "Ordered team",
     reorderAddons: "Ordered extras",
     savePolicy: "Saved policy",
+    removePolicy: "Removed policy",
     savePolicyPoint: "Saved key point",
     removePolicyPoint: "Removed key point",
     theme: "Changed theme",
@@ -181,6 +183,7 @@ const messages = {
     reorderTeam: "ordering the team needs the owner's tap first",
     reorderAddons: "ordering extras needs the owner's tap first",
     savePolicy: "changing a policy needs the owner's tap first",
+    removePolicy: "removing a policy needs the owner's tap first",
     savePolicyPoint: "changing a key point needs the owner's tap first",
     removePolicyPoint: "removing a key point needs the owner's tap first",
     theme: "changing the theme needs the owner's tap first",
@@ -226,6 +229,7 @@ const messages = {
     reorderServiceCategories: "Change the category order?",
     reorderTeam: "Change the team order?",
     reorderAddons: "Change the extras order?",
+    addPolicy: "Add this policy?",
     savePolicy: "Save this policy?",
     removePolicy: "Remove this policy?",
     addPolicyPoint: "Add this key point?",
@@ -273,6 +277,7 @@ const messages = {
     translate: "Translate",
     deletePhoto: "Delete",
     reorder: "Save",
+    addPolicy: "Add",
     savePolicy: "Save",
     removePolicy: "Remove",
     addPolicyPoint: "Add",
@@ -483,7 +488,9 @@ const messages = {
     invalid: "Could not save: bad policy text.",
     failed: (error: string) => `Could not save the policy (${error}).`,
     done: "Policy saved.",
+    added: "Policy added.",
     removed: "Policy removed.",
+    unknown: "Could not do it: unknown policy.",
   },
   policyPoint: {
     unknown: "Could not save: unknown key point.",
@@ -656,6 +663,17 @@ const messages = {
       `list every id from ${source} exactly once, in the new order`,
     policyKindInvalid: "kind must be booking, terms or privacy",
     policyTooLong: (max: number) => `body must be at most ${max} characters`,
+    policyBodyRequired: "body is required: the policy's whole text",
+    policyUnknown:
+      "unknown policy id: call list_policies and use the id of one of the owner's own policies (kind null)",
+    policyIdRequired:
+      "policyId is required: call list_policies and use an id from the list",
+    policyTitleRequired:
+      "title is required for the owner's own policy (no kind)",
+    policyTitleTooLong: (max: number) =>
+      `title must be at most ${max} characters`,
+    policiesFull: (max: number) =>
+      `there are already ${max} policies: change or remove one first`,
     pointUnknown:
       "unknown key point id: call list_policies and use an id from the list",
     pointIdRequired:

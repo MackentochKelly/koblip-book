@@ -234,8 +234,9 @@ export const teamMemberHours = sqliteTable(
   (table) => [index("team_member_hours_member_idx").on(table.teamMemberId, table.weekday)]
 )
 
-// A business's booking policy, terms and privacy notice (lib/policy-rules),
-// plain text, one row per kind. No row (or an empty one) hides it.
+// A business's policies on its page (lib/policy-rules), plain text: its
+// booking policy, terms and privacy notice (one row per kind at most), and
+// the owner's own (no kind, a title of their own). No row: not on the page.
 export const businessPolicies = sqliteTable(
   "business_policies",
   {
@@ -243,11 +244,16 @@ export const businessPolicies = sqliteTable(
     businessId: text()
       .notNull()
       .references(() => businesses.id, { onDelete: "cascade" }),
-    kind: text({ enum: POLICY_KINDS }).notNull(),
+    // null: the owner's own policy.
+    kind: text({ enum: POLICY_KINDS }),
+    // The owner's own policy's title; null for a standard one.
+    title: text(),
     body: text().notNull(),
     ...timestamps(),
   },
   (table) => [
+    // SQLite counts every NULL as different, so a business keeps one row
+    // per standard kind and as many of its own as it likes.
     uniqueIndex("business_policies_business_kind_idx").on(
       table.businessId,
       table.kind

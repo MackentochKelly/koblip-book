@@ -5,18 +5,15 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeftIcon } from "@/components/ui/icons"
 import { messagesFor } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
-import type { PolicyKind } from "@/lib/policy-rules"
 import type { BusinessPolicy } from "../api/get-business-policy"
 
 // One of a business's policies on its own page: a way back to the business,
 // the title, when it last changed, and the text in a readable column. The
 // text is plain; a blank line starts a new paragraph.
 export function PolicyDocument({
-  kind,
   policy,
   language,
 }: {
-  kind: PolicyKind
   policy: BusinessPolicy
   language: PageLanguage
 }) {
@@ -54,7 +51,7 @@ export function PolicyDocument({
       </div>
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold tracking-tight text-balance">
-          {m.policies[kind]}
+          {policy.title}
         </h1>
         <p className="text-sm text-muted-foreground">
           {m.policies.updated}: {updated}

@@ -4,7 +4,7 @@ import type {
   teamMembers,
 } from "@/lib/db/schema"
 import { directionsUrl } from "@/lib/directions-url"
-import type { PolicyKind, PolicyPointIcon } from "@/lib/policy-rules"
+import type { PolicyLink, PolicyPointIcon } from "@/lib/policy-rules"
 import { checkAddons } from "../utils/addons"
 
 type ServiceRow = typeof services.$inferSelect
@@ -79,7 +79,7 @@ export interface BookingPolicyPoint {
 // What the customer agrees to in the last step: the key points as cards,
 // and the policies they link to. Both empty: no such step.
 export interface BookingPolicies {
-  documents: PolicyKind[]
+  documents: PolicyLink[]
   points: BookingPolicyPoint[]
 }
 
@@ -154,7 +154,7 @@ export function toBookingPage(data: {
   addonGroups: BookingAddonGroup[]
   whatsapp: boolean
   manageBookings: boolean
-  policies: PolicyKind[]
+  policies: PolicyLink[]
   policyPoints: BookingPolicyPoint[]
 }): BookingPage {
   return {
