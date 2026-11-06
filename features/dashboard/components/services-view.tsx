@@ -70,7 +70,7 @@ import {
   OTHER_GROUP,
   showsGroups,
 } from "@/lib/service-groups"
-import { ListFilters } from "@/components/list-filters"
+import { FilterChips } from "@/components/filter-chips"
 import {
   createService,
   deleteService,
@@ -181,7 +181,7 @@ export function ServicesView({
   const [categoryTaken, setCategoryTaken] = useState(false)
   const [removingCategory, setRemovingCategory] =
     useState<OwnerServiceCategory | null>(null)
-  // The categories ticked in the filter (OTHER_GROUP for Other); none = all.
+  // The category chips that are on (OTHER_GROUP for Other); none = all.
   const [shownCategories, setShownCategories] = useState<string[]>([])
 
   const openForm = (
@@ -211,8 +211,8 @@ export function ServicesView({
   // one group of every service, shown as the flat list it always was.
   const groups = groupServices(services, categories, { keepEmpty: true })
   const grouped = showsGroups(groups)
-  // The Categories filter: every group there is, in order. A ticked one
-  // since removed no longer counts.
+  // The category chips: every group there is, in order. One that is on
+  // and since removed no longer counts.
   const groupKey = (category: OwnerServiceCategory | null) =>
     category?.id ?? OTHER_GROUP
   const categoryOptions = groups.map(({ category }) => ({
@@ -224,9 +224,6 @@ export function ServicesView({
   )
   const shows = (category: OwnerServiceCategory | null) =>
     ticked.length === 0 || ticked.includes(groupKey(category))
-  const shownCount = groups
-    .filter(({ category }) => shows(category))
-    .reduce((sum, group) => sum + group.services.length, 0)
   // Up or down inside its group; the server gets every service in the new
   // shown order.
   const move = (groupIndex: number, index: number, by: number) => {
@@ -448,35 +445,11 @@ export function ServicesView({
       />
 
       {view === "services" && grouped && (
-        <ListFilters
-          filters={[
-            {
-              key: "categories",
-              label: k.filter,
-              control: (
-                <AppSelect
-                  multiple
-                  options={categoryOptions}
-                  value={ticked}
-                  onValueChange={setShownCategories}
-                  placeholder={k.filter}
-                  aria-label={k.filter}
-                  className="w-full md:w-auto"
-                />
-              ),
-            },
-          ]}
-          count={ticked.length > 0 ? 1 : 0}
-          onClear={() => setShownCategories([])}
-          rowClear={
-            ticked.length > 0 ? () => setShownCategories([]) : undefined
-          }
-          words={{
-            filters: k.filters,
-            clearAll: k.clearAll,
-            clear: k.clear,
-            showResults: k.showResults(shownCount),
-          }}
+        <FilterChips
+          label={k.filter}
+          options={categoryOptions}
+          value={ticked}
+          onValueChange={setShownCategories}
         />
       )}
 

@@ -53,7 +53,7 @@ How to use this file: [Plans](README.md).
 | C9 | Optional: a category colour that becomes the Google Calendar colour of its services that have none | C3 | Done (2026-11-06) |
 | C10 | Optional: "Top categories" in Analytics | C2 | Done (2026-11-06) |
 | C11 | A Categories filter on the Bookings list, beside Services (Other included), only once there are categories; asked by the owner 2026-11-06 | C5 | Done (2026-11-06) |
-| C12 | A Categories filter on the owner Services screen (Other included), in the shared filters row, only once there are categories; asked by the owner 2026-11-06 | C3 | Done (2026-11-06) |
+| C12 | A Categories filter on the owner Services screen (Other included), only once there are categories: a row of category chips under the Services / Extras tabs that scrolls sideways, several on at once, styled like the home page's "Made for" pills; asked by the owner 2026-11-06 | C3 | Done (2026-11-06) |
 
 ## Build order (several builders, asked by the owner 2026-11-06)
 
@@ -90,7 +90,7 @@ How to use this file: [Plans](README.md).
 | Service colour option, when its category has a colour (C9) | Category's colour | Color de la categoría |
 | Analytics card (C10) | Top categories | Categorías más pedidas |
 | Bookings filter (C11) | Categories | Categorías |
-| Services filter (C12) | Categories · Filters · Clear all · Clear · Show 3 services | Categorías · Filtros · Borrar todo · Borrar · Ver 3 servicios |
+| Services category chips, for screen readers (C12) | Categories | Categorías |
 
 ## Decisions log
 
@@ -103,7 +103,7 @@ How to use this file: [Plans](README.md).
 | Categories have their own position; services keep theirs, read inside their category; Move up and Move down in ⋮ menus | `reorderServices` keeps its contract; same as services today and Vagaro's arrows | M Kelly B, 2026-11-06 |
 | No "Featured" tab on the public page | There is no featured flag | M Kelly B, 2026-11-06 |
 | One Services filter, grouped by category | One filter instead of two | M Kelly B, 2026-11-06 |
-| The Services screen's category filter is the shared filters row (ListFilters), like Bookings: a row control on a computer, the Filters sheet on a phone | One filters pattern for every list | M Kelly B, 2026-11-06 |
+| The Services screen's category filter is a row of chips (shared `FilterChips`: shadcn's ToggleGroup, several on, none = all) under the tabs, not the Filters button | The owner asked for chips like the "Made for" pills, one tap and in view; a chip that is on is filled with the main colour, like a chosen time, so the filtered list is clear | M Kelly B, 2026-11-06 |
 | Also a Categories filter on Bookings (C11), next to the grouped Services filter | The owner asked to pick a whole category at once; the help pages of Fresha and Square show no such filter | M Kelly B, 2026-11-06 |
 | Starter catalog saves categories only when there are 2 or more | A one-kind business stays flat; a draft never fails on categories | M Kelly B, 2026-11-06 |
 | One grouping helper in `lib/` and all words written in C2 | Four parts group services; features can't import each other, and parallel builders must not edit the same files | M Kelly B, 2026-11-06 |

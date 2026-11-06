@@ -80,11 +80,6 @@ const catalog: typeof en = {
     removed: "Categoría quitada",
     movesToOther: "Sus servicios pasan a Otros.",
     filter: "Categorías",
-    filters: "Filtros",
-    clearAll: "Borrar todo",
-    clear: "Borrar",
-    showResults: (count: number) =>
-      count === 1 ? "Ver 1 servicio" : `Ver ${count} servicios`,
   },
   extras: {
     suggested: "Extras sugeridos",

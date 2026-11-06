@@ -164,27 +164,30 @@ test("with categories each group has its heading, Other last", () => {
   ).toBeNull()
 })
 
-test("the Categories filter shows only the ticked ones, Other included", async () => {
+test("the category chips show only the ones that are on, Other included", async () => {
   view(
     [service("Fade", "c1"), service("Wax"), service("Gel", "c2")],
     [hair, nails]
   )
-  const filter = screen.getByRole("combobox", { name: "Categories" })
-  fireEvent.click(filter)
-  // A real click starts on the item (Base UI ignores one that doesn't).
-  for (const name of ["Nails", "Other"]) {
-    const option = await screen.findByRole("option", { name })
-    fireEvent.pointerDown(option, { pointerType: "mouse" })
-    fireEvent.click(option)
-  }
+  const chips = screen.getByRole("group", { name: "Categories" })
+  const chip = (name: string) => within(chips).getByRole("button", { name })
+  expect(
+    within(chips)
+      .getAllByRole("button")
+      .map((button) => button.textContent)
+  ).toEqual(["Hair", "Nails", "Other"])
+  for (const name of ["Nails", "Other"]) fireEvent.click(chip(name))
   await waitFor(() => expect(headings()).toEqual(["Nails", "Other"]))
-  fireEvent.click(screen.getByRole("button", { name: "Clear" }))
-  expect(headings()).toEqual(["Hair", "Nails", "Other"])
+  expect(chip("Nails").getAttribute("aria-pressed")).toBe("true")
+  expect(chip("Hair").getAttribute("aria-pressed")).toBe("false")
+  // Turning every chip off again shows them all.
+  for (const name of ["Nails", "Other"]) fireEvent.click(chip(name))
+  await waitFor(() => expect(headings()).toEqual(["Hair", "Nails", "Other"]))
 })
 
-test("without categories there is no Categories filter", () => {
+test("without categories there are no category chips", () => {
   view([service("Fade"), service("Wax")])
-  expect(screen.queryByRole("combobox", { name: "Categories" })).toBeNull()
+  expect(screen.queryByRole("group", { name: "Categories" })).toBeNull()
 })
 
 test("a service moves inside its group, with every id sent", async () => {
