@@ -41,7 +41,8 @@ export function AccountShell({
     active:
       item.href === MY_BOOKINGS_PATH
         ? pathname === item.href ||
-          pathname.startsWith(`${MY_BOOKINGS_PATH}/reschedule`)
+          pathname.startsWith(`${MY_BOOKINGS_PATH}/reschedule`) ||
+          pathname.startsWith(`${MY_BOOKINGS_PATH}/bookings`)
         : pathname.startsWith(item.href),
   }))
   return (

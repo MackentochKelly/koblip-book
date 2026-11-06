@@ -7,6 +7,14 @@ import type { PageLanguage } from "./page-language"
 export const MY_BOOKINGS_PATH = "/account"
 export const ACCOUNT_PROFILE_PATH = "/account/profile"
 export const ACCOUNT_SETTINGS_PATH = "/account/settings"
+// The profile with the add-phone panel open (the empty Bookings page's
+// action: bookings made with that phone then show).
+export const ACCOUNT_ADD_PHONE_PATH = "/account/profile?phone=add"
+
+// One booking's own page in the client account (D11).
+export function accountBookingHref(bookingId: string): string {
+  return `/account/bookings/${encodeURIComponent(bookingId)}`
+}
 
 // The one login page everyone uses, in the page's language, coming back to
 // the client's bookings.

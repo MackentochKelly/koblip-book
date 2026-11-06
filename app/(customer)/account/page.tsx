@@ -7,6 +7,7 @@ import { ClaimBooking } from "@/features/customer-account/components/claim-booki
 import { MyBookingsList } from "@/features/customer-account/components/my-bookings-list"
 import { getCustomer } from "@/lib/customer-dal"
 import { myBookingsLoginHref } from "@/lib/my-bookings-links"
+import { phoneSignInReady } from "@/lib/phone-sign-in"
 import { languageOf } from "@/lib/page-language"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -25,7 +26,11 @@ export default async function AccountBookingsPage() {
   return (
     <>
       <ClaimBooking />
-      <MyBookingsList upcoming={upcoming} past={past} />
+      <MyBookingsList
+        upcoming={upcoming}
+        past={past}
+        addPhone={!customer.phone && phoneSignInReady()}
+      />
     </>
   )
 }

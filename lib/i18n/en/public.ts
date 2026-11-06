@@ -224,6 +224,15 @@ const words = {
     moving: "Moving…",
     moved: "Booking moved",
     timeTaken: "That time was just taken. Pick another one.",
+    // One booking's page (docs/plans/client-account.md, D11).
+    booking: {
+      title: "Your visit",
+      when: "When",
+      service: "Service",
+      price: "Price",
+      note: "Your note",
+      map: "Map",
+    },
   },
   // The home page (Koblip Book's own page for owners).
   home: {

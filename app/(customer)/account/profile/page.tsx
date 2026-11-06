@@ -14,8 +14,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("profile") }
 }
 
-// The client's own name, photo, email and phone.
-export default async function AccountProfilePage() {
+// The client's own name, photo, email and phone. `?phone=add` opens the
+// phone panel (the empty Bookings page's action).
+export default async function AccountProfilePage({
+  searchParams,
+}: PageProps<"/account/profile">) {
+  const { phone: openPhone } = await searchParams
   const session = await getSession()
   if (!session || session.isGuest) {
     redirect(myBookingsLoginHref(await getOwnerLanguage()))
@@ -31,6 +35,7 @@ export default async function AccountProfilePage() {
           session.phone)
       }
       phoneCodes={phoneSignInReady()}
+      openPhone={openPhone === "add"}
     />
   )
 }

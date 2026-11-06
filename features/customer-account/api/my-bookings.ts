@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq, inArray } from "drizzle-orm"
+import { and, desc, eq, inArray, type SQL } from "drizzle-orm"
 
 import { cantComeSettingsFor } from "@/lib/customer-cant-come"
 import { ownBookings } from "@/lib/customer-bookings"
@@ -25,6 +25,36 @@ export async function myBookings(
   locale: string,
   now: Date = new Date()
 ): Promise<{ upcoming: MyBooking[]; past: MyBooking[] }> {
+  const list = await loadBookings(customer, locale, now)
+  const upcoming = list.filter((booking) => booking.ahead).reverse()
+  const past = list.filter((booking) => !booking.ahead)
+  // Soonest first for what is ahead; the newest first for the rest.
+  return { upcoming, past }
+}
+
+// One of the customer's own bookings, for its page (D11); null when it
+// isn't theirs.
+export async function myBooking(
+  customer: CustomerSession,
+  bookingId: string,
+  locale: string,
+  now: Date = new Date()
+): Promise<MyBooking | null> {
+  const [booking] = await loadBookings(
+    customer,
+    locale,
+    now,
+    eq(bookings.id, bookingId)
+  )
+  return booking ?? null
+}
+
+async function loadBookings(
+  customer: CustomerSession,
+  locale: string,
+  now: Date,
+  only?: SQL
+): Promise<MyBooking[]> {
   const rows = await db
     .select({
       id: bookings.id,
@@ -36,6 +66,7 @@ export async function myBookings(
       durationMinutes: bookings.durationMinutes,
       priceMinor: bookings.priceMinor,
       currency: bookings.currency,
+      note: bookings.note,
       business: {
         id: businesses.id,
         slug: businesses.slug,
@@ -46,7 +77,7 @@ export async function myBookings(
     })
     .from(bookings)
     .innerJoin(businesses, eq(businesses.id, bookings.businessId))
-    .where(and(ownBookings(customer), eq(businesses.isDemo, false)))
+    .where(and(ownBookings(customer), eq(businesses.isDemo, false), only))
     .orderBy(desc(bookings.startAt))
     .limit(LIMIT)
 
@@ -120,12 +151,11 @@ export async function myBookings(
       : []
   )
 
-  const upcoming: MyBooking[] = []
-  const past: MyBooking[] = []
-  for (const row of rows) {
+  return rows.map((row) => {
     const start = new Date(row.startAt)
     const open = row.status === "confirmed" && start > now
-    const booking: MyBooking = {
+    const cancelled = row.status === "cancelled"
+    return {
       id: row.id,
       when: new Intl.DateTimeFormat(locale, {
         weekday: "short",
@@ -135,7 +165,9 @@ export async function myBookings(
         minute: "2-digit",
         timeZone: row.business.timezone,
       }).format(start),
-      cancelled: row.status === "cancelled",
+      cancelled,
+      ahead: start > now && !cancelled,
+      note: row.note,
       cantCome: open ? (cantCome.get(row.business.id) ?? null) : null,
       saidCantCome: said.has(`${row.id}:${row.moves}`),
       serviceName: row.serviceName,
@@ -153,10 +185,5 @@ export async function myBookings(
         address: row.business.address,
       },
     }
-    if (start > now && !booking.cancelled) upcoming.push(booking)
-    else past.push(booking)
-  }
-  // Soonest first for what is ahead; the newest first for the rest.
-  upcoming.reverse()
-  return { upcoming, past }
+  })
 }

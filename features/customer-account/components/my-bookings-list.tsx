@@ -1,74 +1,40 @@
 import Link from "next/link"
-import { useLocale, useTranslations } from "next-intl"
+import { useTranslations } from "next-intl"
 
 import { PageSection } from "@/components/page-section"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ButtonGroup } from "@/components/ui/button-group"
-import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
-import { StoreIcon } from "@/components/ui/icons"
+import {
+  Empty,
+  EmptyContent,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import {
   Item,
   ItemActions,
   ItemContent,
   ItemDescription,
-  ItemFooter,
   ItemGroup,
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import { useFormatDuration } from "@/hooks/use-format-duration"
-import { rescheduleHref } from "@/lib/my-bookings-links"
-import { formatPrice } from "@/lib/format-price"
-import { languageOf } from "@/lib/page-language"
+import {
+  ACCOUNT_ADD_PHONE_PATH,
+  accountBookingHref,
+} from "@/lib/my-bookings-links"
 import type { MyBooking } from "../types"
-import { CantComeButton } from "./cant-come-button"
+import { BusinessAvatar, useBookingFacts } from "./booking-facts"
 
-// One booking. What is ahead carries its "Can't make it"; what is over
-// opens the business's page, to book again.
-function BookingRow({
-  booking,
-  ahead,
-}: {
-  booking: MyBooking
-  ahead: boolean
-}) {
-  const t = useTranslations("public")
-  const locale = useLocale()
-  const language = languageOf(locale)
-  const formatDuration = useFormatDuration()
-  const price =
-    booking.priceMinor === null
-      ? null
-      : booking.priceMinor === 0
-        ? t("booking.free")
-        : formatPrice(booking.priceMinor, booking.currency, locale)
-  const details = [
-    formatDuration(booking.durationMinutes),
-    booking.teamMemberName &&
-      t("booking.with", { name: booking.teamMemberName }),
-  ]
-    .filter(Boolean)
-    .join(" · ")
+// One booking, opening its own page (D11), where it can be moved, called
+// off or booked again.
+function BookingRow({ booking }: { booking: MyBooking }) {
+  const t = useTranslations("public.account")
+  const { price, service, details } = useBookingFacts(booking)
   return (
-    <Item
-      variant="box"
-      render={
-        ahead ? undefined : (
-          <Link href={`/b/${booking.business.slug}?lang=${language}`} />
-        )
-      }
-    >
+    <Item variant="box" render={<Link href={accountBookingHref(booking.id)} />}>
       <ItemMedia>
-        <Avatar size="lg">
-          {booking.business.photoUrl && (
-            <AvatarImage src={booking.business.photoUrl} alt="" />
-          )}
-          <AvatarFallback>
-            <StoreIcon className="size-5" />
-          </AvatarFallback>
-        </Avatar>
+        <BusinessAvatar business={booking.business} />
       </ItemMedia>
       <ItemContent className="min-w-0">
         <ItemTitle className="w-full truncate">
@@ -76,45 +42,33 @@ function BookingRow({
         </ItemTitle>
         <ItemDescription className="truncate">{booking.when}</ItemDescription>
         <ItemDescription className="truncate">
-          {[
-            booking.serviceName,
-            ...booking.addons.map((addon) => `+ ${addon}`),
-          ].join(" ")}
+          {service}
           {details && ` · ${details}`}
         </ItemDescription>
       </ItemContent>
       <ItemActions className="flex-col items-end gap-1">
         {booking.cancelled && (
-          <Badge variant="destructive">{t("account.cancelled")}</Badge>
+          <Badge variant="destructive">{t("cancelled")}</Badge>
         )}
         {price && <span className="text-sm tabular-nums">{price}</span>}
       </ItemActions>
-      {ahead && booking.cantCome && (
-        <ItemFooter className="justify-end">
-          <ButtonGroup>
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={<Link href={rescheduleHref(booking.id)} />}
-            >
-              {t("account.reschedule")}
-            </Button>
-            <CantComeButton booking={booking} />
-          </ButtonGroup>
-        </ItemFooter>
-      )}
     </Item>
   )
 }
 
 // The customer's bookings at every business: what is ahead first, then the
 // rest.
+// With none at all, its one action: add the phone the client books with,
+// so those bookings show (`addPhone`, when the account has none and codes
+// can be sent).
 export function MyBookingsList({
   upcoming,
   past,
+  addPhone,
 }: {
   upcoming: MyBooking[]
   past: MyBooking[]
+  addPhone: boolean
 }) {
   const t = useTranslations("public.account")
   if (upcoming.length === 0 && past.length === 0) {
@@ -123,6 +77,16 @@ export function MyBookingsList({
         <EmptyHeader>
           <EmptyTitle>{t("none")}</EmptyTitle>
         </EmptyHeader>
+        {addPhone && (
+          <EmptyContent>
+            <Button
+              nativeButton={false}
+              render={<Link href={ACCOUNT_ADD_PHONE_PATH} />}
+            >
+              {t("profile.addPhone")}
+            </Button>
+          </EmptyContent>
+        )}
       </Empty>
     )
   }
@@ -132,7 +96,7 @@ export function MyBookingsList({
         {upcoming.length ? (
           <ItemGroup className="gap-3">
             {upcoming.map((booking) => (
-              <BookingRow key={booking.id} booking={booking} ahead />
+              <BookingRow key={booking.id} booking={booking} />
             ))}
           </ItemGroup>
         ) : (
@@ -143,7 +107,7 @@ export function MyBookingsList({
         <PageSection id="past" title={t("past")}>
           <ItemGroup className="gap-3">
             {past.map((booking) => (
-              <BookingRow key={booking.id} booking={booking} ahead={false} />
+              <BookingRow key={booking.id} booking={booking} />
             ))}
           </ItemGroup>
         </PageSection>

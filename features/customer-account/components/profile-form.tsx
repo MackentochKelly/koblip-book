@@ -39,6 +39,7 @@ export function ProfileForm({
   email,
   phone,
   phoneCodes,
+  openPhone = false,
 }: {
   name: string
   photoUrl: string | null
@@ -47,11 +48,13 @@ export function ProfileForm({
   phone: string | null
   // Whether WhatsApp codes can be sent (lib/phone-sign-in.ts).
   phoneCodes: boolean
+  // Start with the phone panel open.
+  openPhone?: boolean
 }) {
   const t = useTranslations("public.account.profile")
   const [typed, setTyped] = useState(name)
   const [pending, startTransition] = useTransition()
-  const [phoneOpen, setPhoneOpen] = useState(false)
+  const [phoneOpen, setPhoneOpen] = useState(openPhone && phoneCodes)
   const router = useRouter()
   const trimmed = typed.trim()
   return (
