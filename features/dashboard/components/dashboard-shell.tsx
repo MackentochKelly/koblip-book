@@ -8,7 +8,6 @@ import {
   LayoutDashboardIcon,
   PlusIcon,
   TagIcon,
-  SparklesIcon,
   SettingsIcon,
   UsersIcon,
 } from "@/components/ui/icons"
@@ -21,6 +20,7 @@ import { SpinSwap } from "@/components/spin-swap"
 import { Button } from "@/components/ui/button"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { VoiceGlobe } from "@/components/voice-globe"
 import { useOwnerMessages } from "@/features/dashboard/i18n/provider"
 import { UPLOAD_RULES } from "@/lib/upload-rules"
 import { cn } from "@/lib/utils"
@@ -165,9 +165,9 @@ export function DashboardShell({
           >
             {PHONE_LEFT.map((path) => tab(path))}
             <div className="relative flex min-h-14 items-center justify-center">
-              {/* A soft 2 px ring drawn over its own colour, and a 24 px icon:
-                  the assistant, or the open page's +, spinning from one to
-                  the other. */}
+              {/* The assistant's globe (the computer's floating one), or the
+                  open page's + (a soft 2 px ring over its own colour, a
+                  24 px icon), spinning from one to the other. */}
               <SpinSwap swapKey={addPage ? "add" : "assistant"}>
                 {addPage ? (
                   <Button
@@ -186,12 +186,13 @@ export function DashboardShell({
                 ) : (
                   <Button
                     size="icon-lg"
-                    className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
+                    variant="ghost"
+                    className="size-11 rounded-full border-0 hover:bg-transparent dark:hover:bg-transparent"
                     aria-label={m.assistant}
                     nativeButton={false}
                     render={<Link href={assistantHref} />}
                   >
-                    <SparklesIcon className="size-6" />
+                    <VoiceGlobe className="size-full" />
                   </Button>
                 )}
               </SpinSwap>
