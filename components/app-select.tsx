@@ -67,7 +67,9 @@ export function AppSelect<T extends string>(props: AppSelectProps<T>) {
   const byValue = new Map(options.map((option) => [option.value, option]))
 
   function shown(value: T | T[] | null) {
-    const picked = (Array.isArray(value) ? value : value ? [value] : [])
+    // "" is a real choice when an option has it (like "No category"); only
+    // null is nothing picked.
+    const picked = (Array.isArray(value) ? value : value === null ? [] : [value])
       .map((item) => byValue.get(item))
       .filter((option) => option !== undefined)
     if (picked.length === 0) return placeholder
