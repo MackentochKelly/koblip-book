@@ -3,6 +3,7 @@ import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, notInAr
 import { alias } from "drizzle-orm/sqlite-core"
 import { createTranslator } from "next-intl"
 
+import { noWhatsappReminders } from "@/lib/client-reminders"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { notification, notify } from "@/lib/in-app-notifications"
@@ -470,6 +471,21 @@ async function plan(now: Date) {
         ...notices.flat(),
       ])
     }
+
+    // A client who picked email or the bell only for reminders (client
+    // account D16) gets no WhatsApp reminder; the booking's other messages
+    // still go.
+    await db
+      .update(notificationSends)
+      .set({ state: "skipped", reason: "clientChoice" })
+      .where(
+        and(
+          eq(notificationSends.businessId, businessId),
+          eq(notificationSends.state, "pending"),
+          eq(notificationSends.message, "reminder"),
+          inArray(notificationSends.bookingId, noWhatsappReminders())
+        )
+      )
 
     // A cancelled booking's other waiting messages never go.
     await db

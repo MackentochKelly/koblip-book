@@ -70,6 +70,19 @@ const words = {
       clientReminder: "Reminder before a visit",
       clientReviewAsk: "Rate a visit",
     },
+    // How the client's visit reminders reach them (client account D16).
+    remindBy: "Remind me by",
+    channels: {
+      whatsapp: "WhatsApp",
+      email: "Email",
+      bell: "Only here",
+    },
+    channelHelp: {
+      whatsapp: "If you agree when you book",
+      email: "To {email}",
+      bell: "No messages",
+    },
+    noEmail: "Your account has no email",
     // Each group's ⓘ, beside its name.
     moreInfo: "More info",
     about: {

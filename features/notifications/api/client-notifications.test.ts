@@ -25,10 +25,13 @@ vi.mock("@/lib/customer-dal", () => ({
 const { clientNotification, notify, remindClients } =
   await import("@/lib/in-app-notifications")
 const { saveAll } = await import("@/lib/db/save-all")
-const { clientFeedFor, getClientNotificationChoices } =
+const { clientFeedFor, getClientNotificationChoices, getClientReminderChoice } =
   await import("./client-queries")
-const { markAllClientNotificationsRead, setClientNotificationChoice } =
-  await import("./client-actions")
+const {
+  markAllClientNotificationsRead,
+  setClientNotificationChoice,
+  setClientReminderChannel,
+} = await import("./client-actions")
 const { feedFor } = await import("./queries")
 
 let dir: string
@@ -185,4 +188,25 @@ test("the reminder comes within the lead, once, not for a booking made inside it
   const items = (await clientFeedFor(ana)).page.items
   expect(items.map((item) => item.kind)).toEqual(["clientReminder"])
   expect(await db.select().from(inAppNotifications)).toHaveLength(1)
+})
+
+test("the client picks how reminders reach them; email needs a real email", async () => {
+  signedIn = ana
+  expect(await getClientReminderChoice()).toEqual({
+    channel: "whatsapp",
+    email: "ana@example.com",
+  })
+  expect(await setClientReminderChannel("pigeon")).toEqual({ ok: false, error: "invalid" })
+  expect(await setClientReminderChannel("email")).toEqual({ ok: true })
+  await setClientNotificationChoice("clientMoved", false)
+  expect((await getClientReminderChoice())?.channel).toBe("email")
+
+  await db
+    .update(user)
+    .set({ email: "18095550134@phone.invalid" })
+    .where(eq(user.id, "ana"))
+  expect((await getClientReminderChoice())?.email).toBeNull()
+  expect(await setClientReminderChannel("email")).toEqual({ ok: false, error: "invalid" })
+  expect(await setClientReminderChannel("bell")).toEqual({ ok: true })
+  await db.update(user).set({ email: "ana@example.com" }).where(eq(user.id, "ana"))
 })

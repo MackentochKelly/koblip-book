@@ -12,6 +12,11 @@ import { CANCEL_REASONS } from "../booking-rules"
 import { PAGE_LANGUAGES, type PageLanguage } from "../page-language"
 import { PLANS } from "../plan-features"
 import { POLICY_KINDS, POLICY_POINT_ICONS } from "../policy-rules"
+import {
+  CLIENT_REMINDER_CHANNELS,
+  DEFAULT_REMINDER_CHANNEL,
+  REMINDER_EMAIL_STATES,
+} from "../client-reminder-channels"
 import { REVIEW_HIDE_REASONS } from "../review-rules"
 import { DEFAULT_THEME, type ThemeId } from "../theme-rules"
 import {
@@ -1131,14 +1136,38 @@ export const reviews = sqliteTable(
 )
 
 // The kinds a client turned off in their account's Settings
-// (docs/plans/client-account.md, D10); no row means all on.
+// (docs/plans/client-account.md, D10), and how their visit reminders reach
+// them (D16); no row means all on, by WhatsApp.
 export const clientNotificationSettings = sqliteTable("client_notification_settings", {
   userId: text()
     .primaryKey()
     .references(() => user.id, { onDelete: "cascade" }),
   turnedOff: text({ mode: "json" }).$type<ClientInAppKind[]>().notNull(),
+  reminderChannel: text({ enum: CLIENT_REMINDER_CHANNELS })
+    .notNull()
+    .default(DEFAULT_REMINDER_CHANNEL),
   ...timestamps(),
 })
+
+// Each email reminder to a client who picked email (D16): one per booking
+// and move, written before it goes, so it never goes twice.
+export const clientReminderEmails = sqliteTable(
+  "client_reminder_emails",
+  {
+    id: id(),
+    bookingId: text()
+      .notNull()
+      .references(() => bookings.id, { onDelete: "cascade" }),
+    moves: integer().notNull(),
+    userId: text().references(() => user.id, { onDelete: "set null" }),
+    state: text({ enum: REMINDER_EMAIL_STATES }).notNull(),
+    ...timestamps(),
+  },
+  (table) => [
+    uniqueIndex("client_reminder_emails_booking").on(table.bookingId, table.moves),
+    index("client_reminder_emails_created").on(table.createdAt),
+  ]
+)
 
 // A Google Calendar connection (docs/plans/google-calendar.md): the
 // business's own (teamMemberId null, made by the owner) or, later, one team

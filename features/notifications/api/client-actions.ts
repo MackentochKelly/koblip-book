@@ -10,7 +10,10 @@ import {
   bookings,
   clientNotificationSettings,
   inAppNotifications,
+  user,
 } from "@/lib/db/schema"
+import { isClientReminderChannel } from "@/lib/client-reminder-channels"
+import { isPhoneAccountEmail } from "@/lib/phone-sign-in"
 import {
   CLIENT_IN_APP_KINDS,
   type ClientInAppKind,
@@ -98,6 +101,35 @@ export async function setClientNotificationChoice(
         },
       })
   }
+  refresh()
+  return { ok: true }
+}
+
+// How the client's visit reminders reach them (D16). Email only for an
+// account that has one.
+export async function setClientReminderChannel(
+  channel: string
+): Promise<InAppChoiceResult> {
+  const customer = await getCustomer()
+  if (!customer) return { ok: false, error: "not_found" }
+  if (!isClientReminderChannel(channel)) return { ok: false, error: "invalid" }
+  if (channel === "email") {
+    const [account] = await db
+      .select({ email: user.email })
+      .from(user)
+      .where(eq(user.id, customer.userId))
+      .limit(1)
+    if (!account || isPhoneAccountEmail(account.email)) {
+      return { ok: false, error: "invalid" }
+    }
+  }
+  await db
+    .insert(clientNotificationSettings)
+    .values({ userId: customer.userId, turnedOff: [], reminderChannel: channel })
+    .onConflictDoUpdate({
+      target: clientNotificationSettings.userId,
+      set: { reminderChannel: channel },
+    })
   refresh()
   return { ok: true }
 }

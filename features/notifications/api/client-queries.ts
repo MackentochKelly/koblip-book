@@ -19,13 +19,21 @@ import {
   businesses,
   clientNotificationSettings,
   inAppNotifications,
+  user,
 } from "@/lib/db/schema"
+import { DEFAULT_REMINDER_CHANNEL } from "@/lib/client-reminder-channels"
+import { isPhoneAccountEmail } from "@/lib/phone-sign-in"
 import { notificationRules } from "@/lib/platform-settings"
 import {
   CLIENT_IN_APP_KINDS,
   type ClientInAppKind,
 } from "@/types/in-app-notifications"
-import type { InAppChoice, InAppFeed, InAppPage } from "../types/notifications"
+import type {
+  ClientReminderChoice,
+  InAppChoice,
+  InAppFeed,
+  InAppPage,
+} from "../types/notifications"
 
 // The client's bell (docs/plans/client-account.md, D10): the notifications
 // of the bookings the account owns (lib/customer-bookings.ts), newest first,
@@ -135,4 +143,24 @@ export async function getClientNotificationChoices(): Promise<
   if (!customer) return null
   const off = await turnedOff(customer.userId)
   return CLIENT_IN_APP_KINDS.map((kind) => ({ kind, on: !off.includes(kind) }))
+}
+
+// How the client's reminders reach them (D16), for their Settings.
+export async function getClientReminderChoice(): Promise<ClientReminderChoice | null> {
+  const customer = await getCustomer()
+  if (!customer) return null
+  const [row] = await db
+    .select({
+      email: user.email,
+      channel: clientNotificationSettings.reminderChannel,
+    })
+    .from(user)
+    .leftJoin(clientNotificationSettings, eq(clientNotificationSettings.userId, user.id))
+    .where(eq(user.id, customer.userId))
+    .limit(1)
+  if (!row) return null
+  return {
+    channel: row.channel ?? DEFAULT_REMINDER_CHANNEL,
+    email: isPhoneAccountEmail(row.email) ? null : row.email,
+  }
 }

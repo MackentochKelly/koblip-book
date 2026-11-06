@@ -1,5 +1,6 @@
 import type { createTranslator, Messages } from "next-intl"
 
+import type { ClientReminderChannel } from "@/lib/client-reminder-channels"
 import type { InAppData, InAppKind } from "@/types/in-app-notifications"
 
 // The bell's words (i18n/en.ts), as next-intl gives them.
@@ -41,3 +42,10 @@ export type InAppActionResult = { ok: true } | { ok: false; error: "not_found" }
 export type InAppChoice = { kind: InAppKind; on: boolean }
 
 export type InAppChoiceResult = { ok: true } | { ok: false; error: "not_found" | "invalid" }
+
+// How the client's visit reminders reach them (client account D16), and
+// the account's email, null for an account made with a phone.
+export type ClientReminderChoice = {
+  channel: ClientReminderChannel
+  email: string | null
+}

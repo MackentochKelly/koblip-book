@@ -1,5 +1,6 @@
 import "server-only"
 
+import { emailClients } from "@/lib/client-reminders"
 import { db } from "@/lib/db"
 import { notificationTimer } from "@/lib/db/schema"
 import {
@@ -15,8 +16,8 @@ import { runNotifications } from "./notification-sender"
 // server starts (instrumentation.ts). One check at a time: the next is set
 // only when one ends, after the admin's current `sendEverySeconds`. Each
 // check leaves its time (and error) for the admin's Overview (A2), puts
-// visit reminders and review nudges in clients' bells (client account D10,
-// D15), and removes in-app
+// visit reminders and review nudges in clients' bells and email reminders
+// (client account D10, D15, D16), and removes in-app
 // notifications past their keep time (in-app N5).
 
 const timer = globalThis as typeof globalThis & {
@@ -41,6 +42,11 @@ async function check() {
   }
   try {
     await askForReviews()
+  } catch (error) {
+    console.error(error)
+  }
+  try {
+    await emailClients()
   } catch (error) {
     console.error(error)
   }

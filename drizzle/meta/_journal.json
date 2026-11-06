@@ -470,6 +470,13 @@
       "when": 1794006960963,
       "tag": "0066_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "6",
+      "when": 1794008049972,
+      "tag": "0067_client_reminder_channel",
+      "breakpoints": true
     }
   ]
 }

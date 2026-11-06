@@ -46,6 +46,12 @@ const words = {
       lead: "{businessName}'s Pro plan has ended, so it's on Free now. Upgrade any time:",
       note: "Nothing was deleted. Your Pro settings come back when you upgrade.",
     },
+    // A client's visit reminder, when they picked email (client account D16).
+    clientReminder: {
+      subject: "Reminder: {service} at {business}",
+      lead: "{service} at {business}, {when}. See or change your booking:",
+      note: "You get reminders by email. Change it in your account's Settings.",
+    },
   },
 } as const
 

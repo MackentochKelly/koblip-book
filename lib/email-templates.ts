@@ -154,3 +154,22 @@ export async function backToFreeEmail(input: {
     note: t("backToFree.note"),
   })
 }
+
+// A client's visit reminder, when they picked email in their account's
+// Settings (docs/plans/client-account.md, D16): the link opens the booking.
+export async function clientReminderEmail(input: {
+  service: string
+  business: string
+  when: string
+  url: string
+  language: PageLanguage
+}): Promise<LinkEmail> {
+  const { service, business, when, url } = input
+  const t = await emailWords(input.language)
+  return linkEmail({
+    url,
+    subject: t("clientReminder.subject", { service, business }),
+    lead: t("clientReminder.lead", { service, business, when }),
+    note: t("clientReminder.note"),
+  })
+}

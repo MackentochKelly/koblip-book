@@ -310,6 +310,7 @@ const whatsapp = {
     cancelled: "Booking cancelled",
     late: "Too late",
     unsubscribed: "Customer opted out",
+    clientChoice: "Client picked another way",
     templateNotApproved: "Waiting for Meta",
     badPhone: "Wrong number",
     interrupted: "Stopped midway",

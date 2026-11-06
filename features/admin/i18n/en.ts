@@ -628,11 +628,12 @@ const words = {
     clientReminders: {
       title: "Client reminders",
       channels: {
-        whatsapp: "{n, plural, one {# chose WhatsApp} other {# chose WhatsApp}}",
-        email: "{n, plural, one {# chose email} other {# chose email}}",
-        bell: "{n, plural, one {# chose the bell only} other {# chose the bell only}}",
+        whatsapp: "WhatsApp: {n, number}",
+        email: "Email: {n, number}",
+        bell: "Bell only: {n, number}",
       },
-      othersWhatsapp: "Everyone else: WhatsApp",
+      othersWhatsapp: "Accounts that never picked get WhatsApp.",
+      deletedAccount: "Deleted account",
       emails: "Emails sent",
       none: "No reminder emails yet",
       states: { sending: "Sending", sent: "Sent", failed: "Didn't go" },
