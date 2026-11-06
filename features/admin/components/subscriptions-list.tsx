@@ -16,6 +16,7 @@ import {
 import { initials } from "@/lib/initials"
 import { PLANS, type Plan } from "@/lib/plan-features"
 import type { AdminSubscription } from "../api/subscriptions"
+import { RemoveFreePro } from "./remove-free-pro"
 
 // Stripe's subscription statuses (docs.stripe.com/billing/subscriptions/overview).
 const STATUSES = [
@@ -41,6 +42,8 @@ const BADGE: Record<Status, "success" | "destructive" | "warning" | "secondary">
   canceled: "secondary",
 }
 
+const ENDED: readonly Status[] = ["canceled", "incomplete_expired"]
+
 const isPlan = (plan: string): plan is Plan => (PLANS as readonly string[]).includes(plan)
 
 const known = (status: string): Status =>
@@ -61,6 +64,8 @@ export function SubscriptionsList({
     <ItemGroup className="gap-3">
       {subscriptions.map((sub) => {
         const status = known(sub.status)
+        const { grant } = sub
+        const given = grant && !grant.removedAt && !ENDED.includes(status)
         const when = sub.endedAt
           ? t("ended", { date: date(sub.endedAt) })
           : sub.periodEnd
@@ -77,6 +82,7 @@ export function SubscriptionsList({
               <ItemTitle className="max-w-full">
                 <span className="truncate">{sub.businessName}</span>
                 <Badge variant={BADGE[status]}>{t(`status.${status}`)}</Badge>
+                {grant && <Badge variant="info">{t("free")}</Badge>}
               </ItemTitle>
               <ItemDescription className="truncate">
                 {[sub.ownerName ?? t("noOwner"), sub.ownerEmail].filter(Boolean).join(" · ")}
@@ -90,8 +96,23 @@ export function SubscriptionsList({
                   .filter(Boolean)
                   .join(" · ")}
               </ItemDescription>
+              {grant && (
+                <ItemDescription className="truncate">
+                  {[
+                    t("givenBy", { name: grant.givenBy ?? t("someone"), date: date(grant.givenAt) }),
+                    grant.removedAt &&
+                      t("removedBy", {
+                        name: grant.removedBy ?? t("someone"),
+                        date: date(grant.removedAt),
+                      }),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </ItemDescription>
+              )}
             </ItemContent>
             <ItemActions>
+              {given && <RemoveFreePro grantId={grant.id} name={sub.businessName} />}
               {sub.customerUrl && (
                 <Button
                   variant="outline"

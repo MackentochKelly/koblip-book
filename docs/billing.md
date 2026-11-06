@@ -14,6 +14,7 @@ Make the same things in the sandbox and in live mode. The app finds prices by lo
 | Monthly price | $19 USD a month, lookup key `koblip_pro_monthly`, tax exclusive |
 | Yearly price | $190 USD a year, lookup key `koblip_pro_yearly`, tax exclusive |
 | Customer Portal (default configuration) | Change card, see invoices, update email, name, address and tax id. Switch monthly ↔ yearly (yearly → monthly waits for the period end). Cancel at period end, with a reason. Terms `https://book.koblip.com/terms`, privacy `https://book.koblip.com/privacy` |
+| Free Pro coupon | `koblip_pro_free`, "Pro, given by Koblip": 100% off, forever, applies to `koblip_pro` only. Admin → Subscriptions → Give Pro free uses it (no card needed) |
 | Stripe Tax | Head office address set, status active |
 | Webhook | `<BETTER_AUTH_URL>/api/auth/stripe/webhook`, events below |
 
@@ -53,6 +54,6 @@ Its signing secret stays the same between runs, so `.env.local` needs it once.
 Do this before turning on billing for real owners (P10 passes first):
 
 1. **Tax registrations.** Stripe Tax only collects tax where the account is registered, and none is added yet. Add them in Dashboard → Tax → Registrations, with your accountant's advice. Checkout already asks Stripe Tax for it.
-2. **Live product and prices.** Make the product, both prices and the portal as in the table above, in live mode.
+2. **Live product and prices.** Make the product, both prices, the free Pro coupon and the portal as in the table above, in live mode.
 3. **Webhook.** Dashboard → Developers → Webhooks → add `https://book.koblip.com/api/auth/stripe/webhook` with the 4 events. Copy its signing secret.
 4. **Keys on the server.** Put `STRIPE_SECRET_KEY` (`sk_live_…`) and `STRIPE_WEBHOOK_SECRET` in `.env.production`, then deploy ([deploy.md](deploy.md)).

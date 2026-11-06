@@ -9,11 +9,8 @@ import { subscription } from "@/lib/db/schema"
 import { businessPlan, canBillBusiness } from "@/lib/plan-access"
 import type { Plan } from "@/lib/plan-features"
 import { stripeClient } from "@/lib/stripe"
-import { PAID_PLANS } from "@/lib/subscription-rules"
+import { ENDED_STATUSES, PAID_PLANS } from "@/lib/subscription-rules"
 import type { Billing, PlanPrice } from "../types"
-
-// Subscriptions that are over: nothing left to manage.
-const ENDED = ["canceled", "incomplete_expired"]
 
 // Pro's prices as Stripe charges them, by lookup key (S5), once per request.
 const proPrices = cache(async (): Promise<Billing["prices"] | null> => {
@@ -58,7 +55,7 @@ export async function getBilling(businessId: string): Promise<Billing> {
           // Checkout; only a subscription Stripe made has an id, so an
           // abandoned Checkout leaves nothing to manage.
           isNotNull(subscription.stripeSubscriptionId),
-          notInArray(subscription.status, ENDED)
+          notInArray(subscription.status, ENDED_STATUSES)
         )
       )
       .orderBy(desc(subscription.periodEnd))

@@ -477,6 +477,13 @@
       "when": 1794008049972,
       "tag": "0067_client_reminder_channel",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "6",
+      "when": 1794008820484,
+      "tag": "0068_pro_grants",
+      "breakpoints": true
     }
   ]
 }

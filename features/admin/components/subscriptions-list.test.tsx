@@ -1,9 +1,13 @@
 import { cleanup, render, screen } from "@testing-library/react"
-import { afterEach, expect, test } from "vitest"
+import { afterEach, expect, test, vi } from "vitest"
 
 import { WithWords } from "@/i18n/testing"
 import type { AdminSubscription } from "../api/subscriptions"
 import { SubscriptionsList } from "./subscriptions-list"
+
+vi.mock("./remove-free-pro", () => ({
+  RemoveFreePro: ({ name }: { name: string }) => <button>Remove {name}</button>,
+}))
 
 afterEach(cleanup)
 
@@ -20,6 +24,7 @@ const SUB: AdminSubscription = {
   endedAt: null,
   stripeUrl: "https://dashboard.stripe.com/test/subscriptions/sub_1",
   customerUrl: "https://dashboard.stripe.com/test/customers/cus_1",
+  grant: null,
 }
 
 const show = (subscriptions: AdminSubscription[]) =>
@@ -49,4 +54,26 @@ test("history: a failed payment, a cancelling plan and an ended one", () => {
   expect(screen.getByText("Pro · Yearly · Ends Dec 6, 2026")).toBeTruthy()
   expect(screen.getByText("Canceled")).toBeTruthy()
   expect(screen.getByText("Pro · Monthly · Ended Oct 1, 2026")).toBeTruthy()
+})
+
+test("free Pro: who gave it, Remove while it lasts, and who took it back", () => {
+  const grant = { id: 1, givenBy: "Kelly", givenAt: "2026-11-06T00:00:00.000Z", removedBy: null, removedAt: null }
+  show([
+    { ...SUB, grant },
+    {
+      ...SUB,
+      id: "s5",
+      businessName: "Old Shop",
+      status: "canceled",
+      endedAt: "2026-11-07T00:00:00.000Z",
+      grant: { ...grant, id: 2, removedBy: "Kelly", removedAt: "2026-11-07T00:00:00.000Z" },
+    },
+  ])
+  expect(screen.getAllByText("Given free")).toHaveLength(2)
+  expect(screen.getByText("Given by Kelly on Nov 6, 2026")).toBeTruthy()
+  expect(
+    screen.getByText("Given by Kelly on Nov 6, 2026 · Removed by Kelly on Nov 7, 2026")
+  ).toBeTruthy()
+  expect(screen.getByRole("button", { name: "Remove Ana's Salon" })).toBeTruthy()
+  expect(screen.queryByRole("button", { name: "Remove Old Shop" })).toBeNull()
 })

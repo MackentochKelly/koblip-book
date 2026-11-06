@@ -1047,6 +1047,27 @@ export const platformSettingChanges = sqliteTable(
   (table) => [index("platform_setting_changes_changed_at_idx").on(table.changedAt)]
 )
 
+// Pro given for free by the admin (docs/plans/subscriptions.md, P7b): a
+// real Stripe subscription with the 100% coupon, and who gave it and who
+// took it back, when. A row with no removedAt is still given.
+export const proGrants = sqliteTable(
+  "pro_grants",
+  {
+    id: integer().primaryKey({ autoIncrement: true }),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    stripeSubscriptionId: text().notNull().unique(),
+    givenBy: text().references(() => user.id, { onDelete: "set null" }),
+    givenAt: text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    removedBy: text().references(() => user.id, { onDelete: "set null" }),
+    removedAt: text(),
+  },
+  (table) => [index("pro_grants_business_idx").on(table.businessId)]
+)
+
 // The admin's choice of the lowest plan that has a feature
 // (lib/plan-access.ts); a feature with no row uses its default in
 // lib/plan-features.ts.
