@@ -19,6 +19,9 @@ const messages = {
     createService: "Creating service…",
     updateService: "Updating service…",
     deleteService: "Deleting service…",
+    createServiceCategory: "Creating category…",
+    renameServiceCategory: "Renaming category…",
+    deleteServiceCategory: "Removing category…",
     renameMember: "Renaming team member…",
     setBookingStatus: "Updating booking…",
     cancelBooking: "Cancelling booking…",
@@ -49,6 +52,7 @@ const messages = {
     deletePhoto: "Deleting photo…",
     reorderPhotos: "Ordering photos…",
     reorderServices: "Ordering services…",
+    reorderServiceCategories: "Ordering categories…",
     reorderTeam: "Ordering team…",
     reorderAddons: "Ordering extras…",
     savePolicy: "Saving policy…",
@@ -73,6 +77,9 @@ const messages = {
     createService: "Created service",
     updateService: "Updated service",
     deleteService: "Deleted service",
+    createServiceCategory: "Created category",
+    renameServiceCategory: "Renamed category",
+    deleteServiceCategory: "Removed category",
     renameMember: "Renamed team member",
     setBookingStatus: "Updated booking",
     cancelBooking: "Cancelled booking",
@@ -103,6 +110,7 @@ const messages = {
     deletePhoto: "Deleted photo",
     reorderPhotos: "Ordered photos",
     reorderServices: "Ordered services",
+    reorderServiceCategories: "Ordered categories",
     reorderTeam: "Ordered team",
     reorderAddons: "Ordered extras",
     savePolicy: "Saved policy",
@@ -146,6 +154,9 @@ const messages = {
     createMember: "adding a team member needs the owner's tap first",
     cancel: "cancelling needs the owner's tap first",
     deleteService: "deleting needs the owner's tap first",
+    createServiceCategory: "adding a category needs the owner's tap first",
+    renameServiceCategory: "renaming a category needs the owner's tap first",
+    deleteServiceCategory: "removing a category needs the owner's tap first",
     deleteMember: "removing needs the owner's tap first",
     hours: "changing hours needs the owner's tap first",
     booking: "booking needs the owner's tap first",
@@ -166,6 +177,7 @@ const messages = {
     deletePhoto: "deleting a photo needs the owner's tap first",
     reorderPhotos: "ordering photos needs the owner's tap first",
     reorderServices: "ordering services needs the owner's tap first",
+    reorderServiceCategories: "ordering categories needs the owner's tap first",
     reorderTeam: "ordering the team needs the owner's tap first",
     reorderAddons: "ordering extras needs the owner's tap first",
     savePolicy: "changing a policy needs the owner's tap first",
@@ -188,6 +200,9 @@ const messages = {
     createMember: "Add this team member?",
     cancel: "Cancel this booking?",
     deleteService: "Delete this service?",
+    createServiceCategory: "Add this category?",
+    renameServiceCategory: "Rename this category?",
+    deleteServiceCategory: "Remove this category?",
     deleteMember: "Remove this team member?",
     hours: "Replace opening hours?",
     book: "Book this appointment?",
@@ -208,6 +223,7 @@ const messages = {
     deletePhoto: "Delete this photo?",
     reorderPhotos: "Change the photo order?",
     reorderServices: "Change the service order?",
+    reorderServiceCategories: "Change the category order?",
     reorderTeam: "Change the team order?",
     reorderAddons: "Change the extras order?",
     savePolicy: "Save this policy?",
@@ -235,6 +251,9 @@ const messages = {
     createMember: "Add",
     cancelBooking: "Cancel booking",
     deleteService: "Delete",
+    createServiceCategory: "Add",
+    renameServiceCategory: "Rename",
+    deleteServiceCategory: "Remove",
     deleteMember: "Remove",
     hours: "Replace hours",
     book: "Book",
@@ -307,6 +326,24 @@ const messages = {
   createService: {
     failed: (error: string) => `Could not add the service (${error}).`,
     done: (name: string) => `Added the service ${name}.`,
+  },
+  createServiceCategory: {
+    taken: (name: string) =>
+      `Not added: you already have a category called ${name}.`,
+    failed: (error: string) => `Could not add the category (${error}).`,
+    done: (name: string) => `Added the category ${name}.`,
+  },
+  renameServiceCategory: {
+    unknown: "Could not rename: unknown category.",
+    taken: (name: string) =>
+      `Not renamed: you already have a category called ${name}.`,
+    failed: (error: string) => `Could not rename the category (${error}).`,
+    done: (name: string) => `Renamed to ${name}.`,
+  },
+  deleteServiceCategory: {
+    unknown: "Could not remove: unknown category.",
+    failed: (error: string) => `Could not remove the category (${error}).`,
+    done: "Category removed. Its services moved to Other.",
   },
   renameMember: {
     unknown: "Could not rename: unknown team member.",
@@ -438,6 +475,7 @@ const messages = {
   reorder: {
     failed: (error: string) => `Could not save the order (${error}).`,
     services: "Service order updated.",
+    serviceCategories: "Category order updated.",
     team: "Team order updated.",
     addons: "Extras order updated.",
   },
@@ -544,6 +582,16 @@ const messages = {
     nothingToChange: "Nothing to change.",
     servicesFull: (max: number) =>
       `there are already ${max} services, the most a business can have`,
+    serviceCategoryIdRequired:
+      "categoryId is required: list services first and use an id from its categories",
+    serviceCategoryUnknown:
+      "unknown category id: list services first and use an id from its categories",
+    serviceCategoryInvalid:
+      'categoryId must be an id from list_services categories, or "none" for no category',
+    serviceCategoryExists: (name: string) =>
+      `there is already a category called ${name}`,
+    serviceCategoriesFull: (max: number) =>
+      `there are already ${max} categories, the most a business can have`,
     serviceExists: (name: string) =>
       `there is already a service called ${name} with the same time and price`,
     teamFull: (max: number) =>

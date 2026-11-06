@@ -33,6 +33,12 @@ vi.mock("@/features/dashboard/api/team-services", () => ({
   setServiceTeam: vi.fn(),
   setMemberServices: vi.fn(),
 }))
+vi.mock("@/features/dashboard/api/category-actions", () => ({
+  createServiceCategory: vi.fn(),
+  renameServiceCategory: vi.fn(),
+  deleteServiceCategory: vi.fn(),
+  reorderServiceCategories: vi.fn(),
+}))
 vi.mock("@/features/dashboard/api/addon-actions", () => ({
   createAddonGroup: vi.fn(),
   updateAddonGroup: vi.fn(),
@@ -145,6 +151,12 @@ const {
 const { setMemberServices, setServiceTeam } =
   await import("@/features/dashboard/api/team-services")
 const {
+  createServiceCategory,
+  deleteServiceCategory,
+  renameServiceCategory,
+  reorderServiceCategories,
+} = await import("@/features/dashboard/api/category-actions")
+const {
   createAddonGroup,
   deleteAddonGroup,
   reorderAddonGroups,
@@ -250,6 +262,10 @@ test("every needsConfirm tool carries its result kind", () => {
     ["save_reminder_settings", "timing"],
     ["change_message_wording", "messages"],
     ["turn_automation_on_off", "flows"],
+    ["create_service_category", "services"],
+    ["rename_service_category", "services"],
+    ["delete_service_category", "services"],
+    ["reorder_service_categories", "services"],
   ]
   expect(
     tools
@@ -270,6 +286,7 @@ beforeEach(() => {
     hours: [{ weekday: 1, opensAt: "09:00", closesAt: "18:00" }],
     services: [],
     team: [],
+    categories: [],
   } as never)
   vi.mocked(getBookingCounts).mockResolvedValue({ today: 2, upcoming: 5 })
   vi.mocked(getBookings).mockResolvedValue([])
@@ -311,8 +328,10 @@ test("list_services drops rows past the cap with total and truncated", async () 
       name: `s${i}`,
       durationMinutes: 30,
       priceMinor: 100,
+      categoryId: null,
     })),
     team: [],
+    categories: [],
   } as never)
   const result = (await byName("list_services").run({})) as {
     services: unknown[]
@@ -376,9 +395,11 @@ test("list_services row carries description, hasPhoto, teamMemberIds and addonGr
         priceMinor: 2000,
         description: "A cut",
         photoUrl: "https://img/s1",
+        categoryId: null,
       },
     ],
     team: [],
+    categories: [],
   } as never)
   vi.mocked(getServiceTeams).mockResolvedValue({ s1: ["m1"] })
   vi.mocked(getAddonGroups).mockResolvedValue([
@@ -1218,9 +1239,14 @@ function mockServiceShop() {
         description: null,
         durationMinutes: 30,
         priceMinor: 2000,
+        categoryId: "c1",
       },
     ],
     team: [],
+    categories: [
+      { id: "c1", name: "Hair" },
+      { id: "c2", name: "Nails" },
+    ],
   } as never)
 }
 
@@ -1384,6 +1410,393 @@ test("write tools ignore a smuggled businessId", async () => {
     expect(mock).toHaveBeenCalledTimes(1)
     expect(mock.mock.calls[0][0]).toBe("b1")
   }
+})
+
+// Service categories (docs/plans/service-categories.md): saved order is
+// Manicure, Cut, Consult, Wax; shown, Hair comes first and Other last.
+function mockCategoryShop() {
+  const service = (id: string, name: string, categoryId: string | null) => ({
+    id,
+    name,
+    description: null,
+    durationMinutes: 30,
+    priceMinor: 2500,
+    photoUrl: null,
+    categoryId,
+  })
+  vi.mocked(getOwnerBusiness).mockResolvedValue({
+    business: BUSINESS,
+    hours: [],
+    services: [
+      service("s1", "Manicure", "c2"),
+      service("s2", "Cut", "c1"),
+      service("s3", "Consult", null),
+      // A category that is gone counts as Other, like the shared grouping.
+      service("s4", "Wax", "gone"),
+    ],
+    team: [],
+    categories: [
+      { id: "c1", name: "Hair" },
+      { id: "c2", name: "Nails" },
+    ],
+  } as never)
+}
+
+test("list_services gives each service its category, in the order shown, with the categories", async () => {
+  mockCategoryShop()
+  const result = (await byName("list_services").run({})) as {
+    services: {
+      id: string
+      categoryId: string | null
+      categoryName: string | null
+    }[]
+    categories: unknown
+  }
+  expect(
+    result.services.map((s) => [s.id, s.categoryId, s.categoryName])
+  ).toEqual([
+    ["s2", "c1", "Hair"],
+    ["s1", "c2", "Nails"],
+    ["s3", null, null],
+    ["s4", null, null],
+  ])
+  expect(result.categories).toEqual([
+    { id: "c1", name: "Hair" },
+    { id: "c2", name: "Nails" },
+  ])
+})
+
+test("reorder_services reads the order as list_services shows it", async () => {
+  mockCategoryShop()
+  const tool = byName("reorder_services")
+  expect(
+    await tool.confirm!.describe({ serviceIds: ["s2", "s1", "s3", "s4"] })
+  ).toEqual({ error: "Nothing to change." })
+  expect(
+    await tool.confirm!.describe({ serviceIds: ["s2", "s1", "s4", "s3"] })
+  ).toMatchObject({ summary: "Cut, Manicure, Wax, Consult" })
+})
+
+test("create_service puts the service in a category and the card names it", async () => {
+  mockCategoryShop()
+  vi.mocked(createService).mockResolvedValue({ ok: true, id: "s9" })
+  const tool = byName("create_service")
+  const args = { name: "Fade", minutes: 45, priceMinor: 2500, categoryId: "c1" }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Add this service?",
+    action: "Add",
+    summary: "Fade · 45 min · €25.00 · Hair",
+    destructive: false,
+  })
+  expect(createService).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: true,
+    doneText: "Added the service Fade.",
+  })
+  expect(createService).toHaveBeenLastCalledWith("b1", {
+    name: "Fade",
+    description: null,
+    durationMinutes: 45,
+    priceMinor: 2500,
+    categoryId: "c1",
+  })
+  const none = { ...args, categoryId: "none" }
+  expect(await tool.confirm!.describe(none)).toMatchObject({
+    summary: "Fade · 45 min · €25.00",
+  })
+  await tool.confirm!.execute(none)
+  expect(createService).toHaveBeenLastCalledWith("b1", {
+    name: "Fade",
+    description: null,
+    durationMinutes: 45,
+    priceMinor: 2500,
+    categoryId: null,
+  })
+})
+
+test("create_service refuses a category that is not the business's own", async () => {
+  mockCategoryShop()
+  const tool = byName("create_service")
+  const args = { name: "Fade", minutes: 45, priceMinor: 2500, categoryId: "c9" }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    error: expect.stringContaining("categoryId must be"),
+  })
+  expect(await tool.confirm!.execute(args)).toMatchObject({ ok: false })
+  expect(createService).not.toHaveBeenCalled()
+})
+
+test("update_service moves a service to another category, or none, on the tap", async () => {
+  mockCategoryShop()
+  vi.mocked(updateService).mockResolvedValue({ ok: true })
+  const tool = byName("update_service")
+  expect(
+    await tool.confirm!.describe({ serviceId: "s2", categoryId: "c2" })
+  ).toEqual({
+    title: "Change this service?",
+    action: "Change",
+    summary: "Cut · Hair → Nails",
+    destructive: false,
+  })
+  expect(
+    await tool.confirm!.describe({ serviceId: "s2", categoryId: "none" })
+  ).toMatchObject({ summary: "Cut · Hair → No category" })
+  expect(
+    await tool.confirm!.describe({ serviceId: "s3", categoryId: "c1" })
+  ).toMatchObject({ summary: "Consult · No category → Hair" })
+  expect(
+    await tool.confirm!.describe({ serviceId: "s2", categoryId: "c1" })
+  ).toEqual({ error: "Nothing to change." })
+  expect(
+    await tool.confirm!.describe({ serviceId: "s2", categoryId: "c9" })
+  ).toEqual({ error: expect.stringContaining("categoryId must be") })
+  expect(updateService).not.toHaveBeenCalled()
+  expect(
+    await tool.confirm!.execute({ serviceId: "s2", categoryId: "none" })
+  ).toEqual({ ok: true, doneText: "Changed the service." })
+  expect(updateService).toHaveBeenLastCalledWith("b1", "s2", {
+    name: "Cut",
+    description: null,
+    durationMinutes: 30,
+    priceMinor: 2500,
+    categoryId: null,
+  })
+  // Left out, the service keeps its own category.
+  await tool.confirm!.execute({ serviceId: "s2", minutes: 45 })
+  expect(vi.mocked(updateService).mock.lastCall?.[2]).not.toHaveProperty(
+    "categoryId"
+  )
+})
+
+test("create_service_category shows a card and adds on the tap only", async () => {
+  mockCategoryShop()
+  vi.mocked(createServiceCategory).mockResolvedValue({ ok: true, id: "c3" })
+  const tool = byName("create_service_category")
+  const args = { name: "  Brows   and lashes " }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Add this category?",
+    action: "Add",
+    summary: "Brows and lashes",
+    destructive: false,
+  })
+  expect(createServiceCategory).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: true,
+    doneText: "Added the category Brows and lashes.",
+  })
+  expect(createServiceCategory).toHaveBeenCalledWith("b1", "Brows and lashes")
+})
+
+test("create_service_category says plainly when the category already exists", async () => {
+  mockCategoryShop()
+  const tool = byName("create_service_category")
+  expect(await tool.confirm!.describe({ name: "hair" })).toEqual({
+    error: "there is already a category called hair",
+  })
+  // Made at the same time by another card or the Services screen.
+  vi.mocked(createServiceCategory).mockResolvedValue({
+    ok: false,
+    error: "taken",
+  })
+  expect(await tool.confirm!.execute({ name: "Brows" })).toEqual({
+    ok: false,
+    doneText: "Not added: you already have a category called Brows.",
+  })
+})
+
+test("create_service_category refuses a bad name and a full list", async () => {
+  mockCategoryShop()
+  const tool = byName("create_service_category")
+  for (const args of [{}, { name: " " }, { name: "x".repeat(41) }]) {
+    expect(await tool.confirm!.describe(args)).toEqual({
+      error: "name must be 1-40 characters",
+    })
+    expect((await tool.confirm!.execute(args)).ok).toBe(false)
+  }
+  expect(createServiceCategory).not.toHaveBeenCalled()
+  vi.mocked(getOwnerBusiness).mockResolvedValue(
+    ownerData({
+      categories: Array.from({ length: 20 }, (_, i) => ({
+        id: `c${i}`,
+        name: `Group ${i}`,
+      })),
+    })
+  )
+  expect(await tool.confirm!.describe({ name: "Brows" })).toEqual({
+    error: expect.stringContaining("already 20 categories"),
+  })
+  vi.mocked(createServiceCategory).mockResolvedValue({
+    ok: false,
+    error: "invalid",
+  })
+  expect(await tool.confirm!.execute({ name: "Brows" })).toEqual({
+    ok: false,
+    doneText: "Could not add the category (invalid).",
+  })
+})
+
+test("rename_service_category shows old and new names and renames on the tap only", async () => {
+  mockCategoryShop()
+  vi.mocked(renameServiceCategory).mockResolvedValue({ ok: true })
+  const tool = byName("rename_service_category")
+  const args = { categoryId: "c1", name: " Hairdressing " }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Rename this category?",
+    action: "Rename",
+    summary: "Hair → Hairdressing",
+    destructive: false,
+  })
+  expect(renameServiceCategory).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: true,
+    doneText: "Renamed to Hairdressing.",
+  })
+  expect(renameServiceCategory).toHaveBeenCalledWith("b1", "c1", "Hairdressing")
+})
+
+test("rename_service_category refuses what it cannot do", async () => {
+  mockCategoryShop()
+  const tool = byName("rename_service_category")
+  for (const [args, error] of [
+    [{ name: "Cuts" }, expect.stringContaining("categoryId is required")],
+    [
+      { categoryId: "c9", name: "Cuts" },
+      expect.stringContaining("unknown category id"),
+    ],
+    [{ categoryId: "c1", name: "" }, "name must be 1-40 characters"],
+    [{ categoryId: "c1", name: "Hair" }, "Nothing to change."],
+    [
+      { categoryId: "c1", name: "NAILS" },
+      "there is already a category called NAILS",
+    ],
+  ] as const) {
+    expect(await tool.confirm!.describe(args)).toEqual({ error })
+  }
+  // Only its own capitals change: no other category has the name.
+  expect(
+    await tool.confirm!.describe({ categoryId: "c1", name: "HAIR" })
+  ).toMatchObject({ summary: "Hair → HAIR" })
+  expect(
+    await tool.confirm!.execute({ categoryId: "c9", name: "Cuts" })
+  ).toEqual({ ok: false, doneText: "Could not rename: unknown category." })
+  expect(renameServiceCategory).not.toHaveBeenCalled()
+  vi.mocked(renameServiceCategory).mockResolvedValue({
+    ok: false,
+    error: "taken",
+  })
+  expect(
+    await tool.confirm!.execute({ categoryId: "c1", name: "Nails" })
+  ).toEqual({
+    ok: false,
+    doneText: "Not renamed: you already have a category called Nails.",
+  })
+  vi.mocked(renameServiceCategory).mockResolvedValue({
+    ok: false,
+    error: "not_found",
+  })
+  expect(
+    await tool.confirm!.execute({ categoryId: "c1", name: "Cuts" })
+  ).toEqual({ ok: false, doneText: "Could not rename: unknown category." })
+})
+
+test("delete_service_category says its services move to Other and removes on the tap only", async () => {
+  mockCategoryShop()
+  vi.mocked(deleteServiceCategory).mockResolvedValue({ ok: true })
+  const tool = byName("delete_service_category")
+  expect(await tool.confirm!.describe({ categoryId: "c2" })).toEqual({
+    title: "Remove this category?",
+    action: "Remove",
+    summary: "Nails · Its services move to Other.",
+    destructive: true,
+  })
+  expect(await tool.confirm!.describe({ categoryId: "c9" })).toEqual({
+    error: expect.stringContaining("unknown category id"),
+  })
+  expect(deleteServiceCategory).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute({ categoryId: "c2" })).toEqual({
+    ok: true,
+    doneText: "Category removed. Its services moved to Other.",
+  })
+  expect(deleteServiceCategory).toHaveBeenCalledWith("b1", "c2")
+  vi.mocked(deleteServiceCategory).mockResolvedValue({
+    ok: false,
+    error: "not_found",
+  })
+  for (const args of [{ categoryId: "c2" }, {}]) {
+    expect(await tool.confirm!.execute(args)).toEqual({
+      ok: false,
+      doneText: "Could not remove: unknown category.",
+    })
+  }
+})
+
+test("category tools act on the signed-in owner's business, never the model's", async () => {
+  mockCategoryShop()
+  vi.mocked(createServiceCategory).mockResolvedValue({ ok: true, id: "c3" })
+  vi.mocked(renameServiceCategory).mockResolvedValue({ ok: true })
+  vi.mocked(deleteServiceCategory).mockResolvedValue({ ok: true })
+  vi.mocked(reorderServiceCategories).mockResolvedValue({ ok: true })
+  const businessId = "evil"
+  await byName("create_service_category").confirm!.execute({
+    name: "Brows",
+    businessId,
+  })
+  await byName("rename_service_category").confirm!.execute({
+    categoryId: "c1",
+    name: "Cuts",
+    businessId,
+  })
+  await byName("delete_service_category").confirm!.execute({
+    categoryId: "c2",
+    businessId,
+  })
+  await byName("reorder_service_categories").confirm!.execute({
+    categoryIds: ["c2", "c1"],
+    businessId,
+  })
+  for (const mock of [
+    vi.mocked(createServiceCategory),
+    vi.mocked(renameServiceCategory),
+    vi.mocked(deleteServiceCategory),
+    vi.mocked(reorderServiceCategories),
+    vi.mocked(getOwnerBusiness),
+  ]) {
+    expect(mock).toHaveBeenCalled()
+    for (const call of mock.mock.calls) {
+      expect(call[0]).toBe("b1")
+    }
+  }
+})
+
+test("spanish category cards use the owner area's own words", async () => {
+  mockCategoryShop()
+  expect(
+    await byNameLang("delete_service_category", "es").confirm!.describe({
+      categoryId: "c2",
+    })
+  ).toEqual({
+    title: "¿Quitar esta categoría?",
+    action: "Quitar",
+    summary: "Nails · Sus servicios pasan a Otros.",
+    destructive: true,
+  })
+  expect(
+    await byNameLang("update_service", "es").confirm!.describe({
+      serviceId: "s2",
+      categoryId: "none",
+    })
+  ).toMatchObject({ summary: "Cut · Hair → Sin categoría" })
+  vi.mocked(createServiceCategory).mockResolvedValue({
+    ok: false,
+    error: "taken",
+  })
+  expect(
+    await byNameLang("create_service_category", "es").confirm!.execute({
+      name: "Brows",
+    })
+  ).toEqual({
+    ok: false,
+    doneText: "No se agregó: ya tienes una categoría llamada Brows.",
+  })
 })
 
 // A booking the bookings screen could still cancel: confirmed, starts later.
@@ -1874,6 +2287,10 @@ test("every new tool has a Spanish step label", () => {
     ["update_addon_group", "Actualizando extras…"],
     ["delete_addon_group", "Eliminando extras…"],
     ["update_business_details", "Guardando datos…"],
+    ["create_service_category", "Creando categoría…"],
+    ["rename_service_category", "Renombrando categoría…"],
+    ["delete_service_category", "Quitando categoría…"],
+    ["reorder_service_categories", "Ordenando categorías…"],
   ]
   for (const [name, label] of labels) {
     expect(tools.find((t) => t.definition.name === name)!.label).toBe(label)
@@ -1921,6 +2338,10 @@ test("risky tools never run directly", async () => {
     "update_business_details",
     "set_hours",
     "update_service",
+    "create_service_category",
+    "rename_service_category",
+    "delete_service_category",
+    "reorder_service_categories",
   ]) {
     const result = (await byName(name).run({})) as { error: string }
     expect(result.error).toMatch(/tap/)
@@ -1936,6 +2357,10 @@ test("risky tools never run directly", async () => {
   expect(vi.mocked(updateAddonGroup)).not.toHaveBeenCalled()
   expect(vi.mocked(deleteAddonGroup)).not.toHaveBeenCalled()
   expect(vi.mocked(updateBusinessDetails)).not.toHaveBeenCalled()
+  expect(vi.mocked(createServiceCategory)).not.toHaveBeenCalled()
+  expect(vi.mocked(renameServiceCategory)).not.toHaveBeenCalled()
+  expect(vi.mocked(deleteServiceCategory)).not.toHaveBeenCalled()
+  expect(vi.mocked(reorderServiceCategories)).not.toHaveBeenCalled()
 })
 
 const BOOKING_BUSINESS = {
@@ -2609,8 +3034,10 @@ test("capped list results stay bounded for the model", async () => {
       name: "n".repeat(80),
       durationMinutes: 30,
       priceMinor: 100000,
+      categoryId: null,
     })),
     team: [],
+    categories: [],
   } as never)
   vi.mocked(getBookings).mockResolvedValue(
     Array.from({ length: 200 }, (_, i) => big(i)) as never
@@ -2707,11 +3134,15 @@ function ownerData(overrides: Record<string, unknown> = {}) {
     business: { ...BUSINESS, theme: "luma", setupFinishedAt: 1, description: "Hi" },
     hours: [],
     services: [
-      { id: "s1", name: "Cut" },
-      { id: "s2", name: "Beard" },
+      { id: "s1", name: "Cut", categoryId: null },
+      { id: "s2", name: "Beard", categoryId: null },
     ],
     team: [KELLY, { ...KELLY, id: "m2", name: "Sam" }],
     memberHours: [],
+    categories: [
+      { id: "c1", name: "Hair" },
+      { id: "c2", name: "Nails" },
+    ],
     ...overrides,
   } as never
 }
@@ -2742,6 +3173,10 @@ const CHANGES: [string, string][] = [
   ["save_reminder_settings", "timing"],
   ["change_message_wording", "messages"],
   ["turn_automation_on_off", "flows"],
+  ["create_service_category", "services"],
+  ["rename_service_category", "services"],
+  ["delete_service_category", "services"],
+  ["reorder_service_categories", "services"],
 ]
 
 test.each(CHANGES)("%s waits for the tap", async (name, kind) => {
@@ -3197,6 +3632,14 @@ test("the reorder tools show the new order and need the whole list", async () =>
       summary: "Style, Wash",
       action: reorderAddonGroups,
       doneText: "Extras order updated.",
+    },
+    {
+      tool: "reorder_service_categories",
+      argument: "categoryIds",
+      ids: ["c2", "c1"],
+      summary: "Nails, Hair",
+      action: reorderServiceCategories,
+      doneText: "Category order updated.",
     },
   ]
   for (const { tool: name, argument, ids, summary, action, doneText } of cases) {

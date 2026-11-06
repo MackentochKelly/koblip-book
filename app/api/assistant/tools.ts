@@ -29,6 +29,12 @@ import {
 } from "@/features/dashboard/api/addon-actions"
 import { setAutomationOn } from "@/features/dashboard/api/automation-actions"
 import { automationsFor } from "@/features/dashboard/api/automation-queries"
+import {
+  createServiceCategory,
+  deleteServiceCategory,
+  renameServiceCategory,
+  reorderServiceCategories,
+} from "@/features/dashboard/api/category-actions"
 import { addCustomer } from "@/features/dashboard/api/customer-actions"
 import { improveDetails } from "@/features/dashboard/api/improve-details"
 import { saveTeamMemberWithHours } from "@/features/dashboard/api/member-hours"
@@ -120,6 +126,7 @@ import {
 import { formatDuration } from "@/lib/format-duration"
 import { formatPrice } from "@/lib/format-price"
 import { notificationRules } from "@/lib/platform-settings"
+import { groupServices, inGroupOrder } from "@/lib/service-groups"
 import {
   POLICY_KINDS,
   POLICY_POINT_ICONS,
@@ -157,6 +164,13 @@ function sameService(
 
 type OwnerData = Awaited<ReturnType<typeof getOwnerBusiness>>
 type TeamRow = OwnerData["team"][number]
+type CategoryRow = OwnerData["categories"][number]
+
+// The services in the order the owner and customers see them: each category
+// in its order, then Other. With no category it is the saved order.
+function servicesInShownOrder(owned: OwnerData): OwnerData["services"] {
+  return inGroupOrder(groupServices(owned.services, owned.categories))
+}
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -716,6 +730,10 @@ interface CheckedServiceUpdate {
   priceMinor: number | null
   description: string | null
   currency: string
+  // The category before, and the one asked for: undefined when categoryId
+  // was left out, so the service keeps its own; null is no category.
+  currentCategory: CategoryRow | null
+  category: CategoryRow | null | undefined
 }
 
 // Missing or blank means no description; too long or wrong type rejects.
@@ -733,6 +751,34 @@ function validDescription(value: unknown): string | null | "invalid" {
   return trimmed.length <= BOOKING_RULES.maxServiceDescription
     ? trimmed
     : "invalid"
+}
+
+// The category a service goes in, from the model's categoryId: left out is
+// undefined, "none" (or null) is no category, anything else must be one of
+// the business's own.
+function pickCategory(
+  value: unknown,
+  categories: CategoryRow[]
+): CategoryRow | null | undefined | "unknown" {
+  if (value === undefined) {
+    return undefined
+  }
+  if (value === null || value === "none") {
+    return null
+  }
+  return categories.find((category) => category.id === value) ?? "unknown"
+}
+
+// A category name as the action saves it: trimmed, spaces joined, so the
+// card shows what the tap saves.
+function validCategoryName(value: unknown): string | null {
+  const name = validName(value, BOOKING_RULES.maxServiceCategoryName)
+  return name && name.replace(/\s+/g, " ")
+}
+
+// A category name is used once per business, whatever its capitals.
+function sameCategoryName(a: string, b: string): boolean {
+  return a.toLocaleLowerCase() === b.toLocaleLowerCase()
 }
 
 // Tools closed over the checked businessId and ownerId. The model never
@@ -770,10 +816,15 @@ export function buildAssistantTools(
     if (!a || typeof a.serviceId !== "string" || a.serviceId === "") {
       return { error: t.errors.serviceIdRequired }
     }
-    const { business, services } = await getOwnerBusiness(businessId)
+    const { business, services, categories } =
+      await getOwnerBusiness(businessId)
     const current = services.find((s) => s.id === a.serviceId)
     if (!current) {
       return { error: t.errors.serviceUnknown }
+    }
+    const category = pickCategory(a.categoryId, categories)
+    if (category === "unknown") {
+      return { error: t.errors.serviceCategoryInvalid }
     }
     const name =
       a.name === undefined
@@ -822,6 +873,9 @@ export function buildAssistantTools(
       priceMinor,
       description,
       currency: business.currency,
+      currentCategory:
+        categories.find((c) => c.id === current.categoryId) ?? null,
+      category,
     }
   }
   // Shared checks for set_service_team: describe and execute both use this.
@@ -1359,6 +1413,46 @@ export function buildAssistantTools(
     }
     return { name, description, durationMinutes, priceMinor }
   }
+  // One service category by id, for the tools that act on one.
+  const findServiceCategory = async (
+    args: unknown
+  ): Promise<
+    { category: CategoryRow; categories: CategoryRow[] } | { error: string }
+  > => {
+    const a = asRecord(args)
+    if (!a || typeof a.categoryId !== "string" || a.categoryId === "") {
+      return { error: t.errors.serviceCategoryIdRequired }
+    }
+    const { categories } = await getOwnerBusiness(businessId)
+    const category = categories.find((c) => c.id === a.categoryId)
+    return category
+      ? { category, categories }
+      : { error: t.errors.serviceCategoryUnknown }
+  }
+  // Shared checks for rename_service_category: the card and the tap read
+  // the same. A name another category has is the card's check; the action
+  // checks it again at the tap.
+  const checkRenameCategoryArgs = async (
+    args: unknown
+  ): Promise<
+    | { category: CategoryRow; categories: CategoryRow[]; name: string }
+    | { error: string }
+  > => {
+    const found = await findServiceCategory(args)
+    if ("error" in found) {
+      return found
+    }
+    const name = validCategoryName(asRecord(args)?.name)
+    if (!name) {
+      return {
+        error: t.errors.nameInvalid(BOOKING_RULES.maxServiceCategoryName),
+      }
+    }
+    if (name === found.category.name) {
+      return { error: t.errors.nothingToChange }
+    }
+    return { ...found, name }
+  }
   // Shared checks for rename_team_member.
   const checkRenameArgs = async (
     args: unknown
@@ -1790,34 +1884,42 @@ export function buildAssistantTools(
       definition: {
         name: "list_services",
         description:
-          "All services with duration, price, description, photo yes/no, team member ids and add-on group ids.",
+          "All services in the order shown, by category, with categoryId and categoryName (null = Other), duration, price, description, photo yes/no, team member ids and add-on group ids; categories are the service categories in order. reorder_services orders services within their category; update_service's categoryId moves one.",
         parameters: schema({}),
         needsConfirm: false,
       },
       label: t.steps.services,
       doneLabel: t.stepsDone.services,
       run: async () => {
-        const [{ business, services }, teams, groups] = await Promise.all([
+        const [owned, teams, groups] = await Promise.all([
           getOwnerBusiness(businessId),
           getServiceTeams(businessId),
           getAddonGroups(businessId),
         ])
-        const rows = services.map((s) => ({
-          id: s.id,
-          name: s.name,
-          durationMinutes: s.durationMinutes,
-          priceMinor: s.priceMinor,
-          priceText: priceText(t, s.priceMinor, business.currency),
-          description: s.description,
-          hasPhoto: s.photoUrl !== null,
-          teamMemberIds: teams[s.id] ?? [],
-          addonGroupIds: groups
-            .filter((g) => g.serviceIds.includes(s.id))
-            .map((g) => g.id),
-        }))
+        const { business, categories } = owned
+        const rows = servicesInShownOrder(owned).map((s) => {
+          // Null for Other, like the shared grouping.
+          const category = categories.find((c) => c.id === s.categoryId)
+          return {
+            id: s.id,
+            name: s.name,
+            categoryId: category?.id ?? null,
+            categoryName: category?.name ?? null,
+            durationMinutes: s.durationMinutes,
+            priceMinor: s.priceMinor,
+            priceText: priceText(t, s.priceMinor, business.currency),
+            description: s.description,
+            hasPhoto: s.photoUrl !== null,
+            teamMemberIds: teams[s.id] ?? [],
+            addonGroupIds: groups
+              .filter((g) => g.serviceIds.includes(s.id))
+              .map((g) => g.id),
+          }
+        })
         const capped = rows.slice(0, 50)
         return {
           services: capped,
+          categories: categories.map((c) => ({ id: c.id, name: c.name })),
           total: rows.length,
           truncated: rows.length > capped.length,
         }
@@ -2306,6 +2408,11 @@ export function buildAssistantTools(
               type: "string",
               description: `Optional, max ${BOOKING_RULES.maxServiceDescription} characters`,
             },
+            categoryId: {
+              type: "string",
+              description:
+                'Optional: an id from list_services categories, or "none" for no category',
+            },
           },
           ["name", "minutes", "priceMinor"]
         ),
@@ -2321,7 +2428,12 @@ export function buildAssistantTools(
           if ("error" in checked) {
             return checked
           }
-          const { business, services } = await getOwnerBusiness(businessId)
+          const { business, services, categories } =
+            await getOwnerBusiness(businessId)
+          const category = pickCategory(asRecord(args)?.categoryId, categories)
+          if (category === "unknown") {
+            return { error: t.errors.serviceCategoryInvalid }
+          }
           if (services.length >= BOOKING_RULES.maxServices) {
             return { error: t.errors.servicesFull(BOOKING_RULES.maxServices) }
           }
@@ -2335,6 +2447,7 @@ export function buildAssistantTools(
               checked.name,
               t.booking.minutes(checked.durationMinutes),
               priceText(t, checked.priceMinor, business.currency),
+              ...(category ? [category.name] : []),
               ...(checked.description ? [checked.description] : []),
             ].join(" · "),
             destructive: false,
@@ -2350,7 +2463,7 @@ export function buildAssistantTools(
           }
           // Two cards can wait for the same service, or one come after another
           // was tapped; the card's own check is from when it was made.
-          const { services } = await getOwnerBusiness(businessId)
+          const { services, categories } = await getOwnerBusiness(businessId)
           if (services.some((service) => sameService(service, checked))) {
             return {
               ok: false,
@@ -2359,7 +2472,21 @@ export function buildAssistantTools(
               ),
             }
           }
-          const result = await createService(businessId, checked)
+          // A category removed since the card showed is refused, never
+          // swapped for no category.
+          const category = pickCategory(asRecord(args)?.categoryId, categories)
+          if (category === "unknown") {
+            return {
+              ok: false,
+              doneText: t.createService.failed(t.errors.serviceCategoryInvalid),
+            }
+          }
+          const result = await createService(
+            businessId,
+            category === undefined
+              ? checked
+              : { ...checked, categoryId: category?.id ?? null }
+          )
           if (!result.ok) {
             return {
               ok: false,
@@ -2392,6 +2519,11 @@ export function buildAssistantTools(
           description: {
             type: "string",
             description: `New description, max ${BOOKING_RULES.maxServiceDescription} characters`,
+          },
+          categoryId: {
+            type: "string",
+            description:
+              'New category: an id from list_services categories, or "none" for no category',
           },
         }),
         needsConfirm: true,
@@ -2426,6 +2558,16 @@ export function buildAssistantTools(
           if (oldDescription !== newDescription) {
             parts.push(`${oldDescription ?? ""} → ${newDescription ?? ""}`)
           }
+          if (
+            checked.category !== undefined &&
+            checked.category?.id !== checked.currentCategory?.id
+          ) {
+            const categoryName = (category: CategoryRow | null) =>
+              category?.name ?? ownerWords.catalog.categories.none
+            parts.push(
+              `${categoryName(checked.currentCategory)} → ${categoryName(checked.category)}`
+            )
+          }
           if (parts.length === 0) {
             return { error: t.errors.nothingToChange }
           }
@@ -2457,6 +2599,10 @@ export function buildAssistantTools(
             description: checked.description,
             durationMinutes: checked.durationMinutes,
             priceMinor: checked.priceMinor,
+            // Left out keeps the service's category.
+            ...(checked.category !== undefined
+              ? { categoryId: checked.category?.id ?? null }
+              : {}),
           })
           if (!result.ok) {
             return {
@@ -2705,6 +2851,211 @@ export function buildAssistantTools(
             }
           }
           return { ok: true, doneText: t.deleteService.done }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "create_service_category",
+        description: `Add a service category, like Hair or Nails, to group services. At most ${BOOKING_RULES.maxServiceCategories} per business. create_service and update_service put services in it with categoryId. Needs the owner's tap.`,
+        parameters: schema(
+          {
+            name: {
+              type: "string",
+              description: `Category name, 1-${BOOKING_RULES.maxServiceCategoryName} characters`,
+            },
+          },
+          ["name"]
+        ),
+        needsConfirm: true,
+        resultKind: "services",
+      },
+      label: t.steps.createServiceCategory,
+      doneLabel: t.stepsDone.createServiceCategory,
+      run: async () => ({ error: t.tapFirst.createServiceCategory }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const name = validCategoryName(asRecord(args)?.name)
+          if (!name) {
+            return {
+              error: t.errors.nameInvalid(BOOKING_RULES.maxServiceCategoryName),
+            }
+          }
+          const { categories } = await getOwnerBusiness(businessId)
+          if (categories.length >= BOOKING_RULES.maxServiceCategories) {
+            return {
+              error: t.errors.serviceCategoriesFull(
+                BOOKING_RULES.maxServiceCategories
+              ),
+            }
+          }
+          if (categories.some((c) => sameCategoryName(c.name, name))) {
+            return { error: t.errors.serviceCategoryExists(name) }
+          }
+          return {
+            title: t.cards.createServiceCategory,
+            action: t.actions.createServiceCategory,
+            summary: name,
+            destructive: false,
+          }
+        },
+        // The action checks the name and the count again at the tap.
+        execute: async (args: unknown) => {
+          const name = validCategoryName(asRecord(args)?.name)
+          if (!name) {
+            return {
+              ok: false,
+              doneText: t.createServiceCategory.failed(
+                t.errors.nameInvalid(BOOKING_RULES.maxServiceCategoryName)
+              ),
+            }
+          }
+          const result = await createServiceCategory(businessId, name)
+          if (!result.ok) {
+            return {
+              ok: false,
+              doneText:
+                result.error === "taken"
+                  ? t.createServiceCategory.taken(name)
+                  : t.createServiceCategory.failed(result.error),
+            }
+          }
+          return { ok: true, doneText: t.createServiceCategory.done(name) }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "rename_service_category",
+        description:
+          "Rename a service category. Use the id from list_services categories. Needs the owner's tap.",
+        parameters: schema(
+          {
+            categoryId: {
+              type: "string",
+              description: "Id from list_services categories",
+            },
+            name: {
+              type: "string",
+              description: `New name, 1-${BOOKING_RULES.maxServiceCategoryName} characters`,
+            },
+          },
+          ["categoryId", "name"]
+        ),
+        needsConfirm: true,
+        resultKind: "services",
+      },
+      label: t.steps.renameServiceCategory,
+      doneLabel: t.stepsDone.renameServiceCategory,
+      run: async () => ({ error: t.tapFirst.renameServiceCategory }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const checked = await checkRenameCategoryArgs(args)
+          if ("error" in checked) {
+            return checked
+          }
+          if (
+            checked.categories.some(
+              (c) =>
+                c.id !== checked.category.id &&
+                sameCategoryName(c.name, checked.name)
+            )
+          ) {
+            return { error: t.errors.serviceCategoryExists(checked.name) }
+          }
+          return {
+            title: t.cards.renameServiceCategory,
+            action: t.actions.renameServiceCategory,
+            summary: `${checked.category.name} → ${checked.name}`,
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const checked = await checkRenameCategoryArgs(args)
+          if ("error" in checked) {
+            return {
+              ok: false,
+              doneText:
+                checked.error === t.errors.serviceCategoryUnknown ||
+                checked.error === t.errors.serviceCategoryIdRequired
+                  ? t.renameServiceCategory.unknown
+                  : t.renameServiceCategory.failed(checked.error),
+            }
+          }
+          const result = await renameServiceCategory(
+            businessId,
+            checked.category.id,
+            checked.name
+          )
+          if (!result.ok) {
+            const refusals: Record<string, string> = {
+              not_found: t.renameServiceCategory.unknown,
+              taken: t.renameServiceCategory.taken(checked.name),
+            }
+            return {
+              ok: false,
+              doneText:
+                refusals[result.error] ??
+                t.renameServiceCategory.failed(result.error),
+            }
+          }
+          return {
+            ok: true,
+            doneText: t.renameServiceCategory.done(checked.name),
+          }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "delete_service_category",
+        description:
+          "Remove a service category. Its services move to Other and are never deleted. Use the id from list_services categories. Needs the owner's tap.",
+        parameters: schema(
+          {
+            categoryId: {
+              type: "string",
+              description: "Id from list_services categories",
+            },
+          },
+          ["categoryId"]
+        ),
+        needsConfirm: true,
+        resultKind: "services",
+      },
+      label: t.steps.deleteServiceCategory,
+      doneLabel: t.stepsDone.deleteServiceCategory,
+      run: async () => ({ error: t.tapFirst.deleteServiceCategory }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const found = await findServiceCategory(args)
+          if ("error" in found) {
+            return found
+          }
+          return {
+            title: t.cards.deleteServiceCategory,
+            action: t.actions.deleteServiceCategory,
+            // The same words as the Services screen's own removal.
+            summary: `${found.category.name} · ${ownerWords.catalog.categories.movesToOther}`,
+            destructive: true,
+          }
+        },
+        execute: async (args: unknown) => {
+          const categoryId = asRecord(args)?.categoryId
+          if (typeof categoryId !== "string" || categoryId === "") {
+            return { ok: false, doneText: t.deleteServiceCategory.unknown }
+          }
+          const result = await deleteServiceCategory(businessId, categoryId)
+          if (!result.ok) {
+            return {
+              ok: false,
+              doneText:
+                result.error === "not_found"
+                  ? t.deleteServiceCategory.unknown
+                  : t.deleteServiceCategory.failed(result.error),
+            }
+          }
+          return { ok: true, doneText: t.deleteServiceCategory.done }
         },
       },
     },
@@ -3921,7 +4272,7 @@ export function buildAssistantTools(
       definition: {
         name: "suggest_services",
         description:
-          "Muse suggests services this business could offer. It saves nothing: show them and ask which to add.",
+          "Muse suggests services this business could offer, each with a category name (an existing one or a new one; null = Other). It saves nothing: show them and ask which to add; a new category is added with create_service_category first.",
         parameters: schema({}),
         needsConfirm: false,
       },
@@ -4228,8 +4579,25 @@ export function buildAssistantTools(
       tapFirst: t.tapFirst.reorderServices,
       title: t.cards.reorderServices,
       doneText: t.reorder.services,
-      list: async () => (await getOwnerBusiness(businessId)).services,
+      // In the order list_services shows, so the same list is no change.
+      list: async () =>
+        servicesInShownOrder(await getOwnerBusiness(businessId)),
       save: (ids) => reorderServices(businessId, ids),
+    }),
+    reorderTool({
+      name: "reorder_service_categories",
+      argument: "categoryIds",
+      // Its categories, not its services: the ids differ.
+      listTool: "list_services categories",
+      things: "service categories",
+      resultKind: "services",
+      label: t.steps.reorderServiceCategories,
+      doneLabel: t.stepsDone.reorderServiceCategories,
+      tapFirst: t.tapFirst.reorderServiceCategories,
+      title: t.cards.reorderServiceCategories,
+      doneText: t.reorder.serviceCategories,
+      list: async () => (await getOwnerBusiness(businessId)).categories,
+      save: (ids) => reorderServiceCategories(businessId, ids),
     }),
     reorderTool({
       name: "reorder_team",

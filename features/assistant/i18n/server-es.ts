@@ -17,6 +17,9 @@ const messages: typeof en = {
     createService: "Creando servicio…",
     updateService: "Actualizando servicio…",
     deleteService: "Eliminando servicio…",
+    createServiceCategory: "Creando categoría…",
+    renameServiceCategory: "Renombrando categoría…",
+    deleteServiceCategory: "Quitando categoría…",
     renameMember: "Renombrando miembro…",
     setBookingStatus: "Actualizando reserva…",
     cancelBooking: "Cancelando reserva…",
@@ -47,6 +50,7 @@ const messages: typeof en = {
     deletePhoto: "Eliminando foto…",
     reorderPhotos: "Ordenando fotos…",
     reorderServices: "Ordenando servicios…",
+    reorderServiceCategories: "Ordenando categorías…",
     reorderTeam: "Ordenando el equipo…",
     reorderAddons: "Ordenando extras…",
     savePolicy: "Guardando política…",
@@ -71,6 +75,9 @@ const messages: typeof en = {
     createService: "Servicio creado",
     updateService: "Servicio actualizado",
     deleteService: "Servicio eliminado",
+    createServiceCategory: "Categoría creada",
+    renameServiceCategory: "Categoría renombrada",
+    deleteServiceCategory: "Categoría quitada",
     renameMember: "Miembro renombrado",
     setBookingStatus: "Reserva actualizada",
     cancelBooking: "Reserva cancelada",
@@ -101,6 +108,7 @@ const messages: typeof en = {
     deletePhoto: "Foto eliminada",
     reorderPhotos: "Fotos ordenadas",
     reorderServices: "Servicios ordenados",
+    reorderServiceCategories: "Categorías ordenadas",
     reorderTeam: "Equipo ordenado",
     reorderAddons: "Extras ordenados",
     savePolicy: "Política guardada",
@@ -143,6 +151,9 @@ const messages: typeof en = {
     createMember: "agregar a un miembro del equipo necesita tu toque primero",
     cancel: "cancelar necesita tu toque primero",
     deleteService: "eliminar necesita tu toque primero",
+    createServiceCategory: "agregar una categoría necesita tu toque primero",
+    renameServiceCategory: "renombrar una categoría necesita tu toque primero",
+    deleteServiceCategory: "quitar una categoría necesita tu toque primero",
     deleteMember: "eliminar necesita tu toque primero",
     hours: "cambiar el horario necesita tu toque primero",
     booking: "reservar necesita tu toque primero",
@@ -164,6 +175,8 @@ const messages: typeof en = {
     deletePhoto: "eliminar una foto necesita tu toque primero",
     reorderPhotos: "ordenar las fotos necesita tu toque primero",
     reorderServices: "ordenar los servicios necesita tu toque primero",
+    reorderServiceCategories:
+      "ordenar las categorías necesita tu toque primero",
     reorderTeam: "ordenar el equipo necesita tu toque primero",
     reorderAddons: "ordenar los extras necesita tu toque primero",
     savePolicy: "cambiar una política necesita tu toque primero",
@@ -186,6 +199,9 @@ const messages: typeof en = {
     createMember: "¿Agregar a este miembro del equipo?",
     cancel: "¿Cancelar esta reserva?",
     deleteService: "¿Eliminar este servicio?",
+    createServiceCategory: "¿Agregar esta categoría?",
+    renameServiceCategory: "¿Renombrar esta categoría?",
+    deleteServiceCategory: "¿Quitar esta categoría?",
     deleteMember: "¿Eliminar a este miembro?",
     hours: "¿Cambiar el horario?",
     book: "¿Reservar esta cita?",
@@ -206,6 +222,7 @@ const messages: typeof en = {
     deletePhoto: "¿Eliminar esta foto?",
     reorderPhotos: "¿Cambiar el orden de las fotos?",
     reorderServices: "¿Cambiar el orden de los servicios?",
+    reorderServiceCategories: "¿Cambiar el orden de las categorías?",
     reorderTeam: "¿Cambiar el orden del equipo?",
     reorderAddons: "¿Cambiar el orden de los extras?",
     savePolicy: "¿Guardar esta política?",
@@ -233,6 +250,9 @@ const messages: typeof en = {
     createMember: "Agregar",
     cancelBooking: "Cancelar reserva",
     deleteService: "Eliminar",
+    createServiceCategory: "Agregar",
+    renameServiceCategory: "Renombrar",
+    deleteServiceCategory: "Quitar",
     deleteMember: "Eliminar",
     hours: "Cambiar horario",
     book: "Reservar",
@@ -305,6 +325,24 @@ const messages: typeof en = {
   createService: {
     failed: (error: string) => `No se pudo agregar el servicio (${error}).`,
     done: (name: string) => `Se agregó el servicio ${name}.`,
+  },
+  createServiceCategory: {
+    taken: (name: string) =>
+      `No se agregó: ya tienes una categoría llamada ${name}.`,
+    failed: (error: string) => `No se pudo agregar la categoría (${error}).`,
+    done: (name: string) => `Se agregó la categoría ${name}.`,
+  },
+  renameServiceCategory: {
+    unknown: "No se pudo renombrar: categoría desconocida.",
+    taken: (name: string) =>
+      `No se renombró: ya tienes una categoría llamada ${name}.`,
+    failed: (error: string) => `No se pudo renombrar la categoría (${error}).`,
+    done: (name: string) => `Nuevo nombre: ${name}.`,
+  },
+  deleteServiceCategory: {
+    unknown: "No se pudo quitar: categoría desconocida.",
+    failed: (error: string) => `No se pudo quitar la categoría (${error}).`,
+    done: "Categoría quitada. Sus servicios pasaron a Otros.",
   },
   renameMember: {
     unknown: "No se pudo renombrar: miembro del equipo desconocido.",
@@ -440,6 +478,7 @@ const messages: typeof en = {
   reorder: {
     failed: (error: string) => `No se pudo guardar el orden (${error}).`,
     services: "Orden de los servicios actualizado.",
+    serviceCategories: "Orden de las categorías actualizado.",
     team: "Orden del equipo actualizado.",
     addons: "Orden de los extras actualizado.",
   },
@@ -547,6 +586,16 @@ const messages: typeof en = {
     nothingToChange: "No hay nada que cambiar.",
     servicesFull: (max: number) =>
       `ya hay ${max} servicios, el máximo por negocio`,
+    serviceCategoryIdRequired:
+      "categoryId es obligatorio: lista los servicios primero y usa un id de sus categorías",
+    serviceCategoryUnknown:
+      "id de categoría desconocido: lista los servicios primero y usa un id de sus categorías",
+    serviceCategoryInvalid:
+      'categoryId debe ser un id de las categorías de list_services, o "none" para ninguna',
+    serviceCategoryExists: (name: string) =>
+      `ya hay una categoría llamada ${name}`,
+    serviceCategoriesFull: (max: number) =>
+      `ya hay ${max} categorías, el máximo por negocio`,
     serviceExists: (name: string) =>
       `ya hay un servicio llamado ${name} con el mismo tiempo y precio`,
     teamFull: (max: number) =>
