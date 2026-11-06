@@ -95,8 +95,8 @@ runs in monthly parts if the owner wants to stay inside the free allowance.
 
 The developer never creates accounts or handles keys.
 
-1. Two Google Cloud projects: one for testing, one for production.
-2. Billing on for each, with a budget alert (for example $10 a month).
+1. One Google Cloud project, `koblip-book`, for the Mac and the live site.
+2. Billing on, with a budget alert (for example $10 a month).
 3. Turn on the Cloud Translation API (`translate.googleapis.com`).
 4. Set a daily character quota (for example 1,000,000).
 5. A service account, for example `koblip-translate`, with only
@@ -141,7 +141,7 @@ owner's own policy title.
 | Today's hand-written Spanish words are kept as Edited | They are checked already; it also costs nothing | Developer, 2026-11-06 |
 | next-intl with ICU messages for interface words | The standard for Next.js; plurals and fields are text that Google can translate, not code; messages can come from the database | Developer, 2026-11-06 |
 | Saving never waits for Google | The queue and `after()` do the work after the save | Developer, 2026-11-06 |
-| One Google project per environment | Google's advice | Developer, 2026-11-06 |
+| One Google project for the Mac and the live site | Owner's choice: start now, no separate setup later | Owner, 2026-11-06 |
 | Today's `translations` rows move in G3, not G2 | Moving them while the old code still writes the old table would leave two copies apart | Developer, 2026-11-06 |
 | The engine saves with `saveAll` inside `runInTurn` per business | The app's rule for check-then-save on SQLite (`eslint.config.mjs`); a newer English or an admin edit made while Google works always wins | Developer, 2026-11-06 |
 | Only Google's own automatic translations are reused for the same English | An admin's edit for one business never shows up in another's | Developer, 2026-11-06 |
