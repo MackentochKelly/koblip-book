@@ -39,6 +39,22 @@ function farthestCorner(x: number, y: number) {
   )
 }
 
+// The view transition type the reveal's CSS waits for (app/globals.css).
+const REVEAL_TYPE = "assistant-open"
+
+// View transitions with types (Chrome 125+, Safari 18.2+, Firefox 144+).
+// Elsewhere the Assistant just opens.
+function canReveal() {
+  return (
+    typeof document.startViewTransition === "function" &&
+    "types" in ViewTransition.prototype
+  )
+}
+
+// The reveal's circle, read by its CSS: the globe's centre and how far it
+// grows (to the window's farthest corner), set while it plays.
+const REVEAL_PROPS = ["--reveal-x", "--reveal-y", "--reveal-to"] as const
+
 // The way into the assistant on a computer (a phone has the tab bar's middle
 // button): a round globe that floats over every other page and opens the
 // assistant. For a moment after the page loads, a few short ideas rest next to
@@ -56,11 +72,10 @@ export function AssistantFloat({
   const desktop = useIsDesktop()
   const showIdeas = useJustLoaded(ASSISTANT_RULES.floatIdeasMs)
   const [closed, setClosed] = useState<readonly IdeaKey[]>([])
-  // The globe is opening: it grows over the screen, then fades off the page.
-  const [opening, setOpening] = useState(false)
+  // The reveal is playing: a second click waits for it.
+  const opening = useRef(false)
   const still = useReducedMotion()
   const globe = useRef<HTMLDivElement>(null)
-  const wash = useRef<HTMLDivElement>(null)
   const href = `/dashboard/${businessId}/assistant`
   const pathname = usePathname()
   const assistantOpen = pathname.startsWith(href)
@@ -72,14 +87,14 @@ export function AssistantFloat({
   }, [assistantOpen])
 
   // Off on a phone, so its moving canvas never starts there.
-  if (!desktop || (assistantOpen && !opening)) return null
+  if (!desktop || assistantOpen) return null
 
-  const ideas = opening ? [] : IDEAS.filter(({ key }) => !closed.includes(key))
+  const ideas = IDEAS.filter(({ key }) => !closed.includes(key))
 
   // Goes to the Assistant; resolves once it is on screen.
   const arrive = () =>
     new Promise<void>((resolve) => {
-      const timer = setTimeout(resolve, ASSISTANT_RULES.globeOpenWaitMs)
+      const timer = setTimeout(resolve, ASSISTANT_RULES.globeRevealWaitMs)
       arrived.current = () => {
         clearTimeout(timer)
         arrived.current = null
@@ -88,62 +103,44 @@ export function AssistantFloat({
       router.push(href)
     })
 
-  // The globe grows past the screen's edges and turns into the page's own
-  // colour. The page changes hidden behind it, then it all fades away to show
-  // the Assistant.
-  const open = async () => {
+  // Material's circular reveal: the Assistant shows through a circle that
+  // grows from the globe's centre to the window's farthest corner, while the
+  // page under it holds still (app/globals.css, assistant-reveal). It is a
+  // view transition of the whole window (developer.mozilla.org/docs/Web/API/
+  // View_Transition_API), started here rather than by a React <ViewTransition>
+  // on the Assistant's page, so only this click plays it: a boundary there
+  // would also animate every other way in and out of the page (the phone's
+  // tab bar, the menu, Back). The browser shows real pages, clipped, so it
+  // stays sharp at every frame.
+  const open = () => {
     const ball = globe.current
-    const colour = wash.current
-    if (opening) return
-    // Someone asked for less motion: it just opens.
-    if (!ball || !colour || still) {
+    if (opening.current) return
+    // Someone asked for less motion, or the browser can't: it just opens.
+    if (!ball || still || !canReveal()) {
       router.push(href)
       return
     }
     const place = ball.getBoundingClientRect()
-    const scale =
-      (farthestCorner(
-        place.left + place.width / 2,
-        place.top + place.height / 2
-      ) *
-        2.2) /
-      place.width
-    setOpening(true)
-    const grow = ball.animate(
-      [{ transform: "scale(1)" }, { transform: `scale(${scale})` }],
-      {
-        duration: ASSISTANT_RULES.globeOpenGrowMs,
-        easing: ASSISTANT_RULES.globeOpenGrowEase,
-        fill: "forwards",
-      }
-    )
-    const turn = colour.animate([{ opacity: 0 }, { opacity: 1 }], {
-      delay: ASSISTANT_RULES.globeOpenWashDelayMs,
-      duration: ASSISTANT_RULES.globeOpenWashMs,
-      easing: "ease-in-out",
-      fill: "both",
+    const x = place.left + place.width / 2
+    const y = place.top + place.height / 2
+    const root = document.documentElement.style
+    root.setProperty("--reveal-x", `${x}px`)
+    root.setProperty("--reveal-y", `${y}px`)
+    root.setProperty("--reveal-to", `${farthestCorner(x, y)}px`)
+    opening.current = true
+    const reveal = document.startViewTransition({
+      update: arrive,
+      types: [REVEAL_TYPE],
     })
-    await grow.ready
-    await new Promise((covered) =>
-      setTimeout(covered, ASSISTANT_RULES.globeOpenCoveredMs)
-    )
-    await arrive()
-    await turn.finished
-    const fade = ball.animate([{ opacity: 1 }, { opacity: 0 }], {
-      duration: ASSISTANT_RULES.globeOpenFadeMs,
-      easing: "ease-out",
-      fill: "forwards",
+    void reveal.finished.finally(() => {
+      for (const prop of REVEAL_PROPS) root.removeProperty(prop)
+      opening.current = false
     })
-    await fade.finished
-    grow.cancel()
-    turn.cancel()
-    fade.cancel()
-    setOpening(false)
   }
 
   const ask = (question: string) => {
     handOff(businessId, { kind: "ask", text: question })
-    void open()
+    open()
   }
 
   return (
@@ -157,7 +154,7 @@ export function AssistantFloat({
         // A new tab or window opens as any link does.
         if (event.metaKey || event.ctrlKey || event.shiftKey) return
         event.preventDefault()
-        void open()
+        open()
       }}
       attached={ideas.map(({ key, icon: Icon }, order) => (
         <div
@@ -198,15 +195,9 @@ export function AssistantFloat({
         </div>
       ))}
     >
-      <div
-        ref={globe}
-        className={cn("relative size-full", opening && "will-change-transform")}
-      >
+      {/* Measured for where the reveal starts. */}
+      <div ref={globe} className="size-full">
         <VoiceGlobe className="size-full" />
-        <div
-          ref={wash}
-          className="absolute inset-0 rounded-full bg-background opacity-0"
-        />
       </div>
     </FloatingLink>
   )
