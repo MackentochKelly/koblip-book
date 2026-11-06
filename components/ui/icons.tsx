@@ -222,6 +222,12 @@ export const CornerLeftUpIcon = icon(
 )
 export const CreditCardIcon = icon(MynaCreditCard as Icon, "CreditCardIcon")
 export const EllipsisIcon = icon(LucideEllipsis as Icon, "EllipsisIcon")
+// Lucide's MoreHorizontal is now named Ellipsis; shadcn's Pagination asks
+// for it by the old name.
+export const MoreHorizontalIcon = icon(
+  LucideEllipsis as Icon,
+  "MoreHorizontalIcon"
+)
 export const EllipsisVerticalIcon = icon(
   MynaDotsVertical as Icon,
   "EllipsisVerticalIcon"

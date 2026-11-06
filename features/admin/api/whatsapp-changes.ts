@@ -1,6 +1,6 @@
 import "server-only"
 
-import { desc, eq } from "drizzle-orm"
+import { desc, eq, notLike } from "drizzle-orm"
 import { requireAdmin } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { businesses, platformSettingChanges, user } from "@/lib/db/schema"
@@ -21,7 +21,8 @@ export interface WhatsappChange {
 }
 
 // WhatsApp → Change log (A7): every admin change, newest first, with the
-// business it was for and who made it.
+// business it was for and who made it. Translation rules have their own log
+// (Admin → Translations → History).
 export async function getWhatsappChanges(): Promise<WhatsappChange[]> {
   await requireAdmin()
   return db
@@ -37,6 +38,7 @@ export async function getWhatsappChanges(): Promise<WhatsappChange[]> {
     .from(platformSettingChanges)
     .leftJoin(businesses, eq(businesses.id, platformSettingChanges.businessId))
     .leftJoin(user, eq(user.id, platformSettingChanges.changedBy))
+    .where(notLike(platformSettingChanges.key, "translation.%"))
     .orderBy(desc(platformSettingChanges.id))
     .limit(MAX_ROWS)
 }

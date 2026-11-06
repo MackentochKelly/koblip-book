@@ -21,8 +21,10 @@ import { getTranslator, type Translator } from "./provider"
 import {
   TRANSLATION_RULES,
   type TranslationAction,
+  type TranslationRules,
   type TranslationScope,
 } from "./rules"
+import { translationRules } from "./settings"
 
 // The translation queue (docs/plans/translations.md, G2). Saving only
 // records what changed (syncTexts); the run after the save
@@ -239,6 +241,7 @@ async function runOnce(options: {
     return { ...result, status: "not_set_up" }
   }
   const now = options.now?.() ?? new Date()
+  const rules = await translationRules()
   const due = await db
     .select()
     .from(translationEntries)
@@ -252,7 +255,7 @@ async function runOnce(options: {
       )
     )
     .orderBy(asc(translationEntries.createdAt))
-    .limit(TRANSLATION_RULES.runTexts)
+    .limit(rules.runTexts)
   if (due.length === 0) {
     return result
   }
@@ -292,7 +295,7 @@ async function runOnce(options: {
     }
     if (entry.businessId !== null) {
       const spent = used.get(entry.businessId) ?? 0
-      if (spent + characters > TRANSLATION_RULES.dailyBusinessCharacters) {
+      if (spent + characters > rules.dailyBusinessCharacters) {
         deferred.push(entry.id)
         continue
       }
@@ -317,7 +320,7 @@ async function runOnce(options: {
 
   // 3. Google, in requests of Google's recommended size.
   for (const [language, texts] of requests) {
-    for (const batch of requestBatches(texts)) {
+    for (const batch of requestBatches(texts, rules)) {
       let answers: string[]
       try {
         answers = await translator.translate(
@@ -328,7 +331,8 @@ async function runOnce(options: {
         const outcome = await failTry(
           batch.map((item) => item.entry),
           errorText(error),
-          now
+          now,
+          rules.retryMinutes
         )
         result.retrying += outcome.retrying
         result.failed += outcome.failed
@@ -342,7 +346,8 @@ async function runOnce(options: {
           const outcome = await failTry(
             [item.entry],
             "Google changed a field, link or email",
-            now
+            now,
+            rules.retryMinutes
           )
           result.retrying += outcome.retrying
           result.failed += outcome.failed
@@ -375,7 +380,8 @@ interface PreparedText {
 // Requests of at most `requestCharacters` and `requestTexts`; a longer
 // text goes alone.
 export function requestBatches<T extends { characters: number }>(
-  texts: T[]
+  texts: T[],
+  rules: Pick<TranslationRules, "requestCharacters" | "requestTexts"> = TRANSLATION_RULES
 ): T[][] {
   const batches: T[][] = []
   let batch: T[] = []
@@ -383,8 +389,8 @@ export function requestBatches<T extends { characters: number }>(
   for (const text of texts) {
     if (
       batch.length > 0 &&
-      (batch.length === TRANSLATION_RULES.requestTexts ||
-        characters + text.characters > TRANSLATION_RULES.requestCharacters)
+      (batch.length === rules.requestTexts ||
+        characters + text.characters > rules.requestCharacters)
     ) {
       batches.push(batch)
       batch = []
@@ -542,10 +548,10 @@ async function recordBilled(item: PreparedText, answer: string) {
 async function failTry(
   entries: Entry[],
   error: string,
-  now: Date
+  now: Date,
+  waits: readonly number[]
 ): Promise<{ retrying: number; failed: number }> {
   const outcome = { retrying: 0, failed: 0 }
-  const waits = TRANSLATION_RULES.retryMinutes
   for (const entry of entries) {
     const attempts = entry.attempts + 1
     const failed = attempts > waits.length
@@ -607,11 +613,11 @@ function failedHistory(entry: Entry) {
 }
 
 // Saves for one business (or the app's own words) go one at a time.
-function turnKey(scope: TranslationScope, businessId: string | null): string {
+export function turnKey(scope: TranslationScope, businessId: string | null): string {
   return `translations:${scope}:${businessId ?? "app"}`
 }
 
-function historyOf(entry: Entry) {
+export function historyOf(entry: Entry) {
   return {
     entryId: entry.id,
     scope: entry.scope,

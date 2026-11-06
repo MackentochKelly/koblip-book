@@ -5,6 +5,7 @@ import {
   BellIcon,
   CalendarDaysIcon,
   ContactIcon,
+  LanguagesIcon,
   LayoutDashboardIcon,
   SparklesIcon,
   WhatsAppIcon,
@@ -37,6 +38,7 @@ const NAV = [
   { path: "/bookings", key: "bookings", icon: CalendarDaysIcon },
   { path: "/whatsapp", key: "whatsapp", icon: WhatsAppIcon },
   { path: "/notifications", key: "notifications", icon: BellIcon },
+  { path: "/translations", key: "translations", icon: LanguagesIcon },
   { path: "/assistant", key: "assistant", icon: SparklesIcon },
 ] as const
 

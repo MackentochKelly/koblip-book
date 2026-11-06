@@ -69,6 +69,12 @@ export function sourceHash(text: string): string {
   return createHash("sha3-256").update(text, "utf8").digest("hex")
 }
 
+// An admin's own translation keeps the English's fields, links and emails,
+// as Google's must (fromGoogleHtml).
+export function keepsProtectedParts(english: string, translation: string): boolean {
+  return sameParts(toGoogleHtml(translation).kept, toGoogleHtml(english).kept)
+}
+
 function sameParts(found: string[], kept: string[]): boolean {
   if (found.length !== kept.length) {
     return false

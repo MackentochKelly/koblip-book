@@ -59,7 +59,20 @@ export function isShown(status: TranslationStatus): boolean {
   )
 }
 
-export const TRANSLATION_RULES = {
+export interface TranslationRules {
+  retryMinutes: readonly number[]
+  requestCharacters: number
+  maxTextCharacters: number
+  requestTexts: number
+  dailyBusinessCharacters: number
+  runTexts: number
+  timerSeconds: number
+  requestTimeoutMs: number
+}
+
+// The defaults. An admin changes the ones in TRANSLATION_RULE_KEYS
+// (Admin → Translations → Rules, lib/translations/settings.ts).
+export const TRANSLATION_RULES: TranslationRules = {
   // Minutes before each retry after a failed try; one more failure after
   // the last one marks the text Failed.
   retryMinutes: [1, 5, 30, 120],
@@ -78,4 +91,50 @@ export const TRANSLATION_RULES = {
   timerSeconds: 60,
   // How long Google may take per request.
   requestTimeoutMs: 15_000,
-} as const
+}
+
+// The rules an admin may change. Google's own limit on one text, the
+// timer's pace and Google's wait stay in code.
+export const TRANSLATION_RULE_KEYS = [
+  "retryMinutes",
+  "dailyBusinessCharacters",
+  "runTexts",
+  "requestCharacters",
+  "requestTexts",
+] as const
+export type TranslationRuleKey = (typeof TRANSLATION_RULE_KEYS)[number]
+
+const wholeNumber = (min: number, max: number) => (value: unknown) =>
+  typeof value === "number" &&
+  Number.isSafeInteger(value) &&
+  value >= min &&
+  value <= max
+
+// The values each rule allows; anything else keeps the default.
+export const TRANSLATION_RULE_CHECKS: Record<
+  TranslationRuleKey,
+  (value: unknown) => boolean
+> = {
+  // 1 to 10 waits, each up to a week.
+  retryMinutes: (value) =>
+    Array.isArray(value) &&
+    value.length >= 1 &&
+    value.length <= 10 &&
+    value.every(wholeNumber(1, 7 * 24 * 60)),
+  dailyBusinessCharacters: wholeNumber(1_000, 10_000_000),
+  runTexts: wholeNumber(1, 5_000),
+  // Google takes 30,000 characters per request at most.
+  requestCharacters: wholeNumber(100, 30_000),
+  requestTexts: wholeNumber(1, 100),
+}
+
+// Characters Google translates free each month (a $10 credit at $20 per
+// million, https://cloud.google.com/translate/pricing), for Admin →
+// Translations' month count.
+export const GOOGLE_FREE_MONTHLY_CHARACTERS = 500_000
+
+// Texts per page in Admin → Translations.
+export const TRANSLATION_ADMIN_PAGE_ROWS = 50
+
+// Latest changes in Admin → Translations → History.
+export const TRANSLATION_ADMIN_HISTORY_ROWS = 200
