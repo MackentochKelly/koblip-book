@@ -86,7 +86,7 @@ export function StatStrip({ stats, href }: { stats: Stat[]; href?: string }) {
               <dd aria-hidden className="col-start-2 row-span-2 row-start-1">
                 <ToneIcon
                   tone={stat.tone}
-                  className="size-11 md:size-13 [&_svg]:size-6 md:[&_svg]:size-6.5"
+                  className="size-12 border border-current/25 md:size-14 [&_svg]:size-6.5 md:[&_svg]:size-7"
                 >
                   {stat.icon}
                 </ToneIcon>
