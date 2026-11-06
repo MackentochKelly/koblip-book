@@ -44,12 +44,12 @@ How to use this file: [Plans](README.md).
 | --- | --- | --- | --- |
 | C1 | This plan | | Done (2026-11-06) |
 | C2 | Schema + migration: `service_categories` (id, business, name, position), `services.category_id` (null = Other, ON DELETE SET NULL); rules; actions to create, rename, remove, reorder; `createService`/`updateService` take `categoryId`; owner query returns categories; the one shared grouping helper `lib/service-groups.ts` (groups in order, Other last, empty groups left out for customers); every new EN/ES word below, in all word files; the `ServiceSuggestion` shape with its category; tests | C1 | Done (2026-11-06) |
-| C3 | Owner Services screen: groups under category headings with ⋮ (Add a service, Edit, Move up, Move down, Remove), Other last; Add category (computer header, phone list foot); category panel; Category field in the service form; removal says services move to Other; the Suggest panel shows and saves each suggestion's category | C2 | To do |
-| C4 | Public page and booking: category tabs over the service preview (team profile too); booking service step in sections with jump tabs (scroll-spy moves to `hooks/use-scroll-spy.ts`); category names in Spanish | C2 | To do |
-| C5 | Owner pickers grouped by category: add-booking service, bookings Services filter, Extras "Offered with" | C2 | To do |
-| C6 | Meta AI, server side only: the starter catalog gives each service a category (saved only with 2 or more), `replaceCatalog` clears old ones; `suggestServices` returns an existing or new category for each; demo sample grouped | C2 | To do |
-| C7 | Assistant: `list_services` shows categories; `create_service`/`update_service` take one; confirm-card tools to create, rename, remove and reorder categories | C2 | To do |
-| C8 | Admin "Service categories": every business's categories with their service count; Remove | C2 | To do |
+| C3 | Owner Services screen: groups under category headings with ⋮ (Add a service, Edit, Move up, Move down, Remove), Other last; Add category (computer header, phone list foot); category panel; Category field in the service form; removal says services move to Other; the Suggest panel shows and saves each suggestion's category | C2 | Done (2026-11-06) |
+| C4 | Public page and booking: category tabs over the service preview (team profile too); booking service step in sections with jump tabs (scroll-spy moves to `hooks/use-scroll-spy.ts`); category names in Spanish | C2 | Done (2026-11-06) |
+| C5 | Owner pickers grouped by category: add-booking service, bookings Services filter, Extras "Offered with" | C2 | Done (2026-11-06) |
+| C6 | Meta AI, server side only: the starter catalog gives each service a category (saved only with 2 or more), `replaceCatalog` clears old ones; `suggestServices` returns an existing or new category for each; demo sample grouped | C2 | Done (2026-11-06) |
+| C7 | Assistant: `list_services` shows categories; `create_service`/`update_service` take one; confirm-card tools to create, rename, remove and reorder categories | C2 | Done (2026-11-06) |
+| C8 | Admin "Service categories": every business's categories with their service count; Remove | C2 | Done (2026-11-06) |
 | C9 | Optional: a category colour that becomes the Google Calendar colour of its services that have none | C3 | Decision |
 | C10 | Optional: "Top categories" in Analytics | C2 | Decision |
 
