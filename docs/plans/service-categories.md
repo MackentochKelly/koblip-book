@@ -43,7 +43,7 @@ How to use this file: [Plans](README.md).
 | Task | What | Needs | Status |
 | --- | --- | --- | --- |
 | C1 | This plan | | Done (2026-11-06) |
-| C2 | Schema + migration: `service_categories` (id, business, name, position), `services.category_id` (null = Other, ON DELETE SET NULL); rules; actions to create, rename, remove, reorder; `createService`/`updateService` take `categoryId`; owner query returns categories; the one shared grouping helper `lib/service-groups.ts` (groups in order, Other last, empty groups left out for customers); every new EN/ES word below, in all word files; the `ServiceSuggestion` shape with its category; tests | C1 | To do |
+| C2 | Schema + migration: `service_categories` (id, business, name, position), `services.category_id` (null = Other, ON DELETE SET NULL); rules; actions to create, rename, remove, reorder; `createService`/`updateService` take `categoryId`; owner query returns categories; the one shared grouping helper `lib/service-groups.ts` (groups in order, Other last, empty groups left out for customers); every new EN/ES word below, in all word files; the `ServiceSuggestion` shape with its category; tests | C1 | Done (2026-11-06) |
 | C3 | Owner Services screen: groups under category headings with ⋮ (Add a service, Edit, Move up, Move down, Remove), Other last; Add category (computer header, phone list foot); category panel; Category field in the service form; removal says services move to Other; the Suggest panel shows and saves each suggestion's category | C2 | To do |
 | C4 | Public page and booking: category tabs over the service preview (team profile too); booking service step in sections with jump tabs (scroll-spy moves to `hooks/use-scroll-spy.ts`); category names in Spanish | C2 | To do |
 | C5 | Owner pickers grouped by category: add-booking service, bookings Services filter, Extras "Offered with" | C2 | To do |
@@ -70,7 +70,7 @@ How to use this file: [Plans](README.md).
    checklist at 375px and 1280px, light and dark, EN and ES, screenshots to
    the owner, then the commits.
 
-## Words (waiting for the owner's yes)
+## Words (approved by the owner, 2026-11-06)
 
 | Where | English | Spanish |
 | --- | --- | --- |
@@ -100,3 +100,4 @@ How to use this file: [Plans](README.md).
 | Starter catalog saves categories only when there are 2 or more | A one-kind business stays flat; a draft never fails on categories | M Kelly B, 2026-11-06 |
 | One grouping helper in `lib/` and all words written in C2 | Four parts group services; features can't import each other, and parallel builders must not edit the same files | M Kelly B, 2026-11-06 |
 | The Suggest panel's category is C3's, C6 stays server side | The panel lives in the Services screen file C3 owns | M Kelly B, 2026-11-06 |
+| The migration's `ADD category_id` line carries `ON DELETE set null` by hand | drizzle-kit 0.31 leaves it out of SQLite ADD COLUMN although the snapshot has it; removal also clears the services itself | M Kelly B, 2026-11-06 |

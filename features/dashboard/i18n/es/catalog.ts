@@ -67,6 +67,18 @@ const catalog: typeof en = {
     tryAgain: "Intentar de nuevo",
     nothingNew: "No hay nada nuevo que sugerir.",
   },
+  categories: {
+    category: "Categoría",
+    none: "Sin categoría",
+    other: "Otros",
+    add: "Agregar categoría",
+    addTitle: "Agregar una categoría",
+    editTitle: "Editar categoría",
+    namePlaceholder: "Cortes",
+    taken: "Ya tienes esta categoría",
+    removed: "Categoría quitada",
+    movesToOther: "Sus servicios pasan a Otros.",
+  },
   extras: {
     suggested: "Extras sugeridos",
     someFailed: "Algunos extras no se pudieron agregar.",

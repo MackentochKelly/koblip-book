@@ -3008,7 +3008,7 @@ test("remove_team_access only runs for someone with access", async () => {
 
 test("suggest tools hand back ideas and save nothing, with no card", async () => {
   vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
-  const services = [{ name: "Cut", description: null, durationMinutes: 30 }]
+  const services = [{ name: "Cut", description: null, durationMinutes: 30, category: null }]
   vi.mocked(suggestServices).mockResolvedValue({ ok: true, services })
   vi.mocked(suggestAddonGroups).mockResolvedValue({ ok: true, groups: [] })
   vi.mocked(improveDetails).mockResolvedValue({

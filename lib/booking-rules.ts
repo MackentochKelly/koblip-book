@@ -6,6 +6,9 @@ export const BOOKING_RULES = {
     15, 20, 30, 40, 45, 60, 75, 90, 120, 150, 180, 240,
   ],
   maxServices: 50,
+  // Service categories (docs/plans/service-categories.md).
+  maxServiceCategories: 20,
+  maxServiceCategoryName: 40,
   maxTeam: 20,
   maxSeats: 20,
   maxServiceName: 80,

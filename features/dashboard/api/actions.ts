@@ -16,6 +16,7 @@ import {
   bookings,
   businessHours,
   businesses,
+  serviceCategories,
   services,
   teamMembers,
   teamMemberHours,
@@ -193,6 +194,36 @@ function normalizeServiceInput(input: ServiceInput) {
   }
 }
 
+// Whether a service may go in this category: null (Other) or one of the
+// business's own categories.
+async function isOwnCategory(
+  businessId: string,
+  categoryId: string | null | undefined
+): Promise<boolean> {
+  if (categoryId === undefined || categoryId === null) {
+    return true
+  }
+  if (typeof categoryId !== "string") {
+    return false
+  }
+  const [category] = await db
+    .select({ id: serviceCategories.id })
+    .from(serviceCategories)
+    .where(
+      and(
+        eq(serviceCategories.id, categoryId),
+        eq(serviceCategories.businessId, businessId)
+      )
+    )
+    .limit(1)
+  return Boolean(category)
+}
+
+// After every other service: last in its category, wherever that is.
+function nextPosition(rows: { position: number }[]): number {
+  return rows.reduce((last, row) => Math.max(last, row.position + 1), 0)
+}
+
 export async function createService(
   businessId: string,
   input: ServiceInput
@@ -205,8 +236,11 @@ export async function createService(
   if (!normalized) {
     return invalid()
   }
+  if (!(await isOwnCategory(owned.business.id, input.categoryId))) {
+    return invalid()
+  }
   const existing = await db
-    .select({ id: services.id })
+    .select({ id: services.id, position: services.position })
     .from(services)
     .where(eq(services.businessId, owned.business.id))
   if (existing.length >= BOOKING_RULES.maxServices) {
@@ -217,7 +251,8 @@ export async function createService(
     id,
     businessId: owned.business.id,
     ...normalized,
-    position: existing.length,
+    categoryId: input.categoryId ?? null,
+    position: nextPosition(existing),
   })
   revalidateBusiness(owned.business.slug)
   return { ok: true, id }
@@ -237,7 +272,7 @@ export async function updateService(
     return invalid()
   }
   const [service] = await db
-    .select({ id: services.id })
+    .select({ id: services.id, categoryId: services.categoryId })
     .from(services)
     .where(
       and(eq(services.id, serviceId), eq(services.businessId, owned.business.id))
@@ -246,9 +281,26 @@ export async function updateService(
   if (!service) {
     return { ok: false, error: "not_found" }
   }
+  if (!(await isOwnCategory(owned.business.id, input.categoryId))) {
+    return invalid()
+  }
+  // A service moved to another category goes last in it.
+  const moved =
+    input.categoryId !== undefined && input.categoryId !== service.categoryId
+  const position = moved
+    ? nextPosition(
+        await db
+          .select({ position: services.position })
+          .from(services)
+          .where(eq(services.businessId, owned.business.id))
+      )
+    : undefined
   await db
     .update(services)
-    .set(normalized)
+    .set({
+      ...normalized,
+      ...(moved ? { categoryId: input.categoryId ?? null, position } : {}),
+    })
     .where(eq(services.id, service.id))
   revalidateBusiness(owned.business.slug)
   // Its bookings' events carry its colour (G7).
@@ -572,6 +624,7 @@ function mapSuggestions(
           ? description.slice(0, 120)
           : description,
       durationMinutes: snapDuration(duration),
+      category: null,
     })
   }
   return suggestions

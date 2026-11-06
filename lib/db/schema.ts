@@ -103,6 +103,28 @@ export const businessHours = sqliteTable(
   ]
 )
 
+// The owner's own groups of services, like "Hair" or "Nails"
+// (docs/plans/service-categories.md). Not businesses.category, which is the
+// business's type from Google.
+export const serviceCategories = sqliteTable(
+  "service_categories",
+  {
+    id: id(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    name: text().notNull(),
+    position: integer().notNull().default(0),
+    ...timestamps(),
+  },
+  (table) => [
+    index("service_categories_business_idx").on(
+      table.businessId,
+      table.position
+    ),
+  ]
+)
+
 export const services = sqliteTable(
   "services",
   {
@@ -110,6 +132,11 @@ export const services = sqliteTable(
     businessId: text()
       .notNull()
       .references(() => businesses.id, { onDelete: "cascade" }),
+    // Its group; null = "Other", shown after the categories. Removing a
+    // category moves its services to Other, never removes them.
+    categoryId: text().references(() => serviceCategories.id, {
+      onDelete: "set null",
+    }),
     name: text().notNull(),
     description: text(),
     durationMinutes: integer().notNull(),
@@ -123,6 +150,7 @@ export const services = sqliteTable(
   },
   (table) => [
     index("services_business_idx").on(table.businessId, table.position),
+    index("services_category_idx").on(table.categoryId),
   ]
 )
 

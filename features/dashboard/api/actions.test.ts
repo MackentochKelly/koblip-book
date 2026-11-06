@@ -112,11 +112,13 @@ test("snaps durations, drops duplicates and long names, caps at 8", async () => 
     name: "Beard Trim",
     description: "Tidy up.",
     durationMinutes: 45,
+    category: null,
   })
   expect(result.services[1]).toEqual({
     name: "Deluxe",
     description: null,
     durationMinutes: 90,
+    category: null,
   })
   expect(
     result.services.every((service) => service.name !== "classic cut")

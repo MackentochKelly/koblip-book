@@ -21,6 +21,10 @@ const en = {
     info: "Additional information",
     location: "Location",
     pageSections: "Page sections",
+    // The service categories' tabs, and the group of services with no
+    // category (docs/plans/service-categories.md).
+    serviceCategories: "Service categories",
+    otherServices: "Other",
   },
   page: {
     viewMore: "View more",
@@ -605,6 +609,8 @@ const es: Messages = {
     info: "Información adicional",
     location: "Ubicación",
     pageSections: "Secciones de la página",
+    serviceCategories: "Categorías de servicios",
+    otherServices: "Otros",
   },
   page: {
     viewMore: "Ver más",

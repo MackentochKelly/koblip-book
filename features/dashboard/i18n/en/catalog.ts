@@ -70,6 +70,21 @@ const catalog = {
     tryAgain: "Try again",
     nothingNew: "Nothing new to suggest.",
   },
+  // Service categories (docs/plans/service-categories.md).
+  categories: {
+    category: "Category",
+    none: "No category",
+    // The group of services with no category, last.
+    other: "Other",
+    add: "Add category",
+    addTitle: "Add a category",
+    editTitle: "Edit category",
+    namePlaceholder: "Haircuts",
+    taken: "You already have this category",
+    removed: "Category removed",
+    // Under "Remove Hair?".
+    movesToOther: "Its services move to Other.",
+  },
   extras: {
     suggested: "Suggested extras",
     someFailed: "Some extras could not be added.",

@@ -16,6 +16,7 @@ const en = {
     whatsapp: "WhatsApp",
     notifications: "Notifications",
     assistant: "Assistant",
+    serviceCategories: "Service categories",
   },
   whatsapp: {
     partsLabel: "WhatsApp parts",
@@ -421,6 +422,10 @@ const en = {
   },
   // Team members with their own account, and their open invite links
   // (docs/plans/team-accounts.md).
+  serviceCategories: {
+    none: "No service categories yet",
+    services: (n: number) => (n === 1 ? "1 service" : `${n} services`),
+  },
   team: {
     none: "No team accounts or invite links yet",
     joined: "Joined",
@@ -542,6 +547,7 @@ const es: AdminMessages = {
     whatsapp: "WhatsApp",
     notifications: "Notificaciones",
     assistant: "Asistente",
+    serviceCategories: "Categorías de servicios",
   },
   whatsapp: {
     partsLabel: "Partes de WhatsApp",
@@ -944,6 +950,10 @@ const es: AdminMessages = {
     addedCustomers: "Clientes agregados",
     bookings: (n: number) => (n === 1 ? "1 reserva" : `${n} reservas`),
     open: (name: string) => `Abrir la página de ${name}`,
+  },
+  serviceCategories: {
+    none: "Aún no hay categorías de servicios",
+    services: (n: number) => (n === 1 ? "1 servicio" : `${n} servicios`),
   },
   team: {
     none: "Aún no hay cuentas del equipo ni enlaces de invitación",

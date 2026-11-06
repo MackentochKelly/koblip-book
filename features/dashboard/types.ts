@@ -32,8 +32,9 @@ export interface OwnerCustomer {
   currency: string
 }
 export interface HoursRow { weekday: number; opensAt: string; closesAt: string }
-export interface ServiceInput { name: string; description: string | null; durationMinutes: number; priceMinor: number | null; calendarColor?: GoogleEventColor | null } // calendarColor left out keeps the service's
-export interface ServiceSuggestion { name: string; description: string | null; durationMinutes: number }
+export interface ServiceInput { name: string; description: string | null; durationMinutes: number; priceMinor: number | null; calendarColor?: GoogleEventColor | null; categoryId?: string | null } // calendarColor or categoryId left out keeps the service's; categoryId null = Other
+export interface OwnerServiceCategory { id: string; name: string } // in the owner's order (docs/plans/service-categories.md)
+export interface ServiceSuggestion { name: string; description: string | null; durationMinutes: number; category: string | null } // category: an existing category's name or a new one; null = Other
 export interface AddonOptionSuggestion { name: string; description: string | null; durationMinutes: number }
 export interface AddonGroupSuggestion { name: string; prompt: string; minSelect: number; maxSelect: number | null; serviceIds: string[]; options: AddonOptionSuggestion[] }
 // `currency` (ISO 4217) is left out where the form has none (right after sign-up).
