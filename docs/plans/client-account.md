@@ -2,7 +2,7 @@
 
 A client's own area in the app, built like the owner dashboard and the team area, ready for the client features coming next. It grows out of My bookings ([customer-accounts.md](customer-accounts.md)).
 
-**Status (Nov 6):** C1–C7 built. C8: typecheck, lint and tests pass; phone pages checked in light. Left: computer and dark, Spanish, build.
+**Status (Nov 6):** C1–C7 and C9 built. C8: typecheck, lint and tests pass; phone pages checked in light. Left: computer and dark, Spanish, build. Next: C10–C18 below.
 
 ## What the client gets
 
@@ -37,3 +37,32 @@ Phone: a tab bar at the bottom. Computer: the menu in a sidebar. The account men
 7. **C7. Admin.** Admin → Users shows each account's phone and how many bookings it has (every stored record has an admin screen).
 8. **C8. Checks.** Phone (375px) and computer, light and dark, English and Spanish, the UI checklist, typecheck, lint, tests, build.
 9. **C9. Client bell (D10).** Done Nov 6: migration 0065, `/api/account/notifications`, events in the owner's book / move / cancel, reminders on the timer, the bell in the client top bar, the choices in Settings, admin kinds and rule.
+
+## Next: client features (planned Nov 6, owner approved all five)
+
+Same rules as above: shared parts only (`PageSection`, `Item`, `Empty`, `BottomPanel`, `ResponsivePanel`, `ConfirmDialog`, shadcn from `components/ui`), words in `public.account` (English first, the sync translates), every stored record and rule gets an admin screen, phone first, light and dark.
+
+### Decisions
+
+- **D11. One booking, one page.** `/account/bookings/[bookingId]` shows the visit: business (name, photo, address with a Maps link), service, team member, day and time in the business's time zone, price, the note, and the status. Actions: Add to calendar, Move, Can't make it, and Book again once it's past. It only opens for a booking the account owns (`ownBookings`); anyone else gets 404. A row in Bookings and every client notification open it (`link` becomes `/account/bookings/<id>`; old rows keep `/account`).
+- **D12. Add to calendar.** One `.ics` file per booking from a Route Handler (`/api/account/bookings/[bookingId]/calendar`), the open standard every calendar app reads (RFC 5545), plus a Google Calendar link. Nothing is stored and no Google sign-in is needed. A `DropdownMenu` offers the two ways.
+- **D13. My places.** A new menu item, Places (`/account/places`), lists every business the account has booked, the most recent first: photo, name, last visit, and "Book again" (the business page with the last service picked). Nothing new is stored: it's worked out from the account's bookings. Favourites can come later.
+- **D14. Empty state.** Bookings with nothing in it shows its title and one button, "Find a business", opening the home page search. The same applies to Places.
+- **D15. Reviews.** After a visit marked `completed` (or `confirmed` and over by a day), the client can rate it once: 1–5 stars and an optional short comment (`reviewRules.maxComment`, admin-editable). One review per booking, editable for `reviewRules.editDays` days. The business page shows the average and the latest reviews, with the client's first name only. The owner sees every review in the dashboard (Customers → Reviews) and can hide one from the page with a reason (never edit it). The client gets a bell alert (`clientReviewAsk`) when a visit can be reviewed. Admin sees all reviews, hidden ones too. Table `reviews` (bookingId unique, businessId, userId, stars, comment, hiddenAt, hiddenReason, timestamps).
+- **D16. How to be reminded.** In Settings, the client picks how reminders reach them: WhatsApp, email, or the bell only (the bell always gets them). Stored per account (`client_reminder_channel`). WhatsApp still needs the booking's opt-in (Meta's rule), and email goes to the account's email through `lib/email.ts`. The business's own WhatsApp reminders go on as today. Email reminders are sent by the server's timer, once per booking and move, like the bell's.
+
+### Tasks
+
+| ID | Task | Needs | Files it owns | Status |
+| --- | --- | --- | --- | --- |
+| C10 | Empty states (D14): Bookings gets "Find a business" | – | `features/customer-account/components/my-bookings-list.tsx`, `lib/i18n/en/public.ts` (account) | To do |
+| C11 | Booking page (D11): route, query, page, rows link to it | – | `app/(customer)/account/bookings/`, `features/customer-account/api/booking.ts`, `features/customer-account/components/booking-page.tsx` | To do |
+| C12 | Notifications open the booking (D11) | C11 | `lib/in-app-notifications.ts` (`CLIENT_LINK`) | To do |
+| C13 | Add to calendar (D12): `.ics` route and the menu on the booking page | C11 | `app/api/account/bookings/`, `lib/booking-calendar.ts` | To do |
+| C14 | My places (D13): query, page, menu item, empty state | C10 | `app/(customer)/account/places/`, `features/customer-account/api/places.ts`, `features/customer-account/components/places-list.tsx`, `features/customer-account/nav.ts` | To do |
+| C15 | Reviews, data (D15): table, migration, rules, save/edit action, bell ask on the timer, admin list | C11 | `lib/db/schema.ts` (reviews), `drizzle/`, `lib/review-rules.ts`, `features/reviews/api/`, `features/admin/` (reviews screen) | To do |
+| C16 | Reviews, screens (D15): stars on the booking page, owner's Reviews tab with hide, average and latest on the business page | C15 | `features/reviews/components/`, the owner Customers page, `features/business-page/` (reviews section) | To do |
+| C17 | Reminder channel (D16): setting, email reminders on the timer, admin view | – | `lib/db/schema.ts` (channel), `drizzle/`, `features/customer-account/components/settings-form.tsx`, `lib/client-reminders.ts` | To do |
+| C18 | Checks: phone and computer, light and dark, English and Spanish, typecheck, lint, tests, build | all | – | To do |
+
+Order: C10 → C11 → C12 + C13 → C14 → C15 → C16 → C17 → C18.
