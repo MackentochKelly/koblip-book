@@ -49,6 +49,12 @@ const NAV = [
 const PHONE_LEFT = ["", "/bookings"]
 const PHONE_RIGHT = ["/services", "/team"]
 
+// The tab bar's middle button, the assistant's or a page's +: a 44 px
+// circle, the globe inside the app's hairline (a little darker than the
+// cards' edge so it reads around the globe), with a 2 px gap.
+const MIDDLE_BUTTON =
+  "size-11 rounded-full border-(length:--hairline) border-foreground/20 p-0.5 hover:bg-transparent dark:hover:bg-transparent"
+
 // Pages whose middle button is + rather than the assistant. Known from the
 // address, so it is + from the first moment, while the page still loads;
 // the page then gives what a tap does (useTabBarAction).
@@ -166,13 +172,14 @@ export function DashboardShell({
             {PHONE_LEFT.map((path) => tab(path))}
             <div className="relative flex min-h-14 items-center justify-center">
               {/* The assistant's globe (the computer's floating one), or the
-                  open page's + (a soft 2 px ring over its own colour, a
-                  24 px icon), spinning from one to the other. */}
+                  open page's + on that same globe, spinning from one to the
+                  other. */}
               <SpinSwap swapKey={addPage ? "add" : "assistant"}>
                 {addPage ? (
                   <Button
                     size="icon-lg"
-                    className="size-11 border-2 border-primary-foreground/45 bg-clip-border"
+                    variant="ghost"
+                    className={MIDDLE_BUTTON}
                     aria-label={addLabel}
                     // Until the page hands over its action (while it loads,
                     // or as it closes) the + keeps its look and a tap does
@@ -181,15 +188,16 @@ export function DashboardShell({
                     aria-disabled={action ? undefined : true}
                     onClick={action?.onClick}
                   >
-                    <PlusIcon className="size-6" />
+                    <span className="relative grid size-full place-items-center">
+                      <VoiceGlobe className="absolute inset-0 size-full" />
+                      <PlusIcon className="relative size-6 text-primary-foreground" />
+                    </span>
                   </Button>
                 ) : (
                   <Button
                     size="icon-lg"
                     variant="ghost"
-                    // The app's hairline, a little darker than the cards'
-                    // edge so it reads around the globe, with a 2 px gap.
-                    className="size-11 rounded-full border-(length:--hairline) border-foreground/20 p-0.5 hover:bg-transparent dark:hover:bg-transparent"
+                    className={MIDDLE_BUTTON}
                     aria-label={m.assistant}
                     nativeButton={false}
                     render={<Link href={assistantHref} />}
