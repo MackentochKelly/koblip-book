@@ -4,12 +4,13 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
 import { db } from "@/lib/db"
-import { planFeatures, user } from "@/lib/db/schema"
+import { businesses, planFeatures, subscription, user } from "@/lib/db/schema"
 import { PLAN_FEATURES, PLANS, planIncludes } from "@/lib/plan-features"
 
 vi.mock("server-only", () => ({}))
 
-const { PlanFeatureError, featurePlans, lockedPlans, setFeaturePlan } = await import("./plan-access")
+const { PlanFeatureError, canBillBusiness, featurePlans, lockedPlans, setFeaturePlan, subscribedPlan } =
+  await import("./plan-access")
 
 let dir: string
 let closeDb: () => void
@@ -79,4 +80,42 @@ test("nothing is locked while billing is not live", async () => {
   await setFeaturePlan({ key: "analytics", plan: "pro", userId: "admin" })
   expect(await lockedPlans("any-business")).toEqual({})
   await setFeaturePlan({ key: "analytics", plan: null, userId: "admin" })
+})
+
+test("a business is on Pro only while its subscription is paid", async () => {
+  const business = (id: string) => ({
+    id,
+    slug: id,
+    name: id,
+    timezone: "America/New_York",
+    currency: "USD",
+    ownerId: "admin",
+  })
+  await db.insert(businesses).values([business("paid"), business("retrying")])
+  expect(await subscribedPlan("paid")).toBe("free")
+
+  await db.insert(subscription).values([
+    { id: "s1", plan: "pro", referenceId: "paid", status: "active" },
+    // Stripe is still retrying the card: Free until it's paid.
+    { id: "s2", plan: "pro", referenceId: "retrying", status: "past_due" },
+    // A plan name the app no longer knows counts for nothing.
+    { id: "s3", plan: "gold", referenceId: "retrying", status: "active" },
+  ])
+  expect(await subscribedPlan("paid")).toBe("pro")
+  expect(await subscribedPlan("retrying")).toBe("free")
+
+  await db.update(subscription).set({ status: "canceled" })
+  expect(await subscribedPlan("paid")).toBe("free")
+})
+
+test("only a real business's owner may bill it", async () => {
+  await db.insert(user).values({ id: "other", name: "Other", email: "other@example.com", emailVerified: false })
+  await db.insert(businesses).values([
+    { id: "mine", slug: "mine", name: "Mine", timezone: "UTC", currency: "USD", ownerId: "admin" },
+    { id: "demo", slug: "demo", name: "Demo", timezone: "UTC", currency: "USD", ownerId: "admin", isDemo: true },
+  ])
+  expect(await canBillBusiness("admin", "mine")).toBe(true)
+  expect(await canBillBusiness("other", "mine")).toBe(false)
+  expect(await canBillBusiness("admin", "demo")).toBe(false)
+  expect(await canBillBusiness("admin", "admin")).toBe(false)
 })

@@ -1,9 +1,9 @@
 import "server-only"
 import { cache } from "react"
-import { and, eq } from "drizzle-orm"
+import { and, eq, inArray } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { businesses, planFeatures } from "@/lib/db/schema"
+import { businesses, planFeatures, subscription } from "@/lib/db/schema"
 import {
   isPlan,
   isPlanFeature,
@@ -75,15 +75,48 @@ export async function setFeaturePlan({
     })
 }
 
+// The Stripe statuses that count as paid (S6), as the Stripe plugin counts
+// them. Any other (past_due while Stripe retries, canceled, unpaid…) is Free.
+const PAID_STATUSES = ["active", "trialing"]
+
+// The highest plan the business's paid subscriptions give, or the first
+// plan with none. A plan name the app no longer knows is ignored.
+export async function subscribedPlan(businessId: string): Promise<Plan> {
+  const rows = await db
+    .select({ plan: subscription.plan })
+    .from(subscription)
+    .where(
+      and(eq(subscription.referenceId, businessId), inArray(subscription.status, PAID_STATUSES))
+    )
+  let best: Plan = PLANS[0]
+  for (const { plan } of rows) if (isPlan(plan) && planIncludes(plan, best)) best = plan
+  return best
+}
+
 // The plan a business is on. Until billing is live every business counts
 // as on the top plan (SUBSCRIPTION_RULES.billingLive); then it comes from
-// its subscription (P2).
+// its subscription.
 export async function businessPlan(businessId: string): Promise<Plan> {
   if (!SUBSCRIPTION_RULES.billingLive) return PLANS[PLANS.length - 1]
-  // P2 reads the business's active or trialing subscription here; with none
-  // a business is on the first plan.
-  void businessId
-  return PLANS[0]
+  return subscribedPlan(businessId)
+}
+
+// Who may pay for, change, cancel or see a business's plan (S2): its owner,
+// for a real business (a demo copy is never billed). Used by the Stripe
+// plugin's authorizeReference in lib/auth.ts.
+export async function canBillBusiness(userId: string, businessId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: businesses.id })
+    .from(businesses)
+    .where(
+      and(
+        eq(businesses.id, businessId),
+        eq(businesses.ownerId, userId),
+        eq(businesses.isDemo, false)
+      )
+    )
+    .limit(1)
+  return Boolean(row)
 }
 
 // Every feature this business has, read once per request.

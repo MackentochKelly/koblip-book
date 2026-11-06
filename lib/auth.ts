@@ -1,6 +1,7 @@
 import "server-only"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
+import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api"
 import { parseCookies } from "better-auth/cookies"
 import { nextCookies } from "better-auth/next-js"
 import { admin, anonymous, phoneNumber } from "better-auth/plugins"
@@ -17,6 +18,7 @@ import { stripeClient, stripeKeys } from "./stripe"
 import { PAID_PLANS } from "./subscription-rules"
 import { resetPasswordEmail, verificationEmail } from "./email-templates"
 import { ONBOARDING_RULES } from "./onboarding-rules"
+import { canBillBusiness } from "./plan-access"
 import {
   isSignInPhone,
   latestBookingName,
@@ -121,6 +123,25 @@ export const auth = betterAuth({
       },
     },
   },
+  // A plan is bought for a business, never for the person (S2): an upgrade
+  // must name a business its owner may bill. The Stripe plugin checks other
+  // business ids through authorizeReference below, but skips the check when
+  // no id or the user's own id is sent, so the upgrade is stopped here
+  // (better-auth.com/docs/concepts/hooks).
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/subscription/upgrade") return
+      const referenceId: unknown = ctx.body?.referenceId
+      const session = await getSessionFromCtx(ctx)
+      if (
+        !session ||
+        typeof referenceId !== "string" ||
+        !(await canBillBusiness(session.user.id, referenceId))
+      ) {
+        throw new APIError("UNAUTHORIZED", { message: "Not your business" })
+      }
+    }),
+  },
   // An account a phone creates takes the name its latest booking gave.
   databaseHooks: {
     user: {
@@ -184,6 +205,9 @@ export const auth = betterAuth({
             subscription: {
               enabled: true,
               plans: PAID_PLANS.map((plan) => ({ ...plan })),
+              // referenceId is a business id; only its owner acts on it.
+              authorizeReference: ({ user, referenceId }) =>
+                canBillBusiness(user.id, referenceId),
             },
           }),
         ]
