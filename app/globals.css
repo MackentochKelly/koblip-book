@@ -385,6 +385,12 @@
   [data-surface="app"] [data-slot="tabs-list"][data-variant="default"] {
     @apply inset-ring-(length:--hairline) inset-ring-border/60;
   }
+  /* The open tab inside it gets the same edge. */
+  [data-surface="app"]
+    [data-slot="tabs-list"][data-variant="default"]
+    [data-slot="tabs-trigger"][data-active] {
+    @apply inset-ring-(length:--hairline) inset-ring-border/60;
+  }
   /* The phone's status bar height, which the booking page's pinned bars
      keep clear of: the phone's own (viewport-fit=cover in app/layout.tsx),
      or the demo phone's when the page runs in it (the home page sets it on
