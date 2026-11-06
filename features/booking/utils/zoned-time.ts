@@ -11,18 +11,32 @@ function pad(n: number): string {
   return String(n).padStart(2, "0")
 }
 
+// One clock reader per zone, made once and reused: making one is slow, and
+// free times read the clock thousands of times per request (MDN advises
+// keeping a formatter for repeated use).
+const clocks = new Map<string, Intl.DateTimeFormat>()
+
+function clockFor(timeZone: string): Intl.DateTimeFormat {
+  let clock = clocks.get(timeZone)
+  if (!clock) {
+    clock = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    })
+    clocks.set(timeZone, clock)
+  }
+  return clock
+}
+
 // Wall-clock reading of an instant in the zone, minus the instant itself.
 function zoneOffsetMs(timeZone: string, utcMs: number): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  })
+  const parts = clockFor(timeZone)
     .formatToParts(utcMs)
     .reduce<Record<string, string>>((acc, part) => {
       acc[part.type] = part.value
