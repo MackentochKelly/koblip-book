@@ -93,15 +93,17 @@ runs in monthly parts if the owner wants to stay inside the free allowance.
 
 ## Google setup the owner does (G0)
 
-The developer never creates accounts or handles keys.
+Steps 1–5 done 2026-11-06, in the console at the owner's request. The owner
+makes and stores the key; the developer never handles it.
 
 1. One Google Cloud project, `koblip-book`, for the Mac and the live site.
-2. Billing on, with a budget alert (for example $10 a month).
+2. Billing on, with the budget "Koblip translation": $10 a month, project
+   `koblip-book`, service Translate, emails at 50%, 90% and 100%.
 3. Turn on the Cloud Translation API (`translate.googleapis.com`).
-4. Set a daily character quota (for example 1,000,000).
-5. A service account, for example `koblip-translate`, with only
-   `roles/cloudtranslate.user`.
-6. A key for it: our server is not on Google Cloud and has no identity
+4. Daily quota "v2 and v3 general model characters per day": 1,000,000.
+5. Service account `koblip-translate@koblip-book.iam.gserviceaccount.com`
+   with only Cloud Translation API User (`roles/cloudtranslate.user`).
+6. To do, owner: a key for it. Our server is not on Google Cloud and has no identity
    provider for keyless login. Put the key file on the server outside the
    app folder, readable only by the app, and its path in `.env.local` as
    `GOOGLE_APPLICATION_CREDENTIALS`, plus `GOOGLE_CLOUD_PROJECT`. Never in
@@ -111,7 +113,7 @@ The developer never creates accounts or handles keys.
 
 | Task | What | Needs | Status |
 | --- | --- | --- | --- |
-| G0 | Owner: Google setup above, and go for the cost | G1 | To do |
+| G0 | Owner: Google setup above, and go for the cost | G1 | Steps 1–5 done (2026-11-06); key to do |
 | G1 | This plan | | Done (2026-11-06) |
 | G2 | Engine in `lib/translations/` (server only): the `@google-cloud/translate` v3 client, NMT model, `text/html` with fields wrapped in `translate="no"` and checked on return, requests of 5,000 characters at most; reuse of earlier translations; `translation_entries` (interface or business, page or business, key, language, English, its fingerprint, translation, Google's own version, state, attempts, next try, error) and `translation_history` (who, when, before, after, why); a queue: saving adds work and `after()` starts it, and a timer in `instrumentation.ts` picks up what is left; retries at 1 min, 5 min, 30 min and 2 h, then Failed. A fake Google in development and tests | G1 | Done (2026-11-06) |
 | G3 | Business texts on Google: today's `translations` rows move into `translation_entries` (as `meta`, still shown) and the old table goes, in the same change that moves the page and the saves to the new one; every save adds only changed texts (business details, services, categories, extras, policies with the owner's own title, team, the team area's profile) and removals clean up; Meta translation code removed; Settings → Spanish removed (`/settings/spanish` goes to Settings); the assistant's `translate_page` and its Spanish count removed; services still found by their Spanish name | G2 | To do |
