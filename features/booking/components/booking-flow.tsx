@@ -411,6 +411,7 @@ export function BookingFlow({
     return (
       <>
         <BottomPanel
+          surface="app"
           // Once booked, the sheet slides away under the full "You're booked"
           // page, which leaves the booking in the address until Done.
           open={open && !booked}
@@ -452,6 +453,7 @@ export function BookingFlow({
           {/* Mounted even before a service with extras is picked, so it
               slides up when it opens rather than appearing in place. */}
           <BottomPanel
+            surface="app"
             open={open && stacked && !booked}
             onClose={back}
             title={title}
@@ -508,7 +510,8 @@ export function BookingFlow({
   }
 
   return (
-    <>
+    // The dashboard's grey page, on which the choice cards are white.
+    <div data-surface="app" className="min-h-dvh bg-app-background">
       <header className="sticky top-0 z-10 border-b bg-background pt-(--safe-top)">
         <div className="mx-auto flex h-14 w-full max-w-page items-center gap-2 px-2 md:px-6">
           <Button
@@ -558,7 +561,7 @@ export function BookingFlow({
         <div className="me-4 min-w-0 flex-1">{total}</div>
         {action}
       </BottomBar>
-    </>
+    </div>
   )
 }
 

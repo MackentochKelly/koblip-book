@@ -115,6 +115,7 @@ export function BottomPanel({
   description,
   header,
   footer,
+  surface,
   children,
 }: {
   open: boolean
@@ -126,6 +127,9 @@ export function BottomPanel({
   description?: string
   header?: React.ReactNode
   footer?: React.ReactNode
+  // "app": the dashboard's grey page (bg-app-background), on which choice
+  // cards and rows are white cards (app/globals.css).
+  surface?: "app"
   children: React.ReactNode
 }) {
   const popup = React.useRef<HTMLDivElement | null>(null)
@@ -171,6 +175,7 @@ export function BottomPanel({
         <DrawerContent
           ref={popup}
           data-full={full ? "" : undefined}
+          data-surface={surface}
           style={
             height === null
               ? undefined
@@ -197,7 +202,9 @@ export function BottomPanel({
             "data-full:rounded-b-none data-full:border-x-0 data-full:border-b-0 data-full:[--drawer-inset:0px]",
             // Pulled up past where it rests, the strip under it is the
             // sheet's colour, so no gap opens at the bottom.
-            "data-full:[--drawer-bleed-background:var(--color-popover)]"
+            "data-full:[--drawer-bleed-background:var(--color-popover)]",
+            surface === "app" &&
+              "bg-app-background data-full:[--drawer-bleed-background:var(--color-app-background)]"
           )}
         >
           {header ?? (
