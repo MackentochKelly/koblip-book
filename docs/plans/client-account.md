@@ -2,7 +2,7 @@
 
 A client's own area in the app, built like the owner dashboard and the team area, ready for the client features coming next. It grows out of My bookings ([customer-accounts.md](customer-accounts.md)).
 
-**Status (Nov 6):** C1–C7 and C9 built. C8: typecheck, lint and tests pass; phone pages checked in light. Left: computer and dark, Spanish, build. Next: C10–C18 below.
+**Status (Nov 6):** C1–C18 built and checked. Spanish (and Portuguese, French) words for the client area are queued for Google when the server starts, so they appear after the next restart or deploy.
 
 ## What the client gets
 
@@ -63,6 +63,6 @@ Same rules as above: shared parts only (`PageSection`, `Item`, `Empty`, `BottomP
 | C15 | Reviews, data (D15): table, migration, rules, save/edit action, bell ask on the timer, admin list | C11 | `lib/db/schema.ts` (reviews), `drizzle/`, `lib/review-rules.ts`, `features/reviews/api/`, `features/admin/` (reviews screen) | Done (Nov 6, see commit) |
 | C16 | Reviews, screens (D15): stars on the booking page, owner's Reviews tab with hide, average and latest on the business page | C15 | `features/reviews/components/`, the owner Customers page, `features/business-page/` (reviews section) | Done (Nov 6, see commit) |
 | C17 | Reminder channel (D16): setting, email reminders on the timer, admin view | – | `lib/db/schema.ts` (channel), `drizzle/`, `features/customer-account/components/settings-form.tsx`, `lib/client-reminders.ts` | Done (Nov 6, see commit) |
-| C18 | Checks: phone and computer, light and dark, English and Spanish, typecheck, lint, tests, build | all | – | Working on: M Kelly B, Nov 6 |
+| C18 | Checks: phone and computer, light and dark, English and Spanish, typecheck, lint, tests, build | all | – | Done (Nov 6): typecheck, lint, tests, and a build of a clean copy (as deploy builds) pass; Bookings, a booking, Places, Profile and Settings checked on phone and computer, light and dark; Spanish layout fits. The local dev server was started before these words existed, so it still shows them in English until it restarts. |
 
 Order: C10 → C11 → C12 + C13 → C14 → C15 → C16 → C17 → C18.
