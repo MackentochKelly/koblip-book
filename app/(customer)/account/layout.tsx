@@ -6,12 +6,19 @@ import { Toaster } from "@/components/ui/sonner"
 import { WordsProvider } from "@/components/words-provider"
 import { AccountShell } from "@/features/customer-account/components/account-shell"
 import { getOwnerLanguage } from "@/features/dashboard/i18n/server"
+import { getClientUnreadCount } from "@/features/notifications/api/client-queries"
+import { NotificationBell } from "@/features/notifications/components/notification-bell"
+import { NotificationsProvider } from "@/features/notifications/components/notifications-provider"
+import { notificationRules } from "@/lib/platform-settings"
 import { eq } from "drizzle-orm"
 
 import { getSession } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { businesses } from "@/lib/db/schema"
-import { myBookingsLoginHref } from "@/lib/my-bookings-links"
+import {
+  ACCOUNT_SETTINGS_PATH,
+  myBookingsLoginHref,
+} from "@/lib/my-bookings-links"
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
 
@@ -24,24 +31,38 @@ export default async function AccountLayout({
   const language = await getOwnerLanguage()
   const session = await getSession()
   if (!session || session.isGuest) redirect(myBookingsLoginHref(language))
-  const [owned] = await db
-    .select({ id: businesses.id })
-    .from(businesses)
-    .where(eq(businesses.ownerId, session.userId))
-    .limit(1)
+  const [[owned], unread, rules] = await Promise.all([
+    db
+      .select({ id: businesses.id })
+      .from(businesses)
+      .where(eq(businesses.ownerId, session.userId))
+      .limit(1),
+    getClientUnreadCount(),
+    notificationRules(),
+  ])
+  // One bell state for the page; the first count is rendered here, then the
+  // bell keeps it current (docs/plans/client-account.md, D10).
   return (
     <OwnerLanguageProvider language={language}>
-      <WordsProvider namespaces={["app", "owner", "public"]}>
-        <AccountShell
-          ownsBusiness={Boolean(owned)}
-          account={{
-            name: session.name,
-            contact: session.contact,
-            image: session.image,
-          }}
+      <WordsProvider namespaces={["app", "owner", "public", "notifications"]}>
+        <NotificationsProvider
+          audience="client"
+          initialUnread={unread}
+          pollSeconds={rules.inAppPollSeconds}
+          settingsHref={`${ACCOUNT_SETTINGS_PATH}#notifications`}
         >
-          {children}
-        </AccountShell>
+          <AccountShell
+            ownsBusiness={Boolean(owned)}
+            bell={<NotificationBell />}
+            account={{
+              name: session.name,
+              contact: session.contact,
+              image: session.image,
+            }}
+          >
+            {children}
+          </AccountShell>
+        </NotificationsProvider>
         <Toaster />
       </WordsProvider>
     </OwnerLanguageProvider>

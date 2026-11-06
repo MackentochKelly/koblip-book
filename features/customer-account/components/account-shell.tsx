@@ -19,11 +19,14 @@ import { ACCOUNT_NAV } from "../nav"
 export function AccountShell({
   account,
   ownsBusiness,
+  bell,
   children,
 }: {
   account: Owner
   // An owner too: the account menu leads back to their business.
   ownsBusiness: boolean
+  // The client's notifications, in the top bar.
+  bell?: React.ReactNode
   children: React.ReactNode
 }) {
   const pathname = usePathname()
@@ -48,6 +51,7 @@ export function AccountShell({
       menuLabel={t("menu")}
       account={account}
       settingsHref={ACCOUNT_SETTINGS_PATH}
+      bell={bell}
       accountLinks={
         ownsBusiness
           ? [

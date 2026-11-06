@@ -30,8 +30,15 @@ import { deleteClientAccount } from "../api/delete-account"
 const noChanges = () => () => {}
 
 // The client's Settings: light or dark and the language (the same choices
-// as the account menu), log out, and delete the account.
-export function SettingsForm({ contact }: { contact: string }) {
+// as the account menu), log out, their bell's choices (`notifications`),
+// and delete the account.
+export function SettingsForm({
+  contact,
+  notifications,
+}: {
+  contact: string
+  notifications?: React.ReactNode
+}) {
   const shell = useTranslations("owner.shell")
   const t = useTranslations("public.account.settings")
   const { theme, setTheme } = useTheme()
@@ -108,6 +115,7 @@ export function SettingsForm({ contact }: { contact: string }) {
           </Item>
         </ItemGroup>
       </PageSection>
+      {notifications}
       <DeleteAccountSection
         contact={contact}
         returnTo={ACCOUNT_SETTINGS_PATH}

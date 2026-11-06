@@ -1,4 +1,7 @@
-import type { InAppKind } from "@/types/in-app-notifications"
+import type {
+  ClientInAppKind,
+  OwnerInAppKind,
+} from "@/types/in-app-notifications"
 import { BOOKING_MESSAGES } from "@/lib/whatsapp-messages"
 import type { BookingMessage } from "@/types/whatsapp"
 import type {
@@ -51,7 +54,28 @@ export function titleOf(
     case "koblipLimitReached":
     case "connectionRenew":
       return t(`kinds.${item.kind}`)
+    case "clientBooked":
+    case "clientMoved":
+    case "clientCancelled":
+    case "clientReminder":
+      return t(`kinds.${item.kind}`, {
+        service: item.data.serviceName ?? "",
+        when: whenOf(item, locale),
+      })
   }
+}
+
+// The visit's day and time, in the business's time zone.
+function whenOf(item: InAppNotification, locale: string) {
+  if (!item.data.startAt) return ""
+  return new Intl.DateTimeFormat(locale, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: item.timezone,
+  }).format(new Date(item.data.startAt))
 }
 
 // The calendar day of `iso` on this device (yyyy-mm-dd).
@@ -93,7 +117,13 @@ export function mergePage(
   ]
 }
 
-// The choices screen's groups (N7), in order; every kind in one of them.
+export type ChoiceGroup<Kind extends string> = {
+  id: "bookings" | "whatsapp" | "visits"
+  kinds: readonly Kind[]
+}
+
+// The owner's choices screen's groups (N7), in order; every owner kind in
+// one of them.
 export const CHOICE_GROUPS = [
   {
     id: "bookings",
@@ -117,4 +147,12 @@ export const CHOICE_GROUPS = [
       "connectionRenew",
     ],
   },
-] as const satisfies readonly { id: string; kinds: readonly InAppKind[] }[]
+] as const satisfies readonly ChoiceGroup<OwnerInAppKind>[]
+
+// The client's, in their account's Settings (client account D10).
+export const CLIENT_CHOICE_GROUPS = [
+  {
+    id: "visits",
+    kinds: ["clientBooked", "clientMoved", "clientCancelled", "clientReminder"],
+  },
+] as const satisfies readonly ChoiceGroup<ClientInAppKind>[]

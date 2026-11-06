@@ -53,6 +53,10 @@ const KIND_ICONS: Record<InAppKind, React.ComponentType> = {
   koblipLimitNear: BanknoteIcon,
   koblipLimitReached: OctagonXIcon,
   connectionRenew: LinkIcon,
+  clientBooked: CalendarDaysIcon,
+  clientMoved: ClockIcon,
+  clientCancelled: CalendarX2Icon,
+  clientReminder: BellIcon,
 }
 
 // The clock the "time ago" lines read, moved on every minute while the list

@@ -456,6 +456,13 @@
       "when": 1794003535921,
       "tag": "0064_stripe_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "6",
+      "when": 1794004810753,
+      "tag": "0065_client_notifications",
+      "breakpoints": true
     }
   ]
 }

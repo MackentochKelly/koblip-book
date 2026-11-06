@@ -1,10 +1,11 @@
 import type { PageLanguage } from "@/lib/page-language"
 
-// What the owner's bell shows (docs/plans/in-app-notifications.md, N1).
-// Shared by the code that creates notifications (lib/in-app-notifications.ts)
-// and the bell (features/notifications).
+// What the bells show: the owner's (docs/plans/in-app-notifications.md, N1)
+// and the client's (docs/plans/client-account.md, D10). Shared by the code
+// that creates notifications (lib/in-app-notifications.ts) and the bell
+// (features/notifications).
 
-export const IN_APP_KINDS = [
+export const OWNER_IN_APP_KINDS = [
   "newBooking",
   "customerCancelled",
   "customerConfirmed",
@@ -19,7 +20,25 @@ export const IN_APP_KINDS = [
   "connectionRenew",
 ] as const
 
+// The client's: what the business did with their booking, and the reminder
+// before the visit.
+export const CLIENT_IN_APP_KINDS = [
+  "clientBooked",
+  "clientMoved",
+  "clientCancelled",
+  "clientReminder",
+] as const
+
+export const IN_APP_KINDS = [...OWNER_IN_APP_KINDS, ...CLIENT_IN_APP_KINDS] as const
+
+export type OwnerInAppKind = (typeof OWNER_IN_APP_KINDS)[number]
+export type ClientInAppKind = (typeof CLIENT_IN_APP_KINDS)[number]
 export type InAppKind = (typeof IN_APP_KINDS)[number]
+
+// Whose bell a notification is in: the business owner's, or the account
+// that owns its booking.
+export const IN_APP_AUDIENCES = ["owner", "client"] as const
+export type InAppAudience = (typeof IN_APP_AUDIENCES)[number]
 
 // The facts a notification's title is made from, on screen, in the reader's
 // language (N-D1). Each kind fills only what it needs.

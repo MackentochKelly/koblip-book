@@ -5,13 +5,15 @@ import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { businesses, inAppNotificationSettings, inAppNotifications } from "@/lib/db/schema"
 import { notificationRules } from "@/lib/platform-settings"
-import { IN_APP_KINDS } from "@/types/in-app-notifications"
+import { OWNER_IN_APP_KINDS } from "@/types/in-app-notifications"
 import type { InAppChoice, InAppFeed, InAppPage } from "../types/notifications"
 
 // The owner's bell (docs/plans/in-app-notifications.md, N1): every business
 // the owner owns, newest first.
 
-const ownedBy = (userId: string) => eq(businesses.ownerId, userId)
+// The owner's own: their businesses' notifications, not their clients'.
+const ownedBy = (userId: string) =>
+  and(eq(businesses.ownerId, userId), eq(inAppNotifications.audience, "owner"))
 
 // "<createdAt>|<id>" of the last item shown: the next page starts after it.
 function after(cursor: string | undefined): SQL | undefined {
@@ -86,8 +88,8 @@ export async function getNotificationChoices(businessId: string): Promise<InAppC
     .select({ turnedOff: inAppNotificationSettings.turnedOff })
     .from(businesses)
     .leftJoin(inAppNotificationSettings, eq(inAppNotificationSettings.businessId, businesses.id))
-    .where(and(eq(businesses.id, businessId), ownedBy(session.userId)))
+    .where(and(eq(businesses.id, businessId), eq(businesses.ownerId, session.userId)))
     .limit(1)
   if (!row) return null
-  return IN_APP_KINDS.map((kind) => ({ kind, on: !row.turnedOff?.includes(kind) }))
+  return OWNER_IN_APP_KINDS.map((kind) => ({ kind, on: !row.turnedOff?.includes(kind) }))
 }

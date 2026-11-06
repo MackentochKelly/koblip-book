@@ -6,17 +6,21 @@ import { refresh } from "next/cache"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { businesses, inAppNotificationSettings, inAppNotifications } from "@/lib/db/schema"
-import { IN_APP_KINDS, type InAppKind } from "@/types/in-app-notifications"
+import { OWNER_IN_APP_KINDS, type OwnerInAppKind } from "@/types/in-app-notifications"
 import type { InAppActionResult, InAppChoiceResult } from "../types/notifications"
 
 // Reading notifications in the bell (N1). Each change refreshes the page the
 // owner is on, so the count there updates at once (next/cache `refresh`,
 // N-D3).
 
+// The owner's own: their businesses' notifications, not their clients'.
 function owned(userId: string) {
-  return inArray(
-    inAppNotifications.businessId,
-    db.select({ id: businesses.id }).from(businesses).where(eq(businesses.ownerId, userId))
+  return and(
+    eq(inAppNotifications.audience, "owner"),
+    inArray(
+      inAppNotifications.businessId,
+      db.select({ id: businesses.id }).from(businesses).where(eq(businesses.ownerId, userId))
+    )
   )
 }
 
@@ -47,11 +51,11 @@ export async function markAllNotificationsRead(): Promise<InAppActionResult> {
 // statement each way, so two quick switches never undo each other.
 export async function setNotificationChoice(
   businessId: string,
-  kind: InAppKind,
+  kind: OwnerInAppKind,
   on: boolean
 ): Promise<InAppChoiceResult> {
   const session = await requireOwner()
-  if (typeof on !== "boolean" || !IN_APP_KINDS.includes(kind)) return { ok: false, error: "invalid" }
+  if (typeof on !== "boolean" || !OWNER_IN_APP_KINDS.includes(kind)) return { ok: false, error: "invalid" }
   const [business] = await db
     .select({ id: businesses.id })
     .from(businesses)

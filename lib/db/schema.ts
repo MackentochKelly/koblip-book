@@ -29,7 +29,13 @@ import {
   user,
   verification,
 } from "./auth-schema"
-import { IN_APP_KINDS, type InAppData, type InAppKind } from "../../types/in-app-notifications"
+import {
+  IN_APP_AUDIENCES,
+  IN_APP_KINDS,
+  type ClientInAppKind,
+  type InAppData,
+  type OwnerInAppKind,
+} from "../../types/in-app-notifications"
 
 export { account, session, subscription, user, verification }
 
@@ -1068,8 +1074,13 @@ export const inAppNotifications = sqliteTable(
       .notNull()
       .references(() => businesses.id, { onDelete: "cascade" }),
     kind: text({ enum: IN_APP_KINDS }).notNull(),
+    // The owner's bell, or the client's: the account that owns `bookingId`
+    // (lib/customer-bookings.ts), found when the bell asks, so a booking
+    // joined to an account later still shows its notifications there.
+    audience: text({ enum: IN_APP_AUDIENCES }).notNull().default("owner"),
+    bookingId: text().references(() => bookings.id, { onDelete: "cascade" }),
     data: text({ mode: "json" }).$type<InAppData>().notNull(),
-    // A path in the owner area.
+    // A path in the owner area, or the client's account.
     link: text().notNull(),
     readAt: text(),
     dedupeKey: text(),
@@ -1079,6 +1090,7 @@ export const inAppNotifications = sqliteTable(
     index("in_app_notifications_business").on(table.businessId, table.createdAt),
     index("in_app_notifications_unread").on(table.businessId, table.readAt),
     uniqueIndex("in_app_notifications_once").on(table.businessId, table.dedupeKey),
+    index("in_app_notifications_booking").on(table.bookingId),
   ]
 )
 
@@ -1087,7 +1099,17 @@ export const inAppNotificationSettings = sqliteTable("in_app_notification_settin
   businessId: text()
     .primaryKey()
     .references(() => businesses.id, { onDelete: "cascade" }),
-  turnedOff: text({ mode: "json" }).$type<InAppKind[]>().notNull(),
+  turnedOff: text({ mode: "json" }).$type<OwnerInAppKind[]>().notNull(),
+  ...timestamps(),
+})
+
+// The kinds a client turned off in their account's Settings
+// (docs/plans/client-account.md, D10); no row means all on.
+export const clientNotificationSettings = sqliteTable("client_notification_settings", {
+  userId: text()
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  turnedOff: text({ mode: "json" }).$type<ClientInAppKind[]>().notNull(),
   ...timestamps(),
 })
 

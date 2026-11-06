@@ -10,6 +10,10 @@ import {
 } from "react"
 
 import { markAllNotificationsRead, markNotificationRead } from "../api/actions"
+import {
+  markAllClientNotificationsRead,
+  markClientNotificationRead,
+} from "../api/client-actions"
 import type { InAppFeed, InAppNotification } from "../types/notifications"
 import { mergePage } from "../utils/notification-view"
 
@@ -30,26 +34,48 @@ type Feed = {
 
 const FeedContext = createContext<Feed | null>(null)
 
-async function fetchFeed(cursor?: string): Promise<InAppFeed> {
-  const url = cursor
-    ? `/api/notifications?cursor=${encodeURIComponent(cursor)}`
-    : "/api/notifications"
+// Each bell's feed and read actions: the owner's, or the client's
+// (docs/plans/client-account.md, D10).
+const SOURCES = {
+  owner: {
+    feed: "/api/notifications",
+    markRead: markNotificationRead,
+    markAll: markAllNotificationsRead,
+  },
+  client: {
+    feed: "/api/account/notifications",
+    markRead: markClientNotificationRead,
+    markAll: markAllClientNotificationsRead,
+  },
+} as const
+
+export type NotificationAudience = keyof typeof SOURCES
+
+async function fetchFeed(
+  audience: NotificationAudience,
+  cursor?: string
+): Promise<InAppFeed> {
+  const base = SOURCES[audience].feed
+  const url = cursor ? `${base}?cursor=${encodeURIComponent(cursor)}` : base
   const res = await fetch(url, { cache: "no-store" })
   if (!res.ok) throw new Error(`notifications: ${res.status}`)
   return res.json()
 }
 
-// The bell's state for the owner area, once for every bell on the page (the
+// The bell's state for an app area (the owner's, or the client's with
+// `audience`), once for every bell on the page (the
 // phone's top bar and the computer's sidebar). The first count comes from
 // the server; then the bell asks GET /api/notifications every
 // `pollSeconds` while the tab is shown, and at once when it comes back
 // (docs/plans/in-app-notifications.md, N-D3).
 export function NotificationsProvider({
+  audience = "owner",
   initialUnread,
   pollSeconds,
   settingsHref,
   children,
 }: {
+  audience?: NotificationAudience
   initialUnread: number
   pollSeconds: number
   settingsHref: string
@@ -72,7 +98,7 @@ export function NotificationsProvider({
   }
 
   const reload = useCallback(() => {
-    fetchFeed()
+    fetchFeed(audience)
       .then((feed) => {
         setUnread(feed.unread)
         setItems((shown) => mergePage(feed.page.items, shown))
@@ -81,7 +107,7 @@ export function NotificationsProvider({
         setFailed(false)
       })
       .catch(() => setFailed(true))
-  }, [])
+  }, [audience])
 
   useEffect(() => {
     let timer: number | undefined
@@ -109,7 +135,7 @@ export function NotificationsProvider({
   const loadMore = useCallback(() => {
     if (!nextCursor || loadingMore) return
     setLoadingMore(true)
-    fetchFeed(nextCursor)
+    fetchFeed(audience, nextCursor)
       .then((feed) => {
         pagedRef.current = true
         setUnread(feed.unread)
@@ -124,7 +150,7 @@ export function NotificationsProvider({
       })
       .catch(() => setFailed(true))
       .finally(() => setLoadingMore(false))
-  }, [nextCursor, loadingMore])
+  }, [audience, nextCursor, loadingMore])
 
   // Shown as read at once; the server's answer and refresh() follow.
   const markRead = useCallback(
@@ -137,16 +163,16 @@ export function NotificationsProvider({
         )
       )
       setUnread((count) => Math.max(0, count - 1))
-      markNotificationRead(id).catch(reload)
+      SOURCES[audience].markRead(id).catch(reload)
     },
-    [items, reload]
+    [audience, items, reload]
   )
 
   const markAll = useCallback(() => {
     setItems((shown) => shown.map((item) => ({ ...item, read: true })))
     setUnread(0)
-    markAllNotificationsRead().catch(reload)
-  }, [reload])
+    SOURCES[audience].markAll().catch(reload)
+  }, [audience, reload])
 
   return (
     <FeedContext

@@ -29,6 +29,10 @@ const words = {
     koblipLimitNear: "{sent} of {limit} messages used this month",
     koblipLimitReached: "Monthly message limit reached",
     connectionRenew: "Connect Koblip Chat again",
+    clientBooked: "Booked: {service}, {when}",
+    clientMoved: "{service} moved to {when}",
+    clientCancelled: "{service} on {when} was cancelled",
+    clientReminder: "Reminder: {service}, {when}",
   },
   // The same names as the WhatsApp page.
   messages: {
@@ -45,7 +49,7 @@ const words = {
   // The owner's choices screen (N7).
   choices: {
     title: "Notifications",
-    groups: { bookings: "Bookings", whatsapp: "WhatsApp" },
+    groups: { bookings: "Bookings", whatsapp: "WhatsApp", visits: "Bookings" },
     names: {
       newBooking: "New bookings",
       customerCancelled: "Customer cancelled",
@@ -59,6 +63,10 @@ const words = {
       koblipLimitNear: "Monthly limit almost used",
       koblipLimitReached: "Monthly limit reached",
       connectionRenew: "Connection to renew",
+      clientBooked: "Booked for you",
+      clientMoved: "Booking moved",
+      clientCancelled: "Booking cancelled",
+      clientReminder: "Reminder before a visit",
     },
     // Each group's ⓘ, beside its name.
     moreInfo: "More info",
@@ -67,6 +75,8 @@ const words = {
         "A bell alert when a customer books, confirms, can't make it, moves or cancels.",
       whatsapp:
         "A bell alert about your WhatsApp: customer replies, messages that didn't go, Meta's reviews and your monthly limit.",
+      visits:
+        "A bell alert when a business books, moves or cancels your visit, and a reminder before it.",
     },
     failed: "Couldn't save. Try again.",
   },

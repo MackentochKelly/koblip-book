@@ -1,19 +1,19 @@
 import "server-only"
-import { eq, lt, sql } from "drizzle-orm"
+import { and, eq, gt, isNotNull, lt, lte, ne, or, sql } from "drizzle-orm"
 import type { BatchItem } from "drizzle-orm/batch"
 
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
-import { businesses, inAppNotificationSettings, inAppNotifications } from "@/lib/db/schema"
+import { bookings, businesses, inAppNotificationSettings, inAppNotifications, user } from "@/lib/db/schema"
 import { notificationRules } from "@/lib/platform-settings"
-import type { InAppData, InAppKind } from "@/types/in-app-notifications"
+import type { ClientInAppKind, InAppData, OwnerInAppKind } from "@/types/in-app-notifications"
 
 // Creating the owner's in-app notifications (docs/plans/in-app-notifications.md,
 // N-D2): one shared function, called where each event already happens. The
 // bell reads them through features/notifications.
 
 // Where each kind opens, in the business's owner area.
-const LINKS: Record<InAppKind, string> = {
+const LINKS: Record<OwnerInAppKind, string> = {
   newBooking: "",
   customerCancelled: "",
   customerConfirmed: "",
@@ -28,7 +28,7 @@ const LINKS: Record<InAppKind, string> = {
   connectionRenew: "/integrations",
 }
 
-export function inAppLink(businessId: string, kind: InAppKind) {
+export function inAppLink(businessId: string, kind: OwnerInAppKind) {
   return `/dashboard/${businessId}${LINKS[kind]}`
 }
 
@@ -46,7 +46,7 @@ export type NotifyOptions = {
 // run there and then.
 export async function notification(
   businessId: string,
-  kind: InAppKind,
+  kind: OwnerInAppKind,
   data: InAppData,
   { dedupeKey, renew = false }: NotifyOptions = {}
 ): Promise<BatchItem<"sqlite">[]> {
@@ -74,11 +74,108 @@ export async function notification(
 // The same, saved on its own: for an event that has nothing else to save.
 export async function notify(
   businessId: string,
-  kind: InAppKind,
+  kind: OwnerInAppKind,
   data: InAppData,
   options?: NotifyOptions
 ) {
   await saveAll(await notification(businessId, kind, data, options))
+}
+
+// The client's bell (docs/plans/client-account.md, D10): what the business
+// did with a booking, for the account that owns it. Saved only when an
+// account can own it (made or claimed with one, or made with a phone an
+// account has proved), once per booking, kind and move.
+
+type ClientBooking = Pick<
+  typeof bookings.$inferSelect,
+  "id" | "businessId" | "moves" | "serviceName" | "startAt" | "customerUserId" | "customerKey"
+>
+
+// The client account's page their notifications open.
+export const CLIENT_LINK = "/account"
+
+// The customer key an account's proved phone gives (lib/customer-key.ts):
+// "p:" and the phone's digits.
+const phoneKey = sql<string>`'p:' || replace(${user.phoneNumber}, '+', '')`
+
+// Whether some account owns bookings with this customer key.
+function accountHasKey(key: string) {
+  return db
+    .select({ id: user.id })
+    .from(user)
+    .where(and(eq(user.phoneNumberVerified, true), eq(phoneKey, key)))
+    .limit(1)
+}
+
+function clientInsert(booking: ClientBooking, kind: ClientInAppKind) {
+  return db
+    .insert(inAppNotifications)
+    .values({
+      businessId: booking.businessId,
+      kind,
+      audience: "client",
+      bookingId: booking.id,
+      data: { serviceName: booking.serviceName, startAt: booking.startAt },
+      link: CLIENT_LINK,
+      dedupeKey: `client:${kind}:${booking.id}:${booking.moves}`,
+    })
+    .onConflictDoNothing()
+}
+
+// The writes for one client notification, to save with what caused it (a
+// list, as for `notification`): none for a demo copy or a booking no
+// account can own. `booking` is as it is after the change.
+export async function clientNotification(
+  booking: ClientBooking,
+  kind: ClientInAppKind
+): Promise<BatchItem<"sqlite">[]> {
+  const [business] = await db
+    .select({ isDemo: businesses.isDemo })
+    .from(businesses)
+    .where(eq(businesses.id, booking.businessId))
+    .limit(1)
+  if (!business || business.isDemo) return []
+  if (!booking.customerUserId) {
+    if (!booking.customerKey?.startsWith("p:")) return []
+    const [owner] = await accountHasKey(booking.customerKey)
+    if (!owner) return []
+  }
+  return [clientInsert(booking, kind)]
+}
+
+// The reminder before each visit within the admin's
+// `clientReminderMinutes`, for bookings an account owns, made before that
+// time began; the server's timer calls this on each check.
+export async function remindClients(now = new Date()) {
+  const { clientReminderMinutes } = await notificationRules()
+  const lead = clientReminderMinutes * 60_000
+  const due = await db
+    .select({
+      id: bookings.id,
+      businessId: bookings.businessId,
+      moves: bookings.moves,
+      serviceName: bookings.serviceName,
+      startAt: bookings.startAt,
+      customerUserId: bookings.customerUserId,
+      customerKey: bookings.customerKey,
+    })
+    .from(bookings)
+    .innerJoin(businesses, eq(businesses.id, bookings.businessId))
+    .where(
+      and(
+        eq(businesses.isDemo, false),
+        ne(bookings.status, "cancelled"),
+        gt(bookings.startAt, now.toISOString()),
+        lte(bookings.startAt, new Date(now.getTime() + lead).toISOString()),
+        // Booked or moved after the reminder's time began: just told.
+        lte(bookings.updatedAt, sql`strftime('%Y-%m-%dT%H:%M:%fZ', ${bookings.startAt}, ${`-${clientReminderMinutes} minutes`})`),
+        or(
+          isNotNull(bookings.customerUserId),
+          sql`${bookings.customerKey} in (select ${phoneKey} from ${user} where ${user.phoneNumberVerified} = 1)`
+        )
+      )
+    )
+  await saveAll(due.map((booking) => clientInsert(booking, "clientReminder")))
 }
 
 // Notifications older than the admin's `inAppKeepDays`, read or not, are

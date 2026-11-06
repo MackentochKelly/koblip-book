@@ -10,6 +10,7 @@ import { db } from "@/lib/db"
 import { googleBusyTimes } from "@/lib/google-calendar-busy"
 import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
+import { clientNotification } from "@/lib/in-app-notifications"
 import { DEFAULT_LANGUAGE, isPageLanguage } from "@/lib/page-language"
 import {
   bookingAddons,
@@ -256,6 +257,22 @@ export async function createOwnerBooking(
       }
 
       const bookingId = crypto.randomUUID()
+      const customerPhone = phone && internationalPhone(phone, business)
+      const startAt = new Date(startInstant).toISOString()
+      const key = customerKey(customerPhone, name)
+      // The client's bell hears of it, when an account owns that phone.
+      const notice = await clientNotification(
+        {
+          id: bookingId,
+          businessId: business.id,
+          moves: 0,
+          serviceName: service.name,
+          startAt,
+          customerUserId: null,
+          customerKey: key,
+        },
+        "clientBooked"
+      )
       await saveAll([
         db.insert(bookings).values({
           id: bookingId,
@@ -267,11 +284,11 @@ export async function createOwnerBooking(
           durationMinutes: totalMinutes,
           priceMinor: totalPrice,
           currency: business.currency,
-          startAt: new Date(startInstant).toISOString(),
+          startAt,
           endAt: new Date(endInstant).toISOString(),
           customerName: name,
-          customerPhone: phone && internationalPhone(phone, business),
-          customerKey: customerKey(phone && internationalPhone(phone, business), name),
+          customerPhone,
+          customerKey: key,
           source: "owner",
           status: "confirmed",
           note,
@@ -293,6 +310,7 @@ export async function createOwnerBooking(
               ),
             ]
           : []),
+        ...notice,
       ])
       return { status: "booked", bookingId } as const
     })

@@ -42,6 +42,7 @@ export const RULE_UNITS: Record<NotificationRuleKey, RuleUnit> = {
   inAppKeepDays: "days",
   inAppPageSize: "count",
   inAppPollSeconds: "seconds",
+  clientReminderMinutes: "minutes",
 }
 
 // The rules in groups, in the order the screen shows them.
@@ -80,7 +81,7 @@ export const RULE_GROUPS = [
   },
   {
     id: "inApp",
-    keys: ["inAppKeepDays", "inAppPageSize", "inAppPollSeconds"],
+    keys: ["inAppKeepDays", "inAppPageSize", "inAppPollSeconds", "clientReminderMinutes"],
   },
   {
     id: "wording",

@@ -56,6 +56,9 @@ export const NOTIFICATION_RULES = {
   inAppKeepDays: 90,
   inAppPageSize: 20,
   inAppPollSeconds: 30,
+  // The client's bell (docs/plans/client-account.md, D10) reminds them of a
+  // visit this long before it.
+  clientReminderMinutes: 1440,
 } as const
 
 // These are the defaults: an admin's values in the database override them
@@ -117,4 +120,5 @@ export const NOTIFICATION_RULE_CHECKS: Record<NotificationRuleKey, (value: unkno
   inAppKeepDays: wholeAtLeast(1),
   inAppPageSize: (value) => wholeAtLeast(1)(value) && (value as number) <= 100,
   inAppPollSeconds: wholeAtLeast(10),
+  clientReminderMinutes: wholeAtLeast(1),
 }

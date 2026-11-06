@@ -13,6 +13,7 @@ import { db } from "@/lib/db"
 import { isGoogleEventColor } from "@/lib/google-calendar-colors"
 import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
+import { clientNotification } from "@/lib/in-app-notifications"
 import {
   bookings,
   businessHours,
@@ -534,7 +535,15 @@ export async function cancelBooking(
     return invalid()
   }
   const [booking] = await db
-    .select({ id: bookings.id })
+    .select({
+      id: bookings.id,
+      businessId: bookings.businessId,
+      moves: bookings.moves,
+      serviceName: bookings.serviceName,
+      startAt: bookings.startAt,
+      customerUserId: bookings.customerUserId,
+      customerKey: bookings.customerKey,
+    })
     .from(bookings)
     .where(
       and(
@@ -546,10 +555,14 @@ export async function cancelBooking(
   if (!booking) {
     return { ok: false, error: "not_found" }
   }
-  await db
-    .update(bookings)
-    .set({ status: "cancelled", cancelReason: reason })
-    .where(eq(bookings.id, booking.id))
+  // The client's bell hears of it, saved with the cancel.
+  await saveAll([
+    db
+      .update(bookings)
+      .set({ status: "cancelled", cancelReason: reason })
+      .where(eq(bookings.id, booking.id)),
+    ...(await clientNotification(booking, "clientCancelled")),
+  ])
   revalidateBusiness(owned.business.slug)
   // Google Calendar hears of it now.
   requestGoogleSync(owned.business.id)

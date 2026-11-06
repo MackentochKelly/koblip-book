@@ -5,7 +5,7 @@ import { join } from "node:path"
 import { eq } from "drizzle-orm"
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from "vitest"
 import { db } from "@/lib/db"
-import { IN_APP_KINDS } from "@/types/in-app-notifications"
+import { OWNER_IN_APP_KINDS } from "@/types/in-app-notifications"
 import { businesses, inAppNotificationSettings, inAppNotifications, user } from "@/lib/db/schema"
 
 let signedIn: string | null = "u1"
@@ -145,7 +145,7 @@ test("the owner's choices: all on at first, each kind switched per business, onl
   const offs = async (businessId: string) =>
     (await getNotificationChoices(businessId))?.filter(({ on }) => !on).map(({ kind }) => kind)
   expect(await offs("a")).toEqual([])
-  expect((await getNotificationChoices("a"))?.length).toBe(IN_APP_KINDS.length)
+  expect((await getNotificationChoices("a"))?.length).toBe(OWNER_IN_APP_KINDS.length)
 
   expect(await setNotificationChoice("a", "newBooking", false)).toEqual({ ok: true })
   expect(await setNotificationChoice("a", "newBooking", false)).toEqual({ ok: true })

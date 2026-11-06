@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest"
 
 import { serverWords } from "@/i18n/testing"
-import { IN_APP_KINDS } from "@/types/in-app-notifications"
+import {
+  CLIENT_IN_APP_KINDS,
+  IN_APP_KINDS,
+  OWNER_IN_APP_KINDS,
+} from "@/types/in-app-notifications"
 import type { InAppNotification } from "../types/notifications"
 import {
   CHOICE_GROUPS,
+  CLIENT_CHOICE_GROUPS,
   groupByDay,
   mergePage,
   titleOf,
@@ -61,6 +66,14 @@ describe("titleOf", () => {
     )
   })
 
+  it("names the client's visit and its time in the business's zone", () => {
+    const item = note({
+      kind: "clientMoved",
+      data: { serviceName: "Haircut", startAt: "2026-11-07T19:30:00.000Z" },
+    })
+    expect(title(item)).toBe("Haircut moved to Sat, Nov 7, 2:30 PM")
+  })
+
   it("has a title for every kind", () => {
     for (const kind of IN_APP_KINDS) {
       expect(title(note({ kind }))).not.toBe("")
@@ -107,8 +120,13 @@ describe("mergePage", () => {
 })
 
 describe("CHOICE_GROUPS", () => {
-  it("holds every kind exactly once", () => {
+  it("holds every owner kind exactly once", () => {
     const kinds = CHOICE_GROUPS.flatMap((group) => [...group.kinds])
-    expect([...kinds].sort()).toEqual([...IN_APP_KINDS].sort())
+    expect([...kinds].sort()).toEqual([...OWNER_IN_APP_KINDS].sort())
+  })
+
+  it("the client's hold every client kind exactly once", () => {
+    const kinds = CLIENT_CHOICE_GROUPS.flatMap((group) => [...group.kinds])
+    expect([...kinds].sort()).toEqual([...CLIENT_IN_APP_KINDS].sort())
   })
 })

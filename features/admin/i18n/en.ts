@@ -295,6 +295,7 @@ const words = {
         inAppKeepDays: "Keep notifications for",
         inAppPageSize: "Notifications per page",
         inAppPollSeconds: "Bell checks for new ones every",
+        clientReminderMinutes: "Remind clients in their bell",
       },
       units: {
         minutesList: "Minutes, separated by commas",
@@ -591,6 +592,10 @@ const words = {
       koblipLimitNear: "Koblip limit near",
       koblipLimitReached: "Koblip limit reached",
       connectionRenew: "Connection needs renewal",
+      clientBooked: "Client: booked for them",
+      clientMoved: "Client: booking moved",
+      clientCancelled: "Client: booking cancelled",
+      clientReminder: "Client: visit reminder",
     } as const satisfies Record<InAppKind, string>,
   },
   assistant: {

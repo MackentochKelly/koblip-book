@@ -8,6 +8,7 @@ import { db } from "@/lib/db"
 import { googleBusyTimes } from "@/lib/google-calendar-busy"
 import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
+import { clientNotification } from "@/lib/in-app-notifications"
 import {
   bookings,
   businessHours,
@@ -167,7 +168,16 @@ export async function moveOwnerBooking(
         }
       }
 
-      await saveAll(moveWrites(booking, startInstant))
+      // The client's bell hears of it, with the new time.
+      const notice = await clientNotification(
+        {
+          ...booking,
+          moves: booking.moves + 1,
+          startAt: new Date(startInstant).toISOString(),
+        },
+        "clientMoved"
+      )
+      await saveAll([...moveWrites(booking, startInstant), ...notice])
       return { status: "moved" } as const
     })
 
