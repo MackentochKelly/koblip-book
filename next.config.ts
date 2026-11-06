@@ -1,6 +1,11 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
+  // Google's translation client loads its gRPC and protocol files from
+  // node_modules at run time, so Node's own `require` loads it, not the
+  // bundle (node_modules/next/dist/docs/01-app/03-api-reference/05-config/
+  // 01-next-config-js/serverExternalPackages.md).
+  serverExternalPackages: ["@google-cloud/translate"],
   experimental: {
     serverActions: {
       bodySizeLimit: "5mb",
