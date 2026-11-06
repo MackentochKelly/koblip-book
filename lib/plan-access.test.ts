@@ -2,10 +2,9 @@
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { desc } from "drizzle-orm"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
 import { db } from "@/lib/db"
-import { planFeatureChanges, planFeatures, user } from "@/lib/db/schema"
+import { planFeatures, user } from "@/lib/db/schema"
 import { PLAN_FEATURES, PLANS, planIncludes } from "@/lib/plan-features"
 
 vi.mock("server-only", () => ({}))
@@ -48,23 +47,15 @@ test("the defaults apply until the admin changes one", async () => {
   expect(plans.smsReminders).toBe("pro")
 })
 
-test("a change is saved and logged, and the default removes the row", async () => {
+test("a change is saved, and the default removes the row", async () => {
   await setFeaturePlan({ key: "analytics", plan: "pro", userId: "admin" })
   expect((await featurePlans()).analytics).toBe("pro")
 
-  // The same value again logs nothing.
-  await setFeaturePlan({ key: "analytics", plan: "pro", userId: "admin" })
+  expect((await db.select().from(planFeatures))[0]?.updatedBy).toBe("admin")
 
   await setFeaturePlan({ key: "analytics", plan: "free", userId: "admin" })
   expect((await featurePlans()).analytics).toBe("free")
   expect(await db.select().from(planFeatures)).toHaveLength(0)
-
-  const changes = await db.select().from(planFeatureChanges).orderBy(desc(planFeatureChanges.id))
-  expect(changes.map(({ before, after }) => [before, after])).toEqual([
-    ["pro", null],
-    [null, "pro"],
-  ])
-  expect(changes[0]?.changedBy).toBe("admin")
 })
 
 test("unknown features and plans are refused, and stale rows ignored", async () => {

@@ -78,7 +78,8 @@ How to use this file: [Plans](README.md).
   stay stored and wake up again on resubscribing. (Backend dev)
 - **S9. Features by plan first** (owner, 2026-11-06). One list of every
   feature in code (`lib/plan-features.ts`), and an admin screen (Admin →
-  Plans) that sets, for each feature, the lowest plan that has it. Pro
+  Plans) that sets, for each feature, the lowest plan that has it, with
+  group chips (`FilterChips`) and the app's switcher (`ViewTabs`). Pro
   always has everything Free has. Until P1 ships, no feature checks a plan:
   every business keeps everything. Big teams call this entitlements;
   Stripe has the same idea (Entitlements), and ours stays the source of
@@ -86,7 +87,8 @@ How to use this file: [Plans](README.md).
 - **S10. Defaults**: every built feature on Free; every "Coming soon"
   feature on Pro (as the home page says). Stored choices go over the
   defaults; a feature removed from the list drops its stored row's effect.
-  Every change is logged (who, when, before, after). (Backend dev)
+  No change log (owner, 2026-11-06: not needed); each row keeps who set it
+  last (`updatedBy`). (Backend dev)
 - **S11. Nothing locks before billing.** `SUBSCRIPTION_RULES.billingLive`
   (`lib/subscription-rules.ts`) is false until P1: every business counts as
   on the top plan. `businessPlan()` reads the subscription from P2 on.
@@ -114,7 +116,7 @@ How to use this file: [Plans](README.md).
 
 | Task | What | Needs | Status |
 | --- | --- | --- | --- |
-| P0 | Feature list (`lib/plan-features.ts`), `plan_features` and `plan_feature_changes` tables, `featurePlans()` and `setFeaturePlan()` (`lib/plan-access.ts`), Admin → Plans with each feature's plan and the change log | | Done (2026-11-06) |
+| P0 | Feature list (`lib/plan-features.ts`), `plan_features` table, `featurePlans()` and `setFeaturePlan()` (`lib/plan-access.ts`), Admin → Plans with each feature's plan | | Done (2026-11-06) |
 | P1 | Packages: `better-auth` and `@better-auth/stripe` 1.7.18, `stripe` ^23; plugin in `lib/auth.ts` and `stripeClient` in `lib/auth-client.ts`, plan list in `lib/subscription-rules.ts`; migration for `subscription` and `user.stripeCustomerId` | O1, O2 | To do |
 | P2 | `authorizeReference` (owner of the business only) and `businessPlan()` in `lib/dal.ts`, with tests | P1 | To do |
 | P3 | Stripe set-up doc `docs/billing.md`: product, prices with lookup keys, tax code `txcd_10103001`, Stripe Tax, portal settings, webhook URL and events, test clocks | P1 | To do |
@@ -137,4 +139,5 @@ How to use this file: [Plans](README.md).
 | 2026-11-06 | Backend dev | S1–S8 above, from the docs and the audit |
 | 2026-11-06 | Owner | S9: features-by-plan screen first |
 | 2026-11-06 | Backend dev | S10: defaults and the change log |
+| 2026-11-06 | Owner | Plans page: no change log; group chips; the app's switcher |
 | 2026-11-06 | Backend dev | S11, S12: nothing locks before billing; only checked features move |

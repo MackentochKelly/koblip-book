@@ -1026,23 +1026,6 @@ export const planFeatures = sqliteTable("plan_features", {
   ...timestamps(),
 })
 
-// Every change to a feature's plan: who, when, and the plan before and after
-// (null = the default).
-export const planFeatureChanges = sqliteTable(
-  "plan_feature_changes",
-  {
-    id: integer().primaryKey({ autoIncrement: true }),
-    featureKey: text().notNull(),
-    before: text({ enum: PLANS }),
-    after: text({ enum: PLANS }),
-    changedBy: text().references(() => user.id, { onDelete: "set null" }),
-    changedAt: text()
-      .notNull()
-      .$defaultFn(() => new Date().toISOString()),
-  },
-  (table) => [index("plan_feature_changes_changed_at_idx").on(table.changedAt)]
-)
-
 // The WhatsApp timer's last check (features/dashboard/api/notification-timer.ts):
 // one row, written after every check, so the admin's Overview shows whether
 // it runs (A2).

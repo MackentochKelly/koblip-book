@@ -436,7 +436,9 @@ const words = {
     plans: { free: "Free", pro: "Pro" },
     soon: "Soon",
     byDefault: "Default: {plan}",
-    defaultPlan: "Default",
+    // The group chips: All, then each group.
+    groupsLabel: "Feature groups",
+    all: "All",
     // A built feature that doesn't check its plan yet, so it stays put.
     noCheck: "No plan check yet",
     saved: "Saved",
@@ -488,11 +490,6 @@ const words = {
       outlookCalendar: "Outlook Calendar",
       metaPixel: "Meta Pixel",
       googleAnalytics: "Google Analytics",
-    },
-    changes: {
-      title: "Change log",
-      none: "No changes yet",
-      someone: "Someone",
     },
   },
   // Every business's service categories (docs/plans/service-categories.md).

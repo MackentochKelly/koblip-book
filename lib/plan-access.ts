@@ -3,8 +3,7 @@ import { cache } from "react"
 import { and, eq } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { businesses, planFeatureChanges, planFeatures } from "@/lib/db/schema"
-import { saveAll } from "@/lib/db/save-all"
+import { businesses, planFeatures } from "@/lib/db/schema"
 import {
   isPlan,
   isPlanFeature,
@@ -19,8 +18,7 @@ import { SUBSCRIPTION_RULES } from "@/lib/subscription-rules"
 
 // Which plan has which feature (docs/plans/subscriptions.md, S9): the
 // defaults in lib/plan-features.ts with the admin's choices over them. Only
-// the admin area changes them (its action checks who is asking); every
-// change is logged.
+// the admin area changes them (its action checks who is asking).
 
 export type FeaturePlans = Record<PlanFeatureKey, Plan>
 
@@ -43,8 +41,7 @@ export class PlanFeatureError extends Error {
   }
 }
 
-// Sets a feature's lowest plan, or goes back to its default with null, and
-// logs the change, together.
+// Sets a feature's lowest plan, or goes back to its default with null.
 export async function setFeaturePlan({
   key,
   plan,
@@ -65,21 +62,17 @@ export async function setFeaturePlan({
   // Choosing the default is the same as having no row.
   const after = plan === PLAN_FEATURES[key].defaultPlan ? null : plan
   const where = eq(planFeatures.featureKey, key)
-  const [row] = await db.select({ plan: planFeatures.plan }).from(planFeatures).where(where)
-  const before = row?.plan ?? null
-  if (before === after) return
-  await saveAll([
-    after === null
-      ? db.delete(planFeatures).where(where)
-      : db
-          .insert(planFeatures)
-          .values({ featureKey: key, plan: after, updatedBy: userId })
-          .onConflictDoUpdate({
-            target: planFeatures.featureKey,
-            set: { plan: after, updatedBy: userId },
-          }),
-    db.insert(planFeatureChanges).values({ featureKey: key, before, after, changedBy: userId }),
-  ])
+  if (after === null) {
+    await db.delete(planFeatures).where(where)
+    return
+  }
+  await db
+    .insert(planFeatures)
+    .values({ featureKey: key, plan: after, updatedBy: userId })
+    .onConflictDoUpdate({
+      target: planFeatures.featureKey,
+      set: { plan: after, updatedBy: userId },
+    })
 }
 
 // The plan a business is on. Until billing is live every business counts

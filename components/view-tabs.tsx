@@ -35,6 +35,7 @@ export function ViewTabs<T extends string>({
   variant = "default",
   className,
   listClassName,
+  disabled = false,
 }: {
   views: ViewTab<T>[]
   value: T
@@ -43,6 +44,8 @@ export function ViewTabs<T extends string>({
   variant?: "default" | "line" | "chips"
   className?: string
   listClassName?: string
+  // Every tab shown but none can be picked.
+  disabled?: boolean
 }) {
   const line = variant === "line"
   const chips = variant === "chips"
@@ -91,6 +94,7 @@ export function ViewTabs<T extends string>({
             <TabsTrigger
               key={view.id}
               value={view.id}
+              disabled={disabled}
               className={cn(CONTROL_SIZE.tab, chips && CHIP_TAB)}
             >
               {view.icon}
