@@ -52,7 +52,8 @@ Its signing secret stays the same between runs, so `.env.local` needs it once.
 
 Do this before turning on billing for real owners (P10 passes first):
 
-1. **Tax registrations.** Stripe Tax only collects tax where the account is registered, and none is added yet. Add them in Dashboard → Tax → Registrations, with your accountant's advice. Checkout turns on automatic tax in P4.
+1. **Tax registrations.** Stripe Tax only collects tax where the account is registered, and none is added yet. Add them in Dashboard → Tax → Registrations, with your accountant's advice. Checkout already asks Stripe Tax for it.
 2. **Live product and prices.** Make the product, both prices and the portal as in the table above, in live mode.
 3. **Webhook.** Dashboard → Developers → Webhooks → add `https://book.koblip.com/api/auth/stripe/webhook` with the 4 events. Copy its signing secret.
 4. **Keys on the server.** Put `STRIPE_SECRET_KEY` (`sk_live_…`) and `STRIPE_WEBHOOK_SECRET` in `.env.production`, then deploy ([deploy.md](deploy.md)).
+5. **Turn on plan limits.** Set `billingLive` to `true` in [lib/subscription-rules.ts](../lib/subscription-rules.ts) and deploy. Until then every business has every feature, and Settings → Plan only takes payments.

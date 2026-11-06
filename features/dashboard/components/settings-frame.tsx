@@ -15,6 +15,7 @@ const PARTS = [
   "policies",
   "theme",
   "notifications",
+  "plan",
   "account",
 ] as const
 
@@ -27,14 +28,17 @@ const PART_FEATURES: Partial<Record<Part, PlanFeatureKey>> = {
 
 // Settings' frame around its parts: the shared SectionParts, as on
 // Automations (D19): a row of tabs, pinned under the top bar on a phone.
-// No title on the page: the top bar and the menu already name it.
+// No title on the page: the top bar and the menu already name it. Plan
+// shows once billing is set up (lib/stripe.ts).
 export function SettingsFrame({
   businessId,
   lockedPlans,
+  billing,
   children,
 }: {
   businessId: string
   lockedPlans: LockedPlans
+  billing: boolean
   children: React.ReactNode
 }) {
   const t = useTranslations("owner.settings")
@@ -53,7 +57,7 @@ export function SettingsFrame({
     <SectionParts
       title={shell("nav.settings")}
       titleHidden
-      parts={PARTS.map((item) => ({
+      parts={PARTS.filter((item) => billing || item !== "plan").map((item) => ({
         id: item,
         label: t(`parts.${item}`),
         href: hrefOf(item),

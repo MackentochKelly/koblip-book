@@ -1,6 +1,7 @@
 import admin from "@/features/admin/i18n/en"
 import assistant from "@/features/assistant/i18n/en"
 import assistantServer from "@/features/assistant/i18n/server-en"
+import billing from "@/features/billing/i18n/en"
 import ownerBookings from "@/features/dashboard/i18n/en/bookings"
 import ownerCatalog from "@/features/dashboard/i18n/en/catalog"
 import ownerIntegrations from "@/features/dashboard/i18n/en/integrations"
@@ -29,6 +30,7 @@ const messages = {
   appServer,
   assistant,
   assistantServer,
+  billing,
   notifications,
   onboarding,
   owner: {

@@ -101,6 +101,11 @@ const eslintConfig = defineConfig([
               except: ["./admin"],
             },
             {
+              target: "./features/billing",
+              from: "./features",
+              except: ["./billing"],
+            },
+            {
               target: "./features/notifications",
               from: "./features",
               except: ["./notifications"],

@@ -205,6 +205,18 @@ export const auth = betterAuth({
             subscription: {
               enabled: true,
               plans: PAID_PLANS.map((plan) => ({ ...plan })),
+              // Checkout adds tax where Koblip is registered (S4,
+              // better-auth.com/docs/plugins/stripe#automatic-tax-calculation)
+              // and takes a business's tax id. A returning customer's
+              // address and name are saved back to them, as Stripe Tax needs
+              // (docs.stripe.com/tax/checkout).
+              getCheckoutSessionParams: () => ({
+                params: {
+                  automatic_tax: { enabled: true },
+                  tax_id_collection: { enabled: true },
+                  customer_update: { address: "auto", name: "auto" },
+                },
+              }),
               // referenceId is a business id; only its owner acts on it.
               authorizeReference: ({ user, referenceId }) =>
                 canBillBusiness(user.id, referenceId),

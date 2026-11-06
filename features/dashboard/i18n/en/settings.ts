@@ -9,6 +9,7 @@ const settings = {
     policies: "Policies",
     theme: "Theme",
     notifications: "Notifications",
+    plan: "Plan",
     account: "Account",
   },
   partsLabel: "Settings parts",
