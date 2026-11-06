@@ -103,7 +103,9 @@ makes and stores the key; the developer never handles it.
 4. Daily quota "v2 and v3 general model characters per day": 1,000,000.
 5. Service account `koblip-translate@koblip-book.iam.gserviceaccount.com`
    with only Cloud Translation API User (`roles/cloudtranslate.user`).
-6. To do, owner: a key for it. Our server is not on Google Cloud and has no identity
+6. A key for it (Mac done 2026-11-06: owner made it, kept at
+   `~/.config/koblip/koblip-translate.json`, mode 600, both lines in
+   `.env.local`; live server: copy it there at the next deploy). Our server is not on Google Cloud and has no identity
    provider for keyless login. Put the key file on the server outside the
    app folder, readable only by the app, and its path in `.env.local` as
    `GOOGLE_APPLICATION_CREDENTIALS`, plus `GOOGLE_CLOUD_PROJECT`. Never in
@@ -113,7 +115,7 @@ makes and stores the key; the developer never handles it.
 
 | Task | What | Needs | Status |
 | --- | --- | --- | --- |
-| G0 | Owner: Google setup above, and go for the cost | G1 | Steps 1–5 done (2026-11-06); key to do |
+| G0 | Owner: Google setup above, and go for the cost | G1 | Done on the Mac (2026-11-06); live server key at the next deploy |
 | G1 | This plan | | Done (2026-11-06) |
 | G2 | Engine in `lib/translations/` (server only): the `@google-cloud/translate` v3 client, NMT model, `text/html` with fields wrapped in `translate="no"` and checked on return, requests of 5,000 characters at most; reuse of earlier translations; `translation_entries` (interface or business, page or business, key, language, English, its fingerprint, translation, Google's own version, state, attempts, next try, error) and `translation_history` (who, when, before, after, why); a queue: saving adds work and `after()` starts it, and a timer in `instrumentation.ts` picks up what is left; retries at 1 min, 5 min, 30 min and 2 h, then Failed. A fake Google in development and tests | G1 | Done (2026-11-06) |
 | G3 | Business texts on Google: today's `translations` rows move into `translation_entries` (as `meta`, still shown) and the old table goes, in the same change that moves the page and the saves to the new one; every save adds only changed texts (business details, services, categories, extras, policies with the owner's own title, team, the team area's profile) and removals clean up; Meta translation code removed; Settings → Spanish removed (`/settings/spanish` goes to Settings); the assistant's `translate_page` and its Spanish count removed; services still found by their Spanish name | G2 | To do |
