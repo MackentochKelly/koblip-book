@@ -10,7 +10,8 @@ import {
 } from "@/lib/db/schema"
 import type { ActionResult } from "../types"
 import { planMemberServiceRows, planServiceTeamRows } from "../utils/team-service-plan"
-import { ownedBusiness, revalidateBusiness } from "./owned-business"
+import { revalidateBusiness } from "@/lib/revalidate-business"
+import { ownedBusiness } from "./owned-business"
 
 export async function setServiceTeam(
   businessId: string,

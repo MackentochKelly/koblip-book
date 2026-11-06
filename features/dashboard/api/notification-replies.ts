@@ -2,8 +2,11 @@ import "server-only"
 import { and, eq, exists, isNull, lt, or, type SQL } from "drizzle-orm"
 import type { BatchItem } from "drizzle-orm/batch"
 
+import {
+  afterCustomerCancel,
+  customerCantComeWrites,
+} from "@/lib/customer-cant-come"
 import { db } from "@/lib/db"
-import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
 import { notification } from "@/lib/in-app-notifications"
 import {
@@ -15,7 +18,6 @@ import {
 } from "@/lib/db/schema"
 import type { ButtonAction } from "../types/notifications"
 import { notificationSettingsFor } from "./notifications"
-import { revalidateBusiness } from "./owned-business"
 
 // A customer's answer to a message's button (S3, D2, D16). Chat's inbound
 // event names the message it answers by WhatsApp's id (D6); Book saves the
@@ -97,7 +99,10 @@ export async function applyButtonReply(reply: ButtonReply) {
       .where(
         and(
           eq(notificationSends.id, send.id),
-          or(isNull(notificationSends.repliedAt), lt(notificationSends.repliedAt, reply.at))
+          or(
+            isNull(notificationSends.repliedAt),
+            lt(notificationSends.repliedAt, reply.at)
+          )
         )
       ),
   ]
@@ -113,61 +118,46 @@ export async function applyButtonReply(reply: ButtonReply) {
   if (!current) return saveAll(writes)
 
   const settings = await notificationSettingsFor(booking.businessId)
-  const queued: (typeof notificationSends.$inferInsert)[] = []
-  const base = {
-    businessId: booking.businessId,
-    bookingId: booking.id,
-    moves: booking.moves,
-    dueAt: new Date().toISOString(),
-    sender: send.sender,
-  }
-
-  if (reply.action === "cantCome") {
-    const cancel = settings.cantCome === "cancel"
-    if (cancel) {
-      writes.push(
-        db
-          .update(bookings)
-          .set({ status: "cancelled" })
-          .where(and(eq(bookings.id, booking.id), eq(bookings.status, "confirmed")))
-      )
-    }
-    queued.push({
-      ...base,
-      message: cancel ? "ownerCancelled" : "ownerCantCome",
-      state: settings.ownerPhone ? "pending" : "skipped",
-      reason: settings.ownerPhone ? null : "noOwnerPhone",
-    })
-  }
+  // "Can't make it" does what it does from My bookings too
+  // (lib/customer-cant-come.ts), on the number the tap came to.
+  const cantCome =
+    reply.action === "cantCome"
+      ? await customerCantComeWrites(booking, settings, send.sender)
+      : null
+  if (cantCome) writes.push(...cantCome.writes)
   if (settings.thankYouReply) {
-    queued.push({ ...base, message: "thankYou", state: "pending" })
+    writes.push(
+      db
+        .insert(notificationSends)
+        .values({
+          businessId: booking.businessId,
+          bookingId: booking.id,
+          moves: booking.moves,
+          dueAt: new Date().toISOString(),
+          sender: send.sender,
+          message: "thankYou",
+          state: "pending",
+        })
+        .onConflictDoNothing()
+    )
   }
-  // The owner's bell hears the answer too, once per booking and move.
-  if (reply.action !== "ok") {
-    const kind =
-      reply.action === "confirm"
-        ? "customerConfirmed"
-        : settings.cantCome === "cancel"
-          ? "customerCancelled"
-          : "customerCantCome"
+  // The owner's bell hears a "confirm" too, once per booking and move.
+  if (reply.action === "confirm") {
     writes.push(
       ...(await notification(
         booking.businessId,
-        kind,
-        { customerName: booking.customerName, serviceName: booking.serviceName, startAt: booking.startAt },
-        { dedupeKey: `${kind}:${booking.id}:${booking.moves}` }
+        "customerConfirmed",
+        {
+          customerName: booking.customerName,
+          serviceName: booking.serviceName,
+          startAt: booking.startAt,
+        },
+        { dedupeKey: `customerConfirmed:${booking.id}:${booking.moves}` }
       ))
     )
   }
-  if (queued.length) {
-    writes.push(db.insert(notificationSends).values(queued).onConflictDoNothing())
-  }
   await saveAll(writes)
-  if (reply.action === "cantCome" && settings.cantCome === "cancel") {
-    revalidateBusiness(found.slug)
-    // Google Calendar hears of it now.
-    requestGoogleSync(booking.businessId)
-  }
+  if (cantCome?.cancelled) afterCustomerCancel(booking.businessId, found.slug)
 }
 
 // Saves WhatsApp's id of a message Book sent, from Chat's status events, so
@@ -176,5 +166,10 @@ export function rememberMessageId(sendId: string, messageId: string) {
   return db
     .update(notificationSends)
     .set({ chatMessageId: messageId })
-    .where(and(eq(notificationSends.id, sendId), isNull(notificationSends.chatMessageId)))
+    .where(
+      and(
+        eq(notificationSends.id, sendId),
+        isNull(notificationSends.chatMessageId)
+      )
+    )
 }

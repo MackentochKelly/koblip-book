@@ -7,7 +7,8 @@ import { db } from "@/lib/db"
 import { bookings, customers } from "@/lib/db/schema"
 import { internationalPhone } from "@/lib/whatsapp-phone"
 import type { ActionResult } from "../types"
-import { ownedBusiness, revalidateBusiness } from "./owned-business"
+import { revalidateBusiness } from "@/lib/revalidate-business"
+import { ownedBusiness } from "./owned-business"
 
 // The owner adds a customer by hand: a name, and a phone if they have one.
 // Someone already on the Customers page (added, or from a booking with the

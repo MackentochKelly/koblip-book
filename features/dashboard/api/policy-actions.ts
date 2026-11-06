@@ -9,7 +9,8 @@ import {
   POLICY_RULES,
 } from "@/lib/policy-rules"
 import type { ActionResult, PolicyPointInput } from "../types"
-import { ownedBusiness, revalidateBusiness } from "./owned-business"
+import { revalidateBusiness } from "@/lib/revalidate-business"
+import { ownedBusiness } from "./owned-business"
 
 // Saves one of the owner's policies. Empty text removes it, which hides it
 // from the page. Its Spanish follows on the next translation.

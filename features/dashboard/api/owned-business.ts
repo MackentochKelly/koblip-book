@@ -1,7 +1,6 @@
 import "server-only"
 
 import { eq } from "drizzle-orm"
-import { revalidatePath } from "next/cache"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { businesses } from "@/lib/db/schema"
@@ -17,9 +16,4 @@ export async function ownedBusiness(businessId: string) {
     return null
   }
   return { business, userId: session.userId }
-}
-
-export function revalidateBusiness(slug: string): void {
-  revalidatePath("/b/" + slug)
-  revalidatePath("/dashboard", "layout")
 }

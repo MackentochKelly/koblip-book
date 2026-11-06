@@ -30,7 +30,8 @@ import type {
   ServiceSuggestion,
 } from "../types"
 import { claimBusinessForUser } from "./claim"
-import { ownedBusiness, revalidateBusiness } from "./owned-business"
+import { revalidateBusiness } from "@/lib/revalidate-business"
+import { ownedBusiness } from "./owned-business"
 
 import { validHours } from "@/lib/hours-rules"
 import { randomStartingCounts } from "@/lib/team-rules"

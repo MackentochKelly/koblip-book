@@ -10,7 +10,8 @@ import { teamInviteEmail } from "@/lib/email-templates"
 import { createTeamInvite } from "@/lib/team-invites"
 import { TEAM_RULES } from "@/lib/team-rules"
 import { getOwnerLanguage } from "../i18n/server"
-import { ownedBusiness, revalidateBusiness } from "./owned-business"
+import { revalidateBusiness } from "@/lib/revalidate-business"
+import { ownedBusiness } from "./owned-business"
 
 // A link for a team member to join with their own account
 // (docs/plans/team-accounts.md): emailed when they have an email; the

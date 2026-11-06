@@ -2,7 +2,8 @@
 
 import { isMetaAiEnabled } from "@/lib/meta-ai"
 import type { ActionResult } from "../types"
-import { ownedBusiness, revalidateBusiness } from "./owned-business"
+import { revalidateBusiness } from "@/lib/revalidate-business"
+import { ownedBusiness } from "./owned-business"
 import { translateBusinessTexts } from "./translate-business"
 
 export async function translateBusiness(

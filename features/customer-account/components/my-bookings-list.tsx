@@ -19,13 +19,18 @@ import { formatPrice } from "@/lib/format-price"
 import type { Messages } from "@/lib/i18n"
 import type { PageLanguage } from "@/lib/page-language"
 import type { MyBooking } from "../types"
+import { CantComeButton } from "./cant-come-button"
 
+// One booking. What is ahead carries its "Can't make it"; what is over
+// opens the business's page, to book again.
 function BookingRow({
   booking,
+  ahead,
   language,
   m,
 }: {
   booking: MyBooking
+  ahead: boolean
   language: PageLanguage
   m: Messages
 }) {
@@ -44,7 +49,11 @@ function BookingRow({
   return (
     <Item
       variant="box"
-      render={<Link href={`/b/${booking.business.slug}?lang=${language}`} />}
+      render={
+        ahead ? undefined : (
+          <Link href={`/b/${booking.business.slug}?lang=${language}`} />
+        )
+      }
     >
       <ItemMedia>
         <Avatar size="lg">
@@ -74,13 +83,14 @@ function BookingRow({
           <Badge variant="destructive">{m.account.cancelled}</Badge>
         )}
         {price && <span className="text-sm tabular-nums">{price}</span>}
+        {ahead && <CantComeButton booking={booking} />}
       </ItemActions>
     </Item>
   )
 }
 
 // The customer's bookings at every business: what is ahead first, then the
-// rest. Each opens the business's page, to book again.
+// rest.
 export function MyBookingsList({
   upcoming,
   past,
@@ -110,6 +120,7 @@ export function MyBookingsList({
               <BookingRow
                 key={booking.id}
                 booking={booking}
+                ahead
                 language={language}
                 m={m}
               />
@@ -128,6 +139,7 @@ export function MyBookingsList({
               <BookingRow
                 key={booking.id}
                 booking={booking}
+                ahead={false}
                 language={language}
                 m={m}
               />

@@ -12,7 +12,8 @@ import {
 import { validHours, type HoursRow } from "@/lib/hours-rules"
 import { checkTeamProfile, randomStartingCounts, type TeamProfile } from "@/lib/team-rules"
 import type { ActionResult } from "../types"
-import { ownedBusiness, revalidateBusiness } from "./owned-business"
+import { revalidateBusiness } from "@/lib/revalidate-business"
+import { ownedBusiness } from "./owned-business"
 
 // Their profile (job title, about, languages) customers see on their page
 // and when they book.

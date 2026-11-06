@@ -19,7 +19,8 @@ import type {
   AddonOptionInput,
   AddonOptionSuggestion,
 } from "../types"
-import { ownedBusiness, revalidateBusiness } from "./owned-business"
+import { revalidateBusiness } from "@/lib/revalidate-business"
+import { ownedBusiness } from "./owned-business"
 
 function invalid(): { ok: false; error: string } {
   return { ok: false, error: "invalid" }

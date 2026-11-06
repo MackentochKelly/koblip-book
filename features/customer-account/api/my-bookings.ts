@@ -1,6 +1,7 @@
 import "server-only"
 import { and, desc, eq, inArray } from "drizzle-orm"
 
+import { cantComeSettingsFor } from "@/lib/customer-cant-come"
 import { customerKey } from "@/lib/customer-key"
 import { db } from "@/lib/db"
 import {
@@ -8,6 +9,7 @@ import {
   bookings,
   businessPhotos,
   businesses,
+  notificationSends,
 } from "@/lib/db/schema"
 import type { MyBooking } from "../types"
 
@@ -27,6 +29,7 @@ export async function myBookings(
       id: bookings.id,
       startAt: bookings.startAt,
       status: bookings.status,
+      moves: bookings.moves,
       serviceName: bookings.serviceName,
       teamMemberName: bookings.teamMemberName,
       durationMinutes: bookings.durationMinutes,
@@ -87,10 +90,45 @@ export async function myBookings(
     }
   }
 
+  // For what is still ahead: what "Can't make it" does at each business,
+  // and the bookings the customer already said it for (at their time now).
+  const ahead = rows.filter(
+    (row) => row.status === "confirmed" && new Date(row.startAt) > now
+  )
+  const cantCome = new Map(
+    await Promise.all(
+      [...new Set(ahead.map((row) => row.business.id))].map(
+        async (id) => [id, (await cantComeSettingsFor(id)).cantCome] as const
+      )
+    )
+  )
+  const said = new Set(
+    ahead.length
+      ? (
+          await db
+            .select({
+              bookingId: notificationSends.bookingId,
+              moves: notificationSends.moves,
+            })
+            .from(notificationSends)
+            .where(
+              and(
+                inArray(
+                  notificationSends.bookingId,
+                  ahead.map((row) => row.id)
+                ),
+                eq(notificationSends.message, "ownerCantCome")
+              )
+            )
+        ).map((send) => `${send.bookingId}:${send.moves}`)
+      : []
+  )
+
   const upcoming: MyBooking[] = []
   const past: MyBooking[] = []
   for (const row of rows) {
     const start = new Date(row.startAt)
+    const open = row.status === "confirmed" && start > now
     const booking: MyBooking = {
       id: row.id,
       when: new Intl.DateTimeFormat(locale, {
@@ -102,6 +140,8 @@ export async function myBookings(
         timeZone: row.business.timezone,
       }).format(start),
       cancelled: row.status === "cancelled",
+      cantCome: open ? (cantCome.get(row.business.id) ?? null) : null,
+      saidCantCome: said.has(`${row.id}:${row.moves}`),
       serviceName: row.serviceName,
       addons: addons
         .filter((addon) => addon.bookingId === row.id)

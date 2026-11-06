@@ -4,7 +4,8 @@ import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { bookings } from "@/lib/db/schema"
 import type { ActionResult } from "../types"
-import { ownedBusiness, revalidateBusiness } from "./owned-business"
+import { revalidateBusiness } from "@/lib/revalidate-business"
+import { ownedBusiness } from "./owned-business"
 
 type SettableStatus = "confirmed" | "completed" | "no_show"
 

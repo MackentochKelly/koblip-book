@@ -5,7 +5,8 @@ import { db } from "@/lib/db"
 import { businesses } from "@/lib/db/schema"
 import { isAvailableTheme } from "@/lib/theme-rules"
 import type { ActionResult } from "../types"
-import { ownedBusiness, revalidateBusiness } from "./owned-business"
+import { revalidateBusiness } from "@/lib/revalidate-business"
+import { ownedBusiness } from "./owned-business"
 
 // The owner turns on one of the built themes for their public page.
 export async function activateTheme(

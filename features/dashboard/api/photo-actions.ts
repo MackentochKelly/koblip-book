@@ -10,7 +10,8 @@ import {
   services,
   teamMembers,
 } from "@/lib/db/schema"
-import { ownedBusiness, revalidateBusiness } from "./owned-business"
+import { revalidateBusiness } from "@/lib/revalidate-business"
+import { ownedBusiness } from "./owned-business"
 import type { PhotoResult } from "@/types/photo"
 import type { OwnerPhoto } from "../media-types"
 
