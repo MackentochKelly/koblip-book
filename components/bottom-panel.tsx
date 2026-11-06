@@ -204,7 +204,7 @@ export function BottomPanel({
             // sheet's colour, so no gap opens at the bottom.
             "data-full:[--drawer-bleed-background:var(--color-popover)]",
             // On the grey list the header has a line under it: room above it.
-            surface === "app" && "*:data-[slot=drawer-header]:pb-3"
+            surface === "app" && "**:data-[slot=drawer-header]:pb-3"
           )}
         >
           {header ?? (
