@@ -11,7 +11,7 @@ Customers use the same account and the same login page as everyone else (`/login
 
 ## Next
 
-1. **Sign-in code on WhatsApp (needs the owner's yes).** An authentication template on Koblip's number, submitted to Meta by hand (Chat already supports the `AUTHENTICATION` category and its copy-code button). Until it is approved, only the dev server offers phone sign-in, with the code in its log; production hides the phone option and My bookings, and shows "Done" as before.
+1. **Sign-in code on WhatsApp (needs the owner's yes).** Drafted in [sign-in-code-template.md](sign-in-code-template.md). An authentication template on Koblip's number, submitted to Meta by hand (Chat already supports the `AUTHENTICATION` category and its copy-code button). Until it is approved, only the dev server offers phone sign-in, with the code in its log; production hides the phone option and My bookings, and shows "Done" as before.
 2. **Admin screen** showing each account's phone (every stored record gets one).
 3. **One account, two sign-ins.** A phone already on another account can't be added ("That phone is on another account"); merging two accounts is left for later.
 
