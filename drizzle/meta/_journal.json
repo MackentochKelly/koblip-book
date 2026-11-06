@@ -449,6 +449,13 @@
       "when": 1794002872962,
       "tag": "0063_booking_account",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "6",
+      "when": 1794003535921,
+      "tag": "0064_stripe_subscriptions",
+      "breakpoints": true
     }
   ]
 }

@@ -116,7 +116,7 @@ How to use this file: [Plans](README.md).
 | Task | What | Needs | Status |
 | --- | --- | --- | --- |
 | P0 | Feature list (`lib/plan-features.ts`), `plan_features` table, `featurePlans()` and `setFeaturePlan()` (`lib/plan-access.ts`), Admin → Plans with each feature's plan | | Done (2026-11-06) |
-| P1 | Packages: `better-auth` and `@better-auth/stripe` 1.7.18, `stripe` ^23; plugin in `lib/auth.ts` and `stripeClient` in `lib/auth-client.ts`, plan list in `lib/subscription-rules.ts`; migration for `subscription` and `user.stripeCustomerId` | | To do |
+| P1 | Packages: `better-auth` and `@better-auth/stripe` 1.7.18, `stripe` ^23; plugin in `lib/auth.ts` and `stripeClient` in `lib/auth-client.ts`, plan list in `lib/subscription-rules.ts`; migration for `subscription` and `user.stripeCustomerId` (0064). Off until both Stripe keys are in `.env.local` (`lib/stripe.ts`); the Stripe customer is made at first checkout; any `referenceId` is refused until P2 | | Done (2026-11-06) |
 | P2 | `authorizeReference` (owner of the business only) and `businessPlan()` in `lib/dal.ts`, with tests | P1 | To do |
 | P3 | Stripe set-up doc `docs/billing.md`: product, prices with lookup keys, tax code `txcd_10103001`, Stripe Tax, portal settings, webhook URL and events, test clocks | P1 | To do |
 | P4 | Owner screen Settings → Plan (`features/billing`): current plan, monthly or yearly, Upgrade (Checkout), Manage billing (portal); its own ESLint zone; 4 languages | P2 | To do |

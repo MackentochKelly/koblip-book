@@ -4,12 +4,15 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { parseCookies } from "better-auth/cookies"
 import { nextCookies } from "better-auth/next-js"
 import { admin, anonymous, phoneNumber } from "better-auth/plugins"
+import { stripe } from "@better-auth/stripe"
 import { eq } from "drizzle-orm"
 import { ACCOUNT_RULES } from "./account-rules"
 import { LOGIN_PATH } from "./auth-links"
 import { db } from "./db"
 import * as authSchema from "./db/auth-schema"
 import { sendEmail } from "./email"
+import { stripeClient, stripeKeys } from "./stripe"
+import { PAID_PLANS } from "./subscription-rules"
 import { resetPasswordEmail, verificationEmail } from "./email-templates"
 import { ONBOARDING_RULES } from "./onboarding-rules"
 import {
@@ -154,6 +157,23 @@ export const auth = betterAuth({
       sendOTP: ({ phoneNumber: phone, code }) => sendPhoneCode(phone, code),
       signUpOnVerification: { getTempEmail: phoneAccountEmail },
     }),
+    // App subscriptions (better-auth.com/docs/plugins/stripe,
+    // docs/plans/subscriptions.md): Stripe Checkout and the Customer Portal,
+    // kept in step by the webhook at /api/auth/stripe/webhook. The Stripe
+    // customer is made at the first checkout, not at sign-up, so customers
+    // and demo guests never get one. Off without the Stripe keys.
+    ...(stripeClient && stripeKeys
+      ? [
+          stripe({
+            stripeClient,
+            stripeWebhookSecret: stripeKeys.webhookSecret,
+            subscription: {
+              enabled: true,
+              plans: PAID_PLANS.map((plan) => ({ ...plan })),
+            },
+          }),
+        ]
+      : []),
     // Must stay last (better-auth.com/docs/integrations/next).
     nextCookies(),
   ],
