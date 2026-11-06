@@ -13,10 +13,10 @@ import {
 import { toast } from "sonner"
 
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
+import { FilterChips } from "@/components/filter-chips"
 import { ResponsivePanel } from "@/components/responsive-panel"
 import { ViewTabs } from "@/components/view-tabs"
 import { useShowFirst } from "@/hooks/use-show-first"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -132,7 +132,7 @@ const NO_CATEGORY = "" as const
 // What the business sells: add, edit, reorder and remove services, or let
 // Meta AI suggest the usual ones for this kind of business. Once there is a
 // category, the list shows them in their categories' order, Other last;
-// the Categories button picks which it shows and manages the categories.
+// chips pick which it shows and the Categories button manages them.
 export function ServicesView({
   businessId,
   currency,
@@ -182,8 +182,8 @@ export function ServicesView({
   const [categoryTaken, setCategoryTaken] = useState(false)
   const [removingCategory, setRemovingCategory] =
     useState<OwnerServiceCategory | null>(null)
-  // The Categories panel, and the groups it shows (a category's id,
-  // OTHER_GROUP for Other); none = all.
+  // The Categories panel, and the chips that are on (a category's id,
+  // OTHER_GROUP for Other); none = All.
   const [categoriesOpen, setCategoriesOpen] = useState(false)
   const [shownCategories, setShownCategories] = useState<string[]>([])
 
@@ -214,11 +214,16 @@ export function ServicesView({
   // one group of every service, shown as the flat list it always was.
   const groups = groupServices(services, categories, { keepEmpty: true })
   const grouped = showsGroups(groups)
-  // The groups the list shows; one since removed no longer counts.
+  // The chips: every group there is, in order. One that is on and since
+  // removed no longer counts.
   const groupKey = (category: OwnerServiceCategory | null) =>
     category?.id ?? OTHER_GROUP
+  const categoryOptions = groups.map(({ category }) => ({
+    value: groupKey(category),
+    label: category?.name ?? k.other,
+  }))
   const ticked = shownCategories.filter((key) =>
-    groups.some(({ category }) => groupKey(category) === key)
+    categoryOptions.some((option) => option.value === key)
   )
   const shows = (category: OwnerServiceCategory | null) =>
     ticked.length === 0 || ticked.includes(groupKey(category))
@@ -377,30 +382,43 @@ export function ServicesView({
           </Button>
         </div>
       </div>
-      {/* Categories, for the services list: under the tabs on a phone,
-          at the tabs' end on a computer. */}
-      <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
-        <ViewTabs
-          views={[
-            { id: "services" as const, label: t.tabs.services },
-            { id: "extras" as const, label: t.tabs.extras },
-          ]}
-          value={view}
-          onChange={setView}
-          ariaLabel={t.tabs.label}
-          className="w-full md:w-auto"
-          listClassName="w-full md:w-fit"
-        />
-        {view === "services" && (
-          <Button variant="outline" onClick={() => setCategoriesOpen(true)}>
+      <ViewTabs
+        views={[
+          { id: "services" as const, label: t.tabs.services },
+          { id: "extras" as const, label: t.tabs.extras },
+        ]}
+        value={view}
+        onChange={setView}
+        ariaLabel={t.tabs.label}
+        listClassName="w-full md:w-fit"
+      />
+
+      {/* The category chips, which scroll, then the Categories button that
+          manages them, fixed at the row's end a little apart. */}
+      {view === "services" && (
+        <div className="flex items-center gap-3">
+          {grouped && (
+            <FilterChips
+              label={k.title}
+              all={k.all}
+              options={categoryOptions}
+              value={ticked}
+              onValueChange={setShownCategories}
+              className="min-w-0 flex-1"
+            />
+          )}
+          <Button
+            variant="outline"
+            // As tall as the chips and the tabs on a touch screen too; its
+            // tap area stays 44px.
+            className="ml-auto pointer-coarse:min-h-9"
+            onClick={() => setCategoriesOpen(true)}
+          >
             <TagIcon data-icon="inline-start" />
             {k.title}
-            {ticked.length > 0 && (
-              <Badge variant="secondary">{ticked.length}</Badge>
-            )}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {view === "extras" ? (
         <ExtrasView
@@ -434,7 +452,7 @@ export function ServicesView({
             </EmptyHeader>
             <EmptyContent>
               <Button variant="outline" onClick={() => setShownCategories([])}>
-                {k.all}
+                {k.allServices}
               </Button>
             </EmptyContent>
           </Empty>
@@ -474,13 +492,9 @@ export function ServicesView({
       <CategoriesPanel
         open={categoriesOpen}
         onClose={() => setCategoriesOpen(false)}
-        groups={groups.map(({ category, services: list }) => ({
-          category,
-          services: list.length,
-        }))}
-        total={services.length}
-        shown={ticked}
-        onShownChange={setShownCategories}
+        categories={groups.flatMap(({ category, services: list }) =>
+          category ? [{ category, services: list.length }] : []
+        )}
         googleCalendar={googleCalendar}
         pending={pending}
         onAdd={() => openCategory("new")}

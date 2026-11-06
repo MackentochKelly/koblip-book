@@ -115,15 +115,22 @@ const names = () =>
 
 // Opens the Categories panel.
 function openCategories() {
-  fireEvent.click(screen.getByRole("button", { name: /^Categories/ }))
+  fireEvent.click(screen.getByRole("button", { name: "Categories" }))
   return screen.getByRole("dialog", { name: "Categories" })
 }
 
 // A category's row in the Categories panel.
 const categoryRow = (panel: HTMLElement, name: string) =>
   within(panel)
-    .getByText(name, { selector: "label" })
+    .getByText(name, { selector: "[data-slot=item-title]" })
     .closest("[data-slot=item]") as HTMLElement
+
+// A chip in the row under the tabs.
+const chip = (name: string) =>
+  within(screen.getByRole("group", { name: "Categories" })).getByRole(
+    "button",
+    { name }
+  )
 
 // Opens the ⋮ menu inside `scope` (the first one there) and picks `item`.
 function pick(scope: HTMLElement, item: string) {
@@ -171,47 +178,58 @@ test("with categories it is one list in their order, Other last", () => {
   expect(screen.queryByRole("button", { name: /^Show/ })).toBeNull()
 })
 
-test("the Categories panel shows only the ticked ones, Other included", async () => {
+test("the chips show only the ones that are on, Other included", async () => {
   view(
     [service("Fade", "c1"), service("Wax"), service("Gel", "c2")],
     [hair, nails]
   )
-  const panel = openCategories()
-  const box = (name: string) => within(panel).getByRole("checkbox", { name })
+  const chips = screen.getByRole("group", { name: "Categories" })
   expect(
-    within(panel)
-      .getAllByRole("checkbox")
-      .map((item) => item.getAttribute("aria-checked"))
-  ).toEqual(["true", "false", "false", "false"])
-  fireEvent.click(box("Nails"))
-  fireEvent.click(box("Other"))
+    within(chips)
+      .getAllByRole("button")
+      .map((button) => button.textContent)
+  ).toEqual(["All", "Hair", "Nails", "Other"])
+  expect(chip("All").getAttribute("aria-pressed")).toBe("true")
+  fireEvent.click(chip("Nails"))
+  fireEvent.click(chip("Other"))
   await waitFor(() => expect(names()).toEqual(["Gel", "Wax"]))
-  expect(box("All services").getAttribute("aria-checked")).toBe("false")
-  // The button says how many are ticked (hidden behind the open panel).
-  expect(
-    screen.getByRole("button", { name: /^Categories\s*2$/, hidden: true })
-  ).toBeTruthy()
-  // All services shows every one again.
-  fireEvent.click(box("All services"))
+  expect(chip("Nails").getAttribute("aria-pressed")).toBe("true")
+  expect(chip("All").getAttribute("aria-pressed")).toBe("false")
+  // All shows every one again and turns the others off.
+  fireEvent.click(chip("All"))
   await waitFor(() => expect(names()).toEqual(["Fade", "Gel", "Wax"]))
-  expect(box("Nails").getAttribute("aria-checked")).toBe("false")
+  expect(chip("Nails").getAttribute("aria-pressed")).toBe("false")
+  // So does turning the last one off.
+  fireEvent.click(chip("Hair"))
+  await waitFor(() => expect(names()).toEqual(["Fade"]))
+  fireEvent.click(chip("Hair"))
+  await waitFor(() => expect(names()).toEqual(["Fade", "Gel", "Wax"]))
+  expect(chip("All").getAttribute("aria-pressed")).toBe("true")
 })
 
-test("only empty categories ticked: nothing here, All services back", async () => {
+test("only empty categories on: nothing here, All services back", async () => {
   view([service("Fade", "c1")], [hair, brows])
-  const panel = openCategories()
-  fireEvent.click(within(panel).getByRole("checkbox", { name: "Brows" }))
-  fireEvent.click(within(panel).getByRole("button", { name: "Close" }))
+  fireEvent.click(chip("Brows"))
   expect(await screen.findByText("No services here")).toBeTruthy()
   fireEvent.click(screen.getByRole("button", { name: "All services" }))
   await waitFor(() => expect(names()).toEqual(["Fade"]))
 })
 
-test("without categories the panel offers to add one", () => {
+test("the Categories panel lists each category with its count", () => {
+  view([service("Fade", "c1"), service("Wax")], [hair, brows])
+  const panel = openCategories()
+  expect(within(categoryRow(panel, "Hair")).getByText("1")).toBeTruthy()
+  expect(within(categoryRow(panel, "Brows")).getByText("0")).toBeTruthy()
+  // Managing only: the chips pick, and Other has nothing to manage.
+  expect(within(panel).queryByRole("checkbox")).toBeNull()
+  expect(within(panel).queryByText("Other")).toBeNull()
+})
+
+test("without categories: no chips, the panel offers to add one", () => {
   view([service("Fade"), service("Wax")])
+  expect(screen.queryByRole("group", { name: "Categories" })).toBeNull()
   const panel = openCategories()
   expect(within(panel).getByText("No categories yet")).toBeTruthy()
-  expect(within(panel).queryByRole("checkbox")).toBeNull()
   expect(
     within(panel).getByRole("button", { name: "Add category" })
   ).toBeTruthy()

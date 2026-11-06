@@ -86,9 +86,11 @@ const catalog = {
     removed: "Category removed",
     // Under "Remove Hair?".
     movesToOther: "Its services move to Other.",
-    // The Services screen's Categories button and its panel (C12).
+    // The Services screen's chips, its Categories button and panel (C12).
     title: "Categories",
-    all: "All services",
+    // The first chip.
+    all: "All",
+    allServices: "All services",
     empty: "No categories yet",
     // The list when only empty categories are ticked.
     noneShown: "No services here",

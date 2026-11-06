@@ -53,7 +53,7 @@ How to use this file: [Plans](README.md).
 | C9 | Optional: a category colour that becomes the Google Calendar colour of its services that have none | C3 | Done (2026-11-06) |
 | C10 | Optional: "Top categories" in Analytics | C2 | Done (2026-11-06) |
 | C11 | A Categories filter on the Bookings list, beside Services (Other included), only once there are categories; asked by the owner 2026-11-06 | C5 | Done (2026-11-06) |
-| C12 | One Categories button on the owner Services screen (under the tabs on a phone, at their end on a computer) for a panel with everything about categories: which ones the list shows (several at once, All services, Other included) and each one's ⋮ (Add a service, Edit, Move up, Move down, Remove), Add category at its foot. The list is one plain list in the categories' order, with no headings; asked by the owner 2026-11-06 | C3 | Done (2026-11-06) |
+| C12 | Under the owner Services screen's tabs, one row: category chips that filter the list (All first, several at once, Other included; the row scrolls sideways and fades only where more chips lie), then one Categories button fixed at its end for a panel that manages them all (each one's ⋮: Add a service, Edit, Move up, Move down, Remove; Add category at its foot). The list is one plain list in the categories' order, with no headings; asked by the owner 2026-11-06 | C3 | Done (2026-11-06) |
 
 ## Build order (several builders, asked by the owner 2026-11-06)
 
@@ -90,7 +90,7 @@ How to use this file: [Plans](README.md).
 | Service colour option, when its category has a colour (C9) | Category's colour | Color de la categoría |
 | Analytics card (C10) | Top categories | Categorías más pedidas |
 | Bookings filter (C11) | Categories | Categorías |
-| Services Categories button and panel (C12) | Categories · All services · No categories yet · No services here | Categorías · Todos los servicios · Aún no hay categorías · No hay servicios aquí |
+| Services chips, Categories button and panel (C12) | Categories · All · All services · No categories yet · No services here | Categorías · Todos · Todos los servicios · Aún no hay categorías · No hay servicios aquí |
 
 ## Decisions log
 
@@ -103,7 +103,8 @@ How to use this file: [Plans](README.md).
 | Categories have their own position; services keep theirs, read inside their category; Move up and Move down in ⋮ menus | `reorderServices` keeps its contract; same as services today and Vagaro's arrows | M Kelly B, 2026-11-06 |
 | No "Featured" tab on the public page | There is no featured flag | M Kelly B, 2026-11-06 |
 | One Services filter, grouped by category | One filter instead of two | M Kelly B, 2026-11-06 |
-| The Services screen's categories live in one Categories panel (filter and manage), replacing the chips, the headings with their ⋮ and the Add category buttons; nothing is deleted, every action moved into the panel | The owner asked for a simpler, Apple-like screen: one clearly labelled button, the services in a clean list | M Kelly B, 2026-11-06 |
+| The Services screen's categories: chips to filter, in view, and one Categories button that manages them, in place of the headings with their ⋮ and the Add category buttons; nothing is deleted, every action moved into its panel | The owner's design: visible filter chips plus one place to manage, the services in a clean list | M Kelly B, 2026-11-06 |
+| The chips and the Categories button are as tall as the tabs (36px) with their padding, on a touch screen too; their tap areas stay 44px, invisibly | Sizes consistent with the tabs, as the owner asked; Apple's 44px minimum still met | M Kelly B, 2026-11-06 |
 | In that panel, Edit, Add category and Remove open on top of it and come back to it; Add a service closes it first | Stacked sheets like iOS; the service form also opens from the list, so it stays the list's own | M Kelly B, 2026-11-06 |
 | Also a Categories filter on Bookings (C11), next to the grouped Services filter | The owner asked to pick a whole category at once; the help pages of Fresha and Square show no such filter | M Kelly B, 2026-11-06 |
 | Starter catalog saves categories only when there are 2 or more | A one-kind business stays flat; a draft never fails on categories | M Kelly B, 2026-11-06 |
