@@ -16,7 +16,6 @@ import {
 import { AppInset } from "@/components/app-inset"
 import { BottomTabBar, TabBarLink } from "@/components/bottom-tab-bar"
 import {
-  GLOBE_MARK,
   GlobeOpeningProvider,
   useGlobeOpening,
 } from "@/components/globe-opening"
@@ -74,7 +73,6 @@ function AssistantTabButton({ href, label }: { href: string; label: string }) {
       // `edge`), not a border around it.
       className="size-11 rounded-full border-0 hover:bg-transparent dark:hover:bg-transparent"
       aria-label={label}
-      {...GLOBE_MARK}
       nativeButton={false}
       render={<Link href={href} prefetch />}
       onClick={(event) => {
@@ -165,7 +163,7 @@ export function DashboardShell({
   return (
     <TooltipProvider>
       <CommandMenuProvider business={business}>
-        <GlobeOpeningProvider trialHref={assistantHref}>
+        <GlobeOpeningProvider>
           <SidebarProvider>
             <AppSidebar
               business={business}

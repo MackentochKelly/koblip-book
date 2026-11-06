@@ -32,18 +32,15 @@ const LOOKS = {
 // Fills its `relative isolate` parent, behind the content. It fades in over
 // the plain page colour, unless `fadeIn` is false (something that must be
 // there from its first frame). `maxPixelCount` holds a very big one to fewer
-// pixels (Paper's own limit is four full-HD screens). `rounded` false is for
-// a square box (the whole screen).
+// pixels (Paper's own limit is four full-HD screens).
 export function HeroGradient({
   look = "hero",
   fadeIn = true,
   maxPixelCount,
-  rounded = true,
 }: {
   look?: keyof typeof LOOKS
   fadeIn?: boolean
   maxPixelCount?: number
-  rounded?: boolean
 }) {
   const { colorTokens, distortion, swirl, speed, veiled } = LOOKS[look]
   const colors = useThemeColors(colorTokens)
@@ -56,10 +53,7 @@ export function HeroGradient({
     // rounded corners for a moment, so they flash square.
     <div
       aria-hidden
-      className={cn(
-        "pointer-events-none absolute inset-0 -z-10",
-        rounded && "[clip-path:inset(0_round_var(--radius-4xl))]"
-      )}
+      className="pointer-events-none absolute inset-0 -z-10 [clip-path:inset(0_round_var(--radius-4xl))]"
     >
       {colors && (
         <MeshGradient
