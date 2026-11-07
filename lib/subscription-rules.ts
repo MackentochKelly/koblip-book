@@ -19,3 +19,16 @@ export const ENDED_STATUSES = ["canceled", "incomplete_expired"]
 // The 100% coupon, forever, on Pro only, that the admin's free Pro uses
 // (P7b). Made in Stripe under this id (docs/billing.md).
 export const FREE_PRO_COUPON = "koblip_pro_free"
+
+// When a subscription that is still running stops, or null when it renews.
+// Stripe marks a cancel at the period's end with cancel_at_period_end, or,
+// in the newer billing mode the customer portal uses, with cancel_at
+// (docs.stripe.com/billing/subscriptions/billing-mode/compare).
+export function stopsAt(subscription: {
+  cancelAtPeriodEnd: boolean | null
+  cancelAt: Date | null
+  periodEnd: Date | null
+}): Date | null {
+  if (subscription.cancelAt) return subscription.cancelAt
+  return subscription.cancelAtPeriodEnd ? subscription.periodEnd : null
+}

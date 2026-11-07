@@ -9,7 +9,7 @@ import { subscription } from "@/lib/db/schema"
 import { businessPlan, canBillBusiness } from "@/lib/plan-access"
 import type { Plan } from "@/lib/plan-features"
 import { stripeClient } from "@/lib/stripe"
-import { ENDED_STATUSES, PAID_PLANS } from "@/lib/subscription-rules"
+import { ENDED_STATUSES, PAID_PLANS, stopsAt } from "@/lib/subscription-rules"
 import type { Billing, PlanPrice } from "../types"
 
 // Pro's prices as Stripe charges them, by lookup key (S5), once per request.
@@ -45,6 +45,7 @@ export async function getBilling(businessId: string): Promise<Billing> {
         status: subscription.status,
         periodEnd: subscription.periodEnd,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        cancelAt: subscription.cancelAt,
         billingInterval: subscription.billingInterval,
       })
       .from(subscription)
@@ -67,8 +68,8 @@ export async function getBilling(businessId: string): Promise<Billing> {
     subscription: current
       ? {
           status: current.status ?? "incomplete",
-          endsAt: current.periodEnd?.toISOString() ?? null,
-          cancelling: current.cancelAtPeriodEnd ?? false,
+          endsAt: (stopsAt(current) ?? current.periodEnd)?.toISOString() ?? null,
+          cancelling: stopsAt(current) !== null,
           yearly: current.billingInterval === "year",
         }
       : null,

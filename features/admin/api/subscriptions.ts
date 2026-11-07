@@ -8,7 +8,7 @@ import { db } from "@/lib/db"
 import { businesses, proGrants, subscription, user } from "@/lib/db/schema"
 import { isPhoneAccountEmail } from "@/lib/phone-sign-in"
 import { stripeKeys } from "@/lib/stripe"
-import { ENDED_STATUSES } from "@/lib/subscription-rules"
+import { ENDED_STATUSES, stopsAt } from "@/lib/subscription-rules"
 
 // Every list stops here; the newest come first.
 const MAX_ROWS = 200
@@ -71,6 +71,7 @@ export async function getSubscriptions(): Promise<AdminSubscription[]> {
       periodStart: subscription.periodStart,
       periodEnd: subscription.periodEnd,
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+      cancelAt: subscription.cancelAt,
       endedAt: subscription.endedAt,
       businessName: businesses.name,
       ownerName: user.name,
@@ -98,8 +99,8 @@ export async function getSubscriptions(): Promise<AdminSubscription[]> {
     plan: row.plan,
     status: row.status ?? "incomplete",
     yearly: row.billingInterval === "year",
-    periodEnd: row.periodEnd?.toISOString() ?? null,
-    cancelling: row.cancelAtPeriodEnd ?? false,
+    periodEnd: (stopsAt(row) ?? row.periodEnd)?.toISOString() ?? null,
+    cancelling: stopsAt(row) !== null,
     endedAt: row.endedAt?.toISOString() ?? null,
     stripeUrl: dashboardUrl(`subscriptions/${row.stripeSubscriptionId}`),
     customerUrl: row.stripeCustomerId ? dashboardUrl(`customers/${row.stripeCustomerId}`) : null,
