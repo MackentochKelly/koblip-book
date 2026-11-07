@@ -15,6 +15,15 @@ const words = {
   paymentFailed: "Payment failed",
   upgrade: "Upgrade",
   manage: "Manage billing",
+  // An account made by phone adds a real email before Pro.
+  needsEmail: "Add your email to get Pro. Stripe sends your receipts there.",
+  addEmail: {
+    open: "Add email",
+    title: "Add your email",
+    email: "Email",
+    send: "Send link",
+    sent: "Check your email for the link",
+  },
 }
 
 export default words

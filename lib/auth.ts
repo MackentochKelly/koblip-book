@@ -21,6 +21,7 @@ import { resetPasswordEmail, verificationEmail } from "./email-templates"
 import { ONBOARDING_RULES } from "./onboarding-rules"
 import { canBillBusiness } from "./plan-access"
 import {
+  isPhoneAccountEmail,
   isSignInPhone,
   latestBookingName,
   PHONE_SIGN_IN_RULES,
@@ -106,7 +107,10 @@ export const auth = betterAuth({
   // Owners delete their own account in Settings → Account
   // (better-auth.com/docs/concepts/users-accounts#delete-user); their
   // businesses go first (features/dashboard/api/delete-actions.ts).
-  user: { deleteUser: { enabled: true } },
+  // Change email (better-auth.com/docs/concepts/users-accounts#change-email):
+  // a link to the new address confirms it. Only an account made by phone
+  // uses it, to get a real email before Pro (hooks below).
+  user: { deleteUser: { enabled: true }, changeEmail: { enabled: true } },
   session: { freshAge: ACCOUNT_RULES.freshLoginHours * 3600 },
   advanced: { database: { generateId: () => crypto.randomUUID() } },
   // Phone sign-in is by code only: the phone-number plugin's password
@@ -131,6 +135,15 @@ export const auth = betterAuth({
   // (better-auth.com/docs/concepts/hooks).
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      // Only an account made by phone changes its email: it swaps the
+      // placeholder for a real address (Settings → Plan).
+      if (ctx.path === "/change-email") {
+        const session = await getSessionFromCtx(ctx)
+        if (!session || !isPhoneAccountEmail(session.user.email)) {
+          throw new APIError("FORBIDDEN", { message: "Email can't be changed" })
+        }
+        return
+      }
       if (ctx.path !== "/subscription/upgrade") return
       const referenceId: unknown = ctx.body?.referenceId
       const session = await getSessionFromCtx(ctx)
@@ -140,6 +153,12 @@ export const auth = betterAuth({
         !(await canBillBusiness(session.user.id, referenceId))
       ) {
         throw new APIError("UNAUTHORIZED", { message: "Not your business" })
+      }
+      // Stripe keeps the account's email for receipts and reminders, and the
+      // Stripe plugin copies it there on every change, so a placeholder
+      // email would stay. An account made by phone adds a real one first.
+      if (isPhoneAccountEmail(session.user.email)) {
+        throw new APIError("BAD_REQUEST", { message: "Add an email first" })
       }
     }),
   },

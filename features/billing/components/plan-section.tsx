@@ -23,6 +23,7 @@ import { authClient } from "@/lib/auth-client"
 import { formatPrice } from "@/lib/format-price"
 import { languageOf } from "@/lib/page-language"
 import type { Billing } from "../types"
+import { AddEmail } from "./add-email"
 
 type Period = "monthly" | "yearly"
 
@@ -84,7 +85,11 @@ export function PlanSection({
   const endsAt = subscription?.endsAt
     ? format.dateTime(new Date(subscription.endsAt), { dateStyle: "medium" })
     : null
-  const proNote = needsCard
+  // An account made by phone adds a real email before it can upgrade.
+  const needsEmail = billing.needsEmail && !subscription
+  const proNote = needsEmail
+    ? t("needsEmail")
+    : needsCard
     ? t("needsCard")
     : endsAt
       ? t(subscription?.cancelling ? "ends" : "renews", { date: endsAt })
@@ -105,7 +110,7 @@ export function PlanSection({
         ) : undefined
       }
     >
-      {!subscription && (
+      {!subscription && !needsEmail && (
         <ViewTabs
           views={[
             { id: "monthly", label: t("monthly") },
@@ -144,6 +149,8 @@ export function PlanSection({
               <Badge variant="destructive">{t("paymentFailed")}</Badge>
             ) : onPro ? (
               <Badge variant="success">{t("current")}</Badge>
+            ) : needsEmail ? (
+              <AddEmail returnTo={here} />
             ) : (
               !subscription && (
                 <Button onClick={upgrade} disabled={pending}>

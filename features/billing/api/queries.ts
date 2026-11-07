@@ -74,5 +74,6 @@ export async function getBilling(businessId: string): Promise<Billing> {
         }
       : null,
     prices,
+    needsEmail: owner.email === null,
   }
 }

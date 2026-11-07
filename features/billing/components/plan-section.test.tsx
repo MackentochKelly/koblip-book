@@ -4,13 +4,14 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest"
 import { WithWords } from "@/i18n/testing"
 import type { Billing } from "../types"
 
-const { subscription, toast } = vi.hoisted(() => ({
+const { subscription, changeEmail, toast } = vi.hoisted(() => ({
   subscription: { upgrade: vi.fn(), billingPortal: vi.fn() },
+  changeEmail: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
 vi.mock("sonner", () => ({ toast }))
-vi.mock("@/lib/auth-client", () => ({ authClient: { subscription } }))
+vi.mock("@/lib/auth-client", () => ({ authClient: { subscription, changeEmail } }))
 
 const { PlanSection } = await import("./plan-section")
 const render = (ui: React.ReactElement) => renderPart(ui, { wrapper: WithWords })
@@ -22,7 +23,11 @@ const prices: Billing["prices"] = {
 
 // jsdom has neither; the switcher scrolls its open tab into view.
 beforeEach(() => {
-  window.matchMedia = vi.fn().mockImplementation(() => ({ matches: false }))
+  window.matchMedia = vi.fn().mockImplementation(() => ({
+    matches: false,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }))
   Element.prototype.scrollTo = vi.fn()
 })
 
@@ -34,7 +39,7 @@ afterEach(() => {
 test("on Free: Free is current, and Upgrade buys the period picked", async () => {
   subscription.upgrade.mockResolvedValue({ error: null })
   render(
-    <PlanSection businessId="b1" billing={{ plan: "free", subscription: null, prices }} />
+    <PlanSection businessId="b1" billing={{ plan: "free", subscription: null, prices, needsEmail: false }} />
   )
   expect(screen.getByText("Current")).toBeTruthy()
   expect(screen.getByText("$19.00 a month")).toBeTruthy()
@@ -65,6 +70,7 @@ test("on Pro: Pro is current with its renewal, and Manage billing opens the port
           yearly: false,
         },
         prices,
+        needsEmail: false,
       }}
     />
   )
@@ -89,6 +95,7 @@ test("a failed payment asks for the card, and a Stripe error says so", async () 
         plan: "free",
         subscription: { status: "past_due", endsAt: null, cancelling: false, yearly: false },
         prices,
+        needsEmail: false,
       }}
     />
   )
@@ -98,4 +105,30 @@ test("a failed payment asks for the card, and a Stripe error says so", async () 
 
   fireEvent.click(screen.getByRole("button", { name: "Manage billing" }))
   await waitFor(() => expect(toast.error).toHaveBeenCalled())
+})
+
+test("an account made by phone adds an email before it can upgrade", async () => {
+  changeEmail.mockResolvedValue({ error: null })
+  render(
+    <PlanSection
+      businessId="b1"
+      billing={{ plan: "free", subscription: null, prices, needsEmail: true }}
+    />
+  )
+  expect(screen.getByText("Add your email to get Pro. Stripe sends your receipts there.")).toBeTruthy()
+  expect(screen.queryByRole("button", { name: "Upgrade" })).toBeNull()
+  expect(screen.queryByRole("tablist")).toBeNull()
+
+  fireEvent.click(screen.getByRole("button", { name: "Add email" }))
+  fireEvent.change(await screen.findByLabelText("Email"), {
+    target: { value: "ana@example.com" },
+  })
+  fireEvent.click(screen.getByRole("button", { name: "Send link" }))
+  await waitFor(() =>
+    expect(changeEmail).toHaveBeenCalledWith({
+      newEmail: "ana@example.com",
+      callbackURL: "/dashboard/b1/settings/plan",
+    })
+  )
+  expect(toast.success).toHaveBeenCalledWith("Check your email for the link")
 })

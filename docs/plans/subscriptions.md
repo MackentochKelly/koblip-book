@@ -168,6 +168,7 @@ How to use this file: [Plans](README.md).
 | 2026-11-06 | Backend dev | S11, S12: nothing locks before billing; only checked features move |
 | 2026-11-07 | Owner | P8 words: "Get Pro", "or $190 a year", 30 and 200 WhatsApp messages, Free forever, Soon on unbuilt Pro lines |
 | 2026-11-07 | Owner | P9: Terms "Plans and billing" words; no refunds for unused time unless the law requires it; price changes told 30 days ahead; yearly renewal reminder (Stripe's emails) |
+| 2026-11-07 | Owner | Phone accounts: add a real email before Pro (Better Auth change email, a link to the new address); words approved. Upgrade refuses a placeholder email, since the Stripe plugin copies the account's email to Stripe on every change |
 | 2026-11-07 | Backend dev | P10 in the sandbox: monthly and yearly Checkout, portal cancel and renew, two businesses on one owner, a declined card, a failed renewal (test clock) all pass; webhooks all 200. Found: the portal's cancel sets `cancel_at` (flexible billing mode), not `cancel_at_period_end`, so the app said "Renews"; fixed with `stopsAt` in lib/subscription-rules.ts |
 | 2026-11-07 | Backend dev | P10 note: Adaptive Pricing shows local currency at Checkout (DOP for the Dominican Republic) while the invoice is in USD; Stripe's account setting, left on |
 | 2026-11-07 | Backend dev | P8: Checkout needs a business, so Get Pro leads through the normal sign-up and the ready page; no auto-redirect to Stripe |

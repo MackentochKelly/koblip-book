@@ -13,4 +13,7 @@ export type Billing = {
     yearly: boolean
   } | null
   prices: { monthly: PlanPrice; yearly: PlanPrice }
+  // The account was made by phone and has no real email yet: it adds one
+  // before Upgrade (Stripe needs it).
+  needsEmail: boolean
 }

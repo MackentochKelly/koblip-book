@@ -189,3 +189,50 @@ test.each([
   const call = sendEmailMock.mock.calls.at(-1)?.[0] as { subject: string }
   expect(call.subject).toBe(subject)
 })
+
+// A signed-in account's cookie, for calls that need a session.
+async function signedIn(email: string, password: string): Promise<Headers> {
+  const { auth } = await import("./auth")
+  await auth.api.signUpEmail({
+    body: { name: "Owner", email, password },
+    headers: new Headers(),
+  })
+  const { headers } = await auth.api.signInEmail({
+    body: { email, password },
+    headers: new Headers(),
+    returnHeaders: true,
+  })
+  const cookie = headers.getSetCookie().map((line) => line.split(";")[0]).join("; ")
+  return new Headers({ cookie })
+}
+
+test("an account with a real email can't change it", async () => {
+  const { auth } = await import("./auth")
+  const headers = await signedIn("real-owner@example.com", "password123")
+  await expect(
+    auth.api.changeEmail({ body: { newEmail: "other@example.com" }, headers })
+  ).rejects.toThrow("Email can't be changed")
+})
+
+test("an account made by phone adds a real email through a link", async () => {
+  const { auth } = await import("./auth")
+  const { db } = await import("@/lib/db")
+  const placeholder = "+18095550199@phone.invalid"
+  const headers = await signedIn(placeholder, "password123")
+
+  sendEmailMock.mockClear()
+  await auth.api.changeEmail({
+    body: { newEmail: "phone-owner@example.com", callbackURL: "/dashboard" },
+    headers,
+  })
+  const call = sendEmailMock.mock.calls.at(-1)?.[0] as { to: string } | undefined
+  expect(call?.to).toBe("phone-owner@example.com")
+
+  const token = new URL(sentLink()).searchParams.get("token") as string
+  await auth.api.verifyEmail({ query: { token }, headers })
+  const rows = await db
+    .select({ email: user.email })
+    .from(user)
+    .where(eq(user.email, "phone-owner@example.com"))
+  expect(rows).toHaveLength(1)
+})
