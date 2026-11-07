@@ -1,7 +1,7 @@
 // The Privacy and Terms pages: their sections and points, in order. The
 // words are in the public.legal messages (lib/i18n/en/public.ts).
 // The day the text last changed (shown at the top of each page).
-export const LEGAL_UPDATED = new Date("2026-10-29T12:00:00Z")
+export const LEGAL_UPDATED = new Date("2026-11-07T12:00:00Z")
 
 export const LEGAL_CONTACT = "contact@koblip.com"
 
@@ -24,7 +24,7 @@ function section<D extends LegalDoc, S extends string, P extends string>(
 
 export const LEGAL_SECTIONS = {
   privacy: [
-    section("privacy", "collect", ["account", "business", "clients", "chats"]),
+    section("privacy", "collect", ["account", "business", "clients", "chats", "billing"]),
     section("privacy", "device", ["cookies", "theme", "location"]),
     section("privacy", "helpers", ["providers", "noSale"]),
     section("privacy", "keep", ["open", "unclaimed"]),
@@ -35,7 +35,15 @@ export const LEGAL_SECTIONS = {
     section("terms", "content", ["responsible", "allowed"]),
     section("terms", "bookings", ["agreement", "refunds"]),
     section("terms", "assistant", ["confirm", "google"]),
-    section("terms", "price", ["free"]),
+    section("terms", "billing", [
+      "free",
+      "pro",
+      "charge",
+      "cancel",
+      "refunds",
+      "priceChange",
+      "reminder",
+    ]),
     section("terms", "ending", ["close", "asIs", "changes", "questions"]),
   ],
 }

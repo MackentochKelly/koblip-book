@@ -648,13 +648,15 @@ const words = {
             clients:
               "Your clients: the name, phone, note and bookings they enter on your page.",
             chats: "Assistant chats you type. Live voice audio is not kept.",
+            billing:
+              "If you upgrade: your billing details and payment history. Your card is kept by Stripe, not by us.",
           },
         },
         device: {
           title: "On your device",
           points: {
             cookies:
-              "Only the cookies we need: your sign-in and your language. No ad or tracking cookies.",
+              "Only the cookies we need: your sign-in, your language and the plan you picked. No ad or tracking cookies.",
             theme: "Light or dark mode is saved on your device.",
             location:
               "Your location is used only if you allow it, to search near you, and is not stored.",
@@ -664,7 +666,7 @@ const words = {
           title: "Who helps us",
           points: {
             providers:
-              "Google (Maps, Places and sign-in), Meta (AI assistant), ElevenLabs (voice) and our email provider. They get only what each task needs.",
+              "Google (Maps, Places and sign-in), Meta (AI assistant), ElevenLabs (voice), Stripe (payments) and our email provider. They get only what each task needs.",
             noSale: "We never sell your data and never show ads.",
           },
         },
@@ -723,10 +725,22 @@ const words = {
             google: "Details from Google Maps follow Google's own terms.",
           },
         },
-        price: {
-          title: "Price",
+        // Owner's words, P9 (docs/plans/subscriptions.md); the prices
+        // come from lib/pricing-rules.ts.
+        billing: {
+          title: "Plans and billing",
           points: {
-            free: "Koblip Book is free for now. We will tell you well before any charge starts.",
+            free: "Free is free forever. No card needed.",
+            pro: "Pro costs {monthly} a month or {yearly} a year, before any tax. It renews on its own until you cancel.",
+            charge:
+              "We charge your card when you upgrade, then at the start of each new period. Stripe handles the payment. We never see your full card number.",
+            cancel:
+              "Cancel any time in Settings → Plan. Pro stays until the end of the period you paid for, then you're back on Free.",
+            refunds:
+              "Payments aren't refunded for unused time, unless the law requires it.",
+            priceChange:
+              "If the price changes, we'll tell you at least 30 days before it applies to you.",
+            reminder: "Yearly plans get an email reminder before they renew.",
           },
         },
         ending: {

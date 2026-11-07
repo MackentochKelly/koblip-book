@@ -55,5 +55,6 @@ Do this before turning on billing for real owners (P10 passes first):
 
 1. **Tax registrations.** Stripe Tax only collects tax where the account is registered, and none is added yet. Add them in Dashboard → Tax → Registrations, with your accountant's advice. Checkout already asks Stripe Tax for it.
 2. **Live product and prices.** Make the product, both prices, the free Pro coupon and the portal as in the table above, in live mode.
-3. **Webhook.** Dashboard → Developers → Webhooks → add `https://book.koblip.com/api/auth/stripe/webhook` with the 4 events. Copy its signing secret.
-4. **Keys on the server.** Put `STRIPE_SECRET_KEY` (`sk_live_…`) and `STRIPE_WEBHOOK_SECRET` in `.env.production`, then deploy ([deploy.md](deploy.md)).
+3. **Renewal reminders.** [Subscriptions and emails settings](https://dashboard.stripe.com/settings/billing/automatic) → Email notifications and customer management → turn on **Send emails about upcoming renewals**; the days before are set under Prevent failed payments → Upcoming renewal events ([docs](https://docs.stripe.com/billing/revenue-recovery/customer-emails#renewal-reminders)). The Terms promise yearly plans a reminder before they renew (P9).
+4. **Webhook.** Dashboard → Developers → Webhooks → add `https://book.koblip.com/api/auth/stripe/webhook` with the 4 events. Copy its signing secret.
+5. **Keys on the server.** Put `STRIPE_SECRET_KEY` (`sk_live_…`) and `STRIPE_WEBHOOK_SECRET` in `.env.production`, then deploy ([deploy.md](deploy.md)).

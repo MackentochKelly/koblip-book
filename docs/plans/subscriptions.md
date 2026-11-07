@@ -149,7 +149,7 @@ How to use this file: [Plans](README.md).
 | P7 | Admin screen Subscriptions: every business's plan, status, renewal date, Stripe links, history | P2 | Done (2026-11-06): `features/admin/api/subscriptions.ts`; live and ended subscriptions, newest first, links to the subscription and customer in Stripe's Dashboard |
 | P7b | Admin can give Pro for free (a 100% coupon in Stripe, logged) | P7 | Done (2026-11-06): Admin → Subscriptions → Give Pro free makes a monthly Pro subscription with coupon `koblip_pro_free` (no card); Remove ends it now; `pro_grants` logs who gave and removed it. Only for a business with no live subscription |
 | P8 | Home pricing: Get Pro keeps the choice (a one-day cookie) and opens the search; the ready page's last link becomes Get Pro → Settings → Plan; a signed-in owner goes straight there (`/dashboard?plan=pro`); "Soon" only on Pro lines not built yet; prices from `lib/pricing-rules.ts`, message limits from the admin's rules | P4, O3 | Done |
-| P9 | Terms and privacy: price, cancelling, refunds, Stripe as processor; owners told before the first charge (Terms already promise this) | O1, O2 | To do |
+| P9 | Terms and privacy: price, cancelling, refunds, Stripe as processor; owners told before the first charge (Terms already promise this) | O1, O2 | Done |
 | P10 | Tests and live checks in Stripe test mode: upgrade monthly and yearly, cancel, restore, failed card, two businesses on one owner | P1–P8 | To do |
 
 ## Decisions log
@@ -167,5 +167,6 @@ How to use this file: [Plans](README.md).
 | 2026-11-06 | Backend dev | S15: what a downgrade stops; other features get checks only when they move to a paid plan |
 | 2026-11-06 | Backend dev | S11, S12: nothing locks before billing; only checked features move |
 | 2026-11-07 | Owner | P8 words: "Get Pro", "or $190 a year", 30 and 200 WhatsApp messages, Free forever, Soon on unbuilt Pro lines |
+| 2026-11-07 | Owner | P9: Terms "Plans and billing" words; no refunds for unused time unless the law requires it; price changes told 30 days ahead; yearly renewal reminder (Stripe's emails) |
 | 2026-11-07 | Backend dev | P8: Checkout needs a business, so Get Pro leads through the normal sign-up and the ready page; no auto-redirect to Stripe |
 | 2026-11-06 | Backend dev | P7b: free Pro is a real Stripe subscription with a 100% forever coupon, so Stripe stays the one record of who has Pro; a paying business is changed in Stripe itself |

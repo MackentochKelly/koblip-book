@@ -16,7 +16,9 @@ import {
   LEGAL_UPDATED,
   type LegalDoc,
 } from "@/features/legal/content"
+import { moneyShortParts } from "@/lib/format-price"
 import { languageOf } from "@/lib/page-language"
+import { PRICING_RULES } from "@/lib/pricing-rules"
 import { SOURCE_LANGUAGE } from "@/lib/translations/languages"
 
 // One legal page (Privacy or Terms): the home header and footer around a
@@ -24,7 +26,19 @@ import { SOURCE_LANGUAGE } from "@/lib/translations/languages"
 export function LegalPage({ doc }: { doc: LegalDoc }) {
   const t = useTranslations("public.legal")
   const format = useFormatter()
-  const language = languageOf(useLocale())
+  const locale = useLocale()
+  const language = languageOf(locale)
+  // "$19", in the reader's language's own order, as on the home page.
+  const money = (minor: number) =>
+    moneyShortParts(minor, PRICING_RULES.currency, locale)
+      .map((part) => part.text)
+      .join("")
+  // Every point's values: the contact address and Pro's prices.
+  const values = {
+    contact: LEGAL_CONTACT,
+    monthly: money(PRICING_RULES.proPriceMinor),
+    yearly: money(PRICING_RULES.proYearlyPriceMinor),
+  }
   const updated = format.dateTime(LEGAL_UPDATED, {
     dateStyle: "long",
     timeZone: "UTC",
@@ -75,7 +89,7 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
                 <h2 className="text-lg font-medium">{t(section.title)}</h2>
                 <ul className="flex list-disc flex-col gap-2 pl-5 text-muted-foreground">
                   {section.points.map((point) => (
-                    <li key={point}>{t(point, { contact: LEGAL_CONTACT })}</li>
+                    <li key={point}>{t(point, values)}</li>
                   ))}
                 </ul>
               </section>
