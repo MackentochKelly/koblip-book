@@ -315,13 +315,16 @@ const words = {
       title: "Pricing",
       titleStart: "Start for",
       titleEnd: "free",
-      subtitle: "No card needed. Pro is coming soon.",
+      subtitle: "No card needed to start.",
       perMonth: "/month",
+      // Under Pro's price.
+      perYear: "or {price} a year",
+      getPro: "Get Pro",
       proSample: "Ana paid for her visit",
       // Each plan's list, in the order shown (components/home-pricing.tsx).
       free: {
         name: "Free",
-        note: "Free for now. No card needed.",
+        note: "Free forever. No card needed.",
         features: {
           page: "Your page from Google Maps",
           bookings: "Online bookings, day or night",
@@ -330,6 +333,8 @@ const words = {
           reminders: "Reminders on WhatsApp",
           calendar: "Google Calendar",
           languages: "English, Spanish, Portuguese and French",
+          // The admin's limit on Koblip's number (lib/notification-rules.ts).
+          messages: "{count, plural, one {# WhatsApp message a month} other {# WhatsApp messages a month}}",
         },
       },
       pro: {
@@ -337,6 +342,7 @@ const words = {
         note: "More ways to get booked and paid.",
         features: {
           everything: "Everything in Free",
+          messages: "{count, plural, one {# WhatsApp message a month} other {# WhatsApp messages a month}}",
           payments: "Payments with Stripe",
           sms: "Text reminders by SMS",
           buttons: "Book buttons on Instagram and Facebook",

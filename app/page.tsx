@@ -30,11 +30,13 @@ import { WorksWith } from "@/components/works-with"
 import { Button } from "@/components/ui/button"
 import { Highlighter } from "@/components/ui/highlighter"
 import { claimBusiness } from "@/features/dashboard/api/actions"
+import { choosePro } from "@/features/onboarding/api/pro-choice"
 import { GetStarted } from "@/features/onboarding/components/get-started"
 import { AFTER_LOGIN_PATH, loginHref } from "@/lib/auth-links"
 import { getSession } from "@/lib/dal"
 import { fontDisplay, fontSerif } from "@/lib/fonts"
 import { languageOf } from "@/lib/page-language"
+import { notificationRules } from "@/lib/platform-settings"
 import { cn } from "@/lib/utils"
 
 // The page's language (proxy.ts): ?lang= wins, then the visitor's browser
@@ -52,6 +54,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   const language = languageOf(await getLocale())
   const t = await getTranslations("public.home")
   const onboarding = await getTranslations("onboarding")
+  const rules = await notificationRules()
   return (
     // GetStarted shows the onboarding and owner sign-in words too.
     <WordsProvider namespaces={["app", "public", "onboarding", "ownerAuth"]}>
@@ -157,7 +160,14 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
             <SeeItInAction />
           </HomeBand>
           <HomeBand tone="plain" space="group">
-            <HomePricing />
+            <HomePricing
+              signedIn={signedIn}
+              choosePro={choosePro}
+              messages={{
+                free: rules.koblipMonthlyTemplates,
+                pro: rules.koblipMonthlyTemplatesPro,
+              }}
+            />
           </HomeBand>
           <HomeBand tone="muted" space="group">
             <HomeFaq />

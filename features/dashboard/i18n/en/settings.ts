@@ -154,6 +154,8 @@ const settings = {
     ready: "Your page is ready",
     live: "Congratulations, you're live!",
     toDashboard: "Go to dashboard",
+    // Instead of the dashboard, when Pro was picked on the home page.
+    getPro: "Get Pro",
   },
   verify: {
     title: "Confirm your email",

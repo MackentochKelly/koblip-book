@@ -14,9 +14,13 @@ import { languageOf } from "@/lib/page-language"
 // Where every login lands: the business the owner last opened (else their
 // first); a team member with no business of their own, their team area
 // (docs/plans/team-accounts.md); else one step only: find the business on
-// Google Maps (the home page's box).
-export default async function DashboardPage() {
+// Google Maps (the home page's box). ?plan=pro (the home page's Get Pro)
+// opens that business's Settings → Plan.
+export default async function DashboardPage({
+  searchParams,
+}: PageProps<"/dashboard">) {
   const owner = await requireOwner("/dashboard")
+  const { plan } = await searchParams
   const [businesses, cookieStore] = await Promise.all([
     getMyBusinesses(),
     cookies(),
@@ -24,7 +28,8 @@ export default async function DashboardPage() {
   if (businesses.length) {
     const last = cookieStore.get(LAST_BUSINESS_COOKIE)?.value
     const open = businesses.find((business) => business.id === last)
-    redirect(`/dashboard/${(open ?? businesses[0]).id}`)
+    const id = (open ?? businesses[0]).id
+    redirect(plan === "pro" ? `/dashboard/${id}/settings/plan` : `/dashboard/${id}`)
   }
   // A demo guest whose copy is gone has nothing here: back to the home page.
   if (owner.isGuest) {
