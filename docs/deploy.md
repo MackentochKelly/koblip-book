@@ -4,6 +4,8 @@
 npm run deploy
 ```
 
+Only the owner decides when to deploy: never run this unless the owner says so in chat.
+
 This puts GitHub's `main` live on book.koblip.com. Push first: work that is only on your machine is not deployed.
 
 Never run `npm run build` on the server. It has one core and 4 GB of memory, and a build there runs out of memory. A failed build also deletes the running version, which took the site down on 2026-11-01.

@@ -25,7 +25,7 @@ Rules that always apply:
   company. A change in Chat must be a general API feature, never Book-only.
 - Nothing hidden: anything you store or any rule you add gets its admin
   screen (see below). Secrets only in `.env.local`, only in server code.
-- Commit only your own files. Pull (`git pull --rebase`) before every push.
+- Commit only your own files. Never push or deploy unless the owner says so in chat.
 - Database: one migration per task, made right before you commit. If
   someone else's migration landed first, pull, delete yours and generate it
   again.

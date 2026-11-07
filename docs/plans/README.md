@@ -27,9 +27,9 @@ current.
 
 1. **Pick** a task marked `To do` whose "Needs" tasks are all `Done`.
 2. **Claim it before you start**: set it to `Working on`, add your name and
-   the date, then commit and push only that change
-   (`Plan: working on W5`). Pull first; if someone claimed it already, pick
-   another.
+   the date, then commit only that change (`Plan: working on W5`). Never
+   push or deploy unless the owner says so in chat; if someone claimed it
+   already, pick another.
 3. **Stay in the task's files.** Each task lists the files it owns. If you
    must touch another task's files, ask its owner first.
 4. **Finish**: run typecheck, lint, test and build, then set the task to
