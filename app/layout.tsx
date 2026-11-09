@@ -17,6 +17,14 @@ import { cn } from "@/lib/utils";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'})
 
+// Nova's titles (app/globals.css). Not preloaded: only a business on that
+// look fetches it.
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist",
+  preload: false,
+})
+
 const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
@@ -49,7 +57,7 @@ export default async function RootLayout({
     <html
       lang={isPageLanguage(asked) ? asked : DEFAULT_LANGUAGE}
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
+      className={cn("antialiased", fontMono.variable, geist.variable, "font-sans", inter.variable)}
     >
       <body suppressHydrationWarning>
         <ScrollTopOnReload />

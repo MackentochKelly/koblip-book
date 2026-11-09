@@ -3799,7 +3799,7 @@ test("change_theme only turns on a theme that is ready", async () => {
   const tool = byName("change_theme")
   vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
   expect(await tool.confirm!.describe({ theme: "vega" })).toEqual({
-    error: "Vega is coming soon; ready now: Luma",
+    error: "Vega is coming soon; ready now: Luma, Nova",
   })
   expect(await tool.confirm!.describe({ theme: "luma" })).toEqual({
     error: "Nothing to change.",

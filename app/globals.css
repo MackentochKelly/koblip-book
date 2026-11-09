@@ -96,7 +96,8 @@
        photo, even a white one. bg-photo-scrim text-photo-scrim-foreground. */
     --color-photo-scrim: oklch(0 0 0 / 50%);
     --color-photo-scrim-foreground: oklch(1 0 0);
-    --font-heading: var(--font-sans);
+    /* Titles: each look picks its own face (--heading-font). */
+    --font-heading: var(--heading-font);
     --font-display: var(--font-display);
     --color-hero-foreground: var(--hero-foreground);
     --color-hero-marker-foreground: var(--hero-marker-foreground);
@@ -145,13 +146,15 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    /* The corner steps: --radius times each look's own scale
+       (--radius-scale-*), so a look can be rounder or squarer. */
+    --radius-sm: calc(var(--radius) * var(--radius-scale-sm));
+    --radius-md: calc(var(--radius) * var(--radius-scale-md));
+    --radius-lg: calc(var(--radius) * var(--radius-scale-lg));
+    --radius-xl: calc(var(--radius) * var(--radius-scale-xl));
+    --radius-2xl: calc(var(--radius) * var(--radius-scale-2xl));
+    --radius-3xl: calc(var(--radius) * var(--radius-scale-3xl));
+    --radius-4xl: calc(var(--radius) * var(--radius-scale-4xl));
     /* Magic UI's Marquee (the "Made for" row). */
     --animate-marquee: marquee var(--duration) infinite linear;
     --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
@@ -258,6 +261,16 @@
     --card-shadow:
       0 1px 2px oklch(0 0 0 / 3%), 0 2px 6px -2px oklch(0 0 0 / 3%);
     --radius: 0.625rem;
+    /* Luma's corner scale: round, up to pills. */
+    --radius-scale-sm: 0.6;
+    --radius-scale-md: 0.8;
+    --radius-scale-lg: 1;
+    --radius-scale-xl: 1.4;
+    --radius-scale-2xl: 1.8;
+    --radius-scale-3xl: 2.2;
+    --radius-scale-4xl: 2.6;
+    /* Luma's titles are in the text's own face. */
+    --heading-font: var(--font-sans);
     /* Frame lines and card edges (sidebar edge, top bar, cards, rows, tab
        tracks, a list's filter selects): one real screen pixel, like Apple's
        hairlines. 1px here; sharper screens below. */
@@ -348,6 +361,53 @@
   :root {
     --hairline: calc(1px / 3);
   }
+}
+
+/* Nova: the look of Koblip Sales' bookings (shadcn's Nova style), for a
+   business that picks it in Settings → Theme (lib/theme-rules.ts). Only
+   what differs from Luma is here; everything else is shared. It is on while
+   the page carries that business's mark, or a preview of it
+   (components/business-theme.tsx), and covers the whole page, so menus,
+   dialogs and sheets wear it too. Light and dark stay the visitor's choice. */
+:root:is(
+    :has([data-business-theme="nova"]):not(:has([data-preview-theme])),
+    :has([data-preview-theme="nova"])
+  ) {
+    /* Black main buttons instead of indigo. */
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    /* White pages beside a light grey sidebar. */
+    --app-background: var(--background);
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    /* Squarer corners: buttons, cards and dialogs 14px at most, fields and
+       rows 10px. */
+    --radius-scale-lg: 0.8;
+    --radius-scale-xl: 0.8;
+    --radius-scale-2xl: 1;
+    --radius-scale-3xl: 1;
+    --radius-scale-4xl: 1.4;
+    /* Lines are a full pixel. */
+    --hairline: 1px;
+    /* Titles in Geist, text stays in Inter. */
+    --heading-font: var(--font-geist), var(--font-sans);
+
+    &.dark {
+      /* Dark grey rather than near-black, cards a step lighter. */
+      --background: oklch(0.205 0 0);
+      --card: oklch(0.24 0 0);
+      --popover: oklch(0.24 0 0);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0);
+      --secondary-foreground: oklch(0.985 0 0);
+      --sidebar: oklch(0.205 0 0);
+      --sidebar-primary: oklch(0.488 0.243 264.376);
+      --sidebar-primary-foreground: oklch(0.985 0 0);
+    }
 }
 
 /* Reduce Transparency on: every glass piece and frosted menu turns solid,
@@ -476,4 +536,37 @@
    Outside the layers too: Item draws its edge with a border utility. */
 [data-surface="app"] [data-slot="item"][data-variant="outline"] {
   border-width: var(--hairline);
+}
+
+/* Nova's page titles are in its title face too. In the base layer, so a
+   title that picks its own font keeps it. */
+@layer base {
+  :root:is(
+      :has([data-business-theme="nova"]):not(:has([data-preview-theme])),
+      :has([data-preview-theme="nova"])
+    )
+    :is(h1, h2, h3) {
+    font-family: var(--heading-font);
+  }
+}
+
+/* Nova's fields have an outline and no fill (Luma's are filled, with no
+   line). In the utilities layer, as the fields draw both with utilities; a
+   field in focus or with a mistake keeps its own ring and line. */
+@layer utilities {
+  :root:is(
+      :has([data-business-theme="nova"]):not(:has([data-preview-theme])),
+      :has([data-preview-theme="nova"])
+    ) {
+    :is([data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"]):not(:focus-visible, [aria-invalid="true"]),
+    [data-slot="input-group"]:not(:has([data-slot="input-group-control"]:focus-visible), :has([data-slot][aria-invalid="true"])) {
+      border-color: var(--input);
+    }
+    :is([data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"], [data-slot="input-group"]) {
+      background-color: transparent;
+    }
+    &.dark :is([data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"], [data-slot="input-group"]) {
+      background-color: color-mix(in oklab, var(--input) 30%, transparent);
+    }
+  }
 }

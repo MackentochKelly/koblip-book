@@ -1,9 +1,11 @@
 import type { Metadata } from "next"
 
+import { BusinessTheme } from "@/components/business-theme"
 import { Toaster } from "@/components/ui/sonner"
 import { WordsProvider } from "@/components/words-provider"
 import { TeamShell } from "@/features/team-area/components/team-shell"
 import { PlanLocked } from "@/components/plan-locked"
+import { getBusinessThemeById } from "@/lib/business-theme"
 import { requireTeamMember } from "@/lib/dal"
 import { hasFeature } from "@/lib/plan-access"
 
@@ -21,9 +23,13 @@ export default async function TeamAreaLayout({
   const { seat } = await requireTeamMember(memberId)
   // The business's plan no longer has team accounts: the area stays, locked,
   // until it does again (S7).
-  const open = await hasFeature(seat.business.id, "teamAccounts")
+  const [open, theme] = await Promise.all([
+    hasFeature(seat.business.id, "teamAccounts"),
+    getBusinessThemeById(seat.business.id),
+  ])
   return (
     <WordsProvider namespaces={["app", "notifications", "owner", "teamArea"]}>
+      <BusinessTheme theme={theme} />
       <TeamShell teamMemberId={seat.teamMemberId} businessName={seat.business.name}>
         {open ? children : <PlanLocked feature="teamAccounts" />}
       </TeamShell>

@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { getTranslations } from "next-intl/server"
 
+import { BusinessTheme } from "@/components/business-theme"
 import { Toaster } from "@/components/ui/sonner"
 import { AssistantFloat } from "@/features/assistant/components/assistant-float"
 import {
@@ -17,6 +18,7 @@ import { VerifyEmailAlert } from "@/features/owner-auth/components/verify-email-
 import { requireOwner } from "@/lib/dal"
 import { lockedPlans } from "@/lib/plan-access"
 import { notificationRules } from "@/lib/platform-settings"
+import { DEFAULT_THEME, isAvailableTheme } from "@/lib/theme-rules"
 
 export default async function BusinessDashboardLayout({
   params,
@@ -41,6 +43,10 @@ export default async function BusinessDashboardLayout({
       pollSeconds={rules.inAppPollSeconds}
       settingsHref={`/dashboard/${businessId}/settings/notifications`}
     >
+      {/* This business's look, for as long as its dashboard is open. */}
+      <BusinessTheme
+        theme={isAvailableTheme(business.theme) ? business.theme : DEFAULT_THEME}
+      />
       <DashboardShell
         business={{ id: business.id, slug: business.slug, name: business.name }}
         businesses={businesses}

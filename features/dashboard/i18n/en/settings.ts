@@ -116,6 +116,8 @@ const settings = {
     title: "Theme",
     active: "Active",
     activate: "Activate",
+    preview: "Preview",
+    stopPreview: "Stop preview",
     activated: "Theme activated",
     comingSoon: "Coming soon",
   },

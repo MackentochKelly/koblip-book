@@ -1,9 +1,12 @@
-// Looks an owner can pick for their public page. Luma is today's look and
-// the default; the others show as Coming soon until they are built.
+// Looks an owner can pick for their business: its dashboard, its team's area
+// and its public page all wear it (components/business-theme.tsx; each
+// look's colours, corners and fonts are in app/globals.css). Luma is the
+// default; the ones not built yet show as Coming soon. Light and dark are a
+// separate choice, the visitor's own, and every look has both.
 export const THEMES = [
   { id: "luma", name: "Luma", available: true },
   { id: "vega", name: "Vega", available: false },
-  { id: "nova", name: "Nova", available: false },
+  { id: "nova", name: "Nova", available: true },
   { id: "maia", name: "Maia", available: false },
   { id: "lyra", name: "Lyra", available: false },
 ] as const
