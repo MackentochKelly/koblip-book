@@ -1,5 +1,5 @@
 import "server-only"
-import { runInTurn } from "@/lib/run-in-turn"
+import { bookingTurnKey, runInTurn } from "@/lib/run-in-turn"
 
 // Every booking for one business (by a customer, the owner or the
 // assistant) checks the free times and saves in turn, so two people can
@@ -9,5 +9,5 @@ export function inBookingTurn<T>(
   businessId: string,
   task: () => Promise<T>
 ): Promise<T> {
-  return runInTurn(`booking:${businessId}`, task)
+  return runInTurn(bookingTurnKey(businessId), task)
 }

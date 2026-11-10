@@ -27,3 +27,10 @@ export async function runInTurn<T>(
     }
   }
 }
+
+// The key every change to one business's bookings takes its turn with
+// (features/booking/api/booking-turn.ts), shared with what must never run
+// beside a booking being made: counting rewards (lib/rewards.ts).
+export function bookingTurnKey(businessId: string): string {
+  return `booking:${businessId}`
+}

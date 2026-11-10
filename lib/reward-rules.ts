@@ -286,7 +286,9 @@ export interface EarningBooking {
 }
 
 // How much a booking counts on a rule right now: 0, 1 for a visit, or its
-// price for a spend rule. A visit counts once it happened (it ended, and is
+// price for a spend rule. The rule's status is not looked at here: a rule
+// that is off earns nothing new, but a booking it already counted must
+// still be undone when it is cancelled (lib/rewards.ts decides). A visit counts once it happened (it ended, and is
 // confirmed or completed: the app's one rule, isEarned), never when it is
 // only booked; a cancelled or no-show booking counts 0, which is how a
 // counted booking gets undone. A booking a reward made free earns nothing.
@@ -295,7 +297,6 @@ export function earnAmount(
   booking: EarningBooking,
   now: string
 ): number {
-  if (rule.status !== "active") return 0
   if (!EARNING_STATUSES.some((status) => status === booking.status)) return 0
   if (booking.endAt > now) return 0
   if (rule.startsAt && booking.startAt < rule.startsAt) return 0

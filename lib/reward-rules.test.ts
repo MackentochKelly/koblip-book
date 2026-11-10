@@ -156,11 +156,6 @@ test("visits from before the rule, or after its end, don't count", () => {
   ).toBe(0)
 })
 
-test("a rule that is off or ended earns nothing", () => {
-  expect(earnAmount({ ...rule, status: "off" }, visit, NOW)).toBe(0)
-  expect(earnAmount({ ...rule, status: "ended" }, visit, NOW)).toBe(0)
-})
-
 test("only the chosen services count", () => {
   const cuts = { ...rule, earnServices: [{ id: "cut", name: "Haircut" }] }
   expect(earnAmount(cuts, visit, NOW)).toBe(1)
