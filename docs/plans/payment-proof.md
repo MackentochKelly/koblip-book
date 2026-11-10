@@ -2,7 +2,7 @@
 
 A customer who paid the business outside the app (bank transfer, Zelle, Cash App, another way) can add a picture of the payment when they say "I've paid". The owner sees it next to "Mark as paid". Follows [Pay outside the app: follow-ups](outside-payments.md).
 
-**Status (Nov 10):** Plan only. Nothing built. Waiting for the owner's go and the answers under "Needs the owner".
+**Status (Nov 10):** Plan only. Nothing built. The owner answered the three open points (required, 90 days shown, team members see it); see Decisions. Waiting for the owner's go.
 
 ## Rules that stay
 
@@ -29,12 +29,13 @@ A proof is a screenshot of someone's bank or payment app: names, account numbers
 ## Decisions
 
 - **PP1. Private files.** Proofs are saved in a separate folder (`data/payment-proofs`, set by `PAYMENT_PROOFS_DIR`), never under `/uploads/`. They are served only by a new route that checks the session on every request and answers `Cache-Control: private, no-store`.
-- **PP2. Who can see a proof.** The customer who booked, the business's owner, and the app admin. Not team members (same line as OP3: they see the status, not the details). Not the assistant: it may say a proof was added, it never receives the picture.
-- **PP3. One proof per booking, optional.** The owner decides per business whether it is asked for (PP6). The reference text stays as it is.
+- **PP2. Who can see a proof.** The customer who booked, the business's owner, the app admin, and the team member the booking is with (owner's decision, Nov 10), unless the business owner turns that off (PP9). A member never sees another member's bookings or proofs. Not the assistant: it may say a proof was added, it never receives the picture.
+- **PP3. One proof per booking, required** (owner's decision, Nov 10). While the business asks for proofs (PP6), "I've paid" cannot be sent without a picture; the server refuses it too, not only the button. The reference text stays optional.
 - **PP4. It can be replaced until the owner answers.** While the booking is "reported" the customer may replace or remove the picture. Once it is paid, the proof is locked. If the owner turns it back to "not paid", the old proof is deleted with the reference (as `setBookingPaid` already clears the reference) and the customer can send a new one.
-- **PP5. Kept, then deleted.** A proof is deleted when the booking, the business or the customer's account is deleted, and by a timer 90 days after the booking's date (`PAYMENT_RULES.proofKeepDays`). Why: it is someone's financial data, kept only as long as it is useful (GDPR Article 5: storage limitation).
-- **PP6. A switch for the owner.** Settings → Payments gets one switch, "Ask for a picture of the payment", with two states: **off**, or **on** (the customer may add one, it is not forced). Default: on. A required proof is left out of this plan; see "Needs the owner".
+- **PP5. Kept, then deleted.** A proof is deleted when the booking, the business or the customer's account is deleted, and by a timer 90 days after the booking's date (`PAYMENT_RULES.proofKeepDays`). Why: it is someone's financial data, kept only as long as it is useful (GDPR Article 5: storage limitation). The 90 days are said plainly where it matters (owner's decision, Nov 10): to the owner under the switch in Settings → Payments and beside each proof ("Deleted on {date}"), to the customer under the upload button, and in the app admin with each proof.
+- **PP6. A switch for the owner.** Settings → Payments gets one switch, "Ask for a picture of the payment", with two states: **off** (no picture asked), or **on** (a picture is required to say "I've paid"). Default: on.
 - **PP7. Same checks as other photos.** JPG, PNG, WebP, real type checked, 4 MB (`UPLOAD_RULES`). The picture is re-encoded on save, which strips location and device data from the file. PDF receipts are left out of this plan.
+- **PP9. A second switch: team members.** Settings → Payments, "Team members see payment pictures", on by default, shown only while proofs are asked for. Off: members keep seeing the way and the status (OP3), not the picture. Read from the business on every request, so turning it off works at once. "Admin" in the owner's answer is read as the business owner; the app admin sees every proof either way.
 - **PP8. No judging.** The app does not read the picture, match amounts or detect fakes. It is shown to the owner, who decides.
 
 ## Tasks
@@ -44,13 +45,14 @@ In order. Each is small and ends with its own tests. All `To do`.
 | ID | Task | Done when |
 | --- | --- | --- |
 | PP-1 | Private store | `lib/payment-proofs.ts`: save (checks type and size, re-encodes), read, delete, in its own folder. Tests: wrong type and too big refused; a saved name cannot be reached through `/uploads/`. |
-| PP-2 | Data | `bookings.payment_proof` (the file's name) and `payment_proof_at`; `businesses.payment_proof` (the switch, default on). One migration, new fields only. |
-| PP-3 | The door | `GET /api/payment-proof/[bookingId]`: answers the customer who booked, the owner of that business, or an admin; everyone else gets 404. `private, no-store`, `nosniff`. Tests: each of the three is let in; another customer, another owner, a team member and a signed-out visitor are not. |
-| PP-4 | Customer: add it | The "I've paid" form gets the shared upload button, "Add a picture of your payment". Sent with the reference in one step. Shows a small preview with Replace and Remove while it is "reported". Phone first: the button opens the photo library or camera. |
-| PP-5 | Owner: see it | Booking details show a thumbnail under the reference; a tap opens it full size in a dialog. With none: nothing extra shows. "Review payment" rows get a small "has picture" mark. |
-| PP-6 | Owner: the switch | "Ask for a picture of the payment" in Settings → Payments, shown when the business has a way to pay. Off hides the upload button for its customers. |
+| PP-2 | Data | `bookings.payment_proof` (the file's name) and `payment_proof_at`; `businesses.payment_proof` (the switch, default on) and `businesses.payment_proof_team` (team members see it, default on). One migration, new fields only. |
+| PP-3 | The door | `GET /api/payment-proof/[bookingId]`: answers the customer who booked, the owner of that business, an admin, or the team member the booking is with while the business allows it; everyone else gets 404. `private, no-store`, `nosniff`. Tests: each of the four is let in; another customer, another owner, another team member, the right member with the switch off, and a signed-out visitor are not. |
+| PP-4 | Customer: add it | The "I've paid" form gets the shared upload button, "Add a picture of your payment", required: the button stays off without one and `reportPayment` refuses it. One helper line: kept 90 days. Sent with the reference in one step. Shows a small preview with Replace and Remove while it is "reported". Phone first: the button opens the photo library or camera. |
+| PP-5 | Owner: see it | Booking details show a thumbnail under the reference with "Deleted on {date}"; a tap opens it full size in a dialog. With none: nothing extra shows. "Review payment" rows get a small "has picture" mark. |
+| PP-6 | Owner: the switches | In Settings → Payments, shown when the business has a way to pay: "Ask for a picture of the payment" (helper: required to say "I've paid", deleted after 90 days) and, under it, "Team members see payment pictures". Both on by default. |
+| PP-6b | Team area | A member's own booking shows the proof's thumbnail and opens it, while the business allows it. `features/team-area/`. Tests: own booking yes, another member's no, switch off no. |
 | PP-7 | Clean-up | Proof deleted when the owner turns a booking back to "not paid", and with the booking, the business, the customer's account and the demo purge. Timer deletes proofs 90 days after the booking's date. Tests for each. |
-| PP-8 | Admin | Admin → Bookings shows whether a booking has a proof and opens it (admin only). Nothing hidden from the admin. |
+| PP-8 | Admin | Admin → Bookings shows whether a booking has a proof, opens it, and says when it will be deleted. Admin → Payments shows both switches per business and the 90-day rule. Nothing hidden from the admin. |
 | PP-9 | Assistant | `list_bookings` says `hasProof: true/false`. No tool returns the picture. |
 | PP-10 | Words and checks | New words translated; type check, lint, tests, build; phone (375 and 320) and computer, Luma and Nova, light and dark. |
 
@@ -70,7 +72,7 @@ In order. Each is small and ends with its own tests. All `To do`.
 - Reading the picture (amount, date, name) or spotting fakes.
 - PDF receipts, more than one picture per booking.
 - Sending the proof over WhatsApp or email.
-- A proof that is **required** before the booking is accepted.
+- A proof needed before the **booking** itself is accepted: it is required to say "I've paid", not to book.
 - Proof added by a guest who is not signed in. "I've paid" already needs the customer's account.
 
 ## Risks
@@ -82,11 +84,8 @@ In order. Each is small and ends with its own tests. All `To do`.
 ## Needs the owner
 
 - **Go** to build PP-1 to PP-10.
-- **Required or optional?** Planned: optional, with the owner's switch to turn asking on or off. Say if a business should be able to make it required.
-- **How long to keep proofs.** Planned: 90 days after the booking's date.
-- **Team members.** Planned: they do not see proofs. Say if a member should see the proof on their own bookings.
-- **Wording**, to approve before it ships: "Add a picture of your payment", "Replace", "Remove", "Ask for a picture of the payment", "Customers can add a screenshot when they say they paid.", "Payment picture".
+- **Wording**, to approve before it ships: "Add a picture of your payment", "Replace", "Remove", "Ask for a picture of the payment", "Customers must add a screenshot to say they paid. Deleted after 90 days.", "Team members see payment pictures", "Payment picture", "Deleted on {date}".
 
 ## Next step
 
-Owner answers the five points above. Then PP-1.
+Owner's go. Then PP-1.
