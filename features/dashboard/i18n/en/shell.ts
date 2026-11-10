@@ -13,6 +13,7 @@ const shell = {
     team: "Team",
     hours: "Hours",
     automations: "Automations",
+    rewards: "Rewards",
     widgets: "Widgets",
     integrations: "Integrations",
     settings: "Settings",

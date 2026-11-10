@@ -5,6 +5,7 @@ import billing from "@/features/billing/i18n/en"
 import ownerBookings from "@/features/dashboard/i18n/en/bookings"
 import ownerCatalog from "@/features/dashboard/i18n/en/catalog"
 import ownerIntegrations from "@/features/dashboard/i18n/en/integrations"
+import ownerRewards from "@/features/dashboard/i18n/en/rewards"
 import ownerSettings from "@/features/dashboard/i18n/en/settings"
 import ownerShell from "@/features/dashboard/i18n/en/shell"
 import ownerWhatsapp from "@/features/dashboard/i18n/en/whatsapp"
@@ -38,6 +39,7 @@ const messages = {
     bookings: ownerBookings,
     catalog: ownerCatalog,
     integrations: ownerIntegrations,
+    rewards: ownerRewards,
     settings: ownerSettings,
     shell: ownerShell,
     whatsapp: ownerWhatsapp,

@@ -108,6 +108,23 @@ const words = {
     text: "Try again in a few minutes.",
     retry: "Try again",
   },
+  // A reward rule in words (hooks/use-reward-words.ts), wherever it shows:
+  // the owner's Rewards page, the booking page, the customer's account and
+  // the admin. "Free Haircut", "20% off", "Every 5 visits".
+  rewards: {
+    free: "Free {service}",
+    freeAny: "Free service",
+    percent: "{percent, number}% off {service}",
+    percentAny: "{percent, number}% off",
+    amount: "{amount} off {service}",
+    amountAny: "{amount} off",
+    // One earned reward that covers several bookings: "2 × Free Haircut".
+    times: "{count, number} × {reward}",
+    visits: "Every {count, plural, one {visit} other {# visits}}",
+    visitsOf: "Every {count, plural, one {visit} other {# visits}}: {service}",
+    spend: "Every {amount} spent",
+    spendOf: "Every {amount} spent: {service}",
+  },
   // A feature the business's plan doesn't include (components/plan-locked.tsx).
   planLocked: {
     title: "Part of {plan}",

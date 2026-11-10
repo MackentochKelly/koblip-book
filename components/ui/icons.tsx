@@ -64,6 +64,7 @@ import {
   Sidebar as MynaSidebar,
   Sparkles as MynaSparkles,
   Square as MynaSquare,
+  Gift as MynaGift,
   Star as MynaStar,
   Store as MynaStore,
   Sun as MynaSun,
@@ -307,6 +308,7 @@ export const SparklesIcon = icon(MynaSparkles as Icon, "SparklesIcon")
 export const SmileIcon = icon(MynaSmile as Icon, "SmileIcon")
 export const SquareIcon = icon(MynaSquare as Icon, "SquareIcon")
 export const SquarePenIcon = icon(MynaEdit as Icon, "SquarePenIcon")
+export const GiftIcon = icon(MynaGift as Icon, "GiftIcon")
 export const StarIcon = icon(MynaStar as Icon, "StarIcon")
 export const StethoscopeIcon = icon(
   LucideStethoscope as Icon,

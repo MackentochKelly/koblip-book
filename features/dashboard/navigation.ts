@@ -2,6 +2,7 @@ import {
   CalendarDaysIcon,
   ChartColumnIcon,
   ContactIcon,
+  GiftIcon,
   LayoutDashboardIcon,
   LayoutGridIcon,
   PuzzleIcon,
@@ -39,6 +40,7 @@ export const NAV_GROUPS = [
       { path: "/services", key: "services", icon: TagIcon },
       { path: "/team", key: "team", icon: UsersIcon },
       { path: "/automations", key: "automations", icon: ZapIcon },
+      { path: "/rewards", key: "rewards", icon: GiftIcon, feature: "rewards" },
     ],
   },
   {
