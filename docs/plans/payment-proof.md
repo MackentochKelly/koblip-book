@@ -84,7 +84,7 @@ In order. Each is small and ends with its own tests. All `Done` (Nov 10).
 ## Needs the owner
 
 - A look at it on the phone and the computer.
-- Nothing on wording: the owner asked (Nov 10) for the short plain words big teams use instead of approving each line (`docs/ui-rules/forms-and-text.md`, "Words"). On screen it is a "receipt": "Add receipt", "Replace", "Ask for a receipt", "Team sees receipts", "Receipt", "Deleted on {date}".
+- Nothing on wording: the owner asked (Nov 10) for the short plain words big teams use instead of approving each line (`docs/ui-rules/forms-and-text.md`, "Words"). On screen it is "payment proof" (the owner's word, Nov 10): "Add payment proof", "Replace", "Ask for payment proof", "Team sees payment proof", "Deleted on {date}".
 
 ## Next step
 

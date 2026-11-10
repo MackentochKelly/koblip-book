@@ -155,10 +155,10 @@ const settings = {
     removeHint: "Bookings already made keep it.",
     // The customer's picture of the payment (docs/plans/payment-proof.md).
     proof: {
-      ask: "Ask for a receipt",
+      ask: "Ask for payment proof",
       askHint:
         "Customers add one to say they paid. Deleted {days, number} days after the visit.",
-      team: "Team sees receipts",
+      team: "Team sees payment proof",
       teamHint: "Their own bookings only.",
     },
     // The policies were written for another way of paying than the

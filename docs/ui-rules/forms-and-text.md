@@ -17,9 +17,9 @@ say the same thing, and use the shortest plain words they use.
   fewer words, do so"; Microsoft: "Shorter is always better").
 - Common words, no jargon, written like you speak; contractions are fine
   ("doesn't").
-- Buttons start with a verb, one or two words: "Add receipt", "Replace".
+- Buttons start with a verb, one or two words: "Add photo", "Replace".
 - One word per thing, everywhere, and the word the app already uses
-  ("photo", "receipt"). Check the i18n files before adding a new one.
+  ("photo", "payment proof"). Check the i18n files before adding a new one.
 - Sentence case. No full stop on labels, buttons and titles.
 - "Your" and "my" only where the meaning needs them; never "we".
 - A switch's label says what it does when on.

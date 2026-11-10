@@ -592,7 +592,7 @@ const words = {
     // Paying outside the app (docs/plans/outside-payments.md, OP-8).
     payLater: "At the visit",
     // The customer's picture of the payment (docs/plans/payment-proof.md).
-    proof: "Receipt",
+    proof: "Payment proof",
     proofDeleted: "Deleted on {date, date, medium}",
     payment: {
       unpaid: "Payment pending",
@@ -616,15 +616,15 @@ const words = {
     // Payment pictures: each business's two switches, and the one rule
     // for all of them.
     proof: {
-      on: "Receipt required",
-      off: "No receipt asked",
+      on: "Payment proof required",
+      off: "No payment proof asked",
     },
     proofTeam: {
-      on: "Team sees receipts",
-      off: "Team doesn't see receipts",
+      on: "Team sees payment proof",
+      off: "Team doesn't see payment proof",
     },
     proofRule:
-      "Receipts are deleted {days, number} days after the booking date.",
+      "Payment proof is deleted {days, number} days after the booking date.",
     toCheck:
       "{n, plural, one {# payment to review} other {# payments to review}}",
   },
