@@ -190,6 +190,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Local agent worktrees: other copies of the app, linted in their own.
     ".claude/**",
+    // The launch video: its own package (video/package.json), not the app.
+    "video/**",
   ]),
 ])
 

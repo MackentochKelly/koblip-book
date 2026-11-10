@@ -6,8 +6,9 @@ export default defineConfig({
   plugins: [tsconfigPaths(), react()],
   test: {
     environment: 'jsdom',
-    // Separate checkouts are not part of this repository's test run.
+    // Separate checkouts are not part of this repository's test run, and
+    // neither is video/: its own package, with its own checks.
     // https://vitest.dev/config/exclude.html
-    exclude: [...configDefaults.exclude, '**/.claude/worktrees/**'],
+    exclude: [...configDefaults.exclude, '**/.claude/worktrees/**', 'video/**'],
   },
 })
