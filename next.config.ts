@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
   // bundle (node_modules/next/dist/docs/01-app/03-api-reference/05-config/
   // 01-next-config-js/serverExternalPackages.md).
   serverExternalPackages: ["@google-cloud/translate"],
+  // Open the dev server from a phone on the same Wi-Fi: its hostnames,
+  // comma-separated, from .env.local (node_modules/next/dist/docs/01-app/
+  // 03-api-reference/05-config/01-next-config-js/allowedDevOrigins.md).
+  allowedDevOrigins: process.env.DEV_ALLOWED_ORIGINS?.split(",")
+    .map((host) => host.trim())
+    .filter(Boolean),
   experimental: {
     serverActions: {
       bodySizeLimit: "5mb",
