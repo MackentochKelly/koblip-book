@@ -45,6 +45,7 @@ export function BookingsList({ bookings }: { bookings: AdminBooking[] }) {
             </ItemDescription>
           </ItemContent>
           <ItemActions>
+            {booking.reward && <Badge variant="outline">{t("reward")}</Badge>}
             {booking.payment?.proof && (
               <PaymentProof
                 bookingId={booking.id}

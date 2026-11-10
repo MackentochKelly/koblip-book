@@ -165,6 +165,8 @@ export interface AdminBooking {
   serviceName: string
   customerName: string
   status: string
+  // A reward was redeemed on it (docs/plans/rewards.md, RW-13).
+  reward: boolean
   // Paying outside the app, when the booking tracks it: the way's name
   // (null at the visit) and where it stands.
   // proof: the customer added a picture of the payment.
@@ -187,6 +189,7 @@ export async function getBookings(): Promise<AdminBooking[]> {
       paymentStatus: bookings.paymentStatus,
       paymentReference: bookings.paymentReference,
       paymentProof: bookings.paymentProof,
+      rewardId: bookings.rewardId,
     })
     .from(bookings)
     .innerJoin(businesses, eq(businesses.id, bookings.businessId))
@@ -194,7 +197,7 @@ export async function getBookings(): Promise<AdminBooking[]> {
     .orderBy(desc(bookings.createdAt))
     .limit(MAX_ROWS)
   return rows.map(
-    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof, ...row }) => {
+    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof, rewardId, ...row }) => {
       const payment = paymentOf({
         paymentChoice,
         paymentMethod,
@@ -204,6 +207,7 @@ export async function getBookings(): Promise<AdminBooking[]> {
       })
       return {
         ...row,
+        reward: rewardId !== null,
         payment: payment && {
           way: payment.method?.name ?? null,
           status: payment.status,

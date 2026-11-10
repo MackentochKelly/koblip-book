@@ -3,7 +3,7 @@ import "server-only"
 import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm"
 import { notFound } from "next/navigation"
 import { EARNING_STATUSES } from "@/lib/booking-rules"
-import { customerKey } from "@/lib/customer-key"
+import { customerKey, customerKeyLabel } from "@/lib/customer-key"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { paymentOf } from "@/lib/payment-rules"
@@ -339,12 +339,6 @@ export async function getCustomerRewards(
 // How many of the latest changes Rewards > Activity lists.
 const MAX_REWARD_ACTIVITY = 100
 
-// A customer with no booking and no saved name, from their key: the phone
-// or the name it was made from (lib/customer-key.ts).
-function nameFromKey(key: string): string {
-  return key.startsWith("p:") ? `+${key.slice(2)}` : key.slice(2)
-}
-
 // Rewards > Activity (docs/plans/rewards.md, RW-9): the business's counts
 // and its latest history, for one rule or all, each line with its
 // customer's name.
@@ -396,7 +390,7 @@ export async function getRewardActivity(
       ruleId: event.ruleId,
       customerKey: event.customerKey,
       customerName:
-        names.get(event.customerKey) ?? nameFromKey(event.customerKey),
+        names.get(event.customerKey) ?? customerKeyLabel(event.customerKey),
       type: event.type,
       amount: event.amount,
       note: event.note,

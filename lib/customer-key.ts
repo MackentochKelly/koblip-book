@@ -8,3 +8,9 @@ export function customerKey(phone: string | null, name: string): string {
   }
   return `n:${name.trim().toLowerCase().replace(/\s+/g, " ")}`
 }
+
+// A customer shown by their key alone, when there is no booking or saved
+// name to read: the phone ("+18095550123") or the name it was made from.
+export function customerKeyLabel(key: string): string {
+  return key.startsWith("p:") ? `+${key.slice(2)}` : key.slice(2)
+}

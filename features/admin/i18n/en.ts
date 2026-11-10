@@ -20,6 +20,7 @@ const words = {
     bookings: "Bookings",
     payments: "Payments",
     reviews: "Reviews",
+    rewards: "Rewards",
     whatsapp: "WhatsApp",
     notifications: "Notifications",
     assistant: "Assistant",
@@ -590,6 +591,8 @@ const words = {
       no_show: "No-show",
       cancelled: "Cancelled",
     },
+    // The customer redeemed a reward on it.
+    reward: "Reward",
     // Paying outside the app (docs/plans/outside-payments.md, OP-8).
     payLater: "At the visit",
     // The customer's picture of the payment (docs/plans/payment-proof.md).
@@ -600,6 +603,34 @@ const words = {
       reported: "Says paid",
       paid: "Paid",
     },
+  },
+  // Every business's reward rules, earned rewards and history
+  // (docs/plans/rewards.md, RW-13). Read only.
+  rewards: {
+    none: "No business has rewards yet",
+    partsLabel: "Rewards parts",
+    parts: { rules: "Rewards", earned: "Earned", history: "History" },
+    noEarned: "No rewards earned yet",
+    noHistory: "No history yet",
+    rule: { active: "On", off: "Off", ended: "Removed" },
+    status: {
+      available: "To redeem",
+      held: "On a booking",
+      used: "Used",
+      expired: "Expired",
+      removed: "Taken back",
+    },
+    expires: "Expires {date, date, medium}",
+    types: {
+      earn: "Booking counted",
+      reverse: "Booking taken back",
+      adjust: "Changed by hand",
+      given: "Reward given",
+      convert: "Reward earned",
+      unconvert: "Reward taken back",
+      expire: "Reward expired",
+    },
+    actors: { system: "Koblip", owner: "Owner", assistant: "Assistant" },
   },
   // Each business's ways to be paid outside the app (OP-9). Read only.
   payments: {
