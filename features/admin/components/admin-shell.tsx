@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
 import {
+  BankIcon,
   BanknoteIcon,
   BellIcon,
   CalendarDaysIcon,
@@ -40,6 +41,7 @@ const NAV = [
   { path: "/service-categories", key: "serviceCategories", icon: TagIcon },
   { path: "/bookings", key: "bookings", icon: CalendarDaysIcon },
   { path: "/reviews", key: "reviews", icon: StarIcon },
+  { path: "/payments", key: "payments", icon: BankIcon },
   { path: "/whatsapp", key: "whatsapp", icon: WhatsAppIcon },
   { path: "/notifications", key: "notifications", icon: BellIcon },
   { path: "/translations", key: "translations", icon: LanguagesIcon },

@@ -47,6 +47,7 @@ const KIND_ICONS: Record<InAppKind, React.ComponentType> = {
   customerCantCome: CircleAlertIcon,
   customerMoved: ClockIcon,
   customerCancelled: CalendarX2Icon,
+  customerPaid: BanknoteIcon,
   customerReplied: WhatsAppIcon,
   messageFailed: TriangleAlertIcon,
   templateApproved: BadgeCheckIcon,
@@ -57,6 +58,7 @@ const KIND_ICONS: Record<InAppKind, React.ComponentType> = {
   clientBooked: CalendarDaysIcon,
   clientMoved: ClockIcon,
   clientCancelled: CalendarX2Icon,
+  clientPaid: BanknoteIcon,
   clientReminder: BellIcon,
   clientReviewAsk: StarIcon,
 }

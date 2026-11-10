@@ -2,7 +2,13 @@
 
 import { useLocale, useTranslations } from "next-intl"
 import { Fragment, useCallback, useEffect, useRef, useState } from "react"
-import { CalendarIcon, CalendarX2Icon, UsersIcon } from "@/components/ui/icons"
+import {
+  CalendarIcon,
+  CalendarX2Icon,
+  ClockIcon,
+  UsersIcon,
+} from "@/components/ui/icons"
+import { PaymentTypeIcon } from "@/components/payment-type-icon"
 
 import { InfoTip } from "@/components/info-tip"
 import { PolicyPointIcon } from "@/components/policy-point-icon"
@@ -58,6 +64,7 @@ import { formatPrice } from "@/lib/format-price"
 import { formatClock, formatDay, todayIn } from "@/lib/format-booking-time"
 import { initials } from "@/lib/initials"
 import { languageOf } from "@/lib/page-language"
+import type { PaymentOptions } from "@/lib/payment-rules"
 import { policySegment } from "@/lib/policy-rules"
 import { groupServices, showsGroups } from "@/lib/service-groups"
 import { cn } from "@/lib/utils"
@@ -438,6 +445,72 @@ export function MemberStep({
               )}
             </FieldContent>
             <RadioGroupItem value={option.id} id={`member-${option.id}`} />
+          </Field>
+        </FieldLabel>
+      ))}
+    </RadioGroup>
+  )
+}
+
+// "Pay later" in the payment choice, beside the business's ways' ids.
+export const PAY_LATER = "later"
+
+// How the customer will pay, when the business lists ways to pay outside
+// the app: one of them, or at the visit where the business allows it. Only
+// the ways' names show here; where to send the money comes once booked.
+export function PaymentStep({
+  payments,
+  value,
+  onChange,
+}: {
+  payments: PaymentOptions
+  // A way's id, PAY_LATER, or "" while nothing is picked.
+  value: string
+  onChange: (value: string) => void
+}) {
+  const t = useTranslations("public.booking")
+  const options = [
+    ...payments.methods.map((method) => ({
+      id: method.id,
+      name: method.name,
+      detail: t(`payment.types.${method.type}`),
+      icon: <PaymentTypeIcon type={method.type} />,
+    })),
+    ...(payments.payLater
+      ? [
+          {
+            id: PAY_LATER,
+            name: t("payment.later"),
+            detail: t("payment.laterHint"),
+            icon: <ClockIcon />,
+          },
+        ]
+      : []),
+  ]
+  return (
+    <RadioGroup
+      value={value}
+      onValueChange={(next) => onChange(String(next))}
+      aria-label={t("titles.payment")}
+    >
+      {options.map((option) => (
+        <FieldLabel
+          variant="box"
+          key={option.id}
+          htmlFor={`payment-${option.id}`}
+        >
+          <Field orientation="horizontal">
+            <Avatar size="lg">
+              <AvatarFallback>{option.icon}</AvatarFallback>
+            </Avatar>
+            <FieldContent>
+              <FieldTitle>{option.name}</FieldTitle>
+              {/* A way named like its kind ("Zelle") says it once. */}
+              {option.detail !== option.name && (
+                <FieldDescription>{option.detail}</FieldDescription>
+              )}
+            </FieldContent>
+            <RadioGroupItem value={option.id} id={`payment-${option.id}`} />
           </Field>
         </FieldLabel>
       ))}

@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl"
 import { useState } from "react"
 import { CalendarDaysIcon } from "@/components/ui/icons"
 
+import { PaymentBadge } from "@/components/payment-badge"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -95,11 +96,25 @@ export function MyBookings({
                         {clock.formatRange(new Date(booking.startAt), new Date(booking.endAt))}
                         {" · "}
                         {booking.customerName}
+                        {booking.payment && (
+                          <>
+                            {" · "}
+                            {booking.payment.way ?? t("bookings.payment.later")}
+                          </>
+                        )}
                       </ItemDescription>
                     </ItemContent>
-                    {badge && (
+                    {(badge || booking.payment) && (
                       <ItemActions>
-                        <Badge variant="secondary">{t(`bookings.status.${badge}`)}</Badge>
+                        {badge && (
+                          <Badge variant="secondary">{t(`bookings.status.${badge}`)}</Badge>
+                        )}
+                        {booking.payment && (
+                          <PaymentBadge
+                            status={booking.payment.status}
+                            label={t(`bookings.payment.status.${booking.payment.status}`)}
+                          />
+                        )}
                       </ItemActions>
                     )}
                   </Item>

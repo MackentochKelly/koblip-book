@@ -33,6 +33,7 @@ import type {
 } from "@/types/owner-booking"
 import { cancelBooking } from "../api/actions"
 import { setBookingStatus } from "../api/booking-actions"
+import { setBookingPaid } from "../api/payment-actions"
 import type { OwnerBooking } from "../types"
 import { type BookingAction, bookingActions } from "../utils/booking-filters"
 import { AddBookingPanel, type AddBookingOptions } from "./add-booking-panel"
@@ -153,7 +154,18 @@ export function useBookingPanels({
         title={opened ? opened.customerName : t("booking")}
         footer={footer}
       >
-        {opened && <BookingDetails booking={opened} />}
+        {opened && (
+          <BookingDetails
+            booking={opened}
+            pending={pending}
+            onPaid={(paid) =>
+              run(
+                () => setBookingPaid(businessId, opened.id, paid),
+                t(paid ? "payment.markedPaid" : "payment.markedUnpaid")
+              )
+            }
+          />
+        )}
       </ResponsivePanel>
 
       <AddBookingPanel

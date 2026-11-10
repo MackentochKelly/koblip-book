@@ -156,6 +156,19 @@ export const DEMO_SAMPLE = {
       hours: [] as HoursRow[],
     },
   ],
+  // Ways to pay outside the app, set up so a visitor can try the payment
+  // step of a booking. Made up and not usable on purpose: an all-zero
+  // IBAN, a reserved .example address (RFC 2606) and a $Cashtag with a
+  // hyphen, which Cash App does not allow. No money can reach anyone.
+  paymentMethods: [
+    {
+      type: "bank_transfer",
+      name: "Banco Lumen",
+      details: "Lumen Studio S.L.\nIBAN ES00 0000 0000 0000 0000 0000",
+    },
+    { type: "zelle", name: "Zelle", details: "pay@lumen-studio.example" },
+    { type: "cash_app", name: "Cash App", details: "$lumen-studio-sample" },
+  ],
   customers: [
     "Ana Morales",
     "Pablo Ruiz",

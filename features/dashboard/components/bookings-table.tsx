@@ -90,7 +90,11 @@ export function BookingsTable({
     filters.serviceIds.length > 0 ||
     filters.teamIds.length > 0
 
-  const statusTabs = STATUS_FILTERS.map((status) => ({
+  // "Review payment" only where a booking tracks a payment at all.
+  const tracksPayments = bookings.some((booking) => booking.payment)
+  const statusTabs = STATUS_FILTERS.filter(
+    (status) => status !== "payment" || tracksPayments
+  ).map((status) => ({
     id: status,
     label: `${t(`statuses.${status}`)} ${counts[status]}`,
   }))

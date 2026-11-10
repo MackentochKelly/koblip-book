@@ -118,8 +118,23 @@ const words = {
     tryAgain: "Try again",
     noTimes: "No free times",
     today: "Today",
+      payment: "How you'll pay",
     tomorrow: "Tomorrow",
     day: "Day",
+    // Paying the business outside the app (lib/payment-rules.ts).
+    payment: {
+      types: {
+        bank_transfer: "Bank transfer",
+        zelle: "Zelle",
+        cash_app: "Cash App",
+        other: "Pay the business directly",
+      },
+      later: "Pay later",
+      laterHint: "At your visit",
+      payWith: "Pay with {name}",
+      thenTell: "Once you've paid, say so in Manage your booking.",
+      atVisit: "You'll pay at your visit.",
+    },
     moreDates: "More dates",
     contactTitle: "Contact info",
     name: "Name",
@@ -243,6 +258,23 @@ const words = {
       googleCalendar: "Google Calendar",
     },
   },
+    // Paying the business outside the app, on one booking's page
+    // (lib/payment-rules.ts).
+    payment: {
+      title: "Payment",
+      later: "Pay later",
+      atVisit: "You'll pay at your visit.",
+      status: {
+        unpaid: "Not paid yet",
+        reported: "Being checked",
+        paid: "Paid",
+      },
+      reference: "Payment reference",
+      optional: "Optional",
+      paid: "I've paid",
+      reported: "{business} will check your payment.",
+      failed: "That didn't work. Try again.",
+    },
   // The home page (Koblip Book's own page for owners).
   home: {
     description: "Your booking page in one minute.",

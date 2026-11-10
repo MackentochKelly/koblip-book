@@ -366,3 +366,120 @@ test("signed in, the booking is the account's; signed out, it gets a one-time cl
     ])
   )
 })
+
+// Paying outside the app (lib/payment-rules.ts).
+async function seedPayShop(slug: string, id: string, payLater: boolean) {
+  const { db } = await import("@/lib/db")
+  const { paymentMethods } = await import("@/lib/db/schema")
+  const shop = await seedShop(slug, id)
+  await db.update(businesses).set({ payLater }).where(eq(businesses.id, id))
+  await db.insert(paymentMethods).values({
+    id: `${id}-zelle`,
+    businessId: id,
+    type: "zelle",
+    name: "Zelle",
+    details: "pay@shop.example",
+  })
+  return shop
+}
+
+const payInput = (slug: string, serviceId: string, time: string) => ({
+  slug,
+  serviceId,
+  teamMemberId: null,
+  addonIds: [],
+  date: "2026-06-01",
+  time,
+  name: "Luis",
+  phone: "+18095550134",
+})
+
+test("a business with no way to pay books as before and tracks no payment", async () => {
+  const { serviceId } = await seedShop("nopay-shop", "biz-nopay")
+  const result = await createBooking({
+    ...payInput("nopay-shop", serviceId, "10:00"),
+    // Sent anyway: ignored where the business offers nothing.
+    payment: { choice: "now", methodId: "anything" },
+  })
+  expect(result).toMatchObject({ status: "booked", booking: { payment: null } })
+  const { db } = await import("@/lib/db")
+  const [row] = await db.select().from(bookings).where(eq(bookings.businessId, "biz-nopay"))
+  expect(row).toMatchObject({ paymentChoice: null, paymentMethod: null, paymentStatus: null })
+})
+
+test("with ways to pay, a booking needs a choice", async () => {
+  const { serviceId } = await seedPayShop("pay-need", "biz-pay-need", true)
+  await expect(createBooking(payInput("pay-need", serviceId, "10:00"))).resolves.toEqual({
+    status: "invalid",
+    field: "payment",
+  })
+  const { db } = await import("@/lib/db")
+  expect(await db.select().from(bookings).where(eq(bookings.businessId, "biz-pay-need"))).toEqual([])
+})
+
+test("choosing a way books unpaid and gives the booker its instructions", async () => {
+  const { serviceId } = await seedPayShop("pay-now", "biz-pay-now", true)
+  const result = await createBooking({
+    ...payInput("pay-now", serviceId, "10:00"),
+    payment: { choice: "now", methodId: "biz-pay-now-zelle" },
+  })
+  expect(result).toMatchObject({
+    status: "booked",
+    booking: {
+      payment: {
+        choice: "now",
+        method: { type: "zelle", name: "Zelle", details: "pay@shop.example" },
+        status: "unpaid",
+        reference: null,
+      },
+    },
+  })
+  const { db } = await import("@/lib/db")
+  const [row] = await db.select().from(bookings).where(eq(bookings.businessId, "biz-pay-now"))
+  expect(row).toMatchObject({
+    paymentChoice: "now",
+    paymentMethod: { type: "zelle", name: "Zelle", details: "pay@shop.example" },
+    paymentStatus: "unpaid",
+    paymentReference: null,
+    paymentReportedAt: null,
+    paymentPaidAt: null,
+  })
+})
+
+test("a customer cannot book as already paid", async () => {
+  const { serviceId } = await seedPayShop("pay-claim", "biz-pay-claim", true)
+  const result = await createBooking({
+    ...payInput("pay-claim", serviceId, "10:00"),
+    payment: { choice: "now", methodId: "biz-pay-claim-zelle", status: "paid" } as never,
+  })
+  expect(result.status).toBe("booked")
+  const { db } = await import("@/lib/db")
+  const [row] = await db.select().from(bookings).where(eq(bookings.businessId, "biz-pay-claim"))
+  expect(row.paymentStatus).toBe("unpaid")
+  expect(row.paymentPaidAt).toBeNull()
+})
+
+test("another business's way to pay is refused", async () => {
+  await seedPayShop("pay-a", "biz-pay-a", true)
+  const { serviceId } = await seedPayShop("pay-b", "biz-pay-b", true)
+  await expect(
+    createBooking({
+      ...payInput("pay-b", serviceId, "10:00"),
+      payment: { choice: "now", methodId: "biz-pay-a-zelle" },
+    })
+  ).resolves.toEqual({ status: "invalid", field: "payment" })
+})
+
+test("paying later books only where the business allows it", async () => {
+  const allowed = await seedPayShop("pay-later-on", "biz-later-on", true)
+  await expect(
+    createBooking({ ...payInput("pay-later-on", allowed.serviceId, "10:00"), payment: { choice: "later" } })
+  ).resolves.toMatchObject({
+    status: "booked",
+    booking: { payment: { choice: "later", method: null, status: "unpaid" } },
+  })
+  const refused = await seedPayShop("pay-later-off", "biz-later-off", false)
+  await expect(
+    createBooking({ ...payInput("pay-later-off", refused.serviceId, "10:00"), payment: { choice: "later" } })
+  ).resolves.toEqual({ status: "invalid", field: "payment" })
+})

@@ -6,6 +6,7 @@ import { EARNING_STATUSES } from "@/lib/booking-rules"
 import { customerKey } from "@/lib/customer-key"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
+import { paymentOf } from "@/lib/payment-rules"
 import { bookingAddons, bookings, businesses, customers } from "@/lib/db/schema"
 import type { OwnerBooking, OwnerCustomer } from "../types"
 
@@ -62,6 +63,7 @@ export function toOwnerBooking(
     note: row.note,
     cancelReason: row.cancelReason,
     addons,
+    payment: paymentOf(row),
   }
 }
 

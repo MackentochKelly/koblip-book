@@ -1,4 +1,5 @@
 import type { CalendarEvent } from "@/lib/booking-calendar"
+import type { BookingPayment } from "@/lib/payment-rules"
 
 // One business the client has booked with (D13), from their bookings.
 export interface MyPlace {
@@ -33,6 +34,9 @@ export interface MyBooking {
   durationMinutes: number
   priceMinor: number | null
   currency: string
+  // How they chose to pay outside the app, with the way's instructions;
+  // null when the booking tracks no payment (lib/payment-rules.ts).
+  payment: BookingPayment | null
   business: {
     slug: string
     name: string

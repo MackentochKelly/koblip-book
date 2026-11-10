@@ -11,10 +11,13 @@ export type BookingState =
   | "no_show"
   | "cancelled"
 
+// "payment" is not a state: it is the bookings whose customer says they
+// paid, waiting for the owner to check (lib/payment-rules.ts).
 export const STATUS_FILTERS = [
   "all",
   "upcoming",
   "unmarked",
+  "payment",
   "completed",
   "no_show",
   "cancelled",
@@ -90,12 +93,18 @@ export function matchBookings(
   })
 }
 
+// The customer says they paid and the owner has not answered yet.
+export function paymentToCheck(booking: OwnerBooking): boolean {
+  return booking.payment?.status === "reported"
+}
+
 export function byStatus(
   bookings: OwnerBooking[],
   status: StatusFilter,
   now: string
 ): OwnerBooking[] {
   if (status === "all") return bookings
+  if (status === "payment") return bookings.filter(paymentToCheck)
   return bookings.filter((booking) => bookingState(booking, now) === status)
 }
 
@@ -107,7 +116,10 @@ export function statusCounts(
     STATUS_FILTERS.map((status) => [status, 0])
   ) as Record<StatusFilter, number>
   counts.all = bookings.length
-  for (const booking of bookings) counts[bookingState(booking, now)] += 1
+  for (const booking of bookings) {
+    counts[bookingState(booking, now)] += 1
+    if (paymentToCheck(booking)) counts.payment += 1
+  }
   return counts
 }
 

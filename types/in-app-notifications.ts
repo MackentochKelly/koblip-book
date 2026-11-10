@@ -11,6 +11,7 @@ export const OWNER_IN_APP_KINDS = [
   "customerConfirmed",
   "customerCantCome",
   "customerMoved",
+  "customerPaid",
   "customerReplied",
   "messageFailed",
   "templateApproved",
@@ -26,6 +27,7 @@ export const CLIENT_IN_APP_KINDS = [
   "clientBooked",
   "clientMoved",
   "clientCancelled",
+  "clientPaid",
   "clientReminder",
   "clientReviewAsk",
 ] as const

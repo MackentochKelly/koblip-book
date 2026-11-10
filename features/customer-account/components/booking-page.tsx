@@ -26,6 +26,7 @@ import { languageOf } from "@/lib/page-language"
 import type { MyBooking } from "../types"
 import { AddToCalendar } from "./add-to-calendar"
 import { BusinessAvatar, useBookingFacts } from "./booking-facts"
+import { BookingPayment } from "./booking-payment"
 import { CantComeButton } from "./cant-come-button"
 
 // Google Maps' search link for the business (Maps URLs, api=1): opens the
@@ -143,6 +144,8 @@ export function BookingPage({
           ))}
         </ItemGroup>
       </PageSection>
+
+      <BookingPayment booking={booking} />
 
       {review}
 

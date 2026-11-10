@@ -25,6 +25,8 @@ import { DEMO_SAMPLE } from "../sample"
 vi.mock("server-only", () => ({}))
 
 const { createDemoCopy, findDemoCopy } = await import("./demo-copy")
+const { paymentMethodsFor, paymentOptionsFor } =
+  await import("@/lib/payment-methods")
 const { purgeOldDemos } = await import("./purge-demos")
 const { mayOpenNewDemo, resetNewDemoLimitForTests } =
   await import("./new-demo-limit")
@@ -148,6 +150,15 @@ test("a copy is the full sample, owned by the guest and marked demo", async () =
   ).toBe(DEMO_SAMPLE.extras.reduce((sum, g) => sum + g.services.length, 0))
   const members = await db.select().from(teamMembers).where(eq(teamMembers.businessId, copy.id))
   expect(members.every((member) => member.photoUrl?.startsWith("/demo/lumen/"))).toBe(true)
+  // The three standard ways to pay, set up, so booking has a payment step.
+  expect(
+    (await paymentMethodsFor(copy.id)).map(({ type, name, details }) => ({
+      type,
+      name,
+      details,
+    }))
+  ).toEqual(DEMO_SAMPLE.paymentMethods)
+  expect(await paymentOptionsFor(copy.id)).toMatchObject({ payLater: true })
   // Sundays are skipped, so at least most of the week's bookings land.
   const booked = await db
     .select()

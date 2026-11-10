@@ -1,5 +1,6 @@
 import { useLocale, useTranslations } from "next-intl"
 
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useFormatDuration } from "@/hooks/use-format-duration"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
@@ -7,6 +8,7 @@ import { formatPrice } from "@/lib/format-price"
 import type { OwnerBooking } from "../types"
 import { BookingStatusBadge } from "./booking-status-badge"
 import { ContactButtons } from "./contact-buttons"
+import { PaymentStatusBadge } from "./payment-status-badge"
 
 function price(
   priceMinor: number | null,
@@ -19,8 +21,19 @@ function price(
 }
 
 // One booking: when (and why, once cancelled), what with its extras, the
-// total, the owner's note and quick ways to reach the customer.
-export function BookingDetails({ booking }: { booking: OwnerBooking }) {
+// total, how the customer chose to pay outside the app (and whether they
+// did, which only the owner says: `onPaid`), the owner's note and quick
+// ways to reach the customer.
+export function BookingDetails({
+  booking,
+  onPaid,
+  pending = false,
+}: {
+  booking: OwnerBooking
+  // Marks the booking paid, or not paid after all. Left out: read only.
+  onPaid?: (paid: boolean) => void
+  pending?: boolean
+}) {
   const t = useTranslations("owner.bookings")
   const locale = useLocale()
   const formatDuration = useFormatDuration()
@@ -69,6 +82,40 @@ export function BookingDetails({ booking }: { booking: OwnerBooking }) {
           )}
         </div>
       </div>
+      {booking.payment && (
+        <>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-medium">
+                {booking.payment.method?.name ?? t("payment.later")}
+              </p>
+              <PaymentStatusBadge status={booking.payment.status} />
+            </div>
+            {booking.payment.reference && (
+              <p className="break-words text-muted-foreground">
+                {t("payment.reference", {
+                  reference: booking.payment.reference,
+                })}
+              </p>
+            )}
+            {onPaid && booking.status !== "cancelled" && (
+              <Button
+                variant="outline"
+                className="self-start"
+                disabled={pending}
+                onClick={() => onPaid(booking.payment?.status !== "paid")}
+              >
+                {t(
+                  booking.payment.status === "paid"
+                    ? "payment.markUnpaid"
+                    : "payment.markPaid"
+                )}
+              </Button>
+            )}
+          </div>
+        </>
+      )}
       {booking.note && (
         <>
           <Separator />

@@ -54,6 +54,7 @@ test("each status tab counts its bookings", () => {
     all: 4,
     upcoming: 1,
     unmarked: 1,
+    payment: 0,
     completed: 1,
     no_show: 0,
     cancelled: 1,
@@ -95,4 +96,21 @@ test("what can be done depends on the time and status", () => {
   expect(bookingActions(rows[1], now)).toEqual(["done", "noShow"])
   expect(bookingActions(rows[2], now)).toEqual(["undo"])
   expect(bookingActions(rows[3], now)).toEqual([])
+})
+
+test("Review payment holds only what a customer says they paid", () => {
+  const zelle = { type: "zelle" as const, name: "Zelle", details: "x" }
+  const pay = (id: string, status: "unpaid" | "reported" | "paid") =>
+    booking({
+      id,
+      payment: {
+        choice: "now",
+        method: zelle,
+        status,
+        reference: null,
+      },
+    })
+  const list = [pay("a", "unpaid"), pay("b", "reported"), pay("c", "paid"), booking({ id: "d" })]
+  expect(statusCounts(list, now).payment).toBe(1)
+  expect(byStatus(list, "payment", now).map((row) => row.id)).toEqual(["b"])
 })

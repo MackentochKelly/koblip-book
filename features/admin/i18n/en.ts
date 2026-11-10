@@ -18,6 +18,7 @@ const words = {
     owners: "Owners",
     team: "Team accounts",
     bookings: "Bookings",
+    payments: "Payments",
     reviews: "Reviews",
     whatsapp: "WhatsApp",
     notifications: "Notifications",
@@ -588,6 +589,29 @@ const words = {
       cancelled: "Cancelled",
     },
   },
+    // Paying outside the app (docs/plans/outside-payments.md, OP-8).
+    payLater: "At the visit",
+    payment: {
+      unpaid: "Payment pending",
+      reported: "Says paid",
+      paid: "Paid",
+    },
+  },
+  // Each business's ways to be paid outside the app (OP-9). Read only.
+  payments: {
+    none: "No business lists a way to pay yet",
+    types: {
+      bank_transfer: "Bank transfer",
+      zelle: "Zelle",
+      cash_app: "Cash App",
+      other: "Other",
+    },
+    payLater: {
+      on: "Pay at the visit is on",
+      off: "Pay at the visit is off",
+    },
+    toCheck:
+      "{n, plural, one {# payment to review} other {# payments to review}}",
   koblipChat: {
     title: "Koblip WhatsApp number",
     notConnected: "Not connected. Businesses without their own number can't send.",
@@ -637,6 +661,7 @@ const words = {
       customerCantCome: "Can't make it",
       customerMoved: "Customer moved a booking",
       customerReplied: "Customer wrote",
+      customerPaid: "Customer says they paid",
       messageFailed: "Message failed",
       templateApproved: "Meta approved a message",
       templateRejected: "Meta rejected a message",
@@ -647,6 +672,7 @@ const words = {
       clientMoved: "Client: booking moved",
       clientCancelled: "Client: booking cancelled",
       clientReminder: "Client: visit reminder",
+      clientPaid: "Client: payment confirmed",
       clientReviewAsk: "Client: asked for a review",
     } as const satisfies Record<InAppKind, string>,
     // How clients get their visit reminders (client account D16).

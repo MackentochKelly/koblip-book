@@ -17,6 +17,7 @@ import {
   businesses,
   businessHours,
   businessPhotos,
+  paymentMethods,
   serviceAddonGroups,
   serviceCategories,
   services,
@@ -197,6 +198,13 @@ export async function createDemoCopy(
           serviceId: serviceIds[service],
         }))
       )
+    ),
+    db.insert(paymentMethods).values(
+      sample.paymentMethods.map((method, position) => ({
+        businessId,
+        ...method,
+        position,
+      }))
     ),
     ...(bookingRows.length > 0
       ? [db.insert(bookings).values(bookingRows)]

@@ -58,6 +58,7 @@ import type { OwnerBooking } from "../types"
 import { bookingActions, bookingState } from "../utils/booking-filters"
 import { ACTION_LABELS, type useBookingPanels } from "./booking-panels"
 import { BookingStateBadge } from "./booking-state-badge"
+import { PaymentStatusBadge } from "./payment-status-badge"
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -179,7 +180,13 @@ export function BookingList({
       sortFn: "text",
       cell: ({ row }) => (
         <div className="flex items-center justify-between gap-3">
-          <BookingStateBadge state={bookingState(row.original, now)} />
+          <span className="flex flex-wrap items-center gap-2">
+            <BookingStateBadge state={bookingState(row.original, now)} />
+            {/* A payment the customer says they made, for the owner to check. */}
+            {row.original.payment?.status === "reported" && (
+              <PaymentStatusBadge status="reported" />
+            )}
+          </span>
           {row.original.priceMinor !== null && (
             <span className="tabular-nums">
               {formatPrice(
@@ -240,6 +247,9 @@ export function BookingList({
                   <ItemTitle>
                     {booking.customerName}
                     <BookingStateBadge state={bookingState(booking, now)} />
+                    {booking.payment?.status === "reported" && (
+                      <PaymentStatusBadge status="reported" />
+                    )}
                   </ItemTitle>
                   <ItemDescription>
                     {formatDayNear(booking.date, today, locale)} ·{" "}

@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { getBusinessPage } from "@/features/business-page/api/get-business-page"
 import { BookingFlow } from "@/features/booking/components/booking-flow"
 import { toBookingPage } from "@/features/booking/components/booking-page"
+import { paymentOptionsFor } from "@/lib/payment-methods"
 import { isBookable } from "@/features/booking/utils/is-bookable"
 import { languageOf } from "@/lib/page-language"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
@@ -40,7 +41,10 @@ export default async function BookPage({ params }: Props) {
   if (!data) {
     notFound()
   }
-  const whatsapp = await offersWhatsapp(data.business.id)
+  const [whatsapp, payments] = await Promise.all([
+    offersWhatsapp(data.business.id),
+    paymentOptionsFor(data.business.id),
+  ])
   const bookable = isBookable({
     status: data.business.status,
     servicesCount: data.services.length,
@@ -53,7 +57,7 @@ export default async function BookPage({ params }: Props) {
     <WordsProvider namespaces={["app", "public"]}>
       <LanguageProvider language={language}>
         <div lang={language}>
-          <BookingFlow page={toBookingPage({ ...data, whatsapp})} mode="page" />
+          <BookingFlow page={toBookingPage({ ...data, whatsapp, payments })} mode="page" />
         </div>
         <Toaster />
       </LanguageProvider>

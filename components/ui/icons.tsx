@@ -11,6 +11,7 @@ import {
   ArrowRight as MynaArrowRight,
   ArrowUp as MynaArrowUp,
   Baby as MynaBaby,
+  Bank as MynaBank,
   Bell as MynaBell,
   Calendar as MynaCalendar,
   ChartColumnIncreasing as MynaChartColumnIncreasing,
@@ -186,6 +187,7 @@ export const ArrowUpIcon = icon(MynaArrowUp as Icon, "ArrowUpIcon")
 export const BabyIcon = icon(MynaBaby as Icon, "BabyIcon")
 export const AudioLinesIcon = icon(LucideAudioLines as Icon, "AudioLinesIcon")
 export const BadgeCheckIcon = icon(LucideBadgeCheck as Icon, "BadgeCheckIcon")
+export const BankIcon = icon(MynaBank as Icon, "BankIcon")
 export const BanknoteIcon = icon(LucideBanknote as Icon, "BanknoteIcon")
 export const BellIcon = icon(MynaBell as Icon, "BellIcon")
 export const CalendarDaysIcon = icon(MynaCalendar as Icon, "CalendarDaysIcon")
@@ -329,32 +331,52 @@ export const WebsiteIcon = icon(LucideCompass as Icon, "WebsiteIcon")
 export const XIcon = icon(MynaX as Icon, "XIcon")
 export const ZapIcon = icon(MynaZap as Icon, "ZapIcon")
 
-// WhatsApp's own logo, wherever something stands for WhatsApp. Neither icon
-// set has it, so its glyph is drawn here (Simple Icons, CC0), filled in the
-// text colour like the other icons.
-export const WhatsAppIcon: Icon = forwardRef<SVGSVGElement, IconProps>(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  function WhatsAppIcon({ size = 24, strokeWidth, children, ...props }, ref) {
-    const named =
-      props["aria-label"] != null ||
-      props["aria-labelledby"] != null ||
-      props.role === "img"
-    return (
-      <svg
-        ref={ref}
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        width={size}
-        height={size}
-        fill="currentColor"
-        aria-hidden={named ? undefined : true}
-        {...props}
-      >
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-        {children}
-      </svg>
-    )
-  }
+// A brand's own logo. Neither icon set has brand logos, so each glyph is
+// drawn here (Simple Icons, CC0), filled in the text colour like the other
+// icons, so it follows the theme in light and dark.
+const brand = (name: string, glyph: string): Icon => {
+  const Brand: Icon = forwardRef<SVGSVGElement, IconProps>(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    function Brand({ size = 24, strokeWidth, children, ...props }, ref) {
+      const named =
+        props["aria-label"] != null ||
+        props["aria-labelledby"] != null ||
+        props.role === "img"
+      return (
+        <svg
+          ref={ref}
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width={size}
+          height={size}
+          fill="currentColor"
+          aria-hidden={named ? undefined : true}
+          {...props}
+        >
+          <path d={glyph} />
+          {children}
+        </svg>
+      )
+    }
+  )
+  Brand.displayName = name
+  return Brand
+}
+
+// WhatsApp's logo, wherever something stands for WhatsApp.
+export const WhatsAppIcon = brand(
+  "WhatsAppIcon",
+  "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"
+)
+// Zelle's and Cash App's logos, for a business paid that way
+// (components/payment-type-icon.tsx).
+export const ZelleIcon = brand(
+  "ZelleIcon",
+  "M13.559 24h-2.841a.483.483 0 0 1-.483-.483v-2.765H5.638a.667.667 0 0 1-.666-.666v-2.234a.67.67 0 0 1 .142-.412l8.139-10.382h-7.25a.667.667 0 0 1-.667-.667V3.914c0-.367.299-.666.666-.666h4.23V.483c0-.266.217-.483.483-.483h2.841c.266 0 .483.217.483.483v2.765h4.323c.367 0 .666.299.666.666v2.137a.67.67 0 0 1-.141.41l-8.19 10.481h7.665c.367 0 .666.299.666.666v2.477a.667.667 0 0 1-.666.667h-4.32v2.765a.483.483 0 0 1-.483.483Z"
+)
+export const CashAppIcon = brand(
+  "CashAppIcon",
+  "M23.59 3.475a5.1 5.1 0 00-3.05-3.05c-1.31-.42-2.5-.42-4.92-.42H8.36c-2.4 0-3.61 0-4.9.4a5.1 5.1 0 00-3.05 3.06C0 4.765 0 5.965 0 8.365v7.27c0 2.41 0 3.6.4 4.9a5.1 5.1 0 003.05 3.05c1.3.41 2.5.41 4.9.41h7.28c2.41 0 3.61 0 4.9-.4a5.1 5.1 0 003.06-3.06c.41-1.3.41-2.5.41-4.9v-7.25c0-2.41 0-3.61-.41-4.91zm-6.17 4.63l-.93.93a.5.5 0 01-.67.01 5 5 0 00-3.22-1.18c-.97 0-1.94.32-1.94 1.21 0 .9 1.04 1.2 2.24 1.65 2.1.7 3.84 1.58 3.84 3.64 0 2.24-1.74 3.78-4.58 3.95l-.26 1.2a.49.49 0 01-.48.39H9.63l-.09-.01a.5.5 0 01-.38-.59l.28-1.27a6.54 6.54 0 01-2.88-1.57v-.01a.48.48 0 010-.68l1-.97a.49.49 0 01.67 0c.91.86 2.13 1.34 3.39 1.32 1.3 0 2.17-.55 2.17-1.42 0-.87-.88-1.1-2.54-1.72-1.76-.63-3.43-1.52-3.43-3.6 0-2.42 2.01-3.6 4.39-3.71l.25-1.23a.48.48 0 01.48-.38h1.78l.1.01c.26.06.43.31.37.57l-.27 1.37c.9.3 1.75.77 2.48 1.39l.02.02c.19.2.19.5 0 .68z"
 )
 
 // Filled twins of outline icons: the open page's icon shows filled, in the

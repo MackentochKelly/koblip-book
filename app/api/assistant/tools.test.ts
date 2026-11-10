@@ -108,6 +108,15 @@ vi.mock("@/lib/platform-settings", () => ({
 vi.mock("@/features/dashboard/api/booking-actions", () => ({
   setBookingStatus: vi.fn(),
 }))
+vi.mock("@/features/dashboard/api/payment-actions", () => ({
+  savePaymentMethod: vi.fn(),
+  deletePaymentMethod: vi.fn(),
+  setPayLater: vi.fn(),
+  setBookingPaid: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/payment-queries", () => ({
+  getPaymentSettings: vi.fn(),
+}))
 vi.mock("@/features/booking/api/get-availability", () => ({
   getAvailability: vi.fn(),
   getMoveAvailability: vi.fn(),
@@ -200,6 +209,10 @@ const { automationsFor } =
 const { notificationRules } = await import("@/lib/platform-settings")
 const { setBookingStatus } =
   await import("@/features/dashboard/api/booking-actions")
+const { savePaymentMethod, deletePaymentMethod, setPayLater, setBookingPaid } =
+  await import("@/features/dashboard/api/payment-actions")
+const { getPaymentSettings } =
+  await import("@/features/dashboard/api/payment-queries")
 const { getAvailability, getMoveAvailability } =
   await import("@/features/booking/api/get-availability")
 const { createOwnerBooking } =
@@ -273,6 +286,10 @@ test("every needsConfirm tool carries its result kind", () => {
     ["save_policy_point", "policies"],
     ["remove_policy_point", "policies"],
     ["change_theme", "theme"],
+    ["set_booking_paid", "bookings"],
+    ["save_payment_method", "payments"],
+    ["remove_payment_method", "payments"],
+    ["set_pay_at_visit", "payments"],
     ["turn_message_on_off", "messages"],
     ["save_reminder_settings", "timing"],
     ["change_message_wording", "messages"],
@@ -295,6 +312,11 @@ test("every needsConfirm tool carries its result kind", () => {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(getPaymentSettings).mockResolvedValue({
+    methods: [],
+    payLater: true,
+    toCheck: 0,
+  })
   vi.mocked(getServiceNameTranslations).mockResolvedValue([])
   vi.mocked(getOwnerBusiness).mockResolvedValue({
     business: BUSINESS,
@@ -3136,6 +3158,10 @@ const CHANGES: [string, string][] = [
   ["save_policy_point", "policies"],
   ["remove_policy_point", "policies"],
   ["change_theme", "theme"],
+  ["set_booking_paid", "bookings"],
+  ["save_payment_method", "payments"],
+  ["remove_payment_method", "payments"],
+  ["set_pay_at_visit", "payments"],
   ["turn_message_on_off", "messages"],
   ["save_reminder_settings", "timing"],
   ["change_message_wording", "messages"],
@@ -4133,6 +4159,7 @@ test("only lookups and suggestions run without the tap", () => {
     "list_addons",
     "list_bookings",
     "list_customers",
+    "list_payment_methods",
     "list_policies",
     "list_services",
     "list_team",
@@ -4332,3 +4359,280 @@ test("create_team_member refuses a blank name and a full team", async () => {
   })
 })
 
+
+// Paying outside the app (docs/plans/outside-payments.md, OP-4 to OP-6).
+
+const ZELLE = { id: "pm1", type: "zelle" as const, name: "Zelle", details: "pay@salon.example" }
+const paymentOf = (status: "unpaid" | "reported" | "paid") => ({
+  choice: "now" as const,
+  method: { type: "zelle" as const, name: "Zelle", details: "pay@salon.example" },
+  status,
+  reference: status === "unpaid" ? null : "TX-9",
+})
+
+test("business_overview counts payments to check only when the business has ways to pay", async () => {
+  const run = () =>
+    byName("business_overview").run({}) as Promise<Record<string, unknown>>
+  expect(await run()).not.toHaveProperty("paymentsToCheck")
+  vi.mocked(getPaymentSettings).mockResolvedValue({
+    methods: [ZELLE],
+    payLater: true,
+    toCheck: 2,
+  })
+  expect(await run()).toMatchObject({ paymentsToCheck: 2 })
+})
+
+test("list_bookings carries the payment and filters by it", async () => {
+  const row = (id: string, payment: unknown) => ({
+    ...(STARTED as object),
+    id,
+    addons: [],
+    payment,
+  })
+  vi.mocked(getBookings).mockResolvedValue([
+    row("k1", paymentOf("reported")),
+    row("k2", paymentOf("paid")),
+    row("k3", { choice: "later", method: null, status: "unpaid", reference: null }),
+    row("k4", null),
+  ] as never)
+  const run = (args: object) =>
+    byName("list_bookings").run(args) as Promise<{
+      bookings: { id: string; payment?: unknown }[]
+    }>
+  const all = await run({ range: "past" })
+  expect(all.bookings.map((b) => b.payment)).toEqual([
+    { choice: "now", way: "Zelle", status: "reported", reference: "TX-9" },
+    { choice: "now", way: "Zelle", status: "paid", reference: "TX-9" },
+    { choice: "later", way: null, status: "unpaid", reference: null },
+    undefined,
+  ])
+  // The private instructions never go with a booking.
+  expect(JSON.stringify(all)).not.toContain("pay@salon.example")
+  const toCheck = await run({ range: "past", payment: "reported" })
+  expect(toCheck.bookings.map((b) => b.id)).toEqual(["k1"])
+  expect(await byName("list_bookings").run({ payment: "sent" })).toEqual({
+    error: expect.stringContaining("payment must be"),
+  })
+})
+
+test("list_payment_methods gives the ways, pay at the visit and what waits", async () => {
+  vi.mocked(getPaymentSettings).mockResolvedValue({
+    methods: [ZELLE],
+    payLater: false,
+    toCheck: 1,
+  })
+  expect(await byName("list_payment_methods").run({})).toEqual({
+    methods: [ZELLE],
+    payAtVisit: false,
+    paymentsToCheck: 1,
+    max: 6,
+  })
+})
+
+test("set_booking_paid shows a card and marks on the tap only", async () => {
+  vi.mocked(getBooking).mockResolvedValue({
+    ...(STARTED as object),
+    payment: paymentOf("reported"),
+  } as never)
+  vi.mocked(setBookingPaid).mockResolvedValue({ ok: true })
+  const tool = byName("set_booking_paid")
+  expect(await tool.run({ bookingId: "k1", paid: true })).toEqual({
+    error: expect.stringContaining("tap"),
+  })
+  expect(await tool.confirm!.describe({ bookingId: "k1", paid: true })).toEqual({
+    title: "Mark as paid?",
+    action: "Mark as paid",
+    summary: expect.stringContaining("Ana · Cut"),
+    destructive: false,
+  })
+  expect(setBookingPaid).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute({ bookingId: "k1", paid: true })).toEqual({
+    ok: true,
+    doneText: "Marked as paid.",
+  })
+  expect(setBookingPaid).toHaveBeenCalledWith("b1", "k1", true)
+})
+
+test("set_booking_paid shows no card for a change that is none", async () => {
+  const tool = byName("set_booking_paid")
+  const describe = (args: object) => tool.confirm!.describe(args)
+  vi.mocked(getBooking).mockResolvedValue({
+    ...(STARTED as object),
+    payment: paymentOf("reported"),
+  } as never)
+  // A customer's word is not paid: marking it not paid changes nothing.
+  expect(await describe({ bookingId: "k1", paid: false })).toEqual({
+    error: "Nothing to change.",
+  })
+  expect(await describe({ bookingId: "k1", paid: "yes" })).toEqual({
+    error: expect.stringContaining("paid must be"),
+  })
+  expect(await describe({ paid: true })).toEqual({
+    error: expect.stringContaining("bookingId"),
+  })
+  vi.mocked(getBooking).mockResolvedValue({
+    ...(STARTED as object),
+    payment: null,
+  } as never)
+  expect(await describe({ bookingId: "k1", paid: true })).toEqual({
+    error: expect.stringContaining("tracks no payment"),
+  })
+  // Another business's booking is not found.
+  vi.mocked(getBooking).mockResolvedValue(null)
+  expect(await describe({ bookingId: "k9", paid: true })).toEqual({
+    error: expect.stringContaining("unknown booking"),
+  })
+  expect(setBookingPaid).not.toHaveBeenCalled()
+})
+
+test("set_booking_paid explains a refusal on the tap", async () => {
+  const tool = byName("set_booking_paid")
+  for (const [error, doneText] of [
+    ["not_found", "Could not update: unknown booking."],
+    ["no_payment", "Not updated: that booking tracks no payment."],
+    ["invalid", "Could not update the payment (invalid)."],
+  ]) {
+    vi.mocked(setBookingPaid).mockResolvedValue({ ok: false, error } as never)
+    expect(
+      await tool.confirm!.execute({ bookingId: "k1", paid: true })
+    ).toEqual({ ok: false, doneText })
+  }
+  vi.mocked(setBookingPaid).mockClear()
+  expect(await tool.confirm!.execute({ bookingId: "k1" })).toEqual({
+    ok: false,
+    doneText: "Could not update: unknown booking.",
+  })
+  expect(setBookingPaid).not.toHaveBeenCalled()
+})
+
+test("save_payment_method adds a way with the owner's own words, on the tap", async () => {
+  vi.mocked(savePaymentMethod).mockResolvedValue({ ok: true, id: "pm2" })
+  const tool = byName("save_payment_method")
+  const args = { type: "bank_transfer", name: " Bank ", details: "ES00 1234" }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Add this way to pay?",
+    action: "Add",
+    summary: "Bank · ES00 1234",
+    destructive: false,
+  })
+  expect(savePaymentMethod).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: true,
+    doneText: "Way to pay added.",
+  })
+  expect(savePaymentMethod).toHaveBeenCalledWith("b1", null, {
+    type: "bank_transfer",
+    name: "Bank",
+    details: "ES00 1234",
+  })
+})
+
+test("save_payment_method changes one way and keeps the rest", async () => {
+  vi.mocked(getPaymentSettings).mockResolvedValue({
+    methods: [ZELLE],
+    payLater: true,
+    toCheck: 0,
+  })
+  vi.mocked(savePaymentMethod).mockResolvedValue({ ok: true, id: "pm1" })
+  const tool = byName("save_payment_method")
+  const args = { methodId: "pm1", details: "new@salon.example" }
+  expect(await tool.confirm!.describe(args)).toMatchObject({
+    title: "Change this way to pay?",
+    summary: "Zelle · new@salon.example",
+  })
+  await tool.confirm!.execute(args)
+  expect(savePaymentMethod).toHaveBeenCalledWith("b1", "pm1", {
+    type: "zelle",
+    name: "Zelle",
+    details: "new@salon.example",
+  })
+  expect(await tool.confirm!.describe({ methodId: "pm1" })).toEqual({
+    error: "Nothing to change.",
+  })
+})
+
+test("save_payment_method shows no card for what would be refused", async () => {
+  const tool = byName("save_payment_method")
+  const describe = (args: object) => tool.confirm!.describe(args)
+  expect(await describe({ type: "cash", name: "Cash", details: "x" })).toEqual({
+    error: expect.stringContaining("type must be"),
+  })
+  expect(await describe({ type: "bank_transfer", details: "x" })).toEqual({
+    error: expect.stringContaining("name is required"),
+  })
+  // A brand is its own name.
+  expect(await describe({ type: "cash_app", details: "$salon" })).toMatchObject({
+    summary: "Cash App · $salon",
+  })
+  expect(await describe({ type: "zelle", name: "Zelle" })).toEqual({
+    error: expect.stringContaining("never make them up"),
+  })
+  expect(
+    await describe({ methodId: "nope", type: "zelle", name: "Z", details: "x" })
+  ).toEqual({ error: expect.stringContaining("unknown way to pay") })
+  vi.mocked(getPaymentSettings).mockResolvedValue({
+    methods: Array.from({ length: 6 }, (_, i) => ({ ...ZELLE, id: `pm${i}` })),
+    payLater: true,
+    toCheck: 0,
+  })
+  expect(await describe({ type: "zelle", name: "Z", details: "x" })).toEqual({
+    error: expect.stringContaining("already 6"),
+  })
+  expect(savePaymentMethod).not.toHaveBeenCalled()
+})
+
+test("remove_payment_method names the way and removes on the tap only", async () => {
+  vi.mocked(getPaymentSettings).mockResolvedValue({
+    methods: [ZELLE],
+    payLater: true,
+    toCheck: 0,
+  })
+  vi.mocked(deletePaymentMethod).mockResolvedValue({ ok: true })
+  const tool = byName("remove_payment_method")
+  expect(await tool.confirm!.describe({ methodId: "pm1" })).toEqual({
+    title: "Remove this way to pay?",
+    action: "Remove",
+    summary: "Zelle",
+    destructive: true,
+  })
+  expect(await tool.confirm!.describe({ methodId: "other" })).toEqual({
+    error: expect.stringContaining("unknown way to pay"),
+  })
+  expect(deletePaymentMethod).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute({ methodId: "pm1" })).toEqual({
+    ok: true,
+    doneText: "Way to pay removed.",
+  })
+  expect(deletePaymentMethod).toHaveBeenCalledWith("b1", "pm1")
+  vi.mocked(deletePaymentMethod).mockResolvedValue({
+    ok: false,
+    error: "not_found",
+  })
+  expect(await tool.confirm!.execute({ methodId: "pm1" })).toEqual({
+    ok: false,
+    doneText: "Could not update: unknown way to pay.",
+  })
+})
+
+test("set_pay_at_visit turns it off and on, on the tap only", async () => {
+  vi.mocked(setPayLater).mockResolvedValue({ ok: true })
+  const tool = byName("set_pay_at_visit")
+  expect(await tool.confirm!.describe({ on: true })).toEqual({
+    error: "Nothing to change.",
+  })
+  expect(await tool.confirm!.describe({ on: "no" })).toEqual({
+    error: expect.stringContaining("on must be"),
+  })
+  expect(await tool.confirm!.describe({ on: false })).toEqual({
+    title: "Stop paying at the visit?",
+    action: "Turn off",
+    summary: "Customers must pick one of your ways to pay.",
+    destructive: false,
+  })
+  expect(setPayLater).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute({ on: false })).toEqual({
+    ok: true,
+    doneText: "Paying at the visit is off.",
+  })
+  expect(setPayLater).toHaveBeenCalledWith("b1", false)
+})

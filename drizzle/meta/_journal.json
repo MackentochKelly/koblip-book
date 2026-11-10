@@ -484,6 +484,20 @@
       "when": 1794008820484,
       "tag": "0068_pro_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "6",
+      "when": 1794258505591,
+      "tag": "0071_outside_payments",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "6",
+      "when": 1794294767818,
+      "tag": "0072_removed_payment_types",
+      "breakpoints": true
     }
   ]
 }

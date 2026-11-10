@@ -11,6 +11,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }))
 vi.mock("../api/actions", () => ({ cancelBooking: vi.fn() }))
 vi.mock("../api/booking-actions", () => ({ setBookingStatus: vi.fn() }))
+vi.mock("../api/payment-actions", () => ({ setBookingPaid: vi.fn() }))
 // Only the Assistant widget matters here; the board's drag and drop does not.
 vi.mock("./widget-board", () => ({
   WidgetBoard: ({ widgets }: { widgets: { today: ReactNode } }) => (

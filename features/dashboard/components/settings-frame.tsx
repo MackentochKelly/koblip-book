@@ -13,6 +13,7 @@ const PARTS = [
   "hours",
   "portfolio",
   "policies",
+  "payments",
   "theme",
   "notifications",
   "plan",

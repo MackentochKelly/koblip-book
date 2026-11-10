@@ -13,6 +13,8 @@ import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 import { notification } from "@/lib/in-app-notifications"
+import { paymentMethodsFor } from "@/lib/payment-methods"
+import { startPayment } from "@/lib/payment-rules"
 import { DEFAULT_LANGUAGE, isPageLanguage } from "@/lib/page-language"
 import {
   bookingAddons,
@@ -95,6 +97,18 @@ export async function createBooking(
     if (withPolicies && input.acceptedPolicies !== true) {
       return { status: "invalid", field: "policies" }
     }
+    // A business with ways to pay outside the app is booked only with one
+    // of them chosen (or paying later, where it allows that). The booking
+    // starts unpaid whatever was sent: only the business marks it paid.
+    const started = startPayment(
+      await paymentMethodsFor(business.id),
+      business.payLater,
+      input.payment
+    )
+    if (!started.ok) {
+      return { status: "invalid", field: "payment" }
+    }
+    const payment = started.payment
 
     const [serviceRows, hourRows, teamRows, linkRows, memberHourRows] =
       await Promise.all([
@@ -270,6 +284,9 @@ export async function createBooking(
           // it sends WhatsApp booking messages: booking is the yes.
           whatsappOptIn: whatsapp,
           policiesAcceptedAt: withPolicies ? new Date(Date.now()).toISOString() : null,
+          paymentChoice: payment?.choice ?? null,
+          paymentMethod: payment?.method ?? null,
+          paymentStatus: payment?.status ?? null,
           language: isPageLanguage(input.language) ? input.language : DEFAULT_LANGUAGE,
         }),
         ...(addonCheck.options.length > 0
@@ -306,6 +323,7 @@ export async function createBooking(
           priceMinor: option.priceMinor,
           durationMinutes: option.durationMinutes,
         })),
+        payment,
       }
     })
 

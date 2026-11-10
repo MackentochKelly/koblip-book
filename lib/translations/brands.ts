@@ -35,6 +35,10 @@ export const BRAND_NAMES = [
   "iPad",
   "Android",
   "Gmail",
+  "Cash App",
+  "Zelle",
+  "PayPal",
+  "Venmo",
 ] as const
 
 // The names, longest first, as one regular expression source for the `u`

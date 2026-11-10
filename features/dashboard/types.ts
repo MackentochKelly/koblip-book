@@ -2,6 +2,7 @@ import type { Plan, PlanFeatureKey } from "@/lib/plan-features"
 import type { CancelReason } from "@/lib/booking-rules"
 import type { PolicyKind, PolicyPointIcon } from "@/lib/policy-rules"
 import type { GoogleEventColor } from "@/lib/google-calendar-colors"
+import type { BookingPayment } from "@/lib/payment-rules"
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string }
 export interface OwnedBusiness { id: string; slug: string; name: string; address: string | null; category: string | null; photoUrl: string | null }
 export type BookingStatus = "confirmed" | "cancelled" | "completed" | "no_show"
@@ -13,6 +14,9 @@ export interface OwnerBooking {
   status: BookingStatus; source: "online" | "owner"; note: string | null
   cancelReason: CancelReason | null
   addons: { name: string; priceMinor: number | null; durationMinutes: number }[]
+  // How the customer chose to pay outside the app and where that stands;
+  // none = the booking tracks no payment (lib/payment-rules.ts).
+  payment?: BookingPayment | null
 }
 export interface AddonOptionInput { id: string | null; name: string; description: string | null; priceMinor: number | null; durationMinutes: number } // id null = new
 export interface AddonGroupInput { name: string; prompt: string; minSelect: number; maxSelect: number | null; serviceIds: string[]; options: AddonOptionInput[] } // options in display order

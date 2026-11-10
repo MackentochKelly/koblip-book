@@ -1,5 +1,6 @@
 import { useLocale, useTranslations } from "next-intl"
 
+import { PaymentBadge } from "@/components/payment-badge"
 import { Badge } from "@/components/ui/badge"
 import {
   Item,
@@ -37,9 +38,17 @@ export function BookingsList({ bookings }: { bookings: AdminBooking[] }) {
             <ItemTitle>{booking.customerName}</ItemTitle>
             <ItemDescription className="truncate">
               {`${booking.businessName} · ${booking.serviceName} · ${when(booking)}`}
+              {booking.payment &&
+                ` · ${booking.payment.way ?? t("payLater")}`}
             </ItemDescription>
           </ItemContent>
           <ItemActions>
+            {booking.payment && (
+              <PaymentBadge
+                status={booking.payment.status}
+                label={t(`payment.${booking.payment.status}`)}
+              />
+            )}
             <Badge
               variant={
                 booking.status === "no_show"

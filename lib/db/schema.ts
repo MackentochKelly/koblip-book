@@ -22,6 +22,13 @@ import { DEFAULT_THEME, type ThemeId } from "../theme-rules"
 import {
   TRANSLATION_ACTIONS,
   TRANSLATION_ORIGINS,
+import {
+  PAYMENT_CHOICES,
+  PAYMENT_STATUSES,
+  PAYMENT_TYPES,
+  type PaymentMethodSnapshot,
+  type PaymentType,
+} from "../payment-rules"
   TRANSLATION_SCOPES,
   TRANSLATION_STATUSES,
 } from "../translations/rules"
@@ -108,6 +115,15 @@ export const businesses = sqliteTable(
   },
   (table) => [
     index("businesses_owner_idx").on(table.ownerId),
+    // With ways to pay outside the app (paymentMethods), whether a
+    // customer may also choose to pay at the visit (lib/payment-rules.ts).
+    payLater: integer({ mode: "boolean" }).notNull().default(true),
+    // The standard ways (STANDARD_PAYMENT_TYPES) the owner removed from
+    // their list in Settings → Payments, so they are not offered again.
+    removedPaymentTypes: text({ mode: "json" })
+      .$type<PaymentType[]>()
+      .notNull()
+      .default([]),
     index("businesses_demo_idx").on(table.isDemo, table.createdAt),
   ]
 )
@@ -469,6 +485,19 @@ export const bookings = sqliteTable(
     index("bookings_customer_idx").on(
       table.businessId,
       table.customerKey,
+    // Paying outside the app (lib/payment-rules.ts), all null on a booking
+    // made where the business offers no such way, or made by the owner.
+    // paymentChoice: now (by paymentMethod) or later (at the visit).
+    // paymentMethod: the way as it was when they booked, so its
+    // instructions stay what the customer saw.
+    // paymentStatus: unpaid, reported (the customer says they paid) or
+    // paid; only the business sets paid.
+    paymentChoice: text({ enum: PAYMENT_CHOICES }),
+    paymentMethod: text({ mode: "json" }).$type<PaymentMethodSnapshot>(),
+    paymentStatus: text({ enum: PAYMENT_STATUSES }),
+    paymentReference: text(),
+    paymentReportedAt: text(),
+    paymentPaidAt: text(),
       table.startAt
     ),
     index("bookings_customer_user_idx").on(
@@ -485,6 +514,28 @@ export const customers = sqliteTable(
   "customers",
   {
     id: id(),
+// The ways a business can be paid outside the app (bank transfer, Zelle,
+// its own), chosen by the customer when booking. Koblip never moves the
+// money. `details` (an account number, a Zelle phone) is private: only the
+// owner and a customer who booked with that way see it.
+export const paymentMethods = sqliteTable(
+  "payment_methods",
+  {
+    id: id(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    type: text({ enum: PAYMENT_TYPES }).notNull(),
+    name: text().notNull(),
+    details: text().notNull(),
+    position: integer().notNull().default(0),
+    ...timestamps(),
+  },
+  (table) => [
+    index("payment_methods_business_idx").on(table.businessId, table.position),
+  ]
+)
+
     businessId: text()
       .notNull()
       .references(() => businesses.id, { onDelete: "cascade" }),

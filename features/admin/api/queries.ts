@@ -6,6 +6,7 @@ import { isPhoneAccountEmail } from "@/lib/phone-sign-in"
 import { requireAdmin } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { bookings, businesses, customers, serviceCategories, services, teamInvites, teamMembers, teamMemberHours, ownerVoices, user } from "@/lib/db/schema"
+import { paymentOf, type PaymentStatus } from "@/lib/payment-rules"
 
 // Every list stops here; the newest come first.
 const MAX_ROWS = 200
@@ -164,11 +165,14 @@ export interface AdminBooking {
   serviceName: string
   customerName: string
   status: string
+  // Paying outside the app, when the booking tracks it: the way's name
+  // (null at the visit) and where it stands.
+  payment: { way: string | null; status: PaymentStatus } | null
 }
 
 export async function getBookings(): Promise<AdminBooking[]> {
   await requireAdmin()
-  return db
+  const rows = await db
     .select({
       id: bookings.id,
       startAt: bookings.startAt,
@@ -177,12 +181,33 @@ export async function getBookings(): Promise<AdminBooking[]> {
       serviceName: bookings.serviceName,
       customerName: bookings.customerName,
       status: bookings.status,
+      paymentChoice: bookings.paymentChoice,
+      paymentMethod: bookings.paymentMethod,
+      paymentStatus: bookings.paymentStatus,
+      paymentReference: bookings.paymentReference,
     })
     .from(bookings)
     .innerJoin(businesses, eq(businesses.id, bookings.businessId))
     .where(realBusiness)
     .orderBy(desc(bookings.createdAt))
     .limit(MAX_ROWS)
+  return rows.map(
+    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, ...row }) => {
+      const payment = paymentOf({
+        paymentChoice,
+        paymentMethod,
+        paymentStatus,
+        paymentReference,
+      })
+      return {
+        ...row,
+        payment: payment && {
+          way: payment.method?.name ?? null,
+          status: payment.status,
+        },
+      }
+    }
+  )
 }
 
 export interface AdminTeamAccount {

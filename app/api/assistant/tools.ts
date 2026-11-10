@@ -73,6 +73,13 @@ import {
 } from "@/features/dashboard/api/team-services"
 import { activateTheme } from "@/features/dashboard/api/theme-actions"
 import { setBookingStatus } from "@/features/dashboard/api/booking-actions"
+import {
+  deletePaymentMethod,
+  savePaymentMethod,
+  setBookingPaid,
+  setPayLater,
+} from "@/features/dashboard/api/payment-actions"
+import { getPaymentSettings } from "@/features/dashboard/api/payment-queries"
 import type {
   CantComeAction,
   MessageButton,
@@ -134,6 +141,14 @@ import {
   isPolicyKind,
   isPolicyPointIcon,
 } from "@/lib/policy-rules"
+import {
+  PAYMENT_RULES,
+  PAYMENT_START_NAMES,
+  PAYMENT_STATUSES,
+  PAYMENT_TYPES,
+  checkPaymentMethod,
+  type PaymentType,
+} from "@/lib/payment-rules"
 import { THEMES } from "@/lib/theme-rules"
 import { getServiceNameTranslations } from "@/lib/translations/business-texts"
 import { bookingActions } from "@/features/dashboard/utils/booking-filters"
@@ -1517,6 +1532,83 @@ export function buildAssistantTools(
     }
     return { booking, status }
   }
+  // Shared checks for set_booking_paid: a booking that tracks a payment,
+  // and a change that is one.
+  const checkBookingPaidArgs = async (
+    args: unknown
+  ): Promise<{ booking: OwnerBooking; paid: boolean } | { error: string }> => {
+    const a = asRecord(args)
+    if (!a || typeof a.bookingId !== "string" || a.bookingId === "") {
+      return { error: t("errors.bookingIdRequired") }
+    }
+    if (typeof a.paid !== "boolean") {
+      return { error: t("errors.paidInvalid") }
+    }
+    const booking = await getBooking(businessId, a.bookingId)
+    if (!booking) {
+      return { error: t("errors.bookingUnknown") }
+    }
+    if (!booking.payment) {
+      return { error: t("errors.noPayment") }
+    }
+    if ((booking.payment.status === "paid") === a.paid) {
+      return { error: t("errors.nothingToChange") }
+    }
+    return { booking, paid: a.paid }
+  }
+  // Shared checks for save_payment_method: a new way (no methodId), or one
+  // of the business's with what changes; the rest is kept.
+  const checkPaymentMethodArgs = async (
+    args: unknown
+  ): Promise<
+    | {
+        methodId: string | null
+        values: { type: string; name: string; details: string }
+      }
+    | { error: string }
+  > => {
+    const a = asRecord(args) ?? {}
+    const { methods } = await getPaymentSettings(businessId)
+    let current: (typeof methods)[number] | null = null
+    if (a.methodId !== undefined) {
+      current = methods.find((method) => method.id === a.methodId) ?? null
+      if (!current) {
+        return { error: t("errors.paymentMethodUnknown") }
+      }
+    } else if (methods.length >= PAYMENT_RULES.maxMethods) {
+      return {
+        error: t("errors.paymentMethodsFull", {
+          max: String(PAYMENT_RULES.maxMethods),
+        }),
+      }
+    }
+    const text = (key: string, kept: string | undefined) =>
+      typeof a[key] === "string" ? (a[key] as string) : (kept ?? "")
+    const values = {
+      type: text("type", current?.type),
+      // A brand (Zelle, Cash App) is its own name when none is given.
+      name: text(
+        "name",
+        current?.name ??
+          PAYMENT_START_NAMES[a.type as PaymentType] ??
+          undefined
+      ),
+      details: text("details", current?.details),
+    }
+    const checked = checkPaymentMethod(values)
+    if (!checked.ok) {
+      return { error: t(`errors.paymentMethod.${checked.error}`) }
+    }
+    if (
+      current &&
+      current.type === checked.values.type &&
+      current.name === checked.values.name &&
+      current.details === checked.values.details
+    ) {
+      return { error: t("errors.nothingToChange") }
+    }
+    return { methodId: current?.id ?? null, values: checked.values }
+  }
   // Shared checks for save_policy. kind: a standard policy, added or
   // replaced. No kind: the owner's own, a new one (title needed) or, with
   // policyId, one of theirs (title kept when not given). current: the
@@ -1916,18 +2008,20 @@ export function buildAssistantTools(
       definition: {
         name: "business_overview",
         description:
-          "Name, address, phone, hours, booking counts, about, website, category, seats, bookingPath and photoCount.",
+          "Name, address, phone, hours, booking counts, about, website, category, seats, bookingPath and photoCount. paymentsToCheck (only when the business lists ways to pay): bookings whose customer says they paid and the owner has not checked yet.",
         parameters: schema({}),
         needsConfirm: false,
       },
       label: t("steps.overview"),
       doneLabel: t("stepsDone.overview"),
       run: async () => {
-        const [{ business, hours }, counts, photos] = await Promise.all([
-          getOwnerBusiness(businessId),
-          getBookingCounts(businessId),
-          getBusinessPhotos(businessId),
-        ])
+        const [{ business, hours }, counts, photos, payments] =
+          await Promise.all([
+            getOwnerBusiness(businessId),
+            getBookingCounts(businessId),
+            getBusinessPhotos(businessId),
+            getPaymentSettings(businessId),
+          ])
         return {
           name: business.name,
           address: business.address,
@@ -1943,6 +2037,10 @@ export function buildAssistantTools(
           seats: business.seats,
           bookingPath: `/b/${business.slug}`,
           photoCount: photos.length,
+          // Only for a business that lists ways to be paid outside the app.
+          ...(payments.methods.length > 0
+            ? { paymentsToCheck: payments.toCheck }
+            : {}),
         }
       },
     },
@@ -2075,7 +2173,7 @@ export function buildAssistantTools(
       definition: {
         name: "list_bookings",
         description:
-          "Bookings, each with when (past / now / upcoming), team member, length, price, source, note and add-ons. For yesterday, today or tomorrow, pass only day: every booking that day, past and upcoming (count them all for 'how many today'). For other days, from/to: every booking on those days; adding range keeps only that side of now. With none of these: upcoming (soonest first) or past (most recent first). Source caps: next 200 upcoming, last 100 past.",
+          "Bookings, each with when (past / now / upcoming), team member, length, price, source, note and add-ons. A booking paid outside the app also has payment: choice (now, or later = at the visit), way, status (unpaid, reported = the customer says they paid and the owner must check, paid = the owner confirmed) and reference. For yesterday, today or tomorrow, pass only day: every booking that day, past and upcoming (count them all for 'how many today'). For other days, from/to: every booking on those days; adding range keeps only that side of now. With none of these: upcoming (soonest first) or past (most recent first). Source caps: next 200 upcoming, last 100 past.",
         // `day` is worked out here in the business timezone, so the model
         // never has to compute a date or pick a side of now for a plain day
         // ("Don't make the model fill arguments you already know", OpenAI
@@ -2097,6 +2195,12 @@ export function buildAssistantTools(
             description: "YYYY-MM-DD in the business timezone",
           },
           status: { type: "string", enum: [...STATUSES] },
+          payment: {
+            type: "string",
+            enum: [...PAYMENT_STATUSES],
+            description:
+              "Only bookings whose payment is unpaid, reported (the customer says they paid; the owner has not checked) or paid",
+          },
         }),
         needsConfirm: false,
       },
@@ -2139,6 +2243,12 @@ export function buildAssistantTools(
         ) {
           return bad(t("errors.statusUnknown"))
         }
+        if (
+          a.payment !== undefined &&
+          !(PAYMENT_STATUSES as readonly unknown[]).includes(a.payment)
+        ) {
+          return bad(t("errors.paymentStatusUnknown"))
+        }
         // One now per call for every comparison below.
         const now = new Date().toISOString()
         const hasDayFilter = a.from !== undefined || a.to !== undefined
@@ -2167,6 +2277,7 @@ export function buildAssistantTools(
             (a.from === undefined || b.date >= (a.from as string)) &&
             (a.to === undefined || b.date <= (a.to as string)) &&
             (a.status === undefined || b.status === a.status) &&
+            (a.payment === undefined || b.payment?.status === a.payment) &&
             (!hasDayFilter ||
               a.range === undefined ||
               (range === "upcoming" ? b.endAt >= now : b.endAt < now))
@@ -2210,6 +2321,19 @@ export function buildAssistantTools(
           priceText: priceText(t, locale, b.priceMinor, b.currency),
           source: b.source,
           note: b.note,
+          // Paying outside the app; absent when the booking tracks none.
+          // "reported" is the customer's word only, never paid.
+          ...(b.payment
+            ? {
+                payment: {
+                  // "later": they pay at the visit, with no way chosen.
+                  choice: b.payment.choice,
+                  way: b.payment.method?.name ?? null,
+                  status: b.payment.status,
+                  reference: b.payment.reference,
+                },
+              }
+            : {}),
           addons: b.addons.map((a) => ({
             name: a.name,
             priceMinor: a.priceMinor,
@@ -4886,6 +5010,254 @@ export function buildAssistantTools(
             }
           }
           return { ok: true, doneText: t("policyPoint.removed") }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "set_booking_paid",
+        description:
+          "Mark a booking's payment paid, or not paid after all. Only for a booking that has payment in list_bookings. Only when the owner says they got the money: a customer saying they paid (status reported) is not paid. Needs the owner's tap.",
+        parameters: schema(
+          {
+            bookingId: { type: "string", description: "Id from list_bookings" },
+            paid: { type: "boolean" },
+          },
+          ["bookingId", "paid"]
+        ),
+        needsConfirm: true,
+        resultKind: "bookings",
+      },
+      label: t("steps.setBookingPaid"),
+      doneLabel: t("stepsDone.setBookingPaid"),
+      run: async () => ({ error: t("tapFirst.bookingPaid") }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const checked = await checkBookingPaidArgs(args)
+          if ("error" in checked) {
+            return checked
+          }
+          const { booking, paid } = checked
+          const state = paid ? "paid" : "unpaid"
+          return {
+            title: t(`cards.bookingPaid.${state}`),
+            action: t(`actions.bookingPaid.${state}`),
+            summary: `${booking.customerName} · ${booking.serviceName} · ${formatDay(booking.date, locale)} · ${formatClock(booking.time, locale)} · ${priceText(t, locale, booking.priceMinor, booking.currency)}`,
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const a = asRecord(args)
+          if (
+            !a ||
+            typeof a.bookingId !== "string" ||
+            a.bookingId === "" ||
+            typeof a.paid !== "boolean"
+          ) {
+            return { ok: false, doneText: t("bookingPaid.unknown") }
+          }
+          const result = await setBookingPaid(businessId, a.bookingId, a.paid)
+          if (!result.ok) {
+            const refusals: Record<string, string> = {
+              not_found: t("bookingPaid.unknown"),
+              no_payment: t("bookingPaid.noPayment"),
+            }
+            return {
+              ok: false,
+              doneText:
+                refusals[result.error] ??
+                t("bookingPaid.failed", { error: result.error }),
+            }
+          }
+          return {
+            ok: true,
+            doneText: t(`bookingPaid.done.${a.paid ? "paid" : "unpaid"}`),
+          }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "list_payment_methods",
+        description:
+          "The ways customers can pay the business outside the app (bank transfer, Zelle, Cash App, other), with their ids and private instructions, whether paying at the visit is offered, and how many payments wait for the owner's check. None listed: the booking page asks nothing about payment. The app never moves money.",
+        parameters: schema({}),
+        needsConfirm: false,
+      },
+      label: t("steps.paymentMethods"),
+      doneLabel: t("stepsDone.paymentMethods"),
+      run: async () => {
+        const { methods, payLater, toCheck } =
+          await getPaymentSettings(businessId)
+        return {
+          methods,
+          payAtVisit: payLater,
+          paymentsToCheck: toCheck,
+          max: PAYMENT_RULES.maxMethods,
+        }
+      },
+    },
+    {
+      definition: {
+        name: "save_payment_method",
+        description:
+          "Add a way to pay the business outside the app, or change one (methodId from list_payment_methods; what is not given is kept). details are the instructions the customer sees after booking, in the owner's own words: never invent an account, email or number. Needs the owner's tap.",
+        parameters: schema({
+          methodId: {
+            type: "string",
+            description: "Id from list_payment_methods; omit to add",
+          },
+          type: { type: "string", enum: [...PAYMENT_TYPES] },
+          name: { type: "string", description: "Short name, e.g. Zelle" },
+          details: {
+            type: "string",
+            description: "Where and how to pay, as the owner said it",
+          },
+        }),
+        needsConfirm: true,
+        resultKind: "payments",
+      },
+      label: t("steps.savePaymentMethod"),
+      doneLabel: t("stepsDone.savePaymentMethod"),
+      run: async () => ({ error: t("tapFirst.savePaymentMethod") }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const checked = await checkPaymentMethodArgs(args)
+          if ("error" in checked) {
+            return checked
+          }
+          const adding = checked.methodId === null
+          return {
+            title: t(`cards.savePaymentMethod.${adding ? "add" : "change"}`),
+            action: t(`actions.savePaymentMethod.${adding ? "add" : "change"}`),
+            summary: `${checked.values.name} · ${checked.values.details}`,
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const checked = await checkPaymentMethodArgs(args)
+          if ("error" in checked) {
+            return { ok: false, doneText: checked.error }
+          }
+          const result = await savePaymentMethod(
+            businessId,
+            checked.methodId,
+            checked.values
+          )
+          if (!result.ok) {
+            return {
+              ok: false,
+              doneText: t("paymentMethod.failed", { error: result.error }),
+            }
+          }
+          return {
+            ok: true,
+            doneText: t(
+              `paymentMethod.${checked.methodId === null ? "added" : "changed"}`
+            ),
+          }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "remove_payment_method",
+        description:
+          "Remove a way to pay. Use the id from list_payment_methods. Bookings already made with it keep their own copy. Needs the owner's tap.",
+        parameters: schema(
+          {
+            methodId: {
+              type: "string",
+              description: "Id from list_payment_methods",
+            },
+          },
+          ["methodId"]
+        ),
+        needsConfirm: true,
+        resultKind: "payments",
+      },
+      label: t("steps.removePaymentMethod"),
+      doneLabel: t("stepsDone.removePaymentMethod"),
+      run: async () => ({ error: t("tapFirst.removePaymentMethod") }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const methodId = asRecord(args)?.methodId
+          const { methods } = await getPaymentSettings(businessId)
+          const method = methods.find((row) => row.id === methodId)
+          if (!method) {
+            return { error: t("errors.paymentMethodUnknown") }
+          }
+          return {
+            title: t("cards.removePaymentMethod"),
+            action: t("actions.removePaymentMethod"),
+            summary: method.name,
+            destructive: true,
+          }
+        },
+        execute: async (args: unknown) => {
+          const methodId = asRecord(args)?.methodId
+          if (typeof methodId !== "string" || methodId === "") {
+            return { ok: false, doneText: t("paymentMethod.unknown") }
+          }
+          const result = await deletePaymentMethod(businessId, methodId)
+          if (!result.ok) {
+            return {
+              ok: false,
+              doneText:
+                result.error === "not_found"
+                  ? t("paymentMethod.unknown")
+                  : t("paymentMethod.failed", { error: result.error }),
+            }
+          }
+          return { ok: true, doneText: t("paymentMethod.removed") }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "set_pay_at_visit",
+        description:
+          "Turn on or off whether customers may choose to pay at the visit instead of one of the ways to pay. Only matters when list_payment_methods lists a way. Needs the owner's tap.",
+        parameters: schema({ on: { type: "boolean" } }, ["on"]),
+        needsConfirm: true,
+        resultKind: "payments",
+      },
+      label: t("steps.payAtVisit"),
+      doneLabel: t("stepsDone.payAtVisit"),
+      run: async () => ({ error: t("tapFirst.payAtVisit") }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const on = asRecord(args)?.on
+          if (typeof on !== "boolean") {
+            return { error: t("errors.onInvalid") }
+          }
+          const { payLater } = await getPaymentSettings(businessId)
+          if (payLater === on) {
+            return { error: t("errors.nothingToChange") }
+          }
+          const state = on ? "on" : "off"
+          return {
+            title: t(`cards.payAtVisit.${state}`),
+            action: t(`actions.payAtVisit.${state}`),
+            summary: t(`payAtVisit.summary.${state}`),
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const on = asRecord(args)?.on
+          if (typeof on !== "boolean") {
+            return {
+              ok: false,
+              doneText: t("payAtVisit.failed", { error: "invalid" }),
+            }
+          }
+          const result = await setPayLater(businessId, on)
+          return result.ok
+            ? { ok: true, doneText: t(`payAtVisit.done.${on ? "on" : "off"}`) }
+            : {
+                ok: false,
+                doneText: t("payAtVisit.failed", { error: result.error }),
+              }
         },
       },
     },

@@ -57,6 +57,22 @@ const bookings = {
     completed: "Completed",
     noShow: "No-show",
   },
+  // Paying outside the app (lib/payment-rules.ts): only the owner says a
+  // booking is paid.
+  payment: {
+    later: "Pay later",
+    reference: "Reference: {reference}",
+    status: {
+      // "Review", not "Check": Google reads "check" as a bank cheque.
+      unpaid: "Payment pending",
+      reported: "Review payment",
+      paid: "Paid",
+    },
+    markPaid: "Mark as paid",
+    markUnpaid: "Mark as not paid",
+    markedPaid: "Marked as paid",
+    markedUnpaid: "Marked as not paid",
+  },
   details: {
     free: "Free",
     with: "with {name}",
@@ -84,6 +100,7 @@ const bookings = {
       all: "All",
       upcoming: "Upcoming",
       unmarked: "Not marked",
+      payment: "Review payment",
       completed: "Completed",
       no_show: "No-shows",
       cancelled: "Cancelled",

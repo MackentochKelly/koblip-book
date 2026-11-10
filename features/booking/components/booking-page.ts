@@ -4,6 +4,7 @@ import type {
   teamMembers,
 } from "@/lib/db/schema"
 import { directionsUrl } from "@/lib/directions-url"
+import type { PaymentOptions } from "@/lib/payment-rules"
 import type { PolicyLink, PolicyPointIcon } from "@/lib/policy-rules"
 import { checkAddons } from "../utils/addons"
 
@@ -64,6 +65,9 @@ export interface BookingPage {
   // Whether the business sends WhatsApp booking messages (consent asked).
   whatsapp: boolean
   policies: BookingPolicies
+  // The business's ways to pay outside the app, by name only; none (or
+  // left out) = no payment step.
+  payments?: PaymentOptions | null
 }
 
 export interface BookingPolicyPoint {
@@ -152,6 +156,7 @@ export function toBookingPage(data: {
   whatsapp: boolean
   policies: PolicyLink[]
   policyPoints: BookingPolicyPoint[]
+  payments?: PaymentOptions | null
 }): BookingPage {
   return {
     slug: data.business.slug,
@@ -185,5 +190,6 @@ export function toBookingPage(data: {
     addonGroups: data.addonGroups,
     whatsapp: data.whatsapp,
     policies: { documents: data.policies, points: data.policyPoints },
+    payments: data.payments ?? null,
   }
 }

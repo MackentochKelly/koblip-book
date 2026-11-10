@@ -1,0 +1,1 @@
+ALTER TABLE `businesses` ADD `removed_payment_types` text DEFAULT '[]' NOT NULL;

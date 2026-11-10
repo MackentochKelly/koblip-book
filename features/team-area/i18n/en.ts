@@ -19,6 +19,16 @@ const words = {
       no_show: "No-show",
       cancelled: "Cancelled",
     },
+    // Paying outside the app: how, and where it stands. The owner marks
+    // it; a team member only sees it.
+    payment: {
+      later: "Pays at the visit",
+      status: {
+        unpaid: "Payment pending",
+        reported: "Being checked",
+        paid: "Paid",
+      },
+    },
   },
   hours: {
     closed: "Closed",

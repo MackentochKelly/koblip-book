@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/schema"
 import type { TeamSeat } from "@/lib/dal"
 import type { HoursRow } from "@/lib/hours-rules"
+import { paymentOf } from "@/lib/payment-rules"
 import type { StartingCounts, TeamProfile } from "@/lib/team-rules"
 import type { MyBooking } from "../types"
 
@@ -28,7 +29,7 @@ export async function getMyBookings(
     eq(bookings.businessId, seat.business.id),
     eq(bookings.teamMemberId, seat.teamMemberId)
   )
-  return db
+  const rows = await db
     .select({
       id: bookings.id,
       serviceName: bookings.serviceName,
@@ -36,6 +37,10 @@ export async function getMyBookings(
       endAt: bookings.endAt,
       customerName: bookings.customerName,
       status: bookings.status,
+      paymentChoice: bookings.paymentChoice,
+      paymentMethod: bookings.paymentMethod,
+      paymentStatus: bookings.paymentStatus,
+      paymentReference: bookings.paymentReference,
     })
     .from(bookings)
     .where(
@@ -45,6 +50,23 @@ export async function getMyBookings(
     )
     .orderBy(when === "upcoming" ? asc(bookings.startAt) : desc(bookings.startAt))
     .limit(LIST_LIMIT)
+  return rows.map(
+    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, ...booking }) => {
+      // A cancelled booking has nothing to pay. Only the way's name and
+      // the status leave here.
+      const payment =
+        booking.status === "cancelled"
+          ? null
+          : paymentOf({ paymentChoice, paymentMethod, paymentStatus, paymentReference })
+      return {
+        ...booking,
+        payment: payment && {
+          way: payment.method?.name ?? null,
+          status: payment.status,
+        },
+      }
+    }
+  )
 }
 
 // Their working week: their own hours, or the business's when they have

@@ -24,6 +24,7 @@ export type ResultKind =
   | "photos"
   | "policies"
   | "theme"
+  | "payments"
   | "messages"
   | "timing"
   | "flows"

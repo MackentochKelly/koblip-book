@@ -12,6 +12,7 @@ import {
   businesses,
   notificationSends,
 } from "@/lib/db/schema"
+import { paymentOf } from "@/lib/payment-rules"
 import type { MyBooking } from "../types"
 
 // How many bookings the page lists, newest first.
@@ -89,6 +90,10 @@ async function loadBookings(
       priceMinor: bookings.priceMinor,
       currency: bookings.currency,
       note: bookings.note,
+      paymentChoice: bookings.paymentChoice,
+      paymentMethod: bookings.paymentMethod,
+      paymentStatus: bookings.paymentStatus,
+      paymentReference: bookings.paymentReference,
       business: {
         id: businesses.id,
         slug: businesses.slug,
@@ -191,6 +196,8 @@ async function loadBookings(
       durationMinutes: row.durationMinutes,
       priceMinor: row.priceMinor,
       currency: row.currency,
+      // A cancelled booking owes nothing: its instructions stay hidden.
+      payment: cancelled ? null : paymentOf(row),
       business: {
         slug: row.business.slug,
         name: row.business.name,

@@ -53,6 +53,8 @@ import {
   type BookingDetails,
   BookingTotal,
   DetailsStep,
+  PAY_LATER,
+  PaymentStep,
   type DetailsError,
   ExtrasStep,
   MemberStep,
@@ -62,7 +64,14 @@ import {
   usePriceLabel,
 } from "./booking-steps"
 
-type Step = "service" | "extras" | "member" | "time" | "details" | "policies"
+type Step =
+  | "service"
+  | "extras"
+  | "member"
+  | "time"
+  | "details"
+  | "payment"
+  | "policies"
 
 const DETAILS_FORM = "booking-details"
 
@@ -98,6 +107,17 @@ export function BookingFlow({
   const detailsFilled = Boolean(details.name.trim() && details.phone.trim())
   const [detailsError, setDetailsError] = useState<DetailsError>(null)
   const withPolicies = hasBookingPolicies(page.policies)
+  // The business's ways to pay outside the app; none = no payment step.
+  const payments = page.payments ?? null
+  // The picked way's id or PAY_LATER; "" until one is picked, or once the
+  // picked way is no longer offered.
+  const [paymentPick, setPaymentPick] = useState("")
+  const payment =
+    payments &&
+    (payments.methods.some((method) => method.id === paymentPick) ||
+      (paymentPick === PAY_LATER && payments.payLater))
+      ? paymentPick
+      : ""
   const [closing, setClosing] = useState(false)
 
   const language = params.get("lang")
@@ -150,6 +170,7 @@ export function BookingFlow({
     ...(team.length > 1 && !pinnedHere ? (["member"] as const) : []),
     "time",
     "details",
+    ...(payments ? (["payment"] as const) : []),
     ...(withPolicies ? (["policies"] as const) : []),
   ]
   // A service picked on the business page starts on the next step.
@@ -168,11 +189,13 @@ export function BookingFlow({
       ? "extras"
       : steps.includes("member") && later("member") && !memberChoice
         ? "member"
-        : (asked === "details" || asked === "policies") && !slot
+        : later("time") && !slot
           ? "time"
-          : asked === "policies" && !detailsFilled
+          : later("details") && !detailsFilled
             ? "details"
-            : asked
+            : steps.includes("payment") && later("payment") && !payment
+              ? "payment"
+              : asked
   const index = steps.indexOf(step)
   const title = t(`titles.${step}`)
   // On the phone sheet the extras sit on top of the services.
@@ -219,7 +242,9 @@ export function BookingFlow({
           ? Boolean(memberChoice)
           : step === "time"
             ? Boolean(slot)
-            : true
+            : step === "payment"
+              ? Boolean(payment)
+              : true
   const next = () => {
     if (canContinue && index < steps.length - 1) go(steps[index + 1])
   }
@@ -234,11 +259,12 @@ export function BookingFlow({
     setDetailsError(error)
     return error === null
   }
-  // With policies, the details go on to them; without, they book.
+  // The last step books; any step before it goes on to the next.
+  const lastStep = steps[steps.length - 1]
   const submitDetails = (next: BookingDetails) => {
     if (!checkDetails(next)) return
-    if (withPolicies) go("policies")
-    else void submit(next)
+    if (lastStep === "details") void submit(next)
+    else go(steps[steps.indexOf("details") + 1])
   }
 
   const submit = async (details: BookingDetails) => {
@@ -257,6 +283,12 @@ export function BookingFlow({
       // Confirming on the policies step, under the line that says booking
       // agrees to them, is the agreement.
       acceptedPolicies: withPolicies,
+      ...(payments && {
+        payment:
+          payment === PAY_LATER
+            ? { choice: "later" as const }
+            : { choice: "now" as const, methodId: payment },
+      }),
       language: pageLanguage,
     }).catch(() => ({ status: "failed" as const }))
     setSending(false)
@@ -276,8 +308,12 @@ export function BookingFlow({
     ) {
       setDetailsError(result.field)
       replaceUrl(href(withParam("step", "details")))
-    } else if (result.status === "invalid" && result.field === "policies") {
-      // The business added policies while this page was open.
+    } else if (
+      result.status === "invalid" &&
+      (result.field === "policies" || result.field === "payment")
+    ) {
+      // The business changed its policies or its ways to pay while this
+      // page was open.
       toast.error(t("failed"))
       router.refresh()
     } else {
@@ -295,7 +331,7 @@ export function BookingFlow({
     </Button>
   )
   const action =
-    step === "details" && withPolicies ? (
+    step === "details" && lastStep !== "details" ? (
       <Button
         type="submit"
         size="lg"
@@ -306,8 +342,11 @@ export function BookingFlow({
       </Button>
     ) : step === "details" ? (
       confirm(!detailsFilled, { type: "submit", form: DETAILS_FORM })
-    ) : step === "policies" ? (
-      confirm(false, { type: "button", onClick: () => void submit(details) })
+    ) : step === lastStep && (step === "payment" || step === "policies") ? (
+      confirm(!canContinue, {
+        type: "button",
+        onClick: () => void submit(details),
+      })
     ) : (
       <Button type="button" size="lg" onClick={next} disabled={!canContinue}>
         {t("continue")}
@@ -405,6 +444,13 @@ export function BookingFlow({
             onSubmit={submitDetails}
           />
         </>
+      )}
+      {step === "payment" && payments && (
+        <PaymentStep
+          payments={payments}
+          value={payment}
+          onChange={setPaymentPick}
+        />
       )}
       {step === "policies" && (
         <PoliciesStep slug={page.slug} policies={page.policies} />
@@ -700,6 +746,31 @@ function BookedPage({
                 )}
               </ItemContent>
             </Item>
+            {booking.payment && (
+              <Item variant="muted" className="w-full text-left">
+                <ItemContent className="min-w-0 gap-1 text-sm">
+                  {booking.payment.method ? (
+                    <>
+                      <p className="font-medium">
+                        {t("booking.payment.payWith", {
+                          name: booking.payment.method.name,
+                        })}
+                      </p>
+                      <p className="break-words whitespace-pre-line select-all">
+                        {booking.payment.method.details}
+                      </p>
+                      <p className="text-muted-foreground">
+                        {t("booking.payment.thenTell")}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="font-medium">
+                      {t("booking.payment.atVisit")}
+                    </p>
+                  )}
+                </ItemContent>
+              </Item>
+            )}
           </Celebration>
         </GlassCard>
       </main>

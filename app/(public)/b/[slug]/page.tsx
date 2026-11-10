@@ -33,6 +33,7 @@ import { TeamList } from "@/features/business-page/components/team-list"
 import { isOpenNow } from "@/features/business-page/utils/is-open-now"
 import { BookingFlow } from "@/features/booking/components/booking-flow"
 import { toBookingPage } from "@/features/booking/components/booking-page"
+import { paymentOptionsFor } from "@/lib/payment-methods"
 import { isBookable } from "@/features/booking/utils/is-bookable"
 import { reviewSummary } from "@/features/reviews/api/queries"
 import {
@@ -74,8 +75,9 @@ export default async function BusinessPage({ params }: Props) {
   const { business, hours, services, team, photos } = data
   // No hours saved: say nothing rather than "Closed now".
   const open = hours.length > 0 ? isOpenNow(hours, business.timezone) : null
-  const [whatsapp, reviews, reviewWords] = await Promise.all([
+  const [whatsapp, payments, reviews, reviewWords] = await Promise.all([
     offersWhatsapp(data.business.id),
+    paymentOptionsFor(data.business.id),
     reviewSummary(data.business.id),
     getTranslations("reviews"),
   ])
@@ -160,7 +162,7 @@ export default async function BusinessPage({ params }: Props) {
             />
           </BottomBar>
         )}
-        {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp})} mode="drawer" />}
+        {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp, payments })} mode="drawer" />}
         {isOwner && <OwnerBackButton businessId={business.id} />}
         <Toaster />
       </LanguageProvider>
