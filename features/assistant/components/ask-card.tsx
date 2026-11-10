@@ -57,7 +57,6 @@ export function AskCard({ businessId }: { businessId: string }) {
         onSend={ask}
         onStop={() => {}}
         onTalkLive={() => open({ kind: "live" })}
-        inline
       />
     </div>
   )

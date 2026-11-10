@@ -162,10 +162,11 @@ export function AssistantChat({
           <Button
             type="button"
             variant="secondary"
-            size="icon"
+            size="icon-lg"
             aria-label={t("back")}
             onClick={back}
-            className="justify-self-start md:invisible"
+            // The switcher's 44px, so the row's three pieces line up.
+            className="size-11 justify-self-start md:invisible"
           >
             <ArrowLeftIcon />
           </Button>
@@ -181,11 +182,11 @@ export function AssistantChat({
           <Button
             type="button"
             variant="secondary"
-            size="icon"
+            size="icon-lg"
             aria-label={t("newChat")}
             disabled={chat.busy || (view === "chat" && chat.items.length === 0)}
             onClick={newChat}
-            className="justify-self-end"
+            className="size-11 justify-self-end"
           >
             <SquarePenIcon />
           </Button>

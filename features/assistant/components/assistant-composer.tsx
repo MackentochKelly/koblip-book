@@ -1,7 +1,13 @@
 "use client"
 
 import { useTranslations } from "next-intl"
-import { useEffect, useEffectEvent, useRef, useState } from "react"
+import { LayoutGroup, motion, type Transition } from "motion/react"
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react"
 import {
   ArrowUpIcon,
   AudioLinesIcon,
@@ -15,6 +21,7 @@ import {
   InputGroupButton,
   InputGroupTextarea,
 } from "@/components/ui/input-group"
+import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { VoiceGlobe } from "@/components/voice-globe"
 import { VoiceWaveform } from "@/components/voice-waveform"
@@ -24,6 +31,20 @@ import type { PageLanguage } from "@/lib/page-language"
 import { type LiveVoice, useLiveVoiceSupported } from "../hooks/use-live-voice"
 import type { VoicePicking } from "../hooks/use-voice-choice"
 import { VoiceIntro } from "./voice-intro"
+
+// How the box moves between the pill (button beside it) and the open box
+// (button inside): a spring like Apple's SwiftUI "snappy" one
+// (developer.apple.com/documentation/swiftui/spring), a small bounce. The box
+// grows from its own shape and the button travels to its new spot as the
+// same button (Motion's layout animations, motion.dev).
+const SPRING: Transition = { type: "spring", duration: 0.45, bounce: 0.15 }
+
+// The box's corners, set in style so Motion keeps them round while the box
+// changes size: the pill (rounded-3xl, half its 44px) and the open box
+// (rounded-2xl, as InputGroup draws a box with words).
+const CORNERS = { pill: 24, box: 16 } as const
+
+const MotionInputGroup = motion.create(InputGroup)
 
 // Set on this device once the owner picks "Don't show again".
 const VOICE_INTRO_HIDDEN_KEY = "assistant-voice-intro-hidden"
@@ -53,7 +74,6 @@ export function AssistantComposer({
   voice,
   onTalkLive,
   startLive: startLiveNow = false,
-  inline = false,
 }: {
   busy: boolean
   // While a question is being answered, the send button stops it.
@@ -71,12 +91,10 @@ export function AssistantComposer({
   onTalkLive?: () => void
   // Offer talking live as soon as this shows (asked for on another page).
   startLive?: boolean
-  // One line, the button beside the words (a card on another page); the
-  // chat itself puts the buttons under them.
-  inline?: boolean
 }) {
   const t = useTranslations("assistant.composer")
   const [text, setText] = useState("")
+  const [typing, setTyping] = useState(false)
   const canSend = text.trim() !== "" && !busy
   const supported = useLiveVoiceSupported()
 
@@ -127,6 +145,42 @@ export function AssistantComposer({
     setText("")
   }
 
+  // In the chat, while the owner isn't writing: a one-line box (the button's
+  // 44px) with the button beside it. Writing opens the box with the button
+  // inside it, under the words.
+  const apart = !typing && text === ""
+
+  // The main button: stop an answer, send while there are words, talk live
+  // while the box is empty. A new key per state, so each change fades and
+  // grows in, in the same spot (instant with reduced motion). It keeps the
+  // box's focus when pressed, so the box doesn't close under the tap.
+  const mainButton = (MainButton: typeof Button | typeof InputGroupButton) => (
+    <MainButton
+      key={mode}
+      type={mode === "send" ? "submit" : "button"}
+      variant="default"
+      size="icon-sm"
+      aria-label={t(MODE_LABELS[mode])}
+      disabled={mode === "working" || (mode === "send" && !canSend)}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={
+        mode === "stop" ? onStop : mode === "live" ? startLive : undefined
+      }
+      // 44px, like the header's buttons and switcher.
+      className="size-11 shrink-0 animate-in duration-150 zoom-in-75 fade-in motion-reduce:animate-none"
+    >
+      {mode === "working" ? (
+        <Spinner />
+      ) : mode === "stop" ? (
+        <SquareIcon />
+      ) : mode === "live" ? (
+        <AudioLinesIcon />
+      ) : (
+        <ArrowUpIcon />
+      )}
+    </MainButton>
+  )
+
   if (live && live.state !== "off") {
     return (
       <div className="flex flex-col items-center gap-6">
@@ -176,62 +230,69 @@ export function AssistantComposer({
     )
   }
 
+  const textarea = (
+    <InputGroupTextarea
+      value={text}
+      onChange={(event) => setText(event.target.value)}
+      onFocus={() => setTyping(true)}
+      onBlur={() => setTyping(false)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault()
+          submit()
+        }
+      }}
+      rows={1}
+      maxLength={ASSISTANT_RULES.maxMessageChars}
+      placeholder={t("placeholder", { name: ASSISTANT_NAME })}
+      aria-label={t("label")}
+      enterKeyHint="send"
+      className="max-h-32 min-h-11"
+    />
+  )
+
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault()
         submit()
       }}
+      className="flex items-end gap-2"
     >
-      <InputGroup>
-        <InputGroupTextarea
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault()
-              submit()
-            }
-          }}
-          rows={1}
-          maxLength={ASSISTANT_RULES.maxMessageChars}
-          placeholder={t("placeholder", { name: ASSISTANT_NAME })}
-          aria-label={t("label")}
-          enterKeyHint="send"
-          className="max-h-32 min-h-11"
-        />
-        {/* Like big chat apps: the words on top, the buttons under them;
-            the round one changes with what the owner is doing. */}
-        <InputGroupAddon
-          align={inline ? "inline-end" : "block-end"}
-          className={inline ? undefined : "justify-end"}
+      <LayoutGroup>
+        {/* The box changes size from its own shape; the words and the
+            button row keep their size and only move (layout="position"),
+            so nothing squashes. */}
+        <MotionInputGroup
+          layout
+          transition={SPRING}
+          style={{ borderRadius: apart ? CORNERS.pill : CORNERS.box }}
+          // h-auto: the words sit in a wrapper, so InputGroup's own
+          // has-[>textarea] height rule doesn't reach them.
+          className="h-auto flex-1 flex-col"
         >
-          {/* A new key per state, so each change fades and grows in, in
-              the same spot (instant with reduced motion). */}
-          <InputGroupButton
-            key={mode}
-            type={mode === "send" ? "submit" : "button"}
-            variant="default"
-            size="icon-sm"
-            aria-label={t(MODE_LABELS[mode])}
-            disabled={mode === "working" || (mode === "send" && !canSend)}
-            onClick={
-              mode === "stop" ? onStop : mode === "live" ? startLive : undefined
-            }
-            className="animate-in duration-150 zoom-in-75 fade-in motion-reduce:animate-none"
+          <motion.div
+            layout="position"
+            transition={SPRING}
+            className="flex w-full"
           >
-            {mode === "working" ? (
-              <Spinner />
-            ) : mode === "stop" ? (
-              <SquareIcon />
-            ) : mode === "live" ? (
-              <AudioLinesIcon />
-            ) : (
-              <ArrowUpIcon />
-            )}
-          </InputGroupButton>
-        </InputGroupAddon>
-      </InputGroup>
+            {textarea}
+          </motion.div>
+          {/* Like big chat apps: the words on top, the button under them. */}
+          {!apart && (
+            <InputGroupAddon align="block-end" className="w-full justify-end">
+              <motion.div layoutId="composer-button" transition={SPRING}>
+                {mainButton(InputGroupButton)}
+              </motion.div>
+            </InputGroupAddon>
+          )}
+        </MotionInputGroup>
+        {apart && (
+          <motion.div layoutId="composer-button" transition={SPRING}>
+            {mainButton(Button)}
+          </motion.div>
+        )}
+      </LayoutGroup>
       {voice && (
         <VoiceIntro
           open={introOpen || voice.picking.asking}
