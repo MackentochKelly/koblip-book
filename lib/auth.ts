@@ -9,6 +9,7 @@ import { stripe } from "@better-auth/stripe"
 import { eq } from "drizzle-orm"
 import { ACCOUNT_RULES } from "./account-rules"
 import { billingEmailHooks } from "./billing-emails"
+import { notePlanStarted } from "./partner-events"
 import { LOGIN_PATH } from "./auth-links"
 import { db } from "./db"
 import * as authSchema from "./db/auth-schema"
@@ -239,6 +240,11 @@ export const auth = betterAuth({
               }),
               // The owner hears of a failed payment and of the drop to Free.
               ...billingEmailHooks,
+              // A partner app that invited the business hears it went Pro
+              // (docs/plans/sales-connection.md, SC7).
+              onSubscriptionComplete: async ({ subscription, plan }) => {
+                await notePlanStarted(subscription.referenceId, plan.name).catch(console.error)
+              },
               // referenceId is a business id; only its owner acts on it.
               authorizeReference: ({ user, referenceId }) =>
                 canBillBusiness(user.id, referenceId),

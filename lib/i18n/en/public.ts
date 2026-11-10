@@ -89,6 +89,19 @@ const words = {
     languages: "Languages",
   },
   // The business's own policies, linked from its page's footer.
+  // The page a partner app's invite link opens
+  // (docs/plans/sales-connection.md, SC4).
+  partnerStart: {
+    title: "Your booking page is ready to make",
+    text: "Koblip Book builds it from your Google Maps listing in a minute.",
+    start: "Make my page",
+    failed: "Couldn't make your page. Try again.",
+    ended: {
+      title: "This link doesn't work anymore",
+      text: "Find your business on Koblip Book instead.",
+      action: "Find my business",
+    },
+  },
   policies: {
     booking: "Booking policy",
     terms: "Terms of service",

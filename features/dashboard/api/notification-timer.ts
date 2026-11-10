@@ -9,6 +9,7 @@ import {
   removeOldNotifications,
 } from "@/lib/in-app-notifications"
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
+import { sendDuePartnerEvents } from "@/lib/partner-events"
 import { notificationRules } from "@/lib/platform-settings"
 import { runNotifications } from "./notification-sender"
 
@@ -18,7 +19,8 @@ import { runNotifications } from "./notification-sender"
 // check leaves its time (and error) for the admin's Overview (A2), puts
 // visit reminders and review nudges in clients' bells and email reminders
 // (client account D10, D15, D16), and removes in-app
-// notifications past their keep time (in-app N5).
+// notifications past their keep time (in-app N5), and sends partner apps
+// their events (docs/plans/sales-connection.md, SC7).
 
 const timer = globalThis as typeof globalThis & {
   koblipNotificationTimer?: NodeJS.Timeout
@@ -47,6 +49,11 @@ async function check() {
   }
   try {
     await emailClients()
+  } catch (error) {
+    console.error(error)
+  }
+  try {
+    await sendDuePartnerEvents()
   } catch (error) {
     console.error(error)
   }

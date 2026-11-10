@@ -17,6 +17,10 @@ import {
   DEFAULT_REMINDER_CHANNEL,
   REMINDER_EMAIL_STATES,
 } from "../client-reminder-channels"
+import {
+  PARTNER_EVENT_STATES,
+  PARTNER_EVENT_TYPES,
+} from "../partner-rules"
 import { REVIEW_HIDE_REASONS } from "../review-rules"
 import {
   PAYMENT_CHOICES,
@@ -1460,4 +1464,57 @@ export const automationPauses = sqliteTable("automation_pauses", {
 }, (table) => [
   primaryKey({ columns: [table.businessId, table.workspaceId, table.phoneNumberId, table.customerPhone] }),
   index("automation_pauses_until").on(table.until),
+])
+
+// Apps that bring businesses through the partner API
+// (docs/plans/sales-connection.md, SC1, SC2). Only the key's hash is kept;
+// the event secret signs what Book sends the app (SC7).
+export const partnerApps = sqliteTable("partner_apps", {
+  id: id(),
+  name: text().notNull(),
+  keyHash: text().notNull().unique(),
+  keyHint: text().notNull(),
+  webhookUrl: text(),
+  eventSecret: text().notNull(),
+  dailyInvites: integer().notNull(),
+  revokedAt: text(),
+  ...timestamps(),
+})
+
+// One invite link an app asked for (SC3, SC4): only the Google place ID,
+// the app's own reference, the code's hash, and what happened to it.
+export const partnerInvites = sqliteTable("partner_invites", {
+  id: id(),
+  appId: text().notNull().references(() => partnerApps.id, { onDelete: "cascade" }),
+  codeHash: text().notNull().unique(),
+  placeId: text().notNull(),
+  ref: text(),
+  businessId: text().references(() => businesses.id, { onDelete: "set null" }),
+  openedAt: text(),
+  claimedAt: text(),
+  endsAt: text().notNull(),
+  ...timestamps(),
+}, (table) => [
+  index("partner_invites_app_place").on(table.appId, table.placeId),
+  index("partner_invites_app_created").on(table.appId, table.createdAt),
+  index("partner_invites_business").on(table.businessId),
+])
+
+// Each event for an app, kept before it is sent and retried by the
+// server's timer (SC7).
+export const partnerEvents = sqliteTable("partner_events", {
+  id: id(),
+  appId: text().notNull().references(() => partnerApps.id, { onDelete: "cascade" }),
+  inviteId: text().references(() => partnerInvites.id, { onDelete: "set null" }),
+  type: text({ enum: PARTNER_EVENT_TYPES }).notNull(),
+  body: text().notNull(),
+  state: text({ enum: PARTNER_EVENT_STATES }).notNull().default("pending"),
+  attempts: integer().notNull().default(0),
+  nextAttemptAt: text().notNull(),
+  lastError: text(),
+  sentAt: text(),
+  ...timestamps(),
+}, (table) => [
+  index("partner_events_due").on(table.state, table.nextAttemptAt),
+  index("partner_events_app_created").on(table.appId, table.createdAt),
 ])

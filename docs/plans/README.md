@@ -21,6 +21,7 @@ current.
 | [Service categories](service-categories.md) | Done |
 | [Translations (Google)](translations.md) | To do |
 | [App subscriptions](subscriptions.md) | To do |
+| [Sales connection](sales-connection.md) | To do |
 | [Client account](client-account.md) | In progress |
 
 ## How to work with a plan

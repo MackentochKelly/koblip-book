@@ -486,6 +486,13 @@
       "breakpoints": true
     },
     {
+      "idx": 69,
+      "version": "6",
+      "when": 1794041551926,
+      "tag": "0069_partner_api",
+      "breakpoints": true
+    },
+    {
       "idx": 71,
       "version": "6",
       "when": 1794258505591,

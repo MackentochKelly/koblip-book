@@ -135,6 +135,11 @@ const eslintConfig = defineConfig([
               from: "./features",
               except: ["./reviews"],
             },
+            {
+              target: "./features/partners",
+              from: "./features",
+              except: ["./partners"],
+            },
             // shared code cannot import from features/ or app/
             { target: "./components", from: "./features" },
             { target: "./components", from: "./app" },

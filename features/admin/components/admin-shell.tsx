@@ -11,6 +11,7 @@ import {
   CreditCardIcon,
   LanguagesIcon,
   LayoutDashboardIcon,
+  LinkIcon,
   SparklesIcon,
   StarIcon,
   WhatsAppIcon,
@@ -48,6 +49,7 @@ const NAV = [
   { path: "/assistant", key: "assistant", icon: SparklesIcon },
   { path: "/plans", key: "plans", icon: CreditCardIcon },
   { path: "/subscriptions", key: "subscriptions", icon: BanknoteIcon },
+  { path: "/partners", key: "partners", icon: LinkIcon },
 ] as const
 
 // The admin area, built like the owner dashboard: the same menu (folding on
