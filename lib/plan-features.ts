@@ -44,6 +44,7 @@ export const PLAN_FEATURES = {
   widgets: { group: "dashboard", status: "live", defaultPlan: "free" },
   inAppNotifications: { group: "dashboard", status: "live", defaultPlan: "free" },
   multipleBusinesses: { group: "dashboard", status: "live", defaultPlan: "free" },
+  rewards: { group: "dashboard", status: "live", defaultPlan: "free" },
   // The AI assistant.
   assistantChat: { group: "assistant", status: "live", defaultPlan: "free" },
   assistantVoice: { group: "assistant", status: "live", defaultPlan: "free" },
@@ -83,6 +84,7 @@ export const PLAN_CHECKED_FEATURES: readonly PlanFeatureKey[] = [
   "widgets",
   "pageThemes",
   "multipleBusinesses",
+  "rewards",
   "assistantChat",
   "assistantVoice",
   "aiWriting",

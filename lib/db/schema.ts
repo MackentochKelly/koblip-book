@@ -30,6 +30,15 @@ import {
   type PaymentMethodSnapshot,
   type PaymentType,
 } from "../payment-rules"
+import {
+  REWARD_ACTORS,
+  REWARD_EARN_TYPES,
+  REWARD_EVENT_TYPES,
+  REWARD_RULE_STATUSES,
+  REWARD_STATUSES,
+  REWARD_TYPES,
+  type RewardCopy,
+} from "../reward-rules"
 import { DEFAULT_THEME, type ThemeId } from "../theme-rules"
 import {
   TRANSLATION_ACTIONS,
@@ -510,9 +519,20 @@ export const bookings = sqliteTable(
     // (lib/payment-proofs.ts); never a public address.
     paymentProof: text(),
     paymentPaidAt: text(),
+    // Rewards (docs/plans/rewards.md). rewardId: the earned reward used on
+    // this booking, on one booking at most (the unique index).
+    // rewardDiscountMinor: what it took off; priceMinor is already what is
+    // to pay, so the price before the reward is the two added.
+    // rewardsCountedAt: when the booking, once ended, was looked at for
+    // what it earns; null = still to count (lib/rewards.ts).
+    rewardId: text(),
+    rewardDiscountMinor: integer(),
+    rewardsCountedAt: text(),
     ...timestamps(),
   },
   (table) => [
+    uniqueIndex("bookings_reward_idx").on(table.rewardId),
+    index("bookings_rewards_count_idx").on(table.rewardsCountedAt, table.endAt),
     index("bookings_business_idx").on(table.businessId, table.startAt),
     index("bookings_customer_idx").on(
       table.businessId,
@@ -1529,3 +1549,129 @@ export const partnerEvents = sqliteTable("partner_events", {
   index("partner_events_due").on(table.state, table.nextAttemptAt),
   index("partner_events_app_created").on(table.appId, table.createdAt),
 ])
+
+// Rewards (docs/plans/rewards.md, lib/reward-rules.ts). One rule a business
+// set: what earns (visits or money spent), the goal, what the customer
+// gets, and its limits. A rule with history is never deleted, only ended.
+export const rewardRules = sqliteTable(
+  "reward_rules",
+  {
+    id: id(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    status: text({ enum: REWARD_RULE_STATUSES }).notNull().default("active"),
+    earnType: text({ enum: REWARD_EARN_TYPES }).notNull(),
+    earnMinPriceMinor: integer(),
+    // Visits, or minor units of the business's currency.
+    goal: integer().notNull(),
+    rewardType: text({ enum: REWARD_TYPES }).notNull(),
+    // The percent or the amount in minor units; null for free.
+    rewardValue: integer(),
+    // How many bookings one earned reward covers.
+    rewardCount: integer().notNull().default(1),
+    maxDiscountMinor: integer(),
+    expiresDays: integer(),
+    // Bookings count from here: set when the rule is made, so visits from
+    // before it never count.
+    startsAt: text().notNull(),
+    endsAt: text(),
+    maxPerCustomer: integer(),
+    paidOnly: integer({ mode: "boolean" }).notNull().default(false),
+    position: integer().notNull().default(0),
+    ...timestamps(),
+  },
+  (table) => [
+    index("reward_rules_business_idx").on(table.businessId, table.position),
+  ]
+)
+
+// The services a rule's part is about: "earn" (which bookings count) or
+// "reward" (where the reward can be used). No row for a role = every
+// service. A deleted service leaves by itself.
+export const rewardRuleServices = sqliteTable(
+  "reward_rule_services",
+  {
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    ruleId: text()
+      .notNull()
+      .references(() => rewardRules.id, { onDelete: "cascade" }),
+    serviceId: text()
+      .notNull()
+      .references(() => services.id, { onDelete: "cascade" }),
+    role: text({ enum: ["earn", "reward"] }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.ruleId, table.role, table.serviceId] }),
+    index("reward_rule_services_service_idx").on(table.serviceId),
+  ]
+)
+
+// The history of every change to a customer's progress on a rule. Rows
+// are only ever added; the progress is the sum of `amount`. customerKey is
+// the key bookings carry (lib/customer-key.ts).
+export const rewardEvents = sqliteTable(
+  "reward_events",
+  {
+    id: id(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    ruleId: text()
+      .notNull()
+      .references(() => rewardRules.id, { onDelete: "cascade" }),
+    customerKey: text().notNull(),
+    type: text({ enum: REWARD_EVENT_TYPES }).notNull(),
+    // Visits or minor units, signed.
+    amount: integer().notNull(),
+    // The booking an earn or reverse is about.
+    bookingId: text().references(() => bookings.id, { onDelete: "set null" }),
+    actor: text({ enum: REWARD_ACTORS }).notNull().default("system"),
+    actorUserId: text().references(() => user.id, { onDelete: "set null" }),
+    // The owner's reason for a change by hand.
+    note: text(),
+    createdAt: text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (table) => [
+    index("reward_events_customer_idx").on(table.ruleId, table.customerKey),
+    index("reward_events_booking_idx").on(table.bookingId),
+    index("reward_events_business_idx").on(table.businessId, table.createdAt),
+  ]
+)
+
+// An earned reward: one row per booking it covers ("get 2 free" = 2 rows),
+// with a copy of what the rule gave when it was earned. The booking that
+// uses it points here (bookings.rewardId).
+export const rewards = sqliteTable(
+  "rewards",
+  {
+    id: id(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    ruleId: text()
+      .notNull()
+      .references(() => rewardRules.id, { onDelete: "cascade" }),
+    customerKey: text().notNull(),
+    reward: text({ mode: "json" }).$type<RewardCopy>().notNull(),
+    status: text({ enum: REWARD_STATUSES }).notNull().default("available"),
+    // The convert event that made it; null when the owner gave it by hand.
+    eventId: text().references(() => rewardEvents.id, { onDelete: "set null" }),
+    earnedAt: text().notNull(),
+    expiresAt: text(),
+    ...timestamps(),
+  },
+  (table) => [
+    index("rewards_customer_idx").on(
+      table.businessId,
+      table.customerKey,
+      table.status
+    ),
+    index("rewards_rule_idx").on(table.ruleId),
+    index("rewards_expiry_idx").on(table.status, table.expiresAt),
+  ]
+)

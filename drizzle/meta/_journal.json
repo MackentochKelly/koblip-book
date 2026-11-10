@@ -533,6 +533,13 @@
       "when": 1794298432791,
       "tag": "0075_payment_proof",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "6",
+      "when": 1794302977321,
+      "tag": "0076_rewards",
+      "breakpoints": true
     }
   ]
 }

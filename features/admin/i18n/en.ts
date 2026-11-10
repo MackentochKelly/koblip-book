@@ -522,6 +522,7 @@ const words = {
       widgets: "Home widgets",
       inAppNotifications: "Notifications bell",
       multipleBusinesses: "More than one business",
+      rewards: "Rewards",
       assistantChat: "Assistant by typing",
       assistantVoice: "Assistant by voice",
       aiWriting: "AI writing and suggestions",
