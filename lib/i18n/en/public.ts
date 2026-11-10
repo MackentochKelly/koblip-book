@@ -165,6 +165,16 @@ const words = {
       "By booking, you'll get WhatsApp messages from {business} about this booking.",
     whatsappAbout: "About WhatsApp messages",
     total: "Total",
+    // An earned reward (docs/plans/rewards.md): redeemed on the details
+    // step by a signed-in customer; the summary shows what it takes off.
+    reward: {
+      title: "Reward",
+      redeem: "Redeem {reward}",
+      signIn: "Sign in to see your rewards",
+      signInAction: "Sign in",
+      addPhone: "Add your phone to use rewards",
+      addPhoneAction: "Add phone",
+    },
     with: "with {name}",
     free: "Free",
     continue: "Continue",

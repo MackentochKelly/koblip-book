@@ -2,7 +2,7 @@
 
 Each business sets its own rewards for coming back: "after 5 visits, 1 free haircut", "after 10 visits, 20% off", "after $300 spent, $25 off". Customers earn by booking and redeem a reward on a later booking. Asked by the owner (Nov 10): "After (# of service) get (# of service) free, or (#) percentage etc... very flexible, this is a SaaS."
 
-**Status (Nov 10):** Plan only. Nothing built. Waiting for the owner's go.
+**Status (Nov 10):** The owner said go. RW-1 to RW-6 are built and committed, with tests: rules can be made, visits are counted, and a signed-in customer can redeem when booking. RW-7 to RW-16 are to do. Nothing pushed or deployed. The live server needs the new migration (`0076_rewards`) at the next deploy.
 
 ## Rules that stay
 
@@ -88,6 +88,12 @@ Sources: [Square Loyalty API](https://developer.squareup.com/docs/loyalty-api/ov
 - **RW19. Plan feature.** `rewards` is added to `lib/plan-features.ts` (dashboard group, Free by default) and checked before any rule is saved, so Admin → Plans can move it to Pro later without code.
 - **RW20. Admin sees everything, changes nothing.** New screen Admin → Rewards: every business's rules, every earned reward, the whole history.
 - **RW21. The assistant uses the same server code and the confirm card** for every change, like payments (OP4). It can read rules and a customer's rewards, make and change rules, and adjust visits.
+- **RW23. Changed while building (Nov 10).**
+  - RW4 said a unique index stops a booking counting twice. Built instead: each look at a booking writes only the difference between what it counts for now and what the history already holds for it, inside the business's booking turn. Why: a booking can be counted, undone (no-show) and counted again (back to confirmed), which one fixed row per booking cannot say.
+  - A no-show or cancel on a booking that used a reward also puts the booking's price back to what it was before the reward.
+  - "Ends on" (a rule's end date) is stored and obeyed, but the editor has no field for it yet: see RW-5b.
+  - With several rewards usable on a service, the booking page offers the one that saves the most. Picking another one (RW11) is not built: see RW-6b.
+  - The redeem switch is on the details step, not the pay step: a free booking has no pay step.
 - **RW22. Words.** "Rewards", "Earn", "Redeem", "visits" (Apple, Microsoft and Square all say earn and redeem). One word per thing: never "loyalty", "points", "stamps" or "coupon" on screen.
 
 ## Data
@@ -104,7 +110,7 @@ One migration, new tables and new fields only. SQLite, Drizzle, in `lib/db/schem
 
 ## Tasks
 
-In order. Each is small and ends with its own tests. All `To do`.
+In order. Each is small and ends with its own tests. RW-1 to RW-6: `Done` (Nov 10). The rest: `To do`.
 
 | ID | Task | Done when |
 | --- | --- | --- |
@@ -113,6 +119,8 @@ In order. Each is small and ends with its own tests. All `To do`.
 | RW-3 | Counting | `lib/rewards.ts` (`server-only`): `countBooking`, `uncountBooking`, `progressFor`, `availableRewards`; reaching the goal writes `convert` and makes the reward rows in one transaction. Tests: counts once, goal reached twice in one go, reverse removes an unused reward, reverse after use goes negative, paid-only, minimum price, chosen services, start and end dates, max per customer, free booking does not earn. |
 | RW-4 | Timer and hooks | `lib/rewards-timer.ts` started in `instrumentation.ts`: counts ended bookings, expires rewards. `setBookingStatus`, the owner's cancel, `setBookingPaid` and `lib/customer-cant-come.ts` call the counting code. Tests: each path. |
 | RW-5 | Owner: the page | `/dashboard/[businessId]/rewards`: list of rules as sentences with a switch each, "Add reward" as the one main action, the sheet editor, empty state = title + one action. Entry in `features/dashboard/navigation.ts`. Server actions check owner, plan and input. |
+| RW-5b | "Ends on" in the editor | A day picker with a way to clear it; the day ends in the business's time zone (the zoned-time helper moves from `features/booking/utils` to `lib/`). |
+| RW-6b | Pick another reward | When more than one reward fits the service, a choice instead of the one switch. |
 | RW-6 | Redeem when booking | Booking page: a signed-in customer with a proved phone sees their reward on the summary with "Redeem"; the total updates; a total of 0 skips the pay step. `createBooking` checks the reward again inside the booking turn and saves booking and reward together. Tests: someone else's reward refused, expired refused, wrong service refused, two tabs cannot spend one reward, cancel gives it back. |
 | RW-7 | Customer: see it | After booking and on the booking's own page: "Reward: Free Haircut" and the price before and after. New "Rewards" page in the account (`features/customer-account/nav.ts`): per business, progress ("3 of 5 visits") and rewards with their expiry. Signed out on a booking page: "Sign in to see your rewards". |
 | RW-8 | Owner: per customer | Customers page, the customer's panel: progress per rule, rewards, history, "Add visits" / "Remove visits" with a reason, "Give reward". Booking details and the add-booking panel: "Redeem" when the customer has one, and the reward shown on a booking that used one. |
@@ -169,6 +177,18 @@ In order. Each is small and ends with its own tests. All `To do`.
 5. **RW19: Free or Pro.** Plan says Free for now, movable in Admin → Plans.
 6. Nothing on wording (owner's rule, Nov 10): "Rewards", "Earn", "Redeem", "visits".
 
+### Checked (Nov 10)
+
+- Tests: rules (22), counting (19), the owner's buttons (3), the owner's actions (7), redeeming when booking (8), the reward on the booking screens (4). The related suites pass (lib, dashboard, booking, customer account, admin).
+- Type check and lint: 0 errors outside `video/`.
+- Browser, demo business, phone (375 and 320), light and dark: the Rewards page empty, the editor with More options, a rule saved and listed with its switch; the booking's details step with "Sign in to see your rewards". No sideways scroll.
+
+### Not checked
+
+- **The redeem switch in a browser.** It needs an account signed in with a phone code and an earned reward. Covered by tests; the screen itself was not seen.
+- **The build.** Another session's dev server runs in this folder; `npm run build` was not run beside it.
+- Spanish, Portuguese and French: the new words are translated at the next server start.
+
 ## Next step
 
-The owner says go. Then RW-1, one task at a time.
+RW-7 (the customer sees rewards after booking and in their account), then RW-8 (the owner's view per customer and redeeming for a customer).

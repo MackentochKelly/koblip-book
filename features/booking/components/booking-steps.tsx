@@ -1,11 +1,13 @@
 "use client"
 
+import Link from "next/link"
 import { useLocale, useTranslations } from "next-intl"
 import { Fragment, useCallback, useEffect, useRef, useState } from "react"
 import {
   CalendarIcon,
   CalendarX2Icon,
   ClockIcon,
+  GiftIcon,
   UsersIcon,
 } from "@/components/ui/icons"
 import { CopyButton } from "@/components/copy-button"
@@ -57,20 +59,25 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useElementHeight } from "@/hooks/use-element-height"
 import { useFormatDuration } from "@/hooks/use-format-duration"
+import { useRewardWords } from "@/hooks/use-reward-words"
 import { scrollParent, useScrollSpy } from "@/hooks/use-scroll-spy"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { formatPrice } from "@/lib/format-price"
+import { totalWithReward, type HeldReward } from "@/lib/reward-rules"
 import { formatClock, formatDay, todayIn } from "@/lib/format-booking-time"
 import { initials } from "@/lib/initials"
+import { ACCOUNT_ADD_PHONE_PATH } from "@/lib/my-bookings-links"
 import { languageOf } from "@/lib/page-language"
 import { PAYMENT_RULES, type PaymentOptions } from "@/lib/payment-rules"
 import { policySegment } from "@/lib/policy-rules"
 import { groupServices, showsGroups } from "@/lib/service-groups"
 import { cn } from "@/lib/utils"
 import { getPaymentDetails } from "../api/payment-details"
+import type { MyRewards } from "../api/rewards"
 import type { Availability } from "../types"
 import {
   bookingTotals,
@@ -798,6 +805,7 @@ export function BookingSummary({
   addonIds,
   member,
   slot,
+  discountMinor = 0,
   footer,
   className,
 }: {
@@ -807,6 +815,8 @@ export function BookingSummary({
   addonIds: string[]
   member: { name: string; photoUrl: string | null } | null
   slot: BookingSlot | null
+  // What a redeemed reward takes off the service (docs/plans/rewards.md).
+  discountMinor?: number
   footer?: React.ReactNode
   className?: string
 }) {
@@ -818,7 +828,14 @@ export function BookingSummary({
   const servicePrice = service
     ? priceLabel(service.priceMinor, page.currency)
     : null
-  const total = totals ? priceLabel(totals.priceMinor, page.currency) : null
+  const total = totals
+    ? priceLabel(
+        discountMinor > 0
+          ? totalWithReward(totals.priceMinor, discountMinor)
+          : totals.priceMinor,
+        page.currency
+      )
+    : null
   return (
     // The same soft grey box as the dashboard's "Start here" card.
     <Card variant="muted" className={className}>
@@ -890,6 +907,21 @@ export function BookingSummary({
                   </Fragment>
                 )
               })}
+              {discountMinor > 0 && (
+                <>
+                  <ItemSeparator className="my-0" />
+                  <Item size="xs" className="px-0">
+                    <ItemContent className="min-w-0">
+                      <ItemTitle className="font-normal">
+                        {t("reward.title")}
+                      </ItemTitle>
+                    </ItemContent>
+                    <ItemActions className="text-muted-foreground tabular-nums">
+                      {formatPrice(-discountMinor, page.currency, locale)}
+                    </ItemActions>
+                  </Item>
+                </>
+              )}
               {total && (
                 <>
                   <ItemSeparator className="my-0" />
@@ -923,11 +955,13 @@ export function BookingTotal({
   service,
   groups,
   addonIds,
+  discountMinor = 0,
 }: {
   page: BookingPage
   service: BookingService | null
   groups: BookingAddonGroup[]
   addonIds: string[]
+  discountMinor?: number
 }) {
   const t = useTranslations("public.booking")
   const priceLabel = usePriceLabel()
@@ -940,7 +974,12 @@ export function BookingTotal({
     )
   }
   const totals = bookingTotals(service, groups, addonIds)
-  const price = priceLabel(totals.priceMinor, page.currency)
+  const price = priceLabel(
+    discountMinor > 0
+      ? totalWithReward(totals.priceMinor, discountMinor)
+      : totals.priceMinor,
+    page.currency
+  )
   return (
     <div className="min-w-0 text-sm">
       <p className="truncate font-semibold">{service.name}</p>
@@ -1020,5 +1059,73 @@ export function PoliciesStep({
         )}
       </p>
     </div>
+  )
+}
+
+// The customer's reward on the details step (docs/plans/rewards.md, RW7):
+// a switch to redeem the one that saves the most on this service; or, for
+// someone the rewards cannot be shown to yet, the one step that gets them
+// there. Nothing when there is nothing to offer.
+export function RewardField({
+  rewards,
+  offer,
+  currency,
+  on,
+  onChange,
+  loginHref,
+  disabled,
+}: {
+  rewards: MyRewards
+  offer: HeldReward | null
+  currency: string
+  on: boolean
+  onChange: (on: boolean) => void
+  // Where signing in comes back to: this booking.
+  loginHref: string
+  disabled: boolean
+}) {
+  const t = useTranslations("public.booking.reward")
+  const words = useRewardWords(currency)
+  if (rewards.state === "signedOut" || rewards.state === "noPhone") {
+    const signedOut = rewards.state === "signedOut"
+    return (
+      <Item variant="muted">
+        <ItemMedia variant="icon">
+          <GiftIcon />
+        </ItemMedia>
+        <ItemContent className="min-w-0">
+          <ItemTitle>{t(signedOut ? "signIn" : "addPhone")}</ItemTitle>
+        </ItemContent>
+        <ItemActions>
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={
+              <Link href={signedOut ? loginHref : ACCOUNT_ADD_PHONE_PATH} />
+            }
+          >
+            {t(signedOut ? "signInAction" : "addPhoneAction")}
+          </Button>
+        </ItemActions>
+      </Item>
+    )
+  }
+  if (!offer) return null
+  return (
+    <Item variant="outline">
+      <Field orientation="horizontal" className="min-h-11">
+        <FieldContent>
+          <FieldLabel htmlFor="redeem-reward">
+            {t("redeem", { reward: words.reward(offer.reward) })}
+          </FieldLabel>
+        </FieldContent>
+        <Switch
+          id="redeem-reward"
+          checked={on}
+          onCheckedChange={onChange}
+          disabled={disabled}
+        />
+      </Field>
+    </Item>
   )
 }

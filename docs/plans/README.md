@@ -24,7 +24,7 @@ current.
 | [Sales connection](sales-connection.md) | To do |
 | [Payment proof](payment-proof.md) | To do |
 | [Client account](client-account.md) | In progress |
-| [Rewards](rewards.md) | To do |
+| [Rewards](rewards.md) | In progress |
 
 ## How to work with a plan
 

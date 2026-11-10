@@ -1,6 +1,6 @@
 "use client"
 
-import { useLayoutEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
@@ -30,6 +30,7 @@ import {
 import { Item, ItemContent } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { useFormatDuration } from "@/hooks/use-format-duration"
+import { loginHref } from "@/lib/auth-links"
 import { PHONE_PATTERN } from "@/lib/booking-rules"
 import {
   BOOKED_PHONE_KEY,
@@ -38,8 +39,10 @@ import {
 } from "@/lib/my-bookings-links"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { languageOf } from "@/lib/page-language"
+import { totalWithReward, usableRewards } from "@/lib/reward-rules"
 import { shareLink } from "@/lib/share-link"
 import { createBooking } from "../api/create-booking"
+import { myRewardsHere, type MyRewards } from "../api/rewards"
 import type { BookingConfirmation } from "../types"
 import {
   bookingTotals,
@@ -61,6 +64,7 @@ import {
   ExtrasStep,
   MemberStep,
   PoliciesStep,
+  RewardField,
   ServiceStep,
   TimeStep,
   usePriceLabel,
@@ -128,6 +132,14 @@ export function BookingFlow({
     payments?.asksProof && payment && payment !== PAY_LATER
   )
   const paymentReady = Boolean(payment) && (!needsProof || proof !== null)
+  // The customer's rewards here (docs/plans/rewards.md, RW7), asked from
+  // the server when the booking opens: the page itself is the same for
+  // everyone. null = not known yet.
+  const [myRewards, setMyRewards] = useState<MyRewards | null>(null)
+  const [rewardsKey, setRewardsKey] = useState(0)
+  const [redeem, setRedeem] = useState(false)
+  // Today, for what has expired: fixed while the booking is open.
+  const [openedAt] = useState(() => new Date().toISOString())
   const [closing, setClosing] = useState(false)
 
   const language = params.get("lang")
@@ -141,6 +153,18 @@ export function BookingFlow({
     setSlot(null)
   }
   const open = wanted && !closing
+  useEffect(() => {
+    if (!open) return
+    let current = true
+    void myRewardsHere(page.slug)
+      .catch((): MyRewards => ({ state: "none" }))
+      .then((found) => {
+        if (current) setMyRewards(found)
+      })
+    return () => {
+      current = false
+    }
+  }, [open, page.slug, rewardsKey])
 
   // Booked from a team member's profile (?with=): only the services they
   // do, and they are the professional, so that step is left out.
@@ -175,13 +199,28 @@ export function BookingFlow({
     : memberParam === ANYONE
       ? ANYONE
       : null
+  // The reward that saves the most on this service, redeemed when its
+  // switch is on. A booking it makes free has nothing to pay: no pay step.
+  const offer =
+    service && myRewards?.state === "mine"
+      ? (usableRewards(myRewards.rewards, service, openedAt)[0] ?? null)
+      : null
+  const redeemed = redeem ? offer : null
+  const discountMinor = redeemed?.discountMinor ?? 0
+  const free =
+    redeemed !== null &&
+    service !== null &&
+    totalWithReward(
+      bookingTotals(service, groups, addonIds).priceMinor,
+      redeemed.discountMinor
+    ) === 0
   const steps: Step[] = [
     "service",
     ...(groups.length > 0 ? (["extras"] as const) : []),
     ...(team.length > 1 && !pinnedHere ? (["member"] as const) : []),
     "time",
     "details",
-    ...(payments ? (["payment"] as const) : []),
+    ...(payments && !free ? (["payment"] as const) : []),
     ...(withPolicies ? (["policies"] as const) : []),
   ]
   // A service picked on the business page starts on the next step.
@@ -283,7 +322,7 @@ export function BookingFlow({
     if (!checkDetails(details)) return
     setSending(true)
     let proofForm: FormData | undefined
-    if (needsProof && proof) {
+    if (needsProof && proof && !free) {
       proofForm = new FormData()
       proofForm.set("file", await resizeImage(proof))
     }
@@ -299,7 +338,8 @@ export function BookingFlow({
       // Confirming on the policies step, under the line that says booking
       // agrees to them, is the agreement.
       acceptedPolicies: withPolicies,
-      ...(payments && {
+      rewardId: redeemed?.reward.id ?? null,
+      ...(payments && !free && {
         payment:
           payment === PAY_LATER
             ? { choice: "later" as const }
@@ -336,6 +376,12 @@ export function BookingFlow({
               : "proofMissing"
         )
       )
+    } else if (result.status === "invalid" && result.field === "reward") {
+      // The reward was used or expired meanwhile: the booking goes back to
+      // its full price and the rewards are asked for again.
+      setRedeem(false)
+      setRewardsKey((value) => value + 1)
+      toast.error(t("failed"))
     } else if (
       result.status === "invalid" &&
       (result.field === "policies" || result.field === "payment")
@@ -387,6 +433,7 @@ export function BookingFlow({
       service={service}
       groups={groups}
       addonIds={addonIds}
+      discountMinor={discountMinor}
     />
   )
   const extras = (
@@ -460,8 +507,23 @@ export function BookingFlow({
             addonIds={addonIds}
             member={member}
             slot={slot}
+            discountMinor={discountMinor}
             className="md:hidden"
           />
+          {myRewards && (
+            <RewardField
+              rewards={myRewards}
+              offer={offer?.reward ?? null}
+              currency={page.currency}
+              on={redeem}
+              onChange={setRedeem}
+              loginHref={loginHref({
+                next: `${pathname}?${params}`,
+                language: pageLanguage,
+              })}
+              disabled={sending}
+            />
+          )}
           <DetailsStep
             formId={DETAILS_FORM}
             sending={sending}
@@ -631,6 +693,7 @@ export function BookingFlow({
             addonIds={addonIds}
             member={member}
             slot={slot}
+            discountMinor={discountMinor}
             footer={action}
             className="sticky top-20"
           />
