@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
+import { CopyButton } from "@/components/copy-button"
 import { resizeImage } from "@/lib/resize-image"
 import {
   ArrowLeftIcon,
@@ -787,9 +788,17 @@ function BookedPage({
                           name: booking.payment.method.name,
                         })}
                       </p>
-                      <p className="break-words whitespace-pre-line select-all">
-                        {booking.payment.method.details}
-                      </p>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="min-w-0 break-words whitespace-pre-line select-all">
+                          {booking.payment.method.details}
+                        </p>
+                        <CopyButton
+                          value={booking.payment.method.details}
+                          copyLabel={t("booking.payment.copy")}
+                          copiedLabel={t("booking.payment.copied")}
+                          failedLabel={t("account.payment.failed")}
+                        />
+                      </div>
                       <p className="text-muted-foreground">
                         {booking.payment.status === "reported"
                           ? t("account.payment.reported", {

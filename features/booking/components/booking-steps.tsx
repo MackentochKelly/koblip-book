@@ -566,7 +566,7 @@ export function PaymentStep({
                     value={details[picked.id] ?? ""}
                     copyLabel={t("payment.copy")}
                     copiedLabel={t("payment.copied")}
-                    failedLabel={t("failed")}
+                    failedLabel={tProof("failed")}
                   />
                 </div>
               ) : (

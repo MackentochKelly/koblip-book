@@ -279,6 +279,8 @@ const words = {
       paid: "I've paid",
       reported: "{business} will check your payment.",
       failed: "That didn't work. Try again.",
+      copy: "Copy",
+      copied: "Copied",
       // The picture of the payment (docs/plans/payment-proof.md).
       addProof: "Add payment proof",
       replaceProof: "Replace",

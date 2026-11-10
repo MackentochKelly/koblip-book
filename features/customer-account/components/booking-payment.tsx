@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
+import { CopyButton } from "@/components/copy-button"
 import { PageSection } from "@/components/page-section"
 import { PaymentBadge } from "@/components/payment-badge"
 import { PaymentProof } from "@/components/payment-proof"
@@ -129,6 +130,14 @@ export function BookingPayment({ booking }: { booking: MyBooking }) {
               {payment.method?.details ?? t("atVisit")}
             </ItemTitle>
           </ItemContent>
+          {payment.method && (
+            <CopyButton
+              value={payment.method.details}
+              copyLabel={t("copy")}
+              copiedLabel={t("copied")}
+              failedLabel={t("failed")}
+            />
+          )}
         </Item>
         {canReportPayment(payment) && (
           <Item variant="box">
