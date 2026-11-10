@@ -66,6 +66,7 @@ import { useFormatDuration } from "@/hooks/use-format-duration"
 import { useRewardWords } from "@/hooks/use-reward-words"
 import { scrollParent, useScrollSpy } from "@/hooks/use-scroll-spy"
 import { BOOKING_RULES } from "@/lib/booking-rules"
+import { AppSelect } from "@/components/app-select"
 import { formatPrice } from "@/lib/format-price"
 import { totalWithReward, type HeldReward } from "@/lib/reward-rules"
 import { formatClock, formatDay, todayIn } from "@/lib/format-booking-time"
@@ -1068,7 +1069,9 @@ export function PoliciesStep({
 // there. Nothing when there is nothing to offer.
 export function RewardField({
   rewards,
-  offer,
+  offers,
+  chosen,
+  onChoose,
   currency,
   on,
   onChange,
@@ -1076,7 +1079,11 @@ export function RewardField({
   disabled,
 }: {
   rewards: MyRewards
-  offer: HeldReward | null
+  // What can be redeemed on this service, best first; `chosen` is the one
+  // the switch redeems.
+  offers: { reward: HeldReward; discountMinor: number }[]
+  chosen: HeldReward | null
+  onChoose: (rewardId: string) => void
   currency: string
   on: boolean
   onChange: (on: boolean) => void
@@ -1084,6 +1091,7 @@ export function RewardField({
   loginHref: string
   disabled: boolean
 }) {
+  const locale = useLocale()
   const t = useTranslations("public.booking.reward")
   const words = useRewardWords(currency)
   if (rewards.state === "signedOut" || rewards.state === "noPhone") {
@@ -1110,22 +1118,40 @@ export function RewardField({
       </Item>
     )
   }
-  if (!offer) return null
+  if (!chosen) return null
   return (
     <Item variant="outline">
-      <Field orientation="horizontal" className="min-h-11">
-        <FieldContent>
-          <FieldLabel htmlFor="redeem-reward">
-            {t("redeem", { reward: words.reward(offer.reward) })}
-          </FieldLabel>
-        </FieldContent>
-        <Switch
-          id="redeem-reward"
-          checked={on}
-          onCheckedChange={onChange}
-          disabled={disabled}
-        />
-      </Field>
+      <FieldGroup className="gap-3">
+        <Field orientation="horizontal" className="min-h-11">
+          <FieldContent>
+            <FieldLabel htmlFor="redeem-reward">
+              {t("redeem", { reward: words.reward(chosen.reward) })}
+            </FieldLabel>
+          </FieldContent>
+          <Switch
+            id="redeem-reward"
+            checked={on}
+            onCheckedChange={onChange}
+            disabled={disabled}
+          />
+        </Field>
+        {on && offers.length > 1 && (
+          <AppSelect
+            aria-label={t("title")}
+            options={offers.map(({ reward, discountMinor }) => ({
+              value: reward.id,
+              label: t("choice", {
+                reward: words.reward(reward.reward),
+                amount: formatPrice(-discountMinor, currency, locale),
+              }),
+            }))}
+            value={chosen.id}
+            onValueChange={onChoose}
+            disabled={disabled}
+            className="w-full"
+          />
+        )}
+      </FieldGroup>
     </Item>
   )
 }

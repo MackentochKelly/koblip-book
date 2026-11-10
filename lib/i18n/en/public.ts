@@ -171,6 +171,9 @@ const words = {
     reward: {
       title: "Reward",
       redeem: "Redeem {reward}",
+      // One of several rewards to pick from; the amount is negative:
+      // "Free Haircut · -$25.00".
+      choice: "{reward} · {amount}",
       // On a booking that used one; the amount is negative: "Reward -$25.00".
       off: "Reward {amount}",
       signIn: "Sign in to see your rewards",

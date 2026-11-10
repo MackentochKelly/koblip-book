@@ -415,6 +415,27 @@ export function usableRewards<Held extends HeldReward>(
     )
 }
 
+// The rewards worth choosing between, from usableRewards' list: two that
+// give the same thing are one choice (the first, which expires soonest).
+export function rewardChoices<Held extends HeldReward>(
+  usable: readonly { reward: Held; discountMinor: number }[]
+): { reward: Held; discountMinor: number }[] {
+  const seen = new Set<string>()
+  return usable.filter(({ reward, discountMinor }) => {
+    const { type, value, maxDiscountMinor, services } = reward.reward
+    const same = JSON.stringify([
+      type,
+      value,
+      maxDiscountMinor,
+      services?.map((service) => service.id).sort() ?? null,
+      discountMinor,
+    ])
+    if (seen.has(same)) return false
+    seen.add(same)
+    return true
+  })
+}
+
 // A booking's total with a reward on its service: the service's price less
 // the discount, plus its extras.
 export function totalWithReward(

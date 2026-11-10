@@ -40,7 +40,11 @@ import {
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
 import { languageOf } from "@/lib/page-language"
-import { totalWithReward, usableRewards } from "@/lib/reward-rules"
+import {
+  rewardChoices,
+  totalWithReward,
+  usableRewards,
+} from "@/lib/reward-rules"
 import { shareLink } from "@/lib/share-link"
 import { createBooking } from "../api/create-booking"
 import { myRewardsHere, type MyRewards } from "../api/rewards"
@@ -139,6 +143,8 @@ export function BookingFlow({
   const [myRewards, setMyRewards] = useState<MyRewards | null>(null)
   const [rewardsKey, setRewardsKey] = useState(0)
   const [redeem, setRedeem] = useState(false)
+  // The reward picked when several can be redeemed; null = the best one.
+  const [rewardChoice, setRewardChoice] = useState<string | null>(null)
   // Today, for what has expired: fixed while the booking is open.
   const [openedAt] = useState(() => new Date().toISOString())
   const [closing, setClosing] = useState(false)
@@ -200,12 +206,15 @@ export function BookingFlow({
     : memberParam === ANYONE
       ? ANYONE
       : null
-  // The reward that saves the most on this service, redeemed when its
-  // switch is on. A booking it makes free has nothing to pay: no pay step.
-  const offer =
+  // The rewards usable on this service, the one that saves the most first.
+  // The customer's pick, or that first one, is redeemed when its switch is
+  // on. A booking it makes free has nothing to pay: no pay step.
+  const offers =
     service && myRewards?.state === "mine"
-      ? (usableRewards(myRewards.rewards, service, openedAt)[0] ?? null)
-      : null
+      ? rewardChoices(usableRewards(myRewards.rewards, service, openedAt))
+      : []
+  const offer =
+    offers.find((item) => item.reward.id === rewardChoice) ?? offers[0] ?? null
   const redeemed = redeem ? offer : null
   const discountMinor = redeemed?.discountMinor ?? 0
   const free =
@@ -514,7 +523,9 @@ export function BookingFlow({
           {myRewards && (
             <RewardField
               rewards={myRewards}
-              offer={offer?.reward ?? null}
+              offers={offers}
+              chosen={offer?.reward ?? null}
+              onChoose={setRewardChoice}
               currency={page.currency}
               on={redeem}
               onChange={setRedeem}

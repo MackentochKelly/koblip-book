@@ -6,6 +6,7 @@ import {
   goalsReached,
   progressShown,
   redeemable,
+  rewardChoices,
   rewardDiscount,
   rewardExpiry,
   totalWithReward,
@@ -253,6 +254,19 @@ test("the reward that saves the most comes first, then the one ending soonest", 
       (item) => item.reward.id
     )
   ).toEqual(["c", "b", "a"])
+})
+
+test("rewards that give the same thing are one choice, the one ending soonest", () => {
+  const list = [
+    { id: "a", reward: percent(10), expiresAt: null },
+    { id: "b", reward: amount(1000), expiresAt: null },
+    { id: "c", reward: amount(1000), expiresAt: "2026-12-01T00:00:00.000Z" },
+  ]
+  expect(
+    rewardChoices(usableRewards(list, { id: "cut", priceMinor: 2500 }, NOW)).map(
+      (item) => item.reward.id
+    )
+  ).toEqual(["c", "a"])
 })
 
 test("the total keeps the extras and never goes under 0", () => {

@@ -52,7 +52,9 @@ test("a customer with a reward gets a switch to redeem it", () => {
   render(
     <RewardField
       rewards={{ state: "mine", rewards: [freeCut] }}
-      offer={freeCut}
+      offers={[{ reward: freeCut, discountMinor: 2500 }]}
+      chosen={freeCut}
+      onChoose={() => {}}
       currency="USD"
       on={false}
       onChange={onChange}
@@ -68,7 +70,9 @@ test("signed out, the one step is Sign in; without a phone, Add phone", () => {
   const { rerender } = render(
     <RewardField
       rewards={{ state: "signedOut" }}
-      offer={null}
+      offers={[]}
+      chosen={null}
+      onChoose={() => {}}
       currency="USD"
       on={false}
       onChange={() => {}}
@@ -83,7 +87,9 @@ test("signed out, the one step is Sign in; without a phone, Add phone", () => {
   rerender(
     <RewardField
       rewards={{ state: "noPhone" }}
-      offer={null}
+      offers={[]}
+      chosen={null}
+      onChoose={() => {}}
       currency="USD"
       on={false}
       onChange={() => {}}
@@ -96,11 +102,45 @@ test("signed out, the one step is Sign in; without a phone, Add phone", () => {
   )
 })
 
+test("with several rewards, the one to redeem can be picked once the switch is on", () => {
+  const tenOff: HeldReward = {
+    id: "w2",
+    reward: { type: "amount", value: 1000, maxDiscountMinor: null, services: null },
+    expiresAt: null,
+  }
+  const offers = [
+    { reward: freeCut, discountMinor: 2500 },
+    { reward: tenOff, discountMinor: 1000 },
+  ]
+  const field = (on: boolean) => (
+    <RewardField
+      rewards={{ state: "mine", rewards: [freeCut, tenOff] }}
+      offers={offers}
+      chosen={tenOff}
+      onChoose={() => {}}
+      currency="USD"
+      on={on}
+      onChange={() => {}}
+      loginHref="/login"
+      disabled={false}
+    />
+  )
+  const { rerender } = render(field(false))
+  expect(screen.getByRole("switch", { name: "Redeem $10.00 off" })).toBeTruthy()
+  expect(screen.queryByRole("combobox")).toBeNull()
+  rerender(field(true))
+  expect(
+    screen.getByRole("combobox", { name: "Reward" }).textContent
+  ).toContain("$10.00 off · -$10.00")
+})
+
 test("with nothing to offer, nothing shows", () => {
   const { container } = render(
     <RewardField
       rewards={{ state: "mine", rewards: [] }}
-      offer={null}
+      offers={[]}
+      chosen={null}
+      onChoose={() => {}}
       currency="USD"
       on={false}
       onChange={() => {}}
