@@ -12,6 +12,11 @@ vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }))
 vi.mock("../api/actions", () => ({ cancelBooking: vi.fn() }))
 vi.mock("../api/booking-actions", () => ({ setBookingStatus: vi.fn() }))
 vi.mock("../api/payment-actions", () => ({ setBookingPaid: vi.fn() }))
+vi.mock("../api/customer-reward-actions", () => ({
+  bookingRewards: vi.fn(async () => []),
+  redeemForBooking: vi.fn(),
+  rewardsOfCustomer: vi.fn(async () => []),
+}))
 // Only the Assistant widget matters here; the board's drag and drop does not.
 vi.mock("./widget-board", () => ({
   WidgetBoard: ({ widgets }: { widgets: { today: ReactNode } }) => (

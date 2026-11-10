@@ -334,6 +334,7 @@ const words = {
       phone: "bad phone number",
       note: "note too long",
       addons: "bad add-ons",
+      reward: "that reward can't be used",
     },
     invalidFallback: "invalid input",
     failed: "Could not book: something went wrong.",

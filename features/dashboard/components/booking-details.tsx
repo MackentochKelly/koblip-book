@@ -4,9 +4,11 @@ import { PaymentProof } from "@/components/payment-proof"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useFormatDuration } from "@/hooks/use-format-duration"
+import { useRewardWords } from "@/hooks/use-reward-words"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
 import { proofDeleteDate } from "@/lib/payment-rules"
+import type { BookingReward } from "@/lib/rewards"
 import type { OwnerBooking } from "../types"
 import { BookingStatusBadge } from "./booking-status-badge"
 import { ContactButtons } from "./contact-buttons"
@@ -25,13 +27,18 @@ function price(
 // One booking: when (and why, once cancelled), what with its extras, the
 // total, how the customer chose to pay outside the app (and whether they
 // did, which only the owner says: `onPaid`), the owner's note and quick
-// ways to reach the customer.
+// ways to reach the customer. A reward shows as what it took off; `offer`
+// is the customer's reward the owner can still redeem here (RW8).
 export function BookingDetails({
   booking,
   onPaid,
+  offer,
+  onRedeem,
   pending = false,
 }: {
   booking: OwnerBooking
+  offer?: BookingReward | null
+  onRedeem?: (offer: BookingReward) => void
   // Marks the booking paid, or not paid after all. Left out: read only.
   onPaid?: (paid: boolean) => void
   pending?: boolean
@@ -41,6 +48,8 @@ export function BookingDetails({
   const formatDuration = useFormatDuration()
   const free = t("details.free")
   const total = price(booking.priceMinor, booking.currency, locale, free)
+  const rewards = useTranslations("owner.rewards")
+  const words = useRewardWords(booking.currency)
   return (
     <div className="flex flex-col gap-4 text-sm">
       <div className="flex flex-wrap items-center gap-2">
@@ -73,6 +82,18 @@ export function BookingDetails({
             )}
           </div>
         ))}
+        {!!booking.rewardDiscountMinor && (
+          <div className="flex justify-between gap-3 text-muted-foreground">
+            <span className="min-w-0">{rewards("off")}</span>
+            <span>
+              {formatPrice(
+                -booking.rewardDiscountMinor,
+                booking.currency,
+                locale
+              )}
+            </span>
+          </div>
+        )}
         <div className="flex items-start justify-between gap-3 text-muted-foreground">
           <span className="min-w-0">
             {formatDuration(booking.durationMinutes)}
@@ -83,6 +104,16 @@ export function BookingDetails({
             <span className="font-medium text-foreground">{total}</span>
           )}
         </div>
+        {offer && onRedeem && (
+          <Button
+            variant="outline"
+            className="self-start"
+            disabled={pending}
+            onClick={() => onRedeem(offer)}
+          >
+            {rewards("redeem", { reward: words.reward(offer.reward) })}
+          </Button>
+        )}
       </div>
       {booking.payment && (
         <>

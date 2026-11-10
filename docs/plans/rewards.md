@@ -2,7 +2,7 @@
 
 Each business sets its own rewards for coming back: "after 5 visits, 1 free haircut", "after 10 visits, 20% off", "after $300 spent, $25 off". Customers earn by booking and redeem a reward on a later booking. Asked by the owner (Nov 10): "After (# of service) get (# of service) free, or (#) percentage etc... very flexible, this is a SaaS."
 
-**Status (Nov 10):** The owner said go. RW-1 to RW-6 are built and committed, with tests: rules can be made, visits are counted, and a signed-in customer can redeem when booking. RW-7 to RW-16 are to do. Nothing pushed or deployed. The live server needs the new migration (`0076_rewards`) at the next deploy.
+**Status (Nov 10):** The owner said go. RW-1 to RW-8 are built and committed, with tests: rules can be made, visits are counted, a signed-in customer can redeem when booking and sees their rewards in their account, and the owner sees each customer's rewards, changes them by hand and redeems for them. RW-9 to RW-16 are to do. Nothing pushed or deployed. The live server needs the new migration (`0076_rewards`) at the next deploy.
 
 ## Rules that stay
 
@@ -110,7 +110,7 @@ One migration, new tables and new fields only. SQLite, Drizzle, in `lib/db/schem
 
 ## Tasks
 
-In order. Each is small and ends with its own tests. RW-1 to RW-6: `Done` (Nov 10). The rest: `To do`.
+In order. Each is small and ends with its own tests. RW-1 to RW-8: `Done` (Nov 10). The rest: `To do`.
 
 | ID | Task | Done when |
 | --- | --- | --- |
@@ -180,15 +180,25 @@ In order. Each is small and ends with its own tests. RW-1 to RW-6: `Done` (Nov 1
 ### Checked (Nov 10)
 
 - Tests: rules (22), counting (19), the owner's buttons (3), the owner's actions (7), redeeming when booking (8), the reward on the booking screens (4). The related suites pass (lib, dashboard, booking, customer account, admin).
+- RW-7 and RW-8 tests: the account's Rewards page (3), giving by hand and redeeming on a made booking (3), the owner's customer actions (6), the owner's add-booking with a reward (1). Whole suite: 2,180 pass.
+- Browser, demo business, phone (375): a customer's panel with Rewards, "Add visits" with a reason (5 visits made the reward and the count went back to 0), History; a booking's details with "Redeem Free service", then the reward line and "Free".
 - Type check and lint: 0 errors outside `video/`.
 - Browser, demo business, phone (375 and 320), light and dark: the Rewards page empty, the editor with More options, a rule saved and listed with its switch; the booking's details step with "Sign in to see your rewards". No sideways scroll.
 
 ### Not checked
 
 - **The redeem switch in a browser.** It needs an account signed in with a phone code and an earned reward. Covered by tests; the screen itself was not seen.
+- **The account's Rewards page and the reward line on the customer's booking, in a browser.** They need a signed-in customer account. Covered by tests.
+- **The Redeem switch in the owner's add-booking form, in a browser.** Covered by tests on its two server parts.
 - **The build.** Another session's dev server runs in this folder; `npm run build` was not run beside it.
 - Spanish, Portuguese and French: the new words are translated at the next server start.
 
 ## Next step
 
-RW-7 (the customer sees rewards after booking and in their account), then RW-8 (the owner's view per customer and redeeming for a customer).
+RW-9 (the owner's Activity tab), then RW-10 (the Rewards block on the public page) and RW-11 (the bell when a reward is earned).
+
+### Left from RW-7 and RW-8
+
+- A booking made free by the owner's Redeem keeps its "how to pay" choice; the owner marks it paid or leaves it. Clearing it would also need putting it back on cancel.
+- Redeeming by the owner is not undone by a button: cancelling the booking gives the reward back.
+- The owner's Redeem writes no history line of its own; the booking shows the reward.

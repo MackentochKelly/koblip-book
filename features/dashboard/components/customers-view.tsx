@@ -45,10 +45,21 @@ import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
 import { initials } from "@/lib/initials"
-import type { OwnerBooking, OwnerCustomer } from "../types"
+import type {
+  OwnerBooking,
+  OwnerCustomer,
+  OwnerCustomerRewards,
+} from "../types"
 import { addCustomer } from "../api/customer-actions"
 import { BookingStatusBadge } from "./booking-status-badge"
 import { ContactButtons } from "./contact-buttons"
+import {
+  CustomerRewards,
+  REWARD_CHANGE_FORM,
+  RewardChangeForm,
+  useRewardChangeTitle,
+  type RewardChange,
+} from "./customer-rewards"
 import { useTabBarAction } from "./tab-bar-action"
 import { noAutofill } from "@/lib/no-autofill"
 
@@ -60,11 +71,14 @@ export function CustomersView({
   customers,
   openKey,
   openBookings,
+  openRewards,
 }: {
   businessId: string
   customers: OwnerCustomer[]
   openKey: string | null
   openBookings: OwnerBooking[]
+  // The open customer's rewards; null when there are none to show.
+  openRewards: OwnerCustomerRewards | null
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -75,6 +89,11 @@ export function CustomersView({
   const [closing, setClosing] = useState(false)
   const [adding, setAdding] = useState(false)
   const [formKey, setFormKey] = useState(0)
+  // A change by hand to the open customer's rewards: its form takes the
+  // panel's place until it is saved or cancelled.
+  const [change, setChange] = useState<RewardChange | null>(null)
+  const [changing, setChanging] = useState(false)
+  const changeTitle = useRewardChangeTitle()
   const startAdding = () => {
     setFormKey((value) => value + 1)
     setAdding(true)
@@ -101,6 +120,7 @@ export function CustomersView({
     })
   }
   const close = () => {
+    setChange(null)
     setClosing(true)
     router.replace(pathname, { scroll: false })
   }
@@ -183,10 +203,46 @@ export function CustomersView({
       <ResponsivePanel
         open={opened !== null && !closing}
         onClose={close}
-        title={opened?.name ?? t("customer")}
+        title={change ? changeTitle(change) : (opened?.name ?? t("customer"))}
+        footer={
+          change && (
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                disabled={changing}
+                onClick={() => setChange(null)}
+              >
+                {common("cancel")}
+              </Button>
+              <Button
+                type="submit"
+                form={REWARD_CHANGE_FORM}
+                disabled={changing}
+              >
+                {changing && <Spinner data-icon="inline-start" />}
+                {common("save")}
+              </Button>
+            </div>
+          )
+        }
       >
-        {opened && (
-          <CustomerDetails customer={opened} bookings={openBookings} />
+        {opened && change ? (
+          <RewardChangeForm
+            businessId={businessId}
+            customerKey={opened.key}
+            change={change}
+            onPending={setChanging}
+            onDone={() => setChange(null)}
+          />
+        ) : (
+          opened && (
+            <CustomerDetails
+              customer={opened}
+              bookings={openBookings}
+              rewards={openRewards}
+              onRewardChange={setChange}
+            />
+          )
         )}
       </ResponsivePanel>
 
@@ -203,9 +259,13 @@ export function CustomersView({
 function CustomerDetails({
   customer,
   bookings,
+  rewards,
+  onRewardChange,
 }: {
   customer: OwnerCustomer
   bookings: OwnerBooking[]
+  rewards: OwnerCustomerRewards | null
+  onRewardChange: (change: RewardChange) => void
 }) {
   const t = useTranslations("owner.bookings.customers")
   const locale = useLocale()
@@ -233,6 +293,16 @@ function CustomerDetails({
         <>
           <p className="text-muted-foreground">{customer.phone}</p>
           <ContactButtons phone={customer.phone} />
+        </>
+      )}
+      {rewards && (
+        <>
+          <Separator />
+          <CustomerRewards
+            rewards={rewards}
+            currency={customer.currency}
+            onChange={onRewardChange}
+          />
         </>
       )}
       <Separator />

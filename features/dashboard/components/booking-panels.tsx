@@ -33,7 +33,12 @@ import type {
 } from "@/types/owner-booking"
 import { cancelBooking } from "../api/actions"
 import { setBookingStatus } from "../api/booking-actions"
+import {
+  bookingRewards,
+  redeemForBooking,
+} from "../api/customer-reward-actions"
 import { setBookingPaid } from "../api/payment-actions"
+import type { BookingReward } from "@/lib/rewards"
 import type { OwnerBooking } from "../types"
 import { type BookingAction, bookingActions } from "../utils/booking-filters"
 import { AddBookingPanel, type AddBookingOptions } from "./add-booking-panel"
@@ -65,6 +70,12 @@ export function useBookingPanels({
   // When the details opened, read in the tap handler: a booking that has
   // started by then can be marked done or no-show.
   const [openedAt, setOpenedAt] = useState("")
+  // The opened booking's customer has a reward the owner can redeem on it
+  // (docs/plans/rewards.md, RW8); looked up when the details open.
+  const [offer, setOffer] = useState<{
+    bookingId: string
+    reward: BookingReward
+  } | null>(null)
   const [adding, setAdding] = useState(false)
   const [moving, setMoving] = useState(false)
   const [cancelling, setCancelling] = useState<OwnerBooking | null>(null)
@@ -73,6 +84,7 @@ export function useBookingPanels({
   const [pending, startTransition] = useTransition()
   const router = useRouter()
   const t = useTranslations("owner.bookings")
+  const rewards = useTranslations("owner.rewards")
   const locale = useLocale()
 
   const run = (task: () => Promise<{ ok: boolean }>, done: string) =>
@@ -93,6 +105,14 @@ export function useBookingPanels({
     setOpened(booking)
     setOpenedAt(new Date(at).toISOString())
     setDetailsOpen(true)
+    setOffer(null)
+    if (booking.status !== "cancelled" && !booking.rewardDiscountMinor) {
+      void bookingRewards(businessId, booking.id)
+        .catch(() => [])
+        .then(([reward]) => {
+          if (reward) setOffer({ bookingId: booking.id, reward })
+        })
+    }
   }
 
   // One action, from the details' footer or a row's menu.
@@ -158,6 +178,13 @@ export function useBookingPanels({
           <BookingDetails
             booking={opened}
             pending={pending}
+            offer={offer?.bookingId === opened.id ? offer.reward : null}
+            onRedeem={(reward) =>
+              run(
+                () => redeemForBooking(businessId, opened.id, reward.id),
+                rewards("redeemed")
+              )
+            }
             onPaid={(paid) =>
               run(
                 () => setBookingPaid(businessId, opened.id, paid),

@@ -38,6 +38,38 @@ const rewards = {
     useNumber: "Use a number",
     usePercent: "Use a number from 1 to 100",
   },
+  // On a booking: the owner redeems for the customer (RW8).
+  redeem: "Redeem {reward}",
+  redeemed: "Redeemed",
+  // What a reward took off a booking; the amount is negative.
+  off: "Reward",
+  // One customer's rewards, in their panel on the Customers page.
+  customer: {
+    visits: "{done, number} of {goal, plural, one {# visit} other {# visits}}",
+    spent: "{done} of {goal}",
+    expires: "Expires {day}",
+    held: "On a booking",
+    addVisits: "Add visits",
+    removeVisits: "Remove visits",
+    addAmount: "Add amount",
+    removeAmount: "Remove amount",
+    give: "Give reward",
+    given: "Reward given",
+    count: "Visits",
+    amount: "Amount",
+    reason: "Reason",
+    addReason: "Add a reason",
+    history: "History",
+    types: {
+      earn: "Booking counted",
+      reverse: "Booking taken back",
+      adjust: "Changed by hand",
+      given: "Reward given",
+      convert: "Reward earned",
+      unconvert: "Reward taken back",
+      expire: "Reward expired",
+    },
+  },
 }
 
 export default rewards

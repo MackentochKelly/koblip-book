@@ -13,6 +13,7 @@ export interface OwnerBookingInput {
   allowConflict: boolean // true = the owner said "Book anyway"
   whatsappOptIn?: boolean // the customer agreed to WhatsApp booking messages
   language?: PageLanguage // the language their messages go in
+  rewardId?: string | null // the customer's reward to redeem (docs/plans/rewards.md, RW8)
 }
 export type OwnerBookingResult =
   | { status: "booked"; bookingId: string }
@@ -28,6 +29,7 @@ export type OwnerBookingResult =
         | "name"
         | "phone"
         | "note"
+        | "reward"
     }
   | { status: "failed" }
 // The owner moves a booking that has not started to another day or time.

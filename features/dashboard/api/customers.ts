@@ -7,8 +7,14 @@ import { customerKey } from "@/lib/customer-key"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { paymentOf } from "@/lib/payment-rules"
+import { hasFeature } from "@/lib/plan-access"
+import { customerRewards, rewardHistory } from "@/lib/rewards"
 import { bookingAddons, bookings, businesses, customers } from "@/lib/db/schema"
-import type { OwnerBooking, OwnerCustomer } from "../types"
+import type {
+  OwnerBooking,
+  OwnerCustomer,
+  OwnerCustomerRewards,
+} from "../types"
 
 function zonedDateTime(
   iso: string,
@@ -64,6 +70,7 @@ export function toOwnerBooking(
     cancelReason: row.cancelReason,
     addons,
     payment: paymentOf(row),
+    rewardDiscountMinor: row.rewardDiscountMinor,
   }
 }
 
@@ -275,4 +282,50 @@ export async function getFirstVisits(
       zonedDateTime(row.firstStart, business.timezone).date,
     ])
   )
+}
+
+// How many of the latest changes the customer's panel lists.
+const MAX_REWARD_HISTORY = 20
+
+// One customer's rewards (docs/plans/rewards.md, RW-8): where they are on
+// each rule, what they can redeem, and the latest changes. Null when the
+// business's plan has no rewards or there is nothing to show.
+export async function getCustomerRewards(
+  businessId: string,
+  key: string
+): Promise<OwnerCustomerRewards | null> {
+  const business = await ownedBusinessOrNotFound(businessId)
+  if (!(await hasFeature(business.id, "rewards"))) return null
+  const [mine, history] = await Promise.all([
+    customerRewards(business.id, key),
+    rewardHistory(business.id, key, MAX_REWARD_HISTORY),
+  ])
+  if (!mine.progress.length && !mine.rewards.length) return null
+  const now = new Date().toISOString()
+  const day = (iso: string) => zonedDateTime(iso, business.timezone).date
+  return {
+    rules: mine.progress,
+    rewards: mine.rewards
+      .filter(
+        (reward) =>
+          reward.status === "held" ||
+          (reward.status === "available" &&
+            (reward.expiresAt === null || reward.expiresAt > now))
+      )
+      .map((reward) => ({
+        id: reward.id,
+        reward: reward.reward,
+        held: reward.status === "held",
+        expires: reward.expiresAt === null ? null : day(reward.expiresAt),
+      })),
+    history: history.map((event) => ({
+      id: event.id,
+      ruleId: event.ruleId,
+      type: event.type,
+      amount: event.amount,
+      byHand: event.actor !== "system",
+      note: event.note,
+      date: day(event.createdAt),
+    })),
+  }
 }

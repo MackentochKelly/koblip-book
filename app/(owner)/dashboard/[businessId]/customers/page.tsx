@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import {
   getCustomerBookings,
+  getCustomerRewards,
   getCustomers,
 } from "@/features/dashboard/api/customers"
 import { CustomersView } from "@/features/dashboard/components/customers-view"
@@ -18,9 +19,10 @@ export default async function CustomersPage({
   const { businessId } = await params
   const { customer } = await searchParams
   const openKey = typeof customer === "string" ? customer : null
-  const [customers, openBookings] = await Promise.all([
+  const [customers, openBookings, openRewards] = await Promise.all([
     getCustomers(businessId),
     openKey ? getCustomerBookings(businessId, openKey) : Promise.resolve([]),
+    openKey ? getCustomerRewards(businessId, openKey) : Promise.resolve(null),
   ])
   return (
     <CustomersView
@@ -28,6 +30,7 @@ export default async function CustomersPage({
       customers={customers}
       openKey={openKey}
       openBookings={openBookings}
+      openRewards={openRewards}
     />
   )
 }

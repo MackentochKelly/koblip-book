@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useEffectEvent, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Field,
+  FieldContent,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -32,8 +33,10 @@ import { Input } from "@/components/ui/input"
 import { PhoneInput } from "@/components/phone-input"
 import { AppSelect } from "@/components/app-select"
 import { Spinner } from "@/components/ui/spinner"
+import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { useFormatDuration } from "@/hooks/use-format-duration"
+import { useRewardWords } from "@/hooks/use-reward-words"
 import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
 import { addDaysTo } from "@/lib/format-booking-time"
 import type {
@@ -44,12 +47,16 @@ import type {
 } from "@/types/owner-booking"
 import { noAutofill } from "@/lib/no-autofill"
 import { languageOf } from "@/lib/page-language"
+import type { BookingReward } from "@/lib/rewards"
+import { rewardsOfCustomer } from "../api/customer-reward-actions"
 import type { OwnerServiceCategory } from "../types"
 import { serviceSelectOptions } from "../utils/service-options"
 import { BookingWhen, firstFreeDay, useFreeTimes } from "./booking-when"
 
 const FORM = "add-booking-form"
 const ANYONE = "any"
+// How long the typing rests before the customer's rewards are looked up.
+const REWARD_LOOKUP_MS = 400
 
 type InvalidField = Extract<OwnerBookingResult, { status: "invalid" }>["field"]
 
@@ -75,6 +82,7 @@ export interface AddBookingOptions {
   today: string
   // The business sends WhatsApp booking messages: ask whether the customer agreed.
   whatsapp: boolean
+  currency: string
 }
 
 // A booking the owner adds: a walk-in or a phone call. It offers the free
@@ -101,6 +109,7 @@ export function AddBookingPanel({
   const [pending, startTransition] = useTransition()
   const [formKey, setFormKey] = useState(0)
   const [invalid, setInvalid] = useState<InvalidField | null>(null)
+  const [rewardLookups, setRewardLookups] = useState(0)
   const [conflict, setConflict] = useState<{
     input: OwnerBookingInput
     reason: "closed" | "busy"
@@ -120,6 +129,11 @@ export function AddBookingPanel({
         router.refresh()
       } else if (result.status === "conflict") {
         setConflict({ input, reason: result.reason })
+      } else if (result.status === "invalid" && result.field === "reward") {
+        // The reward went meanwhile: the form looks its customer up again.
+        setConflict(null)
+        setRewardLookups((value) => value + 1)
+        toast.error(t("failed"))
       } else if (result.status === "invalid") {
         setConflict(null)
         setInvalid(result.field)
@@ -148,6 +162,7 @@ export function AddBookingPanel({
           options={options}
           invalid={invalid}
           onInvalid={setInvalid}
+          rewardLookups={rewardLookups}
           onSubmit={send}
           findFreeTimes={findFreeTimes}
         />
@@ -189,6 +204,7 @@ function BookingForm({
   options,
   invalid,
   onInvalid,
+  rewardLookups,
   onSubmit,
   findFreeTimes,
 }: {
@@ -196,6 +212,8 @@ function BookingForm({
   options: AddBookingOptions
   invalid: InvalidField | null
   onInvalid: (field: InvalidField | null) => void
+  // Goes up when the customer's rewards must be looked up again.
+  rewardLookups: number
   onSubmit: (input: OwnerBookingInput) => void
   findFreeTimes: (input: OwnerFreeTimesInput) => Promise<OwnerFreeTimes>
 }) {
@@ -219,6 +237,39 @@ function BookingForm({
   const [note, setNote] = useState("")
   const [whatsappOptIn, setWhatsappOptIn] = useState(false)
   const [addonIds, setAddonIds] = useState<string[]>([])
+  // The customer's reward the owner can redeem on this booking
+  // (docs/plans/rewards.md, RW8), looked up once the typing rests: it
+  // belongs to the phone, or to the name without one.
+  const [offer, setOffer] = useState<BookingReward | null>(null)
+  const [redeem, setRedeem] = useState(false)
+  const words = useRewardWords(options.currency)
+  const rewards = useTranslations("owner.rewards")
+  const customer = [serviceId, name.trim(), phone.trim(), rewardLookups].join(
+    "\n"
+  )
+  const findOffer = useEffectEvent(() =>
+    rewardsOfCustomer(businessId, {
+      name: name.trim(),
+      phone: phone.trim() || null,
+      serviceId,
+    })
+  )
+  useEffect(() => {
+    let current = true
+    const timer = setTimeout(() => {
+      findOffer()
+        .catch(() => [])
+        .then(([found]) => {
+          if (current) setOffer(found ?? null)
+        })
+    }, REWARD_LOOKUP_MS)
+    return () => {
+      current = false
+      clearTimeout(timer)
+      setOffer(null)
+      setRedeem(false)
+    }
+  }, [customer])
   // Other time (`anyTime`) shows the plain day and time fields instead.
   const [anyTime, setAnyTime] = useState(false)
   const teamMemberId = memberId === ANYONE ? null : memberId
@@ -272,6 +323,7 @@ function BookingForm({
           allowConflict: false,
           whatsappOptIn: options.whatsapp && !!phone.trim() && whatsappOptIn,
           language: languageOf(locale),
+          rewardId: redeem && offer ? offer.id : null,
         })
       }}
     >
@@ -432,6 +484,20 @@ function BookingForm({
             <FieldLabel htmlFor="add-whatsapp" className="font-normal">
               {t("whatsappOptIn")}
             </FieldLabel>
+          </Field>
+        )}
+        {offer && (
+          <Field orientation="horizontal" className="min-h-11">
+            <FieldContent>
+              <FieldLabel htmlFor="add-redeem">
+                {rewards("redeem", { reward: words.reward(offer.reward) })}
+              </FieldLabel>
+            </FieldContent>
+            <Switch
+              id="add-redeem"
+              checked={redeem}
+              onCheckedChange={setRedeem}
+            />
           </Field>
         )}
         <Field data-invalid={error("note")}>

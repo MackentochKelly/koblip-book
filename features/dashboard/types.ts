@@ -3,6 +3,7 @@ import type { CancelReason } from "@/lib/booking-rules"
 import type { PolicyKind, PolicyPointIcon } from "@/lib/policy-rules"
 import type { GoogleEventColor } from "@/lib/google-calendar-colors"
 import type { BookingPayment } from "@/lib/payment-rules"
+import type { RewardCopy, RewardEventType, RewardRule } from "@/lib/reward-rules"
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string }
 export interface OwnedBusiness { id: string; slug: string; name: string; address: string | null; category: string | null; photoUrl: string | null }
 export type BookingStatus = "confirmed" | "cancelled" | "completed" | "no_show"
@@ -17,6 +18,17 @@ export interface OwnerBooking {
   // How the customer chose to pay outside the app and where that stands;
   // none = the booking tracks no payment (lib/payment-rules.ts).
   payment?: BookingPayment | null
+  // What a redeemed reward took off; priceMinor is already what is to pay.
+  rewardDiscountMinor?: number | null
+}
+// One customer's rewards, for the owner (docs/plans/rewards.md, RW-8).
+export interface OwnerCustomerRewards {
+  // Each rule they are on: `balance` may be under 0 or over the goal.
+  rules: { rule: RewardRule; balance: number }[]
+  // Ready to redeem, or held by a booking still ahead. `expires`: "YYYY-MM-DD".
+  rewards: { id: string; reward: RewardCopy; held: boolean; expires: string | null }[]
+  // The latest changes, newest first. `given`: a reward given by hand.
+  history: { id: string; ruleId: string; type: RewardEventType; amount: number; byHand: boolean; note: string | null; date: string }[]
 }
 export interface AddonOptionInput { id: string | null; name: string; description: string | null; priceMinor: number | null; durationMinutes: number } // id null = new
 export interface AddonGroupInput { name: string; prompt: string; minSelect: number; maxSelect: number | null; serviceIds: string[]; options: AddonOptionInput[] } // options in display order

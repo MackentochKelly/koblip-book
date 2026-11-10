@@ -80,6 +80,7 @@ export default async function AllBookingsPage({
           addonGroups,
           today,
           whatsapp,
+          currency: business.currency,
         }}
         createBooking={createOwnerBooking}
         findFreeTimes={findOwnerFreeTimes}

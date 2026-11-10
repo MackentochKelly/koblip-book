@@ -337,3 +337,59 @@ test("a page refresh that throws after the save still reports booked", async () 
     .where(eq(bookings.id, result.bookingId))
   expect(row).toMatchObject({ customerName: "Walk In", status: "confirmed" })
 })
+
+test("the owner redeems the customer's reward on the booking they add", async () => {
+  const { db } = await import("@/lib/db")
+  const { rewardRules, rewards } = await import("@/lib/db/schema")
+  await db.insert(rewardRules).values({
+    id: "rule",
+    businessId: "biz-owner",
+    earnType: "visit",
+    goal: 5,
+    rewardType: "free",
+    startsAt: "2026-01-01T00:00:00.000Z",
+  })
+  await db.insert(rewards).values({
+    id: "won",
+    businessId: "biz-owner",
+    ruleId: "rule",
+    customerKey: "p:18095550000",
+    reward: { type: "free", value: null, maxDiscountMinor: null, services: null },
+    earnedAt: "2026-05-01T00:00:00.000Z",
+  })
+  const input = {
+    businessId: "biz-owner",
+    serviceId: "svc-all",
+    teamMemberId: null,
+    addonIds: [],
+    date: "2026-06-01",
+    time: "15:00",
+    note: null,
+    allowConflict: true,
+    rewardId: "won",
+  }
+  // Someone else's reward is refused, and nothing is saved.
+  expect(
+    await createOwnerBooking({ ...input, name: "Bo", phone: "+18095551111" })
+  ).toEqual({ status: "invalid", field: "reward" })
+  const result = await createOwnerBooking({
+    ...input,
+    name: "Ana",
+    phone: "+18095550000",
+  })
+  expect(result.status).toBe("booked")
+  if (result.status !== "booked") return
+  const [row] = await db
+    .select()
+    .from(bookings)
+    .where(eq(bookings.id, result.bookingId))
+  expect(row).toMatchObject({
+    priceMinor: 0,
+    rewardId: "won",
+    rewardDiscountMinor: 1000,
+  })
+  const [held] = await db.select().from(rewards).where(eq(rewards.id, "won"))
+  expect(held.status).toBe("held")
+  await db.delete(bookings).where(eq(bookings.id, result.bookingId))
+  await db.delete(rewardRules)
+})

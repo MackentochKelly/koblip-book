@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, expect, test, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
+  bookingAddons,
   bookings,
   businesses,
   rewardEvents,
@@ -26,9 +27,13 @@ const {
   adjustProgress,
   availableRewards,
   customerRewards,
+  giveReward,
   holdRewardWrite,
   recountBooking,
+  redeemOnBooking,
+  rewardHistory,
   rewardRulesFor,
+  rewardsForBooking,
   sweepRewards,
 } = await import("./rewards")
 
@@ -400,4 +405,104 @@ test("another customer's visits are their own", async () => {
   )
   expect(await balance()).toBe(2)
   expect((await customerRewards("biz", "p:1999")).progress[0].balance).toBe(1)
+})
+
+test("a reward given by hand is in the history with who and why, and moves no count", async () => {
+  await rule({ rewardCount: 2, expiresDays: 30 })
+  await visits(1)
+  const given = await giveReward({
+    businessId: "biz",
+    ruleId: "rule",
+    customerKey: ANA,
+    actor: "owner",
+    actorUserId: "u1",
+    note: "Birthday",
+    now: NOW,
+  })
+  expect(given).toBe(true)
+  expect(await statuses()).toEqual(["available", "available"])
+  expect(await balance()).toBe(1)
+  const [latest] = await rewardHistory("biz", ANA, 10)
+  expect(latest).toMatchObject({
+    type: "adjust",
+    amount: 0,
+    actor: "owner",
+    actorUserId: "u1",
+    note: "Birthday",
+  })
+  // Nothing from a rule that was removed.
+  await db.update(rewardRules).set({ status: "ended" })
+  expect(
+    await giveReward({
+      businessId: "biz",
+      ruleId: "rule",
+      customerKey: ANA,
+      actor: "owner",
+      actorUserId: "u1",
+      note: null,
+    })
+  ).toBe(false)
+})
+
+test("the owner redeems on a booking already made: its service is free, its extra stays", async () => {
+  await rule({ goal: 1 })
+  await visits(1)
+  const id = await visit(-1, { priceMinor: 3000 })
+  await db.insert(bookingAddons).values({
+    businessId: "biz",
+    bookingId: id,
+    name: "Wash",
+    priceMinor: 500,
+    durationMinutes: 0,
+  })
+  const [offer] = await rewardsForBooking("biz", id, NOW)
+  expect(offer.discountMinor).toBe(2500)
+  expect(
+    await redeemOnBooking({
+      businessId: "biz",
+      bookingId: id,
+      rewardId: offer.id,
+      now: NOW,
+    })
+  ).toBe(true)
+  const [row] = await db.select().from(bookings).where(eq(bookings.id, id))
+  expect(row).toMatchObject({
+    rewardId: offer.id,
+    rewardDiscountMinor: 2500,
+    priceMinor: 500,
+  })
+  expect(await statuses()).toEqual(["held"])
+  // Once redeemed, nothing more to offer, and never twice.
+  expect(await rewardsForBooking("biz", id, NOW)).toEqual([])
+  expect(
+    await redeemOnBooking({
+      businessId: "biz",
+      bookingId: id,
+      rewardId: offer.id,
+      now: NOW,
+    })
+  ).toBe(false)
+})
+
+test("redeemed after the visit, the reward is used at once and that free visit gives its count back", async () => {
+  await rule({ goal: 2 })
+  const [, second] = await visits(2)
+  const third = await visit(0.5)
+  await recountBooking(third, NOW)
+  expect(await balance()).toBe(1)
+  const [offer] = await rewardsForBooking("biz", third, NOW)
+  await redeemOnBooking({
+    businessId: "biz",
+    bookingId: third,
+    rewardId: offer.id,
+    now: NOW,
+  })
+  expect(await statuses()).toEqual(["used"])
+  expect(await balance()).toBe(0)
+  // Another customer's reward, or a cancelled booking, takes none.
+  await db
+    .update(bookings)
+    .set({ status: "cancelled" })
+    .where(eq(bookings.id, second))
+  expect(await rewardsForBooking("biz", second, NOW)).toEqual([])
 })

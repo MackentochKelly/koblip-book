@@ -152,6 +152,7 @@ export default async function BookingsPage({ params }: Props) {
           addonGroups,
           today,
           whatsapp,
+          currency: business.currency,
         }}
         createBooking={createOwnerBooking}
         findFreeTimes={findOwnerFreeTimes}

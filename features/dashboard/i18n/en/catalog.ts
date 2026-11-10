@@ -5,6 +5,7 @@ const catalog = {
     add: "Add",
     edit: "Edit",
     save: "Save",
+    cancel: "Cancel",
     more: "More",
     // Past the first few services or extras.
     showMore: "Show {count, number} more",

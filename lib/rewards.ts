@@ -17,6 +17,7 @@ import { EARNING_STATUSES } from "./booking-rules"
 import { db } from "./db"
 import { saveAll } from "./db/save-all"
 import {
+  bookingAddons,
   bookings,
   rewardEvents,
   rewardRuleServices,
@@ -32,8 +33,11 @@ import {
   REWARD_RULES,
   rewardCopy,
   rewardExpiry,
+  totalWithReward,
+  usableRewards,
   type HeldReward,
   type RewardActor,
+  type RewardCopy,
   type RewardRule,
   type RewardServices,
   type RewardType,
@@ -558,6 +562,201 @@ export async function adjustProgress(input: {
     await saveAll([db.insert(rewardEvents).values(event), ...settled.writes])
     return { ok: true as const, earned: settled.made }
   })
+}
+
+// A reward the owner gives by hand (RW8): the rule's reward, as if its
+// goal had been reached, with who gave it and why in the history. The
+// customer's own count does not move.
+export async function giveReward(input: {
+  businessId: string
+  ruleId: string
+  customerKey: string
+  actor: Exclude<RewardActor, "system">
+  actorUserId: string
+  note: string | null
+  now?: Date
+}): Promise<boolean> {
+  return runInTurn(bookingTurnKey(input.businessId), async () => {
+    const nowIso = (input.now ?? new Date()).toISOString()
+    const [rules, featureOn] = await Promise.all([
+      rewardRulesFor(input.businessId),
+      hasFeature(input.businessId, "rewards"),
+    ])
+    const rule = rules.find((item) => item.id === input.ruleId)
+    if (!rule || !featureOn) return false
+    const eventId = crypto.randomUUID()
+    await saveAll([
+      db.insert(rewardEvents).values({
+        id: eventId,
+        businessId: input.businessId,
+        ruleId: rule.id,
+        customerKey: input.customerKey,
+        type: "adjust",
+        amount: 0,
+        actor: input.actor,
+        actorUserId: input.actorUserId,
+        note: input.note,
+        createdAt: nowIso,
+      }),
+      db.insert(rewards).values(
+        Array.from({ length: rule.rewardCount }, () => ({
+          businessId: input.businessId,
+          ruleId: rule.id,
+          customerKey: input.customerKey,
+          reward: rewardCopy(rule),
+          eventId,
+          earnedAt: nowIso,
+          expiresAt: rewardExpiry(rule.expiresDays, nowIso),
+        }))
+      ),
+    ])
+    return true
+  })
+}
+
+// One customer's history at a business, newest first.
+export async function rewardHistory(
+  businessId: string,
+  customerKey: string,
+  limit: number
+) {
+  return db
+    .select()
+    .from(rewardEvents)
+    .where(
+      and(
+        eq(rewardEvents.businessId, businessId),
+        eq(rewardEvents.customerKey, customerKey)
+      )
+    )
+    .orderBy(desc(rewardEvents.createdAt))
+    .limit(limit)
+}
+
+// A booking already made that can still take a reward (RW8: the owner
+// redeems for the customer in front of them), with its service's own part
+// of the price: the total less its extras.
+async function redeemTarget(businessId: string, bookingId: string) {
+  const [booking] = await db
+    .select()
+    .from(bookings)
+    .where(and(eq(bookings.id, bookingId), eq(bookings.businessId, businessId)))
+    .limit(1)
+  if (
+    !booking ||
+    !booking.customerKey ||
+    booking.rewardId ||
+    !EARNING_STATUSES.some((status) => status === booking.status)
+  ) {
+    return null
+  }
+  const extras = await db
+    .select({ priceMinor: bookingAddons.priceMinor })
+    .from(bookingAddons)
+    .where(eq(bookingAddons.bookingId, booking.id))
+  const extrasMinor = extras.reduce(
+    (total, extra) => total + (extra.priceMinor ?? 0),
+    0
+  )
+  return {
+    booking,
+    customerKey: booking.customerKey,
+    service: {
+      id: booking.serviceId ?? "",
+      priceMinor:
+        booking.priceMinor === null
+          ? null
+          : Math.max(0, booking.priceMinor - extrasMinor),
+    },
+  }
+}
+
+export interface BookingReward {
+  id: string
+  reward: RewardCopy
+  discountMinor: number
+}
+
+// The customer's rewards usable on a booking already made, best first.
+export async function rewardsForBooking(
+  businessId: string,
+  bookingId: string,
+  now: Date = new Date()
+): Promise<BookingReward[]> {
+  if (!(await hasFeature(businessId, "rewards"))) return []
+  const target = await redeemTarget(businessId, bookingId)
+  if (!target) return []
+  const held = await availableRewards(businessId, target.customerKey, now)
+  return usableRewards(held, target.service, now.toISOString()).map(
+    (item) => ({
+      id: item.reward.id,
+      reward: item.reward.reward,
+      discountMinor: item.discountMinor,
+    })
+  )
+}
+
+// The customer's rewards usable on a service, for a booking the owner is
+// about to add for them, best first.
+export async function rewardsForService(
+  businessId: string,
+  customerKey: string,
+  serviceId: string,
+  now: Date = new Date()
+): Promise<BookingReward[]> {
+  if (!(await hasFeature(businessId, "rewards"))) return []
+  const [service] = await db
+    .select({ id: services.id, priceMinor: services.priceMinor })
+    .from(services)
+    .where(and(eq(services.id, serviceId), eq(services.businessId, businessId)))
+    .limit(1)
+  if (!service) return []
+  const held = await availableRewards(businessId, customerKey, now)
+  return usableRewards(held, service, now.toISOString()).map((item) => ({
+    id: item.reward.id,
+    reward: item.reward.reward,
+    discountMinor: item.discountMinor,
+  }))
+}
+
+// Puts a reward on a booking already made: the price to pay drops by what
+// it takes off. A visit that already happened uses the reward at once.
+export async function redeemOnBooking(input: {
+  businessId: string
+  bookingId: string
+  rewardId: string
+  now?: Date
+}): Promise<boolean> {
+  const done = await runInTurn(bookingTurnKey(input.businessId), async () => {
+    const target = await redeemTarget(input.businessId, input.bookingId)
+    if (!target) return false
+    const reward = await rewardToRedeem({
+      businessId: input.businessId,
+      rewardId: input.rewardId,
+      customerKey: target.customerKey,
+      service: target.service,
+      now: input.now,
+    })
+    if (!reward) return false
+    await saveAll([
+      db
+        .update(bookings)
+        .set({
+          rewardId: reward.id,
+          rewardDiscountMinor: reward.discountMinor,
+          priceMinor: totalWithReward(
+            target.booking.priceMinor,
+            reward.discountMinor
+          ),
+        })
+        .where(eq(bookings.id, target.booking.id)),
+      holdRewardWrite(reward.id),
+    ])
+    return true
+  })
+  // Outside the turn: recounting takes it itself.
+  if (done) await recountBooking(input.bookingId, input.now)
+  return done
 }
 
 // The timer's work: rewards past their date expire, and bookings that

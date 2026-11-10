@@ -12,6 +12,8 @@ import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
 import { clientNotification } from "@/lib/in-app-notifications"
 import { DEFAULT_LANGUAGE, isPageLanguage } from "@/lib/page-language"
+import { totalWithReward } from "@/lib/reward-rules"
+import { holdRewardWrite, rewardToRedeem } from "@/lib/rewards"
 import {
   bookingAddons,
   bookings,
@@ -260,6 +262,19 @@ export async function createOwnerBooking(
       const customerPhone = phone && internationalPhone(phone, business)
       const startAt = new Date(startInstant).toISOString()
       const key = customerKey(customerPhone, name)
+      // The owner redeems the customer's reward for them (RW8), checked
+      // here in the turn: it is theirs, still free, and fits the service.
+      const reward = input.rewardId
+        ? await rewardToRedeem({
+            businessId: business.id,
+            rewardId: input.rewardId,
+            customerKey: key,
+            service: { id: service.id, priceMinor: service.priceMinor },
+          })
+        : null
+      if (input.rewardId && !reward) {
+        return { status: "invalid", field: "reward" } as const
+      }
       // The client's bell hears of it, when an account owns that phone.
       const notice = await clientNotification(
         {
@@ -282,7 +297,11 @@ export async function createOwnerBooking(
           serviceName: service.name,
           teamMemberName,
           durationMinutes: totalMinutes,
-          priceMinor: totalPrice,
+          priceMinor: reward
+            ? totalWithReward(totalPrice, reward.discountMinor)
+            : totalPrice,
+          rewardId: reward?.id ?? null,
+          rewardDiscountMinor: reward?.discountMinor ?? null,
           currency: business.currency,
           startAt,
           endAt: new Date(endInstant).toISOString(),
@@ -311,11 +330,12 @@ export async function createOwnerBooking(
             ]
           : []),
         ...notice,
+        ...(reward ? [holdRewardWrite(reward.id)] : []),
       ])
       return { status: "booked", bookingId } as const
     })
 
-    if (outcome.status === "conflict") {
+    if (outcome.status !== "booked") {
       return outcome
     }
     saved = { outcome, slug: business.slug, businessId: business.id }
