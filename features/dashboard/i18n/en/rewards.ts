@@ -35,6 +35,10 @@ const rewards = {
     maxDiscount: "Most it takes off",
     minPrice: "Lowest price that counts",
     paidOnly: "Only paid bookings count",
+    // The last day bookings count; empty = it never ends.
+    endsOn: "Ends",
+    never: "Never",
+    pickLater: "Pick a later day",
     useNumber: "Use a number",
     usePercent: "Use a number from 1 to 100",
   },

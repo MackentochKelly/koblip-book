@@ -12,7 +12,7 @@ import {
   services,
   user,
 } from "@/lib/db/schema"
-import type { RewardRuleInput } from "@/lib/reward-rules"
+import { rewardLastDay, type RewardRuleForm } from "@/lib/reward-rules"
 
 vi.mock("server-only", () => ({}))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
@@ -35,7 +35,7 @@ const { rewardRulesFor } = await import("@/lib/rewards")
 
 let dir: string
 
-const input: RewardRuleInput = {
+const input: RewardRuleForm = {
   earnType: "visit",
   earnServiceIds: null,
   earnMinPriceMinor: null,
@@ -46,7 +46,7 @@ const input: RewardRuleInput = {
   rewardServiceIds: ["cut"],
   maxDiscountMinor: null,
   expiresDays: 90,
-  endsAt: null,
+  endsOn: null,
   maxPerCustomer: null,
   paidOnly: false,
 }
@@ -248,4 +248,25 @@ test("a rule nobody earned on is deleted; one with history is ended and kept", a
     ok: false,
     error: "not_found",
   })
+})
+
+test("a rule ends when its last day is over in the business's time zone", async () => {
+  // Santo Domingo is UTC-4 all year.
+  expect(
+    await saveRewardRule("biz", null, { ...input, endsOn: "2099-12-31" })
+  ).toMatchObject({ ok: true })
+  const [rule] = await rewardRulesFor("biz")
+  expect(rule.endsAt).toBe("2100-01-01T04:00:00.000Z")
+  expect(rewardLastDay(rule.endsAt, "America/Santo_Domingo")).toBe(
+    "2099-12-31"
+  )
+})
+
+test("a last day already over, or not a real day, is refused", async () => {
+  for (const endsOn of ["2020-01-01", "2099-02-31", "soon"]) {
+    expect(await saveRewardRule("biz", null, { ...input, endsOn })).toEqual({
+      ok: false,
+      error: "endsAt",
+    })
+  }
 })

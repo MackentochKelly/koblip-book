@@ -35,6 +35,7 @@ export default async function RewardsPage({ params }: Props) {
       currency={business.currency}
       rules={rules}
       services={services.map(({ id, name }) => ({ id, name }))}
+      timeZone={business.timezone}
       tracksPayments={methods.length > 0}
     />
   )

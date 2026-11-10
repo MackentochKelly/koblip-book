@@ -16,10 +16,12 @@ import { revalidateBusiness } from "@/lib/revalidate-business"
 import {
   checkRewardRule,
   REWARD_RULES,
+  type RewardRuleForm,
   type RewardRuleInput,
 } from "@/lib/reward-rules"
 import type { ActionResult } from "../types"
 import { ownedBusiness } from "./owned-business"
+import { bookingRangeUtc } from "./queries"
 
 // The owner's Rewards page (docs/plans/rewards.md): making, changing,
 // turning on and off and removing reward rules. Every action is the
@@ -52,6 +54,26 @@ function serviceRows(
   ]
 }
 
+// The moment a rule stops counting: the end of its last day in the
+// business's time zone. null = no end; undefined = not a real day, or one
+// already over.
+function endOfLastDay(
+  endsOn: unknown,
+  timeZone: string
+): string | null | undefined {
+  if (endsOn === null || endsOn === undefined) return null
+  if (typeof endsOn !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(endsOn)) {
+    return undefined
+  }
+  const [year, month, day] = endsOn.split("-").map(Number)
+  const real = new Date(Date.UTC(year, month - 1, day))
+  if (real.getUTCMonth() !== month - 1 || real.getUTCDate() !== day) {
+    return undefined
+  }
+  const { end } = bookingRangeUtc(endsOn, endsOn, timeZone)
+  return end > new Date().toISOString() ? end : undefined
+}
+
 // Adds a rule (ruleId null) or saves one. A new rule counts bookings from
 // this moment on: visits from before it never count. Changing a rule
 // changes what is earned from now on; rewards already earned keep what
@@ -59,10 +81,12 @@ function serviceRows(
 export async function saveRewardRule(
   businessId: string,
   ruleId: string | null,
-  input: RewardRuleInput
+  input: RewardRuleForm
 ): Promise<ActionResult<{ id: string }>> {
   const owned = await ownedWithRewards(businessId)
   if (!owned) return { ok: false, error: "not_found" }
+  const endsAt = endOfLastDay(input?.endsOn, owned.business.timezone)
+  if (endsAt === undefined) return { ok: false, error: "endsAt" }
   const [serviceIds, existing] = await Promise.all([
     db
       .select({ id: services.id })
@@ -80,7 +104,7 @@ export async function saveRewardRule(
       .orderBy(asc(rewardRules.position)),
   ])
   const checked = checkRewardRule(
-    input,
+    { ...input, endsAt },
     new Set(serviceIds.map((service) => service.id)),
     BOOKING_RULES.maxPriceMinor
   )

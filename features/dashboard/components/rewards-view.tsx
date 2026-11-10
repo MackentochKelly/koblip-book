@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { AppSelect } from "@/components/app-select"
+import { DatePicker } from "@/components/date-picker"
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { PageSection } from "@/components/page-section"
 import { ResponsivePanel } from "@/components/responsive-panel"
@@ -54,15 +55,17 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { useRewardWords } from "@/hooks/use-reward-words"
+import { todayIn } from "@/lib/format-booking-time"
 import { noAutofill } from "@/lib/no-autofill"
 import { parsePrice } from "@/lib/parse-price"
 import {
   REWARD_EARN_TYPES,
   REWARD_RULES,
   REWARD_TYPES,
+  rewardLastDay,
   type RewardEarnType,
   type RewardRule,
-  type RewardRuleInput,
+  type RewardRuleForm,
   type RewardType,
 } from "@/lib/reward-rules"
 import {
@@ -83,6 +86,7 @@ type FormError =
   | "maxPerCustomer"
   | "maxDiscount"
   | "earnMinPrice"
+  | "endsOn"
 
 // Rewards (docs/plans/rewards.md): the business's reward rules, each a
 // row with its switch and its Edit and Remove, and one action, Add reward.
@@ -93,10 +97,13 @@ export function RewardsView({
   currency,
   rules,
   services,
+  timeZone,
   tracksPayments,
 }: {
   businessId: string
   currency: string
+  // The business's own: a reward's last day is a day there.
+  timeZone: string
   rules: RewardRule[]
   services: ServiceOption[]
   // The business lists a way to pay, so "only paid bookings count" means
@@ -121,7 +128,7 @@ export function RewardsView({
     setError(null)
     setEditing(next)
   }
-  const save = (input: RewardRuleInput) => {
+  const save = (input: RewardRuleForm) => {
     if (editing === null) return
     startTransition(async () => {
       const result = await saveRewardRule(
@@ -135,6 +142,8 @@ export function RewardsView({
         router.refresh()
       } else if (result?.error === "full") {
         toast.error(t("full"))
+      } else if (result?.error === "endsAt") {
+        setError("endsOn")
       } else {
         toast.error(settings("tryAgain"))
       }
@@ -258,6 +267,7 @@ export function RewardsView({
             key={formKey}
             rule={editing === "new" ? null : editing}
             services={services}
+            timeZone={timeZone}
             tracksPayments={tracksPayments}
             error={error}
             onError={setError}
@@ -289,6 +299,7 @@ function wholeOrNone(text: string, max: number): number | null | undefined {
 function RuleForm({
   rule,
   services,
+  timeZone,
   tracksPayments,
   error,
   onError,
@@ -296,12 +307,14 @@ function RuleForm({
 }: {
   rule: RewardRule | null
   services: ServiceOption[]
+  timeZone: string
   tracksPayments: boolean
   error: FormError | null
   onError: (error: FormError | null) => void
-  onSave: (input: RewardRuleInput) => void
+  onSave: (input: RewardRuleForm) => void
 }) {
   const t = useTranslations("owner.rewards.form")
+  const locale = useLocale()
   const [earnType, setEarnType] = useState<RewardEarnType>(
     rule?.earnType ?? "visit"
   )
@@ -342,6 +355,9 @@ function RuleForm({
     priceText(rule?.earnMinPriceMinor ?? null)
   )
   const [paidOnly, setPaidOnly] = useState(rule?.paidOnly ?? false)
+  const [endsOn, setEndsOn] = useState(
+    rewardLastDay(rule?.endsAt ?? null, timeZone) ?? ""
+  )
 
   const serviceOptions = services.map((service) => ({
     value: service.id,
@@ -391,7 +407,7 @@ function RuleForm({
       rewardServiceIds: rewardServiceIds.length > 0 ? rewardServiceIds : null,
       maxDiscountMinor,
       expiresDays,
-      endsAt: rule?.endsAt ?? null,
+      endsOn: endsOn === "" ? null : endsOn,
       maxPerCustomer,
       paidOnly: tracksPayments && paidOnly,
     })
@@ -590,6 +606,24 @@ function RuleForm({
                   }}
                   error={error === "earnMinPrice" ? t("useNumber") : null}
                 />
+                <Field data-invalid={error === "endsOn" || undefined}>
+                  <FieldLabel htmlFor="reward-ends">{t("endsOn")}</FieldLabel>
+                  <DatePicker
+                    id="reward-ends"
+                    value={endsOn}
+                    min={todayIn(timeZone)}
+                    onChange={(next) => {
+                      setEndsOn(next)
+                      changed()
+                    }}
+                    locale={locale}
+                    placeholder={t("never")}
+                    invalid={error === "endsOn"}
+                  />
+                  {error === "endsOn" && (
+                    <FieldError>{t("pickLater")}</FieldError>
+                  )}
+                </Field>
               </div>
               {tracksPayments && (
                 <Field orientation="horizontal" className="min-h-11">

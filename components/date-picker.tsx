@@ -21,7 +21,9 @@ import { cn } from "@/lib/utils"
 
 // The app's own day picker (shadcn's Date Picker: a button that opens the
 // month calendar), in place of the browser's date box. Days are
-// "YYYY-MM-DD"; `min`/`max` limit what can be picked.
+// "YYYY-MM-DD"; `min`/`max` limit what can be picked. With a `placeholder`
+// the day is optional: "" shows the placeholder, and picking the chosen
+// day again clears it.
 export function DatePicker({
   id,
   value,
@@ -30,6 +32,7 @@ export function DatePicker({
   max,
   locale = "en-US",
   invalid,
+  placeholder,
 }: {
   id?: string
   value: string
@@ -38,8 +41,22 @@ export function DatePicker({
   max?: string
   locale?: string
   invalid?: boolean
+  placeholder?: string
 }) {
   const [open, setOpen] = useState(false)
+  const picked = value === "" ? undefined : dateFromDay(value)
+  const limits = {
+    locale: dayPickerLocale(locale),
+    defaultMonth: picked ?? (min ? dateFromDay(min) : undefined),
+    startMonth: min ? dateFromDay(min) : undefined,
+    endMonth: max ? dateFromDay(max) : undefined,
+    disabled: (day: Date) => {
+      const shown = dayFromDate(day)
+      return (
+        (min !== undefined && shown < min) || (max !== undefined && shown > max)
+      )
+    },
+  }
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
@@ -57,30 +74,36 @@ export function DatePicker({
           />
         }
       >
-        {formatDayShort(value, locale)}
+        {picked ? (
+          formatDayShort(value, locale)
+        ) : (
+          <span className="text-muted-foreground">{placeholder}</span>
+        )}
         <ChevronDownIcon data-icon="inline-end" />
       </PopoverTrigger>
       <PopoverContent className="w-auto overflow-hidden p-0" align="start">
-        <Calendar
-          mode="single"
-          required
-          locale={dayPickerLocale(locale)}
-          selected={dateFromDay(value)}
-          defaultMonth={dateFromDay(value)}
-          startMonth={min ? dateFromDay(min) : undefined}
-          endMonth={max ? dateFromDay(max) : undefined}
-          disabled={(day) => {
-            const picked = dayFromDate(day)
-            return (
-              (min !== undefined && picked < min) ||
-              (max !== undefined && picked > max)
-            )
-          }}
-          onSelect={(day) => {
-            onChange(dayFromDate(day))
-            setOpen(false)
-          }}
-        />
+        {placeholder === undefined ? (
+          <Calendar
+            mode="single"
+            required
+            {...limits}
+            selected={picked}
+            onSelect={(day) => {
+              onChange(dayFromDate(day))
+              setOpen(false)
+            }}
+          />
+        ) : (
+          <Calendar
+            mode="single"
+            {...limits}
+            selected={picked}
+            onSelect={(day) => {
+              onChange(day ? dayFromDate(day) : "")
+              setOpen(false)
+            }}
+          />
+        )}
       </PopoverContent>
     </Popover>
   )

@@ -3,6 +3,7 @@
 // a later booking. Koblip never moves money: a reward only lowers the price
 // a booking shows and stores. This file is the rules alone, no database.
 import { EARNING_STATUSES } from "./booking-rules"
+import { todayIn } from "./format-booking-time"
 import type { PaymentStatus } from "./payment-rules"
 
 export const REWARD_RULES = {
@@ -128,6 +129,24 @@ export interface RewardRuleInput {
   endsAt: string | null
   maxPerCustomer: number | null
   paidOnly: boolean
+}
+
+// What the owner's form and the assistant send: the last day the rule
+// counts ("YYYY-MM-DD" in the business's time zone) in place of the moment
+// it ends, which the server works out; null = no end.
+export type RewardRuleForm = Omit<RewardRuleInput, "endsAt"> & {
+  endsOn: string | null
+}
+
+// The last day a rule counts, "YYYY-MM-DD" in the business's time zone:
+// endsAt is the moment that day is over. null = no end.
+export function rewardLastDay(
+  endsAt: string | null,
+  timeZone: string
+): string | null {
+  return endsAt === null
+    ? null
+    : todayIn(timeZone, new Date(Date.parse(endsAt) - 1))
 }
 
 export type RewardRuleField =
