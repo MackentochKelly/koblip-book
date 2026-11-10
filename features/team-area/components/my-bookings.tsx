@@ -106,10 +106,13 @@ export function MyBookings({
                         )}
                       </ItemDescription>
                     </ItemContent>
-                    {(badge || booking.payment) && (
+                    {(badge || booking.payment || booking.reward) && (
                       <ItemActions>
                         {badge && (
                           <Badge variant="secondary">{t(`bookings.status.${badge}`)}</Badge>
+                        )}
+                        {booking.reward && (
+                          <Badge variant="outline">{t("bookings.reward")}</Badge>
                         )}
                         {booking.payment && (
                           <PaymentBadge

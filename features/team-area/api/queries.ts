@@ -51,6 +51,7 @@ export async function getMyBookings(
       paymentStatus: bookings.paymentStatus,
       paymentReference: bookings.paymentReference,
       paymentProof: bookings.paymentProof,
+      rewardId: bookings.rewardId,
     })
     .from(bookings)
     .where(
@@ -61,7 +62,7 @@ export async function getMyBookings(
     .orderBy(when === "upcoming" ? asc(bookings.startAt) : desc(bookings.startAt))
     .limit(LIST_LIMIT)
   return rows.map(
-    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof, ...booking }) => {
+    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof, rewardId, ...booking }) => {
       // A cancelled booking has nothing to pay. Only the way's name, the
       // status and whether there is a picture to open leave here.
       const payment =
@@ -70,6 +71,7 @@ export async function getMyBookings(
           : paymentOf({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof })
       return {
         ...booking,
+        reward: rewardId !== null,
         payment: payment && {
           way: payment.method?.name ?? null,
           status: payment.status,

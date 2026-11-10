@@ -11,5 +11,7 @@ export interface MyBooking {
   // stands. Never the instructions or the customer's reference, which are
   // the owner's.
   // proof: there is a payment picture this member may open.
+  // A reward was redeemed on it (docs/plans/rewards.md, RW-12).
+  reward: boolean
   payment: { way: string | null; status: PaymentStatus; proof: boolean } | null
 }

@@ -19,6 +19,8 @@ const words = {
       no_show: "No-show",
       cancelled: "Cancelled",
     },
+    // The customer redeemed a reward on it.
+    reward: "Reward",
     // Paying outside the app: how, and where it stands. The owner marks
     // it; a team member only sees it.
     payment: {
