@@ -5,7 +5,7 @@ import type { BatchItem } from "drizzle-orm/batch"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { bookings, businesses, inAppNotificationSettings, inAppNotifications, reviews, user } from "@/lib/db/schema"
-import { accountBookingHref } from "@/lib/my-bookings-links"
+import { ACCOUNT_REWARDS_PATH, accountBookingHref } from "@/lib/my-bookings-links"
 import { notificationRules } from "@/lib/platform-settings"
 import { REVIEW_RULES } from "@/lib/review-rules"
 import type { ClientInAppKind, InAppData, OwnerInAppKind } from "@/types/in-app-notifications"
@@ -108,7 +108,10 @@ function accountHasKey(key: string) {
     .limit(1)
 }
 
-function clientInsert(booking: ClientBooking, kind: ClientInAppKind) {
+function clientInsert(
+  booking: ClientBooking,
+  kind: Exclude<ClientInAppKind, "clientRewardEarned">
+) {
   return db
     .insert(inAppNotifications)
     .values({
@@ -129,20 +132,55 @@ function clientInsert(booking: ClientBooking, kind: ClientInAppKind) {
 // account can own. `booking` is as it is after the change.
 export async function clientNotification(
   booking: ClientBooking,
-  kind: ClientInAppKind
+  kind: Exclude<ClientInAppKind, "clientRewardEarned">
 ): Promise<BatchItem<"sqlite">[]> {
+  return (await clientCanHear(booking)) ? [clientInsert(booking, kind)] : []
+}
+
+// Whether a client's bell can show something about this booking: never a
+// demo copy, and only a booking some account owns.
+async function clientCanHear(
+  booking: Pick<ClientBooking, "businessId" | "customerUserId" | "customerKey">
+) {
   const [business] = await db
     .select({ isDemo: businesses.isDemo })
     .from(businesses)
     .where(eq(businesses.id, booking.businessId))
     .limit(1)
-  if (!business || business.isDemo) return []
-  if (!booking.customerUserId) {
-    if (!booking.customerKey?.startsWith("p:")) return []
-    const [owner] = await accountHasKey(booking.customerKey)
-    if (!owner) return []
-  }
-  return [clientInsert(booking, kind)]
+  if (!business || business.isDemo) return false
+  if (booking.customerUserId) return true
+  if (!booking.customerKey?.startsWith("p:")) return false
+  const [owner] = await accountHasKey(booking.customerKey)
+  return !!owner
+}
+
+// The writes that tell a client they earned a reward
+// (docs/plans/rewards.md, RW-11), to save with the reward itself. It
+// rides on one of their bookings at the business, which is how the bell
+// knows whose it is, and opens their Rewards page. `once` names what made
+// the reward, so the same one is never told twice.
+export async function clientRewardNotification(
+  booking: Pick<
+    ClientBooking,
+    "id" | "businessId" | "customerUserId" | "customerKey"
+  >,
+  once: string
+): Promise<BatchItem<"sqlite">[]> {
+  if (!(await clientCanHear(booking))) return []
+  return [
+    db
+      .insert(inAppNotifications)
+      .values({
+        businessId: booking.businessId,
+        kind: "clientRewardEarned",
+        audience: "client",
+        bookingId: booking.id,
+        data: {},
+        link: ACCOUNT_REWARDS_PATH,
+        dedupeKey: `client:clientRewardEarned:${once}`,
+      })
+      .onConflictDoNothing(),
+  ]
 }
 
 // The reminder before each visit within the admin's

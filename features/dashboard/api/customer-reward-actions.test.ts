@@ -33,7 +33,7 @@ const {
   redeemForBooking,
   rewardsOfCustomer,
 } = await import("./customer-reward-actions")
-const { getCustomerRewards } = await import("./customers")
+const { getCustomerRewards, getRewardActivity } = await import("./customers")
 
 let dir: string
 const ANA = "p:18095550000"
@@ -202,4 +202,43 @@ test("another owner, or a plan with no rewards, can do none of it", async () => 
     })
   ).toEqual({ ok: false, error: "not_found" })
   expect(await db.select().from(rewardEvents)).toHaveLength(0)
+})
+
+test("Activity lists the history with names and counts, for one reward or all", async () => {
+  await rule()
+  await db.insert(rewardRules).values({
+    id: "other-rule",
+    businessId: "biz",
+    earnType: "visit",
+    goal: 9,
+    rewardType: "free",
+    startsAt: "2026-01-01T00:00:00.000Z",
+    position: 1,
+  })
+  await db.insert(bookings).values({
+    id: "named",
+    businessId: "biz",
+    serviceName: "Haircut",
+    durationMinutes: 60,
+    currency: "USD",
+    startAt: "2026-02-01T10:00:00.000Z",
+    endAt: "2026-02-01T11:00:00.000Z",
+    customerName: "Ana Ruiz",
+    customerKey: ANA,
+  })
+  await change(3)
+  await changeCustomerProgress("biz", {
+    ruleId: "other-rule",
+    customerKey: "p:1999",
+    amount: 1,
+    note: "Friend",
+  })
+  const all = await getRewardActivity("biz", null)
+  expect(all.counts).toEqual({ earning: 2, waiting: 1, used: 0 })
+  expect(all.events).toHaveLength(3)
+  expect(
+    all.events.find((event) => event.customerKey === ANA)?.customerName
+  ).toBe("Ana Ruiz")
+  const one = await getRewardActivity("biz", "other-rule")
+  expect(one.events.map((event) => event.customerName)).toEqual(["+1999"])
 })

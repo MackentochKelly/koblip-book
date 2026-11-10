@@ -9,6 +9,7 @@ import {
   bookingAddons,
   bookings,
   businesses,
+  inAppNotifications,
   rewardEvents,
   rewardRuleServices,
   rewardRules,
@@ -505,4 +506,52 @@ test("redeemed after the visit, the reward is used at once and that free visit g
     .set({ status: "cancelled" })
     .where(eq(bookings.id, second))
   expect(await rewardsForBooking("biz", second, NOW)).toEqual([])
+})
+
+test("the client's bell hears of an earned reward once, by booking or by hand", async () => {
+  await db.insert(user).values({
+    id: "ana",
+    name: "Ana",
+    email: "ana@example.com",
+    emailVerified: true,
+    phoneNumber: "+18095550000",
+    phoneNumberVerified: true,
+  })
+  await rule()
+  const ids = await visits(3)
+  await recountBooking(ids[2], NOW)
+  const bells = () =>
+    db
+      .select()
+      .from(inAppNotifications)
+      .where(eq(inAppNotifications.kind, "clientRewardEarned"))
+  expect(await bells()).toMatchObject([
+    {
+      audience: "client",
+      bookingId: ids[2],
+      link: "/account/rewards",
+    },
+  ])
+  await giveReward({
+    businessId: "biz",
+    ruleId: "rule",
+    customerKey: ANA,
+    actor: "owner",
+    actorUserId: "u1",
+    note: "Birthday",
+    now: NOW,
+  })
+  expect(await bells()).toHaveLength(2)
+  // A customer no account owns gets none.
+  await adjustProgress({
+    businessId: "biz",
+    ruleId: "rule",
+    customerKey: "p:1999",
+    amount: 3,
+    actor: "owner",
+    actorUserId: "u1",
+    note: "Regular",
+  })
+  expect(await bells()).toHaveLength(2)
+  await db.delete(user).where(eq(user.id, "ana"))
 })

@@ -24,6 +24,7 @@ import {
   LinkIcon,
   WhatsAppIcon,
   OctagonXIcon,
+  GiftIcon,
   StarIcon,
   TriangleAlertIcon,
 } from "@/components/ui/icons"
@@ -61,6 +62,7 @@ const KIND_ICONS: Record<InAppKind, React.ComponentType> = {
   clientPaid: BanknoteIcon,
   clientReminder: BellIcon,
   clientReviewAsk: StarIcon,
+  clientRewardEarned: GiftIcon,
 }
 
 // The clock the "time ago" lines read, moved on every minute while the list

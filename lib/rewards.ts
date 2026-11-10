@@ -25,6 +25,7 @@ import {
   rewards,
   services,
 } from "./db/schema"
+import { clientRewardNotification } from "./in-app-notifications"
 import { hasFeature } from "./plan-access"
 import {
   earnAmount,
@@ -363,6 +364,10 @@ async function recount(
         .where(eq(bookings.id, booking.id))
     )
   }
+  // The client's bell hears of a reward this booking earned, once.
+  if (earned > 0) {
+    writes.push(...(await clientRewardNotification(booking, booking.id)))
+  }
   await saveAll(writes)
   return {
     businessId: booking.businessId,
@@ -516,6 +521,33 @@ export function holdRewardWrite(rewardId: string): BatchItem<"sqlite"> {
     .where(and(eq(rewards.id, rewardId), eq(rewards.status, "available")))
 }
 
+// The bell's writes for a reward that came by hand (no booking made it):
+// it rides on the customer's latest booking at the business, when they
+// have one.
+async function bellForHand(
+  businessId: string,
+  customerKey: string,
+  eventId: string
+): Promise<BatchItem<"sqlite">[]> {
+  const [latest] = await db
+    .select({
+      id: bookings.id,
+      businessId: bookings.businessId,
+      customerUserId: bookings.customerUserId,
+      customerKey: bookings.customerKey,
+    })
+    .from(bookings)
+    .where(
+      and(
+        eq(bookings.businessId, businessId),
+        eq(bookings.customerKey, customerKey)
+      )
+    )
+    .orderBy(desc(bookings.startAt))
+    .limit(1)
+  return latest ? clientRewardNotification(latest, eventId) : []
+}
+
 // A change to a customer's progress by hand (the owner, or the assistant
 // for the owner), with who and why, then rewards made or taken back as
 // the new total says.
@@ -559,7 +591,13 @@ export async function adjustProgress(input: {
       featureOn && rule.status === "active",
       nowIso
     )
-    await saveAll([db.insert(rewardEvents).values(event), ...settled.writes])
+    await saveAll([
+      db.insert(rewardEvents).values(event),
+      ...settled.writes,
+      ...(settled.made > 0
+        ? await bellForHand(input.businessId, input.customerKey, event.id)
+        : []),
+    ])
     return { ok: true as const, earned: settled.made }
   })
 }
@@ -609,6 +647,7 @@ export async function giveReward(input: {
           expiresAt: rewardExpiry(rule.expiresDays, nowIso),
         }))
       ),
+      ...(await bellForHand(input.businessId, input.customerKey, eventId)),
     ])
     return true
   })
@@ -631,6 +670,54 @@ export async function rewardHistory(
     )
     .orderBy(desc(rewardEvents.createdAt))
     .limit(limit)
+}
+
+// A business's history, newest first, for one rule or all of them.
+export async function rewardActivity(
+  businessId: string,
+  ruleId: string | null,
+  limit: number
+) {
+  return db
+    .select()
+    .from(rewardEvents)
+    .where(
+      and(
+        eq(rewardEvents.businessId, businessId),
+        ruleId === null ? undefined : eq(rewardEvents.ruleId, ruleId)
+      )
+    )
+    .orderBy(desc(rewardEvents.createdAt))
+    .limit(limit)
+}
+
+// A business's rewards in three numbers: the customers who have counted
+// something, the rewards waiting to be redeemed, and the ones used.
+export async function rewardCounts(
+  businessId: string,
+  now: Date = new Date()
+): Promise<{ earning: number; waiting: number; used: number }> {
+  const nowIso = now.toISOString()
+  const [[customers], [held]] = await Promise.all([
+    db
+      .select({
+        earning: sql<number>`count(distinct ${rewardEvents.customerKey})`,
+      })
+      .from(rewardEvents)
+      .where(eq(rewardEvents.businessId, businessId)),
+    db
+      .select({
+        waiting: sql<number>`coalesce(sum(${rewards.status} = 'available' and (${rewards.expiresAt} is null or ${rewards.expiresAt} > ${nowIso})), 0)`,
+        used: sql<number>`coalesce(sum(${rewards.status} = 'used'), 0)`,
+      })
+      .from(rewards)
+      .where(eq(rewards.businessId, businessId)),
+  ])
+  return {
+    earning: Number(customers.earning),
+    waiting: Number(held.waiting),
+    used: Number(held.used),
+  }
 }
 
 // A booking already made that can still take a reward (RW8: the owner

@@ -8,12 +8,18 @@ import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { paymentOf } from "@/lib/payment-rules"
 import { hasFeature } from "@/lib/plan-access"
-import { customerRewards, rewardHistory } from "@/lib/rewards"
+import {
+  customerRewards,
+  rewardActivity,
+  rewardCounts,
+  rewardHistory,
+} from "@/lib/rewards"
 import { bookingAddons, bookings, businesses, customers } from "@/lib/db/schema"
 import type {
   OwnerBooking,
   OwnerCustomer,
   OwnerCustomerRewards,
+  OwnerRewardActivity,
 } from "../types"
 
 function zonedDateTime(
@@ -326,6 +332,75 @@ export async function getCustomerRewards(
       byHand: event.actor !== "system",
       note: event.note,
       date: day(event.createdAt),
+    })),
+  }
+}
+
+// How many of the latest changes Rewards > Activity lists.
+const MAX_REWARD_ACTIVITY = 100
+
+// A customer with no booking and no saved name, from their key: the phone
+// or the name it was made from (lib/customer-key.ts).
+function nameFromKey(key: string): string {
+  return key.startsWith("p:") ? `+${key.slice(2)}` : key.slice(2)
+}
+
+// Rewards > Activity (docs/plans/rewards.md, RW-9): the business's counts
+// and its latest history, for one rule or all, each line with its
+// customer's name.
+export async function getRewardActivity(
+  businessId: string,
+  ruleId: string | null
+): Promise<OwnerRewardActivity> {
+  const business = await ownedBusinessOrNotFound(businessId)
+  const [counts, events] = await Promise.all([
+    rewardCounts(business.id),
+    rewardActivity(business.id, ruleId, MAX_REWARD_ACTIVITY),
+  ])
+  const keys = [...new Set(events.map((event) => event.customerKey))]
+  const [booked, saved] = keys.length
+    ? await Promise.all([
+        db
+          .select({
+            key: bookings.customerKey,
+            name: bookings.customerName,
+          })
+          .from(bookings)
+          .where(
+            and(
+              eq(bookings.businessId, business.id),
+              inArray(bookings.customerKey, keys)
+            )
+          )
+          .orderBy(asc(bookings.startAt)),
+        db
+          .select({ key: customers.customerKey, name: customers.name })
+          .from(customers)
+          .where(
+            and(
+              eq(customers.businessId, business.id),
+              inArray(customers.customerKey, keys)
+            )
+          ),
+      ])
+    : [[], []]
+  // The name on their latest booking, else the one the owner saved.
+  const names = new Map<string, string>()
+  for (const row of [...saved, ...booked]) {
+    if (row.key) names.set(row.key, row.name)
+  }
+  return {
+    counts,
+    events: events.map((event) => ({
+      id: event.id,
+      ruleId: event.ruleId,
+      customerKey: event.customerKey,
+      customerName:
+        names.get(event.customerKey) ?? nameFromKey(event.customerKey),
+      type: event.type,
+      amount: event.amount,
+      note: event.note,
+      date: zonedDateTime(event.createdAt, business.timezone).date,
     })),
   }
 }

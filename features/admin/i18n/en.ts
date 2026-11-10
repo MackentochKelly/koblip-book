@@ -691,6 +691,7 @@ const words = {
       clientPaid: "Client: payment confirmed",
       clientReminder: "Client: visit reminder",
       clientReviewAsk: "Client: asked for a review",
+      clientRewardEarned: "Client: reward earned",
     } as const satisfies Record<InAppKind, string>,
     // How clients get their visit reminders (client account D16).
     clientReminders: {

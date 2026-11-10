@@ -21,6 +21,12 @@ export interface OwnerBooking {
   // What a redeemed reward took off; priceMinor is already what is to pay.
   rewardDiscountMinor?: number | null
 }
+// The owner's Rewards > Activity (docs/plans/rewards.md, RW-9).
+export interface OwnerRewardActivity {
+  counts: { earning: number; waiting: number; used: number }
+  // Newest first. `date`: "YYYY-MM-DD", business time zone.
+  events: { id: string; ruleId: string; customerKey: string; customerName: string; type: RewardEventType; amount: number; note: string | null; date: string }[]
+}
 // One customer's rewards, for the owner (docs/plans/rewards.md, RW-8).
 export interface OwnerCustomerRewards {
   // Each rule they are on: `balance` may be under 0 or over the goal.

@@ -38,6 +38,20 @@ const rewards = {
     useNumber: "Use a number",
     usePercent: "Use a number from 1 to 100",
   },
+  // The page's parts: the rules, and what happened with them.
+  parts: {
+    label: "Rewards parts",
+    rules: "Rewards",
+    activity: "Activity",
+  },
+  activity: {
+    earning: "Customers",
+    waiting: "To redeem",
+    used: "Used",
+    all: "All rewards",
+    filter: "Reward",
+    none: "No activity yet",
+  },
   // On a booking: the owner redeems for the customer (RW8).
   redeem: "Redeem {reward}",
   redeemed: "Redeemed",

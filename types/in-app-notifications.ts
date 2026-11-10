@@ -21,8 +21,8 @@ export const OWNER_IN_APP_KINDS = [
   "connectionRenew",
 ] as const
 
-// The client's: what the business did with their booking, and the reminder
-// before the visit.
+// The client's: what the business did with their booking, the reminder
+// before the visit, and a reward they earned (docs/plans/rewards.md).
 export const CLIENT_IN_APP_KINDS = [
   "clientBooked",
   "clientMoved",
@@ -30,6 +30,7 @@ export const CLIENT_IN_APP_KINDS = [
   "clientPaid",
   "clientReminder",
   "clientReviewAsk",
+  "clientRewardEarned",
 ] as const
 
 export const IN_APP_KINDS = [...OWNER_IN_APP_KINDS, ...CLIENT_IN_APP_KINDS] as const

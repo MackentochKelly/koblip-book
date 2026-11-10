@@ -2,7 +2,7 @@
 
 Each business sets its own rewards for coming back: "after 5 visits, 1 free haircut", "after 10 visits, 20% off", "after $300 spent, $25 off". Customers earn by booking and redeem a reward on a later booking. Asked by the owner (Nov 10): "After (# of service) get (# of service) free, or (#) percentage etc... very flexible, this is a SaaS."
 
-**Status (Nov 10):** The owner said go. RW-1 to RW-8 are built and committed, with tests: rules can be made, visits are counted, a signed-in customer can redeem when booking and sees their rewards in their account, and the owner sees each customer's rewards, changes them by hand and redeems for them. RW-9 to RW-16 are to do. Nothing pushed or deployed. The live server needs the new migration (`0076_rewards`) at the next deploy.
+**Status (Nov 10):** The owner said go. RW-1 to RW-11 are built and committed, with tests: rules can be made, visits are counted, a signed-in customer can redeem when booking and sees their rewards in their account, the owner sees each customer's rewards, changes them by hand and redeems for them, Rewards has an Activity tab, the public page lists the rewards, and the client's bell tells of a reward earned. RW-12 to RW-16 are to do. Nothing pushed or deployed. The live server needs the new migration (`0076_rewards`) at the next deploy.
 
 ## Rules that stay
 
@@ -110,7 +110,7 @@ One migration, new tables and new fields only. SQLite, Drizzle, in `lib/db/schem
 
 ## Tasks
 
-In order. Each is small and ends with its own tests. RW-1 to RW-8: `Done` (Nov 10). The rest: `To do`.
+In order. Each is small and ends with its own tests. RW-1 to RW-11: `Done` (Nov 10). The rest: `To do`.
 
 | ID | Task | Done when |
 | --- | --- | --- |
@@ -182,6 +182,8 @@ In order. Each is small and ends with its own tests. RW-1 to RW-8: `Done` (Nov 1
 - Tests: rules (22), counting (19), the owner's buttons (3), the owner's actions (7), redeeming when booking (8), the reward on the booking screens (4). The related suites pass (lib, dashboard, booking, customer account, admin).
 - RW-7 and RW-8 tests: the account's Rewards page (3), giving by hand and redeeming on a made booking (3), the owner's customer actions (6), the owner's add-booking with a reward (1). Whole suite: 2,180 pass.
 - Browser, demo business, phone (375): a customer's panel with Rewards, "Add visits" with a reason (5 visits made the reward and the count went back to 0), History; a booking's details with "Redeem Free service", then the reward line and "Free".
+- RW-9 to RW-11 tests: Activity (1), the public page's rewards (1), the bell (1). Whole suite: 2,183 pass.
+- Browser, demo business, phone (375): Rewards > Activity with its counts and lines; the public page has its Rewards tab and section.
 - Type check and lint: 0 errors outside `video/`.
 - Browser, demo business, phone (375 and 320), light and dark: the Rewards page empty, the editor with More options, a rule saved and listed with its switch; the booking's details step with "Sign in to see your rewards". No sideways scroll.
 
@@ -195,7 +197,12 @@ In order. Each is small and ends with its own tests. RW-1 to RW-8: `Done` (Nov 1
 
 ## Next step
 
-RW-9 (the owner's Activity tab), then RW-10 (the Rewards block on the public page) and RW-11 (the bell when a reward is earned).
+RW-12 (the team area shows a reward was used), then RW-13 (admin screens), RW-14 (assistant tools), RW-15 (clean-up) and RW-16 (words and last checks).
+
+### Notes from RW-9 to RW-11
+
+- The bell rides on one of the client's bookings at the business (that is how a bell knows whose it is). A reward given by hand to someone with no booking there rings no bell; they still see it on their Rewards page.
+- The bell was not seen in a browser (it needs a signed-in client with a proved phone). Covered by a test.
 
 ### Left from RW-7 and RW-8
 

@@ -36,6 +36,7 @@ const words = {
     clientPaid: "Payment confirmed: {service}, {when}",
     clientReminder: "Reminder: {service}, {when}",
     clientReviewAsk: "How was {service}? Rate your visit",
+    clientRewardEarned: "You earned a reward at {business}",
   },
   // The same names as the WhatsApp page.
   messages: {
@@ -73,6 +74,7 @@ const words = {
       clientPaid: "Payment confirmed",
       clientReminder: "Reminder before a visit",
       clientReviewAsk: "Rate a visit",
+      clientRewardEarned: "Reward earned",
     },
     // How the client's visit reminders reach them (client account D16).
     remindBy: "Remind me by",

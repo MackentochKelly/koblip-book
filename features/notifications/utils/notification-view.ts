@@ -65,6 +65,8 @@ export function titleOf(
         service: item.data.serviceName ?? "",
         when: whenOf(item, locale),
       })
+    case "clientRewardEarned":
+      return t("kinds.clientRewardEarned", { business: item.businessName })
   }
 }
 
@@ -164,6 +166,7 @@ export const CLIENT_CHOICE_GROUPS = [
       "clientPaid",
       "clientReminder",
       "clientReviewAsk",
+      "clientRewardEarned",
     ],
   },
 ] as const satisfies readonly ChoiceGroup<ClientInAppKind>[]
