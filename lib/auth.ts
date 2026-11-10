@@ -102,6 +102,10 @@ export const auth = betterAuth({
           google: {
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            // Google shows its account list every time, so someone who
+            // signed out can come back with another account
+            // (better-auth.com/docs/authentication/google#always-ask-to-select-an-account).
+            prompt: "select_account",
           },
         }
       : undefined,
