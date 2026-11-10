@@ -20,6 +20,9 @@ export async function register() {
     // Payment pictures are deleted when due (docs/plans/payment-proof.md).
     const { startPaymentProofTimer } = await import("@/lib/payment-proof-timer")
     startPaymentProofTimer()
+    // Ended bookings are counted for rewards (docs/plans/rewards.md).
+    const { startRewardsTimer } = await import("@/lib/rewards-timer")
+    startRewardsTimer()
     // New and changed English goes to the database for translation
     // (docs/plans/translations.md, G4) before the translation timer's first
     // run. A database error leaves the words as they are; the next start

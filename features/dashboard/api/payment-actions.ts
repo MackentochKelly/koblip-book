@@ -15,6 +15,7 @@ import {
   withRemovedType,
 } from "@/lib/payment-rules"
 import { revalidateBusiness } from "@/lib/revalidate-business"
+import { rewardsAfterChange } from "@/lib/rewards"
 import type { ActionResult } from "../types"
 import { ownedBusiness } from "./owned-business"
 
@@ -235,6 +236,8 @@ export async function setBookingPaid(
     ...(turnsPaid ? await clientNotification(booking, "clientPaid") : []),
   ])
   if (!paid) await deleteProof(booking.paymentProof)
+  // Rules that count only paid bookings follow the owner's word.
+  await rewardsAfterChange(booking.id)
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }

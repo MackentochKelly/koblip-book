@@ -386,6 +386,17 @@ export async function recountBooking(
   )
 }
 
+// After a booking's status or payment changed and was saved: rewards
+// follow. The change itself already stands, so a failure here is logged,
+// never shown as the change having failed.
+export async function rewardsAfterChange(bookingId: string): Promise<void> {
+  try {
+    await recountBooking(bookingId)
+  } catch (error) {
+    console.error("Couldn't recount rewards", error)
+  }
+}
+
 // One customer's place on a rule.
 export interface RuleProgress {
   rule: RewardRule

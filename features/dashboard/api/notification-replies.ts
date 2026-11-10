@@ -154,7 +154,7 @@ export async function applyButtonReply(reply: ButtonReply) {
     )
   }
   await saveAll(writes)
-  if (cantCome?.cancelled) afterCustomerCancel(booking.businessId, found.slug)
+  if (cantCome?.cancelled) await afterCustomerCancel(booking, found.slug)
 }
 
 // Saves WhatsApp's id of a message Book sent, from Chat's status events, so

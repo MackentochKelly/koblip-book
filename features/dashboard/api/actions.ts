@@ -14,6 +14,7 @@ import { isGoogleEventColor } from "@/lib/google-calendar-colors"
 import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
 import { clientNotification } from "@/lib/in-app-notifications"
+import { rewardsAfterChange } from "@/lib/rewards"
 import {
   bookings,
   businessHours,
@@ -563,6 +564,8 @@ export async function cancelBooking(
       .where(eq(bookings.id, booking.id)),
     ...(await clientNotification(booking, "clientCancelled")),
   ])
+  // A reward on it goes back to the customer; a counted visit is undone.
+  await rewardsAfterChange(booking.id)
   revalidateBusiness(owned.business.slug)
   // Google Calendar hears of it now.
   requestGoogleSync(owned.business.id)

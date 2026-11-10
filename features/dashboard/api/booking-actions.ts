@@ -5,6 +5,7 @@ import { db } from "@/lib/db"
 import { bookings } from "@/lib/db/schema"
 import type { ActionResult } from "../types"
 import { revalidateBusiness } from "@/lib/revalidate-business"
+import { rewardsAfterChange } from "@/lib/rewards"
 import { ownedBusiness } from "./owned-business"
 
 type SettableStatus = "confirmed" | "completed" | "no_show"
@@ -47,6 +48,8 @@ export async function setBookingStatus(
     .update(bookings)
     .set({ status })
     .where(eq(bookings.id, booking.id))
+  // Completed counts the visit now; a no-show takes it and its reward back.
+  await rewardsAfterChange(booking.id)
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }

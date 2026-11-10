@@ -8,6 +8,7 @@ import { requestGoogleSync } from "./google-calendar-sync"
 import { notification } from "./in-app-notifications"
 import { notificationRules } from "./platform-settings"
 import { revalidateBusiness } from "./revalidate-business"
+import { rewardsAfterChange } from "./rewards"
 
 // What a customer's "I can't make it" does, the same wherever they say it:
 // a WhatsApp "Can't make it" tap or My bookings. The owner chooses: the
@@ -95,9 +96,14 @@ export async function customerCantComeWrites(
   return { writes, cancelled }
 }
 
-// Once a cancel is saved: the business's page frees the time and Google
-// Calendar hears of it now.
-export function afterCustomerCancel(businessId: string, slug: string): void {
+// Once a cancel is saved: a reward on the booking goes back to the
+// customer, the business's page frees the time and Google Calendar hears
+// of it now.
+export async function afterCustomerCancel(
+  booking: { id: string; businessId: string },
+  slug: string
+): Promise<void> {
+  await rewardsAfterChange(booking.id)
   revalidateBusiness(slug)
-  requestGoogleSync(businessId)
+  requestGoogleSync(booking.businessId)
 }

@@ -45,7 +45,7 @@ export async function cantCome(bookingId: unknown): Promise<CantComeResult> {
   const settings = await cantComeSettingsFor(booking.businessId)
   const { writes, cancelled } = await customerCantComeWrites(booking, settings)
   await saveAll(writes)
-  if (cancelled) afterCustomerCancel(booking.businessId, found.slug)
+  if (cancelled) await afterCustomerCancel(booking, found.slug)
   revalidatePath(MY_BOOKINGS_PATH)
   return { ok: true, cancelled }
 }
