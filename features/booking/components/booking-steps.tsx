@@ -505,10 +505,7 @@ export function PaymentStep({
             </Avatar>
             <FieldContent>
               <FieldTitle>{option.name}</FieldTitle>
-              {/* A way named like its kind ("Zelle") says it once. */}
-              {option.detail !== option.name && (
-                <FieldDescription>{option.detail}</FieldDescription>
-              )}
+              <FieldDescription>{option.detail}</FieldDescription>
             </FieldContent>
             <RadioGroupItem value={option.id} id={`payment-${option.id}`} />
           </Field>

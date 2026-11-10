@@ -123,10 +123,12 @@ const words = {
     },
     // Paying the business outside the app (lib/payment-rules.ts).
     payment: {
+      // The line under each way's name: how the money is sent, so a way
+      // named like its kind ("Zelle") never repeats itself.
       types: {
         bank_transfer: "Bank transfer",
-        zelle: "Zelle",
-        cash_app: "Cash App",
+        zelle: "From your bank app",
+        cash_app: "To a $Cashtag",
         other: "Pay the business directly",
       },
       later: "Pay later",
