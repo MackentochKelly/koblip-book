@@ -194,6 +194,15 @@ describe("PaymentStep", () => {
     expect(screen.getByRole("button", { name: "Add payment proof" })).toBeTruthy()
   })
 
+  it("copies where to pay in one tap, and says so", async () => {
+    const writeText = vi.fn(async () => {})
+    Object.assign(navigator, { clipboard: { writeText } })
+    render(step(true, "m1"))
+    fireEvent.click(await screen.findByRole("button", { name: "Copy" }))
+    expect(writeText).toHaveBeenCalledWith("pay@shop.example")
+    expect(await screen.findByRole("button", { name: "Copied" })).toBeTruthy()
+  })
+
   it("asks for nothing when paying later, or when the business does not ask", () => {
     render(step(true, "later"))
     expect(screen.queryByRole("button", { name: "Add payment proof" })).toBeNull()

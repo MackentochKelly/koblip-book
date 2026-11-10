@@ -8,6 +8,7 @@ import {
   ClockIcon,
   UsersIcon,
 } from "@/components/ui/icons"
+import { CopyButton } from "@/components/copy-button"
 import { PaymentProofField } from "@/components/payment-proof-field"
 import { PaymentTypeIcon } from "@/components/payment-type-icon"
 
@@ -557,9 +558,17 @@ export function PaymentStep({
               {!known ? (
                 <Skeleton className="h-5 w-40" />
               ) : details[picked.id] ? (
-                <p className="break-words whitespace-pre-line select-all">
-                  {details[picked.id]}
-                </p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="min-w-0 break-words whitespace-pre-line select-all">
+                    {details[picked.id]}
+                  </p>
+                  <CopyButton
+                    value={details[picked.id] ?? ""}
+                    copyLabel={t("payment.copy")}
+                    copiedLabel={t("payment.copied")}
+                    failedLabel={t("failed")}
+                  />
+                </div>
               ) : (
                 <Button
                   variant="outline"

@@ -135,6 +135,9 @@ const words = {
       laterHint: "At your visit",
       payWith: "Pay with {name}",
       thenTell: "Once you've paid, say so in Manage your booking.",
+      // Where to send the money, on the pay step.
+      copy: "Copy",
+      copied: "Copied",
       atVisit: "You'll pay at your visit.",
     },
     stepOf: "Step {index, number} of {total, number}",
