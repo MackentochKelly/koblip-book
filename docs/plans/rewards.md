@@ -2,7 +2,7 @@
 
 Each business sets its own rewards for coming back: "after 5 visits, 1 free haircut", "after 10 visits, 20% off", "after $300 spent, $25 off". Customers earn by booking and redeem a reward on a later booking. Asked by the owner (Nov 10): "After (# of service) get (# of service) free, or (#) percentage etc... very flexible, this is a SaaS."
 
-**Status (Nov 10):** The owner said go. RW-1 to RW-11 are built and committed, with tests: rules can be made, visits are counted, a signed-in customer can redeem when booking and sees their rewards in their account, the owner sees each customer's rewards, changes them by hand and redeems for them, Rewards has an Activity tab, the public page lists the rewards, and the client's bell tells of a reward earned. RW-12 to RW-16 are to do. Nothing pushed or deployed. The live server needs the new migration (`0076_rewards`) at the next deploy.
+**Status (Nov 10):** Built. Every task, RW-1 to RW-16 with RW-5b and RW-6b, is done and committed, with tests. Nothing pushed or deployed. The live server needs the new migration (`0076_rewards`) at the next deploy. What was not seen in a browser is under "Not checked".
 
 ## Rules that stay
 
@@ -91,8 +91,8 @@ Sources: [Square Loyalty API](https://developer.squareup.com/docs/loyalty-api/ov
 - **RW23. Changed while building (Nov 10).**
   - RW4 said a unique index stops a booking counting twice. Built instead: each look at a booking writes only the difference between what it counts for now and what the history already holds for it, inside the business's booking turn. Why: a booking can be counted, undone (no-show) and counted again (back to confirmed), which one fixed row per booking cannot say.
   - A no-show or cancel on a booking that used a reward also puts the booking's price back to what it was before the reward.
-  - "Ends on" (a rule's end date) is stored and obeyed, but the editor has no field for it yet: see RW-5b.
-  - With several rewards usable on a service, the booking page offers the one that saves the most. Picking another one (RW11) is not built: see RW-6b.
+  - "Ends" (a rule's last day) is in the editor under More options (RW-5b). The form sends the day; the server turns it into the moment that day is over in the business's time zone, and refuses a day already over.
+  - With several rewards usable on a service, the booking page offers the one that saves the most, and a select to pick another once the switch is on (RW-6b). Two rewards that give the same thing are one choice. The owner's own Redeem (on a booking, and when adding one) still takes the best one.
   - The redeem switch is on the details step, not the pay step: a free booking has no pay step.
 - **RW22. Words.** "Rewards", "Earn", "Redeem", "visits" (Apple, Microsoft and Square all say earn and redeem). One word per thing: never "loyalty", "points", "stamps" or "coupon" on screen.
 
@@ -119,7 +119,7 @@ In order. Each is small and ends with its own tests. RW-1 to RW-11: `Done` (Nov 
 | RW-3 | Counting | `lib/rewards.ts` (`server-only`): `countBooking`, `uncountBooking`, `progressFor`, `availableRewards`; reaching the goal writes `convert` and makes the reward rows in one transaction. Tests: counts once, goal reached twice in one go, reverse removes an unused reward, reverse after use goes negative, paid-only, minimum price, chosen services, start and end dates, max per customer, free booking does not earn. |
 | RW-4 | Timer and hooks | `lib/rewards-timer.ts` started in `instrumentation.ts`: counts ended bookings, expires rewards. `setBookingStatus`, the owner's cancel, `setBookingPaid` and `lib/customer-cant-come.ts` call the counting code. Tests: each path. |
 | RW-5 | Owner: the page | `/dashboard/[businessId]/rewards`: list of rules as sentences with a switch each, "Add reward" as the one main action, the sheet editor, empty state = title + one action. Entry in `features/dashboard/navigation.ts`. Server actions check owner, plan and input. |
-| RW-5b | "Ends on" in the editor | A day picker with a way to clear it; the day ends in the business's time zone (the zoned-time helper moves from `features/booking/utils` to `lib/`). |
+| RW-5b | "Ends on" in the editor | A day picker with a way to clear it; the day ends in the business's time zone Built with the dashboard's own `bookingRangeUtc`, so nothing had to move. |
 | RW-6b | Pick another reward | When more than one reward fits the service, a choice instead of the one switch. |
 | RW-6 | Redeem when booking | Booking page: a signed-in customer with a proved phone sees their reward on the summary with "Redeem"; the total updates; a total of 0 skips the pay step. `createBooking` checks the reward again inside the booking turn and saves booking and reward together. Tests: someone else's reward refused, expired refused, wrong service refused, two tabs cannot spend one reward, cancel gives it back. |
 | RW-7 | Customer: see it | After booking and on the booking's own page: "Reward: Free Haircut" and the price before and after. New "Rewards" page in the account (`features/customer-account/nav.ts`): per business, progress ("3 of 5 visits") and rewards with their expiry. Signed out on a booking page: "Sign in to see your rewards". |
@@ -184,6 +184,8 @@ In order. Each is small and ends with its own tests. RW-1 to RW-11: `Done` (Nov 
 - Browser, demo business, phone (375): a customer's panel with Rewards, "Add visits" with a reason (5 visits made the reward and the count went back to 0), History; a booking's details with "Redeem Free service", then the reward line and "Free".
 - RW-9 to RW-11 tests: Activity (1), the public page's rewards (1), the bell (1). Whole suite: 2,183 pass.
 - Browser, demo business, phone (375): Rewards > Activity with its counts and lines; the public page has its Rewards tab and section.
+- RW-12 to RW-16, RW-5b and RW-6b tests: the team area's booking (in its suite), the admin's Rewards (1), the assistant's reward tools (10), the assistant's name in the history (1), the end day (2), a service delete and a business delete (2), the choice between rewards (2). Whole suite: 2,205 pass.
+- Browser, demo business, phone (375): the editor's "Ends" field under More options, its calendar with past days greyed out.
 - Type check and lint: 0 errors outside `video/`.
 - Browser, demo business, phone (375 and 320), light and dark: the Rewards page empty, the editor with More options, a rule saved and listed with its switch; the booking's details step with "Sign in to see your rewards". No sideways scroll.
 
@@ -194,10 +196,18 @@ In order. Each is small and ends with its own tests. RW-1 to RW-11: `Done` (Nov 
 - **The Redeem switch in the owner's add-booking form, in a browser.** Covered by tests on its two server parts.
 - **The build.** Another session's dev server runs in this folder; `npm run build` was not run beside it.
 - Spanish, Portuguese and French: the new words are translated at the next server start.
+- **Admin → Rewards, the team area's Reward badge and the assistant's reward cards, in a browser.** They need an admin, a team member and a chat with the assistant. Covered by tests.
+- **The select between several rewards, in a browser.** It needs a signed-in customer with two different rewards. Covered by a test.
 
 ## Next step
 
-RW-12 (the team area shows a reward was used), then RW-13 (admin screens), RW-14 (assistant tools), RW-15 (clean-up) and RW-16 (words and last checks).
+Nothing left to build in this plan. When the owner says so: push, then deploy (the migration `0076_rewards` runs then).
+
+### Notes from RW-12 to RW-16
+
+- The assistant's change to a customer's count is kept in the history under "assistant", with the owner who tapped.
+- Deleting a service turns off a reward that was only for that service (an empty list would mean every service). The owner sees it off and decides. A reward a customer already earned for that one service stays in their list until it expires, with nothing to use it on.
+- The assistant's `customer_rewards` gives the key that `adjust_customer_visits` needs; `find_customer` is unchanged.
 
 ### Notes from RW-9 to RW-11
 
