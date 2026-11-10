@@ -510,6 +510,58 @@ export async function rewardToRedeem(input: {
   return discountMinor === null ? null : { id: row.id, discountMinor }
 }
 
+// Before services are deleted: the write that turns off every rule one of
+// whose lists (what counts, or what the reward is used on) would be left
+// empty. An empty list means every service, so the rule would quietly
+// widen; off, the owner sees it and decides. Add it to the same saveAll as
+// the delete. Rewards already earned keep their own copy.
+export async function rulesOffBeforeServiceDelete(
+  serviceIds: readonly string[]
+): Promise<BatchItem<"sqlite">[]> {
+  if (serviceIds.length === 0) return []
+  const touched = await db
+    .selectDistinct({ ruleId: rewardRuleServices.ruleId })
+    .from(rewardRuleServices)
+    .where(inArray(rewardRuleServices.serviceId, [...serviceIds]))
+  if (touched.length === 0) return []
+  const rows = await db
+    .select({
+      ruleId: rewardRuleServices.ruleId,
+      role: rewardRuleServices.role,
+      serviceId: rewardRuleServices.serviceId,
+    })
+    .from(rewardRuleServices)
+    .where(
+      inArray(
+        rewardRuleServices.ruleId,
+        touched.map((row) => row.ruleId)
+      )
+    )
+  const going = new Set(serviceIds)
+  // Each rule's list, by role: emptied when none of its services stays.
+  const lists = new Map<string, boolean>()
+  for (const row of rows) {
+    const key = `${row.ruleId}:${row.role}`
+    lists.set(key, (lists.get(key) ?? false) || !going.has(row.serviceId))
+  }
+  const emptied = [
+    ...new Set(
+      [...lists]
+        .filter(([, stays]) => !stays)
+        .map(([key]) => key.slice(0, key.lastIndexOf(":")))
+    ),
+  ]
+  if (emptied.length === 0) return []
+  return [
+    db
+      .update(rewardRules)
+      .set({ status: "off" })
+      .where(
+        and(inArray(rewardRules.id, emptied), eq(rewardRules.status, "active"))
+      ),
+  ]
+}
+
 // The write that puts a reward on a booking being saved: add it to the
 // same saveAll as the booking, inside the business's booking turn, after
 // checking the reward with redeemable(). The booking's unique rewardId

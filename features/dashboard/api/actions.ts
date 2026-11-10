@@ -14,7 +14,10 @@ import { isGoogleEventColor } from "@/lib/google-calendar-colors"
 import { requestGoogleSync } from "@/lib/google-calendar-sync"
 import { saveAll } from "@/lib/db/save-all"
 import { clientNotification } from "@/lib/in-app-notifications"
-import { rewardsAfterChange } from "@/lib/rewards"
+import {
+  rewardsAfterChange,
+  rulesOffBeforeServiceDelete,
+} from "@/lib/rewards"
 import {
   bookings,
   businessHours,
@@ -338,7 +341,12 @@ export async function deleteService(
   if (!service) {
     return { ok: false, error: "not_found" }
   }
-  await db.delete(services).where(eq(services.id, service.id))
+  // A reward only for this service is turned off, never left open to every
+  // service (docs/plans/rewards.md, RW-15).
+  await saveAll([
+    ...(await rulesOffBeforeServiceDelete([service.id])),
+    db.delete(services).where(eq(services.id, service.id)),
+  ])
   revalidateBusiness(owned.business.slug)
   translateBusinessSoon(owned.business.id)
   return { ok: true }

@@ -3,6 +3,7 @@ import "server-only"
 import { and, asc, eq, isNull } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
+import { rulesOffBeforeServiceDelete } from "@/lib/rewards"
 import {
   addonGroups,
   addonOptions,
@@ -237,7 +238,13 @@ export async function replaceCatalog(
       .from(teamMembers)
       .where(eq(teamMembers.businessId, business.id)),
   ])
+  const going = await db
+    .select({ id: services.id })
+    .from(services)
+    .where(eq(services.businessId, business.id))
   await saveAll([
+    // Rewards for these services are turned off, never left open to all.
+    ...(await rulesOffBeforeServiceDelete(going.map((row) => row.id))),
     db.delete(services).where(eq(services.businessId, business.id)),
     db
       .delete(serviceCategories)

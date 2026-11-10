@@ -35,8 +35,10 @@ const {
   rewardHistory,
   rewardRulesFor,
   rewardsForBooking,
+  rulesOffBeforeServiceDelete,
   sweepRewards,
 } = await import("./rewards")
+const { saveAll } = await import("./db/save-all")
 
 let dir: string
 const ANA = "p:18095550000"
@@ -554,4 +556,76 @@ test("the client's bell hears of an earned reward once, by booking or by hand", 
   })
   expect(await bells()).toHaveLength(2)
   await db.delete(user).where(eq(user.id, "ana"))
+})
+
+test("a rule that loses all its chosen services is turned off, never opened to every service", async () => {
+  await db.insert(services).values([
+    { id: "gone", businessId: "biz", name: "Beard", durationMinutes: 30 },
+  ])
+  await rule({ id: "only" })
+  await rule({ id: "two", position: 1 })
+  await rule({ id: "all", position: 2 })
+  await db.insert(rewardRuleServices).values([
+    { businessId: "biz", ruleId: "only", serviceId: "gone", role: "reward" },
+    { businessId: "biz", ruleId: "two", serviceId: "gone", role: "earn" },
+    { businessId: "biz", ruleId: "two", serviceId: "cut", role: "earn" },
+  ])
+  await saveAll([
+    ...(await rulesOffBeforeServiceDelete(["gone"])),
+    db.delete(services).where(eq(services.id, "gone")),
+  ])
+  const after = await rewardRulesFor("biz")
+  expect(after.map((item) => [item.id, item.status])).toEqual([
+    ["only", "off"],
+    ["two", "active"],
+    ["all", "active"],
+  ])
+  // The one that keeps a service keeps its list.
+  expect(after[1].earnServices).toEqual([{ id: "cut", name: "Haircut" }])
+  // A service no rule names changes nothing.
+  expect(await rulesOffBeforeServiceDelete(["color"])).toEqual([])
+})
+
+test("deleting the business takes its rules, history and rewards with it", async () => {
+  await db.insert(businesses).values({
+    id: "closing",
+    slug: "closing",
+    name: "Closing",
+    timezone: "America/Santo_Domingo",
+    currency: "USD",
+    ownerId: "u1",
+  })
+  await db.insert(services).values({
+    id: "wash",
+    businessId: "closing",
+    name: "Wash",
+    durationMinutes: 30,
+  })
+  await rule({ id: "theirs", businessId: "closing" })
+  await db.insert(rewardRuleServices).values({
+    businessId: "closing",
+    ruleId: "theirs",
+    serviceId: "wash",
+    role: "earn",
+  })
+  await db.insert(rewardEvents).values({
+    businessId: "closing",
+    ruleId: "theirs",
+    customerKey: ANA,
+    type: "earn",
+    amount: 1,
+  })
+  await db.insert(rewards).values({
+    businessId: "closing",
+    ruleId: "theirs",
+    customerKey: ANA,
+    reward: { type: "free", value: null, maxDiscountMinor: null, services: null },
+    earnedAt: NOW.toISOString(),
+  })
+  await db.delete(businesses).where(eq(businesses.id, "closing"))
+  for (const table of [rewardRules, rewardRuleServices, rewardEvents, rewards]) {
+    expect(
+      await db.select().from(table).where(eq(table.businessId, "closing"))
+    ).toEqual([])
+  }
 })
