@@ -57,6 +57,8 @@ Every UI change, before and after. Each line must pass.
 - [ ] Removing something asks first (`ConfirmRemove`).
 - [ ] Toasts/status messages are announced to screen readers.
 - [ ] Icon-only buttons have a label.
+- [ ] Words are the shortest plain ones big teams use, and the app's own
+      word for the thing (`forms-and-text.md`, "Words").
 - [ ] Dialogs and sheets: focus goes in, Esc closes, focus comes back.
 - [ ] Anything done by dragging also works by tapping.
 

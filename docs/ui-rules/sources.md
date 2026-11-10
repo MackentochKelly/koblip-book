@@ -56,6 +56,16 @@ The HIG pages need JavaScript; Apple's JSON copies are at
 - Autofill: https://web.dev/learn/forms/autofill
 - Typography: https://web.dev/learn/design/typography
 
+## Writing
+
+Opened and checked on 2026-11-10.
+
+- Apple HIG Writing (16 Dec 2025): https://developer.apple.com/design/human-interface-guidelines/writing
+- Material communication principles (Google): https://codelabs.developers.google.com/codelabs/material-communication-guidance
+- Google developer style word list: https://developers.google.com/style/word-list
+- Microsoft top 10 tips for style and voice (2 Jul 2026): https://learn.microsoft.com/en-us/style-guide/top-10-tips-style-voice
+- Microsoft simple words, concise sentences: https://learn.microsoft.com/en-us/style-guide/word-choice/use-simple-words-concise-sentences
+
 ## MDN
 
 - Viewport meta (23 Sep 2026): https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta/name/viewport

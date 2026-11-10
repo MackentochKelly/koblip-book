@@ -8,6 +8,24 @@
 - One main action per screen.
 - Headings `text-balance`, paragraphs `text-pretty`.
 
+## Words
+
+Before writing any text people see, look up how Apple, Google and Microsoft
+say the same thing, and use the shortest plain words they use.
+
+- Fewer words: check each word needs to be there (Apple: "If you can use
+  fewer words, do so"; Microsoft: "Shorter is always better").
+- Common words, no jargon, written like you speak; contractions are fine
+  ("doesn't").
+- Buttons start with a verb, one or two words: "Add receipt", "Replace".
+- One word per thing, everywhere, and the word the app already uses
+  ("photo", "receipt"). Check the i18n files before adding a new one.
+- Sentence case. No full stop on labels, buttons and titles.
+- "Your" and "my" only where the meaning needs them; never "we".
+- A switch's label says what it does when on.
+- An error says what to do next, without blame, next to the problem.
+- Numbers as numerals.
+
 ## Forms on phones
 
 - Every input has a visible label above it; a placeholder is never the label.

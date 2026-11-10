@@ -277,15 +277,15 @@ const words = {
       reported: "{business} will check your payment.",
       failed: "That didn't work. Try again.",
       // The picture of the payment (docs/plans/payment-proof.md).
-      addProof: "Add a picture of your payment",
-      replaceProof: "Replace picture",
-      proofHint: "A screenshot works. Deleted {days, number} days after your visit.",
-      proof: "Payment picture",
+      addProof: "Add receipt",
+      replaceProof: "Replace",
+      proofHint: "A screenshot works. Deleted {days, number} days after the visit.",
+      proof: "Receipt",
       proofDeleted: "Deleted on {date, date, medium}",
-      proofReplaced: "Picture replaced",
-      proofMissing: "Add a picture of your payment first.",
-      proofTooBig: "That picture is too big.",
-      proofWrongType: "Use a JPG, PNG or WebP picture.",
+      proofReplaced: "Receipt replaced",
+      proofMissing: "Add a receipt first.",
+      proofTooBig: "That photo is too big.",
+      proofWrongType: "Use a JPEG, PNG or WebP photo.",
     },
     // One booking's page (docs/plans/client-account.md, D11).
     booking: {

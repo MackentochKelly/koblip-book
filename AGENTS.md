@@ -37,6 +37,7 @@ Koblip Book is a booking app for any local business: customers book appointments
 - Owner area: bottom tab bar on phone, sidebar on desktop; panels open as sheets/drawers.
 - Touch targets at least 44px. One main action per screen.
 - Very little text: short labels, at most one short helper line, anything longer goes in a tooltip; empty state = title + one action.
+- Words: before writing any text people see, look up how Apple, Google and Microsoft say it and use the shortest plain words they use (`docs/ui-rules/forms-and-text.md`, "Words"). One word per thing, the one the app already uses.
 - Only shadcn components, always. Every control is the shadcn component made for it, from `components/ui`; if it isn't there yet, look it up in https://ui.shadcn.com/docs/components and add it with `npx shadcn@latest add <name>`. Never fake one from another part or plain text (a code box is `InputOTP`, not `Input`; actions are `Button` or `ButtonGroup`, not loose text links; a choice of ways is `DropdownMenu`). Build a shared part once in `components/` from them and reuse it, never a hand-made copy or one-off variant.
 - Colours, radius and spacing only from the theme tokens in `app/globals.css`: no hex colours, no arbitrary px values. Check light and dark.
 
