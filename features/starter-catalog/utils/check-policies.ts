@@ -17,21 +17,40 @@ export interface DraftPolicies {
   points: DraftPolicyPoint[]
 }
 
-// Things a draft must never hold: blanks left to fill in, Markdown the page
-// would show as symbols, or money the app never takes.
-const FORBIDDEN: Array<{ pattern: RegExp; problem: string }> = [
+// Things a policy must never hold, however it was written: blanks left to
+// fill in, or Markdown the page would show as symbols.
+const FORMAT: Array<{ pattern: RegExp; problem: string }> = [
   { pattern: /\[[^\]]*\]|\{[^}]*\}|_{3,}/, problem: "leaves a blank to fill in" },
   { pattern: /^\s*#|\*\*|__/m, problem: "uses Markdown symbols" },
+]
+
+// And what a first draft must not hold either: money the app never takes
+// and the business never told us about.
+const MONEY: Array<{ pattern: RegExp; problem: string }> = [
   {
     pattern: /\b(deposit|card on file|credit card|charge[sd]?|fee|refund)\b/i,
-    problem: "mentions a deposit, card, fee, charge or refund (nothing is paid online)",
+    problem: "mentions a deposit, card, fee, charge or refund (the business has none)",
   },
 ]
 
+function problemsOf(
+  rules: typeof FORMAT,
+  label: string,
+  text: string
+): string[] {
+  return rules
+    .filter((rule) => rule.pattern.test(text))
+    .map((rule) => `${label} ${rule.problem}.`)
+}
+
+// For a text Muse changed but did not write from nothing: the owner's own
+// words may rightly mention a fee.
+export function formatProblems(label: string, text: string): string[] {
+  return problemsOf(FORMAT, label, text)
+}
+
 function forbidden(label: string, text: string): string[] {
-  return FORBIDDEN.filter((rule) => rule.pattern.test(text)).map(
-    (rule) => `${label} ${rule.problem}.`
-  )
+  return problemsOf([...FORMAT, ...MONEY], label, text)
 }
 
 function checkPoints(value: unknown, problems: string[]): DraftPolicyPoint[] {

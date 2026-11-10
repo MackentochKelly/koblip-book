@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import { MoreMenuTrigger } from "@/components/more-menu-trigger"
 import { PageSection } from "@/components/page-section"
 import { PaymentTypeIcon } from "@/components/payment-type-icon"
@@ -25,7 +26,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { PlusIcon, Trash2Icon } from "@/components/ui/icons"
+import { CircleAlertIcon, PlusIcon, Trash2Icon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import {
   Item,
@@ -50,6 +51,7 @@ import {
 } from "@/lib/payment-rules"
 import {
   deletePaymentMethod,
+  keepPolicies,
   removePaymentType,
   savePaymentMethod,
   setPayLater,
@@ -66,17 +68,27 @@ type Editing = { method: PaymentMethod | null; type: PaymentType }
 // where to send the money; a way reaches customers once it has that. Any
 // way can be removed, a standard one too, and added again with Add. With
 // none set up, booking has no payment step. Koblip never moves the money;
-// the owner marks each booking paid (booking-details.tsx).
+// the owner marks each booking paid (booking-details.tsx). When the ways
+// to pay moved on from what the policies say, the first row offers to
+// bring the policies up to date; nothing in them changes without that tap.
 export function PaymentsSection({
   businessId,
   methods,
   payLater,
   removedTypes,
+  policiesOutOfDate,
+  onUpdatePolicies,
 }: {
   businessId: string
   methods: PaymentMethod[]
   payLater: boolean
   removedTypes: PaymentType[]
+  policiesOutOfDate: boolean
+  // Rewrites what the policies say about paying; the page passes it in,
+  // as the policy writer is another feature's.
+  onUpdatePolicies: (
+    businessId: string
+  ) => Promise<{ ok: true; changed: number } | { ok: false }>
 }) {
   const c = useTranslations("owner.catalog.common")
   const settings = useTranslations("owner.settings")
@@ -87,6 +99,7 @@ export function PaymentsSection({
   const [formKey, setFormKey] = useState(0)
   const [removing, setRemoving] = useState<PaymentMethod | null>(null)
   const [error, setError] = useState<"name" | "details" | null>(null)
+  const [askUpdate, setAskUpdate] = useState(false)
   const full = methods.length >= PAYMENT_RULES.maxMethods
   const { standard, more } = paymentSlots(methods, removedTypes)
 
@@ -146,6 +159,25 @@ export function PaymentsSection({
       else toast.error(settings("tryAgain"))
     })
 
+  const updatePolicies = () =>
+    startTransition(async () => {
+      const result = await onUpdatePolicies(businessId).catch(() => null)
+      if (result?.ok) {
+        toast.success(
+          t(result.changed > 0 ? "policies.updated" : "policies.nothing")
+        )
+        router.refresh()
+      } else {
+        toast.error(settings("tryAgain"))
+      }
+    })
+  const keepAsIs = () =>
+    startTransition(async () => {
+      const result = await keepPolicies(businessId).catch(() => null)
+      if (result?.ok) router.refresh()
+      else toast.error(settings("tryAgain"))
+    })
+
   // Add opens a choice of kinds, then that kind's form.
   const add = (
     <DropdownMenu>
@@ -182,6 +214,37 @@ export function PaymentsSection({
       action={add}
     >
       <ItemGroup className="gap-3">
+        {policiesOutOfDate && (
+          <Item variant="muted" role="listitem">
+            <ItemMedia variant="icon">
+              <CircleAlertIcon />
+            </ItemMedia>
+            <ItemContent className="min-w-0">
+              <ItemTitle>{t("policies.title")}</ItemTitle>
+              <ItemDescription>{t("policies.hint")}</ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <Button
+                variant="outline"
+                disabled={pending}
+                onClick={() => setAskUpdate(true)}
+              >
+                {pending && <Spinner data-icon="inline-start" />}
+                {t("policies.update")}
+              </Button>
+              <DropdownMenu>
+                <MoreMenuTrigger label={c("more")} />
+                <DropdownMenuContent align="end">
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem disabled={pending} onClick={keepAsIs}>
+                      {t("policies.keep")}
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </ItemActions>
+          </Item>
+        )}
         {standard.map(({ type, method }) =>
           method ? (
             <MethodRow
@@ -248,6 +311,17 @@ export function PaymentsSection({
         description={t("removeHint")}
         onClose={() => setRemoving(null)}
         onConfirm={() => removing && remove(removing)}
+      />
+
+      <ConfirmDialog
+        open={askUpdate}
+        title={t("policies.confirmTitle")}
+        description={t("policies.confirmText")}
+        confirm={t("policies.update")}
+        cancel={t("policies.cancel")}
+        tone="default"
+        onConfirm={updatePolicies}
+        onClose={() => setAskUpdate(false)}
       />
 
       <ResponsivePanel

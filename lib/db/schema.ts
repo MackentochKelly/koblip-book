@@ -18,17 +18,18 @@ import {
   REMINDER_EMAIL_STATES,
 } from "../client-reminder-channels"
 import { REVIEW_HIDE_REASONS } from "../review-rules"
-import { DEFAULT_THEME, type ThemeId } from "../theme-rules"
-import {
-  TRANSLATION_ACTIONS,
-  TRANSLATION_ORIGINS,
 import {
   PAYMENT_CHOICES,
   PAYMENT_STATUSES,
   PAYMENT_TYPES,
+  POLICY_PAYMENT_STATES,
   type PaymentMethodSnapshot,
   type PaymentType,
 } from "../payment-rules"
+import { DEFAULT_THEME, type ThemeId } from "../theme-rules"
+import {
+  TRANSLATION_ACTIONS,
+  TRANSLATION_ORIGINS,
   TRANSLATION_SCOPES,
   TRANSLATION_STATUSES,
 } from "../translations/rules"
@@ -111,10 +112,6 @@ export const businesses = sqliteTable(
     isDemo: integer({ mode: "boolean" }).notNull().default(false),
     // The public page's look (lib/theme-rules.ts).
     theme: text().$type<ThemeId>().notNull().default(DEFAULT_THEME),
-    ...timestamps(),
-  },
-  (table) => [
-    index("businesses_owner_idx").on(table.ownerId),
     // With ways to pay outside the app (paymentMethods), whether a
     // customer may also choose to pay at the visit (lib/payment-rules.ts).
     payLater: integer({ mode: "boolean" }).notNull().default(true),
@@ -124,6 +121,13 @@ export const businesses = sqliteTable(
       .$type<PaymentType[]>()
       .notNull()
       .default([]),
+    // The way of paying the policies were last written for
+    // (policyPaymentState in lib/payment-rules.ts); null = never recorded.
+    policiesPayment: text({ enum: POLICY_PAYMENT_STATES }),
+    ...timestamps(),
+  },
+  (table) => [
+    index("businesses_owner_idx").on(table.ownerId),
     index("businesses_demo_idx").on(table.isDemo, table.createdAt),
   ]
 )
@@ -478,13 +482,6 @@ export const bookings = sqliteTable(
     // When the customer agreed to the business's policies in the booking
     // flow; null when it had none to agree to, or for owner-made bookings.
     policiesAcceptedAt: text(),
-    ...timestamps(),
-  },
-  (table) => [
-    index("bookings_business_idx").on(table.businessId, table.startAt),
-    index("bookings_customer_idx").on(
-      table.businessId,
-      table.customerKey,
     // Paying outside the app (lib/payment-rules.ts), all null on a booking
     // made where the business offers no such way, or made by the owner.
     // paymentChoice: now (by paymentMethod) or later (at the visit).
@@ -498,6 +495,13 @@ export const bookings = sqliteTable(
     paymentReference: text(),
     paymentReportedAt: text(),
     paymentPaidAt: text(),
+    ...timestamps(),
+  },
+  (table) => [
+    index("bookings_business_idx").on(table.businessId, table.startAt),
+    index("bookings_customer_idx").on(
+      table.businessId,
+      table.customerKey,
       table.startAt
     ),
     index("bookings_customer_user_idx").on(
@@ -507,13 +511,6 @@ export const bookings = sqliteTable(
   ]
 )
 
-// Customers the owner added by hand, before (or without) a booking. The
-// Customers page lists them with everyone who booked; customerKey is the
-// same key bookings carry, so a later booking joins the same customer.
-export const customers = sqliteTable(
-  "customers",
-  {
-    id: id(),
 // The ways a business can be paid outside the app (bank transfer, Zelle,
 // its own), chosen by the customer when booking. Koblip never moves the
 // money. `details` (an account number, a Zelle phone) is private: only the
@@ -536,6 +533,13 @@ export const paymentMethods = sqliteTable(
   ]
 )
 
+// Customers the owner added by hand, before (or without) a booking. The
+// Customers page lists them with everyone who booked; customerKey is the
+// same key bookings carry, so a later booking joins the same customer.
+export const customers = sqliteTable(
+  "customers",
+  {
+    id: id(),
     businessId: text()
       .notNull()
       .references(() => businesses.id, { onDelete: "cascade" }),

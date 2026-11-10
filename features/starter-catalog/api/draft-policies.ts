@@ -2,32 +2,41 @@ import "server-only"
 import type OpenAI from "openai"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { getMetaAiClient, META_TEXT_MODEL } from "@/lib/meta-ai"
+import type { PolicyPaymentState } from "@/lib/payment-rules"
 import { POLICY_POINT_ICONS, POLICY_RULES as RULES } from "@/lib/policy-rules"
 import { checkPolicies, type DraftPolicies } from "../utils/check-policies"
+import { payingFact } from "../utils/paying-fact"
 
 export interface PolicyFacts {
   name: string
   category: string | null
   address: string | null
   phone: string | null
+  // What the business offers for paying right now.
+  payment: PolicyPaymentState
 }
 
-// What the booking page really does, so a policy never promises more.
-const HOW_BOOKING_WORKS = `How booking works on this page (true for every business, never say otherwise):
-- Customers book online for free; nothing is paid online. Payment happens at the business.
+// What the booking page really does at this business, so a policy never
+// promises more.
+function howBookingWorks(payment: PolicyPaymentState): string {
+  return `How booking works on this page (true for this business, never say otherwise):
+- ${payingFact(payment)}
 - A booking needs at least ${BOOKING_RULES.minimumNoticeMinutes} minutes' notice.
 - The booking form asks for the customer's name and phone number, an optional note, and whether they agree to booking messages on WhatsApp.
 - The business uses these details to keep the booking and send confirmations and reminders. Bookings are kept on Koblip Book, the booking service the business uses.
 - To cancel or change a booking, the customer contacts the business.`
+}
 
-const SYSTEM_MESSAGE = `You write three short policies and their key points for a real local business's booking page, in plain, friendly English, as the business speaking ("we", "you"). Fit them to this kind of business.
-- booking: the booking and cancellation policy: how much notice to give when cancelling or changing (pick what is usual for this kind of business), arriving late, missed appointments, and anything customers should know before their visit.
+function systemMessage(payment: PolicyPaymentState): string {
+  return `You write three short policies and their key points for a real local business's booking page, in plain, friendly English, as the business speaking ("we", "you"). Fit them to this kind of business.
+- booking: the booking and cancellation policy: how much notice to give when cancelling or changing (pick what is usual for this kind of business), arriving late, missed appointments, how paying works, and anything customers should know before their visit.
 - terms: the terms of service for booking with the business: what a booking is, changes the business may need to make, being respectful, health and safety where it fits, and that local law applies.
 - privacy: how the business uses customers' details: what is collected, why, who sees it, how long it is kept, and how to ask to see or delete it by contacting the business.
 Each is ${RULES.minDraftLength} to ${Math.round(RULES.maxLength * 0.6)} characters, short paragraphs separated by a blank line, no headings, no list symbols, no Markdown, no blanks to fill in. Use only the facts given; never invent prices, fees, deposits, refunds, emails, websites, laws or numbers.
-- points: ${RULES.minDraftPoints} or ${RULES.maxPoints} key points from these policies that the customer agrees to before booking: cancelling or changing, arriving late, paying at the business, and one that fits this kind of business. Each has an icon (calendar for cancelling, clock for arriving, card for paying, image for photos or results, care for health and care, info for anything else), a title of 1 to 4 words (at most ${RULES.maxPointTitle} characters) and one or two plain sentences (at most ${RULES.maxPointBody} characters).
+- points: ${RULES.minDraftPoints} or ${RULES.maxPoints} key points from these policies that the customer agrees to before booking: cancelling or changing, arriving late, how paying works, and one that fits this kind of business. Each has an icon (calendar for cancelling, clock for arriving, card for paying, image for photos or results, care for health and care, info for anything else), a title of 1 to 4 words (at most ${RULES.maxPointTitle} characters) and one or two plain sentences (at most ${RULES.maxPointBody} characters).
 
-${HOW_BOOKING_WORKS}`
+${howBookingWorks(payment)}`
+}
 
 const SCHEMA = {
   type: "object",
@@ -79,7 +88,7 @@ export async function draftPolicies(
     return null
   }
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: SYSTEM_MESSAGE },
+    { role: "system", content: systemMessage(facts.payment) },
     { role: "user", content: factsMessage(facts) },
   ]
   try {

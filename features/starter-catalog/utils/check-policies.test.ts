@@ -53,7 +53,7 @@ test("checkPolicies checks the points' count, icons, lengths and money", () => {
   expect(bad.problems).toEqual([
     "point 1 needs an icon from the list.",
     "point 2 title must be 1 to 40 characters.",
-    "point 3 mentions a deposit, card, fee, charge or refund (nothing is paid online).",
+    "point 3 mentions a deposit, card, fee, charge or refund (the business has none).",
   ])
 })
 

@@ -153,6 +153,19 @@ const settings = {
     payLaterHint: "Customers can also choose to pay later.",
     removed: "{name} removed",
     removeHint: "Bookings already made keep it.",
+    // The policies were written for another way of paying than the
+    // business offers now (policiesBehind in lib/payment-rules.ts).
+    policies: {
+      title: "Your policies are out of date",
+      hint: "They don't match how customers pay now.",
+      update: "Update",
+      keep: "Keep as they are",
+      confirmTitle: "Update your policies?",
+      confirmText: "Only the parts about paying change.",
+      cancel: "Not now",
+      updated: "Policies updated",
+      nothing: "Nothing needed changing",
+    },
   },
   account: {
     title: "Account",

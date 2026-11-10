@@ -6,6 +6,7 @@ import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import { bookings, businesses, paymentMethods } from "@/lib/db/schema"
 import { clientNotification } from "@/lib/in-app-notifications"
+import { policyPaymentFor } from "@/lib/payment-methods"
 import {
   checkPaymentMethod,
   isPaymentType,
@@ -143,6 +144,19 @@ export async function setPayLater(
     .set({ payLater })
     .where(eq(businesses.id, owned.business.id))
   revalidateBusiness(owned.business.slug)
+  return { ok: true }
+}
+
+// The owner keeps their policies as they are, after the ways to pay moved
+// on: the policies now stand for today's ways, so Settings → Payments
+// stops asking until those change again.
+export async function keepPolicies(businessId: string): Promise<ActionResult> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) return { ok: false, error: "not_found" }
+  await db
+    .update(businesses)
+    .set({ policiesPayment: await policyPaymentFor(owned.business) })
+    .where(eq(businesses.id, owned.business.id))
   return { ok: true }
 }
 

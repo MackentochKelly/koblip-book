@@ -7,6 +7,8 @@ import {
   paymentOf,
   paymentOptions,
   paymentSlots,
+  policiesBehind,
+  policyPaymentState,
   withRemovedType,
   PAYMENT_RULES,
   PAYMENT_START_NAMES,
@@ -183,4 +185,19 @@ test("only a standard way joins the removed list, once", () => {
   expect(withRemovedType([], "zelle")).toEqual(["zelle"])
   expect(withRemovedType(["zelle"], "zelle")).toEqual(["zelle"])
   expect(withRemovedType(["zelle"], "other")).toEqual(["zelle"])
+})
+
+test("what the policies must say follows the ways to pay", () => {
+  expect(policyPaymentState(0, true)).toBe("visit")
+  expect(policyPaymentState(0, false)).toBe("visit")
+  expect(policyPaymentState(2, true)).toBe("direct_or_visit")
+  expect(policyPaymentState(1, false)).toBe("direct")
+})
+
+test("policies fall behind when the ways to pay move on", () => {
+  // Policies from before this was recorded said "pay at the business".
+  expect(policiesBehind(null, "visit")).toBe(false)
+  expect(policiesBehind(null, "direct_or_visit")).toBe(true)
+  expect(policiesBehind("direct_or_visit", "direct_or_visit")).toBe(false)
+  expect(policiesBehind("direct_or_visit", "direct")).toBe(true)
 })

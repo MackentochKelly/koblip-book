@@ -105,22 +105,9 @@ const words = {
       member: "Select a professional",
       time: "Pick a time",
       details: "Your details",
+      payment: "How you'll pay",
       policies: "Before you book",
     },
-    stepOf: "Step {index, number} of {total, number}",
-    anyone: "Anyone",
-    whoeverFree: "Whoever is free",
-    morning: "Morning",
-    afternoon: "Afternoon",
-    evening: "Evening",
-    timesOf: "{part} times",
-    timesFailed: "Times could not load",
-    tryAgain: "Try again",
-    noTimes: "No free times",
-    today: "Today",
-      payment: "How you'll pay",
-    tomorrow: "Tomorrow",
-    day: "Day",
     // Paying the business outside the app (lib/payment-rules.ts).
     payment: {
       types: {
@@ -135,6 +122,19 @@ const words = {
       thenTell: "Once you've paid, say so in Manage your booking.",
       atVisit: "You'll pay at your visit.",
     },
+    stepOf: "Step {index, number} of {total, number}",
+    anyone: "Anyone",
+    whoeverFree: "Whoever is free",
+    morning: "Morning",
+    afternoon: "Afternoon",
+    evening: "Evening",
+    timesOf: "{part} times",
+    timesFailed: "Times could not load",
+    tryAgain: "Try again",
+    noTimes: "No free times",
+    today: "Today",
+    tomorrow: "Tomorrow",
+    day: "Day",
     moreDates: "More dates",
     contactTitle: "Contact info",
     name: "Name",
@@ -245,19 +245,6 @@ const words = {
     moving: "Moving…",
     moved: "Booking moved",
     timeTaken: "That time was just taken. Pick another one.",
-    // One booking's page (docs/plans/client-account.md, D11).
-    booking: {
-      title: "Your visit",
-      when: "When",
-      service: "Service",
-      price: "Price",
-      note: "Your note",
-      map: "Map",
-      addToCalendar: "Add to calendar",
-      calendarFile: "Calendar file (.ics)",
-      googleCalendar: "Google Calendar",
-    },
-  },
     // Paying the business outside the app, on one booking's page
     // (lib/payment-rules.ts).
     payment: {
@@ -275,6 +262,19 @@ const words = {
       reported: "{business} will check your payment.",
       failed: "That didn't work. Try again.",
     },
+    // One booking's page (docs/plans/client-account.md, D11).
+    booking: {
+      title: "Your visit",
+      when: "When",
+      service: "Service",
+      price: "Price",
+      note: "Your note",
+      map: "Map",
+      addToCalendar: "Add to calendar",
+      calendarFile: "Calendar file (.ics)",
+      googleCalendar: "Google Calendar",
+    },
+  },
   // The home page (Koblip Book's own page for owners).
   home: {
     description: "Your booking page in one minute.",

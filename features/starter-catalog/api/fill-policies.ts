@@ -5,10 +5,12 @@ import type { BatchItem } from "drizzle-orm/batch"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
 import {
-  type businesses,
+  businesses,
   businessPolicies,
   businessPolicyPoints,
 } from "@/lib/db/schema"
+import { policyPaymentFor } from "@/lib/payment-methods"
+import type { PolicyPaymentState } from "@/lib/payment-rules"
 import { POLICY_KINDS } from "@/lib/policy-rules"
 import type { DraftPolicies } from "../utils/check-policies"
 import { draftPolicies } from "./draft-policies"
@@ -41,20 +43,34 @@ export async function policyParts(businessId: string): Promise<PolicyParts> {
   return { texts: Boolean(text), points: Boolean(point) }
 }
 
-// Muse Spark's checked policies for this business, or null.
-export function draftPoliciesFor(business: Business): Promise<DraftPolicies | null> {
-  return draftPolicies({
+// A draft and the way of paying it was written for.
+export interface PoliciesDraft {
+  policies: DraftPolicies
+  payment: PolicyPaymentState
+}
+
+// Muse Spark's checked policies for this business, written for the ways
+// to pay it offers right now, or null.
+export async function draftPoliciesFor(
+  business: Business
+): Promise<PoliciesDraft | null> {
+  const payment = await policyPaymentFor(business)
+  const policies = await draftPolicies({
     name: business.name,
     category: business.category,
     address: business.address,
     phone: business.phone,
+    payment,
   })
+  return policies && { policies, payment }
 }
 
-// Saves the parts the business does not have yet, in one batch.
+// Saves the parts the business does not have yet, in one batch. When the
+// policy texts are Muse's, what they were written for is kept with them,
+// so the owner hears when their ways to pay move on (Settings → Payments).
 export async function writeMissingPolicies(
   business: Business,
-  policies: DraftPolicies,
+  { policies, payment }: PoliciesDraft,
   existing: PolicyParts
 ): Promise<void> {
   const writes: BatchItem<"sqlite">[] = []
@@ -66,7 +82,11 @@ export async function writeMissingPolicies(
           kind,
           body: policies.texts[kind],
         }))
-      )
+      ),
+      db
+        .update(businesses)
+        .set({ policiesPayment: payment })
+        .where(eq(businesses.id, business.id))
     )
   }
   if (!existing.points) {

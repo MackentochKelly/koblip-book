@@ -222,3 +222,32 @@ export function checkPaymentReference(
   if (trimmed.length > PAYMENT_RULES.maxReference) return undefined
   return trimmed === "" ? null : trimmed
 }
+
+// What a business's policies must say about paying, from its ways to pay:
+// at the visit only (it lists no way), by one of its ways or at the visit,
+// or by one of its ways only. Policies are written for one of these
+// (businesses.policiesPayment), so the app can tell when they fell behind.
+export const POLICY_PAYMENT_STATES = [
+  "visit",
+  "direct_or_visit",
+  "direct",
+] as const
+export type PolicyPaymentState = (typeof POLICY_PAYMENT_STATES)[number]
+
+export function policyPaymentState(
+  methodCount: number,
+  payLater: boolean
+): PolicyPaymentState {
+  if (methodCount === 0) return "visit"
+  return payLater ? "direct_or_visit" : "direct"
+}
+
+// Whether the policies were written for another way of paying than the
+// business offers now. Policies from before this was recorded (null) all
+// said "pay at the business".
+export function policiesBehind(
+  writtenFor: PolicyPaymentState | null,
+  now: PolicyPaymentState
+): boolean {
+  return (writtenFor ?? "visit") !== now
+}

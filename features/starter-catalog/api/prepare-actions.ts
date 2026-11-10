@@ -2,29 +2,11 @@
 
 import { and, eq, isNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { requireAccount } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { businesses } from "@/lib/db/schema"
 import type { StarterResult } from "../types"
+import { ownedBusiness } from "./owned-business"
 import { catalogJob, photoJob, policiesJob } from "./prepare-jobs"
-
-// The signed-in owner's own real business (never a demo copy), or null.
-// The id comes from the browser, so ownership is checked here.
-async function ownedBusiness(businessId: unknown) {
-  if (typeof businessId !== "string" || !businessId) {
-    return null
-  }
-  const session = await requireAccount()
-  const [business] = await db
-    .select()
-    .from(businesses)
-    .where(eq(businesses.id, businessId))
-    .limit(1)
-  if (!business || business.ownerId !== session.userId || business.isDemo) {
-    return null
-  }
-  return { business, userId: session.userId }
-}
 
 // Right after sign-up: Meta AI writes the business's services, extras,
 // prices and team from its Google details, and they go live at once. A

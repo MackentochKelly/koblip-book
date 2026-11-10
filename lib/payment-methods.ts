@@ -5,8 +5,10 @@ import { db } from "@/lib/db"
 import { businesses, paymentMethods } from "@/lib/db/schema"
 import {
   paymentOptions,
+  policyPaymentState,
   type PaymentMethod,
   type PaymentOptions,
+  type PolicyPaymentState,
 } from "@/lib/payment-rules"
 
 // A business's ways to be paid outside the app, in the owner's order, with
@@ -41,4 +43,13 @@ export async function paymentOptionsFor(
       .limit(1),
   ])
   return paymentOptions(methods, business?.payLater ?? true)
+}
+
+// What the business's policies must say about paying right now.
+export async function policyPaymentFor(business: {
+  id: string
+  payLater: boolean
+}): Promise<PolicyPaymentState> {
+  const methods = await paymentMethodsFor(business.id)
+  return policyPaymentState(methods.length, business.payLater)
 }
