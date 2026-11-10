@@ -117,6 +117,17 @@ vi.mock("@/features/dashboard/api/payment-actions", () => ({
 vi.mock("@/features/dashboard/api/payment-queries", () => ({
   getPaymentSettings: vi.fn(),
 }))
+vi.mock("@/features/dashboard/api/reward-queries", () => ({
+  getRewardSettings: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/reward-actions", () => ({
+  saveRewardRule: vi.fn(),
+  setRewardRuleOn: vi.fn(),
+  removeRewardRule: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/customer-reward-changes", () => ({
+  changeProgress: vi.fn(),
+}))
 vi.mock("@/features/booking/api/get-availability", () => ({
   getAvailability: vi.fn(),
   getMoveAvailability: vi.fn(),
@@ -127,6 +138,7 @@ vi.mock("@/features/booking/api/create-owner-booking", () => ({
 vi.mock("@/features/dashboard/api/customers", () => ({
   getCustomers: vi.fn(),
   getCustomerBookings: vi.fn(),
+  getCustomerRewards: vi.fn(),
 }))
 vi.mock("@/features/dashboard/api/team-service-queries", () => ({
   getBusinessPhotos: vi.fn(),
@@ -217,8 +229,14 @@ const { getAvailability, getMoveAvailability } =
   await import("@/features/booking/api/get-availability")
 const { createOwnerBooking } =
   await import("@/features/booking/api/create-owner-booking")
-const { getCustomers, getCustomerBookings } =
+const { getCustomers, getCustomerBookings, getCustomerRewards } =
   await import("@/features/dashboard/api/customers")
+const { getRewardSettings } =
+  await import("@/features/dashboard/api/reward-queries")
+const { saveRewardRule, setRewardRuleOn, removeRewardRule } =
+  await import("@/features/dashboard/api/reward-actions")
+const { changeProgress } =
+  await import("@/features/dashboard/api/customer-reward-changes")
 const { getBusinessPhotos, getServiceTeams } =
   await import("@/features/dashboard/api/team-service-queries")
 const { getAddonGroups } =
@@ -290,6 +308,10 @@ test("every needsConfirm tool carries its result kind", () => {
     ["save_payment_method", "payments"],
     ["remove_payment_method", "payments"],
     ["set_pay_at_visit", "payments"],
+    ["save_reward", "rewards"],
+    ["turn_reward_on_off", "rewards"],
+    ["remove_reward", "rewards"],
+    ["adjust_customer_visits", "customers"],
     ["turn_message_on_off", "messages"],
     ["save_reminder_settings", "timing"],
     ["change_message_wording", "messages"],
@@ -316,6 +338,12 @@ beforeEach(() => {
     methods: [],
     payLater: true,
     toCheck: 0,
+  })
+  vi.mocked(getRewardSettings).mockResolvedValue({
+    available: true,
+    currency: "EUR",
+    rules: [],
+    counts: { earning: 0, waiting: 0, used: 0 },
   })
   vi.mocked(getServiceNameTranslations).mockResolvedValue([])
   vi.mocked(getOwnerBusiness).mockResolvedValue({
@@ -3162,6 +3190,10 @@ const CHANGES: [string, string][] = [
   ["save_payment_method", "payments"],
   ["remove_payment_method", "payments"],
   ["set_pay_at_visit", "payments"],
+  ["save_reward", "rewards"],
+  ["turn_reward_on_off", "rewards"],
+  ["remove_reward", "rewards"],
+  ["adjust_customer_visits", "customers"],
   ["turn_message_on_off", "messages"],
   ["save_reminder_settings", "timing"],
   ["change_message_wording", "messages"],
@@ -4153,6 +4185,7 @@ test("only lookups and suggestions run without the tap", () => {
   expect(noTap).toEqual([
     "booking_stats",
     "business_overview",
+    "customer_rewards",
     "find_customer",
     "find_free_times",
     "improve_details",
@@ -4161,6 +4194,7 @@ test("only lookups and suggestions run without the tap", () => {
     "list_customers",
     "list_payment_methods",
     "list_policies",
+    "list_rewards",
     "list_services",
     "list_team",
     "suggest_addons",
@@ -4635,4 +4669,301 @@ test("set_pay_at_visit turns it off and on, on the tap only", async () => {
     doneText: "Paying at the visit is off.",
   })
   expect(setPayLater).toHaveBeenCalledWith("b1", false)
+})
+
+// Rewards (docs/plans/rewards.md, RW-14).
+const CUT_RULE = {
+  id: "r1",
+  status: "active" as const,
+  earnType: "visit" as const,
+  earnServices: null,
+  earnMinPriceMinor: null,
+  goal: 5,
+  rewardType: "free" as const,
+  rewardValue: null,
+  rewardCount: 1,
+  rewardServices: [{ id: "s1", name: "Cut" }],
+  maxDiscountMinor: null,
+  expiresDays: 90,
+  startsAt: "2026-11-01T00:00:00.000Z",
+  endsAt: null,
+  maxPerCustomer: null,
+  paidOnly: false,
+}
+const ANA = { key: "p:34600111222", name: "Ana", phone: "+34600111222" }
+
+function mockRewards(rules: unknown[] = [CUT_RULE]) {
+  vi.mocked(getRewardSettings).mockResolvedValue({
+    available: true,
+    currency: "EUR",
+    rules,
+    counts: { earning: 4, waiting: 2, used: 1 },
+  } as never)
+  vi.mocked(getOwnerBusiness).mockResolvedValue(ownerData())
+  vi.mocked(getCustomers).mockResolvedValue([ANA] as never)
+}
+
+test("list_rewards gives each rule in the owner's words, and the counts", async () => {
+  mockRewards()
+  expect(await byName("list_rewards").run({})).toMatchObject({
+    rewards: [
+      {
+        id: "r1",
+        on: true,
+        earnsText: "Every 5 visits",
+        givesText: "Free Cut",
+        goal: 5,
+        rewardServiceIds: ["s1"],
+        expiresDays: 90,
+        endsOn: null,
+      },
+    ],
+    customersEarning: 4,
+    rewardsWaiting: 2,
+    rewardsUsed: 1,
+  })
+})
+
+test("reward tools say so on a plan without rewards", async () => {
+  vi.mocked(getRewardSettings).mockResolvedValue({
+    available: false,
+    currency: "EUR",
+    rules: [],
+    counts: { earning: 0, waiting: 0, used: 0 },
+  })
+  const locked = { error: expect.stringContaining("plan") }
+  expect(await byName("list_rewards").run({})).toEqual(locked)
+  expect(await byName("customer_rewards").run({ query: "Ana" })).toEqual(locked)
+  expect(
+    await byName("save_reward").confirm!.describe({
+      earnType: "visit",
+      goal: 5,
+      rewardType: "free",
+    })
+  ).toEqual(locked)
+})
+
+test("business_overview counts rewards waiting only when the business runs rewards", async () => {
+  const run = () =>
+    byName("business_overview").run({}) as Promise<Record<string, unknown>>
+  expect(await run()).not.toHaveProperty("rewardsWaiting")
+  mockRewards()
+  expect(await run()).toMatchObject({ rewardsWaiting: 2 })
+})
+
+test("list_bookings says what a reward took off", async () => {
+  vi.mocked(getBookings).mockResolvedValue([
+    { ...(STARTED as object), id: "k1", addons: [], rewardDiscountMinor: 2500 },
+    { ...(STARTED as object), id: "k2", addons: [] },
+  ] as never)
+  const result = (await byName("list_bookings").run({ range: "past" })) as {
+    bookings: Record<string, unknown>[]
+  }
+  expect(result.bookings[0]).toMatchObject({
+    rewardOffMinor: 2500,
+    rewardOffText: "€25.00",
+  })
+  expect(result.bookings[1]).not.toHaveProperty("rewardOffMinor")
+})
+
+test("customer_rewards gives the count, the rewards to redeem and the key", async () => {
+  mockRewards()
+  vi.mocked(getCustomerRewards).mockResolvedValue({
+    rules: [{ rule: CUT_RULE, balance: 3 }],
+    rewards: [
+      {
+        id: "w1",
+        reward: {
+          type: "free",
+          value: null,
+          maxDiscountMinor: null,
+          services: [{ id: "s1", name: "Cut" }],
+        },
+        held: false,
+        expires: "2027-01-31",
+      },
+    ],
+    history: [],
+  })
+  expect(await byName("customer_rewards").run({ query: "ana" })).toMatchObject({
+    customers: [
+      {
+        name: "Ana",
+        customerKey: "p:34600111222",
+        progress: [{ ruleId: "r1", count: 3, goal: 5, givesText: "Free Cut" }],
+        rewards: [{ givesText: "Free Cut", onBooking: false }],
+      },
+    ],
+    total: 1,
+    truncated: false,
+  })
+})
+
+test("save_reward shows the new rule in words and saves it on the tap", async () => {
+  mockRewards([])
+  vi.mocked(saveRewardRule).mockResolvedValue({ ok: true, id: "r9" })
+  const args = {
+    earnType: "visit",
+    goal: 5,
+    rewardType: "free",
+    rewardServiceIds: ["s1"],
+    expiresDays: 30,
+  }
+  const tool = byName("save_reward")
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Add this reward?",
+    action: "Add",
+    summary: "Free Cut · Every 5 visits · 30 days to use it",
+    destructive: false,
+  })
+  expect(saveRewardRule).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: true,
+    doneText: "Reward added.",
+  })
+  expect(saveRewardRule).toHaveBeenCalledWith(
+    "b1",
+    null,
+    expect.objectContaining({
+      earnType: "visit",
+      goal: 5,
+      rewardType: "free",
+      rewardValue: null,
+      rewardCount: 1,
+      rewardServiceIds: ["s1"],
+      earnServiceIds: null,
+      expiresDays: 30,
+      endsOn: null,
+      paidOnly: false,
+    })
+  )
+})
+
+test("save_reward changes only what was given", async () => {
+  mockRewards()
+  vi.mocked(saveRewardRule).mockResolvedValue({ ok: true, id: "r1" })
+  const args = { ruleId: "r1", goal: 8 }
+  expect(await byName("save_reward").confirm!.describe(args)).toMatchObject({
+    title: "Change this reward?",
+    summary: "Free Cut · Every 8 visits · 90 days to use it",
+  })
+  await byName("save_reward").confirm!.execute(args)
+  expect(saveRewardRule).toHaveBeenCalledWith(
+    "b1",
+    "r1",
+    expect.objectContaining({ goal: 8, rewardServiceIds: ["s1"], expiresDays: 90 })
+  )
+})
+
+test("save_reward refuses a wrong part by name, and never saves it", async () => {
+  mockRewards()
+  const describe = (args: object) => byName("save_reward").confirm!.describe(args)
+  expect(await describe({ ruleId: "nope", goal: 8 })).toEqual({
+    error: expect.stringContaining("list_rewards"),
+  })
+  expect(
+    await describe({ earnType: "visit", goal: 5, rewardType: "percent" })
+  ).toEqual({ error: expect.stringContaining("rewardValue") })
+  expect(
+    await describe({
+      earnType: "visit",
+      goal: 5,
+      rewardType: "free",
+      rewardServiceIds: ["other"],
+    })
+  ).toEqual({ error: expect.stringContaining("rewardServiceIds") })
+  expect(
+    await describe({
+      earnType: "visit",
+      goal: 5,
+      rewardType: "free",
+      endsOn: "2020-01-01",
+    })
+  ).toEqual({ error: expect.stringContaining("endsOn") })
+  expect(
+    await byName("save_reward").confirm!.execute({ ruleId: "nope", goal: 8 })
+  ).toMatchObject({ ok: false })
+  expect(saveRewardRule).not.toHaveBeenCalled()
+})
+
+test("turn_reward_on_off and remove_reward act on the tap only", async () => {
+  mockRewards()
+  vi.mocked(setRewardRuleOn).mockResolvedValue({ ok: true })
+  vi.mocked(removeRewardRule).mockResolvedValue({ ok: true })
+  const onOff = byName("turn_reward_on_off")
+  expect(await onOff.confirm!.describe({ ruleId: "r1", on: false })).toEqual({
+    title: "Turn off this reward?",
+    action: "Turn off",
+    summary: "Free Cut · Every 5 visits",
+    destructive: false,
+  })
+  // Already on.
+  expect(await onOff.confirm!.describe({ ruleId: "r1", on: true })).toEqual({
+    error: expect.any(String),
+  })
+  expect(await onOff.confirm!.execute({ ruleId: "r1", on: false })).toEqual({
+    ok: true,
+    doneText: "Reward turned off.",
+  })
+  expect(setRewardRuleOn).toHaveBeenCalledWith("b1", "r1", false)
+  const remove = byName("remove_reward")
+  expect(await remove.confirm!.describe({ ruleId: "r1" })).toMatchObject({
+    title: "Remove this reward?",
+    destructive: true,
+  })
+  expect(removeRewardRule).not.toHaveBeenCalled()
+  expect(await remove.confirm!.execute({ ruleId: "r1" })).toEqual({
+    ok: true,
+    doneText: "Reward removed.",
+  })
+  expect(removeRewardRule).toHaveBeenCalledWith("b1", "r1")
+})
+
+test("adjust_customer_visits names the customer, needs a reason and is saved as the assistant's", async () => {
+  mockRewards()
+  vi.mocked(changeProgress).mockResolvedValue({ ok: true, earned: 1 })
+  const tool = byName("adjust_customer_visits")
+  const args = {
+    ruleId: "r1",
+    customerKey: "p:34600111222",
+    amount: 2,
+    reason: "Paid in cash last week",
+  }
+  expect(await tool.confirm!.describe(args)).toEqual({
+    title: "Add to this customer's count?",
+    action: "Add",
+    summary: "Ana · +2 visits · Free Cut · Paid in cash last week",
+    destructive: false,
+  })
+  expect(await tool.confirm!.describe({ ...args, amount: -1 })).toMatchObject({
+    title: "Remove from this customer's count?",
+    summary: "Ana · −1 visit · Free Cut · Paid in cash last week",
+    destructive: true,
+  })
+  for (const wrong of [
+    { ...args, reason: " " },
+    { ...args, amount: 0 },
+    { ...args, amount: 1.5 },
+    { ...args, customerKey: "p:1" },
+    { ...args, ruleId: "nope" },
+  ]) {
+    expect(await tool.confirm!.describe(wrong)).toEqual({
+      error: expect.any(String),
+    })
+  }
+  expect(changeProgress).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute(args)).toEqual({
+    ok: true,
+    doneText: "Count changed. 1 reward earned.",
+  })
+  expect(changeProgress).toHaveBeenCalledWith(
+    "b1",
+    {
+      ruleId: "r1",
+      customerKey: "p:34600111222",
+      amount: 2,
+      note: "Paid in cash last week",
+    },
+    "assistant"
+  )
 })

@@ -25,6 +25,7 @@ export type ResultKind =
   | "policies"
   | "theme"
   | "payments"
+  | "rewards"
   | "messages"
   | "timing"
   | "flows"

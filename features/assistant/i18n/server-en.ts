@@ -26,6 +26,12 @@ const words = {
     savePaymentMethod: "Saving the payment method…",
     removePaymentMethod: "Removing way to pay…",
     payAtVisit: "Changing pay at the visit…",
+    rewards: "Reading rewards…",
+    customerRewards: "Reading the customer's rewards…",
+    saveReward: "Saving the reward…",
+    rewardOnOff: "Changing the reward…",
+    removeReward: "Removing the reward…",
+    adjustVisits: "Changing the count…",
     cancelBooking: "Cancelling booking…",
     deleteMember: "Removing team member…",
     hours: "Replacing hours…",
@@ -89,6 +95,12 @@ const words = {
     savePaymentMethod: "Payment method saved",
     removePaymentMethod: "Removed way to pay",
     payAtVisit: "Changed pay at the visit",
+    rewards: "Rewards loaded",
+    customerRewards: "Customer's rewards loaded",
+    saveReward: "Reward saved",
+    rewardOnOff: "Reward changed",
+    removeReward: "Reward removed",
+    adjustVisits: "Count changed",
     cancelBooking: "Cancelled booking",
     deleteMember: "Removed team member",
     hours: "Replaced hours",
@@ -162,6 +174,10 @@ const words = {
     savePaymentMethod: "saving a way to pay needs the owner's tap first",
     removePaymentMethod: "removing a way to pay needs the owner's tap first",
     payAtVisit: "changing pay at the visit needs the owner's tap first",
+    saveReward: "saving a reward needs the owner's tap first",
+    rewardOnOff: "turning a reward on or off needs the owner's tap first",
+    removeReward: "removing a reward needs the owner's tap first",
+    adjustVisits: "changing a customer's count needs the owner's tap first",
     createMember: "adding a team member needs the owner's tap first",
     cancel: "cancelling needs the owner's tap first",
     deleteService: "deleting needs the owner's tap first",
@@ -256,6 +272,19 @@ const words = {
       on: "Let customers pay at the visit?",
       off: "Stop paying at the visit?",
     },
+    saveReward: {
+      add: "Add this reward?",
+      change: "Change this reward?",
+    },
+    rewardOnOff: {
+      on: "Turn on this reward?",
+      off: "Turn off this reward?",
+    },
+    removeReward: "Remove this reward?",
+    adjustVisits: {
+      add: "Add to this customer's count?",
+      remove: "Remove from this customer's count?",
+    },
     messageOn: "Turn this message on?",
     messageOff: "Turn this message off?",
     reminderSettings: "Change reminder settings?",
@@ -307,6 +336,9 @@ const words = {
     savePaymentMethod: { add: "Add", change: "Save changes" },
     removePaymentMethod: "Remove",
     payAtVisit: { on: "Turn on", off: "Turn off" },
+    saveReward: { add: "Add", change: "Save changes" },
+    removeReward: "Remove",
+    adjustVisits: { add: "Add", remove: "Remove" },
     turnOn: "Turn on",
     turnOff: "Turn off",
     reminderSettings: "Save",
@@ -528,6 +560,34 @@ const words = {
     changed: "Way to pay saved.",
     removed: "Way to pay removed.",
   },
+  // Rewards (docs/plans/rewards.md): the rule itself in words comes from
+  // app.rewards, the same as on the owner's Rewards page.
+  reward: {
+    unknown: "Could not update: unknown reward.",
+    failed: "Could not save the reward ({error}).",
+    added: "Reward added.",
+    changed: "Reward saved.",
+    removed: "Reward removed.",
+    on: "Reward turned on.",
+    off: "Reward turned off.",
+    // A rule's limits on a card, one short part each.
+    limits: {
+      minPrice: "Bookings from {amount}",
+      paidOnly: "Only paid bookings",
+      cap: "Up to {amount} off",
+      expires: "{days, plural, one {# day} other {# days}} to use it",
+      perCustomer: "{count, plural, one {Once} other {# times}} per customer",
+      ends: "Ends {day}",
+    },
+    // A change to one customer's count: "+2 visits", "−$5.00".
+    visits: "{count, plural, one {# visit} other {# visits}}",
+    plus: "+{size}",
+    minus: "−{size}",
+    adjustFailed: "Could not change the count ({error}).",
+    adjusted: "Count changed.",
+    adjustedEarned:
+      "Count changed. {count, plural, one {# reward} other {# rewards}} earned.",
+  },
   payAtVisit: {
     summary: {
       on: "Customers can choose to pay later, at their visit.",
@@ -634,6 +694,35 @@ const words = {
       "unknown way to pay: call list_payment_methods and use an id from the list",
     paymentMethodsFull:
       "there are already {max} ways to pay: change or remove one first",
+    rewardsLocked:
+      "rewards are not part of this business's plan: say so, and that Plans in Settings shows what includes them",
+    rewardUnknown:
+      "unknown reward: call list_rewards and use an id from the list",
+    rewardsFull:
+      "there are already {max} rewards: change or remove one first",
+    rewardCustomer:
+      "unknown customer: call customer_rewards and use the customerKey from it",
+    rewardAmount:
+      "amount must be a whole number, not 0, at most {max} either way",
+    rewardReason:
+      "reason is required, at most {max} characters: ask the owner why; never make it up",
+    rewardField: {
+      earnType: "earnType must be visit or spend",
+      earnServices:
+        "earnServiceIds must be ids from list_services, or null for every service",
+      earnMinPrice: "earnMinPriceMinor must be a whole number above 0, or null",
+      goal: "goal must be a whole number: 1-100 visits, or the amount in minor units",
+      rewardType: "rewardType must be free, percent or amount",
+      rewardValue:
+        "rewardValue is required for percent (1-100) and amount (minor units)",
+      rewardCount: "rewardCount must be 1-10",
+      rewardServices:
+        "rewardServiceIds must be ids from list_services, or null for every service",
+      maxDiscount: "maxDiscountMinor must be a whole number above 0, or null",
+      expiresDays: "expiresDays must be 1-730, or null",
+      endsAt: "endsOn must be a real day, YYYY-MM-DD, today or later, or null",
+      maxPerCustomer: "maxPerCustomer must be 1-100, or null",
+    },
     paymentMethod: {
       type: "type must be bank_transfer, zelle, cash_app or other",
       name: "name is required, at most 60 characters: ask the owner what to call it",

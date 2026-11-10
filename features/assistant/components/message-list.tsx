@@ -74,6 +74,7 @@ const RESULT_PAGES: Record<ResultKind, string> = {
   policies: "/settings/policies",
   theme: "/settings/theme",
   payments: "/settings/payments",
+  rewards: "/rewards",
   messages: "/automations/messages",
   timing: "/automations/timing",
   flows: "/automations/flows",

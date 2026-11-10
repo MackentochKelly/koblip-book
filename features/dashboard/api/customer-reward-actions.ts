@@ -2,83 +2,35 @@
 
 import { PHONE_PATTERN } from "@/lib/booking-rules"
 import { customerKey } from "@/lib/customer-key"
-import { hasFeature } from "@/lib/plan-access"
 import { revalidateBusiness } from "@/lib/revalidate-business"
-import { REWARD_RULES } from "@/lib/reward-rules"
 import {
-  adjustProgress,
   giveReward,
   redeemOnBooking,
-  rewardRulesFor,
   rewardsForBooking,
   rewardsForService,
   type BookingReward,
 } from "@/lib/rewards"
 import { internationalPhone } from "@/lib/whatsapp-phone"
 import type { ActionResult } from "../types"
-import { ownedBusiness } from "./owned-business"
+import {
+  changeProgress,
+  ownedWithRewards,
+  reasonOf,
+  type ProgressChange,
+} from "./customer-reward-changes"
 
 // What the owner does with one customer's rewards (docs/plans/rewards.md,
 // RW8): add or remove visits and give a reward, each with a reason, and
 // redeem a reward for the customer in front of them. Every action is the
 // owner's, on their own business only, and only on a plan with rewards.
 
-async function ownedWithRewards(businessId: string) {
-  const owned = await ownedBusiness(businessId)
-  if (!owned) return null
-  return (await hasFeature(owned.business.id, "rewards")) ? owned : null
-}
-
-// The reason every change by hand carries; null when it is missing or too
-// long.
-function reasonOf(note: unknown): string | null {
-  const reason = typeof note === "string" ? note.trim() : ""
-  return reason.length < 1 || reason.length > REWARD_RULES.maxNote
-    ? null
-    : reason
-}
-
 // Adds to a customer's count on a rule, or takes from it (a negative
-// amount): visits on a visit rule, money in minor units on a spend rule.
-// Rewards are made or taken back as the new count says.
+// amount), as the owner (customer-reward-changes.ts).
 export async function changeCustomerProgress(
   businessId: string,
-  input: { ruleId: string; customerKey: string; amount: number; note: string }
+  input: ProgressChange
 ): Promise<ActionResult<{ earned: number }>> {
-  const owned = await ownedWithRewards(businessId)
-  if (!owned) return { ok: false, error: "not_found" }
-  const note = reasonOf(input.note)
-  if (!note) return { ok: false, error: "note" }
-  const rule = (await rewardRulesFor(owned.business.id)).find(
-    (item) => item.id === input.ruleId
-  )
-  if (!rule || typeof input.customerKey !== "string" || !input.customerKey) {
-    return { ok: false, error: "not_found" }
-  }
-  // A few goals' worth at most in one change.
-  const most =
-    rule.earnType === "visit"
-      ? REWARD_RULES.maxAdjust
-      : rule.goal * REWARD_RULES.maxCount
-  if (
-    !Number.isInteger(input.amount) ||
-    input.amount === 0 ||
-    Math.abs(input.amount) > most
-  ) {
-    return { ok: false, error: "amount" }
-  }
-  const result = await adjustProgress({
-    businessId: owned.business.id,
-    ruleId: rule.id,
-    customerKey: input.customerKey,
-    amount: input.amount,
-    actor: "owner",
-    actorUserId: owned.userId,
-    note,
-  })
-  if (!result.ok) return { ok: false, error: "not_found" }
-  revalidateBusiness(owned.business.slug)
-  return { ok: true, earned: result.earned }
+  return changeProgress(businessId, input, "owner")
 }
 
 // Gives the customer a rule's reward by hand.

@@ -242,3 +242,21 @@ test("Activity lists the history with names and counts, for one reward or all", 
   const one = await getRewardActivity("biz", "other-rule")
   expect(one.events.map((event) => event.customerName)).toEqual(["+1999"])
 })
+
+test("a change the assistant makes is kept under its name", async () => {
+  await rule()
+  const { changeProgress } = await import("./customer-reward-changes")
+  expect(
+    await changeProgress(
+      "biz",
+      { ruleId: "rule", customerKey: ANA, amount: 1, note: "Asked by voice" },
+      "assistant"
+    )
+  ).toEqual({ ok: true, earned: 0 })
+  await change(1)
+  const rows = await db
+    .select({ actor: rewardEvents.actor, note: rewardEvents.note })
+    .from(rewardEvents)
+    .where(eq(rewardEvents.type, "adjust"))
+  expect(rows.map((row) => row.actor).sort()).toEqual(["assistant", "owner"])
+})

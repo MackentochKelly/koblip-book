@@ -80,6 +80,13 @@ import {
   setPayLater,
 } from "@/features/dashboard/api/payment-actions"
 import { getPaymentSettings } from "@/features/dashboard/api/payment-queries"
+import { changeProgress } from "@/features/dashboard/api/customer-reward-changes"
+import {
+  removeRewardRule,
+  saveRewardRule,
+  setRewardRuleOn,
+} from "@/features/dashboard/api/reward-actions"
+import { getRewardSettings } from "@/features/dashboard/api/reward-queries"
 import type {
   CantComeAction,
   MessageButton,
@@ -108,6 +115,7 @@ import {
 } from "@/features/dashboard/api/queries"
 import {
   getCustomerBookings,
+  getCustomerRewards,
   getCustomers,
 } from "@/features/dashboard/api/customers"
 import { getAddonGroups } from "@/features/dashboard/api/addon-queries"
@@ -149,6 +157,16 @@ import {
   checkPaymentMethod,
   type PaymentType,
 } from "@/lib/payment-rules"
+import {
+  checkRewardRule,
+  REWARD_EARN_TYPES,
+  REWARD_RULES,
+  REWARD_TYPES,
+  rewardLastDay,
+  type RewardRule,
+  type RewardRuleForm,
+} from "@/lib/reward-rules"
+import { rewardWords, type RewardWordsText } from "@/lib/reward-words"
 import { THEMES } from "@/lib/theme-rules"
 import { getServiceNameTranslations } from "@/lib/translations/business-texts"
 import { bookingActions } from "@/features/dashboard/utils/booking-filters"
@@ -304,6 +322,20 @@ async function getBusinessForNames(businessId: string) {
         .map((row) => row.text),
     })),
   }
+}
+
+// The customers a name or phone text finds, as the Customers page would.
+function customersMatching<T extends { name: string; phone: string | null }>(
+  all: T[],
+  query: string
+): T[] {
+  const q = query.trim().toLowerCase()
+  const digits = q.replace(/\D/g, "")
+  return all.filter(
+    (c) =>
+      c.name.toLowerCase().includes(q) ||
+      (digits.length > 0 && (c.phone ?? "").replace(/\D/g, "").includes(digits))
+  )
 }
 
 function bad(message: string): { error: string } {
@@ -806,15 +838,24 @@ export interface ToolWords {
   t: ServerWords
   owner: OwnerWords
   duration: DurationWords
+  rewards: RewardWordsText
 }
 
 export async function toolWords(language: PageLanguage): Promise<ToolWords> {
-  const [t, owner, duration] = await Promise.all([
+  const [t, owner, duration, rewards] = await Promise.all([
     getTranslations({ locale: language, namespace: "assistantServer" }),
     getTranslations({ locale: language, namespace: "owner" }),
     getTranslations({ locale: language, namespace: "app.duration" }),
+    getTranslations({ locale: language, namespace: "app.rewards" }),
   ])
-  return { language, locale: DEFAULT_LOCALES[language], t, owner, duration }
+  return {
+    language,
+    locale: DEFAULT_LOCALES[language],
+    t,
+    owner,
+    duration,
+    rewards,
+  }
 }
 
 // Tools closed over the checked businessId and ownerId. The model never
@@ -1556,6 +1597,239 @@ export function buildAssistantTools(
     }
     return { booking, paid: a.paid }
   }
+  // A reward rule as the model reads it: the words the owner sees next to
+  // the raw values, which stay for tool calls.
+  const rewardRow = (rule: RewardRule, currency: string, timeZone: string) => {
+    const say = rewardWords(words.rewards, locale, currency)
+    const endsOn = rewardLastDay(rule.endsAt, timeZone)
+    return {
+      id: rule.id,
+      on: rule.status === "active",
+      earnsText: say.earn(rule),
+      givesText: say.prize(rule),
+      earnType: rule.earnType,
+      goal: rule.goal,
+      earnServiceIds: rule.earnServices?.map((service) => service.id) ?? null,
+      earnMinPriceMinor: rule.earnMinPriceMinor,
+      rewardType: rule.rewardType,
+      rewardValue: rule.rewardValue,
+      rewardCount: rule.rewardCount,
+      rewardServiceIds:
+        rule.rewardServices?.map((service) => service.id) ?? null,
+      maxDiscountMinor: rule.maxDiscountMinor,
+      expiresDays: rule.expiresDays,
+      endsOn,
+      endsOnText: dayText(locale, endsOn),
+      maxPerCustomer: rule.maxPerCustomer,
+      paidOnly: rule.paidOnly,
+    }
+  }
+  // A rule's limits, one short part each, for a card.
+  const rewardLimits = (
+    rule: Pick<
+      RewardRule,
+      | "earnMinPriceMinor"
+      | "maxDiscountMinor"
+      | "expiresDays"
+      | "maxPerCustomer"
+      | "paidOnly"
+    >,
+    endsOn: string | null,
+    currency: string
+  ): string[] => [
+    ...(rule.earnMinPriceMinor === null
+      ? []
+      : [
+          t("reward.limits.minPrice", {
+            amount: formatPrice(rule.earnMinPriceMinor, currency, locale),
+          }),
+        ]),
+    ...(rule.paidOnly ? [t("reward.limits.paidOnly")] : []),
+    ...(rule.maxDiscountMinor === null
+      ? []
+      : [
+          t("reward.limits.cap", {
+            amount: formatPrice(rule.maxDiscountMinor, currency, locale),
+          }),
+        ]),
+    ...(rule.expiresDays === null
+      ? []
+      : [t("reward.limits.expires", { days: rule.expiresDays })]),
+    ...(rule.maxPerCustomer === null
+      ? []
+      : [t("reward.limits.perCustomer", { count: rule.maxPerCustomer })]),
+    ...(endsOn === null
+      ? []
+      : [t("reward.limits.ends", { day: formatDay(endsOn, locale) })]),
+  ]
+  // The business's rewards, or the error for a plan without them.
+  const rewardSettings = async () => {
+    const settings = await getRewardSettings(businessId)
+    return settings.available
+      ? settings
+      : { error: t("errors.rewardsLocked") }
+  }
+  // One of the business's rules by its id.
+  const rewardRule = async (args: unknown) => {
+    const settings = await rewardSettings()
+    if ("error" in settings) return settings
+    const ruleId = asRecord(args)?.ruleId
+    const rule = settings.rules.find((item) => item.id === ruleId)
+    return rule ? { settings, rule } : { error: t("errors.rewardUnknown") }
+  }
+  // Shared checks for save_reward: a new rule (no ruleId), or one of the
+  // business's with what changes; the rest is kept. Checked the way the
+  // action checks it, so the card shows what the tap saves.
+  const checkRewardArgs = async (
+    args: unknown
+  ): Promise<
+    | { error: string }
+    | {
+        ruleId: string | null
+        form: RewardRuleForm
+        summary: string
+      }
+  > => {
+    const a = asRecord(args) ?? {}
+    const [settings, { business, services }] = await Promise.all([
+      rewardSettings(),
+      getOwnerBusiness(businessId),
+    ])
+    if ("error" in settings) return settings
+    const current =
+      a.ruleId === undefined
+        ? null
+        : settings.rules.find((item) => item.id === a.ruleId)
+    if (current === undefined) return { error: t("errors.rewardUnknown") }
+    if (current === null && settings.rules.length >= REWARD_RULES.maxRules) {
+      return {
+        error: t("errors.rewardsFull", { max: String(REWARD_RULES.maxRules) }),
+      }
+    }
+    const saved: Record<keyof RewardRuleForm, unknown> = current
+      ? {
+          earnType: current.earnType,
+          earnServiceIds:
+            current.earnServices?.map((service) => service.id) ?? null,
+          earnMinPriceMinor: current.earnMinPriceMinor,
+          goal: current.goal,
+          rewardType: current.rewardType,
+          rewardValue: current.rewardValue,
+          rewardCount: current.rewardCount,
+          rewardServiceIds:
+            current.rewardServices?.map((service) => service.id) ?? null,
+          maxDiscountMinor: current.maxDiscountMinor,
+          expiresDays: current.expiresDays,
+          endsOn: rewardLastDay(current.endsAt, business.timezone),
+          maxPerCustomer: current.maxPerCustomer,
+          paidOnly: current.paidOnly,
+        }
+      : {
+          earnType: undefined,
+          earnServiceIds: null,
+          earnMinPriceMinor: null,
+          goal: undefined,
+          rewardType: undefined,
+          rewardValue: null,
+          rewardCount: 1,
+          rewardServiceIds: null,
+          maxDiscountMinor: null,
+          expiresDays: null,
+          endsOn: null,
+          maxPerCustomer: null,
+          paidOnly: false,
+        }
+    // What was given wins; what was left out keeps what is saved.
+    const wanted = Object.fromEntries(
+      Object.entries(saved).map(([key, value]) => [
+        key,
+        a[key] === undefined ? value : a[key],
+      ])
+    ) as Record<keyof RewardRuleForm, unknown>
+    const { endsOn, ...rest } = wanted
+    if (
+      endsOn !== null &&
+      (typeof endsOn !== "string" ||
+        !isRealDate(endsOn) ||
+        endsOn < zonedToday(Date.now(), business.timezone))
+    ) {
+      return { error: t("errors.rewardField.endsAt") }
+    }
+    const checked = checkRewardRule(
+      { ...rest, endsAt: null },
+      new Set(services.map((service) => service.id)),
+      BOOKING_RULES.maxPriceMinor
+    )
+    if (!checked.ok) {
+      return { error: t(`errors.rewardField.${checked.error}`) }
+    }
+    const { endsAt, ...values } = checked.values
+    void endsAt
+    const named = (ids: string[] | null) =>
+      ids === null
+        ? null
+        : services
+            .filter((service) => ids.includes(service.id))
+            .map(({ id, name }) => ({ id, name }))
+    const say = rewardWords(words.rewards, locale, business.currency)
+    return {
+      ruleId: current?.id ?? null,
+      form: { ...values, endsOn },
+      summary: [
+        say.prize({ ...values, rewardServices: named(values.rewardServiceIds) }),
+        say.earn({ ...values, earnServices: named(values.earnServiceIds) }),
+        ...rewardLimits(values, endsOn, business.currency),
+      ].join(" · "),
+    }
+  }
+  // Shared checks for adjust_customer_visits: the rule, the customer and
+  // how much, with the reason every change by hand carries.
+  const checkAdjustArgs = async (args: unknown) => {
+    const found = await rewardRule(args)
+    if ("error" in found) return found
+    const a = asRecord(args) ?? {}
+    if (typeof a.customerKey !== "string" || a.customerKey === "") {
+      return { error: t("errors.rewardCustomer") }
+    }
+    const customer = (await getCustomers(businessId)).find(
+      (item) => item.key === a.customerKey
+    )
+    if (!customer) return { error: t("errors.rewardCustomer") }
+    const { rule, settings } = found
+    const most =
+      rule.earnType === "visit"
+        ? REWARD_RULES.maxAdjust
+        : rule.goal * REWARD_RULES.maxCount
+    const amount = a.amount
+    if (
+      typeof amount !== "number" ||
+      !Number.isInteger(amount) ||
+      amount === 0 ||
+      Math.abs(amount) > most
+    ) {
+      return { error: t("errors.rewardAmount", { max: String(most) }) }
+    }
+    const reason = validName(a.reason, REWARD_RULES.maxNote)
+    if (!reason) {
+      return {
+        error: t("errors.rewardReason", { max: String(REWARD_RULES.maxNote) }),
+      }
+    }
+    const size =
+      rule.earnType === "visit"
+        ? t("reward.visits", { count: Math.abs(amount) })
+        : formatPrice(Math.abs(amount), settings.currency, locale)
+    return {
+      change: { ruleId: rule.id, customerKey: customer.key, amount, note: reason },
+      adding: amount > 0,
+      summary: [
+        customer.name,
+        t(`reward.${amount > 0 ? "plus" : "minus"}`, { size }),
+        rewardWords(words.rewards, locale, settings.currency).prize(rule),
+        reason,
+      ].join(" · "),
+    }
+  }
   // Shared checks for save_payment_method: a new way (no methodId), or one
   // of the business's with what changes; the rest is kept.
   const checkPaymentMethodArgs = async (
@@ -2008,19 +2282,20 @@ export function buildAssistantTools(
       definition: {
         name: "business_overview",
         description:
-          "Name, address, phone, hours, booking counts, about, website, category, seats, bookingPath and photoCount. paymentsToCheck (only when the business lists ways to pay): bookings whose customer says they paid and the owner has not checked yet.",
+          "Name, address, phone, hours, booking counts, about, website, category, seats, bookingPath and photoCount. paymentsToCheck (only when the business lists ways to pay): bookings whose customer says they paid and the owner has not checked yet. rewardsWaiting (only when the business runs rewards): rewards customers earned and have not redeemed yet.",
         parameters: schema({}),
         needsConfirm: false,
       },
       label: t("steps.overview"),
       doneLabel: t("stepsDone.overview"),
       run: async () => {
-        const [{ business, hours }, counts, photos, payments] =
+        const [{ business, hours }, counts, photos, payments, rewards] =
           await Promise.all([
             getOwnerBusiness(businessId),
             getBookingCounts(businessId),
             getBusinessPhotos(businessId),
             getPaymentSettings(businessId),
+            getRewardSettings(businessId),
           ])
         return {
           name: business.name,
@@ -2040,6 +2315,10 @@ export function buildAssistantTools(
           // Only for a business that lists ways to be paid outside the app.
           ...(payments.methods.length > 0
             ? { paymentsToCheck: payments.toCheck }
+            : {}),
+          // Only for a business that runs rewards.
+          ...(rewards.rules.length > 0
+            ? { rewardsWaiting: rewards.counts.waiting }
             : {}),
         }
       },
@@ -2173,7 +2452,7 @@ export function buildAssistantTools(
       definition: {
         name: "list_bookings",
         description:
-          "Bookings, each with when (past / now / upcoming), team member, length, price, source, note and add-ons. A booking paid outside the app also has payment: choice (now, or later = at the visit), way, status (unpaid, reported = the customer says they paid and the owner must check, paid = the owner confirmed), reference and hasProof (the customer added a picture of the payment; you cannot see it, the owner opens it on the booking). For yesterday, today or tomorrow, pass only day: every booking that day, past and upcoming (count them all for 'how many today'). For other days, from/to: every booking on those days; adding range keeps only that side of now. With none of these: upcoming (soonest first) or past (most recent first). Source caps: next 200 upcoming, last 100 past.",
+          "Bookings, each with when (past / now / upcoming), team member, length, price, source, note and add-ons. rewardOffMinor / rewardOffText: what a redeemed reward took off (the price is already what is to pay). A booking paid outside the app also has payment: choice (now, or later = at the visit), way, status (unpaid, reported = the customer says they paid and the owner must check, paid = the owner confirmed), reference and hasProof (the customer added a picture of the payment; you cannot see it, the owner opens it on the booking). For yesterday, today or tomorrow, pass only day: every booking that day, past and upcoming (count them all for 'how many today'). For other days, from/to: every booking on those days; adding range keeps only that side of now. With none of these: upcoming (soonest first) or past (most recent first). Source caps: next 200 upcoming, last 100 past.",
         // `day` is worked out here in the business timezone, so the model
         // never has to compute a date or pick a side of now for a plain day
         // ("Don't make the model fill arguments you already know", OpenAI
@@ -2338,6 +2617,18 @@ export function buildAssistantTools(
                 },
               }
             : {}),
+          // What a redeemed reward took off; priceMinor is already what
+          // is to pay. Absent when no reward was used.
+          ...(b.rewardDiscountMinor
+            ? {
+                rewardOffMinor: b.rewardDiscountMinor,
+                rewardOffText: formatPrice(
+                  b.rewardDiscountMinor,
+                  b.currency,
+                  locale
+                ),
+              }
+            : {}),
           addons: b.addons.map((a) => ({
             name: a.name,
             priceMinor: a.priceMinor,
@@ -2378,14 +2669,9 @@ export function buildAssistantTools(
         ) {
           return bad(t("errors.queryInvalid", { max: String(ASSISTANT_RULES.maxCustomerQuery) }))
         }
-        const q = query.trim().toLowerCase()
-        const digits = q.replace(/\D/g, "")
-        const all = await getCustomers(businessId)
-        const matched = all.filter(
-          (c) =>
-            c.name.toLowerCase().includes(q) ||
-            (digits.length > 0 &&
-              (c.phone ?? "").replace(/\D/g, "").includes(digits))
+        const matched = customersMatching(
+          await getCustomers(businessId),
+          query
         )
         const capped = matched.slice(0, 5)
         const entries = await Promise.all(
@@ -5262,6 +5548,392 @@ export function buildAssistantTools(
                 ok: false,
                 doneText: t("payAtVisit.failed", { error: result.error }),
               }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "list_rewards",
+        description:
+          "The business's rewards: rules like \"every 5 visits, a free haircut\". Each has its id, on or off, earnsText and givesText (the words the owner sees) and its raw values; money is in minor units of the business currency. Also customersEarning, rewardsWaiting (earned, not redeemed yet) and rewardsUsed. Customers earn by booking and redeem on a later booking; the app never moves money.",
+        parameters: schema({}),
+        needsConfirm: false,
+      },
+      label: t("steps.rewards"),
+      doneLabel: t("stepsDone.rewards"),
+      run: async () => {
+        const [settings, { business }] = await Promise.all([
+          rewardSettings(),
+          getOwnerBusiness(businessId),
+        ])
+        if ("error" in settings) return settings
+        return {
+          rewards: settings.rules.map((rule) =>
+            rewardRow(rule, settings.currency, business.timezone)
+          ),
+          customersEarning: settings.counts.earning,
+          rewardsWaiting: settings.counts.waiting,
+          rewardsUsed: settings.counts.used,
+          max: REWARD_RULES.maxRules,
+        }
+      },
+    },
+    {
+      definition: {
+        name: "customer_rewards",
+        description:
+          "One customer's rewards, found by name or phone: their count on each reward (count of goal), the rewards they can redeem (onBooking = already on a booking still ahead) and the customerKey adjust_customer_visits needs.",
+        parameters: schema(
+          { query: { type: "string", description: "Name or phone text" } },
+          ["query"]
+        ),
+        needsConfirm: false,
+      },
+      label: t("steps.customerRewards"),
+      doneLabel: t("stepsDone.customerRewards"),
+      run: async (args: unknown) => {
+        const query = asRecord(args)?.query
+        if (
+          typeof query !== "string" ||
+          query.trim().length === 0 ||
+          query.length > ASSISTANT_RULES.maxCustomerQuery
+        ) {
+          return bad(
+            t("errors.queryInvalid", {
+              max: String(ASSISTANT_RULES.maxCustomerQuery),
+            })
+          )
+        }
+        const settings = await rewardSettings()
+        if ("error" in settings) return settings
+        const say = rewardWords(words.rewards, locale, settings.currency)
+        const matched = customersMatching(
+          await getCustomers(businessId),
+          query
+        )
+        const capped = matched.slice(0, 5)
+        const customers = await Promise.all(
+          capped.map(async (customer) => {
+            const mine = await getCustomerRewards(businessId, customer.key)
+            return {
+              name: customer.name,
+              phone: customer.phone,
+              customerKey: customer.key,
+              progress: (mine?.rules ?? []).map(({ rule, balance }) => ({
+                ruleId: rule.id,
+                earnsText: say.earn(rule),
+                givesText: say.prize(rule),
+                earnType: rule.earnType,
+                count: balance,
+                goal: rule.goal,
+                ...(rule.earnType === "spend"
+                  ? {
+                      countText: formatPrice(balance, settings.currency, locale),
+                      goalText: formatPrice(rule.goal, settings.currency, locale),
+                    }
+                  : {}),
+              })),
+              rewards: (mine?.rewards ?? []).map((reward) => ({
+                givesText: say.reward(reward.reward),
+                onBooking: reward.held,
+                expires: reward.expires,
+                expiresText: dayText(locale, reward.expires),
+              })),
+            }
+          })
+        )
+        return {
+          customers,
+          total: matched.length,
+          truncated: matched.length > customers.length,
+        }
+      },
+    },
+    {
+      definition: {
+        name: "save_reward",
+        description:
+          "Add a reward, or change one (ruleId from list_rewards; what is not given is kept). Example \"after 5 visits, 1 free haircut\": earnType visit, goal 5, rewardType free, rewardServiceIds [the haircut's id]. Money is in minor units of the business currency. A new reward counts bookings from now on; a change never touches rewards already earned. Needs the owner's tap.",
+        parameters: schema({
+          ruleId: {
+            type: "string",
+            description: "Id from list_rewards; omit to add",
+          },
+          earnType: {
+            type: "string",
+            enum: [...REWARD_EARN_TYPES],
+            description: "visit: each booking counts 1; spend: its price",
+          },
+          goal: {
+            type: "integer",
+            description: `Visits needed (1-${REWARD_RULES.maxGoalVisits}), or the amount to spend in minor units`,
+          },
+          earnServiceIds: {
+            type: ["array", "null"],
+            items: { type: "string" },
+            description:
+              "Ids from list_services whose bookings count; null = every service",
+          },
+          rewardType: {
+            type: "string",
+            enum: [...REWARD_TYPES],
+            description:
+              "free: the service is free; percent: a percent off; amount: a fixed amount off",
+          },
+          rewardValue: {
+            type: ["integer", "null"],
+            description:
+              "The percent (1-100) or the amount in minor units; null for free",
+          },
+          rewardServiceIds: {
+            type: ["array", "null"],
+            items: { type: "string" },
+            description:
+              "Ids from list_services the reward can be used on; null = every service",
+          },
+          rewardCount: {
+            type: "integer",
+            description: `Bookings one earned reward covers, 1-${REWARD_RULES.maxCount}; 1 unless the owner says more ("get 2 free")`,
+          },
+          expiresDays: {
+            type: ["integer", "null"],
+            description: `Days an earned reward stays usable, 1-${REWARD_RULES.maxExpiresDays}; null = no limit`,
+          },
+          endsOn: {
+            type: ["string", "null"],
+            description:
+              "Last day bookings count, YYYY-MM-DD, today or later; null = never ends",
+          },
+          maxPerCustomer: {
+            type: ["integer", "null"],
+            description: "Times one customer can earn it; null = no limit",
+          },
+          maxDiscountMinor: {
+            type: ["integer", "null"],
+            description:
+              "The most one use takes off, in minor units; null = no cap",
+          },
+          earnMinPriceMinor: {
+            type: ["integer", "null"],
+            description:
+              "Bookings under this price don't count, in minor units; null = any price",
+          },
+          paidOnly: {
+            type: "boolean",
+            description: "Only bookings the owner marked paid count",
+          },
+        }),
+        needsConfirm: true,
+        resultKind: "rewards",
+      },
+      label: t("steps.saveReward"),
+      doneLabel: t("stepsDone.saveReward"),
+      run: async () => ({ error: t("tapFirst.saveReward") }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const checked = await checkRewardArgs(args)
+          if ("error" in checked) {
+            return checked
+          }
+          const adding = checked.ruleId === null
+          return {
+            title: t(`cards.saveReward.${adding ? "add" : "change"}`),
+            action: t(`actions.saveReward.${adding ? "add" : "change"}`),
+            summary: checked.summary,
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const checked = await checkRewardArgs(args)
+          if ("error" in checked) {
+            return { ok: false, doneText: checked.error }
+          }
+          const result = await saveRewardRule(
+            businessId,
+            checked.ruleId,
+            checked.form
+          )
+          if (!result.ok) {
+            return {
+              ok: false,
+              doneText: t("reward.failed", { error: result.error }),
+            }
+          }
+          return {
+            ok: true,
+            doneText: t(
+              `reward.${checked.ruleId === null ? "added" : "changed"}`
+            ),
+          }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "turn_reward_on_off",
+        description:
+          "Turn a reward on or off. Use the id from list_rewards. Off stops earning; rewards already earned stay usable. Needs the owner's tap.",
+        parameters: schema(
+          {
+            ruleId: { type: "string", description: "Id from list_rewards" },
+            on: { type: "boolean" },
+          },
+          ["ruleId", "on"]
+        ),
+        needsConfirm: true,
+        resultKind: "rewards",
+      },
+      label: t("steps.rewardOnOff"),
+      doneLabel: t("stepsDone.rewardOnOff"),
+      run: async () => ({ error: t("tapFirst.rewardOnOff") }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const on = asRecord(args)?.on
+          if (typeof on !== "boolean") {
+            return { error: t("errors.onInvalid") }
+          }
+          const found = await rewardRule(args)
+          if ("error" in found) return found
+          if ((found.rule.status === "active") === on) {
+            return { error: t("errors.nothingToChange") }
+          }
+          const say = rewardWords(words.rewards, locale, found.settings.currency)
+          return {
+            title: t(`cards.rewardOnOff.${on ? "on" : "off"}`),
+            action: t(on ? "actions.turnOn" : "actions.turnOff"),
+            summary: `${say.prize(found.rule)} · ${say.earn(found.rule)}`,
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const a = asRecord(args)
+          if (typeof a?.ruleId !== "string" || typeof a.on !== "boolean") {
+            return { ok: false, doneText: t("reward.unknown") }
+          }
+          const result = await setRewardRuleOn(businessId, a.ruleId, a.on)
+          if (!result.ok) {
+            return {
+              ok: false,
+              doneText:
+                result.error === "not_found"
+                  ? t("reward.unknown")
+                  : t("reward.failed", { error: result.error }),
+            }
+          }
+          return { ok: true, doneText: t(`reward.${a.on ? "on" : "off"}`) }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "remove_reward",
+        description:
+          "Remove a reward. Use the id from list_rewards. Rewards customers already earned stay usable. Needs the owner's tap.",
+        parameters: schema(
+          { ruleId: { type: "string", description: "Id from list_rewards" } },
+          ["ruleId"]
+        ),
+        needsConfirm: true,
+        resultKind: "rewards",
+      },
+      label: t("steps.removeReward"),
+      doneLabel: t("stepsDone.removeReward"),
+      run: async () => ({ error: t("tapFirst.removeReward") }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const found = await rewardRule(args)
+          if ("error" in found) return found
+          const say = rewardWords(words.rewards, locale, found.settings.currency)
+          return {
+            title: t("cards.removeReward"),
+            action: t("actions.removeReward"),
+            summary: `${say.prize(found.rule)} · ${say.earn(found.rule)}`,
+            destructive: true,
+          }
+        },
+        execute: async (args: unknown) => {
+          const ruleId = asRecord(args)?.ruleId
+          if (typeof ruleId !== "string" || ruleId === "") {
+            return { ok: false, doneText: t("reward.unknown") }
+          }
+          const result = await removeRewardRule(businessId, ruleId)
+          if (!result.ok) {
+            return {
+              ok: false,
+              doneText:
+                result.error === "not_found"
+                  ? t("reward.unknown")
+                  : t("reward.failed", { error: result.error }),
+            }
+          }
+          return { ok: true, doneText: t("reward.removed") }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "adjust_customer_visits",
+        description:
+          "Add to a customer's count on a reward, or take from it (a negative amount): visits on a visit reward, minor units of money on a spend reward. Rewards are made or taken back as the new count says. customerKey comes from customer_rewards, ruleId from list_rewards; reason is why, in the owner's words: ask, never make it up. Needs the owner's tap.",
+        parameters: schema(
+          {
+            ruleId: { type: "string", description: "Id from list_rewards" },
+            customerKey: {
+              type: "string",
+              description: "customerKey from customer_rewards",
+            },
+            amount: {
+              type: "integer",
+              description: "How much to add; negative to remove; never 0",
+            },
+            reason: {
+              type: "string",
+              description: `Why, at most ${REWARD_RULES.maxNote} characters`,
+            },
+          },
+          ["ruleId", "customerKey", "amount", "reason"]
+        ),
+        needsConfirm: true,
+        resultKind: "customers",
+      },
+      label: t("steps.adjustVisits"),
+      doneLabel: t("stepsDone.adjustVisits"),
+      run: async () => ({ error: t("tapFirst.adjustVisits") }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const checked = await checkAdjustArgs(args)
+          if ("error" in checked) return checked
+          const way = checked.adding ? "add" : "remove"
+          return {
+            title: t(`cards.adjustVisits.${way}`),
+            action: t(`actions.adjustVisits.${way}`),
+            summary: checked.summary,
+            destructive: !checked.adding,
+          }
+        },
+        execute: async (args: unknown) => {
+          const checked = await checkAdjustArgs(args)
+          if ("error" in checked) {
+            return { ok: false, doneText: checked.error }
+          }
+          const result = await changeProgress(
+            businessId,
+            checked.change,
+            "assistant"
+          )
+          if (!result.ok) {
+            return {
+              ok: false,
+              doneText: t("reward.adjustFailed", { error: result.error }),
+            }
+          }
+          return {
+            ok: true,
+            doneText:
+              result.earned > 0
+                ? t("reward.adjustedEarned", { count: result.earned })
+                : t("reward.adjusted"),
+          }
         },
       },
     },
