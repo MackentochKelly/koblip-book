@@ -16,6 +16,8 @@ import { notification } from "@/lib/in-app-notifications"
 import { paymentMethodsFor } from "@/lib/payment-methods"
 import { deleteProof, saveProof } from "@/lib/payment-proofs"
 import { startPayment } from "@/lib/payment-rules"
+import { totalWithReward } from "@/lib/reward-rules"
+import { holdRewardWrite, rewardToRedeem } from "@/lib/rewards"
 import { DEFAULT_LANGUAGE, isPageLanguage } from "@/lib/page-language"
 import {
   bookingAddons,
@@ -113,10 +115,6 @@ export async function createBooking(
       business.payLater,
       input.payment
     )
-    if (!started.ok) {
-      return { status: "invalid", field: "payment" }
-    }
-    const payment = started.payment
 
     const [serviceRows, hourRows, teamRows, linkRows, memberHourRows] =
       await Promise.all([
@@ -194,6 +192,36 @@ export async function createBooking(
     const session = await getSession()
     const owner = session && !session.isGuest ? session.userId : null
     const claim = owner ? null : newBookingClaim()
+    // A reward to redeem (docs/plans/rewards.md, RW7): only the signed-in
+    // customer's own, found by the phone their sign-in code proved, never
+    // by the phone typed in the form. It takes off the service's price,
+    // not its extras.
+    const rewardOwner =
+      owner && session?.phone ? customerKey(session.phone, "") : null
+    let reward: { id: string; discountMinor: number } | null = null
+    if (input.rewardId) {
+      reward = rewardOwner
+        ? await rewardToRedeem({
+            businessId: business.id,
+            rewardId: input.rewardId,
+            customerKey: rewardOwner,
+            service,
+          })
+        : null
+      if (!reward) {
+        return { status: "invalid", field: "reward" }
+      }
+    }
+    const priceToPay = reward
+      ? totalWithReward(totalPrice, reward.discountMinor)
+      : totalPrice
+    // A booking its reward made free has nothing to pay: no way to pay is
+    // asked for and no proof (RW12). Any other booking needs its choice.
+    const free = reward !== null && priceToPay === 0
+    if (!free && !started.ok) {
+      return { status: "invalid", field: "payment" }
+    }
+    const payment = !free && started.ok ? started.payment : null
     // Everything else is in order: now the proof is kept.
     if (business.paymentProof && payment?.choice === "now") {
       const saved = await saveProof(
@@ -210,7 +238,23 @@ export async function createBooking(
       payment && savedProof
         ? { ...payment, status: "reported" as const, hasProof: true }
         : payment
+    // Set inside the turn when the reward was used elsewhere meanwhile.
+    let rewardGone = false
     const confirmation = await inBookingTurn(business.id, async () => {
+      // Read again inside the turn: nothing else takes the reward now.
+      if (
+        reward &&
+        rewardOwner &&
+        !(await rewardToRedeem({
+          businessId: business.id,
+          rewardId: reward.id,
+          customerKey: rewardOwner,
+          service,
+        }))
+      ) {
+        rewardGone = true
+        return null
+      }
       const dayStart = zonedInstant(input.date, 0, business.timezone)
       const dayEnd = zonedInstant(addDays(input.date, 1), 0, business.timezone)
       const taken = await db
@@ -304,7 +348,9 @@ export async function createBooking(
           serviceName: service.name,
           teamMemberName,
           durationMinutes: totalMinutes,
-          priceMinor: totalPrice,
+          priceMinor: priceToPay,
+          rewardId: reward?.id ?? null,
+          rewardDiscountMinor: reward?.discountMinor ?? null,
           currency: business.currency,
           startAt,
           endAt: new Date(endInstant).toISOString(),
@@ -339,6 +385,7 @@ export async function createBooking(
               ),
             ]
           : []),
+        ...(reward ? [holdRewardWrite(reward.id)] : []),
         ...notice,
         ...paidNotice,
       ])
@@ -350,7 +397,8 @@ export async function createBooking(
         serviceName: service.name,
         teamMemberName,
         durationMinutes: totalMinutes,
-        priceMinor: totalPrice,
+        priceMinor: priceToPay,
+        rewardDiscountMinor: reward?.discountMinor ?? null,
         currency: business.currency,
         date: input.date,
         time: input.time,
@@ -365,6 +413,7 @@ export async function createBooking(
 
     if (!confirmation) {
       await deleteProof(savedProof)
+      if (rewardGone) return { status: "invalid", field: "reward" }
       return { status: "taken" }
     }
     revalidatePath("/dashboard", "layout")

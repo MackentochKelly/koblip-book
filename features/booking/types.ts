@@ -9,7 +9,11 @@ export interface BookingInput { slug: string; serviceId: string; teamMemberId: s
   acceptedPolicies?: boolean
   // How they will pay, needed whenever the business lists ways to pay
   // outside the app (lib/payment-rules.ts).
-  payment?: PaymentRequest }
+  payment?: PaymentRequest
+  // An earned reward to redeem on this booking (docs/plans/rewards.md):
+  // only for a signed-in customer whose phone was proved, on their own
+  // reward. A booking it makes free needs no `payment`.
+  rewardId?: string | null }
 export interface BookingConfirmation {
   id: string; businessName: string; address: string | null; timeZone: string
   serviceName: string; teamMemberName: string | null; durationMinutes: number; priceMinor: number | null; currency: string
@@ -18,13 +22,15 @@ export interface BookingConfirmation {
   // How they chose to pay, with the way's instructions: shown once, to the
   // person who just booked. Null when the business tracks no payment.
   payment: BookingPayment | null
+  // What a redeemed reward took off; priceMinor is already what is to pay.
+  rewardDiscountMinor: number | null
 }
 export type BookingResult =
   // claimToken: booked signed out, the one-time secret that joins it to
   // the account logged in from "Manage your booking" (lib/booking-claim.ts).
   | { status: "booked"; booking: BookingConfirmation; claimToken: string | null }
   | { status: "taken" }
-  | { status: "invalid"; field: "service" | "teamMember" | "addons" | "time" | "name" | "phone" | "policies" | "payment" }
+  | { status: "invalid"; field: "service" | "teamMember" | "addons" | "time" | "name" | "phone" | "policies" | "payment" | "reward" }
   // The business asks for payment proof and none came, or the file was
   // refused (docs/plans/payment-proof.md, PP10).
   | { status: "invalid"; field: "proof"; error: "missing" | "too_big" | "wrong_type" }

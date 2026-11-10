@@ -28,6 +28,7 @@ import { hasFeature } from "./plan-access"
 import {
   earnAmount,
   goalsReached,
+  redeemable,
   REWARD_RULES,
   rewardCopy,
   rewardExpiry,
@@ -465,6 +466,39 @@ export async function availableRewards(
       reward: row.reward,
       expiresAt: row.expiresAt,
     }))
+}
+
+// A reward about to be redeemed on a booking: it must be this business's,
+// this customer's, still available today, and usable on the service.
+// Returns what it takes off the service's price; null when it cannot be
+// used. Call it again inside the booking turn, right before saving.
+export async function rewardToRedeem(input: {
+  businessId: string
+  rewardId: string
+  customerKey: string
+  service: { id: string; priceMinor: number | null }
+  now?: Date
+}): Promise<{ id: string; discountMinor: number } | null> {
+  if (!(await hasFeature(input.businessId, "rewards"))) return null
+  const [row] = await db
+    .select()
+    .from(rewards)
+    .where(
+      and(
+        eq(rewards.id, input.rewardId),
+        eq(rewards.businessId, input.businessId),
+        eq(rewards.customerKey, input.customerKey),
+        eq(rewards.status, "available")
+      )
+    )
+    .limit(1)
+  if (!row) return null
+  const discountMinor = redeemable(
+    { id: row.id, reward: row.reward, expiresAt: row.expiresAt },
+    input.service,
+    (input.now ?? new Date()).toISOString()
+  )
+  return discountMinor === null ? null : { id: row.id, discountMinor }
 }
 
 // The write that puts a reward on a booking being saved: add it to the
