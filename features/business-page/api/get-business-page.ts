@@ -18,7 +18,10 @@ import {
 } from "@/lib/db/schema"
 import { DEFAULT_LANGUAGE, type PageLanguage } from "@/lib/page-language"
 import { placePhotoUrl } from "@/lib/place-photo"
+import { hasFeature } from "@/lib/plan-access"
 import { orderPolicies, type PolicyLink } from "@/lib/policy-rules"
+import type { RewardRule } from "@/lib/reward-rules"
+import { rewardRulesFor } from "@/lib/rewards"
 import { getBusinessTranslations } from "@/lib/translations/business-texts"
 import type { Amenity, BusinessPageData, PagePhoto, PageReview } from "../types"
 import { mapAmenities } from "../utils/map-amenities"
@@ -343,6 +346,33 @@ async function loadBusinessPage(
     body: translated(point.id, "policy_point.body", point.body),
   }))
 
+  // The rewards customers can earn now (docs/plans/rewards.md, RW-10):
+  // the rules that are on and have not ended, their services named in the
+  // page's language.
+  const nowIso = new Date().toISOString()
+  const serviceNames = new Map(
+    pageServices.map((service) => [service.id, service.name] as const)
+  )
+  const named = (list: RewardRule["earnServices"]) =>
+    list &&
+    list.map((service) => ({
+      id: service.id,
+      name: serviceNames.get(service.id) ?? service.name,
+    }))
+  const pageRewards = (await hasFeature(business.id, "rewards"))
+    ? (await rewardRulesFor(business.id))
+        .filter(
+          (rule) =>
+            rule.status === "active" &&
+            (rule.endsAt === null || rule.endsAt > nowIso)
+        )
+        .map((rule) => ({
+          ...rule,
+          earnServices: named(rule.earnServices),
+          rewardServices: named(rule.rewardServices),
+        }))
+    : []
+
   // Add-on groups show only when linked to at least one service and
   // holding at least one option.
   const serviceOrder = new Map(
@@ -405,6 +435,7 @@ async function loadBusinessPage(
     // In lib/policy-rules' one order, so the footer links never move.
     policies: pagePolicies,
     policyPoints: pagePoints,
+    rewards: pageRewards,
   }
 }
 

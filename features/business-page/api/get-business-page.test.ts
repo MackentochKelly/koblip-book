@@ -177,3 +177,36 @@ test("returns the service categories in order, each service with its own", async
     ["Third", "cat-2"],
   ])
 })
+
+test("lists the rewards that are on, never one turned off or ended", async () => {
+  const { db } = await import("@/lib/db")
+  const { rewardRuleServices, rewardRules } = await import("@/lib/db/schema")
+  const rule = (id: string, more = {}) => ({
+    id,
+    businessId: "biz-1",
+    earnType: "visit" as const,
+    goal: 5,
+    rewardType: "free" as const,
+    startsAt: "2026-01-01T00:00:00.000Z",
+    ...more,
+  })
+  await db
+    .insert(rewardRules)
+    .values([
+      rule("on"),
+      rule("off", { status: "off" }),
+      rule("over", { endsAt: "2026-02-01T00:00:00.000Z" }),
+    ])
+  await db.insert(rewardRuleServices).values({
+    businessId: "biz-1",
+    ruleId: "on",
+    serviceId: "svc-1",
+    role: "reward",
+  })
+  const page = await getBusinessPage("demo-salon")
+  expect(page?.rewards.map((item) => item.id)).toEqual(["on"])
+  expect(page?.rewards[0].rewardServices).toEqual([
+    { id: "svc-1", name: "Third" },
+  ])
+  await db.delete(rewardRules)
+})

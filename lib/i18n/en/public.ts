@@ -5,6 +5,7 @@ const words = {
   sections: {
     services: "Services",
     team: "Team",
+    rewards: "Rewards",
     reviews: "Reviews",
     portfolio: "Portfolio",
     hours: "Opening times",

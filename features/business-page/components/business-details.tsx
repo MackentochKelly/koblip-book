@@ -15,6 +15,7 @@ import { BusinessAmenities } from "./business-amenities"
 import { BusinessMap } from "./business-map"
 import { BusinessPortfolio } from "./business-photos"
 import { BusinessReviews } from "./business-reviews"
+import { BusinessRewards } from "./business-rewards"
 import { OpeningHours } from "./opening-hours"
 
 function hasLocation({ business }: BusinessPageData): boolean {
@@ -22,6 +23,7 @@ function hasLocation({ business }: BusinessPageData): boolean {
 }
 
 export type DetailSection =
+  | "rewards"
   | "reviews"
   | "portfolio"
   | "hours"
@@ -38,6 +40,7 @@ export function detailSections(
   hoursTitle?: string
 ): ViewTab<string>[] {
   return [
+    data.rewards.length > 0 && { id: "rewards", label: title("rewards") },
     { id: "reviews", label: title("reviews") },
     data.photos.length > 0 && { id: "portfolio", label: title("portfolio") },
     { id: "hours", label: hoursTitle ?? title("hours") },
@@ -65,6 +68,17 @@ export function BusinessDetails({
   const { business, photos, reviews, amenities } = data
   return (
     <>
+      {data.rewards.length > 0 && (
+        <>
+          <PageSection id="rewards" title={t("sections.rewards")}>
+            <BusinessRewards
+              rewards={data.rewards}
+              currency={business.currency}
+            />
+          </PageSection>
+          <Separator />
+        </>
+      )}
       {clientReviews && (
         <>
           {clientReviews}

@@ -1,3 +1,4 @@
+import type { RewardRule } from "@/lib/reward-rules"
 import type { PageLanguage } from "@/lib/page-language"
 import type { PolicyLink, PolicyPointIcon } from "@/lib/policy-rules"
 import type {
@@ -78,6 +79,8 @@ export interface BusinessPageData {
   policies: PolicyLink[]
   // Its key policy points, agreed to in the booking flow's last step.
   policyPoints: PolicyPoint[]
+  // The rewards customers can earn now (docs/plans/rewards.md, RW-10).
+  rewards: RewardRule[]
 }
 
 export interface PolicyPoint {
