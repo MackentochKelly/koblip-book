@@ -157,7 +157,7 @@ const settings = {
     proof: {
       ask: "Ask for payment proof",
       askHint:
-        "Customers add one to say they paid. Deleted {days, number} days after the visit.",
+        "Customers add it when they book. Deleted {days, number} days after the visit.",
       team: "Team sees payment proof",
       teamHint: "Their own bookings only.",
     },
