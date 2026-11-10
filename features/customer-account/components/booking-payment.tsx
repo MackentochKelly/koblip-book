@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
@@ -8,10 +8,11 @@ import { toast } from "sonner"
 import { PageSection } from "@/components/page-section"
 import { PaymentBadge } from "@/components/payment-badge"
 import { PaymentProof } from "@/components/payment-proof"
+import { PaymentProofField } from "@/components/payment-proof-field"
 import { PaymentTypeIcon } from "@/components/payment-type-icon"
 import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { ClockIcon, ImageIcon } from "@/components/ui/icons"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { ClockIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import {
   Item,
@@ -48,22 +49,9 @@ export function BookingPayment({ booking }: { booking: MyBooking }) {
   const router = useRouter()
   const [reference, setReference] = useState("")
   const [busy, startTransition] = useTransition()
-  // The picture picked for "I've paid", and a small look at it.
+  // The payment proof picked for "I've paid".
   const [picture, setPicture] = useState<File | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
-  const fileInput = useRef<HTMLInputElement>(null)
   const replaceInput = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    if (!picture) return
-    const url = URL.createObjectURL(picture)
-    // The look follows the picked file, and its address is given back.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- an object URL exists only in the browser, after the file is picked
-    setPreview(url)
-    return () => {
-      URL.revokeObjectURL(url)
-      setPreview(null)
-    }
-  }, [picture])
   const payment = booking.payment
   if (!payment) return null
 
@@ -166,42 +154,14 @@ export function BookingPayment({ booking }: { booking: MyBooking }) {
                 />
               </Field>
               {booking.asksProof && (
-                <Field>
-                  <Input
-                    ref={fileInput}
-                    type="file"
-                    accept={ACCEPT}
-                    hidden
-                    onChange={(event) => {
-                      const file = event.target.files?.[0]
-                      event.target.value = ""
-                      if (file) setPicture(file)
-                    }}
-                  />
-                  <div className="flex items-center gap-3">
-                    {preview && (
-                      // eslint-disable-next-line @next/next/no-img-element -- the file just picked, still only in this browser
-                      <img
-                        src={preview}
-                        alt=""
-                        className="size-11 rounded-md object-cover"
-                      />
-                    )}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="min-h-11 md:min-h-9"
-                      disabled={busy}
-                      onClick={() => fileInput.current?.click()}
-                    >
-                      <ImageIcon data-icon="inline-start" />
-                      {t(picture ? "replaceProof" : "addProof")}
-                    </Button>
-                  </div>
-                  <FieldDescription>
-                    {t("proofHint", { days: PAYMENT_RULES.proofKeepDays })}
-                  </FieldDescription>
-                </Field>
+                <PaymentProofField
+                  value={picture}
+                  onChange={setPicture}
+                  disabled={busy}
+                  addLabel={t("addProof")}
+                  replaceLabel={t("replaceProof")}
+                  hint={t("proofHint", { days: PAYMENT_RULES.proofKeepDays })}
+                />
               )}
               <Button
                 type="submit"

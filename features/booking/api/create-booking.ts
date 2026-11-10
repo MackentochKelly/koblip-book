@@ -14,6 +14,7 @@ import { saveAll } from "@/lib/db/save-all"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 import { notification } from "@/lib/in-app-notifications"
 import { paymentMethodsFor } from "@/lib/payment-methods"
+import { deleteProof, saveProof } from "@/lib/payment-proofs"
 import { startPayment } from "@/lib/payment-rules"
 import { DEFAULT_LANGUAGE, isPageLanguage } from "@/lib/page-language"
 import {
@@ -67,9 +68,16 @@ async function hasPolicies(businessId: string): Promise<boolean> {
 // No sign-in needed for customers: signed in, the booking is the account's
 // (My bookings); signed out, it gets a claim for the account logged in
 // after it. Every unexpected error becomes "failed".
+// proof: the form's "file", the payment proof. A business that asks for it
+// is booked with a way to pay now only once it is added: the booking then
+// starts as "reported", for the business to check
+// (docs/plans/payment-proof.md, PP10).
 export async function createBooking(
-  input: BookingInput
+  input: BookingInput,
+  proof?: FormData
 ): Promise<BookingResult> {
+  // The proof saved for this booking; deleted again unless it is booked.
+  let savedProof: string | null = null
   try {
     const name = input.name.trim()
     if (name.length < 1 || name.length > BOOKING_RULES.maxCustomerName) {
@@ -186,6 +194,22 @@ export async function createBooking(
     const session = await getSession()
     const owner = session && !session.isGuest ? session.userId : null
     const claim = owner ? null : newBookingClaim()
+    // Everything else is in order: now the proof is kept.
+    if (business.paymentProof && payment?.choice === "now") {
+      const saved = await saveProof(
+        proof instanceof FormData ? proof.get("file") : null
+      )
+      if (!saved.ok) {
+        return { status: "invalid", field: "proof", error: saved.error }
+      }
+      savedProof = saved.name
+    }
+    const reportedAt = savedProof ? new Date(Date.now()).toISOString() : null
+    // With its proof, the booking says "paid, please check" from the start.
+    const startedPayment =
+      payment && savedProof
+        ? { ...payment, status: "reported" as const, hasProof: true }
+        : payment
     const confirmation = await inBookingTurn(business.id, async () => {
       const dayStart = zonedInstant(input.date, 0, business.timezone)
       const dayEnd = zonedInstant(addDays(input.date, 1), 0, business.timezone)
@@ -262,6 +286,15 @@ export async function createBooking(
         { customerName: name, serviceName: service.name, startAt },
         { dedupeKey: `booking:${bookingId}` }
       )
+      // And, with a proof, that there is a payment to check.
+      const paidNotice = savedProof
+        ? await notification(
+            business.id,
+            "customerPaid",
+            { customerName: name, serviceName: service.name, startAt },
+            { dedupeKey: `paid:${bookingId}` }
+          )
+        : []
       await saveAll([
         db.insert(bookings).values({
           id: bookingId,
@@ -286,7 +319,9 @@ export async function createBooking(
           policiesAcceptedAt: withPolicies ? new Date(Date.now()).toISOString() : null,
           paymentChoice: payment?.choice ?? null,
           paymentMethod: payment?.method ?? null,
-          paymentStatus: payment?.status ?? null,
+          paymentStatus: startedPayment?.status ?? null,
+          paymentReportedAt: reportedAt,
+          paymentProof: savedProof,
           language: isPageLanguage(input.language) ? input.language : DEFAULT_LANGUAGE,
         }),
         ...(addonCheck.options.length > 0
@@ -305,6 +340,7 @@ export async function createBooking(
             ]
           : []),
         ...notice,
+        ...paidNotice,
       ])
       return {
         id: bookingId,
@@ -323,11 +359,12 @@ export async function createBooking(
           priceMinor: option.priceMinor,
           durationMinutes: option.durationMinutes,
         })),
-        payment,
+        payment: startedPayment,
       }
     })
 
     if (!confirmation) {
+      await deleteProof(savedProof)
       return { status: "taken" }
     }
     revalidatePath("/dashboard", "layout")
@@ -339,6 +376,7 @@ export async function createBooking(
       claimToken: claim?.token ?? null,
     }
   } catch {
+    await deleteProof(savedProof).catch(() => {})
     console.error("createBooking failed")
     return { status: "failed" }
   }

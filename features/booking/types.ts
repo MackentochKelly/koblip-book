@@ -25,4 +25,7 @@ export type BookingResult =
   | { status: "booked"; booking: BookingConfirmation; claimToken: string | null }
   | { status: "taken" }
   | { status: "invalid"; field: "service" | "teamMember" | "addons" | "time" | "name" | "phone" | "policies" | "payment" }
+  // The business asks for payment proof and none came, or the file was
+  // refused (docs/plans/payment-proof.md, PP10).
+  | { status: "invalid"; field: "proof"; error: "missing" | "too_big" | "wrong_type" }
   | { status: "failed" }

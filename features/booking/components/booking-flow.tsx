@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
+import { resizeImage } from "@/lib/resize-image"
 import {
   ArrowLeftIcon,
   NavigationIcon,
@@ -90,6 +91,7 @@ export function BookingFlow({
   mode: "page" | "drawer"
 }) {
   const t = useTranslations("public.booking")
+  const tProof = useTranslations("public.account.payment")
   const pageLanguage = languageOf(useLocale())
   const router = useRouter()
   const pathname = usePathname()
@@ -118,6 +120,13 @@ export function BookingFlow({
       (paymentPick === PAY_LATER && payments.payLater))
       ? paymentPick
       : ""
+  // The payment proof, added on the pay step where the business asks for
+  // it and the customer pays now (docs/plans/payment-proof.md, PP10).
+  const [proof, setProof] = useState<File | null>(null)
+  const needsProof = Boolean(
+    payments?.asksProof && payment && payment !== PAY_LATER
+  )
+  const paymentReady = Boolean(payment) && (!needsProof || proof !== null)
   const [closing, setClosing] = useState(false)
 
   const language = params.get("lang")
@@ -127,6 +136,7 @@ export function BookingFlow({
   if (!wanted && (closing || booked || slot)) {
     setClosing(false)
     setBooked(null)
+    setProof(null)
     setSlot(null)
   }
   const open = wanted && !closing
@@ -193,7 +203,7 @@ export function BookingFlow({
           ? "time"
           : later("details") && !detailsFilled
             ? "details"
-            : steps.includes("payment") && later("payment") && !payment
+            : steps.includes("payment") && later("payment") && !paymentReady
               ? "payment"
               : asked
   const index = steps.indexOf(step)
@@ -243,7 +253,7 @@ export function BookingFlow({
           : step === "time"
             ? Boolean(slot)
             : step === "payment"
-              ? Boolean(payment)
+              ? paymentReady
               : true
   const next = () => {
     if (canContinue && index < steps.length - 1) go(steps[index + 1])
@@ -271,6 +281,11 @@ export function BookingFlow({
     if (sending || !service || !slot) return
     if (!checkDetails(details)) return
     setSending(true)
+    let proofForm: FormData | undefined
+    if (needsProof && proof) {
+      proofForm = new FormData()
+      proofForm.set("file", await resizeImage(proof))
+    }
     const result = await createBooking({
       slug: page.slug,
       serviceId: service.id,
@@ -290,7 +305,7 @@ export function BookingFlow({
             : { choice: "now" as const, methodId: payment },
       }),
       language: pageLanguage,
-    }).catch(() => ({ status: "failed" as const }))
+    }, proofForm).catch(() => ({ status: "failed" as const }))
     setSending(false)
     if (result.status === "booked") {
       if (result.claimToken) {
@@ -308,6 +323,18 @@ export function BookingFlow({
     ) {
       setDetailsError(result.field)
       replaceUrl(href(withParam("step", "details")))
+    } else if (result.status === "invalid" && result.field === "proof") {
+      // The proof was refused: back to where it is added, with why.
+      replaceUrl(href(withParam("step", "payment")))
+      toast.error(
+        tProof(
+          result.error === "too_big"
+            ? "proofTooBig"
+            : result.error === "wrong_type"
+              ? "proofWrongType"
+              : "proofMissing"
+        )
+      )
     } else if (
       result.status === "invalid" &&
       (result.field === "policies" || result.field === "payment")
@@ -447,9 +474,13 @@ export function BookingFlow({
       )}
       {step === "payment" && payments && (
         <PaymentStep
+          slug={page.slug}
           payments={payments}
           value={payment}
           onChange={setPaymentPick}
+          proof={proof}
+          onProofChange={setProof}
+          disabled={sending}
         />
       )}
       {step === "policies" && (
@@ -760,7 +791,11 @@ function BookedPage({
                         {booking.payment.method.details}
                       </p>
                       <p className="text-muted-foreground">
-                        {t("booking.payment.thenTell")}
+                        {booking.payment.status === "reported"
+                          ? t("account.payment.reported", {
+                              business: booking.businessName,
+                            })
+                          : t("booking.payment.thenTell")}
                       </p>
                     </>
                   ) : (

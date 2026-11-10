@@ -8,6 +8,7 @@ import {
   ClockIcon,
   UsersIcon,
 } from "@/components/ui/icons"
+import { PaymentProofField } from "@/components/payment-proof-field"
 import { PaymentTypeIcon } from "@/components/payment-type-icon"
 
 import { InfoTip } from "@/components/info-tip"
@@ -64,10 +65,11 @@ import { formatPrice } from "@/lib/format-price"
 import { formatClock, formatDay, todayIn } from "@/lib/format-booking-time"
 import { initials } from "@/lib/initials"
 import { languageOf } from "@/lib/page-language"
-import type { PaymentOptions } from "@/lib/payment-rules"
+import { PAYMENT_RULES, type PaymentOptions } from "@/lib/payment-rules"
 import { policySegment } from "@/lib/policy-rules"
 import { groupServices, showsGroups } from "@/lib/service-groups"
 import { cn } from "@/lib/utils"
+import { getPaymentDetails } from "../api/payment-details"
 import type { Availability } from "../types"
 import {
   bookingTotals,
@@ -459,16 +461,48 @@ export const PAY_LATER = "later"
 // the app: one of them, or at the visit where the business allows it. Only
 // the ways' names show here; where to send the money comes once booked.
 export function PaymentStep({
+  slug,
   payments,
   value,
   onChange,
+  proof,
+  onProofChange,
+  disabled,
 }: {
+  slug: string
   payments: PaymentOptions
   // A way's id, PAY_LATER, or "" while nothing is picked.
   value: string
   onChange: (value: string) => void
+  // The payment proof, where the business asks for it: the picked way
+  // then shows where to send the money, and the proof is added here,
+  // before the booking is confirmed (docs/plans/payment-proof.md, PP10).
+  proof: File | null
+  onProofChange: (file: File) => void
+  disabled?: boolean
 }) {
   const t = useTranslations("public.booking")
+  const tProof = useTranslations("public.account.payment")
+  const picked = payments.asksProof
+    ? payments.methods.find((method) => method.id === value)
+    : undefined
+  const pickedId = picked?.id
+  // Where to send the money, by way: asked for once a way is picked.
+  // null = it could not be read.
+  const [details, setDetails] = useState<Record<string, string | null>>({})
+  const known = pickedId !== undefined && pickedId in details
+  useEffect(() => {
+    if (pickedId === undefined || known) return
+    let current = true
+    void getPaymentDetails(slug, pickedId)
+      .catch(() => null)
+      .then((found) => {
+        if (current) setDetails((all) => ({ ...all, [pickedId]: found }))
+      })
+    return () => {
+      current = false
+    }
+  }, [slug, pickedId, known])
   const options = [
     ...payments.methods.map((method) => ({
       id: method.id,
@@ -488,6 +522,7 @@ export function PaymentStep({
       : []),
   ]
   return (
+    <div className="flex flex-col gap-4">
     <RadioGroup
       value={value}
       onValueChange={(next) => onChange(String(next))}
@@ -512,6 +547,47 @@ export function PaymentStep({
         </FieldLabel>
       ))}
     </RadioGroup>
+      {picked && (
+        <Item variant="muted">
+          <ItemContent className="min-w-0 gap-3">
+            <div className="flex flex-col gap-1 text-sm" aria-live="polite">
+              <p className="font-medium">
+                {t("payment.payWith", { name: picked.name })}
+              </p>
+              {!known ? (
+                <Skeleton className="h-5 w-40" />
+              ) : details[picked.id] ? (
+                <p className="break-words whitespace-pre-line select-all">
+                  {details[picked.id]}
+                </p>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="min-h-11 self-start md:min-h-9"
+                  onClick={() =>
+                    setDetails((all) => {
+                      const rest = { ...all }
+                      delete rest[picked.id]
+                      return rest
+                    })
+                  }
+                >
+                  {t("tryAgain")}
+                </Button>
+              )}
+            </div>
+            <PaymentProofField
+              value={proof}
+              onChange={onProofChange}
+              disabled={disabled}
+              addLabel={tProof("addProof")}
+              replaceLabel={tProof("replaceProof")}
+              hint={tProof("proofHint", { days: PAYMENT_RULES.proofKeepDays })}
+            />
+          </ItemContent>
+        </Item>
+      )}
+    </div>
   )
 }
 

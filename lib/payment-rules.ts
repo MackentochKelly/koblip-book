@@ -130,6 +130,9 @@ export type PaymentMethodSnapshot = Omit<PaymentMethod, "id">
 export interface PaymentOptions {
   methods: Pick<PaymentMethod, "id" | "type" | "name">[]
   payLater: boolean
+  // The business asks for payment proof: a way picked to pay now is then
+  // paid, and its proof added, before the booking is confirmed.
+  asksProof: boolean
 }
 
 // What a customer sends when they book.
@@ -152,12 +155,14 @@ export interface BookingPayment {
 // pay: its booking flow then has no payment step, as before.
 export function paymentOptions(
   methods: readonly PaymentMethod[],
-  payLater: boolean
+  payLater: boolean,
+  asksProof: boolean
 ): PaymentOptions | null {
   if (methods.length === 0) return null
   return {
     methods: methods.map(({ id, type, name }) => ({ id, type, name })),
     payLater,
+    asksProof,
   }
 }
 

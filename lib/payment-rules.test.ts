@@ -31,7 +31,7 @@ const bank: PaymentMethod = {
 }
 
 test("a business with no way to pay has no payment step and tracks nothing", () => {
-  expect(paymentOptions([], true)).toBeNull()
+  expect(paymentOptions([], true, true)).toBeNull()
   expect(startPayment([], true, { choice: "now", methodId: "m1" })).toEqual({
     ok: true,
     payment: null,
@@ -40,13 +40,14 @@ test("a business with no way to pay has no payment step and tracks nothing", () 
 })
 
 test("the booking page gets the ways' names, never their details", () => {
-  const options = paymentOptions([zelle, bank], false)
+  const options = paymentOptions([zelle, bank], false, true)
   expect(options).toEqual({
     methods: [
       { id: "m1", type: "zelle", name: "Zelle" },
       { id: "m2", type: "bank_transfer", name: "Banco Popular" },
     ],
     payLater: false,
+    asksProof: true,
   })
   expect(JSON.stringify(options)).not.toContain("pay@lumen.example")
   expect(JSON.stringify(options)).not.toContain("123-456")
@@ -140,7 +141,7 @@ test("every business is offered a bank transfer, Zelle and Cash App, none of the
     more: [],
   })
   // Offering them changes nothing for customers: still no payment step.
-  expect(paymentOptions([], true)).toBeNull()
+  expect(paymentOptions([], true, true)).toBeNull()
 })
 
 test("a way the owner set up takes its standard place; the rest follow in order", () => {

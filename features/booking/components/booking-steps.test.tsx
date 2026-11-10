@@ -8,7 +8,12 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { WithWords } from "@/i18n/testing"
 import type { BookingPage, BookingService } from "./booking-page"
-import { ServiceStep } from "./booking-steps"
+import { PaymentStep, ServiceStep } from "./booking-steps"
+
+// Where to send the money is asked from the server once a way is picked.
+vi.mock("../api/payment-details", () => ({
+  getPaymentDetails: vi.fn(async () => "pay@shop.example"),
+}))
 
 // The parts read their words from next-intl, in English.
 const render = (ui: React.ReactElement) =>
@@ -162,5 +167,38 @@ describe("ServiceStep", () => {
       "Nails",
     ])
     expect(screen.queryByRole("tablist")).toBeNull()
+  })
+})
+
+describe("PaymentStep", () => {
+  afterEach(cleanup)
+  const payments = (asksProof: boolean) => ({
+    methods: [{ id: "m1", type: "zelle" as const, name: "Zelle" }],
+    payLater: true,
+    asksProof,
+  })
+  const step = (asksProof: boolean, value: string) => (
+    <PaymentStep
+      slug="shop"
+      payments={payments(asksProof)}
+      value={value}
+      onChange={() => {}}
+      proof={null}
+      onProofChange={() => {}}
+    />
+  )
+
+  it("shows where to pay and asks for payment proof once a way is picked", async () => {
+    render(step(true, "m1"))
+    expect(await screen.findByText("pay@shop.example")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Add payment proof" })).toBeTruthy()
+  })
+
+  it("asks for nothing when paying later, or when the business does not ask", () => {
+    render(step(true, "later"))
+    expect(screen.queryByRole("button", { name: "Add payment proof" })).toBeNull()
+    cleanup()
+    render(step(false, "m1"))
+    expect(screen.queryByRole("button", { name: "Add payment proof" })).toBeNull()
   })
 })

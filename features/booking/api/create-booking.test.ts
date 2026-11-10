@@ -1,8 +1,9 @@
 // @vitest-environment node
-import { mkdtempSync, rmSync } from "node:fs"
+import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { eq } from "drizzle-orm"
+import sharp from "sharp"
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest"
 import {
   bookings,
@@ -70,6 +71,7 @@ async function seedShop(slug: string, id: string) {
 beforeAll(async () => {
   dir = mkdtempSync(join(tmpdir(), "koblip-booking-test-"))
   process.env.DATABASE_URL = `file:${join(dir, "test.db")}`
+  process.env.PAYMENT_PROOFS_DIR = join(dir, "proofs")
   const { migrate } = await import("drizzle-orm/libsql/migrator")
   const { db } = await import("@/lib/db")
   await migrate(db, { migrationsFolder: "drizzle" })
@@ -368,11 +370,21 @@ test("signed in, the booking is the account's; signed out, it gets a one-time cl
 })
 
 // Paying outside the app (lib/payment-rules.ts).
-async function seedPayShop(slug: string, id: string, payLater: boolean) {
+// asksProof: the business asks for payment proof (off unless a test is
+// about it).
+async function seedPayShop(
+  slug: string,
+  id: string,
+  payLater: boolean,
+  asksProof = false
+) {
   const { db } = await import("@/lib/db")
   const { paymentMethods } = await import("@/lib/db/schema")
   const shop = await seedShop(slug, id)
-  await db.update(businesses).set({ payLater }).where(eq(businesses.id, id))
+  await db
+    .update(businesses)
+    .set({ payLater, paymentProof: asksProof })
+    .where(eq(businesses.id, id))
   await db.insert(paymentMethods).values({
     id: `${id}-zelle`,
     businessId: id,
@@ -483,4 +495,97 @@ test("paying later books only where the business allows it", async () => {
   await expect(
     createBooking({ ...payInput("pay-later-off", refused.serviceId, "10:00"), payment: { choice: "later" } })
   ).resolves.toEqual({ status: "invalid", field: "payment" })
+})
+
+// Payment proof on the pay step (docs/plans/payment-proof.md, PP10).
+const storedProofs = () => {
+  const folder = process.env.PAYMENT_PROOFS_DIR as string
+  return existsSync(folder) ? readdirSync(folder) : []
+}
+
+// A real small picture in a form, as the pay step sends it.
+async function proofForm(): Promise<FormData> {
+  const bytes = await sharp({
+    create: { width: 40, height: 60, channels: 3, background: "#2a6" },
+  })
+    .png()
+    .toBuffer()
+  const form = new FormData()
+  form.set("file", new File([new Uint8Array(bytes)], "paid.png", { type: "image/png" }))
+  return form
+}
+
+test("a business that asks for payment proof is not booked to pay now without it", async () => {
+  const { serviceId } = await seedPayShop("proof-need", "biz-proof-need", true, true)
+  const input = {
+    ...payInput("proof-need", serviceId, "10:00"),
+    payment: { choice: "now" as const, methodId: "biz-proof-need-zelle" },
+  }
+  await expect(createBooking(input)).resolves.toEqual({
+    status: "invalid",
+    field: "proof",
+    error: "missing",
+  })
+  const notPicture = new FormData()
+  notPicture.set("file", new File(["hello"], "paid.png", { type: "image/png" }))
+  await expect(createBooking(input, notPicture)).resolves.toEqual({
+    status: "invalid",
+    field: "proof",
+    error: "wrong_type",
+  })
+  const { db } = await import("@/lib/db")
+  expect(await db.select().from(bookings).where(eq(bookings.businessId, "biz-proof-need"))).toEqual([])
+  expect(storedProofs()).toEqual([])
+})
+
+test("with its proof, the booking starts as reported and the owner hears of both", async () => {
+  const { serviceId } = await seedPayShop("proof-ok", "biz-proof-ok", true, true)
+  const result = await createBooking(
+    {
+      ...payInput("proof-ok", serviceId, "10:00"),
+      payment: { choice: "now", methodId: "biz-proof-ok-zelle" },
+    },
+    await proofForm()
+  )
+  expect(result).toMatchObject({
+    status: "booked",
+    booking: { payment: { choice: "now", status: "reported", hasProof: true } },
+  })
+  const { db } = await import("@/lib/db")
+  const [row] = await db.select().from(bookings).where(eq(bookings.businessId, "biz-proof-ok"))
+  expect(row).toMatchObject({
+    paymentStatus: "reported",
+    paymentReportedAt: new Date(NOW).toISOString(),
+    paymentPaidAt: null,
+  })
+  expect(storedProofs()).toEqual([row.paymentProof])
+  const bell = await db
+    .select({ kind: inAppNotifications.kind })
+    .from(inAppNotifications)
+    .where(eq(inAppNotifications.businessId, "biz-proof-ok"))
+  expect(bell.map(({ kind }) => kind).sort()).toEqual(["customerPaid", "newBooking"])
+  rmSync(process.env.PAYMENT_PROOFS_DIR as string, { recursive: true, force: true })
+})
+
+test("paying later needs no proof, and a proof for a taken time is not kept", async () => {
+  const { serviceId } = await seedPayShop("proof-later", "biz-proof-later", true, true)
+  await expect(
+    createBooking({
+      ...payInput("proof-later", serviceId, "10:00"),
+      payment: { choice: "later" },
+    })
+  ).resolves.toMatchObject({
+    status: "booked",
+    booking: { payment: { choice: "later", status: "unpaid", hasProof: false } },
+  })
+  await expect(
+    createBooking(
+      {
+        ...payInput("proof-later", serviceId, "10:00"),
+        payment: { choice: "now", methodId: "biz-proof-later-zelle" },
+      },
+      await proofForm()
+    )
+  ).resolves.toEqual({ status: "taken" })
+  expect(storedProofs()).toEqual([])
 })

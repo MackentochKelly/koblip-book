@@ -36,6 +36,7 @@ A proof is a screenshot of someone's bank or payment app: names, account numbers
 - **PP6. A switch for the owner.** Settings → Payments gets one switch, "Ask for a picture of the payment", with two states: **off** (no picture asked), or **on** (a picture is required to say "I've paid"). Default: on.
 - **PP7. Same checks as other photos.** JPG, PNG, WebP, real type checked, 4 MB (`UPLOAD_RULES`). The picture is re-encoded on save, which strips location and device data from the file. PDF receipts are left out of this plan.
 - **PP9. A second switch: team members.** Settings → Payments, "Team members see payment pictures", on by default, shown only while proofs are asked for. Off: members keep seeing the way and the status (OP3), not the picture. Read from the business on every request, so turning it off works at once. "Admin" in the owner's answer is read as the business owner; the app admin sees every proof either way.
+- **PP10. Asked on the pay step, before the booking is confirmed** (owner's decision, Nov 10: "it should be on the checkout process, on the booking flow"). On "How you'll pay", picking a way to pay now shows where to send the money and "Add payment proof"; "Confirm" stays off until it is added, and the server refuses the booking without it. The booking then starts as "Being checked" and the owner's bell says both "new booking" and "says they paid". Paying later asks for nothing. Works signed out, like booking itself. Where to send the money is asked from the server only when a way is picked (`features/booking/api/payment-details.ts`), and only for a business that asks for proof: it is still never part of the public page. If the time was taken meanwhile, the proof is not kept on the server; it stays in the form for the next time picked. "I've paid" in Manage your booking stays for a business that turned proofs off, and for replacing a proof.
 - **PP8. No judging.** The app does not read the picture, match amounts or detect fakes. It is shown to the owner, who decides.
 
 ## Tasks
@@ -72,8 +73,6 @@ In order. Each is small and ends with its own tests. All `Done` (Nov 10).
 - Reading the picture (amount, date, name) or spotting fakes.
 - PDF receipts, more than one picture per booking.
 - Sending the proof over WhatsApp or email.
-- A proof needed before the **booking** itself is accepted: it is required to say "I've paid", not to book.
-- Proof added by a guest who is not signed in. "I've paid" already needs the customer's account.
 
 ## Risks
 

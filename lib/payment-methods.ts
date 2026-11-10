@@ -37,12 +37,19 @@ export async function paymentOptionsFor(
   const [methods, [business]] = await Promise.all([
     paymentMethodsFor(businessId),
     db
-      .select({ payLater: businesses.payLater })
+      .select({
+        payLater: businesses.payLater,
+        asksProof: businesses.paymentProof,
+      })
       .from(businesses)
       .where(eq(businesses.id, businessId))
       .limit(1),
   ])
-  return paymentOptions(methods, business?.payLater ?? true)
+  return paymentOptions(
+    methods,
+    business?.payLater ?? true,
+    business?.asksProof ?? true
+  )
 }
 
 // What the business's policies must say about paying right now.
