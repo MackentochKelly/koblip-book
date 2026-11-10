@@ -38,6 +38,7 @@ import {
   MY_BOOKINGS_PATH,
 } from "@/lib/my-bookings-links"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
+import { formatPrice } from "@/lib/format-price"
 import { languageOf } from "@/lib/page-language"
 import { totalWithReward, usableRewards } from "@/lib/reward-rules"
 import { shareLink } from "@/lib/share-link"
@@ -832,7 +833,22 @@ function BookedPage({
                         ` · ${t("booking.with", { name: booking.teamMemberName })}`}
                     </p>
                   </div>
-                  {price && <p>{price}</p>}
+                  {price && (
+                    <div className="text-right">
+                      <p>{price}</p>
+                      {!!booking.rewardDiscountMinor && (
+                        <p className="text-muted-foreground">
+                          {t("booking.reward.off", {
+                            amount: formatPrice(
+                              -booking.rewardDiscountMinor,
+                              booking.currency,
+                              locale
+                            ),
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {booking.address && (
                   <p className="truncate text-muted-foreground">

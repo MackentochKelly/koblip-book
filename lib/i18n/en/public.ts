@@ -170,6 +170,8 @@ const words = {
     reward: {
       title: "Reward",
       redeem: "Redeem {reward}",
+      // On a booking that used one; the amount is negative: "Reward -$25.00".
+      off: "Reward {amount}",
       signIn: "Sign in to see your rewards",
       signInAction: "Sign in",
       addPhone: "Add your phone to use rewards",
@@ -222,6 +224,7 @@ const words = {
     nav: {
       bookings: "Bookings",
       places: "Places",
+      rewards: "Rewards",
       profile: "Profile",
       settings: "Settings",
     },
@@ -229,6 +232,14 @@ const words = {
     places: {
       none: "No places yet",
       last: "Last booked {when}",
+    },
+    // The client's rewards at each business (docs/plans/rewards.md, RW-7).
+    rewards: {
+      none: "No rewards yet",
+      visits:
+        "{done, number} of {goal, plural, one {# visit} other {# visits}}",
+      spent: "{done} of {goal}",
+      expires: "Expires {when}",
     },
     profile: {
       photo: "Your photo",

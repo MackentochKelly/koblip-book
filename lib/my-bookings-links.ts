@@ -8,6 +8,7 @@ export const MY_BOOKINGS_PATH = "/account"
 export const ACCOUNT_PROFILE_PATH = "/account/profile"
 export const ACCOUNT_SETTINGS_PATH = "/account/settings"
 export const ACCOUNT_PLACES_PATH = "/account/places"
+export const ACCOUNT_REWARDS_PATH = "/account/rewards"
 // The profile with the add-phone panel open (the empty Bookings page's
 // action: bookings made with that phone then show).
 export const ACCOUNT_ADD_PHONE_PATH = "/account/profile?phone=add"

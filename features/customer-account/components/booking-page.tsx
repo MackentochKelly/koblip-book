@@ -51,7 +51,7 @@ export function BookingPage({
 }) {
   const t = useTranslations("public")
   const language = languageOf(useLocale())
-  const { price, service, details } = useBookingFacts(booking)
+  const { price, reward, service, details } = useBookingFacts(booking)
   const facts = [
     {
       key: "when",
@@ -71,6 +71,7 @@ export function BookingPage({
       icon: BanknoteIcon,
       label: t("account.booking.price"),
       value: price,
+      more: reward,
     },
     booking.note && {
       key: "note",

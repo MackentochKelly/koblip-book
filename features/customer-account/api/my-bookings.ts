@@ -88,6 +88,7 @@ async function loadBookings(
       teamMemberName: bookings.teamMemberName,
       durationMinutes: bookings.durationMinutes,
       priceMinor: bookings.priceMinor,
+      rewardDiscountMinor: bookings.rewardDiscountMinor,
       currency: bookings.currency,
       note: bookings.note,
       paymentChoice: bookings.paymentChoice,
@@ -197,6 +198,7 @@ async function loadBookings(
       teamMemberName: row.teamMemberName,
       durationMinutes: row.durationMinutes,
       priceMinor: row.priceMinor,
+      rewardDiscountMinor: row.rewardDiscountMinor,
       currency: row.currency,
       // A cancelled booking owes nothing: its instructions stay hidden.
       payment: cancelled ? null : paymentOf(row),

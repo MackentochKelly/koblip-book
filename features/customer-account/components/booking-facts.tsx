@@ -24,7 +24,7 @@ export function BusinessAvatar({
 }
 
 // A booking's words, the same wherever it shows: the service with its
-// extras, how long and with whom, and the price.
+// extras, how long and with whom, the price, and what a reward took off it.
 export function useBookingFacts(booking: MyBooking) {
   const t = useTranslations("public")
   const locale = useLocale()
@@ -46,5 +46,14 @@ export function useBookingFacts(booking: MyBooking) {
   ]
     .filter(Boolean)
     .join(" · ")
-  return { price, service, details }
+  const reward = booking.rewardDiscountMinor
+    ? t("booking.reward.off", {
+        amount: formatPrice(
+          -booking.rewardDiscountMinor,
+          booking.currency,
+          locale
+        ),
+      })
+    : null
+  return { price, reward, service, details }
 }

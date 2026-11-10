@@ -1,5 +1,17 @@
 import type { CalendarEvent } from "@/lib/booking-calendar"
 import type { BookingPayment } from "@/lib/payment-rules"
+import type { RewardCopy, RewardRule } from "@/lib/reward-rules"
+
+// The client's rewards at one business they book with
+// (docs/plans/rewards.md, RW-7).
+export interface MyRewardsPlace {
+  business: MyBooking["business"]
+  currency: string
+  // Ready to redeem on a next booking; `expires` is the day, in words.
+  rewards: { id: string; reward: RewardCopy; expires: string | null }[]
+  // Where they are on each rule that is on: `done` of the rule's goal.
+  progress: { rule: RewardRule; done: number }[]
+}
 
 // One business the client has booked with (D13), from their bookings.
 export interface MyPlace {
@@ -33,6 +45,8 @@ export interface MyBooking {
   teamMemberName: string | null
   durationMinutes: number
   priceMinor: number | null
+  // What a redeemed reward took off; priceMinor is already what is to pay.
+  rewardDiscountMinor: number | null
   currency: string
   // How they chose to pay outside the app, with the way's instructions;
   // null when the booking tracks no payment (lib/payment-rules.ts).
