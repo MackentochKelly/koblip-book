@@ -4,7 +4,13 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from "vitest"
 import { eq } from "drizzle-orm"
-import { businessHours, businesses, user } from "@/lib/db/schema"
+import {
+  businessHours,
+  businesses,
+  paymentMethods,
+  user,
+} from "@/lib/db/schema"
+import { SAMPLE_PAYMENT_METHODS } from "@/lib/payment-rules"
 import type { GooglePlace } from "./fetch-place"
 
 vi.mock("server-only", () => ({}))
@@ -182,6 +188,17 @@ test("the same place imported twice at once is saved once", async () => {
     .from(businessHours)
     .where(eq(businessHours.businessId, rows[0].id))
   expect(hours).toHaveLength(1)
+  // Saved once, with the standard ways to pay and their sample details.
+  const ways = await db
+    .select({
+      type: paymentMethods.type,
+      name: paymentMethods.name,
+      details: paymentMethods.details,
+    })
+    .from(paymentMethods)
+    .where(eq(paymentMethods.businessId, rows[0].id))
+    .orderBy(paymentMethods.position)
+  expect(ways).toEqual(SAMPLE_PAYMENT_METHODS)
 })
 
 test("importing an owned business again changes nothing", async () => {

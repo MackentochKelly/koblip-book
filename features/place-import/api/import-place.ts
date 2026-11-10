@@ -2,7 +2,8 @@ import "server-only"
 import { eq, like } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
-import { businessHours, businesses } from "@/lib/db/schema"
+import { businessHours, businesses, paymentMethods } from "@/lib/db/schema"
+import { SAMPLE_PAYMENT_METHODS } from "@/lib/payment-rules"
 import { writeAbout, type AboutWords } from "./write-about"
 import { fetchPlace, type GooglePlace } from "./fetch-place"
 import { findPlaceId } from "./find-place-id"
@@ -109,6 +110,15 @@ export async function importPlaceById(
       await saveAll([
         db.insert(businesses).values({ ...business, description, id, slug, setupFinishedAt: null }),
         ...hoursInsert(id, hours),
+        // Every business starts with the standard ways to pay, holding
+        // sample details (lib/payment-rules.ts).
+        db.insert(paymentMethods).values(
+          SAMPLE_PAYMENT_METHODS.map((method, position) => ({
+            businessId: id,
+            ...method,
+            position,
+          }))
+        ),
       ])
       return slug
     } catch (error) {

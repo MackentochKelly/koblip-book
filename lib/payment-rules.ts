@@ -21,14 +21,34 @@ export const PAYMENT_TYPES = [
 ] as const
 export type PaymentType = (typeof PAYMENT_TYPES)[number]
 
-// The ways every business is offered from the start, in this order, in
-// Settings → Payments. Offered, not on: a way reaches customers only once
-// the owner has said where to send the money, since Koblip cannot know it.
+// The ways every business has from the start, in this order, in
+// Settings → Payments.
 export const STANDARD_PAYMENT_TYPES = [
   "bank_transfer",
   "zelle",
   "cash_app",
 ] as const satisfies readonly PaymentType[]
+
+// What each standard way holds on a new business, so booking has its
+// payment step from the first day and the owner can try it (the owner's
+// decision, Nov 10: customers see these too until the owner puts in their
+// own, or removes the way). Made up and not usable on purpose: an all-zero
+// account, a reserved example.com address (RFC 2606) and a $Cashtag with
+// a hyphen, which Cash App does not allow. No money can reach anyone.
+// Migration 0074 gave the same rows to every business that existed.
+export const SAMPLE_PAYMENT_METHODS = [
+  {
+    type: "bank_transfer",
+    name: "Sample Bank",
+    details: "Account holder: Sample Name\nAccount number: 0000 0000 0000",
+  },
+  { type: "zelle", name: "Zelle", details: "sample@example.com" },
+  { type: "cash_app", name: "Cash App", details: "$sample-cashtag" },
+] as const satisfies readonly {
+  type: (typeof STANDARD_PAYMENT_TYPES)[number]
+  name: string
+  details: string
+}[]
 
 // The name a new way starts with: a brand is its own name, in every
 // language; a bank or another way is named by the owner.
