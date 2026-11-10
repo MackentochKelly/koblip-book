@@ -12,6 +12,7 @@ import { PlusIcon } from "@/components/ui/icons"
 import { cn } from "cn"
 import type { OwnerBooking } from "../types"
 import { type BookingPanelsProps, useBookingPanels } from "./booking-panels"
+import type { TeamColor } from "@/lib/team-rules"
 import { BookingsCalendar } from "./bookings-calendar"
 import { BookingsTable } from "./bookings-table"
 
@@ -27,8 +28,11 @@ export function BookingsPageView({
   month,
   today,
   now,
+  teamColors,
   ...panelProps
 }: BookingPanelsProps & {
+  // Each team member's calendar colour, by id.
+  teamColors: Record<string, TeamColor>
   tab: BookingsTab
   bookings: OwnerBooking[]
   range: DayRangeValue
@@ -115,6 +119,7 @@ export function BookingsPageView({
             today={today}
             now={now}
             team={team}
+            teamColors={teamColors}
             panels={panels}
           />
         )}

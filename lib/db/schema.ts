@@ -235,6 +235,9 @@ export const teamMembers = sqliteTable(
     // area (app/(team)) opens only to it. The business keeps its one owner.
     userId: text().references(() => user.id, { onDelete: "set null" }),
     position: integer().notNull().default(0),
+    // Their colour on the owner's calendar (TEAM_COLORS in
+    // lib/team-rules.ts); null = one picked by their place in the team.
+    calendarColor: text(),
     ...timestamps(),
   },
   (table) => [

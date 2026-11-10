@@ -84,6 +84,12 @@
     --color-google-event-9: var(--google-event-9);
     --color-google-event-10: var(--google-event-10);
     --color-google-event-11: var(--google-event-11);
+    --color-team-blue: var(--team-blue);
+    --color-team-green: var(--team-green);
+    --color-team-orange: var(--team-orange);
+    --color-team-purple: var(--team-purple);
+    --color-team-rose: var(--team-rose);
+    --color-team-teal: var(--team-teal);
     --color-warning: var(--warning);
     --color-info: var(--info);
     --color-app-background: var(--app-background);
@@ -178,6 +184,15 @@
 }
 
 :root {
+    /* A team member's colour on the owner's calendar (TEAM_COLORS in
+       lib/team-rules.ts), the same in every look: 3:1 or more on the card
+       in light and dark. bg-team-blue, border-l-team-blue. */
+    --team-blue: oklch(0.6 0.17 255);
+    --team-green: oklch(0.6 0.15 155);
+    --team-orange: oklch(0.64 0.16 60);
+    --team-purple: oklch(0.58 0.18 300);
+    --team-rose: oklch(0.62 0.19 10);
+    --team-teal: oklch(0.6 0.11 195);
     --warning: oklch(0.666 0.179 58.318);
     /* Plain news, neither good nor bad (a stat's blue icon): 3:1 or more on
        the card in light and dark. */
@@ -290,6 +305,12 @@
     /* On dark glass a dark edge disappears: a faint light line instead. */
     --glass-edge: color-mix(in oklab, var(--foreground) 15%, transparent);
     --glass-frame-edge: color-mix(in oklab, var(--foreground) 8%, transparent);
+    --team-blue: oklch(0.72 0.14 255);
+    --team-green: oklch(0.74 0.13 155);
+    --team-orange: oklch(0.78 0.14 60);
+    --team-purple: oklch(0.72 0.15 300);
+    --team-rose: oklch(0.72 0.16 10);
+    --team-teal: oklch(0.75 0.1 195);
     --warning: oklch(0.828 0.189 84.429);
     --info: oklch(0.7 0.15 250);
     /* Dark cards are already lighter than the page. */

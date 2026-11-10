@@ -108,3 +108,22 @@ export function checkTeamProfile(
     return { ok: false, error: "languages" }
   return { ok: true, values: { description, about, languages: [...new Set(languages)] } }
 }
+
+// The colours a team member can have on the owner's calendar, so the owner
+// tells people apart at a glance (the --team-* values in app/globals.css,
+// the same in every look). The name always shows beside the colour.
+export const TEAM_COLORS = ["blue", "green", "orange", "purple", "rose", "teal"] as const
+
+export type TeamColor = (typeof TEAM_COLORS)[number]
+
+export function isTeamColor(value: unknown): value is TeamColor {
+  return (TEAM_COLORS as readonly unknown[]).includes(value)
+}
+
+// The colour someone shows in: the one the owner picked, else one by their
+// place in the team (0 = first), so everyone has a colour from the start.
+export function teamColorOf(saved: unknown, position: number): TeamColor {
+  if (isTeamColor(saved)) return saved
+  const place = Number.isInteger(position) && position >= 0 ? position : 0
+  return TEAM_COLORS[place % TEAM_COLORS.length]
+}

@@ -36,12 +36,14 @@ import {
   formatClock,
   formatDay,
 } from "@/lib/format-booking-time"
+import type { TeamColor } from "@/lib/team-rules"
 import { cn } from "cn"
 import type { OwnerBooking } from "../types"
 import { type BookingState, bookingState } from "../utils/booking-filters"
 import { monthRange } from "../utils/booking-range"
 import type { useBookingPanels } from "./booking-panels"
 import { BookingStateBadge } from "./booking-state-badge"
+import { TEAM_EDGE, TeamColorDot } from "./team-color-dot"
 
 // Each 15 minutes is one row of the day's grid.
 const SLOT_MINUTES = 15
@@ -58,7 +60,9 @@ const BLOCK: Record<BookingState, string> = {
 
 // The Calendar tab: a month with how many bookings each day has; tapping a
 // day shows it. A computer lays the day out as a time grid, one column per
-// team member; a phone lists it.
+// team member; a phone lists it. Each person's bookings carry their colour
+// (a dot by their name, the block's edge); the fill still says where the
+// booking stands.
 export function BookingsCalendar({
   bookings,
   month,
@@ -66,9 +70,12 @@ export function BookingsCalendar({
   today,
   now,
   team,
+  teamColors,
   panels,
 }: {
   bookings: OwnerBooking[]
+  // Each team member's calendar colour, by id.
+  teamColors: Record<string, TeamColor>
   month: string // "YYYY-MM"
   onMonthChange: (month: string) => void
   today: string
@@ -207,9 +214,18 @@ export function BookingsCalendar({
                       </ItemTitle>
                       <ItemDescription>
                         {booking.customerName} · {booking.serviceName}
-                        {booking.teamMemberName &&
-                          ` · ${booking.teamMemberName}`}
                       </ItemDescription>
+                      {booking.teamMemberName && (
+                        <ItemDescription className="flex items-center gap-2">
+                          {booking.teamMemberId &&
+                            teamColors[booking.teamMemberId] && (
+                              <TeamColorDot
+                                color={teamColors[booking.teamMemberId]}
+                              />
+                            )}
+                          {booking.teamMemberName}
+                        </ItemDescription>
+                      )}
                     </ItemContent>
                     <ItemActions>
                       <ChevronRightIcon />
@@ -220,6 +236,7 @@ export function BookingsCalendar({
               <DayGrid
                 bookings={dayBookings}
                 team={team}
+                teamColors={teamColors}
                 now={now}
                 onOpen={(booking) => panels.open(booking, Date.now())}
               />
@@ -240,10 +257,12 @@ const minutesOf = (time: string) =>
 function DayGrid({
   bookings,
   team,
+  teamColors,
   now,
   onOpen,
 }: {
   bookings: OwnerBooking[]
+  teamColors: Record<string, TeamColor>
   team: { id: string; name: string }[]
   now: string
   onOpen: (booking: OwnerBooking) => void
@@ -292,10 +311,15 @@ function DayGrid({
       {columns.map((column, index) => (
         <div
           key={column.id ?? "anyone"}
-          className="truncate pb-2 font-medium"
+          className="flex min-w-0 items-center gap-2 pb-2 font-medium"
           style={{ gridColumn: index + 2, gridRow: 1 }}
         >
-          {columns.length > 1 || team.length > 0 ? column.name : ""}
+          {column.id && teamColors[column.id] && (
+            <TeamColorDot color={teamColors[column.id]} />
+          )}
+          <span className="truncate">
+            {columns.length > 1 || team.length > 0 ? column.name : ""}
+          </span>
         </div>
       ))}
       {hours.map((hour, index) => (
@@ -334,6 +358,9 @@ function DayGrid({
           (item) => item.id === booking.teamMemberId
         )
         const state = bookingState(booking, now)
+        const color = booking.teamMemberId
+          ? teamColors[booking.teamMemberId]
+          : undefined
         return (
           <Button
             key={booking.id}
@@ -341,7 +368,9 @@ function DayGrid({
             onClick={() => onOpen(booking)}
             className={cn(
               "z-10 h-auto min-h-0 flex-col items-start justify-start gap-0 overflow-hidden rounded-xl border-transparent border-l-4 px-2 py-1 text-left text-xs font-normal whitespace-normal",
-              BLOCK[state]
+              BLOCK[state],
+              // Their colour on the edge; a cancelled one stays grey.
+              color && state !== "cancelled" && TEAM_EDGE[color]
             )}
             style={{
               gridColumn: column + 2,

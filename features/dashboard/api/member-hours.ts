@@ -10,7 +10,7 @@ import {
   PHONE_PATTERN,
 } from "@/lib/booking-rules"
 import { validHours, type HoursRow } from "@/lib/hours-rules"
-import { checkTeamProfile, randomStartingCounts, type TeamProfile } from "@/lib/team-rules"
+import { checkTeamProfile, isTeamColor, randomStartingCounts, type TeamColor, type TeamProfile } from "@/lib/team-rules"
 import type { ActionResult } from "../types"
 import { revalidateBusiness } from "@/lib/revalidate-business"
 import { translateBusinessSoon } from "@/lib/translations/business-texts"
@@ -22,6 +22,9 @@ export interface TeamMemberDetails extends TeamProfile {
   name: string
   phone: string | null // owner only
   email: string | null // owner only
+  // Their colour on the owner's calendar; null = one by their place in the
+  // team. Left out keeps the one they have.
+  calendarColor?: TeamColor | null
 }
 
 // Trimmed text, null when empty; undefined when it is not text at all.
@@ -34,7 +37,9 @@ function optionalText(value: unknown): string | null | undefined {
 // Checks a person's details. The error names the field that is wrong.
 function checkDetails(
   details: TeamMemberDetails
-): { ok: true; values: TeamMemberDetails } | { ok: false; error: string } {
+):
+  | { ok: true; values: TeamMemberDetails & { calendarColor?: TeamColor | null } }
+  | { ok: false; error: string } {
   const name = typeof details?.name === "string" ? details.name.trim() : ""
   if (!name || name.length > BOOKING_RULES.maxTeamName)
     return { ok: false, error: "name" }
@@ -50,7 +55,20 @@ function checkDetails(
     return { ok: false, error: "email" }
   const profile = checkTeamProfile(details)
   if (!profile.ok) return profile
-  return { ok: true, values: { name, phone, email, ...profile.values } }
+  const color = details.calendarColor
+  if (color !== undefined && color !== null && !isTeamColor(color))
+    return { ok: false, error: "invalid" }
+  return {
+    ok: true,
+    values: {
+      name,
+      phone,
+      email,
+      ...profile.values,
+      // Left out of the values, a save keeps the colour they have.
+      ...(color !== undefined && { calendarColor: color }),
+    },
+  }
 }
 
 // Adds a person (memberId null) or saves one: their details and hours.

@@ -77,7 +77,14 @@ import {
 import { useTabBarAction } from "./tab-bar-action"
 import { noAutofill } from "@/lib/no-autofill"
 import { shareLink } from "@/lib/share-link"
-import { languageName, TEAM_RULES } from "@/lib/team-rules"
+import {
+  isTeamColor,
+  languageName,
+  TEAM_COLORS,
+  TEAM_RULES,
+  teamColorOf,
+  type TeamColor,
+} from "@/lib/team-rules"
 import { removeTeamAccess, sendTeamInvite } from "../api/team-access-actions"
 import {
   disconnectTeamCalendar,
@@ -86,6 +93,7 @@ import {
 import type { TeamCalendar } from "../types/google-calendar"
 import { ConfirmRemove } from "./confirm-remove"
 import { RemoveGoogleEvents } from "./remove-google-events"
+import { TeamColorDot } from "./team-color-dot"
 
 interface MemberRow {
   id: string
@@ -98,7 +106,12 @@ interface MemberRow {
   languages: string[] | null
   // Set once they joined with their own account.
   userId: string | null
+  // Their colour on the calendar; none = one by their place in the team.
+  calendarColor?: string | null
 }
+
+// "Automatic" in the colour list, which needs a string.
+const AUTO_COLOR = "" as const
 
 type DetailsError = "name" | "phone" | "email"
 
@@ -264,7 +277,12 @@ export function TeamView({
                 </Avatar>
               </ItemMedia>
               <ItemContent>
-                <ItemTitle>{member.name}</ItemTitle>
+                <ItemTitle>
+                  <TeamColorDot
+                    color={teamColorOf(member.calendarColor, index)}
+                  />
+                  {member.name}
+                </ItemTitle>
                 {member.userId && <ItemDescription>{t("hasAccess")}</ItemDescription>}
                 {calendars[member.id] && (
                   <ItemDescription>
@@ -382,6 +400,7 @@ export function TeamView({
         {editing !== null && (
           <MemberForm
             key={formKey}
+            place={editing === "new" ? team.length : Math.max(0, team.findIndex((member) => member.id === editing.id))}
             hours={hours}
             memberHours={editing === "new" ? [] : memberHours.filter((row) => row.teamMemberId === editing.id)}
             member={editing === "new" ? null : editing}
@@ -433,6 +452,7 @@ export function TeamView({
 
 function MemberForm({
   member,
+  place,
   hours,
   memberHours,
   photo,
@@ -442,6 +462,8 @@ function MemberForm({
   onSave,
 }: {
   member: MemberRow | null // null while adding
+  // Their place in the team (0 = first), for the automatic colour.
+  place: number
   hours: HoursRow[]
   memberHours: HoursRow[]
   photo: React.ReactNode
@@ -467,6 +489,10 @@ function MemberForm({
   const [description, setDescription] = useState(member?.description ?? "")
   const [about, setAbout] = useState(member?.about ?? "")
   const [languages, setLanguages] = useState(member?.languages ?? [])
+  const savedColor = isTeamColor(member?.calendarColor)
+    ? member.calendarColor
+    : AUTO_COLOR
+  const [color, setColor] = useState<TeamColor | typeof AUTO_COLOR>(savedColor)
   const [newPhoto, setNewPhoto] = useState<File | null>(null)
   const changed =
     name !== (member?.name ?? "") ||
@@ -475,6 +501,7 @@ function MemberForm({
     description !== (member?.description ?? "") ||
     about !== (member?.about ?? "") ||
     languages.join() !== (member?.languages ?? []).join() ||
+    color !== savedColor ||
     same !== (memberHours.length === 0) ||
     (!same &&
       JSON.stringify(rows) !==
@@ -493,7 +520,15 @@ function MemberForm({
           return onError("email")
         if (!same && (!validHours(rows) || rows.length === 0)) { setHoursInvalid(true); return }
         onSave(
-          { name: name.trim(), phone, email, description, about, languages },
+          {
+            name: name.trim(),
+            phone,
+            email,
+            description,
+            about,
+            languages,
+            calendarColor: color === AUTO_COLOR ? null : color,
+          },
           same ? null : rows,
           member ? null : newPhoto
         )
@@ -589,6 +624,29 @@ function MemberForm({
             value={languages}
             onValueChange={setLanguages}
             placeholder={c("optional")}
+            className="w-full"
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="member-color">{t("calendarColor")}</FieldLabel>
+          <AppSelect
+            id="member-color"
+            options={[
+              {
+                value: AUTO_COLOR,
+                label: t("calendarColorAuto"),
+                icon: <TeamColorDot color={teamColorOf(null, place)} />,
+              },
+              ...TEAM_COLORS.map((item) => ({
+                value: item,
+                label: t(`calendarColors.${item}`),
+                icon: <TeamColorDot color={item} />,
+              })),
+            ]}
+            value={color}
+            onValueChange={(picked) =>
+              setColor(isTeamColor(picked) ? picked : AUTO_COLOR)
+            }
             className="w-full"
           />
         </Field>

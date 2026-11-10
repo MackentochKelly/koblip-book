@@ -1,6 +1,13 @@
 import { expect, test } from "vitest"
 
-import { checkStartingCounts, randomStartingCounts, TEAM_RULES } from "./team-rules"
+import {
+  checkStartingCounts,
+  isTeamColor,
+  randomStartingCounts,
+  TEAM_COLORS,
+  TEAM_RULES,
+  teamColorOf,
+} from "./team-rules"
 
 test("random starting numbers stay in range, clients never more than appointments", () => {
   const { min, max } = TEAM_RULES.startingCounts
@@ -34,4 +41,22 @@ test("checkStartingCounts refuses more clients than appointments, negatives and 
     })
   ).toEqual(bad)
   expect(checkStartingCounts(null)).toEqual(bad)
+})
+
+test("a team member shows in the colour picked for them", () => {
+  expect(teamColorOf("purple", 0)).toBe("purple")
+  expect(isTeamColor("purple")).toBe(true)
+})
+
+test("with no colour picked, each place in the team gets its own", () => {
+  const colors = TEAM_COLORS.map((_, index) => teamColorOf(null, index))
+  expect(new Set(colors).size).toBe(TEAM_COLORS.length)
+  // More people than colours start over from the first.
+  expect(teamColorOf(null, TEAM_COLORS.length)).toBe(TEAM_COLORS[0])
+})
+
+test("a colour that is not on the list falls back to the place's colour", () => {
+  expect(isTeamColor("#ff0000")).toBe(false)
+  expect(teamColorOf("#ff0000", 1)).toBe(TEAM_COLORS[1])
+  expect(teamColorOf(undefined, -3)).toBe(TEAM_COLORS[0])
 })

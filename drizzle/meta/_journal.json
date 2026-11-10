@@ -493,6 +493,13 @@
       "breakpoints": true
     },
     {
+      "idx": 70,
+      "version": "6",
+      "when": 1794258302985,
+      "tag": "0070_team_calendar_color",
+      "breakpoints": true
+    },
+    {
       "idx": 71,
       "version": "6",
       "when": 1794258505591,

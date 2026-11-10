@@ -21,6 +21,7 @@ import {
 } from "@/features/dashboard/utils/booking-range"
 import { BOOKING_RULES } from "@/lib/booking-rules"
 import { todayIn } from "@/lib/format-booking-time"
+import { teamColorOf } from "@/lib/team-rules"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -58,6 +59,12 @@ export default async function AllBookingsPage({
         today={today}
         now={new Date().toISOString()}
         businessId={businessId}
+        teamColors={Object.fromEntries(
+          owner.team.map((member, index) => [
+            member.id,
+            teamColorOf(member.calendarColor, index),
+          ])
+        )}
         addOptions={{
           services: owner.services.map(
             ({ id, name, durationMinutes, categoryId }) => ({
