@@ -55,6 +55,7 @@ import {
   removePaymentType,
   savePaymentMethod,
   setPayLater,
+  setPaymentProof,
 } from "../api/payment-actions"
 import { ConfirmRemove } from "./confirm-remove"
 
@@ -76,6 +77,8 @@ export function PaymentsSection({
   methods,
   payLater,
   removedTypes,
+  asksProof,
+  teamSeesProof,
   policiesOutOfDate,
   onUpdatePolicies,
 }: {
@@ -83,6 +86,10 @@ export function PaymentsSection({
   methods: PaymentMethod[]
   payLater: boolean
   removedTypes: PaymentType[]
+  // Payment pictures (docs/plans/payment-proof.md): asked for, and shown
+  // to the team member a booking is with.
+  asksProof: boolean
+  teamSeesProof: boolean
   policiesOutOfDate: boolean
   // Rewrites what the policies say about paying; the page passes it in,
   // as the policy writer is another feature's.
@@ -159,6 +166,14 @@ export function PaymentsSection({
       else toast.error(settings("tryAgain"))
     })
 
+  const toggleProof = (setting: "ask" | "team", next: boolean) =>
+    startTransition(async () => {
+      const result = await setPaymentProof(businessId, setting, next).catch(
+        () => null
+      )
+      if (result?.ok) router.refresh()
+      else toast.error(settings("tryAgain"))
+    })
   const updatePolicies = () =>
     startTransition(async () => {
       const result = await onUpdatePolicies(businessId).catch(() => null)
@@ -299,6 +314,40 @@ export function PaymentsSection({
                 id="pay-later"
                 checked={payLater}
                 onCheckedChange={toggleLater}
+                disabled={pending}
+              />
+            </Field>
+          </Item>
+        )}
+        {methods.length > 0 && (
+          <Item variant="outline" role="listitem">
+            <Field orientation="horizontal" className="min-h-11">
+              <FieldContent>
+                <FieldLabel htmlFor="ask-proof">{t("proof.ask")}</FieldLabel>
+                <FieldDescription>
+                  {t("proof.askHint", { days: PAYMENT_RULES.proofKeepDays })}
+                </FieldDescription>
+              </FieldContent>
+              <Switch
+                id="ask-proof"
+                checked={asksProof}
+                onCheckedChange={(next) => toggleProof("ask", next)}
+                disabled={pending}
+              />
+            </Field>
+          </Item>
+        )}
+        {methods.length > 0 && asksProof && (
+          <Item variant="outline" role="listitem">
+            <Field orientation="horizontal" className="min-h-11">
+              <FieldContent>
+                <FieldLabel htmlFor="team-proof">{t("proof.team")}</FieldLabel>
+                <FieldDescription>{t("proof.teamHint")}</FieldDescription>
+              </FieldContent>
+              <Switch
+                id="team-proof"
+                checked={teamSeesProof}
+                onCheckedChange={(next) => toggleProof("team", next)}
                 disabled={pending}
               />
             </Field>

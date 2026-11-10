@@ -128,6 +128,11 @@ export const businesses = sqliteTable(
     // The way of paying the policies were last written for
     // (policyPaymentState in lib/payment-rules.ts); null = never recorded.
     policiesPayment: text({ enum: POLICY_PAYMENT_STATES }),
+    // Payment pictures (docs/plans/payment-proof.md): whether a customer
+    // must add one to say they paid, and whether a team member sees the
+    // ones on their own bookings.
+    paymentProof: integer({ mode: "boolean" }).notNull().default(true),
+    paymentProofTeam: integer({ mode: "boolean" }).notNull().default(true),
     ...timestamps(),
   },
   (table) => [
@@ -501,6 +506,9 @@ export const bookings = sqliteTable(
     paymentStatus: text({ enum: PAYMENT_STATUSES }),
     paymentReference: text(),
     paymentReportedAt: text(),
+    // The payment picture's file name in the private store
+    // (lib/payment-proofs.ts); never a public address.
+    paymentProof: text(),
     paymentPaidAt: text(),
     ...timestamps(),
   },

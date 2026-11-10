@@ -94,6 +94,8 @@ async function loadBookings(
       paymentMethod: bookings.paymentMethod,
       paymentStatus: bookings.paymentStatus,
       paymentReference: bookings.paymentReference,
+      paymentProof: bookings.paymentProof,
+      asksProof: businesses.paymentProof,
       business: {
         id: businesses.id,
         slug: businesses.slug,
@@ -198,6 +200,7 @@ async function loadBookings(
       currency: row.currency,
       // A cancelled booking owes nothing: its instructions stay hidden.
       payment: cancelled ? null : paymentOf(row),
+      asksProof: row.asksProof,
       business: {
         slug: row.business.slug,
         name: row.business.name,

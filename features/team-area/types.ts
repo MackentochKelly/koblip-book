@@ -10,5 +10,6 @@ export interface MyBooking {
   // Paying outside the app, when the booking tracks it: how and where it
   // stands. Never the instructions or the customer's reference, which are
   // the owner's.
-  payment: { way: string | null; status: PaymentStatus } | null
+  // proof: there is a payment picture this member may open.
+  payment: { way: string | null; status: PaymentStatus; proof: boolean } | null
 }

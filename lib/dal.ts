@@ -78,12 +78,18 @@ export async function requireAccount(next?: string): Promise<OwnerSession> {
 // The app owner's admin area: a signed-in account that Better Auth's admin
 // plugin counts as an admin (ADMIN_USER_IDS). Anyone else gets "not found",
 // so the area doesn't show that it exists.
+// Whether this account is an app admin. For a place that answers several
+// kinds of people; a page only for admins uses requireAdmin.
+export async function isAdmin(userId: string): Promise<boolean> {
+  const { success } = await auth.api.userHasPermission({
+    body: { userId, permissions: { user: ["list"] } },
+  })
+  return success
+}
+
 export async function requireAdmin(): Promise<OwnerSession> {
   const session = await requireAccount("/admin")
-  const { success } = await auth.api.userHasPermission({
-    body: { userId: session.userId, permissions: { user: ["list"] } },
-  })
-  if (!success) {
+  if (!(await isAdmin(session.userId))) {
     notFound()
   }
   return session

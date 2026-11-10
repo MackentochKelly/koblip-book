@@ -11,6 +11,16 @@ export const PAYMENT_RULES = {
   maxDetails: 300,
   // What the customer may add when they say they paid (a transfer number).
   maxReference: 80,
+  // The picture of the payment a customer adds when they say they paid
+  // (docs/plans/payment-proof.md): days it is kept after the booking's
+  // date, then deleted, and its longest side once saved.
+  proofKeepDays: 90,
+  proofMaxSide: 2000,
+  // How often the server looks for pictures to delete, and how old a
+  // picture no booking holds must be first (one being sent right now is
+  // saved a moment before its booking knows it).
+  proofSweepMinutes: 60,
+  proofOrphanMinutes: 60,
 } as const
 
 export const PAYMENT_TYPES = [
@@ -133,6 +143,9 @@ export interface BookingPayment {
   method: PaymentMethodSnapshot | null
   status: PaymentStatus
   reference: string | null
+  // Whether the customer added a picture of the payment. The picture
+  // itself is private: see lib/payment-proof-access.ts for who may open it.
+  hasProof: boolean
 }
 
 // A business's choices, for its booking page. Null while it lists no way to
@@ -189,6 +202,7 @@ export function startPayment(
         method: null,
         status: "unpaid",
         reference: null,
+        hasProof: false,
       },
     }
   }
@@ -203,6 +217,7 @@ export function startPayment(
         method: { type, name, details },
         status: "unpaid",
         reference: null,
+        hasProof: false,
       },
     }
   }
@@ -215,6 +230,7 @@ export function paymentOf(row: {
   paymentMethod: PaymentMethodSnapshot | null
   paymentStatus: PaymentStatus | null
   paymentReference: string | null
+  paymentProof?: string | null
 }): BookingPayment | null {
   if (!row.paymentChoice || !row.paymentStatus) return null
   return {
@@ -222,7 +238,22 @@ export function paymentOf(row: {
     method: row.paymentChoice === "now" ? row.paymentMethod : null,
     status: row.paymentStatus,
     reference: row.paymentReference,
+    hasProof: Boolean(row.paymentProof),
   }
+}
+
+// Where a booking's payment picture is read from. The address answers
+// only the people allowed to see it (lib/payment-proof-access.ts).
+export function paymentProofPath(bookingId: string): string {
+  return `/api/payment-proof/${bookingId}`
+}
+
+// The day a booking's payment picture is deleted: proofKeepDays after the
+// booking's date.
+export function proofDeleteDate(startAt: string): Date {
+  return new Date(
+    new Date(startAt).getTime() + PAYMENT_RULES.proofKeepDays * 86_400_000
+  )
 }
 
 // Whether the customer can still say "I've paid": they chose a way to pay

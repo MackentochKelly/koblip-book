@@ -2,7 +2,7 @@
 
 A customer who paid the business outside the app (bank transfer, Zelle, Cash App, another way) can add a picture of the payment when they say "I've paid". The owner sees it next to "Mark as paid". Follows [Pay outside the app: follow-ups](outside-payments.md).
 
-**Status (Nov 10):** Plan only. Nothing built. The owner answered the three open points (required, 90 days shown, team members see it); see Decisions. Waiting for the owner's go.
+**Status (Nov 10):** Built, PP-1 to PP-10, on the owner's go. Type check, lint, tests and build pass. Not checked on a phone screen yet, not pushed, not live. Spanish, Portuguese and French words fill in at the next server start.
 
 ## Rules that stay
 
@@ -40,7 +40,7 @@ A proof is a screenshot of someone's bank or payment app: names, account numbers
 
 ## Tasks
 
-In order. Each is small and ends with its own tests. All `To do`.
+In order. Each is small and ends with its own tests. All `Done` (Nov 10).
 
 | ID | Task | Done when |
 | --- | --- | --- |
@@ -83,9 +83,9 @@ In order. Each is small and ends with its own tests. All `To do`.
 
 ## Needs the owner
 
-- **Go** to build PP-1 to PP-10.
+- A look at it on the phone and the computer.
 - **Wording**, to approve before it ships: "Add a picture of your payment", "Replace", "Remove", "Ask for a picture of the payment", "Customers must add a screenshot to say they paid. Deleted after 90 days.", "Team members see payment pictures", "Payment picture", "Deleted on {date}".
 
 ## Next step
 
-Owner's go. Then PP-1.
+The owner looks at it. On the live server, `PAYMENT_PROOFS_DIR` must exist and be writable before deploy.

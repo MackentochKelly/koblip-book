@@ -68,6 +68,9 @@ const bookings = {
       reported: "Review payment",
       paid: "Paid",
     },
+    // The customer's picture of the payment (docs/plans/payment-proof.md).
+    proof: "Payment picture",
+    proofDeleted: "Deleted on {date, date, medium}",
     markPaid: "Mark as paid",
     markUnpaid: "Mark as not paid",
     markedPaid: "Marked as paid",

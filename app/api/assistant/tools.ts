@@ -2173,7 +2173,7 @@ export function buildAssistantTools(
       definition: {
         name: "list_bookings",
         description:
-          "Bookings, each with when (past / now / upcoming), team member, length, price, source, note and add-ons. A booking paid outside the app also has payment: choice (now, or later = at the visit), way, status (unpaid, reported = the customer says they paid and the owner must check, paid = the owner confirmed) and reference. For yesterday, today or tomorrow, pass only day: every booking that day, past and upcoming (count them all for 'how many today'). For other days, from/to: every booking on those days; adding range keeps only that side of now. With none of these: upcoming (soonest first) or past (most recent first). Source caps: next 200 upcoming, last 100 past.",
+          "Bookings, each with when (past / now / upcoming), team member, length, price, source, note and add-ons. A booking paid outside the app also has payment: choice (now, or later = at the visit), way, status (unpaid, reported = the customer says they paid and the owner must check, paid = the owner confirmed), reference and hasProof (the customer added a picture of the payment; you cannot see it, the owner opens it on the booking). For yesterday, today or tomorrow, pass only day: every booking that day, past and upcoming (count them all for 'how many today'). For other days, from/to: every booking on those days; adding range keeps only that side of now. With none of these: upcoming (soonest first) or past (most recent first). Source caps: next 200 upcoming, last 100 past.",
         // `day` is worked out here in the business timezone, so the model
         // never has to compute a date or pick a side of now for a plain day
         // ("Don't make the model fill arguments you already know", OpenAI
@@ -2331,6 +2331,10 @@ export function buildAssistantTools(
                   way: b.payment.method?.name ?? null,
                   status: b.payment.status,
                   reference: b.payment.reference,
+                  // Whether the customer added a picture of the payment.
+                  // The picture itself never comes here: the owner opens
+                  // it on the booking.
+                  hasProof: b.payment.hasProof,
                 },
               }
             : {}),

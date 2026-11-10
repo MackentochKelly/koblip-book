@@ -591,6 +591,9 @@ const words = {
     },
     // Paying outside the app (docs/plans/outside-payments.md, OP-8).
     payLater: "At the visit",
+    // The customer's picture of the payment (docs/plans/payment-proof.md).
+    proof: "Payment picture",
+    proofDeleted: "Deleted on {date, date, medium}",
     payment: {
       unpaid: "Payment pending",
       reported: "Says paid",
@@ -610,6 +613,18 @@ const words = {
       on: "Pay at the visit is on",
       off: "Pay at the visit is off",
     },
+    // Payment pictures: each business's two switches, and the one rule
+    // for all of them.
+    proof: {
+      on: "Payment picture required",
+      off: "No payment picture asked",
+    },
+    proofTeam: {
+      on: "Team sees pictures",
+      off: "Team does not see pictures",
+    },
+    proofRule:
+      "A payment picture is deleted {days, number} days after the booking's date.",
     toCheck:
       "{n, plural, one {# payment to review} other {# payments to review}}",
   },

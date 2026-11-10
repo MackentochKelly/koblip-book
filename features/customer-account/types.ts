@@ -37,6 +37,9 @@ export interface MyBooking {
   // How they chose to pay outside the app, with the way's instructions;
   // null when the booking tracks no payment (lib/payment-rules.ts).
   payment: BookingPayment | null
+  // Whether its business asks for a picture of the payment
+  // (docs/plans/payment-proof.md).
+  asksProof: boolean
   business: {
     slug: string
     name: string

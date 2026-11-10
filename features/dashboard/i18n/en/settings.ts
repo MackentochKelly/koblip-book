@@ -153,6 +153,14 @@ const settings = {
     payLaterHint: "Customers can also choose to pay later.",
     removed: "{name} removed",
     removeHint: "Bookings already made keep it.",
+    // The customer's picture of the payment (docs/plans/payment-proof.md).
+    proof: {
+      ask: "Ask for a picture of the payment",
+      askHint:
+        "Customers add one to say they paid. Deleted {days, number} days after the visit.",
+      team: "Team members see payment pictures",
+      teamHint: "Only on their own bookings.",
+    },
     // The policies were written for another way of paying than the
     // business offers now (policiesBehind in lib/payment-rules.ts).
     policies: {

@@ -17,6 +17,9 @@ export async function register() {
     startNotificationTimer()
     const { startGoogleCalendarTimer } = await import("@/features/dashboard/api/google-calendar-timer")
     startGoogleCalendarTimer()
+    // Payment pictures are deleted when due (docs/plans/payment-proof.md).
+    const { startPaymentProofTimer } = await import("@/lib/payment-proof-timer")
+    startPaymentProofTimer()
     // New and changed English goes to the database for translation
     // (docs/plans/translations.md, G4) before the translation timer's first
     // run. A database error leaves the words as they are; the next start

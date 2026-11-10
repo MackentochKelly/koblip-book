@@ -1,10 +1,12 @@
 import { useLocale, useTranslations } from "next-intl"
 
+import { PaymentProof } from "@/components/payment-proof"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useFormatDuration } from "@/hooks/use-format-duration"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
+import { proofDeleteDate } from "@/lib/payment-rules"
 import type { OwnerBooking } from "../types"
 import { BookingStatusBadge } from "./booking-status-badge"
 import { ContactButtons } from "./contact-buttons"
@@ -98,6 +100,15 @@ export function BookingDetails({
                   reference: booking.payment.reference,
                 })}
               </p>
+            )}
+            {booking.payment.hasProof && (
+              <PaymentProof
+                bookingId={booking.id}
+                label={t("payment.proof")}
+                note={t("payment.proofDeleted", {
+                  date: proofDeleteDate(booking.startAt),
+                })}
+              />
             )}
             {onPaid && booking.status !== "cancelled" && (
               <Button

@@ -11,6 +11,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
+import { PAYMENT_RULES } from "@/lib/payment-rules"
 import type { AdminBusinessPayments } from "../api/payments"
 
 // Each business's ways to be paid outside the app, with whether paying at
@@ -23,6 +24,9 @@ export function BusinessPaymentsList({
   const t = useTranslations("admin.payments")
   return (
     <div className="flex flex-col gap-8">
+      <p className="text-sm text-muted-foreground">
+        {t("proofRule", { days: PAYMENT_RULES.proofKeepDays })}
+      </p>
       {businesses.map((business) => (
         <section key={business.businessId} className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -32,6 +36,14 @@ export function BusinessPaymentsList({
             <Badge variant="outline">
               {t(`payLater.${business.payLater ? "on" : "off"}`)}
             </Badge>
+            <Badge variant="outline">
+              {t(`proof.${business.asksProof ? "on" : "off"}`)}
+            </Badge>
+            {business.asksProof && (
+              <Badge variant="outline">
+                {t(`proofTeam.${business.teamSeesProof ? "on" : "off"}`)}
+              </Badge>
+            )}
             {business.toCheck > 0 && (
               <Badge variant="warning">
                 {t("toCheck", { n: business.toCheck })}

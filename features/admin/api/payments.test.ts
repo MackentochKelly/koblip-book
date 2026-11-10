@@ -103,6 +103,7 @@ beforeAll(async () => {
         paymentMethod: zelle,
         paymentStatus: "reported",
         paymentReference: "TX-1",
+        paymentProof: "proof-k1.webp",
       }),
       booking("k2", "salon", {
         paymentChoice: "later",
@@ -131,6 +132,8 @@ test("every real business with a way to pay, its ways in order, and what waits",
       businessName: "Barber",
       slug: "barber",
       payLater: true,
+      asksProof: true,
+      teamSeesProof: true,
       methods: [
         { id: "b1", type: "other", name: "Cash App", details: "$barber" },
       ],
@@ -141,6 +144,8 @@ test("every real business with a way to pay, its ways in order, and what waits",
       businessName: "Salon",
       slug: "salon",
       payLater: false,
+      asksProof: true,
+      teamSeesProof: true,
       methods: [
         {
           id: "s1",
@@ -159,7 +164,7 @@ test("the bookings list carries each booking's way to pay and status", async () 
   const list = await getBookings()
   expect(list.map(({ id, payment }) => [id, payment])).toEqual([
     ["k3", null],
-    ["k2", { way: null, status: "unpaid" }],
-    ["k1", { way: "Zelle", status: "reported" }],
+    ["k2", { way: null, status: "unpaid", proof: false }],
+    ["k1", { way: "Zelle", status: "reported", proof: true }],
   ])
 })

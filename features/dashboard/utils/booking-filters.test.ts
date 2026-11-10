@@ -108,6 +108,7 @@ test("Review payment holds only what a customer says they paid", () => {
         method: zelle,
         status,
         reference: null,
+        hasProof: false,
       },
     })
   const list = [pay("a", "unpaid"), pay("b", "reported"), pay("c", "paid"), booking({ id: "d" })]

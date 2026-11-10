@@ -28,6 +28,10 @@ const words = {
         reported: "Being checked",
         paid: "Paid",
       },
+      // The customer's picture of the payment, while the owner lets the
+      // team see them (docs/plans/payment-proof.md).
+      proof: "Payment picture",
+      proofDeleted: "Deleted on {date, date, medium}",
     },
   },
   hours: {

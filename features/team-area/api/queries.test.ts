@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterAll, beforeAll, expect, test, vi } from "vitest"
+import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { bookings, businesses, teamMembers, user } from "@/lib/db/schema"
 import type { TeamSeat } from "@/lib/dal"
@@ -80,6 +81,7 @@ beforeAll(async () => {
     paymentMethod: ZELLE,
     paymentStatus: "reported",
     paymentReference: "TX-SECRET",
+    paymentProof: "proof-zelle.webp",
   })
   await booked("later", {
     startAt: "2099-01-05T11:00:00.000Z",
@@ -107,14 +109,35 @@ afterAll(() => {
 test("a team member sees how their own bookings are paid, and where it stands", async () => {
   const mine = await getMyBookings(SEAT, "upcoming")
   expect(mine.map(({ id, payment }) => [id, payment])).toEqual([
-    ["zelle", { way: "Zelle", status: "reported" }],
-    ["later", { way: null, status: "unpaid" }],
+    ["zelle", { way: "Zelle", status: "reported", proof: true }],
+    ["later", { way: null, status: "unpaid", proof: false }],
     ["plain", null],
   ])
+})
+
+test("with the owner's switch off, a team member is told of no picture", async () => {
+  await db
+    .update(businesses)
+    .set({ paymentProofTeam: false })
+    .where(eq(businesses.id, "biz"))
+  try {
+    const mine = await getMyBookings(SEAT, "upcoming")
+    expect(mine.find(({ id }) => id === "zelle")?.payment).toEqual({
+      way: "Zelle",
+      status: "reported",
+      proof: false,
+    })
+  } finally {
+    await db
+      .update(businesses)
+      .set({ paymentProofTeam: true })
+      .where(eq(businesses.id, "biz"))
+  }
 })
 
 test("the instructions and the customer's reference never reach the team area", async () => {
   const text = JSON.stringify(await getMyBookings(SEAT, "upcoming"))
   expect(text).not.toContain("pay@shop.example")
   expect(text).not.toContain("TX-SECRET")
+  expect(text).not.toContain("proof-zelle")
 })

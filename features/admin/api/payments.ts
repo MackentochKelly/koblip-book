@@ -14,6 +14,9 @@ export interface AdminBusinessPayments {
   businessName: string
   slug: string
   payLater: boolean
+  // Payment pictures: asked for, and shown to the team.
+  asksProof: boolean
+  teamSeesProof: boolean
   methods: PaymentMethod[]
   // Bookings whose customer says they paid, waiting for the owner.
   toCheck: number
@@ -32,6 +35,8 @@ export async function getBusinessPayments(): Promise<AdminBusinessPayments[]> {
         businessName: businesses.name,
         slug: businesses.slug,
         payLater: businesses.payLater,
+        asksProof: businesses.paymentProof,
+        teamSeesProof: businesses.paymentProofTeam,
         id: paymentMethods.id,
         type: paymentMethods.type,
         name: paymentMethods.name,

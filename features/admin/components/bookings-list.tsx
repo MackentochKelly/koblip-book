@@ -1,6 +1,7 @@
 import { useLocale, useTranslations } from "next-intl"
 
 import { PaymentBadge } from "@/components/payment-badge"
+import { PaymentProof } from "@/components/payment-proof"
 import { Badge } from "@/components/ui/badge"
 import {
   Item,
@@ -10,6 +11,7 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
+import { proofDeleteDate } from "@/lib/payment-rules"
 import type { AdminBooking } from "../api/queries"
 
 // A booking's status words, by the statuses a booking has.
@@ -43,6 +45,15 @@ export function BookingsList({ bookings }: { bookings: AdminBooking[] }) {
             </ItemDescription>
           </ItemContent>
           <ItemActions>
+            {booking.payment?.proof && (
+              <PaymentProof
+                bookingId={booking.id}
+                label={t("proof")}
+                note={t("proofDeleted", {
+                  date: proofDeleteDate(booking.startAt),
+                })}
+              />
+            )}
             {booking.payment && (
               <PaymentBadge
                 status={booking.payment.status}

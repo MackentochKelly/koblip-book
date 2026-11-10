@@ -41,6 +41,8 @@ export default async function PaymentsPage({ params }: Props) {
       methods={methods}
       payLater={business.payLater}
       removedTypes={business.removedPaymentTypes}
+      asksProof={business.paymentProof}
+      teamSeesProof={business.paymentProofTeam}
       policiesOutOfDate={policiesOutOfDate}
       onUpdatePolicies={updatePoliciesForPayments}
     />

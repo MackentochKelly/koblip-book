@@ -61,6 +61,7 @@ test("choosing a way starts unpaid and keeps the way as it was", () => {
       method: { type: "bank_transfer", name: "Banco Popular", details: "Account 123-456" },
       status: "unpaid",
       reference: null,
+      hasProof: false,
     },
   })
 })
@@ -79,7 +80,7 @@ test("a customer cannot start a booking as paid or reported", () => {
 test("paying later only where the business allows it", () => {
   expect(startPayment([zelle], true, { choice: "later" })).toEqual({
     ok: true,
-    payment: { choice: "later", method: null, status: "unpaid", reference: null },
+    payment: { choice: "later", method: null, status: "unpaid", reference: null, hasProof: false },
   })
   expect(startPayment([zelle], false, { choice: "later" })).toEqual({ ok: false })
 })
@@ -112,11 +113,11 @@ test("a booking with no payment columns tracks none", () => {
 })
 
 test("only an unpaid pay-now booking can be reported as paid", () => {
-  const now = { choice: "now" as const, method: { type: "zelle" as const, name: "Zelle", details: "x" }, reference: null }
+  const now = { choice: "now" as const, method: { type: "zelle" as const, name: "Zelle", details: "x" }, reference: null, hasProof: false }
   expect(canReportPayment({ ...now, status: "unpaid" })).toBe(true)
   expect(canReportPayment({ ...now, status: "reported" })).toBe(false)
   expect(canReportPayment({ ...now, status: "paid" })).toBe(false)
-  expect(canReportPayment({ choice: "later", method: null, status: "unpaid", reference: null })).toBe(false)
+  expect(canReportPayment({ choice: "later", method: null, status: "unpaid", reference: null, hasProof: false })).toBe(false)
   expect(canReportPayment(null)).toBe(false)
 })
 

@@ -167,7 +167,8 @@ export interface AdminBooking {
   status: string
   // Paying outside the app, when the booking tracks it: the way's name
   // (null at the visit) and where it stands.
-  payment: { way: string | null; status: PaymentStatus } | null
+  // proof: the customer added a picture of the payment.
+  payment: { way: string | null; status: PaymentStatus; proof: boolean } | null
 }
 
 export async function getBookings(): Promise<AdminBooking[]> {
@@ -185,6 +186,7 @@ export async function getBookings(): Promise<AdminBooking[]> {
       paymentMethod: bookings.paymentMethod,
       paymentStatus: bookings.paymentStatus,
       paymentReference: bookings.paymentReference,
+      paymentProof: bookings.paymentProof,
     })
     .from(bookings)
     .innerJoin(businesses, eq(businesses.id, bookings.businessId))
@@ -192,18 +194,20 @@ export async function getBookings(): Promise<AdminBooking[]> {
     .orderBy(desc(bookings.createdAt))
     .limit(MAX_ROWS)
   return rows.map(
-    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, ...row }) => {
+    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof, ...row }) => {
       const payment = paymentOf({
         paymentChoice,
         paymentMethod,
         paymentStatus,
         paymentReference,
+        paymentProof,
       })
       return {
         ...row,
         payment: payment && {
           way: payment.method?.name ?? null,
           status: payment.status,
+          proof: payment.hasProof,
         },
       }
     }

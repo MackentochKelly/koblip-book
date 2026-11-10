@@ -5,6 +5,7 @@ import { and, asc, desc, eq, gte, lt, ne } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   bookings,
+  businesses,
   businessHours,
   teamMemberHours,
   teamMembers,
@@ -29,6 +30,14 @@ export async function getMyBookings(
     eq(bookings.businessId, seat.business.id),
     eq(bookings.teamMemberId, seat.teamMemberId)
   )
+  // Whether the business lets its team see payment pictures
+  // (docs/plans/payment-proof.md, PP9): asked each time, so the owner's
+  // switch works at once.
+  const [business] = await db
+    .select({ teamSeesProof: businesses.paymentProofTeam })
+    .from(businesses)
+    .where(eq(businesses.id, seat.business.id))
+    .limit(1)
   const rows = await db
     .select({
       id: bookings.id,
@@ -41,6 +50,7 @@ export async function getMyBookings(
       paymentMethod: bookings.paymentMethod,
       paymentStatus: bookings.paymentStatus,
       paymentReference: bookings.paymentReference,
+      paymentProof: bookings.paymentProof,
     })
     .from(bookings)
     .where(
@@ -51,18 +61,19 @@ export async function getMyBookings(
     .orderBy(when === "upcoming" ? asc(bookings.startAt) : desc(bookings.startAt))
     .limit(LIST_LIMIT)
   return rows.map(
-    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, ...booking }) => {
-      // A cancelled booking has nothing to pay. Only the way's name and
-      // the status leave here.
+    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof, ...booking }) => {
+      // A cancelled booking has nothing to pay. Only the way's name, the
+      // status and whether there is a picture to open leave here.
       const payment =
         booking.status === "cancelled"
           ? null
-          : paymentOf({ paymentChoice, paymentMethod, paymentStatus, paymentReference })
+          : paymentOf({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof })
       return {
         ...booking,
         payment: payment && {
           way: payment.method?.name ?? null,
           status: payment.status,
+          proof: payment.hasProof && Boolean(business?.teamSeesProof),
         },
       }
     }

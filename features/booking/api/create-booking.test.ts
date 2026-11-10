@@ -431,6 +431,7 @@ test("choosing a way books unpaid and gives the booker its instructions", async 
         method: { type: "zelle", name: "Zelle", details: "pay@shop.example" },
         status: "unpaid",
         reference: null,
+        hasProof: false,
       },
     },
   })

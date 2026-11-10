@@ -5,6 +5,7 @@ import { useState } from "react"
 import { CalendarDaysIcon } from "@/components/ui/icons"
 
 import { PaymentBadge } from "@/components/payment-badge"
+import { PaymentProof } from "@/components/payment-proof"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -21,6 +22,7 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
+import { proofDeleteDate } from "@/lib/payment-rules"
 import type { MyBooking } from "../types"
 
 type View = "upcoming" | "past"
@@ -113,6 +115,15 @@ export function MyBookings({
                           <PaymentBadge
                             status={booking.payment.status}
                             label={t(`bookings.payment.status.${booking.payment.status}`)}
+                          />
+                        )}
+                        {booking.payment?.proof && (
+                          <PaymentProof
+                            bookingId={booking.id}
+                            label={t("bookings.payment.proof")}
+                            note={t("bookings.payment.proofDeleted", {
+                              date: proofDeleteDate(booking.startAt),
+                            })}
                           />
                         )}
                       </ItemActions>

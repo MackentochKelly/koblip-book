@@ -21,7 +21,8 @@ export function uploadsDir(): string {
 
 type SaveError = "missing" | "too_big" | "wrong_type"
 
-function sniffType(bytes: Uint8Array): UploadType | null {
+// The picture's real type, from its first bytes; never from its name.
+export function sniffType(bytes: Uint8Array): UploadType | null {
   if (
     bytes.length >= 3 &&
     bytes[0] === 0xff &&

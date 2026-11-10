@@ -7,6 +7,7 @@ import { saveAll } from "@/lib/db/save-all"
 import { bookings, businesses, paymentMethods } from "@/lib/db/schema"
 import { clientNotification } from "@/lib/in-app-notifications"
 import { policyPaymentFor } from "@/lib/payment-methods"
+import { deleteProof } from "@/lib/payment-proofs"
 import {
   checkPaymentMethod,
   isPaymentType,
@@ -160,6 +161,26 @@ export async function keepPolicies(businessId: string): Promise<ActionResult> {
   return { ok: true }
 }
 
+// Payment pictures (docs/plans/payment-proof.md): whether a customer must
+// add one to say they paid (`ask`), and whether a team member sees the
+// ones on their own bookings (`team`). Pictures already sent stay.
+export async function setPaymentProof(
+  businessId: string,
+  setting: "ask" | "team",
+  on: boolean
+): Promise<ActionResult> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) return { ok: false, error: "not_found" }
+  if (typeof on !== "boolean" || (setting !== "ask" && setting !== "team"))
+    return { ok: false, error: "invalid" }
+  await db
+    .update(businesses)
+    .set(setting === "ask" ? { paymentProof: on } : { paymentProofTeam: on })
+    .where(eq(businesses.id, owned.business.id))
+  revalidateBusiness(owned.business.slug)
+  return { ok: true }
+}
+
 // The owner says a booking is paid, or not after all. The only way a
 // booking becomes paid: a customer can only ask for it to be checked.
 // Only for a booking that tracks a payment.
@@ -175,6 +196,7 @@ export async function setBookingPaid(
     .select({
       id: bookings.id,
       paymentStatus: bookings.paymentStatus,
+      paymentProof: bookings.paymentProof,
       businessId: bookings.businessId,
       moves: bookings.moves,
       serviceName: bookings.serviceName,
@@ -202,11 +224,17 @@ export async function setBookingPaid(
         paymentStatus: paid ? "paid" : "unpaid",
         paymentPaidAt: paid ? new Date().toISOString() : null,
         // Not paid after all: what the customer reported no longer stands.
-        ...(!paid && { paymentReference: null, paymentReportedAt: null }),
+        // Its picture goes too, so the customer can send a new one.
+        ...(!paid && {
+          paymentReference: null,
+          paymentReportedAt: null,
+          paymentProof: null,
+        }),
       })
       .where(eq(bookings.id, booking.id)),
     ...(turnsPaid ? await clientNotification(booking, "clientPaid") : []),
   ])
+  if (!paid) await deleteProof(booking.paymentProof)
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }
