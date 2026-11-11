@@ -2,7 +2,9 @@ import "server-only"
 import { eq } from "drizzle-orm"
 
 import { db } from "@/lib/db"
+import { saveAll } from "@/lib/db/save-all"
 import { bookings, onlinePaymentEvents } from "@/lib/db/schema"
+import { clientNotification } from "@/lib/in-app-notifications"
 import { paidInFullOnline } from "@/lib/payment-rules"
 
 // What happened to online payments (docs/plans/online-payments.md): the
@@ -81,15 +83,19 @@ export async function saveRefund(input: {
       paidMinor: booking.paidOnlineMinor,
       refundedMinor,
     })
-  await db
-    .update(bookings)
-    .set({
-      refundedMinor,
-      refundedAt: new Date(Date.now()).toISOString(),
-      ...(booking.paymentStatus === "paid" && !stillPaid
-        ? { paymentStatus: "unpaid" as const, paymentPaidAt: null }
-        : {}),
-    })
-    .where(eq(bookings.id, booking.id))
+  // The customer's bell hears of it, saved with the refund.
+  await saveAll([
+    db
+      .update(bookings)
+      .set({
+        refundedMinor,
+        refundedAt: new Date(Date.now()).toISOString(),
+        ...(booking.paymentStatus === "paid" && !stillPaid
+          ? { paymentStatus: "unpaid" as const, paymentPaidAt: null }
+          : {}),
+      })
+      .where(eq(bookings.id, booking.id)),
+    ...(await clientNotification(booking, "clientRefunded")),
+  ])
   return { id: booking.id, businessId: booking.businessId, isNew }
 }

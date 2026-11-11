@@ -524,6 +524,16 @@ export async function book(
             { dedupeKey: `paid:${bookingId}` }
           )
         : []
+      // And that the card paid (docs/plans/online-payments.md).
+      const cardNotice =
+        mode.kind === "paid"
+          ? await notification(
+              business.id,
+              "paidOnline",
+              { customerName: name, serviceName: service.name, startAt },
+              { dedupeKey: `paid-online:${bookingId}` }
+            )
+          : []
       await saveAll([
         db.insert(bookings).values({
           id: bookingId,
@@ -589,6 +599,7 @@ export async function book(
           : []),
         ...notice,
         ...paidNotice,
+        ...cardNotice,
       ])
       return {
         id: bookingId,

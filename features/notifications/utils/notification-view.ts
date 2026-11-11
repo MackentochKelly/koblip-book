@@ -41,6 +41,8 @@ export function titleOf(
     case "customerCantCome":
     case "customerMoved":
     case "customerPaid":
+    case "paidOnline":
+    case "paymentDisputed":
     case "customerReplied":
     case "messageFailed":
       return t(`kinds.${item.kind}`, { who: who(item, t) })
@@ -59,6 +61,7 @@ export function titleOf(
     case "clientMoved":
     case "clientCancelled":
     case "clientPaid":
+    case "clientRefunded":
     case "clientReminder":
     case "clientReviewAsk":
       return t(`kinds.${item.kind}`, {
@@ -139,6 +142,8 @@ export const CHOICE_GROUPS = [
       "customerMoved",
       "customerCancelled",
       "customerPaid",
+      "paidOnline",
+      "paymentDisputed",
     ],
   },
   {
@@ -164,6 +169,7 @@ export const CLIENT_CHOICE_GROUPS = [
       "clientMoved",
       "clientCancelled",
       "clientPaid",
+      "clientRefunded",
       "clientReminder",
       "clientReviewAsk",
       "clientRewardEarned",

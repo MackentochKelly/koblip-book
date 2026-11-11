@@ -12,6 +12,9 @@ export const OWNER_IN_APP_KINDS = [
   "customerCantCome",
   "customerMoved",
   "customerPaid",
+  // By card (docs/plans/online-payments.md).
+  "paidOnline",
+  "paymentDisputed",
   "customerReplied",
   "messageFailed",
   "templateApproved",
@@ -28,6 +31,7 @@ export const CLIENT_IN_APP_KINDS = [
   "clientMoved",
   "clientCancelled",
   "clientPaid",
+  "clientRefunded",
   "clientReminder",
   "clientReviewAsk",
   "clientRewardEarned",

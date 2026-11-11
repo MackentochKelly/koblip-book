@@ -23,6 +23,8 @@ const words = {
     customerCantCome: "{who} can't make it",
     customerMoved: "{who} moved their booking",
     customerPaid: "{who} says they paid",
+    paidOnline: "{who} paid online",
+    paymentDisputed: "{who} disputed a payment",
     customerReplied: "{who} wrote on WhatsApp",
     messageFailed: "A message to {who} didn't go",
     templateApproved: "Meta approved {message}",
@@ -34,6 +36,7 @@ const words = {
     clientMoved: "{service} moved to {when}",
     clientCancelled: "{service} on {when} was cancelled",
     clientPaid: "Payment confirmed: {service}, {when}",
+    clientRefunded: "Refunded: {service}, {when}",
     clientReminder: "Reminder: {service}, {when}",
     clientReviewAsk: "How was {service}? Rate your visit",
     clientRewardEarned: "You earned a reward at {business}",
@@ -61,6 +64,8 @@ const words = {
       customerCantCome: "Customer can't make it",
       customerMoved: "Customer moved a booking",
       customerPaid: "Customer says they paid",
+      paidOnline: "Customer paid online",
+      paymentDisputed: "Payment disputed",
       customerReplied: "Customer wrote",
       messageFailed: "Message didn't go",
       templateApproved: "Meta approved a message",
@@ -72,6 +77,7 @@ const words = {
       clientMoved: "Booking moved",
       clientCancelled: "Booking cancelled",
       clientPaid: "Payment confirmed",
+      clientRefunded: "Refunded",
       clientReminder: "Reminder before a visit",
       clientReviewAsk: "Rate a visit",
       clientRewardEarned: "Reward earned",
@@ -93,7 +99,7 @@ const words = {
     moreInfo: "More info",
     about: {
       bookings:
-        "A bell alert when a customer books, confirms, can't make it, moves or cancels.",
+        "A bell alert when a customer books, confirms, can't make it, moves, cancels or pays.",
       whatsapp:
         "A bell alert about your WhatsApp: customer replies, messages that didn't go, Meta's reviews and your monthly limit.",
       visits:

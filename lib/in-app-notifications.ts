@@ -22,6 +22,8 @@ const LINKS: Record<OwnerInAppKind, string> = {
   customerCantCome: "",
   customerMoved: "",
   customerPaid: "/bookings",
+  paidOnline: "/bookings",
+  paymentDisputed: "/bookings",
   customerReplied: "/automations/activity",
   messageFailed: "/automations/activity",
   templateApproved: "/automations/messages",

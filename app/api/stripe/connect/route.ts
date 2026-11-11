@@ -7,6 +7,7 @@ import {
 } from "@/features/booking/api/settle-card-payment"
 import { db } from "@/lib/db"
 import { bookings, businesses } from "@/lib/db/schema"
+import { notify } from "@/lib/in-app-notifications"
 import { recordPaymentEvent, saveRefund } from "@/lib/online-payment-events"
 import { fromStripeAmount } from "@/lib/payment-rules"
 import { saveStripeAccount, stripeConnect } from "@/lib/stripe-connect"
@@ -76,7 +77,13 @@ async function handle(event: Stripe.Event, accountId: string) {
       const paymentId = idOf(dispute.payment_intent)
       const [booking] = paymentId
         ? await db
-            .select({ id: bookings.id, businessId: bookings.businessId })
+            .select({
+              id: bookings.id,
+              businessId: bookings.businessId,
+              customerName: bookings.customerName,
+              serviceName: bookings.serviceName,
+              startAt: bookings.startAt,
+            })
             .from(bookings)
             .where(eq(bookings.stripePaymentId, paymentId))
             .limit(1)
@@ -92,6 +99,18 @@ async function handle(event: Stripe.Event, accountId: string) {
         currency: dispute.currency.toUpperCase(),
         note: dispute.reason,
       })
+      // The owner's bell: Stripe's dashboard is where they answer it.
+      if (booking)
+        await notify(
+          booking.businessId,
+          "paymentDisputed",
+          {
+            customerName: booking.customerName,
+            serviceName: booking.serviceName,
+            startAt: booking.startAt,
+          },
+          { dedupeKey: `dispute:${dispute.id}` }
+        )
       return
     }
     // Stripe changed what the account can do: only its answer turns card
