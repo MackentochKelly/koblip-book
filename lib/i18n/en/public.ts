@@ -290,6 +290,9 @@ const words = {
     cancelTitle: "Cancel this booking?",
     cantComeTitle: "Can't make it?",
     willBeTold: "{business} will be told.",
+    // The booking was paid by card: no refund by itself.
+    cancelPaid:
+      "{business} will be told. They decide whether to refund your {amount}.",
     keep: "Keep it",
     cancelBooking: "Cancel booking",
     tellThem: "Tell them",

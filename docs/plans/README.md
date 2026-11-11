@@ -25,7 +25,7 @@ current.
 | [Payment proof](payment-proof.md) | To do |
 | [Client account](client-account.md) | In progress |
 | [Rewards](rewards.md) | Done |
-| [Online payments](online-payments.md) | To do |
+| [Online payments](online-payments.md) | Built, sandbox run left (ON-14) |
 | [Email](email.md) | To do |
 
 ## How to work with a plan

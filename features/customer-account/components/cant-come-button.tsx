@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { formatPrice } from "@/lib/format-price"
 import { myBookingsLoginHref } from "@/lib/my-bookings-links"
 import { languageOf } from "@/lib/page-language"
 import { cantCome } from "../api/cant-come"
@@ -18,7 +19,8 @@ import type { MyBooking } from "../types"
 // it tells the owner they can't make it, and the booking stays.
 export function CantComeButton({ booking }: { booking: MyBooking }) {
   const t = useTranslations("public.account")
-  const language = languageOf(useLocale())
+  const locale = useLocale()
+  const language = languageOf(locale)
   const router = useRouter()
   const [asking, setAsking] = useState(false)
   const [busy, startTransition] = useTransition()
@@ -32,6 +34,10 @@ export function CantComeButton({ booking }: { booking: MyBooking }) {
     )
   }
   const cancels = booking.cantCome === "cancel"
+  // Paid by card: cancelling gives nothing back by itself; the business
+  // decides (docs/plans/online-payments.md, ON10). Said before they cancel.
+  const online = booking.payment?.online
+  const paid = online ? online.paidMinor - online.refundedMinor : 0
 
   const confirm = () =>
     startTransition(async () => {
@@ -61,7 +67,14 @@ export function CantComeButton({ booking }: { booking: MyBooking }) {
       <ConfirmDialog
         open={asking}
         title={cancels ? t("cancelTitle") : t("cantComeTitle")}
-        description={t("willBeTold", { business: booking.business.name })}
+        description={
+          cancels && paid > 0
+            ? t("cancelPaid", {
+                business: booking.business.name,
+                amount: formatPrice(paid, booking.currency, locale),
+              })
+            : t("willBeTold", { business: booking.business.name })
+        }
         confirm={cancels ? t("cancelBooking") : t("tellThem")}
         cancel={t("keep")}
         tone={cancels ? "destructive" : "default"}
