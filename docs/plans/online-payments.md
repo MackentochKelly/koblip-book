@@ -134,7 +134,7 @@ In order. Each is small, ends with its own tests, and is committed alone.
 
 ## Needs the owner
 
-1. **Go**, and which country Koblip's Stripe account is in (it decides which countries can connect).
+1. **Go.** (Answered Nov 10: Koblip's Stripe account is in the United States. ON-1 confirms in the Stripe dashboard which countries it can connect businesses from.)
 2. **Fee:** stay with no Koblip fee per payment (ON11), or take one from the start?
 3. **Pro only** (ON-13), as the plan screen already says?
 
