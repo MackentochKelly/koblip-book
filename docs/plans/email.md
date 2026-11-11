@@ -88,7 +88,7 @@ The owner signs in to AWS; the developer never types a password or a key. Each c
 
 | ID | Task | Needs | Files it owns | Status |
 | --- | --- | --- | --- | --- |
-| EM-1 | Look at the AWS account and write what is there into `docs/email.md` (new) | – | `docs/email.md` | To do |
+| EM-1 | Look at the AWS account and write what is there into `docs/email.md` (new) | – | `docs/email.md` | Done (Nov 11): us-east-1, already out of the sandbox, `koblip.com` verified with DKIM; MAIL FROM and Book's configuration set missing |
 | EM-2 | AWS setup steps 2, 4, 5, 6 | EM-1 | `docs/email.md` | To do |
 | EM-3 | Tables `email_sends` and `email_blocks`, migration, copy of `client_reminder_emails` | – | `lib/db/schema.ts` (email), `drizzle/` | To do |
 | EM-4 | Send through the SES API with the log; events route with signature check; blocks | EM-3 | `lib/email.ts`, `lib/email-sends.ts`, `lib/email-events.ts`, `app/api/email/events/`, `docs/setup.md`, `docs/deploy.md`, `scripts/deploy.sh` (email check) | To do |
