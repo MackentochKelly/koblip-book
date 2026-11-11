@@ -3,7 +3,7 @@
 Customers pay the business by card when they book: the full price or a deposit. Asked by the owner (2026-11-10). Nothing is built until the owner says go.
 How to use this file: [Plans](README.md).
 
-**Status (Nov 11):** Built, ON-1 to ON-13 done. ON-14: type check, lint, the whole test suite and the build pass; in Stripe's sandbox a 25% deposit was paid on a phone-size screen, the booking was made and the owner's Refund gave it back. Still to run in the sandbox: full price, a declined card, a card needing the bank check, a closed tab (needs the Stripe CLI running). Not pushed, not live.
+**Status (Nov 11):** Built, ON-1 to ON-14 done. Type check, lint, the whole test suite and the build pass. Run in Stripe's sandbox on a phone-size screen: a 25% deposit, the full price, a declined card (Stripe shows the error, nothing is booked), a card needing the bank check, an unpaid closed tab (the time is freed when the page expires), a paid closed tab (Stripe's message alone makes the booking), and the owner's Refund. Not pushed, not live: going live is the 4 steps in [../online-payments.md](../online-payments.md).
 
 ## The short version
 
@@ -100,7 +100,7 @@ In order. Each is small, ends with its own tests, and is committed alone.
 | ON-11 | Admin                | Admin → Online payments: each business's Stripe state and setting, every payment event; Admin → Bookings shows paid online and refunded. Read only.                                                                                                       | ON-4       | Done   |
 | ON-12 | Assistant            | `list_bookings` returns what was paid online and refunded; `list_payment_methods` returns the card setting; `set_online_payment` (off, deposit, full) and `refund_booking`, both with the confirm card. Connecting Stripe is never done by the assistant. | ON-9       | Done   |
 | ON-13 | Plans and home       | `onlinePayments` goes from "Soon" to live on Pro; a downgrade turns card payments off and keeps the Stripe account; home pricing and the Pro screen lose "Soon". Terms and privacy name Stripe for customer payments.                                     | ON-7       | Done   |
-| ON-14 | Words and checks     | Words looked up at Apple, Google and Stripe; translations; type check, lint, tests, build; a whole run in Stripe's sandbox on a phone: connect, deposit, full price, declined card, card needing the bank check, closed tab, refund.                      | all        | Partly |
+| ON-14 | Words and checks     | Words looked up at Apple, Google and Stripe; translations; type check, lint, tests, build; a whole run in Stripe's sandbox on a phone: connect, deposit, full price, declined card, card needing the bank check, closed tab, refund.                      | all        | Done   |
 
 ### Where the code will go
 

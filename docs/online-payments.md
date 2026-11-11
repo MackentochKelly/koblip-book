@@ -44,8 +44,10 @@ Never commit a key or paste one into chat.
 The Stripe CLI forwards the businesses' events to the dev server:
 
 ```bash
-stripe listen --api-key "$(grep '^STRIPE_SECRET_KEY=' .env.local | cut -d= -f2)" --forward-connect-to localhost:3100/api/stripe/connect
+stripe listen --api-key "$(grep '^STRIPE_SECRET_KEY=' .env.local | cut -d= -f2)" --all-snapshot --forward-connect-to localhost:3100/api/stripe/connect
 ```
+
+`--all-snapshot` is needed since CLI 1.55: without it the CLI asks which events to forward.
 
 Without the CLI running, a payment still ends as a booking: the page the customer comes back to asks Stripe itself. Only closed tabs, refunds made in Stripe and disputes need the webhook.
 
