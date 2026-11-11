@@ -17,10 +17,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
+import { Switch } from "@/components/ui/switch"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { CANCEL_REASONS, type CancelReason } from "@/lib/booking-rules"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
+import { formatPrice } from "@/lib/format-price"
 import { TOUCH_AREA } from "@/lib/touch-area"
 import type {
   OwnerBookingInput,
@@ -37,12 +40,13 @@ import {
   bookingRewards,
   redeemForBooking,
 } from "../api/customer-reward-actions"
+import { refundBooking } from "../api/online-pay-actions"
 import { setBookingPaid } from "../api/payment-actions"
 import type { BookingReward } from "@/lib/rewards"
 import type { OwnerBooking } from "../types"
 import { type BookingAction, bookingActions } from "../utils/booking-filters"
 import { AddBookingPanel, type AddBookingOptions } from "./add-booking-panel"
-import { BookingDetails } from "./booking-details"
+import { BookingDetails, refundable } from "./booking-details"
 import { MoveBookingPanel } from "./move-booking-panel"
 
 export interface BookingPanelsProps {
@@ -81,6 +85,10 @@ export function useBookingPanels({
   const [cancelling, setCancelling] = useState<OwnerBooking | null>(null)
   // The quick answer to "Why?", picked in the cancel question (optional).
   const [reason, setReason] = useState<CancelReason | null>(null)
+  // Cancelling a booking paid online: whether the money goes back too.
+  const [refundToo, setRefundToo] = useState(false)
+  // The booking whose Refund was tapped, while the question is open.
+  const [refunding, setRefunding] = useState<OwnerBooking | null>(null)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
   const t = useTranslations("owner.bookings")
@@ -91,6 +99,7 @@ export function useBookingPanels({
     startTransition(async () => {
       const result = await task().catch(() => ({ ok: false }))
       setCancelling(null)
+      setRefunding(null)
       if (result.ok) {
         setDetailsOpen(false)
         toast.success(done)
@@ -123,6 +132,7 @@ export function useBookingPanels({
       setMoving(true)
     } else if (action === "cancel") {
       setReason(null)
+      setRefundToo(false)
       setCancelling(booking)
     } else if (action === "undo") {
       run(
@@ -185,6 +195,7 @@ export function useBookingPanels({
                 rewards("redeemed")
               )
             }
+            onRefund={() => setRefunding(opened)}
             onPaid={(paid) =>
               run(
                 () => setBookingPaid(businessId, opened.id, paid),
@@ -260,6 +271,27 @@ export function useBookingPanels({
               ))}
             </ToggleGroup>
           </div>
+          {cancelling && refundable(cancelling) > 0 && (
+            <Field orientation="horizontal" className="min-h-11">
+              <FieldContent>
+                <FieldLabel htmlFor="cancel-refund">
+                  {t("cancel.refund", {
+                    amount: formatPrice(
+                      refundable(cancelling),
+                      cancelling.currency,
+                      locale
+                    ),
+                  })}
+                </FieldLabel>
+              </FieldContent>
+              <Switch
+                id="cancel-refund"
+                checked={refundToo}
+                onCheckedChange={setRefundToo}
+                disabled={pending}
+              />
+            </Field>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>
               {t("cancel.keep")}
@@ -270,12 +302,55 @@ export function useBookingPanels({
               onClick={() =>
                 cancelling &&
                 run(
-                  () => cancelBooking(businessId, cancelling.id, reason),
+                  () =>
+                    cancelBooking(businessId, cancelling.id, reason, refundToo),
                   t("cancel.done")
                 )
               }
             >
               {t("cancel.confirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={refunding !== null}
+        onOpenChange={(open) => {
+          if (!open && !pending) setRefunding(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {refunding &&
+                t("payment.refund.title", {
+                  amount: formatPrice(
+                    refundable(refunding),
+                    refunding.currency,
+                    locale
+                  ),
+                })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("payment.refund.text")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>
+              {t("payment.refund.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={pending}
+              onClick={() =>
+                refunding &&
+                run(
+                  () => refundBooking(businessId, refunding.id),
+                  t("payment.refund.done")
+                )
+              }
+            >
+              {t("payment.refund.open")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

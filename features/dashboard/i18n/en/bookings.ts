@@ -24,6 +24,8 @@ const bookings = {
     keep: "Keep it",
     confirm: "Cancel booking",
     done: "Booking cancelled",
+    // Also gives back what the card paid (docs/plans/online-payments.md).
+    refund: "Refund {amount}",
     why: "Why?",
     reasons: {
       customerAsked: "Customer asked",
@@ -76,6 +78,14 @@ const bookings = {
     paidOnline: "Paid online: {amount}",
     refundedAmount: "Refunded: {amount}",
     left: "Left to pay at the visit: {amount}",
+    // The owner gives back everything the card paid.
+    refund: {
+      open: "Refund",
+      title: "Refund {amount}?",
+      text: "It goes back to the customer's card. This can take 5 to 10 days.",
+      cancel: "Cancel",
+      done: "Refunded",
+    },
     // The customer's picture of the payment (docs/plans/payment-proof.md).
     proof: "Payment proof",
     proofDeleted: "Deleted on {date, date, medium}",

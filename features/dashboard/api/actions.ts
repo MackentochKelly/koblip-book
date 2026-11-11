@@ -45,6 +45,7 @@ import { claimBusinessForUser } from "./claim"
 import { revalidateBusiness } from "@/lib/revalidate-business"
 import { translateBusinessSoon } from "@/lib/translations/business-texts"
 import { ownedBusiness } from "./owned-business"
+import { refundBookingPayment } from "./refund"
 
 import { validHours } from "@/lib/hours-rules"
 import { randomStartingCounts } from "@/lib/team-rules"
@@ -534,7 +535,10 @@ export async function reorderTeam(
 export async function cancelBooking(
   businessId: string,
   bookingId: string,
-  reason: CancelReason | null = null
+  reason: CancelReason | null = null,
+  // Also gives back what the card paid (ON10): the owner's answer to the
+  // question in the cancel dialog.
+  refund = false
 ): Promise<ActionResult> {
   const owned = await ownedBusiness(businessId)
   if (!owned) {
@@ -542,6 +546,13 @@ export async function cancelBooking(
   }
   if (reason !== null && !isCancelReason(reason)) {
     return invalid()
+  }
+  // The money first: a refund that fails cancels nothing, so the owner
+  // can try again and never ends with one done and the other not.
+  if (refund === true) {
+    const refunded = await refundBookingPayment(owned.business.id, bookingId)
+    if (!refunded.ok && refunded.error !== "nothing")
+      return { ok: false, error: "refund_failed" }
   }
   const [booking] = await db
     .select({

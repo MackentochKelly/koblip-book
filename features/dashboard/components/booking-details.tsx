@@ -30,6 +30,13 @@ function price(
   return priceMinor === 0 ? free : formatPrice(priceMinor, currency, locale)
 }
 
+// What a booking's card payment still holds, in hundredths: what the
+// owner can give back.
+export function refundable(booking: OwnerBooking): number {
+  const online = booking.payment?.online
+  return online ? online.paidMinor - online.refundedMinor : 0
+}
+
 // One booking: when (and why, once cancelled), what with its extras, the
 // total, how the customer chose to pay outside the app (and whether they
 // did, which only the owner says: `onPaid`), the owner's note and quick
@@ -38,6 +45,7 @@ function price(
 export function BookingDetails({
   booking,
   onPaid,
+  onRefund,
   offer,
   onRedeem,
   pending = false,
@@ -47,6 +55,8 @@ export function BookingDetails({
   onRedeem?: (offer: BookingReward) => void
   // Marks the booking paid, or not paid after all. Left out: read only.
   onPaid?: (paid: boolean) => void
+  // Asks to give back what the card paid. Left out: no Refund button.
+  onRefund?: () => void
   pending?: boolean
 }) {
   const t = useTranslations("owner.bookings")
@@ -170,6 +180,16 @@ export function BookingDetails({
                     </p>
                   )}
               </div>
+            )}
+            {onRefund && refundable(booking) > 0 && (
+              <Button
+                variant="outline"
+                className="self-start"
+                disabled={pending}
+                onClick={onRefund}
+              >
+                {t("payment.refund.open")}
+              </Button>
             )}
             {booking.payment.reference && (
               <p className="break-words text-muted-foreground">

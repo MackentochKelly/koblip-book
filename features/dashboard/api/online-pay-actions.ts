@@ -11,6 +11,7 @@ import { revalidateBusiness } from "@/lib/revalidate-business"
 import { connectStripe } from "@/lib/stripe-connect"
 import type { ActionResult } from "../types"
 import { ownedBusiness } from "./owned-business"
+import { refundBookingPayment } from "./refund"
 
 // Settings → Payments → Card payments (docs/plans/online-payments.md).
 // Every action is the owner's, on their own real business, on a plan that
@@ -64,6 +65,21 @@ export async function saveOnlinePay(
           { onlinePay: pay ? "full" : "off" }
     )
     .where(eq(businesses.id, owned.business.id))
+  revalidateBusiness(owned.business.slug)
+  return { ok: true }
+}
+
+// The owner's Refund on a booking paid online: the whole amount, back to
+// the customer's card (ON10). It works on any plan: money already taken
+// can always be given back.
+export async function refundBooking(
+  businessId: string,
+  bookingId: string
+): Promise<ActionResult> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned || owned.business.isDemo) return { ok: false, error: "not_found" }
+  const result = await refundBookingPayment(owned.business.id, bookingId)
+  if (!result.ok) return result
   revalidateBusiness(owned.business.slug)
   return { ok: true }
 }
