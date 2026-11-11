@@ -17,7 +17,7 @@ import {
 } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
-vi.mock("@/lib/dal", () => ({ getSession: async () => null }))
+vi.mock("@/lib/dal", () => ({ getSession: async () => ({ userId: "u-customer", isGuest: false, phone: null }) }))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 vi.mock("next/headers", () => ({
   headers: async () => new Map([["origin", "https://book.example.com"]]),
@@ -192,6 +192,12 @@ afterAll(() => {
   rmSync(dir, { recursive: true, force: true })
 })
 
+// Bookings come from a signed-in account (EM-D7).
+beforeAll(async () => {
+  const { addCustomer } = await import("./test-customer")
+  await addCustomer()
+})
+
 beforeEach(() => {
   vi.spyOn(Date, "now").mockReturnValue(NOW)
   stripe.fail = false
@@ -230,7 +236,8 @@ test("paying by card holds the time, and the booking is made when Stripe says pa
     teamMemberId: "pay-tm",
     amountMinor: 4000,
   })
-  expect(started.claimToken).toEqual(expect.any(String))
+  // Signed in: the booking is the account's, so it needs no claim.
+  expect(started.claimToken).toBeNull()
   const free = await getAvailability("pay", "pay-svc", null)
   expect(free?.days.find((day) => day.date === "2026-06-01")?.times).not.toContain(
     "10:00"
@@ -281,7 +288,10 @@ test("paying by card holds the time, and the booking is made when Stripe says pa
     stripePaymentId: `pi_${page?.id}`,
     customerName: "Luis",
   })
-  expect(now.bookings[0].claimTokenHash).toEqual(expect.any(String))
+  expect(now.bookings[0]).toMatchObject({
+    customerUserId: "u-customer",
+    claimTokenHash: null,
+  })
 
   // Stripe's webhook says the same again: still one booking, one record.
   expect(await settleCardPayment("acct_pay", page as never)).toEqual({

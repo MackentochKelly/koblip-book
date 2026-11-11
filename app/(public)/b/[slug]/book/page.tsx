@@ -59,7 +59,10 @@ export default async function BookPage({ params }: Props) {
     <WordsProvider namespaces={["app", "public", "ownerAuth"]}>
       <LanguageProvider language={language}>
         <div lang={language}>
-          <BookingFlow page={toBookingPage({ ...data, whatsapp, payments })} mode="page" signIn={<SignInHere phoneSignIn={phoneSignInReady()} language={language} />} />
+          <BookingFlow page={toBookingPage({ ...data, whatsapp, payments })} mode="page" signIn={
+            // A visitor's demo copy books signed out, as before.
+            data.business.isDemo ? null : <SignInHere phoneSignIn={phoneSignInReady()} language={language} />
+          } />
         </div>
         <Toaster />
       </LanguageProvider>

@@ -119,9 +119,10 @@ export type BookOutcome = BookingResult | { status: "held"; hold: HeldBooking }
 // Makes a customer's booking, or holds its time (see BookMode). Not a
 // server action: a browser reaches it only through createBooking and
 // startCardPayment, and Stripe's answer through finishCardPayment.
-// No sign-in needed for customers: signed in, the booking is the account's
-// (My bookings); signed out, it gets a claim for the account logged in
-// after it. Every unexpected error becomes "failed".
+// Only a signed-in account books a real business (docs/plans/email.md,
+// EM-D7): the booking is the account's (My bookings) and has its email.
+// A visitor's demo copy still books signed out, with a claim for the
+// account logged in after it. Every unexpected error becomes "failed".
 // proof: the form's "file", the payment proof. A business that asks for it
 // is booked with a way to pay now only once it is added: the booking then
 // starts as "reported", for the business to check
@@ -257,6 +258,9 @@ export async function book(
         : session && !session.isGuest
           ? session.userId
           : null
+    if (!owner && !business.isDemo) {
+      return { status: "signIn" }
+    }
     const claim: { token: string | null; hash: string } | null =
       mode.kind === "paid"
         ? mode.hold.claimTokenHash

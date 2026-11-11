@@ -187,10 +187,10 @@ test("a percent reward takes its share off the service", async () => {
 
 test("signed out, or without a proved phone, nothing is redeemed", async () => {
   await reward()
+  // Signed out, nothing is booked at all (EM-D7).
   signedIn.session = null
   expect(await book("10:00", { rewardId: "w1" })).toEqual({
-    status: "invalid",
-    field: "reward",
+    status: "signIn",
   })
   // Signed in with Google, no phone proved: the typed phone is not enough.
   signedIn.session = { ...ANA, phone: null }

@@ -495,6 +495,11 @@ export function BookingFlow({
         rememberClaim(result.booking.id, result.claimToken)
       }
       setBooked(result.booking)
+    } else if (result.status === "signIn") {
+      // The sign-in ended while the page was open: it takes the form's
+      // place again.
+      setCustomer(null)
+      replaceUrl(href(withParam("step", "details")))
     } else if (result.status === "taken") {
       setSlot(null)
       setTimesKey((value) => value + 1)

@@ -32,6 +32,8 @@ export type BookingResult =
   // the account logged in from "Manage your booking" (lib/booking-claim.ts).
   | { status: "booked"; booking: BookingConfirmation; claimToken: string | null }
   | { status: "taken" }
+  // Signed out (or the sign-in ended) on a real business: sign in first.
+  | { status: "signIn" }
   | { status: "invalid"; field: "service" | "teamMember" | "addons" | "time" | "name" | "phone" | "email" | "policies" | "payment" | "reward" }
   // The business asks for payment proof and none came, or the file was
   // refused (docs/plans/payment-proof.md, PP10).

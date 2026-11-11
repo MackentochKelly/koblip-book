@@ -18,9 +18,10 @@ import {
 } from "@/lib/db/schema"
 
 vi.mock("server-only", () => ({}))
-// Customers book signed out, unless a test signs one in.
+// Customers book signed in (EM-D7), unless a test signs them out.
+const CUSTOMER = { userId: "u-customer", isGuest: false }
 const signedIn = {
-  session: null as { userId: string; isGuest: boolean } | null,
+  session: CUSTOMER as { userId: string; isGuest: boolean } | null,
 }
 vi.mock("@/lib/dal", () => ({ getSession: async () => signedIn.session }))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
@@ -83,13 +84,19 @@ afterAll(() => {
   rmSync(dir, { recursive: true, force: true })
 })
 
+// Bookings come from a signed-in account (EM-D7).
+beforeAll(async () => {
+  const { addCustomer } = await import("./test-customer")
+  await addCustomer()
+})
+
 beforeEach(() => {
   vi.spyOn(Date, "now").mockReturnValue(NOW)
 })
 
 afterEach(() => {
   vi.restoreAllMocks()
-  signedIn.session = null
+  signedIn.session = CUSTOMER
 })
 
 test("books a valid slot and picks the free team member", async () => {
@@ -331,7 +338,7 @@ test("a business without policies books without the box, and saves no agreement"
   expect(row.policiesAcceptedAt).toBeNull()
 })
 
-test("signed in, the booking is the account's; signed out, it gets a one-time claim", async () => {
+test("signed in, the booking is the account's; signed out, a real business is not booked and a demo gets a one-time claim", async () => {
   const { serviceId } = await seedShop("claim-shop", "biz-claim")
   const { db } = await import("@/lib/db")
   const { user } = await import("@/lib/db/schema")
@@ -359,6 +366,10 @@ test("signed in, the booking is the account's; signed out, it gets a one-time cl
   expect(mine).toMatchObject({ status: "booked", claimToken: null })
 
   signedIn.session = null
+  expect(await book("11:00")).toEqual({ status: "signIn" })
+
+  // A visitor's demo copy still books signed out, with a claim.
+  await db.update(businesses).set({ isDemo: true }).where(eq(businesses.id, "biz-claim"))
   const theirs = await book("11:00")
   expect(theirs).toMatchObject({ status: "booked", claimToken: expect.any(String) })
 

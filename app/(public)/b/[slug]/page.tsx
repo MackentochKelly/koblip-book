@@ -164,7 +164,10 @@ export default async function BusinessPage({ params }: Props) {
             />
           </BottomBar>
         )}
-        {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp, payments })} mode="drawer" signIn={<SignInHere phoneSignIn={phoneSignInReady()} language={language} />} />}
+        {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp, payments })} mode="drawer" signIn={
+            // A visitor's demo copy books signed out, as before.
+            data.business.isDemo ? null : <SignInHere phoneSignIn={phoneSignInReady()} language={language} />
+          } />}
         {isOwner && <OwnerBackButton businessId={business.id} />}
         <Toaster />
       </LanguageProvider>

@@ -25,7 +25,7 @@ vi.mock("server-only", () => ({}))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 vi.mock("@/lib/dal", () => ({
   // Customers book signed out.
-  getSession: vi.fn(async () => null),
+  getSession: vi.fn(async () => ({ userId: "u-customer", isGuest: false, phone: null })),
   requireOwner: vi.fn(async () => ({
     userId: "u1",
     name: "Owner",
@@ -121,6 +121,12 @@ beforeAll(async () => {
 afterAll(() => {
   closeDb()
   rmSync(dir, { recursive: true, force: true })
+})
+
+// Bookings come from a signed-in account (EM-D7).
+beforeAll(async () => {
+  const { addCustomer } = await import("./test-customer")
+  await addCustomer()
 })
 
 beforeEach(() => {
