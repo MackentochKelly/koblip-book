@@ -27,7 +27,7 @@ Webhook events (better-auth.com/docs/plugins/stripe#set-up-stripe-webhooks):
 
 The sandbox ("KOBLIP") has all of this except a webhook endpoint, since locally the Stripe CLI forwards events instead (below).
 
-Live mode (made Nov 11): product `prod_Vbi2JBhRM6qzrG` "Koblip Pro" with both prices and lookup keys, the free Pro coupon, the portal (both prices, switching down waits for the period end, phone off, tax id on), renewal emails, and the webhook "Koblip Book subscriptions" (`we_1UaUjfINXbkEC5NAf1Aq9BiX`, API version `2026-10-28.endive`). Not yet: Stripe Tax (not activated in live, so the product has no tax code yet) and the terms and privacy links, which live in the account's Public business information that Koblip Food shares.
+Live mode (made Nov 11): product `prod_Vbi2JBhRM6qzrG` "Koblip Pro" with both prices and lookup keys, the free Pro coupon, the portal (both prices, switching down waits for the period end, phone off, tax id on), renewal emails, and the webhook "Koblip Book subscriptions" (`we_1UaUjfINXbkEC5NAf1Aq9BiX`, API version `2026-10-28.endive`). Not yet: Stripe Tax (not activated in live, so the product has no tax code and `STRIPE_TAX` stays unset) and the terms and privacy links, which live in the account's Public business information that Koblip Food shares.
 
 ## Keys
 
@@ -35,6 +35,7 @@ Live mode (made Nov 11): product `prod_Vbi2JBhRM6qzrG` "Koblip Pro" with both pr
 | --- | --- | --- |
 | `STRIPE_SECRET_KEY` | Dashboard → Developers → API keys (`sk_test_…` in the sandbox, `sk_live_…` live) | `.env.local` on the Mac, `.env.production` on the server |
 | `STRIPE_WEBHOOK_SECRET` | Locally: `stripe listen --print-secret`. Live: the webhook endpoint's signing secret | Same |
+| `STRIPE_TAX` | `on` once Stripe Tax is set up in that account. Unset, Checkout adds no tax ([lib/stripe.ts](../lib/stripe.ts)) | Same |
 
 The publishable key (`pk_…`) is not used: the app only sends owners to Stripe's own pages. Never commit a key or paste one into chat.
 
@@ -55,7 +56,7 @@ Its signing secret stays the same between runs, so `.env.local` needs it once.
 
 Do this before turning on billing for real owners (P10 passes first):
 
-1. **Tax registrations.** Stripe Tax only collects tax where the account is registered, and none is added yet. Add them in Dashboard → Tax → Registrations, with your accountant's advice. Checkout already asks Stripe Tax for it.
+1. **Tax (optional, later).** Pro can go live without it: with `STRIPE_TAX` unset, Checkout adds no tax (owner's call, Nov 11). To add tax: Dashboard → Tax → Get started (head office address), add registrations with your accountant's advice, set the product's tax code `txcd_10103001`, then `STRIPE_TAX=on` and restart.
 2. **Live product and prices.** Make the product, both prices, the free Pro coupon and the portal as in the table above, in live mode.
 3. **Renewal reminders.** [Subscriptions and emails settings](https://dashboard.stripe.com/settings/billing/automatic) → Email notifications and customer management → turn on **Send emails about upcoming renewals**; the days before are set under Prevent failed payments → Upcoming renewal events ([docs](https://docs.stripe.com/billing/revenue-recovery/customer-emails#renewal-reminders)). The Terms promise yearly plans a reminder before they renew (P9).
 4. **Webhook.** Dashboard → Developers → Webhooks → add `https://book.koblip.com/api/auth/stripe/webhook` with the 4 events. Copy its signing secret.

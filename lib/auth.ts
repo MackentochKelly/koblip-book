@@ -16,7 +16,7 @@ import * as authSchema from "./db/auth-schema"
 import { bookings } from "./db/schema"
 import { sendEmail } from "./email"
 import { deletePhoto } from "./uploads"
-import { stripeClient, stripeKeys } from "./stripe"
+import { stripeClient, stripeKeys, stripeTaxEnabled } from "./stripe"
 import { PAID_PLANS } from "./subscription-rules"
 import { resetPasswordEmail, verificationEmail } from "./email-templates"
 import { ONBOARDING_RULES } from "./onboarding-rules"
@@ -238,14 +238,15 @@ export const auth = betterAuth({
             subscription: {
               enabled: true,
               plans: PAID_PLANS.map((plan) => ({ ...plan })),
-              // Checkout adds tax where Koblip is registered (S4,
-              // better-auth.com/docs/plugins/stripe#automatic-tax-calculation)
-              // and takes a business's tax id. A returning customer's
-              // address and name are saved back to them, as Stripe Tax needs
-              // (docs.stripe.com/tax/checkout).
+              // Checkout adds tax where Koblip is registered, once Stripe Tax
+              // is set up (S4, lib/stripe.ts,
+              // better-auth.com/docs/plugins/stripe#automatic-tax-calculation),
+              // and always takes a business's tax id. A returning customer's
+              // address and name are saved back to them, as Stripe Tax and
+              // tax ids need (docs.stripe.com/tax/checkout).
               getCheckoutSessionParams: () => ({
                 params: {
-                  automatic_tax: { enabled: true },
+                  ...(stripeTaxEnabled && { automatic_tax: { enabled: true } }),
                   tax_id_collection: { enabled: true },
                   customer_update: { address: "auto", name: "auto" },
                 },

@@ -14,6 +14,11 @@ export const stripeKeys =
       }
     : null
 
+// Stripe Tax (docs.stripe.com/tax/checkout) adds tax at Checkout only once it
+// is set up in the account. Until then STRIPE_TAX stays unset and Pro is
+// charged without tax; `STRIPE_TAX=on` turns it on, with no other change.
+export const stripeTaxEnabled = process.env.STRIPE_TAX === "on"
+
 // The API version is pinned, as Stripe advises
 // (docs.stripe.com/api/versioning): the one stripe 23 is typed for.
 export const stripeClient = stripeKeys
