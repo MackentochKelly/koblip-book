@@ -7,10 +7,10 @@ import {
   bookings,
   businesses,
   clientNotificationSettings,
-  clientReminderEmails,
+  emailSends,
   user,
 } from "@/lib/db/schema"
-import { sendEmail } from "@/lib/email"
+import { claimEmail, deliverEmail } from "@/lib/email"
 import { clientReminderEmail } from "@/lib/email-templates"
 import { accountBookingHref } from "@/lib/my-bookings-links"
 import { DEFAULT_LOCALES } from "@/lib/page-language"
@@ -44,14 +44,15 @@ export function noWhatsappReminders() {
 
 // Email reminders (D16), `clientReminderMinutes` before the visit like the
 // bell's, for accounts that picked email and have a real email. One per
-// booking and move: the row is written first, so a second timer never
-// sends it again. The server's timer calls this on each check.
+// booking and move: its email_sends row is written first, so a second
+// timer never sends it again. The server's timer calls this on each check.
 export async function emailClients(now = new Date()) {
   const { clientReminderMinutes } = await notificationRules()
   const lead = clientReminderMinutes * 60_000
   const due = await db
     .select({
       id: bookings.id,
+      businessId: bookings.businessId,
       moves: bookings.moves,
       serviceName: bookings.serviceName,
       startAt: bookings.startAt,
@@ -65,10 +66,11 @@ export async function emailClients(now = new Date()) {
     .innerJoin(businesses, eq(businesses.id, bookings.businessId))
     .innerJoin(user, eq(user.id, bookingAccount))
     .leftJoin(
-      clientReminderEmails,
+      emailSends,
       and(
-        eq(clientReminderEmails.bookingId, bookings.id),
-        eq(clientReminderEmails.moves, bookings.moves)
+        eq(emailSends.bookingId, bookings.id),
+        eq(emailSends.kind, "clientReminder"),
+        eq(emailSends.moves, bookings.moves)
       )
     )
     .where(
@@ -83,23 +85,22 @@ export async function emailClients(now = new Date()) {
           sql`strftime('%Y-%m-%dT%H:%M:%fZ', ${bookings.startAt}, ${`-${clientReminderMinutes} minutes`})`
         ),
         eq(bookingReminderChannel, "email"),
-        isNull(clientReminderEmails.id)
+        isNull(emailSends.id)
       )
     )
   for (const booking of due) {
     if (isPhoneAccountEmail(booking.email)) continue
-    const [claimed] = await db
-      .insert(clientReminderEmails)
-      .values({
-        bookingId: booking.id,
-        moves: booking.moves,
-        userId: booking.userId,
-        state: "sending",
-      })
-      .onConflictDoNothing()
-      .returning({ id: clientReminderEmails.id })
-    if (!claimed) continue
     const language = booking.language ?? "en"
+    const sendId = await claimEmail(booking.email, {
+      kind: "clientReminder",
+      userId: booking.userId,
+      businessId: booking.businessId,
+      bookingId: booking.id,
+      reminderMinutes: clientReminderMinutes,
+      moves: booking.moves,
+      language,
+    })
+    if (!sendId) continue
     const content = await clientReminderEmail({
       service: booking.serviceName,
       business: booking.businessName,
@@ -111,10 +112,6 @@ export async function emailClients(now = new Date()) {
       url: `${process.env.BETTER_AUTH_URL}${accountBookingHref(booking.id)}`,
       language,
     })
-    const sent = await sendEmail({ to: booking.email, ...content })
-    await db
-      .update(clientReminderEmails)
-      .set({ state: sent ? "sent" : "failed" })
-      .where(eq(clientReminderEmails.id, claimed.id))
+    await deliverEmail(sendId, { to: booking.email, ...content }, booking.businessId)
   }
 }

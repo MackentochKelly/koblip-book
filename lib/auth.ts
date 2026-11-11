@@ -57,8 +57,12 @@ export const auth = betterAuth({
     maxPasswordLength: ONBOARDING_RULES.maxPasswordLength,
     resetPasswordTokenExpiresIn: ACCOUNT_RULES.passwordResetMinutes * 60,
     sendResetPassword: ({ user, url }, request) => {
-      void resetPasswordEmail(url, emailLanguage(request)).then((content) =>
-        sendEmail({ to: user.email, ...content })
+      const language = emailLanguage(request)
+      void resetPasswordEmail(url, language).then((content) =>
+        sendEmail(
+          { to: user.email, ...content },
+          { kind: "resetPassword", userId: user.id, language }
+        )
       )
       return Promise.resolve()
     },
@@ -81,8 +85,12 @@ export const auth = betterAuth({
   // before verification: claiming keeps working straight after sign-up.
   emailVerification: {
     sendVerificationEmail: ({ user, url }, request) => {
-      void verificationEmail(url, emailLanguage(request)).then((content) =>
-        sendEmail({ to: user.email, ...content })
+      const language = emailLanguage(request)
+      void verificationEmail(url, language).then((content) =>
+        sendEmail(
+          { to: user.email, ...content },
+          { kind: "verification", userId: user.id, language }
+        )
       )
       return Promise.resolve()
     },

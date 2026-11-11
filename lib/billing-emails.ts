@@ -22,6 +22,7 @@ export async function sendBillingEmail(kind: BillingEmail, businessId: string): 
   const [row] = await db
     .select({
       businessName: businesses.name,
+      userId: user.id,
       email: user.email,
       language: notificationSettings.ownerLanguage,
     })
@@ -31,12 +32,16 @@ export async function sendBillingEmail(kind: BillingEmail, businessId: string): 
     .where(eq(businesses.id, businessId))
     .limit(1)
   if (!row || isPhoneAccountEmail(row.email)) return false
+  const language = row.language ?? "en"
   const content = await TEMPLATES[kind]({
     businessName: row.businessName,
     url: `${process.env.BETTER_AUTH_URL}/dashboard/${businessId}/settings/plan`,
-    language: row.language ?? "en",
+    language,
   })
-  return sendEmail({ to: row.email, ...content })
+  return sendEmail(
+    { to: row.email, ...content },
+    { kind, userId: row.userId, businessId, language }
+  )
 }
 
 // Stripe's update moved the subscription into past_due: the first charge

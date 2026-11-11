@@ -13,6 +13,3 @@ export function isClientReminderChannel(
 ): value is ClientReminderChannel {
   return CLIENT_REMINDER_CHANNELS.some((channel) => channel === value)
 }
-
-// How an email reminder went.
-export const REMINDER_EMAIL_STATES = ["sending", "sent", "failed"] as const

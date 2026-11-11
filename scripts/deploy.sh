@@ -45,7 +45,7 @@ ssh "$HOST" "set -e
     echo 'FAILED: the server is on a commit that is not part of main.'
     exit 1
   fi
-  for key in SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS EMAIL_FROM; do
+  for key in AWS_REGION AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EMAIL_FROM; do
     if ! grep -qE \"^\$key=.+\" .env.production; then
       echo \"FAILED: .env.production has no \$key, so the app can't send email.\"
       exit 1

@@ -8,14 +8,18 @@ import {
   bookings,
   businesses,
   clientNotificationSettings,
-  clientReminderEmails,
+  emailSends,
   user,
 } from "@/lib/db/schema"
 
-const sendEmail = vi.fn(async () => true)
+const { sendMail } = vi.hoisted(() => ({
+  sendMail: vi.fn(async () => ({ response: "ses-id" })),
+}))
 
 vi.mock("server-only", () => ({}))
-vi.mock("@/lib/email", () => ({ sendEmail }))
+vi.mock("nodemailer", () => ({
+  default: { createTransport: () => ({ sendMail }) },
+}))
 
 const { registerEnglishWords } = await import("./translations/interface-words")
 registerEnglishWords((await import("@/i18n/messages")).default)
@@ -49,6 +53,10 @@ function visit(
 
 beforeAll(async () => {
   process.env.BETTER_AUTH_URL = "https://book.example.com"
+  process.env.AWS_REGION = "us-east-1"
+  process.env.AWS_ACCESS_KEY_ID = "test-key"
+  process.env.AWS_SECRET_ACCESS_KEY = "test-secret"
+  process.env.EMAIL_FROM = "Koblip <contact@koblip.com>"
   dir = mkdtempSync(join(tmpdir(), "koblip-client-reminders-test-"))
   process.env.DATABASE_URL = `file:${join(dir, "test.db")}`
   const { migrate } = await import("drizzle-orm/libsql/migrator")
@@ -77,8 +85,8 @@ beforeAll(async () => {
 })
 
 beforeEach(async () => {
-  sendEmail.mockClear()
-  await db.delete(clientReminderEmails)
+  sendMail.mockClear()
+  await db.delete(emailSends)
   await db.delete(clientNotificationSettings)
   await db.delete(bookings)
   // Ana and Ben (by the phone he proved) picked email; Cy the bell only.
@@ -105,18 +113,20 @@ afterAll(() => {
 test("an email reminder goes once, before the visit, to accounts that picked email", async () => {
   await emailClients()
   await emailClients()
-  const sent = sendEmail.mock.calls.map((call) => (call as unknown as [{ to: string; text: string }])[0])
+  const sent = sendMail.mock.calls.map((call) => (call as unknown as [{ to: string; text: string }])[0])
   expect(sent.map((email) => email.to).sort()).toEqual(["ana@example.com", "ben@example.com"])
   expect(sent[0].text).toContain("https://book.example.com/account/bookings/")
-  const rows = await db.select().from(clientReminderEmails)
-  expect(rows.map((row) => [row.bookingId, row.state]).sort()).toEqual([
-    ["ana-soon", "sent"],
-    ["ben-soon", "sent"],
+  const rows = await db.select().from(emailSends)
+  expect(rows.map((row) => [row.bookingId, row.kind, row.state, row.messageId]).sort()).toEqual([
+    ["ana-soon", "clientReminder", "sent", "ses-id"],
+    ["ben-soon", "clientReminder", "sent", "ses-id"],
   ])
+  expect(rows.every((row) => row.businessId === "shop")).toBe(true)
 })
 
 test("a move gets its own reminder; a failed send is kept as failed", async () => {
-  sendEmail.mockResolvedValueOnce(false)
+  sendMail.mockRejectedValueOnce(new Error("ses down"))
+  const error = vi.spyOn(console, "error").mockImplementation(() => {})
   await emailClients()
   const { eq } = await import("drizzle-orm")
   // Moved a day ago, before its reminder's time began.
@@ -125,9 +135,10 @@ test("a move gets its own reminder; a failed send is kept as failed", async () =
     .set({ moves: 1, updatedAt: new Date(Date.now() - 24 * HOUR).toISOString() })
     .where(eq(bookings.id, "ana-soon"))
   await emailClients()
-  const rows = await db.select().from(clientReminderEmails).where(eq(clientReminderEmails.bookingId, "ana-soon"))
+  const rows = await db.select().from(emailSends).where(eq(emailSends.bookingId, "ana-soon"))
   expect(rows.map((row) => row.moves).sort()).toEqual([0, 1])
-  expect((await db.select().from(clientReminderEmails)).some((row) => row.state === "failed")).toBe(true)
+  expect((await db.select().from(emailSends)).some((row) => row.state === "failed")).toBe(true)
+  error.mockRestore()
 })
 
 test("WhatsApp reminders skip bookings whose client picked another way", async () => {

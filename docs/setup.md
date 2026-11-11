@@ -26,11 +26,12 @@ The table describes the variables consumed by this repository. Provider accounts
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`                              | Optional Google login. The callback is `<BETTER_AUTH_URL>/api/auth/callback/google`.             |
 | `MODEL_API_KEY`                                                         | Model-backed assistant responses and live speech recognition.                                    |
 | `ELEVENLABS_API_KEY`                                                    | Spoken replies. The server creates a short-lived token for the browser.                          |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`        | Email delivery, including verification messages. When absent, sending is skipped with a warning. |
+| `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `EMAIL_FROM` | Email through Amazon SES, including verification messages. When absent, sending is skipped with a warning. |
+| `SES_CONFIGURATION_SET`, `SES_EVENTS_TOPIC_ARN`                         | Optional: SES events (delivered, bounced, complained) back to `/api/email/events`. See [Email](email.md). |
 | `UPLOADS_DIR`                                                           | Optional photo storage path; defaults to `./data/uploads`.                                       |
 | `CHAT_*`, `TOKEN_ENCRYPTION_KEY`                                       | WhatsApp messages through Koblip Chat (server only). See `.env.example` and [Koblip Chat integration](koblip-chat-integration.md). |
 
-Authentication and database access need their settings to work. Configure each provider before testing the feature that uses it. Missing SMTP settings let local development continue, but verification messages will not be delivered.
+Authentication and database access need their settings to work. Configure each provider before testing the feature that uses it. Missing email settings let local development continue, but verification messages will not be delivered.
 
 ## Database
 

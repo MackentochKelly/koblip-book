@@ -19,6 +19,12 @@ How Koblip Book sends email, and what Amazon holds for it. The plan and its task
 | DMARC today | Passes through DKIM: mail from `contact@koblip.com` is signed by `koblip.com`, the same domain. The custom MAIL FROM would also line up SPF; it is optional and not set up |
 | Other identities | `printdura.com` (verified), `upra.space` (not verified), one personal email address: other businesses, not touched |
 
+## How Book sends (EM-3, EM-4)
+
+- `lib/email.ts` sends through the SES API (nodemailer's SES transport, `@aws-sdk/client-sesv2`). Every email gets an `email_sends` row first: kind, address, business, booking, state (`sending → sent | failed | skipped`), Amazon's message id.
+- An address in `email_blocks` is skipped with the reason `blocked`. Without the AWS keys, emails are skipped with `notSetUp` and one warning.
+- `SES_CONFIGURATION_SET` puts each email in that set; its SNS topic posts to `/api/email/events`. The route checks Amazon's signature, the topic (`SES_EVENTS_TOPIC_ARN`) and the certificate host, confirms the subscription once, and records Delivery, DeliveryDelay, Reject, Bounce and Complaint. A hard bounce or a complaint blocks the address everywhere.
+
 ## Still to look at
 
 - Which SES keys and `EMAIL_FROM` the live server uses today (`.env.production`); it becomes `Koblip <contact@koblip.com>`.

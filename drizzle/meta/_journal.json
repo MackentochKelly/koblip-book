@@ -554,6 +554,20 @@
       "when": 1794370536171,
       "tag": "0078_booking_email",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "6",
+      "when": 1794373630594,
+      "tag": "0079_email_sends",
+      "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "6",
+      "when": 1794373636995,
+      "tag": "0080_drop_client_reminder_emails",
+      "breakpoints": true
     }
   ]
 }

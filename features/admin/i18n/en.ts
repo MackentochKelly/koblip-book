@@ -776,7 +776,13 @@ const words = {
       deletedAccount: "Deleted account",
       emails: "Emails sent",
       none: "No reminder emails yet",
-      states: { sending: "Sending", sent: "Sent", failed: "Didn't go" },
+      states: {
+        pending: "Waiting",
+        sending: "Sending",
+        sent: "Sent",
+        failed: "Didn't go",
+        skipped: "Not sent",
+      },
     },
   },
   assistant: {

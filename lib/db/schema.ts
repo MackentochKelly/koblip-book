@@ -15,12 +15,18 @@ import { POLICY_KINDS, POLICY_POINT_ICONS } from "../policy-rules"
 import {
   CLIENT_REMINDER_CHANNELS,
   DEFAULT_REMINDER_CHANNEL,
-  REMINDER_EMAIL_STATES,
 } from "../client-reminder-channels"
 import {
   PARTNER_EVENT_STATES,
   PARTNER_EVENT_TYPES,
 } from "../partner-rules"
+import {
+  EMAIL_BLOCK_REASONS,
+  EMAIL_DELIVERY,
+  EMAIL_KINDS,
+  EMAIL_SEND_REASONS,
+  EMAIL_SEND_STATES,
+} from "../email-rules"
 import { REVIEW_HIDE_REASONS } from "../review-rules"
 import {
   DEPOSIT_TYPES,
@@ -1292,23 +1298,68 @@ export const clientNotificationSettings = sqliteTable("client_notification_setti
   ...timestamps(),
 })
 
-// Each email reminder to a client who picked email (D16): one per booking
-// and move, written before it goes, so it never goes twice.
-export const clientReminderEmails = sqliteTable(
-  "client_reminder_emails",
+// Every email Koblip Book sends (docs/plans/email.md, EM-D4): written before
+// it goes, so it never goes twice, then what Amazon said became of it.
+// A booking's emails are one per kind, reminder time and move.
+export const emailSends = sqliteTable(
+  "email_sends",
   {
     id: id(),
-    bookingId: text()
-      .notNull()
-      .references(() => bookings.id, { onDelete: "cascade" }),
-    moves: integer().notNull(),
+    kind: text({ enum: EMAIL_KINDS }).notNull(),
+    // The address it went to, in lower case.
+    email: text().notNull(),
     userId: text().references(() => user.id, { onDelete: "set null" }),
-    state: text({ enum: REMINDER_EMAIL_STATES }).notNull(),
+    businessId: text().references(() => businesses.id, { onDelete: "cascade" }),
+    bookingId: text().references(() => bookings.id, { onDelete: "cascade" }),
+    // Minutes before the visit for a reminder; 0 for the other emails.
+    reminderMinutes: integer().notNull().default(0),
+    // The booking's moves when this row was made (0 without a booking).
+    moves: integer().notNull().default(0),
+    state: text({ enum: EMAIL_SEND_STATES }).notNull(),
+    reason: text({ enum: EMAIL_SEND_REASONS }),
+    language: text({ enum: PAGE_LANGUAGES }),
+    // Amazon's id for the email, which its events name.
+    messageId: text(),
+    sentAt: text(),
+    delivery: text({ enum: EMAIL_DELIVERY }),
+    deliveryAt: text(),
     ...timestamps(),
   },
   (table) => [
-    uniqueIndex("client_reminder_emails_booking").on(table.bookingId, table.moves),
-    index("client_reminder_emails_created").on(table.createdAt),
+    uniqueIndex("email_sends_booking").on(
+      table.bookingId,
+      table.kind,
+      table.reminderMinutes,
+      table.moves
+    ),
+    index("email_sends_message").on(table.messageId),
+    index("email_sends_created").on(table.createdAt),
+    index("email_sends_email").on(table.email),
+  ]
+)
+
+// Addresses that get no more email (EM-D5): for every business when they
+// bounced for good or marked an email as spam (businessId null), or for one
+// business when they used "Stop emails".
+export const emailBlocks = sqliteTable(
+  "email_blocks",
+  {
+    id: id(),
+    email: text().notNull(),
+    businessId: text().references(() => businesses.id, { onDelete: "cascade" }),
+    reason: text({ enum: EMAIL_BLOCK_REASONS }).notNull(),
+    // The email that led to it, when there is one.
+    sendId: text().references(() => emailSends.id, { onDelete: "set null" }),
+    ...timestamps(),
+  },
+  (table) => [
+    // One block per address and business, and one for every business
+    // (SQLite counts each null business as different, hence the second).
+    uniqueIndex("email_blocks_email").on(table.email, table.businessId),
+    uniqueIndex("email_blocks_everywhere")
+      .on(table.email)
+      .where(sql`${table.businessId} is null`),
+    index("email_blocks_created").on(table.createdAt),
   ]
 )
 

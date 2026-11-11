@@ -166,17 +166,21 @@ export async function sendTeamCalendarLink(
     teamMemberId: member.id,
     createdBy: session.userId,
   })
+  const language = await getOwnerLanguage()
   const emailed =
     !!member.email &&
-    (await sendEmail({
-      to: member.email,
-      ...(await teamCalendarEmail({
-        businessName: business.name,
-        url,
-        days: GOOGLE_CALENDAR_RULES.inviteDays,
-        language: await getOwnerLanguage(),
-      })),
-    }))
+    (await sendEmail(
+      {
+        to: member.email,
+        ...(await teamCalendarEmail({
+          businessName: business.name,
+          url,
+          days: GOOGLE_CALENDAR_RULES.inviteDays,
+          language,
+        })),
+      },
+      { kind: "teamCalendar", userId: member.userId, businessId, language }
+    ))
   return { ok: true, url, emailedTo: emailed ? member.email : null }
 }
 

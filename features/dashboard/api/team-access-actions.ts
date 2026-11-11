@@ -36,17 +36,21 @@ export async function sendTeamInvite(
     teamMemberId: member.id,
     createdBy: owned.userId,
   })
+  const language = await getOwnerLanguage()
   const emailed =
     !!member.email &&
-    (await sendEmail({
-      to: member.email,
-      ...(await teamInviteEmail({
-        businessName: owned.business.name,
-        url,
-        days: TEAM_RULES.inviteDays,
-        language: await getOwnerLanguage(),
-      })),
-    }))
+    (await sendEmail(
+      {
+        to: member.email,
+        ...(await teamInviteEmail({
+          businessName: owned.business.name,
+          url,
+          days: TEAM_RULES.inviteDays,
+          language,
+        })),
+      },
+      { kind: "teamInvite", businessId, language }
+    ))
   return { ok: true, url, emailedTo: emailed ? member.email : null }
 }
 

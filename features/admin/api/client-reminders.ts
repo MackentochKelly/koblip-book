@@ -1,6 +1,6 @@
 import "server-only"
 
-import { count, desc, eq } from "drizzle-orm"
+import { and, count, desc, eq } from "drizzle-orm"
 
 import type { ClientReminderChannel } from "@/lib/client-reminder-channels"
 import { requireAdmin } from "@/lib/dal"
@@ -9,9 +9,10 @@ import {
   bookings,
   businesses,
   clientNotificationSettings,
-  clientReminderEmails,
+  emailSends,
   user,
 } from "@/lib/db/schema"
+import type { EmailSendState } from "@/lib/email-rules"
 
 // How clients get their visit reminders (docs/plans/client-account.md,
 // D16): how many picked each way, and every reminder email, newest first.
@@ -24,7 +25,7 @@ export type AdminReminderEmail = {
   serviceName: string
   timezone: string
   startAt: string
-  state: "sending" | "sent" | "failed"
+  state: EmailSendState
   at: string
 }
 
@@ -45,20 +46,23 @@ export async function getClientReminders(limit = 200): Promise<AdminClientRemind
       .groupBy(clientNotificationSettings.reminderChannel),
     db
       .select({
-        id: clientReminderEmails.id,
+        id: emailSends.id,
         clientName: user.name,
         businessName: businesses.name,
         serviceName: bookings.serviceName,
         timezone: businesses.timezone,
         startAt: bookings.startAt,
-        state: clientReminderEmails.state,
-        at: clientReminderEmails.createdAt,
+        state: emailSends.state,
+        at: emailSends.createdAt,
       })
-      .from(clientReminderEmails)
-      .innerJoin(bookings, eq(bookings.id, clientReminderEmails.bookingId))
+      .from(emailSends)
+      .innerJoin(
+        bookings,
+        and(eq(bookings.id, emailSends.bookingId), eq(emailSends.kind, "clientReminder"))
+      )
       .innerJoin(businesses, eq(businesses.id, bookings.businessId))
-      .leftJoin(user, eq(user.id, clientReminderEmails.userId))
-      .orderBy(desc(clientReminderEmails.createdAt))
+      .leftJoin(user, eq(user.id, emailSends.userId))
+      .orderBy(desc(emailSends.createdAt))
       .limit(limit),
   ])
   return { channels, emails }
