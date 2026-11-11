@@ -123,7 +123,7 @@ const settings = {
     comingSoon: "Coming soon",
   },
   payments: {
-    title: "Payments",
+    title: "Offline payments",
     info: "Ways customers can pay you outside Koblip. They choose one when they book. Koblip never moves the money: you mark each booking paid.",
     // A standard way the owner has not filled in yet, and its button.
     notSetUp: "Not set up",
@@ -164,7 +164,7 @@ const settings = {
     // Paying by card through the business's own Stripe account
     // (docs/plans/online-payments.md).
     card: {
-      title: "Card payments",
+      title: "Online payments",
       info: "Customers pay by card when they book. The money goes to your own Stripe account. Stripe charges its fee; Koblip adds none.",
       stripe: "Stripe",
       state: {
