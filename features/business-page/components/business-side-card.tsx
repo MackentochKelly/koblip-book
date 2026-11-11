@@ -1,3 +1,5 @@
+import { useLocale } from "next-intl"
+
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
   Card,
@@ -9,20 +11,20 @@ import {
 } from "@/components/ui/card"
 import type { Business } from "../types"
 import { BusinessActions } from "./business-actions"
-import { BusinessFacts } from "./business-facts"
+import { Rating } from "@/components/rating"
 import { LanguageMenu } from "@/components/language-menu"
 import { ShareButton } from "./share-button"
 
 // On a computer: the business and its buttons, kept in view beside the page.
+// Whether it is open now shows once, in the page's own header.
 export function BusinessSideCard({
   business,
-  open,
   bookable,
 }: {
   business: Business
-  open: boolean | null
   bookable: boolean
 }) {
+  const locale = useLocale()
   return (
     <Card className="sticky top-6">
       <CardHeader>
@@ -37,7 +39,13 @@ export function BusinessSideCard({
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <BusinessFacts business={business} open={open} />
+        {business.rating !== null && (
+          <Rating
+            rating={business.rating}
+            reviewCount={business.reviewCount}
+            locale={locale}
+          />
+        )}
         {business.address && (
           <p className="text-sm text-muted-foreground">{business.address}</p>
         )}
