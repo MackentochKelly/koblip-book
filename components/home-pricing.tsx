@@ -50,7 +50,7 @@ const FEATURES = {
   pro: [
     { key: "pro.features.everything" },
     { key: "pro.features.messages" },
-    { key: "pro.features.payments", soon: true },
+    { key: "pro.features.payments" },
     { key: "pro.features.sms", soon: true },
     { key: "pro.features.buttons", soon: true },
     { key: "pro.features.reviews", soon: true },

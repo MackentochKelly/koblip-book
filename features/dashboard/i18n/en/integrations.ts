@@ -103,6 +103,15 @@ const integrations = {
     name: "Stripe",
     description:
       "Take deposits or full payment when customers book, so fewer skip their visit.",
+    // The same words as Settings, Payments, Online payments.
+    state: {
+      details: "More details needed",
+      ready: "Connected",
+      country: "Not in your country yet",
+    },
+    connect: "Connect",
+    continue: "Continue",
+    manage: "Manage",
   },
   metaPixel: {
     name: "Meta Pixel",

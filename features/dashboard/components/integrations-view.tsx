@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import {
@@ -34,6 +35,7 @@ import { useConnectWindow } from "../hooks/use-connect-window"
 import type { ChatConnection } from "../types/chat-connection"
 import type { GoogleCalendarConnection } from "../types/google-calendar"
 import type { Sender } from "@/types/whatsapp"
+import type { StripeState } from "@/lib/stripe-connect"
 import {
   CHAT_CONNECT_CHANNEL,
   type ChatConnectMessage,
@@ -60,6 +62,7 @@ export function IntegrationsView({
   googleCalendar,
   googleResult,
   team,
+  stripe,
 }: {
   businessId: string
   connection: ChatConnection | null
@@ -72,6 +75,9 @@ export function IntegrationsView({
   googleResult: GoogleConnectResult | null
   // The team, for whose bookings Google busy times block.
   team: { id: string; name: string }[]
+  // Where the business's own Stripe account stands (online payments);
+  // null where the app has none for it yet.
+  stripe: StripeState | null
 }) {
   const t = useTranslations("owner.integrations")
   const whatsapp = useTranslations("owner.whatsapp")
@@ -239,11 +245,51 @@ export function IntegrationsView({
       }
     />
   )
+  // Stripe's own app icon, as stripe.com uses it; a square, so its corners
+  // are rounded like the other app icons. It is connected and set up in
+  // Settings, Payments (docs/plans/online-payments.md): the row goes there.
+  const stripeRow = (
+    <IntegrationRow
+      logo="/brands/stripe.svg"
+      square
+      name={t("stripe.name")}
+      description={
+        !stripe || stripe === "none"
+          ? t("stripe.description")
+          : t(`stripe.state.${stripe}`)
+      }
+      action={
+        !stripe ? (
+          <Badge variant="secondary">{t("soon")}</Badge>
+        ) : stripe === "country" ? null : (
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={
+              <Link
+                href={`/dashboard/${encodeURIComponent(businessId)}/settings/payments`}
+              />
+            }
+          >
+            {t(
+              stripe === "ready"
+                ? "stripe.manage"
+                : stripe === "details"
+                  ? "stripe.continue"
+                  : "stripe.connect"
+            )}
+            {stripe !== "ready" && <ChevronRightIcon data-icon="inline-end" />}
+          </Button>
+        )
+      }
+    />
+  )
   // Connected: the apps working for the business now.
   const connectedRows = [
     whatsappRow && <Fragment key="whatsapp">{whatsappRow}</Fragment>,
     usable && <Fragment key="chat">{chatRow}</Fragment>,
     googleUsable && <Fragment key="google">{googleRow}</Fragment>,
+    stripe === "ready" && <Fragment key="stripe">{stripeRow}</Fragment>,
   ].filter(Boolean)
   // Suggested: the apps that work today and aren't connected yet, Google
   // Calendar first. "Coming soon" apps are never suggested.
@@ -366,15 +412,7 @@ export function IntegrationsView({
           </PageSection>
           <PageSection id="payments" title={t("payments")}>
             <ItemGroup className="gap-3">
-              {/* Stripe's own app icon, as stripe.com uses it; a square, so
-                  its corners are rounded like the other app icons. */}
-              <IntegrationRow
-                logo="/brands/stripe.svg"
-                square
-                name={t("stripe.name")}
-                description={t("stripe.description")}
-                action={<Badge variant="secondary">{t("soon")}</Badge>}
-              />
+              {stripeRow}
             </ItemGroup>
           </PageSection>
           <PageSection id="reviews" title={t("reviews")}>

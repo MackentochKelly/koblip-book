@@ -74,11 +74,11 @@ const APPS_WORKING: App[] = [
     name: "Google Calendar",
   },
   { key: "koblipChat", logo: "/brands/koblip-chat.png", name: "Koblip Chat" },
+  { key: "stripe", logo: "/brands/stripe.svg", name: "Stripe" },
 ]
 
 // The ones marked "Coming soon" on that page.
 const APPS_SOON: App[] = [
-  { key: "stripe", logo: "/brands/stripe.svg", name: "Stripe" },
   { key: "instagram", logo: "/brands/instagram.png", name: "Instagram" },
   { key: "facebook", logo: "/brands/facebook.png", name: "Facebook" },
   {

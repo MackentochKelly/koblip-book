@@ -12,6 +12,7 @@ vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }))
 vi.mock("../api/actions", () => ({ cancelBooking: vi.fn() }))
 vi.mock("../api/booking-actions", () => ({ setBookingStatus: vi.fn() }))
 vi.mock("../api/payment-actions", () => ({ setBookingPaid: vi.fn() }))
+vi.mock("../api/online-pay-actions", () => ({ refundBooking: vi.fn() }))
 vi.mock("../api/customer-reward-actions", () => ({
   bookingRewards: vi.fn(async () => []),
   redeemForBooking: vi.fn(),

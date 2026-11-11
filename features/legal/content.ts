@@ -24,7 +24,7 @@ function section<D extends LegalDoc, S extends string, P extends string>(
 
 export const LEGAL_SECTIONS = {
   privacy: [
-    section("privacy", "collect", ["account", "business", "clients", "chats", "billing"]),
+    section("privacy", "collect", ["account", "business", "clients", "chats", "billing", "cardPayments"]),
     section("privacy", "device", ["cookies", "theme", "location"]),
     section("privacy", "helpers", ["providers", "noSale"]),
     section("privacy", "keep", ["open", "unclaimed"]),
@@ -33,7 +33,7 @@ export const LEGAL_SECTIONS = {
   terms: [
     section("terms", "account", ["safe", "claim"]),
     section("terms", "content", ["responsible", "allowed"]),
-    section("terms", "bookings", ["agreement", "refunds"]),
+    section("terms", "bookings", ["agreement", "refunds", "cardPayments"]),
     section("terms", "assistant", ["confirm", "google"]),
     section("terms", "billing", [
       "free",

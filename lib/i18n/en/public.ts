@@ -759,6 +759,8 @@ const words = {
             chats: "Assistant chats you type. Live voice audio is not kept.",
             billing:
               "If you upgrade: your billing details and payment history. Your card is kept by Stripe, not by us.",
+            cardPayments:
+              "If a client pays a business by card: the amount and whether it was paid or refunded. The card is entered on Stripe's page and is never seen or kept by us.",
           },
         },
         device: {
@@ -824,6 +826,8 @@ const words = {
               "A booking is an agreement between the business and its client. Koblip is not part of it.",
             refunds:
               "Businesses handle their own cancellations, payments and refunds.",
+            cardPayments:
+              "Card payments go through Stripe to the business's own Stripe account. Koblip never holds the money. Stripe's own terms apply to them.",
           },
         },
         assistant: {

@@ -35,7 +35,7 @@ test("Pro shows both prices, its limit, and Soon on lines not built yet", () => 
   expect(screen.getByText("or $190 a year")).toBeTruthy()
   expect(screen.getByText("30 WhatsApp messages a month")).toBeTruthy()
   expect(screen.getByText("200 WhatsApp messages a month")).toBeTruthy()
-  expect(screen.getAllByText("Soon")).toHaveLength(4)
+  expect(screen.getAllByText("Soon")).toHaveLength(3)
 })
 
 test("a visitor's Get Pro keeps the choice, then goes to the search", async () => {
