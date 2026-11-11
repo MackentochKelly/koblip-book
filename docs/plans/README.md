@@ -26,6 +26,7 @@ current.
 | [Client account](client-account.md) | In progress |
 | [Rewards](rewards.md) | Done |
 | [Online payments](online-payments.md) | To do |
+| [Email](email.md) | To do |
 
 ## How to work with a plan
 
