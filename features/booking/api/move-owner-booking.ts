@@ -29,6 +29,7 @@ import {
 } from "../utils/owner-time"
 import { addDays, zonedInstant, zonedToday } from "../utils/zoned-time"
 import { inBookingTurn } from "./booking-turn"
+import { heldTimes } from "./holds"
 import { moveWrites } from "./move-writes"
 
 // The owner moves a booking that has not started to a later day or time,
@@ -157,7 +158,8 @@ export async function moveOwnerBooking(
           durationMinutes: booking.durationMinutes,
           seats: business.seats,
           teamMemberIds: booking.teamMemberId ? [booking.teamMemberId] : [],
-          taken,
+          // A time a customer is paying for is busy too.
+          taken: [...taken, ...(await heldTimes(business.id))],
           busy,
           now: Date.now(),
           dates: [input.date],

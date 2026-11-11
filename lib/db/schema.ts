@@ -1729,10 +1729,11 @@ export const bookingHolds = sqliteTable(
     // What the card is charged, in hundredths, and in which currency.
     amountMinor: integer().notNull(),
     currency: text().notNull(),
-    // Who booked: the signed-in customer, and the phone a reward belongs to.
+    // Who booked: the signed-in customer (with the customer key their
+    // reward belongs to), or a claim for the account logged in later.
     customerUserId: text().references(() => user.id, { onDelete: "set null" }),
-    rewardPhone: text(),
-    claimTokenHash: text().notNull(),
+    rewardCustomerKey: text(),
+    claimTokenHash: text(),
     // Stripe's payment page for it; null for the moment before it is made.
     stripeSessionId: text(),
     expiresAt: text().notNull(),

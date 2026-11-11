@@ -37,6 +37,7 @@ import {
 import { checkAddons } from "../utils/addons"
 import { loadGroupsForService } from "./addon-groups"
 import { inBookingTurn } from "./booking-turn"
+import { heldTimes } from "./holds"
 import {
   allowedServiceMemberIds,
   firstFreeMember,
@@ -187,6 +188,9 @@ export async function createOwnerBooking(
         new Date(dayEnd + 86_400_000).toISOString()
       )
 
+      // A time a customer is paying for is busy too.
+      const held = await heldTimes(business.id)
+
       if (!input.allowConflict) {
         const startMinute = toMinutes(input.time)
         const endMinute = startMinute + totalMinutes
@@ -213,7 +217,7 @@ export async function createOwnerBooking(
           seats: business.seats,
           teamMemberIds:
             input.teamMemberId !== null ? [input.teamMemberId] : allowedIds,
-          taken,
+          taken: [...taken, ...held],
           busy,
           now: Date.now(),
           dates: [input.date],
@@ -241,7 +245,7 @@ export async function createOwnerBooking(
         const free = firstFreeMember(
           workingRows,
           // A team member busy in Google is not free either.
-          [...taken, ...busy],
+          [...taken, ...held, ...busy],
           startInstant,
           endInstant
         )

@@ -20,6 +20,7 @@ import { isBookable } from "../utils/is-bookable"
 import { allowedServiceMemberIds } from "../utils/service-members"
 import { checkAddons } from "../utils/addons"
 import { loadGroupsForService } from "./addon-groups"
+import { heldTimes } from "./holds"
 
 // null = business or service not found, not bookable, invalid add-ons, or
 // teamMemberId given but not on the team / not allowed for the service.
@@ -246,7 +247,8 @@ async function freeDays(input: {
     durationMinutes: input.durationMinutes,
     seats: input.seats,
     teamMemberIds: input.teamMemberIds,
-    taken,
+    // A time another customer is paying for is busy too.
+    taken: [...taken, ...(await heldTimes(input.businessId))],
     busy,
     now,
   })

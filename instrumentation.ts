@@ -23,6 +23,10 @@ export async function register() {
     // Ended bookings are counted for rewards (docs/plans/rewards.md).
     const { startRewardsTimer } = await import("@/lib/rewards-timer")
     startRewardsTimer()
+    // Times held for a card payment nobody made are freed
+    // (docs/plans/online-payments.md).
+    const { startHoldsTimer } = await import("@/features/booking/api/holds-timer")
+    startHoldsTimer()
     // New and changed English goes to the database for translation
     // (docs/plans/translations.md, G4) before the translation timer's first
     // run. A database error leaves the words as they are; the next start

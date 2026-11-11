@@ -224,6 +224,9 @@ export async function createCardSession(input: {
   const session = await stripeConnect.client.checkout.sessions.create(
     {
       mode: "payment",
+      // Cards only (Apple Pay and Google Pay are cards): they answer at
+      // once, so a held time is never paid for days later.
+      allowed_payment_method_types: ["card"],
       line_items: [
         {
           quantity: 1,
