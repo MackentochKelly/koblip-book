@@ -27,6 +27,8 @@ Webhook events (better-auth.com/docs/plugins/stripe#set-up-stripe-webhooks):
 
 The sandbox ("KOBLIP") has all of this except a webhook endpoint, since locally the Stripe CLI forwards events instead (below).
 
+Live mode (made Nov 11): product `prod_Vbi2JBhRM6qzrG` "Koblip Pro" with both prices and lookup keys, the free Pro coupon, the portal (both prices, switching down waits for the period end, phone off, tax id on), renewal emails, and the webhook "Koblip Book subscriptions" (`we_1UaUjfINXbkEC5NAf1Aq9BiX`, API version `2026-10-28.endive`). Not yet: Stripe Tax (not activated in live, so the product has no tax code yet) and the terms and privacy links, which live in the account's Public business information that Koblip Food shares.
+
 ## Keys
 
 | Key | Where it comes from | Where it goes |
