@@ -79,7 +79,14 @@ import {
   setBookingPaid,
   setPayLater,
 } from "@/features/dashboard/api/payment-actions"
-import { getPaymentSettings } from "@/features/dashboard/api/payment-queries"
+import {
+  refundBooking,
+  saveOnlinePay,
+} from "@/features/dashboard/api/online-pay-actions"
+import {
+  getOnlinePaySettings,
+  getPaymentSettings,
+} from "@/features/dashboard/api/payment-queries"
 import { changeProgress } from "@/features/dashboard/api/customer-reward-changes"
 import {
   removeRewardRule,
@@ -154,7 +161,14 @@ import {
   PAYMENT_START_NAMES,
   PAYMENT_STATUSES,
   PAYMENT_TYPES,
+  CARD_TYPE,
+  DEPOSIT_TYPES,
+  ONLINE_PAY_MODES,
+  ONLINE_PAY_RULES,
+  checkOnlinePay,
   checkPaymentMethod,
+  smallestCharge,
+  type OnlinePay,
   type PaymentType,
 } from "@/lib/payment-rules"
 import {
@@ -1573,6 +1587,89 @@ export function buildAssistantTools(
     }
     return { booking, status }
   }
+  // What customers pay by card, in the owner's words: "Off", "Full
+  // price", "25% deposit", "$10.00 deposit".
+  const onlinePayText = (pay: OnlinePay | null, currency: string) => {
+    if (!pay) return t("onlinePayment.summary.off")
+    if (pay.mode === "full") return t("onlinePayment.summary.full")
+    return pay.type === "percent"
+      ? t("onlinePayment.summary.percent", { percent: pay.value })
+      : t("onlinePayment.summary.amount", {
+          amount: formatPrice(pay.value, currency, locale),
+        })
+  }
+  // Shared checks for set_online_payment: a setting the rules allow, a
+  // plan that has online payments, a Stripe account first, and a change
+  // that is one.
+  const checkOnlinePayArgs = async (
+    args: unknown
+  ): Promise<
+    | {
+        pay: OnlinePay | null
+        currency: string
+        input: { mode: string; type?: string; value?: number }
+      }
+    | { error: string }
+  > => {
+    const a = asRecord(args)
+    const online = await getOnlinePaySettings(businessId)
+    const input = {
+      mode: a?.mode,
+      type: a?.depositType,
+      value: a?.depositValue,
+    }
+    const checked = checkOnlinePay(input, online.currency)
+    if (!checked.ok) {
+      return {
+        error: t(`errors.onlinePayment.${checked.error}`, {
+          min: String(ONLINE_PAY_RULES.minPercent),
+          max: String(ONLINE_PAY_RULES.maxPercent),
+          amount: String(smallestCharge(online.currency)),
+        }),
+      }
+    }
+    if (!online.available) {
+      return { error: t("errors.onlinePayment.plan") }
+    }
+    if (
+      checked.pay &&
+      (online.stripe === "none" || online.stripe === "country")
+    ) {
+      return { error: t("errors.onlinePayment.notConnected") }
+    }
+    if (JSON.stringify(checked.pay) === JSON.stringify(online.pay)) {
+      return { error: t("errors.nothingToChange") }
+    }
+    const { pay } = checked
+    return {
+      pay,
+      currency: online.currency,
+      input:
+        pay?.mode === "deposit"
+          ? { mode: pay.mode, type: pay.type, value: pay.value }
+          : { mode: pay?.mode ?? "off" },
+    }
+  }
+  // Shared checks for refund_booking: a booking paid by card that still
+  // holds something to give back.
+  const checkRefundArgs = async (
+    args: unknown
+  ): Promise<{ booking: OwnerBooking; amountMinor: number } | { error: string }> => {
+    const a = asRecord(args)
+    if (!a || typeof a.bookingId !== "string" || a.bookingId === "") {
+      return { error: t("errors.bookingIdRequired") }
+    }
+    const booking = await getBooking(businessId, a.bookingId)
+    if (!booking) {
+      return { error: t("errors.bookingUnknown") }
+    }
+    const online = booking.payment?.online
+    const amountMinor = online ? online.paidMinor - online.refundedMinor : 0
+    if (amountMinor <= 0) {
+      return { error: t("errors.nothingToRefund") }
+    }
+    return { booking, amountMinor }
+  }
   // Shared checks for set_booking_paid: a booking that tracks a payment,
   // and a change that is one.
   const checkBookingPaidArgs = async (
@@ -2452,7 +2549,7 @@ export function buildAssistantTools(
       definition: {
         name: "list_bookings",
         description:
-          "Bookings, each with when (past / now / upcoming), team member, length, price, source, note and add-ons. rewardOffMinor / rewardOffText: what a redeemed reward took off (the price is already what is to pay). A booking paid outside the app also has payment: choice (now, or later = at the visit), way, status (unpaid, reported = the customer says they paid and the owner must check, paid = the owner confirmed), reference and hasProof (the customer added a picture of the payment; you cannot see it, the owner opens it on the booking). For yesterday, today or tomorrow, pass only day: every booking that day, past and upcoming (count them all for 'how many today'). For other days, from/to: every booking on those days; adding range keeps only that side of now. With none of these: upcoming (soonest first) or past (most recent first). Source caps: next 200 upcoming, last 100 past.",
+          "Bookings, each with when (past / now / upcoming), team member, length, price, source, note and add-ons. rewardOffMinor / rewardOffText: what a redeemed reward took off (the price is already what is to pay). A booking paid outside the app also has payment: choice (now, or later = at the visit), way, status (unpaid, reported = the customer says they paid and the owner must check, paid = the owner confirmed), reference and hasProof (the customer added a picture of the payment; you cannot see it, the owner opens it on the booking). A booking paid online by card has way Card with paidOnlineMinor / paidOnlineText (what the card paid when booking: a deposit or the full price; the rest of the price is paid at the visit) and refundedMinor (what was given back); only Stripe sets these. For yesterday, today or tomorrow, pass only day: every booking that day, past and upcoming (count them all for 'how many today'). For other days, from/to: every booking on those days; adding range keeps only that side of now. With none of these: upcoming (soonest first) or past (most recent first). Source caps: next 200 upcoming, last 100 past.",
         // `day` is worked out here in the business timezone, so the model
         // never has to compute a date or pick a side of now for a plain day
         // ("Don't make the model fill arguments you already know", OpenAI
@@ -2607,13 +2704,29 @@ export function buildAssistantTools(
                 payment: {
                   // "later": they pay at the visit, with no way chosen.
                   choice: b.payment.choice,
-                  way: b.payment.method?.name ?? null,
+                  way:
+                    b.payment.method?.type === CARD_TYPE
+                      ? t("onlinePayment.card")
+                      : (b.payment.method?.name ?? null),
                   status: b.payment.status,
                   reference: b.payment.reference,
                   // Whether the customer added a picture of the payment.
                   // The picture itself never comes here: the owner opens
                   // it on the booking.
                   hasProof: b.payment.hasProof,
+                  // By card, online: what was paid when booking and
+                  // what the owner gave back. Absent when not by card.
+                  ...(b.payment.online
+                    ? {
+                        paidOnlineMinor: b.payment.online.paidMinor,
+                        paidOnlineText: formatPrice(
+                          b.payment.online.paidMinor,
+                          b.currency,
+                          locale
+                        ),
+                        refundedMinor: b.payment.online.refundedMinor,
+                      }
+                    : {}),
                 },
               }
             : {}),
@@ -5370,21 +5483,140 @@ export function buildAssistantTools(
       definition: {
         name: "list_payment_methods",
         description:
-          "The ways customers can pay the business outside the app (bank transfer, Zelle, Cash App, other), with their ids and private instructions, whether paying at the visit is offered, and how many payments wait for the owner's check. None listed: the booking page asks nothing about payment. The app never moves money.",
+          "How customers pay the business. Offline payments, outside the app: the ways (bank transfer, Zelle, Cash App, other) with their ids and private instructions, whether paying at the visit is offered, and how many payments wait for the owner's check. onlinePayments, by card when booking, through the business's own Stripe account: available (the plan has it), stripe (none = not connected, details = Stripe needs more details, ready = connected, country = not in the business's country yet) and customersPay (off, deposit with depositType and depositValue, or full). Connecting Stripe is only done by the owner in Settings, Payments: you never do it. Koblip never holds the money.",
         parameters: schema({}),
         needsConfirm: false,
       },
       label: t("steps.paymentMethods"),
       doneLabel: t("stepsDone.paymentMethods"),
       run: async () => {
-        const { methods, payLater, toCheck } =
-          await getPaymentSettings(businessId)
+        const [{ methods, payLater, toCheck }, online] = await Promise.all([
+          getPaymentSettings(businessId),
+          getOnlinePaySettings(businessId),
+        ])
         return {
           methods,
           payAtVisit: payLater,
           paymentsToCheck: toCheck,
           max: PAYMENT_RULES.maxMethods,
+          onlinePayments: {
+            available: online.available,
+            stripe: online.stripe,
+            customersPay: online.pay?.mode ?? "off",
+            ...(online.pay?.mode === "deposit"
+              ? {
+                  depositType: online.pay.type,
+                  depositValue: online.pay.value,
+                  depositText: onlinePayText(online.pay, online.currency),
+                }
+              : {}),
+          },
         }
+      },
+    },
+    {
+      definition: {
+        name: "set_online_payment",
+        description:
+          "Set what customers pay by card when they book: off, a deposit, or the full price. A deposit is a percent of the price (depositType percent, depositValue 1 to 99) or a fixed amount (depositType amount, depositValue in minor units of the business currency). Only works when onlinePayments in list_payment_methods is available and stripe is not none or country: otherwise tell the owner to connect Stripe in Settings, Payments. Needs the owner's tap.",
+        parameters: schema(
+          {
+            mode: { type: "string", enum: [...ONLINE_PAY_MODES] },
+            depositType: { type: "string", enum: [...DEPOSIT_TYPES] },
+            depositValue: {
+              type: "number",
+              description:
+                "Percent (1 to 99), or the amount in minor units; only for a deposit",
+            },
+          },
+          ["mode"]
+        ),
+        needsConfirm: true,
+        resultKind: "payments",
+      },
+      label: t("steps.onlinePayment"),
+      doneLabel: t("stepsDone.onlinePayment"),
+      run: async () => ({ error: t("tapFirst.onlinePayment") }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const checked = await checkOnlinePayArgs(args)
+          if ("error" in checked) {
+            return checked
+          }
+          return {
+            title: t("cards.onlinePayment"),
+            action: t("actions.onlinePayment"),
+            summary: onlinePayText(checked.pay, checked.currency),
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const checked = await checkOnlinePayArgs(args)
+          if ("error" in checked) {
+            return { ok: false, doneText: checked.error }
+          }
+          const result = await saveOnlinePay(businessId, checked.input)
+          return result.ok
+            ? { ok: true, doneText: t("onlinePayment.done") }
+            : {
+                ok: false,
+                doneText: t("onlinePayment.failed", { error: result.error }),
+              }
+        },
+      },
+    },
+    {
+      definition: {
+        name: "refund_booking",
+        description:
+          "Give back everything a booking's card payment still holds, to the customer's card, from the business's own Stripe account. Only for a booking with paidOnlineMinor in list_bookings that is not fully refunded. Only when the owner asks to refund. It does not cancel the booking. Needs the owner's tap.",
+        parameters: schema(
+          {
+            bookingId: { type: "string", description: "Id from list_bookings" },
+          },
+          ["bookingId"]
+        ),
+        needsConfirm: true,
+        resultKind: "bookings",
+      },
+      label: t("steps.refundBooking"),
+      doneLabel: t("stepsDone.refundBooking"),
+      run: async () => ({ error: t("tapFirst.refundBooking") }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const checked = await checkRefundArgs(args)
+          if ("error" in checked) {
+            return checked
+          }
+          const { booking, amountMinor } = checked
+          return {
+            title: t("cards.refundBooking", {
+              amount: formatPrice(amountMinor, booking.currency, locale),
+            }),
+            action: t("actions.refundBooking"),
+            summary: `${booking.customerName} · ${booking.serviceName} · ${formatDay(booking.date, locale)} · ${formatClock(booking.time, locale)}`,
+            destructive: true,
+          }
+        },
+        execute: async (args: unknown) => {
+          const bookingId = asRecord(args)?.bookingId
+          if (typeof bookingId !== "string" || bookingId === "") {
+            return { ok: false, doneText: t("refundBooking.unknown") }
+          }
+          const result = await refundBooking(businessId, bookingId)
+          if (!result.ok) {
+            const refusals: Record<string, string> = {
+              not_found: t("refundBooking.unknown"),
+              nothing: t("refundBooking.nothing"),
+            }
+            return {
+              ok: false,
+              doneText:
+                refusals[result.error] ?? t("refundBooking.failed"),
+            }
+          }
+          return { ok: true, doneText: t("refundBooking.done") }
+        },
       },
     },
     {

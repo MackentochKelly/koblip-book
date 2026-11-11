@@ -116,6 +116,11 @@ vi.mock("@/features/dashboard/api/payment-actions", () => ({
 }))
 vi.mock("@/features/dashboard/api/payment-queries", () => ({
   getPaymentSettings: vi.fn(),
+  getOnlinePaySettings: vi.fn(),
+}))
+vi.mock("@/features/dashboard/api/online-pay-actions", () => ({
+  saveOnlinePay: vi.fn(),
+  refundBooking: vi.fn(),
 }))
 vi.mock("@/features/dashboard/api/reward-queries", () => ({
   getRewardSettings: vi.fn(),
@@ -223,8 +228,10 @@ const { setBookingStatus } =
   await import("@/features/dashboard/api/booking-actions")
 const { savePaymentMethod, deletePaymentMethod, setPayLater, setBookingPaid } =
   await import("@/features/dashboard/api/payment-actions")
-const { getPaymentSettings } =
+const { getPaymentSettings, getOnlinePaySettings } =
   await import("@/features/dashboard/api/payment-queries")
+const { saveOnlinePay, refundBooking } =
+  await import("@/features/dashboard/api/online-pay-actions")
 const { getAvailability, getMoveAvailability } =
   await import("@/features/booking/api/get-availability")
 const { createOwnerBooking } =
@@ -308,6 +315,8 @@ test("every needsConfirm tool carries its result kind", () => {
     ["save_payment_method", "payments"],
     ["remove_payment_method", "payments"],
     ["set_pay_at_visit", "payments"],
+    ["set_online_payment", "payments"],
+    ["refund_booking", "bookings"],
     ["save_reward", "rewards"],
     ["turn_reward_on_off", "rewards"],
     ["remove_reward", "rewards"],
@@ -3190,6 +3199,8 @@ const CHANGES: [string, string][] = [
   ["save_payment_method", "payments"],
   ["remove_payment_method", "payments"],
   ["set_pay_at_visit", "payments"],
+  ["set_online_payment", "payments"],
+  ["refund_booking", "bookings"],
   ["save_reward", "rewards"],
   ["turn_reward_on_off", "rewards"],
   ["remove_reward", "rewards"],
@@ -4455,11 +4466,124 @@ test("list_payment_methods gives the ways, pay at the visit and what waits", asy
     payLater: false,
     toCheck: 1,
   })
+  vi.mocked(getOnlinePaySettings).mockResolvedValue({
+    ...ONLINE_OFF,
+    pay: { mode: "deposit", type: "percent", value: 25 },
+  })
   expect(await byName("list_payment_methods").run({})).toEqual({
     methods: [ZELLE],
     payAtVisit: false,
     paymentsToCheck: 1,
     max: 6,
+    onlinePayments: {
+      available: true,
+      stripe: "ready",
+      customersPay: "deposit",
+      depositType: "percent",
+      depositValue: 25,
+      depositText: "25% deposit",
+    },
+  })
+})
+
+// Online payments (docs/plans/online-payments.md, ON-12).
+const ONLINE_OFF = {
+  available: true,
+  stripe: "ready" as const,
+  pay: null,
+  currency: "USD",
+}
+
+test("set_online_payment shows a card and saves on the tap only", async () => {
+  vi.mocked(getOnlinePaySettings).mockResolvedValue(ONLINE_OFF)
+  vi.mocked(saveOnlinePay).mockResolvedValue({ ok: true })
+  const tool = byName("set_online_payment")
+  expect(await tool.confirm!.describe({ mode: "off" })).toEqual({
+    error: "Nothing to change.",
+  })
+  expect(await tool.confirm!.describe({ mode: "half" })).toEqual({
+    error: expect.stringContaining("mode must be"),
+  })
+  expect(
+    await tool.confirm!.describe({
+      mode: "deposit",
+      depositType: "percent",
+      depositValue: 100,
+    })
+  ).toEqual({ error: expect.stringContaining("from 1 to 99") })
+  const deposit = { mode: "deposit", depositType: "amount", depositValue: 1000 }
+  expect(await tool.confirm!.describe(deposit)).toEqual({
+    title: "Change what customers pay online?",
+    action: "Change",
+    summary: "$10.00 deposit",
+    destructive: false,
+  })
+  expect(saveOnlinePay).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute(deposit)).toEqual({
+    ok: true,
+    doneText: "Online payments changed.",
+  })
+  expect(saveOnlinePay).toHaveBeenCalledWith("b1", {
+    mode: "deposit",
+    type: "amount",
+    value: 1000,
+  })
+})
+
+test("set_online_payment asks for Stripe and the plan first", async () => {
+  const tool = byName("set_online_payment")
+  vi.mocked(getOnlinePaySettings).mockResolvedValue({
+    ...ONLINE_OFF,
+    stripe: "none",
+  })
+  expect(await tool.confirm!.describe({ mode: "full" })).toEqual({
+    error: expect.stringContaining("Stripe is not connected"),
+  })
+  vi.mocked(getOnlinePaySettings).mockResolvedValue({
+    ...ONLINE_OFF,
+    available: false,
+  })
+  expect(await tool.confirm!.describe({ mode: "full" })).toEqual({
+    error: expect.stringContaining("plan"),
+  })
+  expect(saveOnlinePay).not.toHaveBeenCalled()
+})
+
+test("refund_booking shows the amount and refunds on the tap only", async () => {
+  const tool = byName("refund_booking")
+  vi.mocked(getBooking).mockResolvedValue({
+    ...(STARTED as object),
+    payment: paymentOf("paid"),
+  } as never)
+  // Paid outside the app: nothing the app can give back.
+  expect(await tool.confirm!.describe({ bookingId: "k1" })).toEqual({
+    error: expect.stringContaining("nothing to refund"),
+  })
+  vi.mocked(getBooking).mockResolvedValue({
+    ...(STARTED as object),
+    currency: "USD",
+    payment: {
+      ...paymentOf("paid"),
+      online: { paidMinor: 2500, refundedMinor: 0 },
+    },
+  } as never)
+  expect(await tool.confirm!.describe({ bookingId: "k1" })).toMatchObject({
+    title: "Refund $25.00?",
+    action: "Refund",
+    destructive: true,
+  })
+  expect(refundBooking).not.toHaveBeenCalled()
+  vi.mocked(refundBooking).mockResolvedValue({ ok: true })
+  expect(await tool.confirm!.execute({ bookingId: "k1" })).toEqual({
+    ok: true,
+    doneText: "Refunded. The customer gets it back on their card in 5 to 10 days.",
+  })
+  expect(refundBooking).toHaveBeenCalledWith("b1", "k1")
+  vi.mocked(refundBooking).mockResolvedValue({ ok: false, error: "nothing" })
+  expect(await tool.confirm!.execute({ bookingId: "k1" })).toEqual({
+    ok: false,
+    doneText:
+      "Not refunded: nothing was paid online, or it was already refunded.",
   })
 })
 

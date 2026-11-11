@@ -26,6 +26,8 @@ const words = {
     savePaymentMethod: "Saving the payment method…",
     removePaymentMethod: "Removing way to pay…",
     payAtVisit: "Changing pay at the visit…",
+    onlinePayment: "Changing online payments…",
+    refundBooking: "Refunding…",
     rewards: "Reading rewards…",
     customerRewards: "Reading the customer's rewards…",
     saveReward: "Saving the reward…",
@@ -95,6 +97,8 @@ const words = {
     savePaymentMethod: "Payment method saved",
     removePaymentMethod: "Removed way to pay",
     payAtVisit: "Changed pay at the visit",
+    onlinePayment: "Changed online payments",
+    refundBooking: "Refunded",
     rewards: "Rewards loaded",
     customerRewards: "Customer's rewards loaded",
     saveReward: "Reward saved",
@@ -174,6 +178,8 @@ const words = {
     savePaymentMethod: "saving a way to pay needs the owner's tap first",
     removePaymentMethod: "removing a way to pay needs the owner's tap first",
     payAtVisit: "changing pay at the visit needs the owner's tap first",
+    onlinePayment: "changing online payments needs the owner's tap first",
+    refundBooking: "a refund needs the owner's tap first",
     saveReward: "saving a reward needs the owner's tap first",
     rewardOnOff: "turning a reward on or off needs the owner's tap first",
     removeReward: "removing a reward needs the owner's tap first",
@@ -272,6 +278,8 @@ const words = {
       on: "Let customers pay at the visit?",
       off: "Stop paying at the visit?",
     },
+    onlinePayment: "Change what customers pay online?",
+    refundBooking: "Refund {amount}?",
     saveReward: {
       add: "Add this reward?",
       change: "Change this reward?",
@@ -336,6 +344,8 @@ const words = {
     savePaymentMethod: { add: "Add", change: "Save changes" },
     removePaymentMethod: "Remove",
     payAtVisit: { on: "Turn on", off: "Turn off" },
+    onlinePayment: "Change",
+    refundBooking: "Refund",
     saveReward: { add: "Add", change: "Save changes" },
     removeReward: "Remove",
     adjustVisits: { add: "Add", remove: "Remove" },
@@ -588,6 +598,24 @@ const words = {
     adjustedEarned:
       "Count changed. {count, plural, one {# reward} other {# rewards}} earned.",
   },
+  // Online payments by card (docs/plans/online-payments.md, ON-12).
+  onlinePayment: {
+    card: "Card",
+    summary: {
+      off: "Off",
+      full: "Full price",
+      percent: "{percent, number}% deposit",
+      amount: "{amount} deposit",
+    },
+    failed: "Could not change online payments ({error}).",
+    done: "Online payments changed.",
+  },
+  refundBooking: {
+    unknown: "Could not refund: unknown booking.",
+    nothing: "Not refunded: nothing was paid online, or it was already refunded.",
+    failed: "Could not refund. Try again, or refund it in Stripe.",
+    done: "Refunded. The customer gets it back on their card in 5 to 10 days.",
+  },
   payAtVisit: {
     summary: {
       on: "Customers can choose to pay later, at their visit.",
@@ -688,6 +716,17 @@ const words = {
     statusUnknown: "unknown status",
     paymentStatusUnknown: "payment must be unpaid, reported or paid",
     paidInvalid: "paid must be true or false",
+    nothingToRefund:
+      "nothing to refund: only a booking with paidOnlineMinor in list_bookings that is not fully refunded can be refunded",
+    onlinePayment: {
+      mode: "mode must be off, deposit or full",
+      type: "a deposit needs depositType: percent or amount",
+      percent: "depositValue must be a whole percent from {min} to {max}",
+      amount: "depositValue must be at least {amount} minor units",
+      plan: "online payments are not in this business's plan: the owner can upgrade in Settings, Plan",
+      notConnected:
+        "Stripe is not connected: the owner connects it in Settings, Payments, Online payments",
+    },
     noPayment:
       "that booking tracks no payment: only bookings with payment in list_bookings can be marked",
     paymentMethodUnknown:
