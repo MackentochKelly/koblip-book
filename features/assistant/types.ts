@@ -29,6 +29,7 @@ export type ResultKind =
   | "messages"
   | "timing"
   | "flows"
+  | "emails"
 export type SourceKind = "bookings" | "services" | "team" | "customers"
 export type AssistantStreamEvent =
   | { type: "text"; delta: string } // words appearing in the reply

@@ -45,8 +45,17 @@ import { bookWordsFor } from "@/features/dashboard/api/message-words"
 import {
   saveMessageWording,
   saveNotificationSettings,
+  setEmailOn,
   setMessageOn,
 } from "@/features/dashboard/api/notification-actions"
+import { emailActivity } from "@/lib/email-activity"
+import { EMAIL_ACTIVITY_STATES } from "@/lib/email-activity-filter"
+import {
+  BOOKING_EMAILS,
+  CUSTOMER_EMAILS,
+  isBookingEmail,
+  type BookingEmail,
+} from "@/lib/email-rules"
 import {
   notificationMessagesFor,
   notificationSettingsFor,
@@ -2112,6 +2121,22 @@ export function buildAssistantTools(
     return turnedOff.includes(message) !== a.on
       ? { error: t("errors.nothingToChange") }
       : { message, on: a.on }
+  }
+  // Shared checks for turn_email_on_off (docs/plans/email.md, EM-12).
+  const checkEmailOnArgs = async (
+    args: unknown
+  ): Promise<{ email: BookingEmail; on: boolean } | { error: string }> => {
+    const a = asRecord(args)
+    if (!a || !isBookingEmail(a.email)) {
+      return { error: t("errors.emailUnknown") }
+    }
+    if (typeof a.on !== "boolean") {
+      return { error: t("errors.onInvalid") }
+    }
+    const { emailTurnedOff } = await notificationSettingsFor(businessId)
+    return emailTurnedOff.includes(a.email) !== a.on
+      ? { error: t("errors.nothingToChange") }
+      : { email: a.email, on: a.on }
   }
   // Shared checks for save_reminder_settings: the action saves these fields
   // together, so the given ones go over what is saved now, re-read at the tap.
@@ -6612,6 +6637,136 @@ export function buildAssistantTools(
             doneText: checked.on
               ? t("automationOn.on", { name })
               : t("automationOn.off", { name }),
+          }
+        },
+      },
+    },
+    // Email (docs/plans/email.md, EM-12): the Email page's switches and
+    // history, as the owner sees them.
+    {
+      definition: {
+        name: "email_settings",
+        description:
+          "Booking emails: each one with its name, who gets it (the customer or the owner) and whether it is on. Emails go only to bookings with an email address; reminders go by email when the customer can't get WhatsApp or picked email.",
+        parameters: schema({}),
+        needsConfirm: false,
+      },
+      label: t("steps.email"),
+      doneLabel: t("stepsDone.email"),
+      run: async () => {
+        const { emailTurnedOff } = await notificationSettingsFor(businessId)
+        return {
+          emails: BOOKING_EMAILS.map((email) => ({
+            email,
+            name: ownerT(`email.names.${email}`),
+            to: (CUSTOMER_EMAILS as readonly string[]).includes(email) ? "customer" : "owner",
+            on: !emailTurnedOff.includes(email),
+          })),
+        }
+      },
+    },
+    {
+      definition: {
+        name: "email_history",
+        description:
+          "The latest booking emails, newest first: which, to whom, when it went or goes, and its status (scheduled, sent, delivered, bounced, failed, not sent) with why it was not sent. Narrow by email, status, or a customer's name or address.",
+        parameters: schema({
+          email: { type: "string", enum: [...BOOKING_EMAILS] },
+          state: { type: "string", enum: [...EMAIL_ACTIVITY_STATES] },
+          search: { type: "string", description: "Customer name or email address" },
+        }),
+        needsConfirm: false,
+      },
+      label: t("steps.emailHistory"),
+      doneLabel: t("stepsDone.emailHistory"),
+      run: async (args: unknown) => {
+        const a = asRecord(args)
+        const email = isBookingEmail(a?.email) ? a.email : undefined
+        const state = EMAIL_ACTIVITY_STATES.find((item) => item === a?.state)
+        const search = typeof a?.search === "string" ? a.search.trim() || undefined : undefined
+        const [{ business }, rules] = await Promise.all([
+          getOwnerBusiness(businessId),
+          notificationRules(businessId),
+        ])
+        const rows = await emailActivity(
+          { businessId, kinds: BOOKING_EMAILS },
+          { kind: email, state, search },
+          rules.historySize
+        )
+        const when = new Intl.DateTimeFormat(locale, {
+          dateStyle: "medium",
+          timeStyle: "short",
+          timeZone: business.timezone,
+        })
+        return {
+          total: rows.length,
+          // The list stops at the latest `historySize`.
+          truncated: rows.length === rules.historySize,
+          emails: rows.flatMap((row) =>
+            isBookingEmail(row.kind)
+              ? [
+                  {
+                    email: row.kind,
+                    name: ownerT(`email.names.${row.kind}`),
+                    to: row.email,
+                    customerName: row.customerName,
+                    at: row.at,
+                    whenText: when.format(new Date(row.at)),
+                    status: ownerT(
+                      `email.states.${row.state === "sent" && row.delivery ? row.delivery : row.state}`
+                    ),
+                    reason: row.reason ? ownerT(`email.reasons.${row.reason}`) : null,
+                  },
+                ]
+              : []
+          ),
+        }
+      },
+    },
+    {
+      definition: {
+        name: "turn_email_on_off",
+        description:
+          "Turn one booking email on or off. An email turned off is not sent and shows as not sent in the history. Needs the owner's tap.",
+        parameters: schema(
+          {
+            email: { type: "string", enum: [...BOOKING_EMAILS] },
+            on: { type: "boolean" },
+          },
+          ["email", "on"]
+        ),
+        needsConfirm: true,
+        resultKind: "emails",
+      },
+      label: t("steps.emailOn"),
+      doneLabel: t("stepsDone.emailOn"),
+      run: async () => ({ error: t("tapFirst.emailOn") }),
+      confirm: {
+        describe: async (args: unknown) => {
+          const checked = await checkEmailOnArgs(args)
+          if ("error" in checked) {
+            return checked
+          }
+          return {
+            title: checked.on ? t("cards.emailOn") : t("cards.emailOff"),
+            action: checked.on ? t("actions.turnOn") : t("actions.turnOff"),
+            summary: ownerT(`email.names.${checked.email}`),
+            destructive: false,
+          }
+        },
+        execute: async (args: unknown) => {
+          const checked = await checkEmailOnArgs(args)
+          if ("error" in checked) {
+            return { ok: false, doneText: checked.error }
+          }
+          const result = await setEmailOn(businessId, checked.email, checked.on)
+          if (!result.ok) {
+            return { ok: false, doneText: t("emailOn.failed", { error: result.error }) }
+          }
+          const name = ownerT(`email.names.${checked.email}`)
+          return {
+            ok: true,
+            doneText: checked.on ? t("emailOn.on", { name }) : t("emailOn.off", { name }),
           }
         },
       },

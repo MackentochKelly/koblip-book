@@ -88,6 +88,7 @@ vi.mock("@/features/dashboard/api/theme-actions", () => ({
   activateTheme: vi.fn(),
 }))
 vi.mock("@/features/dashboard/api/notification-actions", () => ({
+  setEmailOn: vi.fn(),
   setMessageOn: vi.fn(),
   saveNotificationSettings: vi.fn(),
   saveMessageWording: vi.fn(),
@@ -104,6 +105,9 @@ vi.mock("@/features/dashboard/api/automation-queries", () => ({
 }))
 vi.mock("@/lib/platform-settings", () => ({
   notificationRules: vi.fn(),
+}))
+vi.mock("@/lib/email-activity", () => ({
+  emailActivity: vi.fn(),
 }))
 vi.mock("@/features/dashboard/api/booking-actions", () => ({
   setBookingStatus: vi.fn(),
@@ -215,8 +219,9 @@ const {
 } = await import("@/features/dashboard/api/policy-actions")
 const { getPolicies } = await import("@/features/dashboard/api/policy-queries")
 const { activateTheme } = await import("@/features/dashboard/api/theme-actions")
-const { saveMessageWording, saveNotificationSettings, setMessageOn } =
+const { saveMessageWording, saveNotificationSettings, setEmailOn, setMessageOn } =
   await import("@/features/dashboard/api/notification-actions")
+const { emailActivity } = await import("@/lib/email-activity")
 const { notificationMessagesFor, notificationSettingsFor } =
   await import("@/features/dashboard/api/notifications")
 const { setAutomationOn } =
@@ -325,6 +330,7 @@ test("every needsConfirm tool carries its result kind", () => {
     ["save_reminder_settings", "timing"],
     ["change_message_wording", "messages"],
     ["turn_automation_on_off", "flows"],
+    ["turn_email_on_off", "emails"],
     ["create_service_category", "services"],
     ["rename_service_category", "services"],
     ["delete_service_category", "services"],
@@ -3209,6 +3215,7 @@ const CHANGES: [string, string][] = [
   ["save_reminder_settings", "timing"],
   ["change_message_wording", "messages"],
   ["turn_automation_on_off", "flows"],
+  ["turn_email_on_off", "emails"],
   ["create_service_category", "services"],
   ["rename_service_category", "services"],
   ["delete_service_category", "services"],
@@ -3906,6 +3913,90 @@ const SETTINGS = {
   thankYouReply: true,
 } as never
 
+test("email_settings lists each booking email, who gets it and whether it is on", async () => {
+  vi.mocked(notificationSettingsFor).mockResolvedValue({
+    emailTurnedOff: ["clientReminder"],
+  } as never)
+  const result = (await byName("email_settings").run({})) as {
+    emails: { email: string; name: string; to: string; on: boolean }[]
+  }
+  expect(result.emails).toHaveLength(7)
+  expect(result.emails[0]).toEqual({
+    email: "bookingConfirmed",
+    name: "Booking confirmed",
+    to: "customer",
+    on: true,
+  })
+  expect(result.emails.find((row) => row.email === "clientReminder")?.on).toBe(false)
+  expect(result.emails.find((row) => row.email === "ownerNewBooking")?.to).toBe("owner")
+})
+
+test("email_history passes its filters and reads each email's status and why", async () => {
+  vi.mocked(getOwnerBusiness).mockResolvedValue({ business: BUSINESS } as never)
+  vi.mocked(notificationRules).mockResolvedValue({ historySize: 30 } as never)
+  const row = {
+    id: "e1",
+    kind: "bookingConfirmed",
+    email: "ana@example.com",
+    customerName: "Ana",
+    businessName: "Salon",
+    timeZone: "Europe/Madrid",
+    at: "2026-11-11T10:00:00.000Z",
+    state: "sent",
+    reason: null,
+    delivery: "delivered",
+  } as const
+  vi.mocked(emailActivity).mockResolvedValue([
+    row,
+    { ...row, id: "e2", kind: "clientReminder", state: "skipped", reason: "turnedOff", delivery: null },
+  ])
+  const result = (await byName("email_history").run({
+    email: "bookingConfirmed",
+    state: "nope",
+    search: " ana ",
+  })) as { total: number; truncated: boolean; emails: Record<string, unknown>[] }
+  expect(vi.mocked(emailActivity)).toHaveBeenCalledWith(
+    { businessId: "b1", kinds: expect.arrayContaining(["bookingConfirmed", "ownerCancelled"]) },
+    { kind: "bookingConfirmed", state: undefined, search: "ana" },
+    30
+  )
+  expect(result.truncated).toBe(false)
+  expect(result.emails[0]).toMatchObject({
+    name: "Booking confirmed",
+    to: "ana@example.com",
+    whenText: "Nov 11, 2026, 11:00 AM",
+    status: "Delivered",
+    reason: null,
+  })
+  expect(result.emails[1]).toMatchObject({ status: "Not sent", reason: "Email turned off" })
+})
+
+test("turn_email_on_off names the email and skips no change", async () => {
+  vi.mocked(notificationSettingsFor).mockResolvedValue({
+    emailTurnedOff: ["clientReminder"],
+  } as never)
+  vi.mocked(setEmailOn).mockResolvedValue({ ok: true })
+  const tool = byName("turn_email_on_off")
+  expect(await tool.confirm!.describe({ email: "clientReminder", on: true })).toEqual({
+    title: "Turn this email on?",
+    action: "Turn on",
+    summary: "Reminder",
+    destructive: false,
+  })
+  expect(await tool.confirm!.describe({ email: "bookingConfirmed", on: true })).toEqual({
+    error: "Nothing to change.",
+  })
+  expect(await tool.confirm!.describe({ email: "reminder", on: true })).toEqual({
+    error: expect.stringContaining("unknown email"),
+  })
+  expect(vi.mocked(setEmailOn)).not.toHaveBeenCalled()
+  expect(await tool.confirm!.execute({ email: "ownerCancelled", on: false })).toEqual({
+    ok: true,
+    doneText: "Customer cancelled email is off.",
+  })
+  expect(vi.mocked(setEmailOn)).toHaveBeenCalledWith("b1", "ownerCancelled", false)
+})
+
 test("turn_message_on_off names the message and skips no change", async () => {
   vi.mocked(notificationSettingsFor).mockResolvedValue(SETTINGS)
   vi.mocked(setMessageOn).mockResolvedValue({ ok: true })
@@ -4197,6 +4288,8 @@ test("only lookups and suggestions run without the tap", () => {
     "booking_stats",
     "business_overview",
     "customer_rewards",
+    "email_history",
+    "email_settings",
     "find_customer",
     "find_free_times",
     "improve_details",

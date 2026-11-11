@@ -78,6 +78,7 @@ const RESULT_PAGES: Record<ResultKind, string> = {
   messages: "/automations/messages",
   timing: "/automations/timing",
   flows: "/automations/flows",
+  emails: "/automations/email",
 }
 
 // What a tapped action did, in full (it names what was done and when), as a
