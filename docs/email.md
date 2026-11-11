@@ -31,10 +31,14 @@ How Koblip Book sends email, and what Amazon holds for it. The plan and its task
 | --- | --- | --- |
 | Configuration set | `koblip-book-production` | Every Book email goes out in it (`SES_CONFIGURATION_SET`). Sends Rejects, Deliveries, Hard bounces, Complaints and Delivery delays to the topic |
 | SNS topic | `koblip-book-ses-events`, ARN `arn:aws:sns:us-east-1:175646932741:koblip-book-ses-events` | `SES_EVENTS_TOPIC_ARN`. Standard topic |
-| Subscription | HTTPS to `https://book.koblip.com/api/email/events` | **Not made yet**: made after the deploy, so the live app confirms it |
-| IAM user | `koblip-book-email`, inline policy `KoblipBookEmailAccess` | Can only send (`ses:SendEmail`, `ses:SendRawEmail`) on `koblip.com` with that set, from `contact@koblip.com`. No console access. No access key yet: the owner makes it |
+| Subscription | HTTPS to `https://book.koblip.com/api/email/events`, raw delivery off | Confirmed by the live app on Nov 11 |
+| IAM user | `koblip-book-email`, inline policy `KoblipBookEmailAccess` | Can only send (`ses:SendEmail`, `ses:SendRawEmail`) on `koblip.com` with that set, from `contact@koblip.com`. No console access. Its key is in `.env.local` and the server's `.env.production` |
+
+## Checked live (Nov 11)
+
+Sent from the server to Amazon's mailbox simulator in `koblip-book-production`: `bounce@`, `complaint@` and `success@simulator.amazonses.com`. SNS posted each event to `/api/email/events` (all answered 204), and the bounce and the complaint each put their address in `email_blocks` for every business.
 
 ## Still to look at
 
-- Which SES keys and `EMAIL_FROM` the live server uses today (`.env.production`); it becomes `Koblip <contact@koblip.com>`.
-- Whether Book's sends show up under a configuration set: none named for Book, so today Book's bounces reach only the suppression list.
+- The server's `.env.production` still has the old `SMTP_*` values; the app no longer reads them. The IAM user `koblip-ses` that they likely came from can be retired once nothing else uses it.
+- The live `EMAIL_FROM` is `"Koblip Book <contact@koblip.com>"` (kept as it was); `.env.example` and local use `Koblip <contact@koblip.com>`.

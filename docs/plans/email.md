@@ -79,7 +79,7 @@ The owner signs in to AWS; the developer never types a password or a key. Each c
 
 1. Look: region in use, sandbox or production, verified identities, DKIM, MAIL FROM, DMARC, suppression settings, sending numbers.
 2. Domain: `koblip.com` is verified with Easy DKIM and has a DMARC record (checked Nov 11). Sender: `contact@koblip.com`. No custom MAIL FROM: DMARC already passes through DKIM (owner's call, Nov 11).
-3. Configuration set `koblip-book-production` with an SNS event destination; SNS topic `koblip-book-ses-events`; HTTPS subscription to `https://book.koblip.com/api/email/events` (needs EM-4 live). Set and topic made Nov 11; the subscription waits for the deploy.
+3. Configuration set `koblip-book-production` with an SNS event destination; SNS topic `koblip-book-ses-events`; HTTPS subscription to `https://book.koblip.com/api/email/events` (needs EM-4 live). Made Nov 11; the subscription was confirmed by the live app.
 4. Suppression list on for bounces and complaints.
 5. IAM user `koblip-book-email` (made Nov 11), inline policy `KoblipBookEmailAccess`: only `ses:SendEmail`/`ses:SendRawEmail`, on `koblip.com` and that configuration set, from `contact@koblip.com`. The owner makes its access key and copies it into `.env.production` and `.env.local`.
 6. If in the sandbox: ask for production access (Transactional, website `https://book.koblip.com`).
@@ -91,8 +91,8 @@ The owner signs in to AWS; the developer never types a password or a key. Each c
 | EM-1 | Look at the AWS account and write what is there into `docs/email.md` (new) | – | `docs/email.md` | Done (Nov 11): us-east-1, already out of the sandbox, `koblip.com` verified with DKIM; MAIL FROM and Book's configuration set missing |
 | EM-2 | AWS setup steps 2, 4, 5, 6 | EM-1 | `docs/email.md` | To do |
 | EM-3 | Tables `email_sends` and `email_blocks`, migration, copy of `client_reminder_emails` | – | `lib/db/schema.ts` (email), `drizzle/` | Done (Nov 11) |
-| EM-4 | Send through the SES API with the log; events route with signature check; blocks | EM-3 | `lib/email.ts`, `lib/email-events.ts`, `app/api/email/events/`, `docs/setup.md`, `docs/deploy.md`, `scripts/deploy.sh` (email check) | Done (Nov 11), not live: the server needs the AWS keys (EM-5) |
-| EM-5 | AWS setup step 3, then a real bounce and complaint with Amazon's mailbox simulator | EM-2, EM-4 deployed | `docs/email.md` | Working on (Nov 11): set, topic, IAM user done; waiting on the access key, the deploy, the subscription and the simulator test |
+| EM-4 | Send through the SES API with the log; events route with signature check; blocks | EM-3 | `lib/email.ts`, `lib/email-events.ts`, `app/api/email/events/`, `docs/setup.md`, `docs/deploy.md`, `scripts/deploy.sh` (email check) | Done (Nov 11), live since `88af786` |
+| EM-5 | AWS setup step 3, then a real bounce and complaint with Amazon's mailbox simulator | EM-2, EM-4 deployed | `docs/email.md` | Done (Nov 11): keys on the server, subscription confirmed by the live app, simulator bounce and complaint each blocked their address |
 | EM-6 | Shared email layout; the existing seven emails moved onto it and the log | EM-4 | `lib/email-templates.ts`, `lib/email-layout.ts`, `lib/billing-emails.ts`, `lib/auth.ts` (send calls), `lib/i18n/en/` (emails) | To do |
 | EM-7 | "Email" on the booking form and `bookings.customerEmail`; owner's new-booking form too | – | `features/booking/` (form, create), `features/dashboard/` (owner booking form), `lib/db/schema.ts` (bookings) | Public form: Done (Nov 11, see commit). Owner's form: To do |
 | EM-8 | Plan and send the customer's four emails; reminders by the business's times, quiet hours and EM-D8; "Stop emails" link | EM-6, EM-7 | `lib/booking-emails.ts`, `lib/client-reminders.ts`, `features/dashboard/api/notification-timer.ts`, `app/(public)/email/stop/` | To do |
