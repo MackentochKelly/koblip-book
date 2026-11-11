@@ -29,6 +29,8 @@ const PARTS = [
   "timing",
   "replies",
   "activity",
+  // Booking emails go without WhatsApp (docs/plans/email.md, EM-10).
+  "email",
 ] as const
 
 type Part = (typeof PARTS)[number]
@@ -78,29 +80,29 @@ export function WhatsappFrame({
     }
   }, [businessId, ownUsable, state, router])
 
-  if (!usable) {
-    return (
-      <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold tracking-tight max-md:sr-only">{shell("nav.automations")}</h1>
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <WhatsAppIcon />
-            </EmptyMedia>
-            <EmptyTitle>{t("connectTitle")}</EmptyTitle>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button
-              nativeButton={false}
-              render={<Link href={`/dashboard/${businessId}/integrations`} />}
-            >
-              {connection ? chat("reconnect") : t("connect")}
-            </Button>
-          </EmptyContent>
-        </Empty>
-      </div>
+  // Without a working WhatsApp sender, its parts ask to connect one; the
+  // Email part works on its own.
+  const content =
+    usable || part === "email" ? (
+      children
+    ) : (
+      <Empty className="border">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <WhatsAppIcon />
+          </EmptyMedia>
+          <EmptyTitle>{t("connectTitle")}</EmptyTitle>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button
+            nativeButton={false}
+            render={<Link href={`/dashboard/${businessId}/integrations`} />}
+          >
+            {connection ? chat("reconnect") : t("connect")}
+          </Button>
+        </EmptyContent>
+      </Empty>
     )
-  }
 
   return (
     <SectionParts
@@ -122,7 +124,7 @@ export function WhatsappFrame({
         )
       }
     >
-      {children}
+      {content}
     </SectionParts>
   )
 }

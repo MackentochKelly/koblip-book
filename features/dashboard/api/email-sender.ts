@@ -9,7 +9,13 @@ import { db } from "@/lib/db"
 import { bookings, businesses, emailSends, notificationSends, user } from "@/lib/db/schema"
 import { claimPlannedEmail, deliverEmail, settleEmail, type EmailMessage } from "@/lib/email"
 import { renderEmail, type EmailLine } from "@/lib/email-layout"
-import { EMAIL_RULES, type EmailKind } from "@/lib/email-rules"
+import {
+  EMAIL_RULES,
+  OWNER_EMAILS,
+  isBookingEmail,
+  type BookingEmail,
+  type EmailKind,
+} from "@/lib/email-rules"
 import { stopLinks } from "@/lib/email-stop"
 import { emailWords } from "@/lib/email-templates"
 import { accountBookingHref, bookAgainHref } from "@/lib/my-bookings-links"
@@ -37,7 +43,7 @@ type Send = typeof emailSends.$inferInsert
 type Booking = typeof bookings.$inferSelect
 type Business = typeof businesses.$inferSelect
 
-const OWNER_KINDS: readonly EmailKind[] = ["ownerNewBooking", "ownerCantCome", "ownerCancelled"]
+const OWNER_KINDS: readonly EmailKind[] = OWNER_EMAILS
 
 // Which words each email uses (appServer.emails.booking).
 const WORDS = {
@@ -48,13 +54,9 @@ const WORDS = {
   ownerNewBooking: "ownerNewBooking",
   ownerCantCome: "ownerCantCome",
   ownerCancelled: "ownerCancelled",
-} as const
+} as const satisfies Record<BookingEmail, string>
 
-type BookingEmailKind = keyof typeof WORDS
-
-function isBookingEmail(kind: EmailKind): kind is BookingEmailKind {
-  return kind in WORDS
-}
+type BookingEmailKind = BookingEmail
 
 // The account the booking is the customer's in, and that account's email.
 const accountEmail = sql<string | null>`(select ${user.email} from ${user} where ${user.id} = ${bookingAccount})`
@@ -296,6 +298,16 @@ async function plan(now: Date) {
     })
   }
 
+  // An email the owner turned off is kept as not sent, with the reason
+  // (EM-D10), so its history says why.
+  for (const row of rows) {
+    if (!row.businessId || row.state !== "pending") continue
+    const { emailTurnedOff } = await settingsOf(row.businessId)
+    if (isBookingEmail(row.kind) && emailTurnedOff.includes(row.kind)) {
+      row.state = "skipped"
+      row.reason = "turnedOff"
+    }
+  }
   if (rows.length) await db.insert(emailSends).values(rows).onConflictDoNothing()
 
   // A cancelled booking's customer emails still waiting never go (the owner's
@@ -460,8 +472,11 @@ async function deliver(send: typeof emailSends.$inferSelect, now: Date) {
   }
   const { booking, business } = row
   const toOwner = OWNER_KINDS.includes(kind)
-  const reason =
-    !toOwner && kind !== "bookingCancelled" && booking.status === "cancelled"
+  const { emailTurnedOff } = await notificationSettingsFor(business.id)
+  // Turned off, cancelled, moved or too late since it was planned.
+  const reason = emailTurnedOff.includes(kind)
+    ? "turnedOff"
+    : !toOwner && kind !== "bookingCancelled" && booking.status === "cancelled"
       ? "cancelled"
       : (kind === "clientReminder" || kind === "bookingChanged") && send.moves !== booking.moves
         ? "moved"

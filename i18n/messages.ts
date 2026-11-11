@@ -4,6 +4,7 @@ import assistantServer from "@/features/assistant/i18n/server-en"
 import billing from "@/features/billing/i18n/en"
 import ownerBookings from "@/features/dashboard/i18n/en/bookings"
 import ownerCatalog from "@/features/dashboard/i18n/en/catalog"
+import ownerEmail from "@/features/dashboard/i18n/en/email"
 import ownerIntegrations from "@/features/dashboard/i18n/en/integrations"
 import ownerRewards from "@/features/dashboard/i18n/en/rewards"
 import ownerSettings from "@/features/dashboard/i18n/en/settings"
@@ -40,6 +41,7 @@ const messages = {
   owner: {
     bookings: ownerBookings,
     catalog: ownerCatalog,
+    email: ownerEmail,
     integrations: ownerIntegrations,
     rewards: ownerRewards,
     settings: ownerSettings,

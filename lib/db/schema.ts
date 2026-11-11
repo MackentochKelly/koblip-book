@@ -26,6 +26,7 @@ import {
   EMAIL_KINDS,
   EMAIL_SEND_REASONS,
   EMAIL_SEND_STATES,
+  type BookingEmail,
 } from "../email-rules"
 import { REVIEW_HIDE_REASONS } from "../review-rules"
 import {
@@ -982,6 +983,8 @@ export const notificationSettings = sqliteTable("notification_settings", {
   // What a customer's "Can't make it" does.
   cantCome: text({ enum: ["cancel", "alertOnly"] }).notNull().default("alertOnly"),
   thankYouReply: integer({ mode: "boolean" }).notNull().default(true),
+  // The booking emails the owner turned off (docs/plans/email.md, EM-D10).
+  emailTurnedOff: text({ mode: "json" }).$type<BookingEmail[]>().notNull().default([]),
   ...timestamps(),
 })
 

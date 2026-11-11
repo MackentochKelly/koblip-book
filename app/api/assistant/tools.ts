@@ -2120,7 +2120,7 @@ export function buildAssistantTools(
   ): Promise<
     | {
         current: NotificationSettings
-        next: Omit<NotificationSettings, "turnedOff">
+        next: Omit<NotificationSettings, "turnedOff" | "emailTurnedOff">
       }
     | { error: string }
   > => {
@@ -2184,7 +2184,7 @@ export function buildAssistantTools(
     if (cantCome !== "cancel" && cantCome !== "alertOnly") {
       return { error: t("errors.settingInvalid", { field: "cantCome" }) }
     }
-    const next: Omit<NotificationSettings, "turnedOff"> = {
+    const next: Omit<NotificationSettings, "turnedOff" | "emailTurnedOff"> = {
       ownerPhone,
       ownerLanguage: ownerLanguage as TemplateLanguage,
       reminders,

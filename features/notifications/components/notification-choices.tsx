@@ -4,17 +4,7 @@ import { useTranslations } from "next-intl"
 import { useOptimistic, useTransition } from "react"
 import { toast } from "sonner"
 
-import {
-  Field,
-  FieldContent,
-  FieldGroup,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-  FieldTitle,
-} from "@/components/ui/field"
 import { AppSelect } from "@/components/app-select"
-import { InfoTip } from "@/components/info-tip"
 import { ClockIcon } from "@/components/ui/icons"
 import {
   Item,
@@ -25,7 +15,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { PageSection } from "@/components/page-section"
-import { Switch } from "@/components/ui/switch"
+import { SwitchGroups } from "@/components/switch-groups"
 import type {
   ClientInAppKind,
   InAppKind,
@@ -162,40 +152,21 @@ function ChoiceSwitches<Kind extends InAppKind>({
 
   return (
     <PageSection id="notifications" title={t("title")}>
-      <FieldGroup>
-        {lead}
-        {groups.map((group) => (
-          <FieldSet key={group.id}>
-            {/* The ⓘ keeps the name's line height (32px button, 24px line). */}
-            <FieldLegend className="flex items-center gap-1">
-              {t(`groups.${group.id}`)}
-              <InfoTip label={t("moreInfo")} className="-my-1">
-                {t(`about.${group.id}`)}
-              </InfoTip>
-            </FieldLegend>
-            <FieldGroup className="gap-3">
-              {group.kinds.map((kind) => {
-                const name: InAppKind = kind
-                const id = `notify-${kind}`
-                return (
-                  <FieldLabel key={kind} htmlFor={id}>
-                    <Field orientation="horizontal">
-                      <FieldContent>
-                        <FieldTitle>{t(`names.${name}`)}</FieldTitle>
-                      </FieldContent>
-                      <Switch
-                        id={id}
-                        checked={on(kind)}
-                        onCheckedChange={(next) => change(kind, next)}
-                      />
-                    </Field>
-                  </FieldLabel>
-                )
-              })}
-            </FieldGroup>
-          </FieldSet>
-        ))}
-      </FieldGroup>
+      <SwitchGroups<Kind>
+        idPrefix="notify"
+        moreInfo={t("moreInfo")}
+        lead={lead}
+        onChange={change}
+        groups={groups.map((group) => ({
+          id: group.id,
+          title: t(`groups.${group.id}`),
+          about: t(`about.${group.id}`),
+          items: group.kinds.map((kind) => {
+            const name: InAppKind = kind
+            return { key: kind, name: t(`names.${name}`), on: on(kind) }
+          }),
+        }))}
+      />
     </PageSection>
   )
 }

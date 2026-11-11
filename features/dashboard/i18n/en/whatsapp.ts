@@ -16,6 +16,7 @@ const whatsapp = {
     timing: "Timing",
     replies: "Replies",
     activity: "Activity",
+    email: "Email",
   },
   // Flows (D11): what Book answers by itself when a customer writes.
   flows: {

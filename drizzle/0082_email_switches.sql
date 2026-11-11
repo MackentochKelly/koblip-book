@@ -1,0 +1,1 @@
+ALTER TABLE `notification_settings` ADD `email_turned_off` text DEFAULT '[]' NOT NULL;

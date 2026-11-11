@@ -51,6 +51,7 @@ export async function notificationSettingsFor(businessId: string): Promise<Notif
     freeTextInWindow: row?.freeTextInWindow ?? rules.defaultFreeTextInWindow,
     cantCome: row?.cantCome ?? rules.defaultCantCome,
     thankYouReply: row?.thankYouReply ?? rules.defaultThankYouReply,
+    emailTurnedOff: row?.emailTurnedOff ?? [],
   }
 }
 

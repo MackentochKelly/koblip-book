@@ -13,6 +13,7 @@ import {
   emailBlocks,
   emailSends,
   notificationSends,
+  notificationSettings,
   user,
 } from "@/lib/db/schema"
 
@@ -29,6 +30,7 @@ const { registerEnglishWords } = await import("@/lib/translations/interface-word
 registerEnglishWords((await import("@/i18n/messages")).default)
 const { runBookingEmails } = await import("./email-sender")
 const { readStopToken, stopEmails, stopLinks } = await import("@/lib/email-stop")
+const { emailActivity } = await import("@/lib/email-activity")
 
 type Mail = {
   from: string | { name: string; address: string }
@@ -107,6 +109,7 @@ beforeEach(async () => {
   await db.delete(emailSends)
   await db.delete(notificationSends)
   await db.delete(clientNotificationSettings)
+  await db.delete(notificationSettings)
   await db.delete(bookings)
 })
 
@@ -239,4 +242,40 @@ test("Stop emails: a signed link stops that business's emails to that address", 
   expect(mails()).toHaveLength(0)
   const [row] = await rows("b1")
   expect([row?.state, row?.reason]).toEqual(["skipped", "blocked"])
+})
+
+test("an email the owner turned off is kept as not sent, and the history shows why", async () => {
+  await db.insert(notificationSettings).values({
+    businessId: "shop",
+    reminders: [1440],
+    quietStart: "21:00",
+    quietEnd: "08:00",
+    turnedOff: [],
+    emailTurnedOff: ["bookingConfirmed"],
+  })
+  await db.insert(bookings).values([
+    booking("b1", { customerUserId: "ana" }),
+    booking("b2", { customerName: "Bo_b", customerEmail: "bob@example.com", customerUserId: null }),
+  ])
+  await runBookingEmails(NOW)
+
+  // The owner's email still goes; the confirmations don't.
+  expect(mails().map((mail) => mail.to)).toEqual(["owner@example.com", "owner@example.com"])
+  const confirmations = (await rows()).filter((row) => row.kind === "bookingConfirmed")
+  expect(confirmations.map((row) => [row.state, row.reason])).toEqual([
+    ["skipped", "turnedOff"],
+    ["skipped", "turnedOff"],
+  ])
+
+  // Filtered by email and state, and searched by name (LIKE's "_" taken
+  // literally) or address.
+  const off = await emailActivity("shop", { kind: "bookingConfirmed", state: "skipped" }, 30)
+  expect(off.map((row) => row.reason)).toEqual(["turnedOff", "turnedOff"])
+  const bob = await emailActivity("shop", { search: "o_b" }, 30)
+  expect(bob.every((row) => row.customerName === "Bo_b")).toBe(true)
+  expect(bob.length).toBeGreaterThan(0)
+  expect(await emailActivity("shop", { search: "oxb" }, 30)).toEqual([])
+  const byAddress = await emailActivity("shop", { search: "ANA@" }, 30)
+  expect(byAddress.every((row) => row.email === "ana@example.com")).toBe(true)
+  expect(await emailActivity("other", {}, 30)).toEqual([])
 })

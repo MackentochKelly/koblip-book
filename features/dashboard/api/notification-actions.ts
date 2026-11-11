@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm"
 
 import { PHONE_PATTERN } from "@/lib/booking-rules"
 import { db } from "@/lib/db"
+import { isBookingEmail, type BookingEmail } from "@/lib/email-rules"
 import { notificationSends, notificationSettings, notificationTexts } from "@/lib/db/schema"
 import { notificationRules } from "@/lib/platform-settings"
 import { sendAgainWrite } from "@/lib/whatsapp-sends"
@@ -37,6 +38,7 @@ async function saveSettings(businessId: string, next: NotificationSettings) {
     freeTextInWindow: next.freeTextInWindow,
     cantCome: next.cantCome,
     thankYouReply: next.thankYouReply,
+    emailTurnedOff: next.emailTurnedOff,
   }
   await db
     .insert(notificationSettings)
@@ -60,6 +62,26 @@ export async function setMessageOn(
   await saveSettings(owned.business.id, {
     ...current,
     turnedOff: on ? turnedOff : [...turnedOff, message],
+  })
+  return { ok: true }
+}
+
+// A booking email's switch on the Email page (docs/plans/email.md, EM-10).
+export async function setEmailOn(
+  businessId: string,
+  kind: BookingEmail,
+  on: boolean
+): Promise<ActionResult> {
+  const owned = await ownedBusiness(businessId)
+  if (!owned) return { ok: false, error: "not_found" }
+  if (!isBookingEmail(kind) || typeof on !== "boolean") {
+    return { ok: false, error: "invalid" }
+  }
+  const current = await notificationSettingsFor(owned.business.id)
+  const turnedOff = current.emailTurnedOff.filter((item) => item !== kind)
+  await saveSettings(owned.business.id, {
+    ...current,
+    emailTurnedOff: on ? turnedOff : [...turnedOff, kind],
   })
   return { ok: true }
 }

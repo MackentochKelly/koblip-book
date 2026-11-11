@@ -22,6 +22,29 @@ export const EMAIL_KINDS = [
 
 export type EmailKind = (typeof EMAIL_KINDS)[number]
 
+// A booking's emails, each with the owner's own switch (EM-D10): the
+// customer's four, then the owner's three.
+export const CUSTOMER_EMAILS = [
+  "bookingConfirmed",
+  "clientReminder",
+  "bookingChanged",
+  "bookingCancelled",
+] as const satisfies readonly EmailKind[]
+
+export const OWNER_EMAILS = [
+  "ownerNewBooking",
+  "ownerCantCome",
+  "ownerCancelled",
+] as const satisfies readonly EmailKind[]
+
+export const BOOKING_EMAILS = [...CUSTOMER_EMAILS, ...OWNER_EMAILS] as const
+
+export type BookingEmail = (typeof BOOKING_EMAILS)[number]
+
+export function isBookingEmail(value: unknown): value is BookingEmail {
+  return BOOKING_EMAILS.some((kind) => kind === value)
+}
+
 // pending → sending → sent | failed; skipped when it must not go.
 export const EMAIL_SEND_STATES = [
   "pending",
@@ -46,6 +69,8 @@ export const EMAIL_SEND_REASONS = [
   // A move's "Booking changed" when the customer never got the
   // confirmation: the next email they get has the new time anyway.
   "notTold",
+  // The owner turned this email off.
+  "turnedOff",
   // Left "sending" when the server stopped mid-send: never tried again, as
   // it may have gone.
   "interrupted",

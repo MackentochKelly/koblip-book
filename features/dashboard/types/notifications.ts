@@ -1,3 +1,4 @@
+import type { BookingEmail } from "@/lib/email-rules"
 import type { BookingMessage, ButtonAction, Sender, TemplateReview } from "@/types/whatsapp"
 import type { TemplateLanguage, Wording } from "../utils/booking-templates"
 
@@ -37,6 +38,8 @@ export type NotificationSettings = {
   cantCome: CantComeAction
   // A short thank-you after the customer taps a button.
   thankYouReply: boolean
+  // The booking emails turned off (docs/plans/email.md, EM-D10).
+  emailTurnedOff: BookingEmail[]
 }
 
 
