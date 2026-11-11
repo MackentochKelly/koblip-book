@@ -11,6 +11,7 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
+import { formatPrice } from "@/lib/format-price"
 import { proofDeleteDate } from "@/lib/payment-rules"
 import type { AdminBooking } from "../api/queries"
 
@@ -41,7 +42,28 @@ export function BookingsList({ bookings }: { bookings: AdminBooking[] }) {
             <ItemDescription className="truncate">
               {`${booking.businessName} · ${booking.serviceName} · ${when(booking)}`}
               {booking.payment &&
-                ` · ${booking.payment.way ?? t("payLater")}`}
+                ` · ${
+                  booking.payment.card
+                    ? t("card")
+                    : (booking.payment.way ?? t("payLater"))
+                }`}
+              {booking.payment?.online &&
+                ` · ${t("paidOnline", {
+                  amount: formatPrice(
+                    booking.payment.online.paidMinor,
+                    booking.currency,
+                    locale
+                  ),
+                })}`}
+              {booking.payment?.online &&
+                booking.payment.online.refundedMinor > 0 &&
+                ` · ${t("refundedAmount", {
+                  amount: formatPrice(
+                    booking.payment.online.refundedMinor,
+                    booking.currency,
+                    locale
+                  ),
+                })}`}
             </ItemDescription>
           </ItemContent>
           <ItemActions>

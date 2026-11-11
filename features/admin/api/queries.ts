@@ -6,7 +6,7 @@ import { isPhoneAccountEmail } from "@/lib/phone-sign-in"
 import { requireAdmin } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { bookings, businesses, customers, serviceCategories, services, teamInvites, teamMembers, teamMemberHours, ownerVoices, user } from "@/lib/db/schema"
-import { paymentOf, type PaymentStatus } from "@/lib/payment-rules"
+import { CARD_TYPE, paymentBadgeState, paymentOf, type PaymentBadgeState } from "@/lib/payment-rules"
 
 // Every list stops here; the newest come first.
 const MAX_ROWS = 200
@@ -170,7 +170,15 @@ export interface AdminBooking {
   // Paying outside the app, when the booking tracks it: the way's name
   // (null at the visit) and where it stands.
   // proof: the customer added a picture of the payment.
-  payment: { way: string | null; status: PaymentStatus; proof: boolean } | null
+  // online: what a card paid and what was given back, in hundredths.
+  payment: {
+    way: string | null
+    status: PaymentBadgeState
+    proof: boolean
+    card: boolean
+    online: { paidMinor: number; refundedMinor: number } | null
+  } | null
+  currency: string
 }
 
 export async function getBookings(): Promise<AdminBooking[]> {
@@ -189,6 +197,9 @@ export async function getBookings(): Promise<AdminBooking[]> {
       paymentStatus: bookings.paymentStatus,
       paymentReference: bookings.paymentReference,
       paymentProof: bookings.paymentProof,
+      paidOnlineMinor: bookings.paidOnlineMinor,
+      refundedMinor: bookings.refundedMinor,
+      currency: bookings.currency,
       rewardId: bookings.rewardId,
     })
     .from(bookings)
@@ -197,21 +208,25 @@ export async function getBookings(): Promise<AdminBooking[]> {
     .orderBy(desc(bookings.createdAt))
     .limit(MAX_ROWS)
   return rows.map(
-    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof, rewardId, ...row }) => {
+    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof, paidOnlineMinor, refundedMinor, rewardId, ...row }) => {
       const payment = paymentOf({
         paymentChoice,
         paymentMethod,
         paymentStatus,
         paymentReference,
         paymentProof,
+        paidOnlineMinor,
+        refundedMinor,
       })
       return {
         ...row,
         reward: rewardId !== null,
         payment: payment && {
           way: payment.method?.name ?? null,
-          status: payment.status,
+          status: paymentBadgeState(payment),
           proof: payment.hasProof,
+          card: payment.method?.type === CARD_TYPE,
+          online: payment.online,
         },
       }
     }

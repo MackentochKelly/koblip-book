@@ -42,6 +42,7 @@ const NAV = [
   { path: "/team", key: "team", icon: UsersIcon },
   { path: "/service-categories", key: "serviceCategories", icon: TagIcon },
   { path: "/bookings", key: "bookings", icon: CalendarDaysIcon },
+  { path: "/online-payments", key: "onlinePayments", icon: CreditCardIcon },
   { path: "/payments", key: "payments", icon: BankIcon },
   { path: "/reviews", key: "reviews", icon: StarIcon },
   { path: "/rewards", key: "rewards", icon: GiftIcon },

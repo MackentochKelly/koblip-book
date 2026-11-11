@@ -18,7 +18,8 @@ const words = {
     owners: "Owners",
     team: "Team accounts",
     bookings: "Bookings",
-    payments: "Payments",
+    onlinePayments: "Online payments",
+    payments: "Offline payments",
     reviews: "Reviews",
     rewards: "Rewards",
     whatsapp: "WhatsApp",
@@ -602,7 +603,13 @@ const words = {
       unpaid: "Payment pending",
       reported: "Says paid",
       paid: "Paid",
+      deposit: "Deposit paid",
+      refunded: "Refunded",
     },
+    // By card (docs/plans/online-payments.md, ON-11).
+    card: "Card",
+    paidOnline: "Paid online: {amount}",
+    refundedAmount: "Refunded: {amount}",
   },
   // Every business's reward rules, earned rewards and history
   // (docs/plans/rewards.md, RW-13). Read only.
@@ -631,6 +638,36 @@ const words = {
       expire: "Reward expired",
     },
     actors: { system: "Koblip", owner: "Owner", assistant: "Assistant" },
+  },
+  // Each business's Stripe account and card setting, and every online
+  // payment event (docs/plans/online-payments.md, ON-11). Read only.
+  onlinePayments: {
+    partsLabel: "Online payments parts",
+    parts: { businesses: "Businesses", history: "History" },
+    none: "No business has connected Stripe yet",
+    noHistory: "No history yet",
+    state: {
+      none: "Not connected",
+      details: "More details needed",
+      ready: "Connected",
+      country: "Not in its country yet",
+    },
+    pay: {
+      off: "Off",
+      full: "Full price",
+      percent: "{percent, number}% deposit",
+      amount: "{amount} deposit",
+    },
+    kinds: {
+      paid: "Paid",
+      refunded_unbookable: "Refunded: booking couldn't be made",
+      refunded: "Refunded",
+      disputed: "Disputed",
+      expired: "Payment page expired",
+      failed: "Payment failed",
+      account: "Stripe account changed",
+      other: "Other",
+    },
   },
   // Each business's ways to be paid outside the app (OP-9). Read only.
   payments: {

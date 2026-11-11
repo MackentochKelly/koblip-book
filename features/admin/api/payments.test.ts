@@ -164,7 +164,7 @@ test("the bookings list carries each booking's way to pay and status", async () 
   const list = await getBookings()
   expect(list.map(({ id, payment }) => [id, payment])).toEqual([
     ["k3", null],
-    ["k2", { way: null, status: "unpaid", proof: false }],
-    ["k1", { way: "Zelle", status: "reported", proof: true }],
+    ["k2", { way: null, status: "unpaid", proof: false, card: false, online: null }],
+    ["k1", { way: "Zelle", status: "reported", proof: true, card: false, online: null }],
   ])
 })
