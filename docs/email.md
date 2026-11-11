@@ -15,9 +15,11 @@ How Koblip Book sends email, and what Amazon holds for it. The plan and its task
 | DNS | Hostinger (name servers `*.dns-parking.com`). Mailboxes on `koblip.com` are Hostinger's (MX `mx1/mx2.hostinger.com`) |
 | Suppression list | On, for bounces and complaints. 10+ addresses, mostly old bounces; `admin@koblip.com` bounced on Jul 31 |
 | Configuration sets | `flowlead-production`, `koblip-sales-production`, `my-first-configuration-set`. None for Book yet |
+| `contact@koblip.com` | The sender (owner's call, Nov 11). Covered by the verified `koblip.com` domain, so SES sends from it as is. Not on the suppression list (all 18 entries checked). A real Hostinger mailbox, so replies reach a person. Already the app's legal contact (`features/legal/content.ts`) |
+| DMARC today | Passes through DKIM: mail from `contact@koblip.com` is signed by `koblip.com`, the same domain. The custom MAIL FROM would also line up SPF; it is optional and not set up |
 | Other identities | `printdura.com` (verified), `upra.space` (not verified), one personal email address: other businesses, not touched |
 
 ## Still to look at
 
-- Which SES keys the live server uses today (`SMTP_*` in `.env.production`).
+- Which SES keys and `EMAIL_FROM` the live server uses today (`.env.production`); it becomes `Koblip <contact@koblip.com>`.
 - Whether Book's sends show up under a configuration set: none named for Book, so today Book's bounces reach only the suppression list.

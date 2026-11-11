@@ -70,7 +70,7 @@ Made by the developer, Nov 10, as the plans' rules ask. The owner can change any
 - **EM-D9. The business's times.** Email reminders use the business's reminder times and quiet hours, the ones WhatsApp uses, replacing the single 24-hour email. `clientReminderMinutes` stays for the bell.
 - **EM-D10. Owner controls.** A new "Email" page next to WhatsApp in the owner's Notifications: one switch per email, and the history. The words are Koblip's, translated; owners do not edit them in this plan. Each customer email ends with "Stop emails", a signed link that blocks that address for that business.
 - **EM-D11. Plan.** Email is free on every plan: `emailReminders` becomes live, default Free. Why: it costs Koblip almost nothing, the client's email reminder is already free, and Fresha gives email free. The admin can still move it in Plans.
-- **EM-D12. Look.** One shared layout for all emails: business name on top, the booking's lines (service, when, with whom, where, price), one button, a plain-text twin. No images. From name is the business's name; the address is Koblip's; replies are not read and the email says so. Confirmed and changed carry the `.ics` file (`lib/booking-calendar.ts`).
+- **EM-D12. Look.** One shared layout for all emails: business name on top, the booking's lines (service, when, with whom, where, price), one button, a plain-text twin. No images. From name is the business's name; the address is `contact@koblip.com`, a real mailbox, so replies reach Koblip. Confirmed and changed carry the `.ics` file (`lib/booking-calendar.ts`).
 - **EM-D13. Sending.** Booking emails are planned as rows when the booking is made, moved or cancelled, and sent by the timer in batches (`sendBatch`), like WhatsApp. Amazon's "slow down" answers are tried again up to 3 times; anything else fails once and is shown. Account emails (sign-up, reset) are sent at once and logged.
 
 ## AWS setup (in the browser, after the owner's go)
@@ -78,7 +78,7 @@ Made by the developer, Nov 10, as the plans' rules ask. The owner can change any
 The owner signs in to AWS; the developer never types a password or a key. Each change below is named to the owner before it is made.
 
 1. Look: region in use, sandbox or production, verified identities, DKIM, MAIL FROM, DMARC, suppression settings, sending numbers.
-2. Domain: `koblip.com` verified with Easy DKIM; a custom MAIL FROM subdomain; a DMARC record. DNS records are added where the domain's DNS lives (the owner says where).
+2. Domain: `koblip.com` is verified with Easy DKIM and has a DMARC record (checked Nov 11). Sender: `contact@koblip.com`. No custom MAIL FROM: DMARC already passes through DKIM (owner's call, Nov 11).
 3. Configuration set `koblip-book` with an SNS event destination; SNS topic `koblip-book-email`; HTTPS subscription to `https://book.koblip.com/api/email/events` (needs EM-4 live).
 4. Suppression list on for bounces and complaints.
 5. IAM user `koblip-book-email` allowed only `ses:SendEmail` from the verified identity with that configuration set. The owner copies its key into `.env.production` and `.env.local`.
@@ -116,5 +116,6 @@ Order: EM-1 → EM-2, with EM-3 → EM-4 alongside → EM-5 → EM-6 + EM-7 → 
 | Date | Who | What | Why |
 | --- | --- | --- | --- |
 | Nov 10 | Developer | EM-D1 to EM-D13 | See each decision |
+| Nov 11 | Owner | Emails come from `contact@koblip.com`; no custom MAIL FROM | An address Koblip already has and reads; DKIM on `koblip.com` already passes DMARC |
 | Nov 11 | Owner, developer | EM-D7 changed: Email is **required** on the public booking form. Signed out, the app's one sign-in (`AuthForm`: Google, More options) **replaces** Contact info, so every booking comes from an account; signed in, Contact info shows filled from the account | The owner's call: every customer has an account and an email |
 | Nov 11 | Owner, developer | The server books a real business only for a signed-in account (`book()` answers `signIn`, and the page shows the sign-in again). A visitor's demo copy still books signed out. The account comes from the app's sign-in, which signs in or makes the account (Google, email with name and password, phone code); never an account made silently from a typed email | Every booking has an account and an email; an unproved email must not open someone else's account |
