@@ -174,6 +174,7 @@ describe("PaymentStep", () => {
   afterEach(cleanup)
   const payments = (asksProof: boolean) => ({
     methods: [{ id: "m1", type: "zelle" as const, name: "Zelle" }],
+    card: null,
     payLater: true,
     asksProof,
   })

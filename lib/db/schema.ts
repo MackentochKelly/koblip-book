@@ -23,6 +23,8 @@ import {
 } from "../partner-rules"
 import { REVIEW_HIDE_REASONS } from "../review-rules"
 import {
+  DEPOSIT_TYPES,
+  ONLINE_PAY_MODES,
   PAYMENT_CHOICES,
   PAYMENT_STATUSES,
   PAYMENT_TYPES,
@@ -142,9 +144,23 @@ export const businesses = sqliteTable(
     // ones on their own bookings.
     paymentProof: integer({ mode: "boolean" }).notNull().default(true),
     paymentProofTeam: integer({ mode: "boolean" }).notNull().default(true),
+    // Paying online (docs/plans/online-payments.md). stripeAccountId: the
+    // business's own Stripe account, made when the owner connects.
+    // stripeChargesOn: Stripe says it can take payments (only Stripe's
+    // answer sets it). stripeRefusedCountry: the country Stripe answered
+    // "not supported" for, so the owner is told instead of asked again.
+    // onlinePay with depositType and depositValue (a percent, or an amount
+    // in hundredths): what a customer pays by card when booking.
+    stripeAccountId: text(),
+    stripeChargesOn: integer({ mode: "boolean" }).notNull().default(false),
+    stripeRefusedCountry: text(),
+    onlinePay: text({ enum: ONLINE_PAY_MODES }).notNull().default("off"),
+    depositType: text({ enum: DEPOSIT_TYPES }),
+    depositValue: integer(),
     ...timestamps(),
   },
   (table) => [
+    uniqueIndex("businesses_stripe_account_idx").on(table.stripeAccountId),
     index("businesses_owner_idx").on(table.ownerId),
     index("businesses_demo_idx").on(table.isDemo, table.createdAt),
   ]
@@ -528,9 +544,22 @@ export const bookings = sqliteTable(
     rewardId: text(),
     rewardDiscountMinor: integer(),
     rewardsCountedAt: text(),
+    // Paid online (docs/plans/online-payments.md), all null on a booking
+    // not paid by card. paidOnlineMinor: what Stripe took, in hundredths.
+    // stripeSessionId: Stripe's payment page, on one booking at most (the
+    // unique index), so one payment never makes two bookings.
+    // stripePaymentId: Stripe's payment, for refunds. refundedMinor: what
+    // was given back. Only Stripe's answers set these.
+    paidOnlineMinor: integer(),
+    stripeSessionId: text(),
+    stripePaymentId: text(),
+    refundedMinor: integer(),
+    refundedAt: text(),
     ...timestamps(),
   },
   (table) => [
+    uniqueIndex("bookings_stripe_session_idx").on(table.stripeSessionId),
+    index("bookings_stripe_payment_idx").on(table.stripePaymentId),
     uniqueIndex("bookings_reward_idx").on(table.rewardId),
     index("bookings_rewards_count_idx").on(table.rewardsCountedAt, table.endAt),
     index("bookings_business_idx").on(table.businessId, table.startAt),
@@ -1673,5 +1702,81 @@ export const rewards = sqliteTable(
     ),
     index("rewards_rule_idx").on(table.ruleId),
     index("rewards_expiry_idx").on(table.status, table.expiresAt),
+  ]
+)
+
+// A time held while a customer pays by card (docs/plans/online-payments.md,
+// ON7). It keeps the time busy until expiresAt and carries the booking as
+// it was checked; the booking itself is made, with bookingId, only when
+// Stripe says the payment went through. Not paid: the row is deleted.
+export const bookingHolds = sqliteTable(
+  "booking_holds",
+  {
+    id: id(),
+    businessId: text()
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    // The id the booking will have, so the customer's device can keep its
+    // claim before leaving for Stripe.
+    bookingId: text().notNull(),
+    // What the customer sent, already checked (BookingInput).
+    input: text({ mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    startAt: text().notNull(),
+    endAt: text().notNull(),
+    teamMemberId: text().references(() => teamMembers.id, {
+      onDelete: "cascade",
+    }),
+    // What the card is charged, in hundredths, and in which currency.
+    amountMinor: integer().notNull(),
+    currency: text().notNull(),
+    // Who booked: the signed-in customer, and the phone a reward belongs to.
+    customerUserId: text().references(() => user.id, { onDelete: "set null" }),
+    rewardPhone: text(),
+    claimTokenHash: text().notNull(),
+    // Stripe's payment page for it; null for the moment before it is made.
+    stripeSessionId: text(),
+    expiresAt: text().notNull(),
+    createdAt: text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (table) => [
+    uniqueIndex("booking_holds_session_idx").on(table.stripeSessionId),
+    uniqueIndex("booking_holds_booking_idx").on(table.bookingId),
+    index("booking_holds_business_idx").on(table.businessId, table.startAt),
+    index("booking_holds_expiry_idx").on(table.expiresAt),
+  ]
+)
+
+// Everything that happened to online payments, for the admin's history
+// (Admin → Online payments) and so that one Stripe event is handled once.
+// `key` is Stripe's event id, or the app's own for what it did itself
+// ("paid:<session>", "refund:<refund>"). Rows are only ever added.
+export const onlinePaymentEvents = sqliteTable(
+  "online_payment_events",
+  {
+    id: id(),
+    key: text().notNull(),
+    kind: text().notNull(),
+    businessId: text().references(() => businesses.id, {
+      onDelete: "set null",
+    }),
+    bookingId: text().references(() => bookings.id, { onDelete: "set null" }),
+    stripeAccountId: text(),
+    amountMinor: integer(),
+    currency: text(),
+    note: text(),
+    createdAt: text()
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (table) => [
+    uniqueIndex("online_payment_events_key_idx").on(table.key),
+    index("online_payment_events_business_idx").on(
+      table.businessId,
+      table.createdAt
+    ),
+    index("online_payment_events_booking_idx").on(table.bookingId),
+    index("online_payment_events_time_idx").on(table.createdAt),
   ]
 )

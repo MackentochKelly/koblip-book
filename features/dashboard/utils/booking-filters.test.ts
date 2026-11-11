@@ -109,6 +109,7 @@ test("Review payment holds only what a customer says they paid", () => {
         status,
         reference: null,
         hasProof: false,
+        online: null,
       },
     })
   const list = [pay("a", "unpaid"), pay("b", "reported"), pay("c", "paid"), booking({ id: "d" })]
