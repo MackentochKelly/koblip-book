@@ -8,8 +8,12 @@ import { isBlocked } from "@/lib/email"
 import { stopRequest } from "@/lib/email-stop"
 import { languageOf } from "@/lib/page-language"
 
-// Never in search results: a link is one person's key.
-export const metadata: Metadata = { robots: { index: false, follow: false } }
+// Never in search results: a link is one person's key. The tab names the
+// page, in the page's language (proxy.ts).
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("emailStop")
+  return { title: `${t("stop")} · Koblip Book`, robots: { index: false, follow: false } }
+}
 
 // The page a customer email's "Stop emails" link opens (EM-D10): who and
 // which business, and one button. Opening it stops nothing, so a mail
