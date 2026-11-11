@@ -47,7 +47,13 @@ export function CommandMenuProvider({
   const [open, setOpen] = useState(false)
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey)) {
+      // Picking a saved email from Chrome's autofill sends a keydown with
+      // no key, which would crash here.
+      if (
+        typeof event.key === "string" &&
+        event.key.toLowerCase() === "k" &&
+        (event.metaKey || event.ctrlKey)
+      ) {
         event.preventDefault()
         setOpen((value) => !value)
       }

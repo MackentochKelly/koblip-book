@@ -47,7 +47,9 @@ function ThemeHotkey() {
         return
       }
 
-      if (event.key.toLowerCase() !== "d") {
+      // Picking a saved email from Chrome's autofill sends a keydown with
+      // no key, which would crash here.
+      if (typeof event.key !== "string" || event.key.toLowerCase() !== "d") {
         return
       }
 
