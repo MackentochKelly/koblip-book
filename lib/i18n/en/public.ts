@@ -134,6 +134,19 @@ const words = {
       },
       later: "Pay later",
       laterHint: "At your visit",
+      // Paying by card on Stripe's page (docs/plans/online-payments.md).
+      card: "Card",
+      cardFull: "Pay {amount} now",
+      cardDeposit: "Pay {amount} now, the rest at your visit",
+      // The last button, in place of "Confirm booking".
+      pay: "Pay {amount}",
+      // Back from Stripe's page.
+      checking: "Checking your payment…",
+      notFinished: "Payment not finished",
+      refunded: "That time is no longer free. Your payment was refunded.",
+      // On "You're booked".
+      paidOnline: "Paid {amount} by card",
+      restAtVisit: "{amount} left to pay at your visit",
       payWith: "Pay with {name}",
       thenTell: "Once you've paid, say so in Manage your booking.",
       // Where to send the money, on the pay step.
@@ -160,6 +173,8 @@ const words = {
     phone: "Phone",
     addName: "Add your name",
     checkPhone: "Check your phone number",
+    email: "Email",
+    checkEmail: "Check your email",
     // Meta's opt-in: the business's name and that messages come (the ⓘ on
     // Phone); booking is the customer's yes.
     whatsappNotice:

@@ -1,6 +1,12 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
@@ -30,8 +36,9 @@ import {
 import { Item, ItemContent } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { useFormatDuration } from "@/hooks/use-format-duration"
+import { authClient } from "@/lib/auth-client"
 import { loginHref } from "@/lib/auth-links"
-import { PHONE_PATTERN } from "@/lib/booking-rules"
+import { EMAIL_PATTERN, PHONE_PATTERN } from "@/lib/booking-rules"
 import {
   BOOKED_PHONE_KEY,
   BOOKING_CLAIM_KEY,
@@ -40,13 +47,20 @@ import {
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
 import { languageOf } from "@/lib/page-language"
+import { cardAmount, leftToPay } from "@/lib/payment-rules"
 import {
   rewardChoices,
   totalWithReward,
   usableRewards,
 } from "@/lib/reward-rules"
 import { shareLink } from "@/lib/share-link"
+import {
+  cancelCardPayment,
+  finishCardPayment,
+  startCardPayment,
+} from "../api/card-payment"
 import { createBooking } from "../api/create-booking"
+import { bookingCustomer, type BookingCustomer } from "../api/customer"
 import { myRewardsHere, type MyRewards } from "../api/rewards"
 import type { BookingConfirmation } from "../types"
 import {
@@ -63,6 +77,7 @@ import {
   type BookingDetails,
   BookingTotal,
   DetailsStep,
+  PAY_CARD,
   PAY_LATER,
   PaymentStep,
   type DetailsError,
@@ -96,13 +111,17 @@ const DETAILS_FORM = "booking-details"
 export function BookingFlow({
   page,
   mode,
+  signIn,
 }: {
   page: BookingPage
   mode: "page" | "drawer"
+  // The app's sign-in, shown on the details step to someone signed out.
+  signIn: ReactNode
 }) {
   const t = useTranslations("public.booking")
   const tProof = useTranslations("public.account.payment")
-  const pageLanguage = languageOf(useLocale())
+  const locale = useLocale()
+  const pageLanguage = languageOf(locale)
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -114,9 +133,17 @@ export function BookingFlow({
   const [details, setDetails] = useState<BookingDetails>({
     name: "",
     phone: "",
+    email: "",
   })
-  // Confirm looks ready only once both are typed, like Continue before it.
-  const detailsFilled = Boolean(details.name.trim() && details.phone.trim())
+  // Confirm looks ready only once all are typed, like Continue before it.
+  const detailsFilled = Boolean(
+    details.name.trim() && details.phone.trim() && details.email.trim()
+  )
+  // Who is booking, asked when the booking opens: undefined = not known
+  // yet, null = signed out.
+  const [customer, setCustomer] = useState<BookingCustomer | null>()
+  // Signing in on the details step changes who is booking.
+  const accountId = authClient.useSession().data?.user.id
   const [detailsError, setDetailsError] = useState<DetailsError>(null)
   const withPolicies = hasBookingPolicies(page.policies)
   // The business's ways to pay outside the app; none = no payment step.
@@ -124,19 +151,9 @@ export function BookingFlow({
   // The picked way's id or PAY_LATER; "" until one is picked, or once the
   // picked way is no longer offered.
   const [paymentPick, setPaymentPick] = useState("")
-  const payment =
-    payments &&
-    (payments.methods.some((method) => method.id === paymentPick) ||
-      (paymentPick === PAY_LATER && payments.payLater))
-      ? paymentPick
-      : ""
   // The payment proof, added on the pay step where the business asks for
   // it and the customer pays now (docs/plans/payment-proof.md, PP10).
   const [proof, setProof] = useState<File | null>(null)
-  const needsProof = Boolean(
-    payments?.asksProof && payment && payment !== PAY_LATER
-  )
-  const paymentReady = Boolean(payment) && (!needsProof || proof !== null)
   // The customer's rewards here (docs/plans/rewards.md, RW7), asked from
   // the server when the booking opens: the page itself is the same for
   // everyone. null = not known yet.
@@ -148,6 +165,54 @@ export function BookingFlow({
   // Today, for what has expired: fixed while the booking is open.
   const [openedAt] = useState(() => new Date().toISOString())
   const [closing, setClosing] = useState(false)
+
+  // Back from Stripe's payment page (docs/plans/online-payments.md):
+  // `paid` carries Stripe's page id, which the server asks Stripe about;
+  // `unpaid` the held time to free. Either leaves the address at once.
+  const paidParam = params.get("paid")
+  const unpaidParam = params.get("unpaid")
+  useEffect(() => {
+    if (!paidParam && !unpaidParam) return
+    let current = true
+    const clean = () => {
+      const next = new URLSearchParams(window.location.search)
+      next.delete("paid")
+      next.delete("unpaid")
+      const query = next.toString()
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${query ? `?${query}` : ""}`
+      )
+    }
+    if (!paidParam) {
+      void cancelCardPayment(page.slug, unpaidParam ?? "").catch(() => {})
+      clean()
+      toast.error(t("payment.notFinished"))
+      return
+    }
+    void finishCardPayment(page.slug, paidParam)
+      .catch(() => ({ status: "failed" as const }))
+      .then((result) => {
+        if (!current) return
+        if (result.status === "booked") setBooked(result.booking)
+        else
+          toast.error(
+            t(
+              result.status === "unpaid"
+                ? "payment.notFinished"
+                : result.status === "refunded"
+                  ? "payment.refunded"
+                  : "failed"
+            )
+          )
+        clean()
+      })
+    return () => {
+      current = false
+    }
+  }, [paidParam, unpaidParam, page.slug, t])
+  const checkingPayment = mode === "page" && Boolean(paidParam) && !booked
 
   const language = params.get("lang")
   const businessPath = `/b/${page.slug}${language ? `?lang=${encodeURIComponent(language)}` : ""}`
@@ -172,6 +237,26 @@ export function BookingFlow({
       current = false
     }
   }, [open, page.slug, rewardsKey])
+  // A signed-in account fills what the form still has empty.
+  useEffect(() => {
+    if (!open) return
+    let current = true
+    void bookingCustomer()
+      .catch(() => null)
+      .then((found) => {
+        if (!current) return
+        setCustomer(found)
+        if (!found) return
+        setDetails((typed) => ({
+          name: typed.name || found.name,
+          phone: typed.phone || (found.phone ?? ""),
+          email: typed.email || (found.email ?? ""),
+        }))
+      })
+    return () => {
+      current = false
+    }
+  }, [open, accountId])
 
   // Booked from a team member's profile (?with=): only the services they
   // do, and they are the professional, so that step is left out.
@@ -224,13 +309,41 @@ export function BookingFlow({
       bookingTotals(service, groups, addonIds).priceMinor,
       redeemed.discountMinor
     ) === 0
+  // What is to pay, and what the card would take of it now on Stripe's
+  // page (docs/plans/online-payments.md): null where the business takes no
+  // card, or this booking has no price a card can be charged.
+  const toPay = service
+    ? totalWithReward(
+        bookingTotals(service, groups, addonIds).priceMinor,
+        discountMinor
+      )
+    : null
+  const cardCharge =
+    payments?.card && toPay !== null
+      ? cardAmount(payments.card, toPay, page.currency)
+      : null
+  const payment =
+    payments &&
+    (payments.methods.some((method) => method.id === paymentPick) ||
+      (paymentPick === PAY_LATER && payments.payLater) ||
+      (paymentPick === PAY_CARD && cardCharge !== null))
+      ? paymentPick
+      : ""
+  const byCard = payment === PAY_CARD
+  const needsProof = Boolean(
+    payments?.asksProof && payment && payment !== PAY_LATER && !byCard
+  )
+  const paymentReady = Boolean(payment) && (!needsProof || proof !== null)
+  // The pay step is there while there is a way to pay for this booking.
+  const hasWays =
+    payments !== null && (payments.methods.length > 0 || cardCharge !== null)
   const steps: Step[] = [
     "service",
     ...(groups.length > 0 ? (["extras"] as const) : []),
     ...(team.length > 1 && !pinnedHere ? (["member"] as const) : []),
     "time",
     "details",
-    ...(payments && !free ? (["payment"] as const) : []),
+    ...(hasWays && !free ? (["payment"] as const) : []),
     ...(withPolicies ? (["policies"] as const) : []),
   ]
   // A service picked on the business page starts on the next step.
@@ -309,13 +422,15 @@ export function BookingFlow({
     if (canContinue && index < steps.length - 1) go(steps[index + 1])
   }
 
-  // The name and phone, checked before they go on or are sent.
+  // The name, phone and email, checked before they go on or are sent.
   const checkDetails = (next: BookingDetails) => {
     const error: DetailsError = !next.name
       ? "name"
       : !PHONE_PATTERN.test(next.phone)
         ? "phone"
-        : null
+        : !EMAIL_PATTERN.test(next.email)
+          ? "email"
+          : null
     setDetailsError(error)
     return error === null
   }
@@ -336,7 +451,7 @@ export function BookingFlow({
       proofForm = new FormData()
       proofForm.set("file", await resizeImage(proof))
     }
-    const result = await createBooking({
+    const input = {
       slug: page.slug,
       serviceId: service.id,
       teamMemberId: member?.id ?? null,
@@ -345,18 +460,35 @@ export function BookingFlow({
       time: slot.time,
       name: details.name,
       phone: details.phone,
+      email: details.email,
       // Confirming on the policies step, under the line that says booking
       // agrees to them, is the agreement.
       acceptedPolicies: withPolicies,
       rewardId: redeemed?.reward.id ?? null,
-      ...(payments && !free && {
-        payment:
-          payment === PAY_LATER
+      ...(hasWays && !free && {
+        payment: byCard
+          ? { choice: "card" as const }
+          : payment === PAY_LATER
             ? { choice: "later" as const }
             : { choice: "now" as const, methodId: payment },
       }),
       language: pageLanguage,
-    }, proofForm).catch(() => ({ status: "failed" as const }))
+    }
+    // By card: the time is held and the customer pays on Stripe's page;
+    // the booking is made when they come back paid.
+    const result = await (
+      byCard && !free
+        ? startCardPayment(input)
+        : createBooking(input, proofForm)
+    ).catch(() => ({ status: "failed" as const }))
+    if (result.status === "pay") {
+      if (result.claimToken) {
+        rememberClaim(result.bookingId, result.claimToken)
+      }
+      // Still "sending" until Stripe's page takes over.
+      window.location.assign(result.url)
+      return
+    }
     setSending(false)
     if (result.status === "booked") {
       if (result.claimToken) {
@@ -370,7 +502,9 @@ export function BookingFlow({
       toast.error(t("taken"))
     } else if (
       result.status === "invalid" &&
-      (result.field === "name" || result.field === "phone")
+      (result.field === "name" ||
+        result.field === "phone" ||
+        result.field === "email")
     ) {
       setDetailsError(result.field)
       replaceUrl(href(withParam("step", "details")))
@@ -411,7 +545,13 @@ export function BookingFlow({
   ) => (
     <Button size="lg" disabled={sending || disabled} {...props}>
       {sending && <Spinner data-icon="inline-start" />}
-      {sending ? t("sending") : t("confirm")}
+      {sending
+        ? t("sending")
+        : byCard && cardCharge !== null && !free
+          ? t("payment.pay", {
+              amount: formatPrice(cardCharge, page.currency, locale),
+            })
+          : t("confirm")}
     </Button>
   )
   const action =
@@ -541,6 +681,7 @@ export function BookingFlow({
             sending={sending}
             error={detailsError}
             whatsappFrom={page.whatsapp ? page.name : null}
+            signIn={customer === null ? signIn : null}
             details={details}
             onDetailsChange={setDetails}
             onSubmit={submitDetails}
@@ -556,6 +697,14 @@ export function BookingFlow({
           proof={proof}
           onProofChange={setProof}
           disabled={sending}
+          card={
+            cardCharge !== null && toPay !== null
+              ? {
+                  amount: formatPrice(cardCharge, page.currency, locale),
+                  deposit: cardCharge < toPay,
+                }
+              : null
+          }
         />
       )}
       {step === "policies" && (
@@ -660,6 +809,23 @@ export function BookingFlow({
         booking={booked}
         phone={details.phone}
       />
+    )
+  }
+
+  if (checkingPayment) {
+    return (
+      <div
+        data-surface="app"
+        className="grid min-h-dvh place-items-center bg-app-background"
+      >
+        <p
+          role="status"
+          className="flex items-center gap-2 text-sm text-muted-foreground"
+        >
+          <Spinner />
+          {t("payment.checking")}
+        </p>
+      </div>
     )
   }
 
@@ -871,7 +1037,34 @@ function BookedPage({
             {booking.payment && (
               <Item variant="muted" className="w-full text-left">
                 <ItemContent className="min-w-0 gap-1 text-sm">
-                  {booking.payment.method ? (
+                  {booking.payment.online ? (
+                    <>
+                      <p className="font-medium">
+                        {t("booking.payment.paidOnline", {
+                          amount: formatPrice(
+                            booking.payment.online.paidMinor,
+                            booking.currency,
+                            locale
+                          ),
+                        })}
+                      </p>
+                      {(leftToPay(booking.priceMinor, booking.payment.online) ??
+                        0) > 0 && (
+                        <p className="text-muted-foreground">
+                          {t("booking.payment.restAtVisit", {
+                            amount: formatPrice(
+                              leftToPay(
+                                booking.priceMinor,
+                                booking.payment.online
+                              ),
+                              booking.currency,
+                              locale
+                            ),
+                          })}
+                        </p>
+                      )}
+                    </>
+                  ) : booking.payment.method ? (
                     <>
                       <p className="font-medium">
                         {t("booking.payment.payWith", {

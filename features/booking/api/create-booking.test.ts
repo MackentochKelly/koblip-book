@@ -103,6 +103,7 @@ test("books a valid slot and picks the free team member", async () => {
     time: "10:00",
     name: "  Luis  ",
     phone: "+18095550134",
+    email: "ana@example.com",
   })
   expect(result).toMatchObject({
     status: "booked",
@@ -160,6 +161,7 @@ test("returns taken when the slot filled up", async () => {
     time: "10:00",
     name: "Luis",
     phone: "+18095550134",
+    email: "ana@example.com",
   })
   expect(result).toEqual({ status: "taken" })
 })
@@ -191,6 +193,7 @@ test("returns taken when the team member is busy in their Google Calendar", asyn
       time,
       name: "Luis",
       phone: "+18095550134",
+      email: "ana@example.com",
     })
   await expect(book("10:30")).resolves.toEqual({ status: "taken" })
   await expect(book("11:00")).resolves.toMatchObject({ status: "booked" })
@@ -224,6 +227,7 @@ test("cancelled bookings do not block the slot", async () => {
     time: "10:00",
     name: "Luis",
     phone: "+18095550134",
+    email: "ana@example.com",
   })
   expect(result.status).toBe("booked")
 })
@@ -239,6 +243,7 @@ test("validation paths", async () => {
     time: "10:00",
     name: "Luis",
     phone: "+18095550134",
+    email: "ana@example.com",
   }
   await expect(createBooking({ ...valid, name: "   " })).resolves.toEqual({
     status: "invalid",
@@ -247,6 +252,10 @@ test("validation paths", async () => {
   await expect(createBooking({ ...valid, phone: "abc" })).resolves.toEqual({
     status: "invalid",
     field: "phone",
+  })
+  await expect(createBooking({ ...valid, email: "ana@" })).resolves.toEqual({
+    status: "invalid",
+    field: "email",
   })
   await expect(
     createBooking({ ...valid, date: "06-01-2026" })
@@ -281,6 +290,7 @@ test("a business with policies books only once they are agreed to", async () => 
     time: "11:00",
     name: "Luis",
     phone: "+18095550134",
+    email: "ana@example.com",
   }
   expect(await createBooking(input)).toEqual({
     status: "invalid",
@@ -310,6 +320,7 @@ test("a business without policies books without the box, and saves no agreement"
     time: "12:00",
     name: "Luis",
     phone: "+18095550134",
+    email: "ana@example.com",
   })
   expect(result.status).toBe("booked")
   const { db } = await import("@/lib/db")
@@ -340,6 +351,7 @@ test("signed in, the booking is the account's; signed out, it gets a one-time cl
       time,
       name: "Ana",
       phone: "+18095550134",
+      email: "ana@example.com",
     })
 
   signedIn.session = { userId: "u-ana", isGuest: false }
@@ -404,6 +416,7 @@ const payInput = (slug: string, serviceId: string, time: string) => ({
   time,
   name: "Luis",
   phone: "+18095550134",
+  email: "ana@example.com",
 })
 
 test("a business with no way to pay books as before and tracks no payment", async () => {

@@ -6,6 +6,7 @@ import { headers } from "next/headers"
 import { getSession } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { bookingHolds, businesses } from "@/lib/db/schema"
+import { isPageLanguage } from "@/lib/page-language"
 import {
   closeCardSession,
   createCardSession,
@@ -23,10 +24,13 @@ export type CardStart =
   | { status: "pay"; url: string; bookingId: string; claimToken: string | null }
   | Exclude<BookingResult, { status: "booked" }>
 
-// Where the customer comes back to: the page they are on.
-async function bookPage(slug: string): Promise<string> {
+// Where the customer comes back to: the business's booking page on the
+// site they are on, in their language, with the service they picked.
+async function bookPage(input: BookingInput): Promise<string> {
   const origin = (await headers()).get("origin") ?? process.env.BETTER_AUTH_URL
-  return `${origin}/b/${encodeURIComponent(slug)}/book`
+  const query = new URLSearchParams({ service: input.serviceId })
+  if (isPageLanguage(input.language)) query.set("lang", input.language)
+  return `${origin}/b/${encodeURIComponent(input.slug)}/book?${query}`
 }
 
 // Checks the booking, holds its time and makes Stripe's payment page on
@@ -38,7 +42,7 @@ export async function startCardPayment(input: BookingInput): Promise<CardStart> 
   }
   const { hold } = outcome
   try {
-    const page = await bookPage(input.slug)
+    const page = await bookPage(input)
     const session = await getSession()
     const made = await createCardSession({
       accountId: hold.stripeAccountId,
@@ -51,8 +55,8 @@ export async function startCardPayment(input: BookingInput): Promise<CardStart> 
       currency: hold.currency,
       email: session && !session.isGuest ? session.email : null,
       // Stripe puts its own id where the braces are.
-      successUrl: `${page}?paid={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${page}?unpaid=${hold.holdId}`,
+      successUrl: `${page}&paid={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${page}&unpaid=${hold.holdId}`,
     })
     if (!made) throw new Error("No payment page")
     await db

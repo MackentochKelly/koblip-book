@@ -3,7 +3,9 @@ import type { BookingPayment, PaymentRequest } from "@/lib/payment-rules"
 
 export interface AvailabilityDay { date: string; times: string[] } // date "YYYY-MM-DD", times "HH:mm", business time zone
 export interface Availability { days: AvailabilityDay[] }
-export interface BookingInput { slug: string; serviceId: string; teamMemberId: string | null; addonIds: string[]; date: string; time: string; name: string; phone: string; language?: PageLanguage
+export interface BookingInput { slug: string; serviceId: string; teamMemberId: string | null; addonIds: string[]; date: string; time: string; name: string; phone: string
+  // Where the booking's emails go (docs/plans/email.md, EM-D7).
+  email: string; language?: PageLanguage
   // The customer ticked the box agreeing to the business's policies; needed
   // whenever the business has any.
   acceptedPolicies?: boolean
@@ -30,7 +32,7 @@ export type BookingResult =
   // the account logged in from "Manage your booking" (lib/booking-claim.ts).
   | { status: "booked"; booking: BookingConfirmation; claimToken: string | null }
   | { status: "taken" }
-  | { status: "invalid"; field: "service" | "teamMember" | "addons" | "time" | "name" | "phone" | "policies" | "payment" | "reward" }
+  | { status: "invalid"; field: "service" | "teamMember" | "addons" | "time" | "name" | "phone" | "email" | "policies" | "payment" | "reward" }
   // The business asks for payment proof and none came, or the file was
   // refused (docs/plans/payment-proof.md, PP10).
   | { status: "invalid"; field: "proof"; error: "missing" | "too_big" | "wrong_type" }

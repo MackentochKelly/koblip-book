@@ -6,7 +6,11 @@ import { newBookingClaim } from "@/lib/booking-claim"
 import { customerKey } from "@/lib/customer-key"
 import { getSession } from "@/lib/dal"
 import { internationalPhone } from "@/lib/whatsapp-phone"
-import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
+import {
+  BOOKING_RULES,
+  EMAIL_PATTERN,
+  PHONE_PATTERN,
+} from "@/lib/booking-rules"
 import { db } from "@/lib/db"
 import { googleBusyTimes } from "@/lib/google-calendar-busy"
 import { requestGoogleSync } from "@/lib/google-calendar-sync"
@@ -138,6 +142,15 @@ export async function book(
     if (!PHONE_PATTERN.test(phone)) {
       return { status: "invalid", field: "phone" }
     }
+    // A card payment started before the form asked for an email has none.
+    const email = (input.email ?? "").trim().toLowerCase()
+    if (
+      !(mode.kind === "paid" && !email) &&
+      (email.length > BOOKING_RULES.maxCustomerEmail ||
+        !EMAIL_PATTERN.test(email))
+    ) {
+      return { status: "invalid", field: "email" }
+    }
     if (!DATE_PATTERN.test(input.date) || !TIME_PATTERN.test(input.time)) {
       return { status: "invalid", field: "time" }
     }
@@ -161,12 +174,7 @@ export async function book(
     // starts unpaid whatever was sent: only the business marks it paid.
     // The card, where the business takes it, is one more way.
     const card = await cardPayFor(business)
-    const started = startPayment(
-      await paymentMethodsFor(business.id),
-      business.payLater,
-      input.payment,
-      card !== null
-    )
+    const methods = await paymentMethodsFor(business.id)
 
     const [serviceRows, hourRows, teamRows, linkRows, memberHourRows] =
       await Promise.all([
@@ -287,6 +295,19 @@ export async function book(
     // A booking its reward made free has nothing to pay: no way to pay is
     // asked for and no proof (RW12). Any other booking needs its choice.
     const free = reward !== null && priceToPay === 0
+    // What the card would be charged for this booking; null when it
+    // cannot be (no card, no fixed price, or under Stripe's smallest
+    // charge): the card is then no way to pay for it.
+    const cardCharge =
+      card && priceToPay !== null
+        ? cardAmount(card, priceToPay, business.currency)
+        : null
+    const started = startPayment(
+      methods,
+      business.payLater,
+      input.payment,
+      cardCharge !== null
+    )
     let payment: BookingPayment | null
     // What the card is to be charged, when the time is being held for it.
     let toCharge: number | null = null
@@ -313,10 +334,7 @@ export async function book(
         return { status: "invalid", field: "payment" }
       }
       if (mode.kind === "hold") {
-        toCharge =
-          card && priceToPay !== null
-            ? cardAmount(card, priceToPay, business.currency)
-            : null
+        toCharge = cardCharge
         if (toCharge === null || !business.stripeAccountId) {
           return { status: "invalid", field: "payment" }
         }
@@ -523,6 +541,7 @@ export async function book(
           endAt: new Date(endInstant).toISOString(),
           customerName: name,
           customerPhone: internationalPhone(phone, business),
+          customerEmail: email || null,
           customerKey: customerKey(internationalPhone(phone, business), name),
           customerUserId: owner,
           claimTokenHash: claim?.hash ?? null,

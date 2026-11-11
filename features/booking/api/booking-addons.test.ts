@@ -141,6 +141,7 @@ test("createBooking stores copies and totals", async () => {
     time: "10:00",
     name: "Luis",
     phone: "+18095550134",
+    email: "ana@example.com",
   })
   expect(result.status).toBe("booked")
   if (result.status !== "booked") {
@@ -185,6 +186,7 @@ test("createBooking rejects bad add-ons and enforces minSelect", async () => {
     time: "09:00",
     name: "Luis",
     phone: "+18095550134",
+    email: "ana@example.com",
   }
   await expect(
     createBooking({ ...base, addonIds: ["nope"] })
@@ -212,6 +214,7 @@ test("totals stay null only when nothing has a price", async () => {
     time: "09:00",
     name: "Luis",
     phone: "+18095550134",
+    email: "ana@example.com",
   })
   expect(priced).toMatchObject({
     status: "booked",
@@ -226,6 +229,7 @@ test("totals stay null only when nothing has a price", async () => {
     time: "09:30",
     name: "Marta",
     phone: "+18095550135",
+    email: "ana@example.com",
   })
   expect(free).toMatchObject({
     status: "booked",

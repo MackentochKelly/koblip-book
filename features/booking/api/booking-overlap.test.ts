@@ -90,6 +90,7 @@ function customer(slug: string, serviceId: string, time: string) {
     time,
     name: "Luis",
     phone: "+18095550134",
+    email: "ana@example.com",
   })
 }
 

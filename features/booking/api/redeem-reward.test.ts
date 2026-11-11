@@ -76,6 +76,7 @@ const book = (time: string, extra: Record<string, unknown> = {}) =>
     time,
     name: "Ana",
     phone: "+18095550134",
+    email: "ana@example.com",
     ...extra,
   })
 

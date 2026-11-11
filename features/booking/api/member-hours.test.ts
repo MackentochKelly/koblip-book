@@ -45,6 +45,7 @@ const publicInput = {
   time: "10:00",
   name: "Customer",
   phone: "+18095550134",
+  email: "ana@example.com",
 }
 const ownerInput = {
   ...publicInput,

@@ -148,6 +148,7 @@ const input = (slug: string, more: object = {}) => ({
   time: "10:00",
   name: "Luis",
   phone: "+12125550134",
+  email: "ana@example.com",
   payment: { choice: "card" as const },
   ...more,
 })
@@ -212,7 +213,8 @@ test("paying by card holds the time, and the booking is made when Stripe says pa
     params: {
       mode: "payment",
       allowed_payment_method_types: ["card"],
-      success_url: "https://book.example.com/b/pay/book?paid={CHECKOUT_SESSION_ID}",
+      success_url:
+        "https://book.example.com/b/pay/book?service=pay-svc&paid={CHECKOUT_SESSION_ID}",
       line_items: [
         { price_data: { unit_amount: 4000, currency: "usd" } },
       ],

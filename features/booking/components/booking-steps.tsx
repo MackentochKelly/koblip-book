@@ -2,7 +2,14 @@
 
 import Link from "next/link"
 import { useLocale, useTranslations } from "next-intl"
-import { Fragment, useCallback, useEffect, useRef, useState } from "react"
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react"
 import {
   CalendarIcon,
   CalendarX2Icon,
@@ -463,8 +470,10 @@ export function MemberStep({
   )
 }
 
-// "Pay later" in the payment choice, beside the business's ways' ids.
+// "Pay later" and "Card" in the payment choice, beside the business's
+// ways' ids.
 export const PAY_LATER = "later"
+export const PAY_CARD = "card"
 
 // How the customer will pay, when the business lists ways to pay outside
 // the app: one of them, or at the visit where the business allows it. Only
@@ -477,6 +486,7 @@ export function PaymentStep({
   proof,
   onProofChange,
   disabled,
+  card = null,
 }: {
   slug: string
   payments: PaymentOptions
@@ -489,6 +499,10 @@ export function PaymentStep({
   proof: File | null
   onProofChange: (file: File) => void
   disabled?: boolean
+  // What the card pays now on Stripe's page, already as text, and whether
+  // that is a deposit (the rest is paid at the visit); null = no card for
+  // this booking (docs/plans/online-payments.md).
+  card?: { amount: string; deposit: boolean } | null
 }) {
   const t = useTranslations("public.booking")
   const tProof = useTranslations("public.account.payment")
@@ -513,6 +527,18 @@ export function PaymentStep({
     }
   }, [slug, pickedId, known])
   const options = [
+    ...(card
+      ? [
+          {
+            id: PAY_CARD,
+            name: t("payment.card"),
+            detail: t(card.deposit ? "payment.cardDeposit" : "payment.cardFull", {
+              amount: card.amount,
+            }),
+            icon: <PaymentTypeIcon type="card" />,
+          },
+        ]
+      : []),
     ...payments.methods.map((method) => ({
       id: method.id,
       name: method.name,
@@ -710,17 +736,19 @@ export function TimeStep({
   )
 }
 
-export type DetailsError = "name" | "phone" | null
+export type DetailsError = "name" | "phone" | "email" | null
 
-export type BookingDetails = { name: string; phone: string }
+export type BookingDetails = { name: string; phone: string; email: string }
 
-// Last step: a name and a phone, nothing else. The flow holds them, so its
-// Confirm button knows when both are filled.
+// Last step: a name, a phone and an email (docs/plans/email.md, EM-D7). The
+// flow holds them, so its Confirm button knows when all are filled. Signed
+// out, the app's one sign-in comes first (`signIn`): it fills name and email.
 export function DetailsStep({
   formId,
   sending,
   error,
   whatsappFrom,
+  signIn,
   details,
   onDetailsChange,
   onSubmit,
@@ -731,15 +759,21 @@ export function DetailsStep({
   // The business's name when it sends WhatsApp booking messages: the ⓘ on
   // Phone says so (Meta opt-in), and booking is the customer's yes.
   whatsappFrom: string | null
+  // Signed out: the app's sign-in, shown above the form. Null once signed
+  // in, or while that is not known yet.
+  signIn: ReactNode
   details: BookingDetails
   onDetailsChange: (details: BookingDetails) => void
   onSubmit: (details: BookingDetails) => void
 }) {
   const t = useTranslations("public.booking")
   const locale = useLocale()
-  const { name, phone } = details
-  const setName = (next: string) => onDetailsChange({ name: next, phone })
-  const setPhone = (next: string) => onDetailsChange({ name, phone: next })
+  const { name, phone, email } = details
+  const setName = (next: string) => onDetailsChange({ ...details, name: next })
+  const setPhone = (next: string) =>
+    onDetailsChange({ ...details, phone: next })
+  const setEmail = (next: string) =>
+    onDetailsChange({ ...details, email: next })
   return (
     <form
       id={formId}
@@ -748,9 +782,18 @@ export function DetailsStep({
       className="mt-4"
       onSubmit={(event) => {
         event.preventDefault()
-        onSubmit({ name: name.trim(), phone: phone.trim() })
+        onSubmit({
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+        })
       }}
     >
+      {signIn && (
+        <Card variant="muted" className="mb-4">
+          <CardContent>{signIn}</CardContent>
+        </Card>
+      )}
       <Card variant="muted">
         <CardHeader>
           <CardTitle>{t("contactTitle")}</CardTitle>
@@ -790,6 +833,21 @@ export function DetailsStep({
                 locale={locale}
               />
               {error === "phone" && <FieldError>{t("checkPhone")}</FieldError>}
+            </Field>
+            <Field data-invalid={error === "email" || undefined}>
+              <FieldLabel htmlFor="booking-email">{t("email")}</FieldLabel>
+              <Input
+                {...noAutofill("booking_email")}
+                id="booking-email"
+                type="email"
+                inputMode="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                disabled={sending}
+                maxLength={BOOKING_RULES.maxCustomerEmail}
+                aria-invalid={error === "email" || undefined}
+              />
+              {error === "email" && <FieldError>{t("checkEmail")}</FieldError>}
             </Field>
           </FieldGroup>
         </CardContent>

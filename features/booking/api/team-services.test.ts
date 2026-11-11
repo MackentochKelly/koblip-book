@@ -155,6 +155,7 @@ test("createBooking rejects a member not allowed for the service", async () => {
     time: "11:00",
     name: "Luis",
     phone: "+18095550134",
+    email: "ana@example.com",
   })
   expect(result).toEqual({ status: "invalid", field: "teamMember" })
 })
@@ -169,6 +170,7 @@ test("createBooking anyone for a restricted service picks the allowed member", a
     time: "11:00",
     name: "Luis",
     phone: "+18095550134",
+    email: "ana@example.com",
   })
   expect(result.status).toBe("booked")
   if (result.status === "booked") {
