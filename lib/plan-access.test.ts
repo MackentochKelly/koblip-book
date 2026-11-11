@@ -35,9 +35,13 @@ test("a higher plan has everything a lower one has", () => {
   expect(planIncludes("free", "free")).toBe(true)
 })
 
+// Online payments are built and on Pro: the owner's decision
+// (docs/plans/online-payments.md).
 test("built features start on Free and coming-soon ones on Pro", () => {
-  for (const feature of Object.values(PLAN_FEATURES)) {
-    expect(feature.defaultPlan).toBe(feature.status === "live" ? "free" : "pro")
+  for (const [key, feature] of Object.entries(PLAN_FEATURES)) {
+    expect(feature.defaultPlan).toBe(
+      feature.status === "live" && key !== "onlinePayments" ? "free" : "pro"
+    )
     expect(PLANS).toContain(feature.defaultPlan)
   }
 })
