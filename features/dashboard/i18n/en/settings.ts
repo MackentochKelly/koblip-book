@@ -161,6 +161,32 @@ const settings = {
       team: "Team sees payment proof",
       teamHint: "Their own bookings only.",
     },
+    // Paying by card through the business's own Stripe account
+    // (docs/plans/online-payments.md).
+    card: {
+      title: "Card payments",
+      info: "Customers pay by card when they book. The money goes to your own Stripe account. Stripe charges its fee; Koblip adds none.",
+      stripe: "Stripe",
+      state: {
+        none: "Not connected",
+        details: "More details needed",
+        ready: "Connected",
+        country: "Not in your country yet",
+      },
+      connect: "Connect",
+      continue: "Continue",
+      open: "Open Stripe",
+      needEmail: "Add an email to your account first",
+      // What customers pay by card when they book.
+      pay: "Customers pay",
+      modes: { off: "Off", deposit: "Deposit", full: "Full price" },
+      depositPercent: "{percent, number}% deposit",
+      depositAmount: "{amount} deposit",
+      depositType: "Deposit",
+      types: { percent: "Percent", amount: "Amount" },
+      usePercent: "Use a number from {min, number} to {max, number}",
+      useAmount: "Use {amount} or more",
+    },
     // The policies were written for another way of paying than the
     // business offers now (policiesBehind in lib/payment-rules.ts).
     policies: {

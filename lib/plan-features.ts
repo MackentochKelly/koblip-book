@@ -35,7 +35,7 @@ export const PLAN_FEATURES = {
   pageThemes: { group: "bookingPage", status: "live", defaultPlan: "free" },
   pageLanguages: { group: "bookingPage", status: "live", defaultPlan: "free" },
   myBookings: { group: "bookingPage", status: "live", defaultPlan: "free" },
-  onlinePayments: { group: "bookingPage", status: "soon", defaultPlan: "pro" },
+  onlinePayments: { group: "bookingPage", status: "live", defaultPlan: "pro" },
   // The owner's dashboard.
   bookings: { group: "dashboard", status: "live", defaultPlan: "free" },
   customers: { group: "dashboard", status: "live", defaultPlan: "free" },
@@ -83,6 +83,7 @@ export const PLAN_CHECKED_FEATURES: readonly PlanFeatureKey[] = [
   "analytics",
   "widgets",
   "pageThemes",
+  "onlinePayments",
   "multipleBusinesses",
   "rewards",
   "assistantChat",

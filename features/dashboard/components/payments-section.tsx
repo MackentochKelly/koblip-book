@@ -81,6 +81,7 @@ export function PaymentsSection({
   teamSeesProof,
   policiesOutOfDate,
   onUpdatePolicies,
+  hasCard = false,
 }: {
   businessId: string
   methods: PaymentMethod[]
@@ -96,6 +97,9 @@ export function PaymentsSection({
   onUpdatePolicies: (
     businessId: string
   ) => Promise<{ ok: true; changed: number } | { ok: false }>
+  // Customers can pay by card (card-payments-section.tsx): paying at the
+  // visit is then a choice even with no way listed here.
+  hasCard?: boolean
 }) {
   const c = useTranslations("owner.catalog.common")
   const settings = useTranslations("owner.settings")
@@ -303,7 +307,7 @@ export function PaymentsSection({
             onRemove={() => setRemoving(method)}
           />
         ))}
-        {methods.length > 0 && (
+        {(methods.length > 0 || hasCard) && (
           <Item variant="outline" role="listitem">
             <Field orientation="horizontal" className="min-h-11">
               <FieldContent>
