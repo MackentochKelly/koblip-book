@@ -40,5 +40,5 @@ Sent from the server to Amazon's mailbox simulator in `koblip-book-production`: 
 
 ## Still to look at
 
-- The server's `.env.production` still has the old `SMTP_*` values; the app no longer reads them. The IAM user `koblip-ses` that they likely came from can be retired once nothing else uses it.
+- The server's `.env.production` still has the old `SMTP_*` values; Book no longer reads them. The IAM user `koblip-ses` stays: the owner's other apps use it (owner, Nov 11).
 - The live `EMAIL_FROM` is `"Koblip Book <contact@koblip.com>"` (kept as it was); `.env.example` and local use `Koblip <contact@koblip.com>`.
