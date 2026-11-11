@@ -37,9 +37,12 @@ import {
 } from "../utils/rule-values"
 import {
   CANT_COME_CHOICES,
+  EMAIL_RULE_GROUPS,
   RULE_GROUPS,
   RULE_UNITS,
 } from "../utils/whatsapp-rules"
+
+type RuleGroupId = (typeof RULE_GROUPS | typeof EMAIL_RULE_GROUPS)[number]["id"]
 
 export type RuleSetting = {
   key: NotificationRuleKey
@@ -53,8 +56,15 @@ const FORM = "whatsapp-rule-form"
 
 // WhatsApp → Rules (A7): every rule in its group with the value in use; a
 // changed one shows its default. Tapping one opens it to change or go back
-// to the default. The server checks each value and logs the change.
-export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
+// to the default. The server checks each value and logs the change. Email →
+// Rules shows the ones booking emails follow (`groups`).
+export function WhatsappRules({
+  rules,
+  groups = RULE_GROUPS,
+}: {
+  rules: RuleSetting[]
+  groups?: readonly { id: RuleGroupId; keys: readonly NotificationRuleKey[] }[]
+}) {
   const t = useTranslations("admin.whatsapp.rules")
   const locale = useLocale()
   const formatDuration = useFormatDuration()
@@ -165,7 +175,7 @@ export function WhatsappRules({ rules }: { rules: RuleSetting[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {RULE_GROUPS.map((group) => (
+      {groups.map((group) => (
         <section
           key={group.id}
           className="flex flex-col gap-3"

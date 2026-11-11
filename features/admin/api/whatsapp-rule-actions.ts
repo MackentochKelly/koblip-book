@@ -31,6 +31,7 @@ export async function saveWhatsappRule(
     return { ok: false, error: "failed" }
   }
   revalidatePath("/admin/whatsapp/rules")
+  revalidatePath("/admin/email/rules")
   revalidatePath("/admin/whatsapp/changes")
   return { ok: true }
 }

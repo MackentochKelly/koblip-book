@@ -44,6 +44,7 @@ export const RULE_UNITS: Record<NotificationRuleKey, RuleUnit> = {
   inAppPageSize: "count",
   inAppPollSeconds: "seconds",
   clientReminderMinutes: "minutes",
+  emailPlanWindowMinutes: "minutes",
 }
 
 // The rules in groups, in the order the screen shows them.
@@ -95,6 +96,28 @@ export const RULE_GROUPS = [
       "maxFooter",
       "minWordsPerField",
     ],
+  },
+] as const satisfies readonly {
+  id: string
+  keys: readonly NotificationRuleKey[]
+}[]
+
+// The rules booking emails follow, on Email → Rules: their own, then the
+// ones they share with WhatsApp (docs/plans/email.md, EM-11).
+export const EMAIL_RULE_GROUPS = [
+  {
+    id: "email",
+    keys: [
+      "emailPlanWindowMinutes",
+      "sendEverySeconds",
+      "sendBatch",
+      "stuckSendingMinutes",
+      "historySize",
+    ],
+  },
+  {
+    id: "timing",
+    keys: ["defaultReminders", "longReminderMinutes", "defaultQuietStart", "defaultQuietEnd"],
   },
 ] as const satisfies readonly {
   id: string

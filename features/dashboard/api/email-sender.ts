@@ -10,7 +10,6 @@ import { bookings, businesses, emailSends, notificationSends, user } from "@/lib
 import { claimPlannedEmail, deliverEmail, settleEmail, type EmailMessage } from "@/lib/email"
 import { renderEmail, type EmailLine } from "@/lib/email-layout"
 import {
-  EMAIL_RULES,
   OWNER_EMAILS,
   isBookingEmail,
   type BookingEmail,
@@ -20,6 +19,7 @@ import { stopLinks } from "@/lib/email-stop"
 import { emailWords } from "@/lib/email-templates"
 import { accountBookingHref, bookAgainHref } from "@/lib/my-bookings-links"
 import { isPhoneAccountEmail } from "@/lib/phone-sign-in"
+import { hasFeature } from "@/lib/plan-access"
 import { notificationRules } from "@/lib/platform-settings"
 import type { NotificationSettings } from "../types/notifications"
 import { bookingValues } from "../utils/booking-templates"
@@ -93,9 +93,9 @@ const wantsEmailReminder = or(
 const live = (now: Date) =>
   and(eq(businesses.isDemo, false), gt(bookings.startAt, now.toISOString()))
 
-async function plan(now: Date) {
+async function plan(now: Date, windowMinutes: number) {
   const nowIso = now.toISOString()
-  const since = new Date(now.getTime() - EMAIL_RULES.planWindowMinutes * MINUTE).toISOString()
+  const since = new Date(now.getTime() - windowMinutes * MINUTE).toISOString()
   const settings = new Map<string, Promise<NotificationSettings>>()
   const settingsOf = (businessId: string) => {
     let found = settings.get(businessId)
@@ -473,10 +473,15 @@ async function deliver(send: typeof emailSends.$inferSelect, now: Date) {
   const { booking, business } = row
   const toOwner = OWNER_KINDS.includes(kind)
   const { emailTurnedOff } = await notificationSettingsFor(business.id)
-  // Turned off, cancelled, moved or too late since it was planned.
+  // Email reminders can be moved to a plan the business isn't on.
+  const onPlan = kind !== "clientReminder" || (await hasFeature(business.id, "emailReminders"))
+  // Turned off, not on the plan, cancelled, moved or too late since it was
+  // planned.
   const reason = emailTurnedOff.includes(kind)
     ? "turnedOff"
-    : !toOwner && kind !== "bookingCancelled" && booking.status === "cancelled"
+    : !onPlan
+      ? "notOnPlan"
+      : !toOwner && kind !== "bookingCancelled" && booking.status === "cancelled"
       ? "cancelled"
       : (kind === "clientReminder" || kind === "bookingChanged") && send.moves !== booking.moves
         ? "moved"
@@ -537,6 +542,6 @@ async function sendDue(now: Date, batch: number) {
 export async function runBookingEmails(now = new Date()) {
   const rules = await notificationRules()
   await closeStuck(now, rules.stuckSendingMinutes)
-  await plan(now)
+  await plan(now, rules.emailPlanWindowMinutes)
   await sendDue(now, rules.sendBatch)
 }

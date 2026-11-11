@@ -62,7 +62,8 @@ export const PLAN_FEATURES = {
   googleMapsImport: { group: "integrations", status: "live", defaultPlan: "free" },
   googleCalendar: { group: "integrations", status: "live", defaultPlan: "free" },
   smsReminders: { group: "integrations", status: "soon", defaultPlan: "pro" },
-  emailReminders: { group: "integrations", status: "soon", defaultPlan: "pro" },
+  // Free on every plan (docs/plans/email.md, EM-D11).
+  emailReminders: { group: "integrations", status: "live", defaultPlan: "free" },
   instagramButton: { group: "integrations", status: "soon", defaultPlan: "pro" },
   facebookButton: { group: "integrations", status: "soon", defaultPlan: "pro" },
   googleBusinessProfile: { group: "integrations", status: "soon", defaultPlan: "pro" },
@@ -93,6 +94,7 @@ export const PLAN_CHECKED_FEATURES: readonly PlanFeatureKey[] = [
   "whatsappOwnNumber",
   "teamAccounts",
   "googleCalendar",
+  "emailReminders",
 ]
 
 // Whether Admin → Plans may move this feature to another plan.

@@ -6,6 +6,7 @@ import { getOwnerBusiness } from "@/features/dashboard/api/queries"
 import { EmailPage } from "@/features/dashboard/components/email-page"
 import { emailActivity } from "@/lib/email-activity"
 import { emailFilterFrom } from "@/lib/email-activity-filter"
+import { BOOKING_EMAILS } from "@/lib/email-rules"
 import { notificationRules } from "@/lib/platform-settings"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -22,12 +23,12 @@ export default async function EmailRoute({
   const { businessId } = await params
   // Only the business's owner gets here.
   const { business } = await getOwnerBusiness(businessId)
-  const filter = emailFilterFrom(await searchParams)
+  const filter = emailFilterFrom(await searchParams, BOOKING_EMAILS)
   const [settings, rules] = await Promise.all([
     notificationSettingsFor(businessId),
     notificationRules(businessId),
   ])
-  const history = await emailActivity(businessId, filter, rules.historySize)
+  const history = await emailActivity({ businessId, kinds: BOOKING_EMAILS }, filter, rules.historySize)
   return (
     <EmailPage
       businessId={businessId}

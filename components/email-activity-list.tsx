@@ -25,7 +25,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { EMAIL_ACTIVITY_STATES, emailFilterQuery } from "@/lib/email-activity-filter"
-import { BOOKING_EMAILS, type BookingEmail } from "@/lib/email-rules"
+import type { EmailKind } from "@/lib/email-rules"
 import { noAutofill } from "@/lib/no-autofill"
 import { cn } from "@/lib/utils"
 import type { EmailActivityFilter, EmailActivityRow } from "@/types/email"
@@ -36,7 +36,8 @@ const ANY = "any"
 // The words the list shows, in the page's language.
 export type EmailActivityLabels = {
   locale: string
-  names: Record<BookingEmail, string>
+  // Each email in `kinds` by name.
+  names: Partial<Record<EmailKind, string>>
   noHistory: string
   search: string
   searchLabel: string
@@ -55,22 +56,29 @@ export type EmailActivityLabels = {
   reasons: Record<string, string>
 }
 
-// The history of booking emails (docs/plans/email.md, EM-10): which, to
-// whom, when, and what became of it; filtered by email and status, searched
-// by customer name or address. The filters live in the address. Times show
-// in `timeZone`. `emptyAction` is the one action under "No emails yet".
+// The history of emails (docs/plans/email.md): a business's booking emails
+// on its Email page (EM-10), every email in the admin (EM-11). Which, to
+// whom, when, and what became of it; filtered by email (one of `kinds`) and
+// status, searched by name or address. The filters live in the address.
+// Times show in `timeZone`, or with `showBusiness` in each row's business's
+// own, and the row names its business. `emptyAction` is the one action
+// under "No emails yet".
 export function EmailActivityList({
   rows,
+  kinds,
   filter,
   timeZone,
   labels: t,
+  showBusiness = false,
   emptyAction,
 }: {
   rows: EmailActivityRow[]
+  kinds: readonly EmailKind[]
   filter: EmailActivityFilter
   timeZone?: string
   labels: EmailActivityLabels
-  emptyAction: React.ReactNode
+  showBusiness?: boolean
+  emptyAction?: React.ReactNode
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -78,13 +86,23 @@ export function EmailActivityList({
   const [pending, startTransition] = useTransition()
   const filtered = !!(filter.kind || filter.state || filter.search)
   const filterCount = (filter.kind ? 1 : 0) + (filter.state ? 1 : 0)
-  const format = new Intl.DateTimeFormat(t.locale, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone,
-  })
+  const formatters = new Map<string, Intl.DateTimeFormat>()
+  const when = (row: EmailActivityRow) => {
+    const zone = (showBusiness ? row.timeZone : timeZone) ?? undefined
+    const key = zone ?? ""
+    let format = formatters.get(key)
+    if (!format) {
+      format = new Intl.DateTimeFormat(t.locale, {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: zone,
+      })
+      formatters.set(key, format)
+    }
+    return format.format(new Date(row.at))
+  }
 
   const show = (next: EmailActivityFilter) =>
     startTransition(() => {
@@ -102,7 +120,7 @@ export function EmailActivityList({
           </EmptyMedia>
           <EmptyTitle>{t.noHistory}</EmptyTitle>
         </EmptyHeader>
-        <EmptyContent>{emptyAction}</EmptyContent>
+        {emptyAction && <EmptyContent>{emptyAction}</EmptyContent>}
       </Empty>
     )
   }
@@ -138,13 +156,13 @@ export function EmailActivityList({
               <AppSelect
                 options={[
                   { value: ANY, label: t.allEmails },
-                  ...BOOKING_EMAILS.map((kind) => ({ value: kind, label: t.names[kind] })),
+                  ...kinds.map((kind) => ({ value: kind, label: t.names[kind] ?? kind })),
                 ]}
                 value={filter.kind ?? ANY}
                 onValueChange={(value) =>
                   show({
                     ...filter,
-                    kind: value === ANY ? undefined : (value as BookingEmail),
+                    kind: value === ANY ? undefined : (value as EmailKind),
                   })
                 }
                 className="w-full md:w-auto"
@@ -219,12 +237,13 @@ export function EmailActivityList({
               return (
                 <Item key={row.id} variant="outline" size="sm">
                   <ItemContent className="min-w-0">
-                    <ItemTitle>{t.names[row.kind]}</ItemTitle>
+                    <ItemTitle>{t.names[row.kind] ?? row.kind}</ItemTitle>
                     <ItemDescription className="truncate">
                       {[
+                        showBusiness && row.businessName,
                         row.customerName,
                         row.email,
-                        format.format(new Date(row.at)),
+                        when(row),
                         row.reason && t.reasons[row.reason],
                       ]
                         .filter(Boolean)

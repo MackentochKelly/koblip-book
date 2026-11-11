@@ -61,6 +61,11 @@ export const NOTIFICATION_RULES = {
   // The client's bell (docs/plans/client-account.md, D10) reminds them of a
   // visit this long before it.
   clientReminderMinutes: 1440,
+  // How far back the email timer looks for bookings made, and owner alerts
+  // raised, that still need their email (docs/plans/email.md, EM-8): a
+  // restart is covered, and the first run after a deploy never emails old
+  // bookings.
+  emailPlanWindowMinutes: 60,
 } as const
 
 // These are the defaults: an admin's values in the database override them
@@ -124,4 +129,5 @@ export const NOTIFICATION_RULE_CHECKS: Record<NotificationRuleKey, (value: unkno
   inAppPageSize: (value) => wholeAtLeast(1)(value) && (value as number) <= 100,
   inAppPollSeconds: wholeAtLeast(10),
   clientReminderMinutes: wholeAtLeast(1),
+  emailPlanWindowMinutes: wholeAtLeast(1),
 }

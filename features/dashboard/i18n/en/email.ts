@@ -55,6 +55,7 @@ const words = {
     interrupted: "Stopped midway",
     notTold: "Customer not told yet",
     turnedOff: "Email turned off",
+    notOnPlan: "Not on your plan",
   },
 } as const
 

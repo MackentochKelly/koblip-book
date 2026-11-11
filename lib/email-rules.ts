@@ -71,6 +71,8 @@ export const EMAIL_SEND_REASONS = [
   "notTold",
   // The owner turned this email off.
   "turnedOff",
+  // Email reminders aren't on the business's plan (Admin → Plans).
+  "notOnPlan",
   // Left "sending" when the server stopped mid-send: never tried again, as
   // it may have gone.
   "interrupted",
@@ -94,11 +96,6 @@ export type EmailDelivery = (typeof EMAIL_DELIVERY)[number]
 export const EMAIL_BLOCK_REASONS = ["bounce", "complaint", "stopped"] as const
 
 export type EmailBlockReason = (typeof EMAIL_BLOCK_REASONS)[number]
-
-// How far back the timer looks for bookings made, and owner alerts raised,
-// that still need their email: a short gap (a restart) is covered, and the
-// first run after a deploy never emails old bookings.
-export const EMAIL_RULES = { planWindowMinutes: 60 } as const
 
 // Addresses are kept and compared in lower case.
 export function normalEmail(address: string): string {

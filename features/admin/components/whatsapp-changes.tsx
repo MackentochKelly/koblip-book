@@ -96,6 +96,10 @@ function describe(
       detail: languageName(language),
     }
   }
+  if (change.key === "email.block.remove") {
+    const before = change.before as { email?: unknown } | null
+    return { title: t("changes.emailUnblocked"), detail: String(before?.email ?? "") }
+  }
   return { title: change.key, detail: null }
 }
 

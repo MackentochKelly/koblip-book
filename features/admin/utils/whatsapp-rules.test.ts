@@ -8,13 +8,15 @@ import {
   type NotificationRuleKey,
 } from "@/lib/notification-rules"
 import { formatRuleValue, parseRuleInput, ruleInputOf } from "./rule-values"
-import { RULE_GROUPS } from "./whatsapp-rules"
+import { EMAIL_RULE_GROUPS, RULE_GROUPS } from "./whatsapp-rules"
 
 const keys = Object.keys(NOTIFICATION_RULES) as NotificationRuleKey[]
 
-test("every rule is in exactly one group", () => {
+test("every rule is in one WhatsApp group, or on Email → Rules", () => {
   const placed = RULE_GROUPS.flatMap((group) => [...group.keys])
-  expect([...placed].sort()).toEqual([...keys].sort())
+  expect(new Set(placed).size).toBe(placed.length)
+  const shown = new Set([...placed, ...EMAIL_RULE_GROUPS.flatMap((group) => [...group.keys])])
+  expect([...shown].sort()).toEqual([...keys].sort())
 })
 
 test("each default, shown in the edit box and read back, is the same allowed value", () => {

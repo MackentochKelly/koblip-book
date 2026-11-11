@@ -2,8 +2,8 @@ import "server-only"
 import { and, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm"
 
 import { db } from "@/lib/db"
-import { bookings, emailSends } from "@/lib/db/schema"
-import { BOOKING_EMAILS, isBookingEmail } from "@/lib/email-rules"
+import { bookings, businesses, emailSends } from "@/lib/db/schema"
+import type { EmailKind } from "@/lib/email-rules"
 import type { EmailActivityFilter, EmailActivityRow } from "@/types/email"
 
 // A LIKE pattern that finds `text` anywhere, with LIKE's own wildcards
@@ -15,32 +15,36 @@ function contains(text: string): string {
 // When an email went, or goes.
 const at = sql<string>`coalesce(${emailSends.sentAt}, ${emailSends.dueAt}, ${emailSends.createdAt})`
 
-// One business's booking emails, newest first (docs/plans/email.md, EM-10):
-// what is waiting, sent, or was not sent and why; narrowed by email, state
-// and a search by customer name or address.
+// Emails newest first: one business's booking emails on its Email page
+// (docs/plans/email.md, EM-10), or every email in the admin (EM-11). What is
+// waiting, sent, or was not sent and why; narrowed to `kinds`, by email and
+// state, and by a search of customer name, address or business name.
 export async function emailActivity(
-  businessId: string,
+  scope: { businessId?: string; kinds: readonly EmailKind[] },
   filter: EmailActivityFilter,
   limit: number
 ): Promise<EmailActivityRow[]> {
   const search = filter.search?.trim()
   const conditions: (SQL | undefined)[] = [
-    eq(emailSends.businessId, businessId),
-    inArray(emailSends.kind, filter.kind ? [filter.kind] : [...BOOKING_EMAILS]),
+    scope.businessId ? eq(emailSends.businessId, scope.businessId) : undefined,
+    inArray(emailSends.kind, filter.kind ? [filter.kind] : [...scope.kinds]),
     filter.state ? eq(emailSends.state, filter.state) : undefined,
     search
       ? or(
           sql`${bookings.customerName} like ${contains(search)} escape '\\'`,
-          sql`${emailSends.email} like ${contains(search.toLowerCase())} escape '\\'`
+          sql`${emailSends.email} like ${contains(search.toLowerCase())} escape '\\'`,
+          sql`${businesses.name} like ${contains(search)} escape '\\'`
         )
       : undefined,
   ]
-  const rows = await db
+  return db
     .select({
       id: emailSends.id,
       kind: emailSends.kind,
       email: emailSends.email,
       customerName: bookings.customerName,
+      businessName: businesses.name,
+      timeZone: businesses.timezone,
       at,
       state: emailSends.state,
       reason: emailSends.reason,
@@ -48,8 +52,8 @@ export async function emailActivity(
     })
     .from(emailSends)
     .leftJoin(bookings, eq(bookings.id, emailSends.bookingId))
+    .leftJoin(businesses, eq(businesses.id, emailSends.businessId))
     .where(and(...conditions))
     .orderBy(desc(at))
     .limit(limit)
-  return rows.flatMap(({ kind, ...row }) => (isBookingEmail(kind) ? [{ ...row, kind }] : []))
 }

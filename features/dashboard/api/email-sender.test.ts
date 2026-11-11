@@ -14,6 +14,7 @@ import {
   emailSends,
   notificationSends,
   notificationSettings,
+  planFeatures,
   user,
 } from "@/lib/db/schema"
 
@@ -31,6 +32,7 @@ registerEnglishWords((await import("@/i18n/messages")).default)
 const { runBookingEmails } = await import("./email-sender")
 const { readStopToken, stopEmails, stopLinks } = await import("@/lib/email-stop")
 const { emailActivity } = await import("@/lib/email-activity")
+const { BOOKING_EMAILS } = await import("@/lib/email-rules")
 
 type Mail = {
   from: string | { name: string; address: string }
@@ -110,6 +112,7 @@ beforeEach(async () => {
   await db.delete(notificationSends)
   await db.delete(clientNotificationSettings)
   await db.delete(notificationSettings)
+  await db.delete(planFeatures)
   await db.delete(bookings)
 })
 
@@ -269,13 +272,25 @@ test("an email the owner turned off is kept as not sent, and the history shows w
 
   // Filtered by email and state, and searched by name (LIKE's "_" taken
   // literally) or address.
-  const off = await emailActivity("shop", { kind: "bookingConfirmed", state: "skipped" }, 30)
+  const off = await emailActivity({ businessId: "shop", kinds: BOOKING_EMAILS }, { kind: "bookingConfirmed", state: "skipped" }, 30)
   expect(off.map((row) => row.reason)).toEqual(["turnedOff", "turnedOff"])
-  const bob = await emailActivity("shop", { search: "o_b" }, 30)
+  const bob = await emailActivity({ businessId: "shop", kinds: BOOKING_EMAILS }, { search: "o_b" }, 30)
   expect(bob.every((row) => row.customerName === "Bo_b")).toBe(true)
   expect(bob.length).toBeGreaterThan(0)
-  expect(await emailActivity("shop", { search: "oxb" }, 30)).toEqual([])
-  const byAddress = await emailActivity("shop", { search: "ANA@" }, 30)
+  expect(await emailActivity({ businessId: "shop", kinds: BOOKING_EMAILS }, { search: "oxb" }, 30)).toEqual([])
+  const byAddress = await emailActivity({ businessId: "shop", kinds: BOOKING_EMAILS }, { search: "ANA@" }, 30)
   expect(byAddress.every((row) => row.email === "ana@example.com")).toBe(true)
-  expect(await emailActivity("other", {}, 30)).toEqual([])
+  expect(await emailActivity({ businessId: "other", kinds: BOOKING_EMAILS }, {}, 30)).toEqual([])
+})
+
+test("email reminders moved to Pro: a Free business's reminders are kept as not sent", async () => {
+  await db.insert(planFeatures).values({ featureKey: "emailReminders", plan: "pro", updatedBy: "owner" })
+  await db.insert(bookings).values(booking("b1", { source: "owner" }))
+  await runBookingEmails(NOW)
+  await runBookingEmails(new Date("2026-11-14T15:00:30.000Z"))
+
+  expect(mails().some((mail) => mail.subject.startsWith("Reminder"))).toBe(false)
+  expect(mails().some((mail) => mail.subject.startsWith("Booking confirmed"))).toBe(true)
+  const reminder = (await rows("b1")).find((row) => row.kind === "clientReminder" && row.reminderMinutes === 1440)
+  expect([reminder?.state, reminder?.reason]).toEqual(["skipped", "notOnPlan"])
 })

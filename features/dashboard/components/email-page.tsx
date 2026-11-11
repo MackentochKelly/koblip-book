@@ -85,6 +85,7 @@ export function EmailPage({
       <PageSection id="history" title={t("history")}>
         <EmailActivityList
           rows={history}
+          kinds={BOOKING_EMAILS}
           filter={filter}
           timeZone={timeZone}
           labels={{
