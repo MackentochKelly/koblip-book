@@ -3,7 +3,7 @@
 Customers pay the business by card when they book: the full price or a deposit. Asked by the owner (2026-11-10). Nothing is built until the owner says go.
 How to use this file: [Plans](README.md).
 
-**Status (Nov 10):** Plan written. No code. Three things need the owner first: see "Needs the owner".
+**Status (Nov 11):** The owner said go (Nov 10): the plan as written, no Koblip fee, Pro only. Being built, task by task.
 
 ## The short version
 
@@ -69,7 +69,7 @@ Stripe's list has 51 countries. In: United States, Spain, Mexico, Brazil, Canada
 
 For those businesses this plan changes nothing; paying outside the app stays their way. A local card processor for the Dominican Republic (Azul, CardNET) or PayPal would be its own plan, with its own contract.
 
-Still to confirm in ON-1: which countries Koblip's own Stripe account may connect businesses from. It depends on the country Koblip's account is in.
+Confirmed in ON-1 (Stripe's sandbox, Nov 10): Koblip's US account can connect businesses in Stripe's other countries (Spain, Mexico, Brazil, Canada and the United Kingdom were tried). For the Dominican Republic Stripe answers "unsupported country". The app reads a business's country from its time zone and asks Stripe; Stripe's answer decides.
 
 ## Data
 
@@ -87,7 +87,7 @@ In order. Each is small, ends with its own tests, and is committed alone.
 
 | ID    | Task                 | What                                                                                                                                                                                                                                                      | Needs      | Status |
 | ----- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------ |
-| ON-1  | Stripe set-up        | Turn on Connect in Koblip's Stripe sandbox; confirm the countries; write `docs/online-payments.md` (settings, the second webhook, test cards).                                                                                                            | Owner      | To do  |
+| ON-1  | Stripe set-up        | Turn on Connect in Koblip's Stripe sandbox; confirm the countries; write `docs/online-payments.md` (settings, the second webhook, test cards).                                                                                                            | Owner      | Done   |
 | ON-2  | Rules and data       | The deposit sum, smallest charges and no-cent currencies in `lib/payment-rules.ts` with tests; the migration for the columns and tables above.                                                                                                            |            | To do  |
 | ON-3  | Connect a business   | Server code to make the business's Stripe account, the Account Link, and to read whether it can take payments (`lib/stripe-connect.ts`); owner only, real businesses only, Pro only.                                                                      | ON-1, ON-2 | To do  |
 | ON-4  | Webhook              | `app/api/stripe/connect/route.ts`: checks Stripe's signature, records each event once, handles paid, paid later, failed, expired, refunded, disputed and account changes.                                                                                 | ON-3       | To do  |
@@ -135,9 +135,9 @@ In order. Each is small, ends with its own tests, and is committed alone.
 ## Needs the owner
 
 1. **Go.** (Answered Nov 10: Koblip's Stripe account is in the United States. ON-1 confirms in the Stripe dashboard which countries it can connect businesses from.)
-2. **Fee:** stay with no Koblip fee per payment (ON11), or take one from the start?
-3. **Pro only** (ON-13), as the plan screen already says?
+2. **Fee:** answered Nov 10: no Koblip fee per payment (ON11).
+3. **Pro only** (ON-13): answered Nov 10: yes.
 
 ## Next step
 
-The owner's go and the three answers above. Then ON-1.
+The next task marked "To do" in the table.
