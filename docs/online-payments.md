@@ -2,7 +2,7 @@
 
 Customers pay a business by card when they book. The money goes to the business's own Stripe account; Koblip never holds it. Decisions and tasks: [plans/online-payments.md](plans/online-payments.md). Subscriptions are a different thing with their own webhook: [billing.md](billing.md).
 
-Online payments are off until `STRIPE_SECRET_KEY` and `STRIPE_CONNECT_WEBHOOK_SECRET` are both set.
+Online payments are off until `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (subscriptions, [billing.md](billing.md)) and `STRIPE_CONNECT_WEBHOOK_SECRET` are all set: the Stripe client is made only when subscriptions have their keys, and online payments are a Pro feature.
 
 ## What Stripe holds
 
@@ -57,6 +57,6 @@ Without the CLI running, a payment still ends as a booking: the page the custome
 ## Going live
 
 1. **Connect in live mode.** Dashboard → Connect: finish Stripe's platform profile for the live account (Stripe asks how Koblip uses Connect: businesses are the sellers, direct charges).
-2. **Webhook.** Dashboard → Developers → Webhooks → add `https://book.koblip.com/api/stripe/connect`, **Events from: Connected accounts**, with the 7 events above. Copy its signing secret.
-3. **Key on the server.** Put `STRIPE_CONNECT_WEBHOOK_SECRET` in `.env.production`, then deploy ([deploy.md](deploy.md)).
+2. **Webhook.** Done Nov 11: "Koblip Book online payments" (`we_1UaUVkINXbkEC5NApCcGnavP`), `https://book.koblip.com/api/stripe/connect`, Events from: Connected accounts, snapshot, API version `2026-10-28.endive`, the 7 events above. Its signing secret is on that page.
+3. **Keys on the server.** Subscriptions go live first ([billing.md](billing.md), "Going live"). Then put `STRIPE_CONNECT_WEBHOOK_SECRET` in `.env.production` and restart the app.
 4. **One real payment.** Connect a real business, pay a small deposit with a real card, refund it.
