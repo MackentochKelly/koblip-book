@@ -116,6 +116,11 @@ const eslintConfig = defineConfig([
               except: ["./team-calendar"],
             },
             {
+              target: "./features/email-stop",
+              from: "./features",
+              except: ["./email-stop"],
+            },
+            {
               target: "./features/starter-catalog",
               from: "./features",
               except: ["./starter-catalog"],

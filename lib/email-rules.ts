@@ -9,7 +9,15 @@ export const EMAIL_KINDS = [
   "teamCalendar",
   "paymentFailed",
   "backToFree",
+  // A booking's emails (EM-D6): the customer's four (the reminder keeps its
+  // first name) and the owner's three.
   "clientReminder",
+  "bookingConfirmed",
+  "bookingChanged",
+  "bookingCancelled",
+  "ownerNewBooking",
+  "ownerCantCome",
+  "ownerCancelled",
 ] as const
 
 export type EmailKind = (typeof EMAIL_KINDS)[number]
@@ -30,6 +38,17 @@ export const EMAIL_SEND_REASONS = [
   "blocked",
   "notSetUp",
   "sendFailed",
+  // A booking's email that no longer fits: the booking was cancelled or
+  // moved after it was planned, or its time has passed.
+  "cancelled",
+  "moved",
+  "late",
+  // A move's "Booking changed" when the customer never got the
+  // confirmation: the next email they get has the new time anyway.
+  "notTold",
+  // Left "sending" when the server stopped mid-send: never tried again, as
+  // it may have gone.
+  "interrupted",
 ] as const
 
 export type EmailSendReason = (typeof EMAIL_SEND_REASONS)[number]
@@ -50,6 +69,11 @@ export type EmailDelivery = (typeof EMAIL_DELIVERY)[number]
 export const EMAIL_BLOCK_REASONS = ["bounce", "complaint", "stopped"] as const
 
 export type EmailBlockReason = (typeof EMAIL_BLOCK_REASONS)[number]
+
+// How far back the timer looks for bookings made, and owner alerts raised,
+// that still need their email: a short gap (a restart) is covered, and the
+// first run after a deploy never emails old bookings.
+export const EMAIL_RULES = { planWindowMinutes: 60 } as const
 
 // Addresses are kept and compared in lower case.
 export function normalEmail(address: string): string {

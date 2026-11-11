@@ -374,6 +374,7 @@ const words = {
       time: "bad time",
       name: "bad customer name",
       phone: "bad phone number",
+      email: "bad email",
       note: "note too long",
       addons: "bad add-ons",
       reward: "that reward can't be used",

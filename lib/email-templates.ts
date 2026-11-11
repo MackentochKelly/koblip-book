@@ -4,40 +4,35 @@ import { createTranslator } from "next-intl"
 import { ACCOUNT_RULES } from "./account-rules"
 import { APP_NAME } from "./app-install"
 import { ONBOARDING_RULES } from "./onboarding-rules"
+import { renderEmail, type EmailBody } from "./email-layout"
 import { DEFAULT_LOCALES, type PageLanguage } from "./page-language"
 import { wordsFor } from "./translations/interface-words"
 
-export interface LinkEmail {
+export interface LinkEmail extends EmailBody {
   subject: string
-  text: string
-  html: string
 }
 
-// Names and links in an email's HTML are text, never markup.
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-}
-
-// Every email Koblip Book sends: plain words and one link. No images, no
-// tracking.
+// An email about one link (sign-up, password, an invite, the plan): the
+// shared layout with the link as its one button (docs/plans/email.md,
+// EM-D12). The title is the subject.
 function linkEmail(words: {
+  heading: string
   subject: string
   lead: string
+  button: string
   url: string
   note: string
 }): LinkEmail {
-  const { subject, lead, url, note } = words
+  const { heading, subject, lead, button, url, note } = words
   return {
     subject,
-    text: `${lead}\n\n${url}\n\n${note}`,
-    html:
-      `<p>${escapeHtml(lead)}</p>` +
-      `<p><a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>` +
-      `<p>${escapeHtml(note)}</p>`,
+    ...renderEmail({
+      heading,
+      title: subject,
+      lead,
+      button: { label: button, url },
+      note,
+    }),
   }
 }
 
@@ -45,7 +40,7 @@ function linkEmail(words: {
 // Emails also go out with no page behind them (sign-up, the team's
 // invites), so the words come straight from the app's words, as a
 // Google Calendar event's do (lib/google-calendar-event.ts).
-async function emailWords(language: PageLanguage) {
+export async function emailWords(language: PageLanguage) {
   const messages = await wordsFor(language)
   return createTranslator({
     locale: DEFAULT_LOCALES[language],
@@ -62,6 +57,8 @@ export async function verificationEmail(
   const t = await emailWords(language)
   return linkEmail({
     url,
+    heading: APP_NAME,
+    button: t("verification.button"),
     subject: t("verification.subject"),
     lead: t("verification.lead", { app: APP_NAME }),
     note: t("verification.note", {
@@ -78,6 +75,8 @@ export async function resetPasswordEmail(
   const t = await emailWords(language)
   return linkEmail({
     url,
+    heading: APP_NAME,
+    button: t("resetPassword.button"),
     subject: t("resetPassword.subject"),
     lead: t("resetPassword.lead", { app: APP_NAME }),
     note: t("resetPassword.note", {
@@ -98,6 +97,8 @@ export async function teamCalendarEmail(input: {
   const t = await emailWords(input.language)
   return linkEmail({
     url,
+    heading: businessName,
+    button: t("teamCalendar.button"),
     subject: t("teamCalendar.subject", { businessName }),
     lead: t("teamCalendar.lead", { businessName }),
     note: t("teamCalendar.note", { days }),
@@ -116,6 +117,8 @@ export async function teamInviteEmail(input: {
   const t = await emailWords(input.language)
   return linkEmail({
     url,
+    heading: businessName,
+    button: t("teamInvite.button"),
     subject: t("teamInvite.subject", { businessName, app: APP_NAME }),
     lead: t("teamInvite.lead", { businessName, app: APP_NAME }),
     note: t("teamInvite.note", { days }),
@@ -133,6 +136,8 @@ export async function paymentFailedEmail(input: {
   const t = await emailWords(input.language)
   return linkEmail({
     url,
+    heading: APP_NAME,
+    button: t("paymentFailed.button"),
     subject: t("paymentFailed.subject", { businessName }),
     lead: t("paymentFailed.lead", { businessName }),
     note: t("paymentFailed.note", { businessName }),
@@ -149,27 +154,10 @@ export async function backToFreeEmail(input: {
   const t = await emailWords(input.language)
   return linkEmail({
     url,
+    heading: APP_NAME,
+    button: t("backToFree.button"),
     subject: t("backToFree.subject", { businessName }),
     lead: t("backToFree.lead", { businessName }),
     note: t("backToFree.note"),
-  })
-}
-
-// A client's visit reminder, when they picked email in their account's
-// Settings (docs/plans/client-account.md, D16): the link opens the booking.
-export async function clientReminderEmail(input: {
-  service: string
-  business: string
-  when: string
-  url: string
-  language: PageLanguage
-}): Promise<LinkEmail> {
-  const { service, business, when, url } = input
-  const t = await emailWords(input.language)
-  return linkEmail({
-    url,
-    subject: t("clientReminder.subject", { service, business }),
-    lead: t("clientReminder.lead", { service, business, when }),
-    note: t("clientReminder.note"),
   })
 }

@@ -25,6 +25,13 @@ export interface EmailMessage {
   subject: string
   text: string
   html: string
+  // The name it comes from (a booking's email: the business's), at
+  // EMAIL_FROM's address. EMAIL_FROM's own name when not given.
+  fromName?: string
+  attachments?: { filename: string; content: string; contentType: string }[]
+  // Where mail apps' unsubscribe button posts (RFC 8058): a customer
+  // email's "Stop emails" (lib/email-stop.ts).
+  oneClickStop?: string
 }
 
 // What an email is and whom it is about, for the log (EM-D4).
@@ -104,7 +111,24 @@ export async function claimEmail(
   return row?.id ?? null
 }
 
-async function settle(
+// EMAIL_FROM's address, without its name: "Koblip Book <contact@koblip.com>"
+// → contact@koblip.com.
+function fromAddress(from: string): string {
+  return from.match(/<([^>]+)>/)?.[1]?.trim() ?? from.trim()
+}
+
+// Takes a planned email (pending) to send it now. False when another check
+// took it first.
+export async function claimPlannedEmail(sendId: string): Promise<boolean> {
+  const [row] = await db
+    .update(emailSends)
+    .set({ state: "sending" })
+    .where(and(eq(emailSends.id, sendId), eq(emailSends.state, "pending")))
+    .returning({ id: emailSends.id })
+  return Boolean(row)
+}
+
+export async function settleEmail(
   sendId: string,
   outcome:
     | { state: "sent"; messageId: string }
@@ -132,7 +156,7 @@ export async function deliverEmail(
   businessId: string | null = null
 ): Promise<boolean> {
   if (await isBlocked(message.to, businessId)) {
-    await settle(sendId, { state: "skipped", reason: "blocked" })
+    await settleEmail(sendId, { state: "skipped", reason: "blocked" })
     return false
   }
   if (!isConfigured()) {
@@ -140,28 +164,36 @@ export async function deliverEmail(
       warnedMissing = true
       console.warn("Email is not set up")
     }
-    await settle(sendId, { state: "skipped", reason: "notSetUp" })
+    await settleEmail(sendId, { state: "skipped", reason: "notSetUp" })
     return false
   }
   try {
     const configurationSet = process.env.SES_CONFIGURATION_SET
+    const from = process.env.EMAIL_FROM as string
     const info = await getTransporter().sendMail({
-      from: process.env.EMAIL_FROM,
+      from: message.fromName
+        ? { name: message.fromName, address: fromAddress(from) }
+        : from,
       to: message.to,
       subject: message.subject,
       text: message.text,
       html: message.html,
+      ...(message.attachments?.length ? { attachments: message.attachments } : {}),
+      ...(message.oneClickStop && {
+        list: { unsubscribe: message.oneClickStop },
+        headers: { "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+      }),
       ...(configurationSet && {
         ses: { ConfigurationSetName: configurationSet },
       }),
     })
     // The SES transport puts Amazon's own message id in `response`: the id
     // its events name.
-    await settle(sendId, { state: "sent", messageId: String(info.response) })
+    await settleEmail(sendId, { state: "sent", messageId: String(info.response) })
     return true
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
-    await settle(sendId, { state: "failed", reason: "sendFailed" })
+    await settleEmail(sendId, { state: "failed", reason: "sendFailed" })
     return false
   }
 }

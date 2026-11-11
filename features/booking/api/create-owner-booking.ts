@@ -4,7 +4,7 @@ import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { customerKey } from "@/lib/customer-key"
 import { internationalPhone } from "@/lib/whatsapp-phone"
-import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
+import { BOOKING_RULES, EMAIL_PATTERN, PHONE_PATTERN } from "@/lib/booking-rules"
 import { requireOwner } from "@/lib/dal"
 import { db } from "@/lib/db"
 import { googleBusyTimes } from "@/lib/google-calendar-busy"
@@ -71,6 +71,13 @@ export async function createOwnerBooking(
     const phone = rawPhone === "" ? null : rawPhone
     if (phone !== null && !PHONE_PATTERN.test(phone)) {
       return { status: "invalid", field: "phone" }
+    }
+    const email = (input.email ?? "").trim().toLowerCase() || null
+    if (
+      email !== null &&
+      (email.length > BOOKING_RULES.maxCustomerEmail || !EMAIL_PATTERN.test(email))
+    ) {
+      return { status: "invalid", field: "email" }
     }
     const rawNote = input.note === null ? "" : input.note.trim()
     const note = rawNote === "" ? null : rawNote
@@ -311,6 +318,7 @@ export async function createOwnerBooking(
           endAt: new Date(endInstant).toISOString(),
           customerName: name,
           customerPhone,
+          customerEmail: email,
           customerKey: key,
           source: "owner",
           status: "confirmed",

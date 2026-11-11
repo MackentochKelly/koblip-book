@@ -1315,6 +1315,8 @@ export const emailSends = sqliteTable(
     reminderMinutes: integer().notNull().default(0),
     // The booking's moves when this row was made (0 without a booking).
     moves: integer().notNull().default(0),
+    // When a planned booking email goes (EM-D13); null for one sent at once.
+    dueAt: text(),
     state: text({ enum: EMAIL_SEND_STATES }).notNull(),
     reason: text({ enum: EMAIL_SEND_REASONS }),
     language: text({ enum: PAGE_LANGUAGES }),
@@ -1333,6 +1335,7 @@ export const emailSends = sqliteTable(
       table.moves
     ),
     index("email_sends_message").on(table.messageId),
+    index("email_sends_due").on(table.state, table.dueAt),
     index("email_sends_created").on(table.createdAt),
     index("email_sends_email").on(table.email),
   ]

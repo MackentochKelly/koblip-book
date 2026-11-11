@@ -9,6 +9,7 @@ export interface OwnerBookingInput {
   time: string // "HH:mm", business time zone
   name: string
   phone: string | null
+  email?: string | null // where the booking's emails go (docs/plans/email.md, EM-D7)
   note: string | null
   allowConflict: boolean // true = the owner said "Book anyway"
   whatsappOptIn?: boolean // the customer agreed to WhatsApp booking messages
@@ -28,6 +29,7 @@ export type OwnerBookingResult =
         | "time"
         | "name"
         | "phone"
+        | "email"
         | "note"
         | "reward"
     }

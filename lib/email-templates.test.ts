@@ -27,7 +27,10 @@ test("verificationEmail carries the link, the hours and no tracking", async () =
   )
   expect(email.text).toContain("24")
   const escaped = url.replaceAll("&", "&amp;")
-  expect(email.html).toContain(`<a href="${escaped}">${escaped}</a>`)
+  // The link is the email's one button.
+  expect(email.html).toContain(`<a href="${escaped}" `)
+  expect(email.html).toContain(">Confirm email</a>")
+  expect(email.text).toContain(`Confirm email: ${url}`)
   expect(email.html).toContain("24")
   expect(email.html).not.toContain("<img")
 })
@@ -56,7 +59,8 @@ test("the password email carries the link and how long it works", async () => {
     `The link works for ${ACCOUNT_RULES.passwordResetMinutes} minutes, once.`
   )
   expect(email.text).toContain(APP_NAME)
-  expect(email.html).toContain(`<a href="${url}">`)
+  expect(email.html).toContain(`<a href="${url}" `)
+  expect(email.html).toContain(">Choose password</a>")
   expect(email.html).not.toContain("<img")
 })
 

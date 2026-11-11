@@ -1,6 +1,5 @@
 import "server-only"
 
-import { emailClients } from "@/lib/client-reminders"
 import { db } from "@/lib/db"
 import { notificationTimer } from "@/lib/db/schema"
 import {
@@ -11,14 +10,16 @@ import {
 import { NOTIFICATION_RULES } from "@/lib/notification-rules"
 import { sendDuePartnerEvents } from "@/lib/partner-events"
 import { notificationRules } from "@/lib/platform-settings"
+import { runBookingEmails } from "./email-sender"
 import { runNotifications } from "./notification-sender"
 
-// The server's timer for WhatsApp booking messages, started once when the
-// server starts (instrumentation.ts). One check at a time: the next is set
+// The server's timer for WhatsApp booking messages and booking emails
+// (docs/plans/email.md, EM-D13), started once when the server starts
+// (instrumentation.ts). One check at a time: the next is set
 // only when one ends, after the admin's current `sendEverySeconds`. Each
 // check leaves its time (and error) for the admin's Overview (A2), puts
-// visit reminders and review nudges in clients' bells and email reminders
-// (client account D10, D15, D16), and removes in-app
+// visit reminders and review nudges in clients' bells (client account D10,
+// D15), and removes in-app
 // notifications past their keep time (in-app N5), and sends partner apps
 // their events (docs/plans/sales-connection.md, SC7).
 
@@ -48,7 +49,7 @@ async function check() {
     console.error(error)
   }
   try {
-    await emailClients()
+    await runBookingEmails()
   } catch (error) {
     console.error(error)
   }

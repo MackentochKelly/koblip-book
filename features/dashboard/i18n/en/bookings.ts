@@ -254,6 +254,8 @@ const bookings = {
     addName: "Add a name",
     phone: "Phone",
     checkPhone: "Check the phone number",
+    email: "Email",
+    checkEmail: "Check the email",
     whatsappOptIn: "Customer agreed to WhatsApp messages",
     note: "Note",
     optional: "Optional",

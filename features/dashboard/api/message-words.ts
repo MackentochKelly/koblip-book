@@ -1,5 +1,8 @@
 import "server-only"
 
+import { createTranslator } from "next-intl"
+
+import { DEFAULT_LOCALES } from "@/lib/page-language"
 import { wordsFor } from "@/lib/translations/interface-words"
 import { welcomeWordsIn, type WelcomeWords } from "../utils/automation-defaults"
 import {
@@ -56,4 +59,16 @@ export async function welcomeWords(): Promise<
     )
   )
   return Object.fromEntries(all) as Record<TemplateLanguage, WelcomeWords>
+}
+
+// A length of time in the message's language (app.duration). Messages and
+// emails go out on the server's timer, with no page behind them, so the
+// words come straight from the app's words, as a Google Calendar event's do
+// (lib/google-calendar-event.ts).
+export async function durationWordsFor(language: TemplateLanguage) {
+  return createTranslator({
+    locale: DEFAULT_LOCALES[language],
+    messages: await wordsFor(language),
+    namespace: "app.duration",
+  })
 }

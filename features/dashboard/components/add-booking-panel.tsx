@@ -37,7 +37,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { useFormatDuration } from "@/hooks/use-format-duration"
 import { useRewardWords } from "@/hooks/use-reward-words"
-import { BOOKING_RULES, PHONE_PATTERN } from "@/lib/booking-rules"
+import { BOOKING_RULES, EMAIL_PATTERN, PHONE_PATTERN } from "@/lib/booking-rules"
 import { addDaysTo } from "@/lib/format-booking-time"
 import type {
   OwnerBookingInput,
@@ -234,6 +234,7 @@ function BookingForm({
   const [time, setTime] = useState("")
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
+  const [email, setEmail] = useState("")
   const [note, setNote] = useState("")
   const [whatsappOptIn, setWhatsappOptIn] = useState(false)
   const [addonIds, setAddonIds] = useState<string[]>([])
@@ -309,6 +310,9 @@ function BookingForm({
         if (phone.trim() && !PHONE_PATTERN.test(phone.trim())) {
           return onInvalid("phone")
         }
+        if (email.trim() && !EMAIL_PATTERN.test(email.trim())) {
+          return onInvalid("email")
+        }
         onInvalid(null)
         onSubmit({
           businessId,
@@ -319,6 +323,7 @@ function BookingForm({
           time,
           name: name.trim(),
           phone: phone.trim() || null,
+          email: email.trim() || null,
           note: note.trim() || null,
           allowConflict: false,
           whatsappOptIn: options.whatsapp && !!phone.trim() && whatsappOptIn,
@@ -473,6 +478,21 @@ function BookingForm({
             locale={locale}
           />
           {invalid === "phone" && <FieldError>{t("checkPhone")}</FieldError>}
+        </Field>
+        <Field data-invalid={error("email")}>
+          <FieldLabel htmlFor="add-email">{t("email")}</FieldLabel>
+          <Input
+            {...noAutofill("add_email")}
+            id="add-email"
+            type="email"
+            inputMode="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            maxLength={BOOKING_RULES.maxCustomerEmail}
+            placeholder={t("optional")}
+            aria-invalid={error("email")}
+          />
+          {invalid === "email" && <FieldError>{t("checkEmail")}</FieldError>}
         </Field>
         {options.whatsapp && phone.trim() && (
           <Field orientation="horizontal">

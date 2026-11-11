@@ -12,6 +12,7 @@ import ownerWhatsapp from "@/features/dashboard/i18n/en/whatsapp"
 import ownerWidgets from "@/features/dashboard/i18n/en/widgets"
 import notifications from "@/features/notifications/i18n/en"
 import onboarding from "@/features/onboarding/i18n/en"
+import emailStop from "@/features/email-stop/i18n/en"
 import ownerAuth from "@/features/owner-auth/i18n/en"
 import reviews from "@/features/reviews/i18n/en"
 import starterCatalog from "@/features/starter-catalog/i18n/en"
@@ -33,6 +34,7 @@ const messages = {
   assistant,
   assistantServer,
   billing,
+  emailStop,
   notifications,
   onboarding,
   owner: {
