@@ -817,6 +817,21 @@ export function DetailsStep({
               />
               {error === "name" && <FieldError>{t("addName")}</FieldError>}
             </Field>
+            <Field data-invalid={error === "email" || undefined}>
+              <FieldLabel htmlFor="booking-email">{t("email")}</FieldLabel>
+              <Input
+                {...noAutofill("booking_email")}
+                id="booking-email"
+                type="email"
+                inputMode="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                disabled={sending}
+                maxLength={BOOKING_RULES.maxCustomerEmail}
+                aria-invalid={error === "email" || undefined}
+              />
+              {error === "email" && <FieldError>{t("checkEmail")}</FieldError>}
+            </Field>
             <Field data-invalid={error === "phone" || undefined}>
               <div className="flex items-center gap-1">
                 <FieldLabel htmlFor="booking-phone">{t("phone")}</FieldLabel>
@@ -837,21 +852,6 @@ export function DetailsStep({
                 locale={locale}
               />
               {error === "phone" && <FieldError>{t("checkPhone")}</FieldError>}
-            </Field>
-            <Field data-invalid={error === "email" || undefined}>
-              <FieldLabel htmlFor="booking-email">{t("email")}</FieldLabel>
-              <Input
-                {...noAutofill("booking_email")}
-                id="booking-email"
-                type="email"
-                inputMode="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                disabled={sending}
-                maxLength={BOOKING_RULES.maxCustomerEmail}
-                aria-invalid={error === "email" || undefined}
-              />
-              {error === "email" && <FieldError>{t("checkEmail")}</FieldError>}
             </Field>
           </FieldGroup>
         </CardContent>

@@ -426,10 +426,10 @@ export function BookingFlow({
   const checkDetails = (next: BookingDetails) => {
     const error: DetailsError = !next.name
       ? "name"
-      : !PHONE_PATTERN.test(next.phone)
-        ? "phone"
-        : !EMAIL_PATTERN.test(next.email)
-          ? "email"
+      : !EMAIL_PATTERN.test(next.email)
+        ? "email"
+        : !PHONE_PATTERN.test(next.phone)
+          ? "phone"
           : null
     setDetailsError(error)
     return error === null
