@@ -29,7 +29,7 @@ How Koblip Book sends email, and what Amazon holds for it. The plan and its task
 
 | Piece | Name | What it does |
 | --- | --- | --- |
-| Configuration set | `koblip-book-production` | Every Book email goes out in it (`SES_CONFIGURATION_SET`). Sends Rejects, Deliveries, Hard bounces, Complaints and Delivery delays to the topic |
+| Configuration set | `koblip-book-production` | Every Book email goes out in it (`SES_CONFIGURATION_SET`). Sends Rejects, Deliveries, Hard bounces, Complaints and Delivery delays to the topic. Its Virtual Deliverability Manager options override the account's: engagement tracking off (the account has it on, which wrapped every link in `awstrack.me`), optimized shared delivery on as the account has it. Set Nov 11; the other apps keep the account's settings |
 | SNS topic | `koblip-book-ses-events`, ARN `arn:aws:sns:us-east-1:175646932741:koblip-book-ses-events` | `SES_EVENTS_TOPIC_ARN`. Standard topic |
 | Subscription | HTTPS to `https://book.koblip.com/api/email/events`, raw delivery off | Confirmed by the live app on Nov 11 |
 | IAM user | `koblip-book-email`, inline policy `KoblipBookEmailAccess` | Can only send (`ses:SendEmail`, `ses:SendRawEmail`) on `koblip.com` with that set, from `contact@koblip.com`. No console access. Its key is in `.env.local` and the server's `.env.production` |
@@ -37,6 +37,8 @@ How Koblip Book sends email, and what Amazon holds for it. The plan and its task
 ## Checked live (Nov 11)
 
 Sent from the server to Amazon's mailbox simulator in `koblip-book-production`: `bounce@`, `complaint@` and `success@simulator.amazonses.com`. SNS posted each event to `/api/email/events` (all answered 204), and the bounce and the complaint each put their address in `email_blocks` for every business.
+
+A real booking at Barbalogia to `kellybegin754@gmail.com` (Nov 11): confirmed (Gmail showed the event card from `booking.ics`, and its own unsubscribe), changed after a move, cancelled after a cancel; all delivered, and the four waiting reminders were skipped at the cancel. The Stop emails page opens with the address and the business.
 
 ## Still to look at
 
