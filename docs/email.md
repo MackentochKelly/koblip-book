@@ -14,7 +14,7 @@ How Koblip Book sends email, and what Amazon holds for it. The plan and its task
 | SPF on `koblip.com` | `include:_spf.mail.hostinger.com include:_spf.firebasemail.com include:amazonses.com ~all` |
 | DNS | Hostinger (name servers `*.dns-parking.com`). Mailboxes on `koblip.com` are Hostinger's (MX `mx1/mx2.hostinger.com`) |
 | Suppression list | On, for bounces and complaints. 10+ addresses, mostly old bounces; `admin@koblip.com` bounced on Jul 31 |
-| Configuration sets | `flowlead-production`, `koblip-sales-production`, `my-first-configuration-set`. None for Book yet |
+| Configuration sets | `flowlead-production`, `koblip-sales-production`, `my-first-configuration-set`, and Book's `koblip-book-production` (Nov 11) |
 | `contact@koblip.com` | The sender (owner's call, Nov 11). Covered by the verified `koblip.com` domain, so SES sends from it as is. Not on the suppression list (all 18 entries checked). A real Hostinger mailbox, so replies reach a person. Already the app's legal contact (`features/legal/content.ts`) |
 | DMARC today | Passes through DKIM: mail from `contact@koblip.com` is signed by `koblip.com`, the same domain. The custom MAIL FROM would also line up SPF; it is optional and not set up |
 | Other identities | `printdura.com` (verified), `upra.space` (not verified), one personal email address: other businesses, not touched |
@@ -24,6 +24,15 @@ How Koblip Book sends email, and what Amazon holds for it. The plan and its task
 - `lib/email.ts` sends through the SES API (nodemailer's SES transport, `@aws-sdk/client-sesv2`). Every email gets an `email_sends` row first: kind, address, business, booking, state (`sending → sent | failed | skipped`), Amazon's message id.
 - An address in `email_blocks` is skipped with the reason `blocked`. Without the AWS keys, emails are skipped with `notSetUp` and one warning.
 - `SES_CONFIGURATION_SET` puts each email in that set; its SNS topic posts to `/api/email/events`. The route checks Amazon's signature, the topic (`SES_EVENTS_TOPIC_ARN`) and the certificate host, confirms the subscription once, and records Delivery, DeliveryDelay, Reject, Bounce and Complaint. A hard bounce or a complaint blocks the address everywhere.
+
+## Book's AWS pieces (made Nov 11, EM-5)
+
+| Piece | Name | What it does |
+| --- | --- | --- |
+| Configuration set | `koblip-book-production` | Every Book email goes out in it (`SES_CONFIGURATION_SET`). Sends Rejects, Deliveries, Hard bounces, Complaints and Delivery delays to the topic |
+| SNS topic | `koblip-book-ses-events`, ARN `arn:aws:sns:us-east-1:175646932741:koblip-book-ses-events` | `SES_EVENTS_TOPIC_ARN`. Standard topic |
+| Subscription | HTTPS to `https://book.koblip.com/api/email/events` | **Not made yet**: made after the deploy, so the live app confirms it |
+| IAM user | `koblip-book-email`, inline policy `KoblipBookEmailAccess` | Can only send (`ses:SendEmail`, `ses:SendRawEmail`) on `koblip.com` with that set, from `contact@koblip.com`. No console access. No access key yet: the owner makes it |
 
 ## Still to look at
 
