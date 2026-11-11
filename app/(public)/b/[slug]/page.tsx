@@ -147,7 +147,11 @@ export default async function BusinessPage({ params }: Props) {
               />
             </div>
             <aside className="hidden md:block">
-              <BusinessSideCard business={business} bookable={bookable} />
+              <BusinessSideCard
+                business={business}
+                open={open}
+                bookable={bookable}
+              />
             </aside>
           </div>
         </main>
