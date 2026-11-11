@@ -237,14 +237,13 @@ describe("DetailsStep", () => {
     expect(screen.queryByText("Check your email")).not.toBeNull()
   })
 
-  it("shows the sign-in above the form only when one is given", () => {
+  it("shows only the sign-in when one is given, else the form", () => {
     const { rerender } = render(step(<button>Sign in here</button>))
-    const signIn = screen.getByRole("button", { name: "Sign in here" })
-    expect(
-      signIn.compareDocumentPosition(screen.getByLabelText("Name")) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Sign in here" })).toBeTruthy()
+    expect(screen.queryByLabelText("Name")).toBeNull()
+    expect(screen.queryByText("Contact info")).toBeNull()
     rerender(step(null))
     expect(screen.queryByRole("button", { name: "Sign in here" })).toBeNull()
+    expect(screen.getByLabelText("Name")).toBeTruthy()
   })
 })

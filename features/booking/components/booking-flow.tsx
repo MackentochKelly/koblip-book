@@ -660,7 +660,9 @@ export function BookingFlow({
             discountMinor={discountMinor}
             className="md:hidden"
           />
-          {myRewards && (
+          {/* Signed out, the sign-in below is the one way on. */}
+          {myRewards &&
+            !(customer === null && myRewards.state === "signedOut") && (
             <RewardField
               rewards={myRewards}
               offers={offers}

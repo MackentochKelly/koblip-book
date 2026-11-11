@@ -742,7 +742,8 @@ export type BookingDetails = { name: string; phone: string; email: string }
 
 // Last step: a name, a phone and an email (docs/plans/email.md, EM-D7). The
 // flow holds them, so its Confirm button knows when all are filled. Signed
-// out, the app's one sign-in comes first (`signIn`): it fills name and email.
+// out, the app's one sign-in (`signIn`) takes the form's place: every
+// booking comes from an account, and signing in fills name and email.
 export function DetailsStep({
   formId,
   sending,
@@ -759,8 +760,8 @@ export function DetailsStep({
   // The business's name when it sends WhatsApp booking messages: the ⓘ on
   // Phone says so (Meta opt-in), and booking is the customer's yes.
   whatsappFrom: string | null
-  // Signed out: the app's sign-in, shown above the form. Null once signed
-  // in, or while that is not known yet.
+  // Signed out: the app's sign-in, shown instead of the form. Null once
+  // signed in, or while that is not known yet.
   signIn: ReactNode
   details: BookingDetails
   onDetailsChange: (details: BookingDetails) => void
@@ -774,6 +775,14 @@ export function DetailsStep({
     onDetailsChange({ ...details, phone: next })
   const setEmail = (next: string) =>
     onDetailsChange({ ...details, email: next })
+  // Outside the form: the sign-in has forms of its own.
+  if (signIn) {
+    return (
+      <Card variant="muted" className="mt-4">
+        <CardContent>{signIn}</CardContent>
+      </Card>
+    )
+  }
   return (
     <form
       id={formId}
@@ -789,11 +798,6 @@ export function DetailsStep({
         })
       }}
     >
-      {signIn && (
-        <Card variant="muted" className="mb-4">
-          <CardContent>{signIn}</CardContent>
-        </Card>
-      )}
       <Card variant="muted">
         <CardHeader>
           <CardTitle>{t("contactTitle")}</CardTitle>

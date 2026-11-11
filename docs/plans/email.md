@@ -116,4 +116,4 @@ Order: EM-1 → EM-2, with EM-3 → EM-4 alongside → EM-5 → EM-6 + EM-7 → 
 | Date | Who | What | Why |
 | --- | --- | --- | --- |
 | Nov 10 | Developer | EM-D1 to EM-D13 | See each decision |
-| Nov 11 | Owner, developer | EM-D7 changed: Email is **required** on the public booking form, and a signed-out customer sees the app's one sign-in (Google, More options) above Contact info. Signing in fills name and email; guests can still book by typing them | The owner wants every customer to have an email; forcing an account loses bookings, so sign-in is offered, not required |
+| Nov 11 | Owner, developer | EM-D7 changed: Email is **required** on the public booking form. Signed out, the app's one sign-in (`AuthForm`: Google, More options) **replaces** Contact info, so every booking comes from an account; signed in, Contact info shows filled from the account | The owner's call: every customer has an account and an email |
