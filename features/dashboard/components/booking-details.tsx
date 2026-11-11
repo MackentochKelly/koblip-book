@@ -7,7 +7,13 @@ import { useFormatDuration } from "@/hooks/use-format-duration"
 import { useRewardWords } from "@/hooks/use-reward-words"
 import { formatClock, formatDay } from "@/lib/format-booking-time"
 import { formatPrice } from "@/lib/format-price"
-import { proofDeleteDate } from "@/lib/payment-rules"
+import {
+  CARD_TYPE,
+  leftToPay,
+  paidInFullOnline,
+  paymentBadgeState,
+  proofDeleteDate,
+} from "@/lib/payment-rules"
 import type { BookingReward } from "@/lib/rewards"
 import type { OwnerBooking } from "../types"
 import { BookingStatusBadge } from "./booking-status-badge"
@@ -121,10 +127,50 @@ export function BookingDetails({
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-medium">
-                {booking.payment.method?.name ?? t("payment.later")}
+                {booking.payment.method?.type === CARD_TYPE
+                  ? t("payment.card")
+                  : (booking.payment.method?.name ?? t("payment.later"))}
               </p>
-              <PaymentStatusBadge status={booking.payment.status} />
+              <PaymentStatusBadge status={paymentBadgeState(booking.payment)} />
             </div>
+            {booking.payment.online && (
+              <div className="flex flex-col text-muted-foreground">
+                <p>
+                  {t("payment.paidOnline", {
+                    amount: formatPrice(
+                      booking.payment.online.paidMinor,
+                      booking.currency,
+                      locale
+                    ),
+                  })}
+                </p>
+                {booking.payment.online.refundedMinor > 0 && (
+                  <p>
+                    {t("payment.refundedAmount", {
+                      amount: formatPrice(
+                        booking.payment.online.refundedMinor,
+                        booking.currency,
+                        locale
+                      ),
+                    })}
+                  </p>
+                )}
+                {booking.payment.status !== "paid" &&
+                  booking.status !== "cancelled" &&
+                  (leftToPay(booking.priceMinor, booking.payment.online) ?? 0) >
+                    0 && (
+                    <p>
+                      {t("payment.left", {
+                        amount: formatPrice(
+                          leftToPay(booking.priceMinor, booking.payment.online),
+                          booking.currency,
+                          locale
+                        ),
+                      })}
+                    </p>
+                  )}
+              </div>
+            )}
             {booking.payment.reference && (
               <p className="break-words text-muted-foreground">
                 {t("payment.reference", {
@@ -141,7 +187,11 @@ export function BookingDetails({
                 })}
               />
             )}
-            {onPaid && booking.status !== "cancelled" && (
+            {/* What the card paid in full is Stripe's to say, never a tap
+                (ON12). */}
+            {onPaid &&
+              booking.status !== "cancelled" &&
+              !paidInFullOnline(booking.priceMinor, booking.payment.online) && (
               <Button
                 variant="outline"
                 className="self-start"

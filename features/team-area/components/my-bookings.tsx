@@ -5,6 +5,7 @@ import { useState } from "react"
 import { CalendarDaysIcon } from "@/components/ui/icons"
 
 import { PaymentBadge } from "@/components/payment-badge"
+import { formatPrice } from "@/lib/format-price"
 import { PaymentProof } from "@/components/payment-proof"
 import { ViewTabs } from "@/components/view-tabs"
 import { Badge } from "@/components/ui/badge"
@@ -117,7 +118,19 @@ export function MyBookings({
                         {booking.payment && (
                           <PaymentBadge
                             status={booking.payment.status}
-                            label={t(`bookings.payment.status.${booking.payment.status}`)}
+                            label={
+                              booking.payment.status === "deposit"
+                                ? t("bookings.payment.paidOnline", {
+                                    amount: formatPrice(
+                                      booking.payment.paidOnlineMinor ?? 0,
+                                      booking.payment.currency,
+                                      locale
+                                    ),
+                                  })
+                                : t(
+                                    `bookings.payment.status.${booking.payment.status}`
+                                  )
+                            }
                           />
                         )}
                         {booking.payment?.proof && (

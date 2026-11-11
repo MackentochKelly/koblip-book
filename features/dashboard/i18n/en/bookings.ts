@@ -67,7 +67,15 @@ const bookings = {
       unpaid: "Payment pending",
       reported: "Review payment",
       paid: "Paid",
+      // By card (docs/plans/online-payments.md).
+      deposit: "Deposit paid",
+      refunded: "Refunded",
     },
+    // Paid by card on Stripe's page: only Stripe sets these.
+    card: "Card",
+    paidOnline: "Paid online: {amount}",
+    refundedAmount: "Refunded: {amount}",
+    left: "Left to pay at the visit: {amount}",
     // The customer's picture of the payment (docs/plans/payment-proof.md).
     proof: "Payment proof",
     proofDeleted: "Deleted on {date, date, medium}",

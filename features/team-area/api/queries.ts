@@ -12,7 +12,7 @@ import {
 } from "@/lib/db/schema"
 import type { TeamSeat } from "@/lib/dal"
 import type { HoursRow } from "@/lib/hours-rules"
-import { paymentOf } from "@/lib/payment-rules"
+import { paymentBadgeState, paymentOf } from "@/lib/payment-rules"
 import type { StartingCounts, TeamProfile } from "@/lib/team-rules"
 import type { MyBooking } from "../types"
 
@@ -51,6 +51,9 @@ export async function getMyBookings(
       paymentStatus: bookings.paymentStatus,
       paymentReference: bookings.paymentReference,
       paymentProof: bookings.paymentProof,
+      paidOnlineMinor: bookings.paidOnlineMinor,
+      refundedMinor: bookings.refundedMinor,
+      currency: bookings.currency,
       rewardId: bookings.rewardId,
     })
     .from(bookings)
@@ -62,20 +65,26 @@ export async function getMyBookings(
     .orderBy(when === "upcoming" ? asc(bookings.startAt) : desc(bookings.startAt))
     .limit(LIST_LIMIT)
   return rows.map(
-    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof, rewardId, ...booking }) => {
+    ({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof, paidOnlineMinor, refundedMinor, currency, rewardId, ...booking }) => {
       // A cancelled booking has nothing to pay. Only the way's name, the
       // status and whether there is a picture to open leave here.
       const payment =
         booking.status === "cancelled"
           ? null
-          : paymentOf({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof })
+          : paymentOf({ paymentChoice, paymentMethod, paymentStatus, paymentReference, paymentProof, paidOnlineMinor, refundedMinor })
+      const kept = payment?.online
+        ? payment.online.paidMinor - payment.online.refundedMinor
+        : 0
       return {
         ...booking,
         reward: rewardId !== null,
         payment: payment && {
           way: payment.method?.name ?? null,
-          status: payment.status,
+          status: paymentBadgeState(payment),
           proof: payment.hasProof && Boolean(business?.teamSeesProof),
+          // The amount only: never how the customer paid it.
+          paidOnlineMinor: kept > 0 ? kept : null,
+          currency,
         },
       }
     }

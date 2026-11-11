@@ -11,6 +11,7 @@ import { deleteProof } from "@/lib/payment-proofs"
 import {
   checkPaymentMethod,
   isPaymentType,
+  paidInFullOnline,
   PAYMENT_RULES,
   withRemovedType,
 } from "@/lib/payment-rules"
@@ -198,6 +199,9 @@ export async function setBookingPaid(
       id: bookings.id,
       paymentStatus: bookings.paymentStatus,
       paymentProof: bookings.paymentProof,
+      priceMinor: bookings.priceMinor,
+      paidOnlineMinor: bookings.paidOnlineMinor,
+      refundedMinor: bookings.refundedMinor,
       businessId: bookings.businessId,
       moves: bookings.moves,
       serviceName: bookings.serviceName,
@@ -215,6 +219,20 @@ export async function setBookingPaid(
     .limit(1)
   if (!booking) return { ok: false, error: "not_found" }
   if (booking.paymentStatus === null) return { ok: false, error: "no_payment" }
+  // What the card paid in full is Stripe's to say, never a tap (ON12).
+  if (
+    !paid &&
+    paidInFullOnline(
+      booking.priceMinor,
+      booking.paidOnlineMinor === null
+        ? null
+        : {
+            paidMinor: booking.paidOnlineMinor,
+            refundedMinor: booking.refundedMinor ?? 0,
+          }
+    )
+  )
+    return { ok: false, error: "paid_online" }
   // The client's bell hears that it is paid, saved with the change; not
   // when it was paid already, and not when it turns back to not paid.
   const turnsPaid = paid && booking.paymentStatus !== "paid"

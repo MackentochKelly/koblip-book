@@ -109,8 +109,8 @@ afterAll(() => {
 test("a team member sees how their own bookings are paid, and where it stands", async () => {
   const mine = await getMyBookings(SEAT, "upcoming")
   expect(mine.map(({ id, payment }) => [id, payment])).toEqual([
-    ["zelle", { way: "Zelle", status: "reported", proof: true }],
-    ["later", { way: null, status: "unpaid", proof: false }],
+    ["zelle", { way: "Zelle", status: "reported", proof: true, paidOnlineMinor: null, currency: "DOP" }],
+    ["later", { way: null, status: "unpaid", proof: false, paidOnlineMinor: null, currency: "DOP" }],
     ["plain", null],
   ])
 })
@@ -126,6 +126,8 @@ test("with the owner's switch off, a team member is told of no picture", async (
       way: "Zelle",
       status: "reported",
       proof: false,
+      paidOnlineMinor: null,
+      currency: "DOP",
     })
   } finally {
     await db

@@ -1,4 +1,4 @@
-import type { PaymentStatus } from "@/lib/payment-rules"
+import type { PaymentBadgeState } from "@/lib/payment-rules"
 
 export interface MyBooking {
   id: string
@@ -13,5 +13,13 @@ export interface MyBooking {
   // proof: there is a payment picture this member may open.
   // A reward was redeemed on it (docs/plans/rewards.md, RW-12).
   reward: boolean
-  payment: { way: string | null; status: PaymentStatus; proof: boolean } | null
+  // paidOnline: what the card paid when booking and was not given back,
+  // already as text ("$10.00"); null when nothing was.
+  payment: {
+    way: string | null
+    status: PaymentBadgeState
+    proof: boolean
+    paidOnlineMinor: number | null
+    currency: string
+  } | null
 }

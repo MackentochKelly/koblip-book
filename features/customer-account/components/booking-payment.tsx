@@ -24,11 +24,14 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
+import { formatPrice } from "@/lib/format-price"
 import { myBookingsLoginHref } from "@/lib/my-bookings-links"
 import { languageOf } from "@/lib/page-language"
 import {
   canReportPayment,
+  leftToPay,
   PAYMENT_RULES,
+  paymentBadgeState,
   proofDeleteDate,
 } from "@/lib/payment-rules"
 import { resizeImage } from "@/lib/resize-image"
@@ -46,7 +49,8 @@ const ACCEPT = Object.keys(UPLOAD_RULES.types).join(",")
 
 export function BookingPayment({ booking }: { booking: MyBooking }) {
   const t = useTranslations("public.account.payment")
-  const language = languageOf(useLocale())
+  const locale = useLocale()
+  const language = languageOf(locale)
   const router = useRouter()
   const [reference, setReference] = useState("")
   const [busy, startTransition] = useTransition()
@@ -102,18 +106,46 @@ export function BookingPayment({ booking }: { booking: MyBooking }) {
     })
   const deleted = t("proofDeleted", { date: proofDeleteDate(booking.calendar.startAt) })
 
+  const badge = paymentBadgeState(payment)
+  const online = payment.online
+  const left = leftToPay(booking.priceMinor, online) ?? 0
+  const money = (minor: number) => formatPrice(minor, booking.currency, locale)
+
   return (
     <PageSection
       id="payment"
       title={t("title")}
-      action={
-        <PaymentBadge
-          status={payment.status}
-          label={t(`status.${payment.status}`)}
-        />
-      }
+      action={<PaymentBadge status={badge} label={t(`status.${badge}`)} />}
     >
       <ItemGroup className="gap-3">
+        {/* Paid by card on Stripe's page (docs/plans/online-payments.md):
+            nothing to send and nothing to report. */}
+        {online && (
+          <Item variant="box">
+            <ItemMedia variant="icon">
+              <PaymentTypeIcon type="card" />
+            </ItemMedia>
+            <ItemContent className="min-w-0">
+              <ItemDescription>{t("card")}</ItemDescription>
+              <ItemTitle>
+                {t("paidOnline", { amount: money(online.paidMinor) })}
+              </ItemTitle>
+              {online.refundedMinor > 0 && (
+                <ItemDescription>
+                  {t("refundedAmount", { amount: money(online.refundedMinor) })}
+                </ItemDescription>
+              )}
+              {payment.status !== "paid" &&
+                !booking.cancelled &&
+                left > 0 && (
+                  <ItemDescription>
+                    {t("left", { amount: money(left) })}
+                  </ItemDescription>
+                )}
+            </ItemContent>
+          </Item>
+        )}
+        {!online && (
         <Item variant="box">
           <ItemMedia variant="icon">
             {payment.method ? (
@@ -139,6 +171,7 @@ export function BookingPayment({ booking }: { booking: MyBooking }) {
             />
           )}
         </Item>
+        )}
         {canReportPayment(payment) && (
           <Item variant="box">
             <form

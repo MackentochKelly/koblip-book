@@ -1,10 +1,14 @@
 import { Badge } from "@/components/ui/badge"
-import type { PaymentStatus } from "@/lib/payment-rules"
+import type { PaymentBadgeState } from "@/lib/payment-rules"
 
 const VARIANTS = {
   unpaid: "secondary",
   reported: "warning",
   paid: "success",
+  // By card (docs/plans/online-payments.md): a part is paid, or all of it
+  // was given back.
+  deposit: "success",
+  refunded: "secondary",
 } as const
 
 // Where a booking's payment stands (lib/payment-rules.ts): not paid, the
@@ -15,7 +19,7 @@ export function PaymentBadge({
   status,
   label,
 }: {
-  status: PaymentStatus
+  status: PaymentBadgeState
   label: string
 }) {
   return <Badge variant={VARIANTS[status]}>{label}</Badge>

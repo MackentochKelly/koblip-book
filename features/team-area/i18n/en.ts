@@ -29,7 +29,10 @@ const words = {
         unpaid: "Payment pending",
         reported: "Being checked",
         paid: "Paid",
+        refunded: "Refunded",
       },
+      // What the card paid when booking, in place of "Payment pending".
+      paidOnline: "Paid online: {amount}",
       // The customer's picture of the payment, while the owner lets the
       // team see them (docs/plans/payment-proof.md).
       proof: "Payment proof",

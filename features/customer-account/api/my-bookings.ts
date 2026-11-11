@@ -96,6 +96,8 @@ async function loadBookings(
       paymentStatus: bookings.paymentStatus,
       paymentReference: bookings.paymentReference,
       paymentProof: bookings.paymentProof,
+      paidOnlineMinor: bookings.paidOnlineMinor,
+      refundedMinor: bookings.refundedMinor,
       asksProof: businesses.paymentProof,
       business: {
         id: businesses.id,
@@ -201,7 +203,9 @@ async function loadBookings(
       rewardDiscountMinor: row.rewardDiscountMinor,
       currency: row.currency,
       // A cancelled booking owes nothing: its instructions stay hidden.
-      payment: cancelled ? null : paymentOf(row),
+      // What a card paid, and what was given back, still shows.
+      payment:
+        cancelled && row.paidOnlineMinor === null ? null : paymentOf(row),
       asksProof: row.asksProof,
       business: {
         slug: row.business.slug,

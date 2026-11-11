@@ -570,3 +570,15 @@ export function paidInFullOnline(
     online.paidMinor > 0
   )
 }
+
+// What a booking's payment badge says: its status, or, while the business
+// has not marked it paid, what the card did: paid a part ("deposit"), or
+// was given everything back ("refunded").
+export type PaymentBadgeState = PaymentStatus | "deposit" | "refunded"
+
+export function paymentBadgeState(payment: BookingPayment): PaymentBadgeState {
+  if (payment.status !== "unpaid" || !payment.online) return payment.status
+  return payment.online.paidMinor - payment.online.refundedMinor > 0
+    ? "deposit"
+    : "refunded"
+}
