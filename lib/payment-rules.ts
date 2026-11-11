@@ -359,8 +359,15 @@ export const ONLINE_PAY_RULES = {
   // How long a time is held while the customer pays: Stripe's shortest
   // payment page (docs.stripe.com/api/checkout/sessions/create, expires_at).
   holdMinutes: 30,
-  // How often the server deletes holds nobody paid for.
+  // The hold outlives Stripe's page by this much, so a payment made in its
+  // last second still finds its time; and how often the server deletes
+  // holds nobody paid for.
+  holdGraceMinutes: 5,
   holdSweepMinutes: 5,
+  // Koblip's own fee per payment, in percent of what the card is charged
+  // (ON11): none. The payment page already sends it to Stripe when it is
+  // above 0, so turning it on is this one number.
+  feePercent: 0,
   // A deposit in percent; 100 is the full price, which is its own choice.
   minPercent: 1,
   maxPercent: 99,

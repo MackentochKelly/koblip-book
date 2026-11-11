@@ -11,7 +11,7 @@ Online payments are off until `STRIPE_SECRET_KEY` and `STRIPE_CONNECT_WEBHOOK_SE
 | Koblip's account | United States. Connect is on in the sandbox ("KOBLIP"), checked Nov 10 by making a test business account, its onboarding link and a payment page through the API |
 | Each business | Its own Stripe account, made by the app with the Accounts v2 API: full Stripe dashboard, Stripe's fees paid by the business, losses covered by Stripe, `card_payments` asked for. `metadata.businessId` is the Koblip business |
 | Payments | Stripe Checkout sessions made **on the business's account** (direct charges). `metadata.holdId` and `metadata.businessId` say which booking it pays |
-| Koblip's fee | None. Admin → Settings keeps the percent, at 0 |
+| Koblip's fee | None: `ONLINE_PAY_RULES.feePercent` in [lib/payment-rules.ts](../lib/payment-rules.ts) is 0 |
 | Webhook | `<BETTER_AUTH_URL>/api/stripe/connect`, listening to **Connected accounts**, events below. Not the subscriptions one |
 
 Webhook events ([docs.stripe.com/connect/webhooks](https://docs.stripe.com/connect/webhooks)):
