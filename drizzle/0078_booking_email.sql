@@ -1,0 +1,1 @@
+ALTER TABLE `bookings` ADD `customer_email` text;

@@ -4,7 +4,9 @@ import { getLocale, getTranslations } from "next-intl/server"
 import { LanguageProvider } from "@/components/language-provider"
 import { WordsProvider } from "@/components/words-provider"
 import { getSession } from "@/lib/dal"
+import { SignInHere } from "@/features/owner-auth/components/sign-in-here"
 import { languageOf } from "@/lib/page-language"
+import { phoneSignInReady } from "@/lib/phone-sign-in"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { BottomBar } from "@/components/bottom-bar"
@@ -97,7 +99,7 @@ export default async function BusinessPage({ params }: Props) {
   ]
 
   return (
-    <WordsProvider namespaces={["app", "public", "reviews"]}>
+    <WordsProvider namespaces={["app", "public", "reviews", "ownerAuth"]}>
       <LanguageProvider language={language}>
         <main
           lang={language}
@@ -162,7 +164,7 @@ export default async function BusinessPage({ params }: Props) {
             />
           </BottomBar>
         )}
-        {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp, payments })} mode="drawer" />}
+        {bookable && <BookingFlow page={toBookingPage({ ...data, whatsapp, payments })} mode="drawer" signIn={<SignInHere phoneSignIn={phoneSignInReady()} language={language} />} />}
         {isOwner && <OwnerBackButton businessId={business.id} />}
         <Toaster />
       </LanguageProvider>

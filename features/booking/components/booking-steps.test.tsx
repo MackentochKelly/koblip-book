@@ -8,7 +8,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { WithWords } from "@/i18n/testing"
 import type { BookingPage, BookingService } from "./booking-page"
-import { PaymentStep, ServiceStep } from "./booking-steps"
+import { DetailsStep, PaymentStep, ServiceStep } from "./booking-steps"
 
 // Where to send the money is asked from the server once a way is picked.
 vi.mock("../api/payment-details", () => ({
@@ -210,5 +210,41 @@ describe("PaymentStep", () => {
     cleanup()
     render(step(false, "m1"))
     expect(screen.queryByRole("button", { name: "Add payment proof" })).toBeNull()
+  })
+})
+
+describe("DetailsStep", () => {
+  const step = (signIn: React.ReactNode) => (
+    <WithWords>
+      <DetailsStep
+        formId="details"
+        sending={false}
+        error="email"
+        whatsappFrom={null}
+        signIn={signIn}
+        details={{ name: "Ana", phone: "+18095550134", email: "ana@" }}
+        onDetailsChange={() => {}}
+        onSubmit={() => {}}
+      />
+    </WithWords>
+  )
+
+  it("asks for an email and says when it is wrong", () => {
+    render(step(null))
+    expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe(
+      "ana@"
+    )
+    expect(screen.queryByText("Check your email")).not.toBeNull()
+  })
+
+  it("shows the sign-in above the form only when one is given", () => {
+    const { rerender } = render(step(<button>Sign in here</button>))
+    const signIn = screen.getByRole("button", { name: "Sign in here" })
+    expect(
+      signIn.compareDocumentPosition(screen.getByLabelText("Name")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    rerender(step(null))
+    expect(screen.queryByRole("button", { name: "Sign in here" })).toBeNull()
   })
 })

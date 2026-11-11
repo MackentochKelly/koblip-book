@@ -490,6 +490,9 @@ export const bookings = sqliteTable(
     endAt: text().notNull(),
     customerName: text().notNull(),
     customerPhone: text(),
+    // Where the booking's emails go (docs/plans/email.md, EM-D7): asked on
+    // the public booking form; null on older and owner-made bookings.
+    customerEmail: text(),
     // customerKey(customerPhone, customerName) from lib/customer-key.ts,
     // set on every new booking. Null only on bookings made before it
     // existed, until `npm run customers:backfill` fills them.

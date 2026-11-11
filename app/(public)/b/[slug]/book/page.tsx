@@ -9,7 +9,9 @@ import { BookingFlow } from "@/features/booking/components/booking-flow"
 import { toBookingPage } from "@/features/booking/components/booking-page"
 import { paymentOptionsFor } from "@/lib/payment-methods"
 import { isBookable } from "@/features/booking/utils/is-bookable"
+import { SignInHere } from "@/features/owner-auth/components/sign-in-here"
 import { languageOf } from "@/lib/page-language"
+import { phoneSignInReady } from "@/lib/phone-sign-in"
 import { offersWhatsapp } from "@/lib/whatsapp-offer"
 
 type Props = PageProps<"/b/[slug]/book">
@@ -54,10 +56,10 @@ export default async function BookPage({ params }: Props) {
     redirect(`/b/${slug}`)
   }
   return (
-    <WordsProvider namespaces={["app", "public"]}>
+    <WordsProvider namespaces={["app", "public", "ownerAuth"]}>
       <LanguageProvider language={language}>
         <div lang={language}>
-          <BookingFlow page={toBookingPage({ ...data, whatsapp, payments })} mode="page" />
+          <BookingFlow page={toBookingPage({ ...data, whatsapp, payments })} mode="page" signIn={<SignInHere phoneSignIn={phoneSignInReady()} language={language} />} />
         </div>
         <Toaster />
       </LanguageProvider>

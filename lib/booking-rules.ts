@@ -20,6 +20,8 @@ export const BOOKING_RULES = {
   maxBusinessAddress: 300,
   maxBusinessDescription: 1000,
   maxCustomerName: 80,
+  // The longest address an email can have (RFC 5321).
+  maxCustomerEmail: 254,
   maxPriceMinor: 10_000_000,
   maxNote: 500,
   maxHoursRows: 14,

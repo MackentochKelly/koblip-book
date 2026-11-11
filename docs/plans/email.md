@@ -94,7 +94,7 @@ The owner signs in to AWS; the developer never types a password or a key. Each c
 | EM-4 | Send through the SES API with the log; events route with signature check; blocks | EM-3 | `lib/email.ts`, `lib/email-sends.ts`, `lib/email-events.ts`, `app/api/email/events/`, `docs/setup.md`, `docs/deploy.md`, `scripts/deploy.sh` (email check) | To do |
 | EM-5 | AWS setup step 3, then a real bounce and complaint with Amazon's mailbox simulator | EM-2, EM-4 deployed | `docs/email.md` | To do |
 | EM-6 | Shared email layout; the existing seven emails moved onto it and the log | EM-4 | `lib/email-templates.ts`, `lib/email-layout.ts`, `lib/billing-emails.ts`, `lib/auth.ts` (send calls), `lib/i18n/en/` (emails) | To do |
-| EM-7 | "Email" on the booking form and `bookings.customerEmail`; owner's new-booking form too | EM-3 | `features/booking/` (form, create), `features/dashboard/` (owner booking form), `lib/db/schema.ts` (bookings) | To do |
+| EM-7 | "Email" on the booking form and `bookings.customerEmail`; owner's new-booking form too | – | `features/booking/` (form, create), `features/dashboard/` (owner booking form), `lib/db/schema.ts` (bookings) | Public form: Done (Nov 11, see commit). Owner's form: To do |
 | EM-8 | Plan and send the customer's four emails; reminders by the business's times, quiet hours and EM-D8; "Stop emails" link | EM-6, EM-7 | `lib/booking-emails.ts`, `lib/client-reminders.ts`, `features/dashboard/api/notification-timer.ts`, `app/(public)/email/stop/` | To do |
 | EM-9 | Owner's three emails | EM-8 | `lib/booking-emails.ts`, `lib/db/schema.ts` (settings) | To do |
 | EM-10 | Owner's Email page: switches and history | EM-8 | `features/dashboard/` (email page), `app/(owner)/` (route) | To do |
@@ -116,3 +116,4 @@ Order: EM-1 → EM-2, with EM-3 → EM-4 alongside → EM-5 → EM-6 + EM-7 → 
 | Date | Who | What | Why |
 | --- | --- | --- | --- |
 | Nov 10 | Developer | EM-D1 to EM-D13 | See each decision |
+| Nov 11 | Owner, developer | EM-D7 changed: Email is **required** on the public booking form, and a signed-out customer sees the app's one sign-in (Google, More options) above Contact info. Signing in fills name and email; guests can still book by typing them | The owner wants every customer to have an email; forcing an account loses bookings, so sign-in is offered, not required |
