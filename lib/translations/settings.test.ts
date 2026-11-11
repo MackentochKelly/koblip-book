@@ -167,3 +167,27 @@ test("the queue keeps to the admin's daily limit per business", async () => {
     deferred: 1,
   })
 })
+
+test("a new daily limit counts today: texts held for tomorrow are due again", async () => {
+  await setTranslationRule({ key: "dailyBusinessCharacters", value: 1_000, userId: "admin" })
+  await syncTexts({
+    scope: "business",
+    businessId: "biz",
+    items: [{ key: "s1:service.description", module: "service.description", text: "x".repeat(1_200) }],
+    languages: ["es"],
+  })
+  const google: Translator = {
+    name: "google",
+    async translate(htmls) {
+      return htmls.map((html) => `ES:${html}`)
+    },
+  }
+  expect(await runTranslationQueue({ translator: google })).toMatchObject({ deferred: 1 })
+  await setTranslationRule({ key: "dailyBusinessCharacters", value: 2_000, userId: "admin" })
+  const [entry] = await db.select().from(translationEntries)
+  expect(entry.nextAttemptAt).toBeNull()
+  expect(await runTranslationQueue({ translator: google })).toMatchObject({
+    translated: 1,
+    deferred: 0,
+  })
+})

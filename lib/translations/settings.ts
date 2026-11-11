@@ -1,9 +1,13 @@
 import "server-only"
 
-import { eq, like } from "drizzle-orm"
+import { and, eq, gt, like } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { saveAll } from "@/lib/db/save-all"
-import { platformSettingChanges, platformSettings } from "@/lib/db/schema"
+import {
+  platformSettingChanges,
+  platformSettings,
+  translationEntries,
+} from "@/lib/db/schema"
 import {
   TRANSLATION_RULE_CHECKS,
   TRANSLATION_RULE_KEYS,
@@ -74,7 +78,9 @@ export class TranslationRuleError extends Error {
 }
 
 // Saves one rule's value (null goes back to the default) and logs the
-// change, together.
+// change, together. A new daily limit counts today: texts the old one held
+// for tomorrow (pending, never tried, a next try ahead) are due again, and
+// the queue holds back again whatever the new limit still doesn't cover.
 export async function setTranslationRule(change: {
   key: TranslationRuleKey
   value: unknown
@@ -110,5 +116,19 @@ export async function setTranslationRule(change: {
       after: value,
       changedBy: userId,
     }),
+    ...(key === "dailyBusinessCharacters"
+      ? [
+          db
+            .update(translationEntries)
+            .set({ nextAttemptAt: null })
+            .where(
+              and(
+                eq(translationEntries.status, "pending"),
+                eq(translationEntries.attempts, 0),
+                gt(translationEntries.nextAttemptAt, new Date().toISOString())
+              )
+            ),
+        ]
+      : []),
   ])
 }

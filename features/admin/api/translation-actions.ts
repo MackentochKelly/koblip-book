@@ -133,6 +133,8 @@ export async function saveTranslationRule(
     console.error(error)
     return { ok: false, error: "failed" }
   }
+  // A new limit sends what it now allows at once, not at the next timer run.
+  if (key === "dailyBusinessCharacters") translateSoon()
   revalidatePath(TRANSLATIONS_BASE, "layout")
   return { ok: true }
 }
