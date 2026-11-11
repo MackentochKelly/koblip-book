@@ -138,13 +138,20 @@ export function hasWords(text: string): boolean {
   return /\p{L}\p{M}*\p{L}/u.test(rest)
 }
 
+// CLDR's order of plural forms. Older engines list
+// resolvedOptions().pluralCategories in another order (Node 22 gives
+// many, one, other), so the forms are sorted into this one.
+const PLURAL_ORDER = ["zero", "one", "two", "few", "many", "other"]
+
 // The forms a language's plurals have
-// (Intl.PluralRules resolvedOptions().pluralCategories): Spanish, French
-// and Portuguese have one, many and other.
+// (Intl.PluralRules resolvedOptions().pluralCategories), in CLDR's order:
+// Spanish, French and Portuguese have one, many and other.
 export function pluralForms(language: string, ordinal = false): string[] {
-  return new Intl.PluralRules(language, {
-    type: ordinal ? "ordinal" : "cardinal",
-  }).resolvedOptions().pluralCategories
+  return [
+    ...new Intl.PluralRules(language, {
+      type: ordinal ? "ordinal" : "cardinal",
+    }).resolvedOptions().pluralCategories,
+  ].sort((a, b) => PLURAL_ORDER.indexOf(a) - PLURAL_ORDER.indexOf(b))
 }
 
 // The English words, each a valid ICU message whose plurals and selects
